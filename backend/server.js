@@ -36,6 +36,7 @@ import { checkIqamaExpiry } from './jobs/iqamaChecker.js';
 import { syncZatcaInvoices } from './jobs/zatcaSync.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 import logger from './utils/logger.js';
+import User from './models/User.js';
 
 dotenv.config();
 
@@ -111,8 +112,29 @@ app.use(errorHandler);
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/zatca-erp')
-  .then(() => {
+  .then(async () => {
     logger.info('MongoDB connected successfully');
+    
+    // Auto-seed super admin if not exists
+    try {
+      const existingAdmin = await User.findOne({ role: 'super_admin' });
+      if (!existingAdmin) {
+        await User.create({
+          email: process.env.SUPER_ADMIN_EMAIL || 'admin@maqder.com',
+          password: process.env.SUPER_ADMIN_PASSWORD || 'SuperAdmin@123',
+          firstName: 'Super',
+          lastName: 'Admin',
+          firstNameAr: 'المشرف',
+          lastNameAr: 'العام',
+          role: 'super_admin',
+          isActive: true,
+          preferences: { language: 'en', theme: 'light' }
+        });
+        logger.info('Super Admin created: ' + (process.env.SUPER_ADMIN_EMAIL || 'admin@maqder.com'));
+      }
+    } catch (err) {
+      logger.error('Auto-seed super admin error:', err.message);
+    }
     
     // Cron Jobs
     // Check Iqama expiry daily at 8 AM
