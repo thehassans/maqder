@@ -1,16 +1,30 @@
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
-import { Save, Globe, ShieldCheck, DollarSign } from 'lucide-react'
+import { Save, Globe, ShieldCheck, DollarSign, Plus, Trash2, Star, GripVertical } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
+
+const defaultPlan = {
+  id: '',
+  nameEn: '',
+  nameAr: '',
+  priceMonthly: 0,
+  priceYearly: 0,
+  popular: false,
+  featuresEn: [],
+  featuresAr: []
+}
 
 export default function WebsiteSettings() {
   const queryClient = useQueryClient()
   const { language } = useSelector((state) => state.ui)
-
   const isArabic = language === 'ar'
+
+  const [plans, setPlans] = useState([])
+  const [currency, setCurrency] = useState('SAR')
 
   const { register, handleSubmit, reset, getValues } = useForm({
     defaultValues: {
@@ -20,29 +34,26 @@ export default function WebsiteSettings() {
       contactEmail: 'info@maqder.com',
       contactAddressEn: 'Riyadh, Saudi Arabia',
       contactAddressAr: 'الرياض، المملكة العربية السعودية',
-
       heroTitleEn: 'Complete ERP System',
       heroTitleAr: 'نظام ERP متكامل',
       heroSubtitleEn: 'Saudi compliant, ZATCA Phase 2 ready. Invoicing, HR, Payroll, Inventory & more.',
       heroSubtitleAr: 'متوافق مع السعودية وجاهز للمرحلة الثانية. فوترة، موارد بشرية، رواتب، مخزون وأكثر.',
-
       demoEnabled: true,
       demoTenantSlug: 'demo',
       demoEmail: 'demo@maqder.com',
       demoPassword: '',
-
-      pricingCurrency: 'SAR',
-      pricingPlansJson: '[]',
     },
   })
 
   const { data, isLoading } = useQuery({
     queryKey: ['website-settings'],
     queryFn: () => api.get('/super-admin/settings/website').then((res) => res.data),
-    onSuccess: (d) => {
-      const website = d?.website || {}
-      const demo = website?.demo || {}
+  })
 
+  useEffect(() => {
+    if (data?.website) {
+      const website = data.website
+      const demo = website?.demo || {}
       reset({
         brandName: website?.brandName || 'Maqder ERP',
         domain: website?.domain || 'maqder.com',
@@ -50,47 +61,46 @@ export default function WebsiteSettings() {
         contactEmail: website?.contactEmail || 'info@maqder.com',
         contactAddressEn: website?.contactAddressEn || 'Riyadh, Saudi Arabia',
         contactAddressAr: website?.contactAddressAr || 'الرياض، المملكة العربية السعودية',
-
         heroTitleEn: website?.hero?.titleEn || 'Complete ERP System',
         heroTitleAr: website?.hero?.titleAr || 'نظام ERP متكامل',
         heroSubtitleEn: website?.hero?.subtitleEn || '',
         heroSubtitleAr: website?.hero?.subtitleAr || '',
-
         demoEnabled: !!demo?.enabled,
         demoTenantSlug: demo?.tenantSlug || 'demo',
         demoEmail: demo?.email || 'demo@maqder.com',
         demoPassword: '',
-
-        pricingCurrency: website?.pricing?.currency || 'SAR',
-        pricingPlansJson: JSON.stringify(website?.pricing?.plans || [], null, 2),
       })
-    },
-  })
+      setCurrency(website?.pricing?.currency || 'SAR')
+      setPlans(website?.pricing?.plans || [])
+    }
+  }, [data, reset])
 
   const saveMutation = useMutation({
     mutationFn: (payload) => api.put('/super-admin/settings/website', payload).then((res) => res.data),
     onSuccess: (d) => {
       toast.success(isArabic ? 'تم حفظ إعدادات الموقع' : 'Website settings saved')
-      queryClient.setQueryData(['website-settings'], d)
       queryClient.invalidateQueries(['website-settings'])
-      reset({
-        ...getValues(),
-        demoPassword: '',
-      })
     },
     onError: (err) => toast.error(err.response?.data?.error || 'Error saving settings'),
   })
 
-  const onSubmit = (formData) => {
-    let plans = []
-    try {
-      plans = JSON.parse(String(formData.pricingPlansJson || '[]'))
-      if (!Array.isArray(plans)) throw new Error('Plans must be an array')
-    } catch (e) {
-      toast.error(isArabic ? 'صيغة خطط الأسعار غير صحيحة (JSON)' : 'Invalid pricing plans JSON')
-      return
-    }
+  const updatePlan = (index, field, value) => {
+    setPlans(prev => prev.map((p, i) => i === index ? { ...p, [field]: value } : p))
+  }
 
+  const addPlan = () => {
+    setPlans(prev => [...prev, { ...defaultPlan, id: `plan_${Date.now()}` }])
+  }
+
+  const removePlan = (index) => {
+    setPlans(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const togglePopular = (index) => {
+    setPlans(prev => prev.map((p, i) => ({ ...p, popular: i === index })))
+  }
+
+  const onSubmit = (formData) => {
     const payload = {
       website: {
         brandName: String(formData.brandName || '').trim(),
@@ -112,7 +122,7 @@ export default function WebsiteSettings() {
           password: String(formData.demoPassword || '').trim(),
         },
         pricing: {
-          currency: String(formData.pricingCurrency || 'SAR').trim(),
+          currency: currency.trim() || 'SAR',
           plans,
         },
       },
@@ -246,29 +256,97 @@ export default function WebsiteSettings() {
           </section>
 
           <section className="space-y-4">
-            <div className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-violet-600" />
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{isArabic ? 'الأسعار' : 'Pricing'}</h2>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-violet-600" />
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{isArabic ? 'الأسعار' : 'Pricing'}</h2>
+              </div>
+              <button type="button" onClick={addPlan} className="btn btn-secondary text-sm">
+                <Plus className="w-4 h-4" />
+                {isArabic ? 'إضافة خطة' : 'Add Plan'}
+              </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               <div>
                 <label className="label">{isArabic ? 'العملة' : 'Currency'}</label>
-                <input {...register('pricingCurrency')} className="input" placeholder="SAR" />
+                <input value={currency} onChange={(e) => setCurrency(e.target.value)} className="input" placeholder="SAR" />
               </div>
-              <div className="md:col-span-2">
-                <label className="label">{isArabic ? 'خطط الأسعار (JSON)' : 'Pricing plans (JSON)'}</label>
-                <textarea
-                  {...register('pricingPlansJson')}
-                  className="input min-h-[220px] font-mono text-xs"
-                  spellCheck={false}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  {isArabic
-                    ? 'يمكنك تعديل الأسماء والأسعار والميزات لكل خطة.'
-                    : 'You can edit plan names, prices, and features for each plan.'}
-                </p>
-              </div>
+            </div>
+
+            <div className="space-y-4">
+              {plans.map((plan, index) => (
+                <div key={plan.id || index} className={`p-4 rounded-xl border-2 ${plan.popular ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/20' : 'border-gray-200 dark:border-dark-600 bg-gray-50 dark:bg-dark-700/50'}`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <GripVertical className="w-4 h-4 text-gray-400" />
+                      <span className="font-semibold text-gray-900 dark:text-white">
+                        {isArabic ? `خطة ${index + 1}` : `Plan ${index + 1}`}
+                      </span>
+                      {plan.popular && (
+                        <span className="px-2 py-0.5 text-xs font-medium bg-violet-500 text-white rounded-full flex items-center gap-1">
+                          <Star className="w-3 h-3" /> {isArabic ? 'مميزة' : 'Popular'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button type="button" onClick={() => togglePopular(index)} className={`text-xs px-2 py-1 rounded ${plan.popular ? 'bg-violet-200 text-violet-700' : 'bg-gray-200 text-gray-600 hover:bg-violet-100'}`}>
+                        <Star className="w-3 h-3 inline mr-1" />
+                        {isArabic ? 'مميزة' : 'Popular'}
+                      </button>
+                      <button type="button" onClick={() => removePlan(index)} className="p-1.5 text-red-500 hover:bg-red-50 rounded">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div>
+                      <label className="text-xs text-gray-500">{isArabic ? 'الاسم (EN)' : 'Name (EN)'}</label>
+                      <input value={plan.nameEn || ''} onChange={(e) => updatePlan(index, 'nameEn', e.target.value)} className="input text-sm" placeholder="Starter" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500">{isArabic ? 'الاسم (AR)' : 'Name (AR)'}</label>
+                      <input value={plan.nameAr || ''} onChange={(e) => updatePlan(index, 'nameAr', e.target.value)} className="input text-sm" placeholder="البداية" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500">{isArabic ? 'السعر الشهري' : 'Monthly Price'}</label>
+                      <input type="number" value={plan.priceMonthly || 0} onChange={(e) => updatePlan(index, 'priceMonthly', Number(e.target.value))} className="input text-sm" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500">{isArabic ? 'السعر السنوي' : 'Yearly Price'}</label>
+                      <input type="number" value={plan.priceYearly || 0} onChange={(e) => updatePlan(index, 'priceYearly', Number(e.target.value))} className="input text-sm" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                    <div>
+                      <label className="text-xs text-gray-500">{isArabic ? 'الميزات (EN) - سطر لكل ميزة' : 'Features (EN) - one per line'}</label>
+                      <textarea
+                        value={(plan.featuresEn || []).join('\n')}
+                        onChange={(e) => updatePlan(index, 'featuresEn', e.target.value.split('\n').filter(Boolean))}
+                        className="input text-sm min-h-[100px]"
+                        placeholder="ZATCA E-Invoicing&#10;Up to 500 invoices/month&#10;5 users"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-500">{isArabic ? 'الميزات (AR) - سطر لكل ميزة' : 'Features (AR) - one per line'}</label>
+                      <textarea
+                        value={(plan.featuresAr || []).join('\n')}
+                        onChange={(e) => updatePlan(index, 'featuresAr', e.target.value.split('\n').filter(Boolean))}
+                        className="input text-sm min-h-[100px]"
+                        placeholder="الفوترة الإلكترونية&#10;حتى 500 فاتورة/شهر&#10;5 مستخدمين"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {plans.length === 0 && (
+                <div className="text-center py-8 text-gray-500 border-2 border-dashed border-gray-300 dark:border-dark-600 rounded-xl">
+                  {isArabic ? 'لا توجد خطط. اضغط "إضافة خطة" لإنشاء خطة جديدة.' : 'No plans yet. Click "Add Plan" to create one.'}
+                </div>
+              )}
             </div>
           </section>
 
