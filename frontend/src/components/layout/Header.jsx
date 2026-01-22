@@ -45,22 +45,21 @@ export default function Header() {
   const handleSearch = (e) => {
     e.preventDefault()
     if (searchQuery.trim()) {
-      // Navigate to relevant page based on current context or search
       const query = searchQuery.toLowerCase()
       if (query.includes('invoice') || query.includes('فاتورة')) {
-        navigate('/invoices')
+        navigate('/dashboard/invoices')
       } else if (query.includes('expense') || query.includes('expenses') || query.includes('مصروف') || query.includes('مصاريف')) {
-        navigate('/expenses')
+        navigate('/dashboard/expenses')
       } else if (query.includes('employee') || query.includes('موظف')) {
-        navigate('/employees')
+        navigate('/dashboard/employees')
       } else if (query.includes('customer') || query.includes('عميل')) {
-        navigate('/customers')
+        navigate('/dashboard/customers')
       } else if (query.includes('contact') || query.includes('contacts') || query.includes('جهات') || query.includes('اتصال')) {
-        navigate('/contacts')
+        navigate('/dashboard/contacts')
       } else if (query.includes('product') || query.includes('منتج')) {
-        navigate('/products')
+        navigate('/dashboard/products')
       } else if (query.includes('report') || query.includes('تقرير')) {
-        navigate('/reports')
+        navigate('/dashboard/reports')
       }
       setSearchQuery('')
       setSearchOpen(false)

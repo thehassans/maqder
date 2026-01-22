@@ -10,6 +10,7 @@ import AuthLayout from './layouts/AuthLayout'
 import SuperAdminLayout from './layouts/SuperAdminLayout'
 
 import Login from './pages/auth/Login'
+import Landing from './pages/Landing'
 import Dashboard from './pages/Dashboard'
 import Invoices from './pages/invoices/Invoices'
 import InvoiceCreate from './pages/invoices/InvoiceCreate'
@@ -66,7 +67,7 @@ function ProtectedRoute({ children, allowedRoles, redirectSuperAdmin }) {
   }
   
   if (allowedRoles && !allowedRoles.includes(user?.role)) {
-    return <Navigate to="/" replace />
+    return <Navigate to="/dashboard" replace />
   }
 
   return children
@@ -94,6 +95,9 @@ function App() {
 
   return (
     <Routes>
+      {/* Public Landing Page */}
+      <Route path="/" element={<Landing />} />
+
       {/* Auth Routes */}
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<Login />} />
@@ -118,7 +122,7 @@ function App() {
 
       {/* Main App Routes */}
       <Route
-        path="/"
+        path="/dashboard"
         element={
           <ProtectedRoute redirectSuperAdmin>
             <MainLayout />

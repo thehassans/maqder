@@ -45,73 +45,73 @@ export default function Sidebar() {
     {
       title: language === 'ar' ? 'الرئيسية' : 'Main',
       items: [
-        { path: '/', icon: LayoutDashboard, label: t('dashboard'), end: true },
-        { path: '/invoices', icon: FileText, label: t('invoices') },
-        { path: '/contacts', icon: Users, label: language === 'ar' ? 'جهات الاتصال' : 'Contacts' },
-        { path: '/customers', icon: Building, label: language === 'ar' ? 'العملاء' : 'Customers' },
+        { path: '/dashboard', icon: LayoutDashboard, label: t('dashboard'), end: true },
+        { path: '/dashboard/invoices', icon: FileText, label: t('invoices') },
+        { path: '/dashboard/contacts', icon: Users, label: language === 'ar' ? 'جهات الاتصال' : 'Contacts' },
+        { path: '/dashboard/customers', icon: Building, label: language === 'ar' ? 'العملاء' : 'Customers' },
       ]
     },
     {
       title: language === 'ar' ? 'الموارد البشرية' : 'Human Resources',
       items: [
-        { path: '/employees', icon: Users, label: t('employees') },
-        { path: '/payroll', icon: Wallet, label: t('payroll') },
-        { path: '/payroll/calculators', icon: Calculator, label: 'GOSI/EOSB' },
+        { path: '/dashboard/employees', icon: Users, label: t('employees') },
+        { path: '/dashboard/payroll', icon: Wallet, label: t('payroll') },
+        { path: '/dashboard/payroll/calculators', icon: Calculator, label: 'GOSI/EOSB' },
       ]
     },
     {
       title: language === 'ar' ? 'المخزون' : 'Inventory',
       items: [
-        { path: '/products', icon: Package, label: t('products') },
-        { path: '/warehouses', icon: Warehouse, label: t('warehouses') },
+        { path: '/dashboard/products', icon: Package, label: t('products') },
+        { path: '/dashboard/warehouses', icon: Warehouse, label: t('warehouses') },
       ]
     },
     {
       title: language === 'ar' ? 'سلسلة التوريد' : 'Supply Chain',
       items: [
-        { path: '/suppliers', icon: Building, label: language === 'ar' ? 'الموردين' : 'Suppliers' },
-        { path: '/purchase-orders', icon: ShoppingCart, label: language === 'ar' ? 'طلبات الشراء' : 'Purchase Orders' },
-        { path: '/shipments', icon: Truck, label: language === 'ar' ? 'الشحنات' : 'Shipments' },
+        { path: '/dashboard/suppliers', icon: Building, label: language === 'ar' ? 'الموردين' : 'Suppliers' },
+        { path: '/dashboard/purchase-orders', icon: ShoppingCart, label: language === 'ar' ? 'طلبات الشراء' : 'Purchase Orders' },
+        { path: '/dashboard/shipments', icon: Truck, label: language === 'ar' ? 'الشحنات' : 'Shipments' },
       ]
     },
     {
       title: language === 'ar' ? 'إدارة المشاريع' : 'Project Management',
       items: [
-        { path: '/projects', icon: FolderKanban, label: language === 'ar' ? 'المشاريع' : 'Projects' },
-        { path: '/tasks', icon: ClipboardList, label: language === 'ar' ? 'المهام' : 'Tasks' },
+        { path: '/dashboard/projects', icon: FolderKanban, label: language === 'ar' ? 'المشاريع' : 'Projects' },
+        { path: '/dashboard/tasks', icon: ClipboardList, label: language === 'ar' ? 'المهام' : 'Tasks' },
       ]
     },
     {
       title: language === 'ar' ? 'التواصل' : 'Communication',
       items: [
-        { path: '/whatsapp', icon: MessageCircle, label: 'WhatsApp' },
+        { path: '/dashboard/whatsapp', icon: MessageCircle, label: 'WhatsApp' },
       ]
     },
     {
       title: language === 'ar' ? 'إنترنت الأشياء' : 'Internet of Things',
       items: [
-        { path: '/iot', icon: Cpu, label: language === 'ar' ? 'إنترنت الأشياء' : 'IoT' },
+        { path: '/dashboard/iot', icon: Cpu, label: language === 'ar' ? 'إنترنت الأشياء' : 'IoT' },
       ]
     },
     {
       title: language === 'ar' ? 'المالية' : 'Finance',
       items: [
-        { path: '/finance', icon: Landmark, label: language === 'ar' ? 'المالية' : 'Finance' },
-        { path: '/expenses', icon: Receipt, label: language === 'ar' ? 'المصروفات' : 'Expenses' },
+        { path: '/dashboard/finance', icon: Landmark, label: language === 'ar' ? 'المالية' : 'Finance' },
+        { path: '/dashboard/expenses', icon: Receipt, label: language === 'ar' ? 'المصروفات' : 'Expenses' },
       ]
     },
     {
       title: language === 'ar' ? 'التكلفة والتخطيط' : 'Costing & Planning',
       items: [
-        { path: '/job-costing', icon: Briefcase, label: language === 'ar' ? 'تكلفة الأعمال' : 'Job Costing' },
-        { path: '/mrp', icon: Factory, label: 'MRP' },
+        { path: '/dashboard/job-costing', icon: Briefcase, label: language === 'ar' ? 'تكلفة الأعمال' : 'Job Costing' },
+        { path: '/dashboard/mrp', icon: Factory, label: 'MRP' },
       ]
     },
     {
       title: language === 'ar' ? 'الإعدادات' : 'Settings',
       items: [
-        { path: '/reports', icon: BarChart3, label: language === 'ar' ? 'التقارير' : 'Reports' },
-        { path: '/settings', icon: Settings, label: t('settings') },
+        { path: '/dashboard/reports', icon: BarChart3, label: language === 'ar' ? 'التقارير' : 'Reports' },
+        { path: '/dashboard/settings', icon: Settings, label: t('settings') },
       ]
     },
   ]

@@ -11,7 +11,7 @@ export default function AuthLayout() {
     if (user?.role === 'super_admin') {
       return <Navigate to="/super-admin" replace />
     }
-    return <Navigate to="/" replace />
+    return <Navigate to="/dashboard" replace />
   }
 
   return <Outlet />
