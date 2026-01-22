@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { getMe } from './store/slices/authSlice'
 import { setLanguage, setTheme } from './store/slices/uiSlice'
@@ -8,9 +8,15 @@ import { applyTenantBranding } from './lib/branding'
 import MainLayout from './layouts/MainLayout'
 import AuthLayout from './layouts/AuthLayout'
 import SuperAdminLayout from './layouts/SuperAdminLayout'
+import MarketingLayout from './layouts/MarketingLayout'
 
 import Login from './pages/auth/Login'
-import Landing from './pages/Landing'
+import MarketingHome from './pages/marketing/Home'
+import MarketingPricing from './pages/marketing/Pricing'
+import MarketingAbout from './pages/marketing/About'
+import MarketingContact from './pages/marketing/Contact'
+import MarketingPrivacy from './pages/marketing/Privacy'
+import MarketingTerms from './pages/marketing/Terms'
 import Dashboard from './pages/Dashboard'
 import Invoices from './pages/invoices/Invoices'
 import InvoiceCreate from './pages/invoices/InvoiceCreate'
@@ -52,8 +58,15 @@ import TenantManagement from './pages/super-admin/TenantManagement'
 import TenantForm from './pages/super-admin/TenantForm'
 import UserManagement from './pages/super-admin/UserManagement'
 import GeminiSettings from './pages/super-admin/GeminiSettings'
+import WebsiteSettings from './pages/super-admin/WebsiteSettings'
 
 import LoadingScreen from './components/ui/LoadingScreen'
+
+function LegacyDashboardRedirect() {
+  const location = useLocation()
+  const nextPath = location.pathname.replace(/^\/dashboard/, '/app/dashboard')
+  return <Navigate to={`${nextPath}${location.search}${location.hash}`} replace />
+}
 
 function ProtectedRoute({ children, allowedRoles, redirectSuperAdmin }) {
   const { isAuthenticated, isLoading, user } = useSelector((state) => state.auth)
@@ -67,7 +80,7 @@ function ProtectedRoute({ children, allowedRoles, redirectSuperAdmin }) {
   }
   
   if (allowedRoles && !allowedRoles.includes(user?.role)) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to="/app/dashboard" replace />
   }
 
   return children
@@ -95,13 +108,25 @@ function App() {
 
   return (
     <Routes>
-      {/* Public Landing Page */}
-      <Route path="/" element={<Landing />} />
+      {/* Public Marketing Website */}
+      <Route path="/" element={<MarketingLayout />}>
+        <Route index element={<MarketingHome />} />
+        <Route path="pricing" element={<MarketingPricing />} />
+        <Route path="about" element={<MarketingAbout />} />
+        <Route path="contact" element={<MarketingContact />} />
+        <Route path="privacy" element={<MarketingPrivacy />} />
+        <Route path="terms" element={<MarketingTerms />} />
+      </Route>
 
       {/* Auth Routes */}
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<Login />} />
       </Route>
+
+      <Route path="/app" element={<Navigate to="/app/dashboard" replace />} />
+
+      {/* Legacy redirect (backwards compatibility) */}
+      <Route path="/dashboard/*" element={<LegacyDashboardRedirect />} />
 
       {/* Super Admin Routes */}
       <Route
@@ -117,12 +142,13 @@ function App() {
         <Route path="tenants/new" element={<TenantForm />} />
         <Route path="tenants/:id" element={<TenantForm />} />
         <Route path="users" element={<UserManagement />} />
+        <Route path="website" element={<WebsiteSettings />} />
         <Route path="gemini" element={<GeminiSettings />} />
       </Route>
 
       {/* Main App Routes */}
       <Route
-        path="/dashboard"
+        path="/app/dashboard"
         element={
           <ProtectedRoute redirectSuperAdmin>
             <MainLayout />

@@ -25,6 +25,16 @@ export const login = createAsyncThunk(
   }
 )
 
+export const demoLogin = createAsyncThunk('auth/demoLogin', async (_, { rejectWithValue }) => {
+  try {
+    const { data } = await api.post('/public/demo-login')
+    localStorage.setItem('token', data.token)
+    return data
+  } catch (error) {
+    return rejectWithValue(error.response?.data?.error || 'Demo login failed')
+  }
+})
+
 export const getMe = createAsyncThunk(
   'auth/getMe',
   async (_, { rejectWithValue }) => {
@@ -71,6 +81,21 @@ const authSlice = createSlice({
         state.token = action.payload.token
       })
       .addCase(login.rejected, (state, action) => {
+        state.isLoading = false
+        state.error = action.payload
+      })
+      .addCase(demoLogin.pending, (state) => {
+        state.isLoading = true
+        state.error = null
+      })
+      .addCase(demoLogin.fulfilled, (state, action) => {
+        state.isLoading = false
+        state.isAuthenticated = true
+        state.user = action.payload.user
+        state.tenant = action.payload.tenant
+        state.token = action.payload.token
+      })
+      .addCase(demoLogin.rejected, (state, action) => {
         state.isLoading = false
         state.error = action.payload
       })

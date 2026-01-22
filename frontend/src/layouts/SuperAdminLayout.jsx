@@ -23,6 +23,7 @@ export default function SuperAdminLayout() {
   const navItems = [
     { path: '/super-admin', icon: LayoutDashboard, label: t('dashboard'), end: true },
     { path: '/super-admin/tenants', icon: Building2, label: t('tenants') },
+    { path: '/super-admin/website', icon: Globe, label: t('websiteSettings') },
     { path: '/super-admin/gemini', icon: Settings, label: t('geminiSettings') },
   ]
 

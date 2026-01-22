@@ -15,8 +15,15 @@ router.use(authorize('super_admin'));
 
 const getGlobalSettings = async () => {
   const existing = await SystemSettings.findOne({ key: 'global' });
-  if (existing) return existing;
-  return SystemSettings.create({ key: 'global' });
+  if (existing) {
+    if (!existing.website) {
+      existing.website = {};
+      existing.markModified('website');
+      await existing.save();
+    }
+    return existing;
+  }
+  return SystemSettings.create({ key: 'global', website: {} });
 };
 
 const maskApiKey = (key) => {
@@ -24,6 +31,31 @@ const maskApiKey = (key) => {
   const k = String(key);
   if (k.length <= 8) return `${k.slice(0, 2)}***${k.slice(-2)}`;
   return `${k.slice(0, 4)}***${k.slice(-4)}`;
+};
+
+const maskSecret = (value) => {
+  if (!value) return '';
+  const v = String(value);
+  if (v.length <= 4) return '****';
+  return `${v.slice(0, 2)}***${v.slice(-2)}`;
+};
+
+const mergeWebsiteDefaults = (website) => {
+  const defaultsDoc = new SystemSettings({ key: 'global' });
+  const defaults = defaultsDoc.website?.toObject?.() || defaultsDoc.website || {};
+  const current = website?.toObject?.() || website || {};
+  return {
+    ...defaults,
+    ...current,
+    hero: { ...(defaults.hero || {}), ...(current.hero || {}) },
+    cta: { ...(defaults.cta || {}), ...(current.cta || {}) },
+    demo: { ...(defaults.demo || {}), ...(current.demo || {}) },
+    pricing: {
+      ...(defaults.pricing || {}),
+      ...(current.pricing || {}),
+      plans: (current.pricing?.plans && current.pricing.plans.length ? current.pricing.plans : defaults.pricing?.plans) || []
+    }
+  };
 };
 
 // @route   GET /api/super-admin/dashboard
@@ -60,6 +92,85 @@ router.get('/dashboard', async (req, res) => {
       recentTenants,
       subscriptionStats,
       monthlyRevenue
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/settings/website', async (req, res) => {
+  try {
+    const settings = await getGlobalSettings();
+    const website = mergeWebsiteDefaults(settings.website);
+    res.json({
+      website: {
+        ...website,
+        demo: {
+          ...(website.demo?.toObject?.() || website.demo || {}),
+          password: '',
+          hasPassword: !!website?.demo?.password,
+          passwordMasked: maskSecret(website?.demo?.password)
+        }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.put('/settings/website', async (req, res) => {
+  try {
+    const payload = req.body?.website || req.body || {};
+    const settings = await getGlobalSettings();
+    const currentWebsite = mergeWebsiteDefaults(settings.website);
+
+    const nextWebsite = {
+      ...currentWebsite,
+      ...payload,
+      hero: {
+        ...(currentWebsite.hero || {}),
+        ...(payload.hero || {})
+      },
+      cta: {
+        ...(currentWebsite.cta || {}),
+        ...(payload.cta || {})
+      },
+      pricing: {
+        ...(currentWebsite.pricing || {}),
+        ...(payload.pricing || {})
+      },
+      demo: {
+        ...(currentWebsite.demo || {}),
+        ...(payload.demo || {})
+      }
+    };
+
+    const nextDemo = { ...(nextWebsite.demo || {}) };
+    if (payload?.demo && Object.prototype.hasOwnProperty.call(payload.demo, 'password')) {
+      const trimmed = String(payload.demo.password || '').trim();
+      if (trimmed) {
+        nextDemo.password = trimmed;
+      } else {
+        nextDemo.password = currentWebsite?.demo?.password;
+      }
+    }
+    nextWebsite.demo = nextDemo;
+
+    settings.website = nextWebsite;
+    settings.markModified('website');
+    await settings.save();
+
+    const website = mergeWebsiteDefaults(settings.website);
+    res.json({
+      website: {
+        ...website,
+        demo: {
+          ...(website.demo?.toObject?.() || website.demo || {}),
+          password: '',
+          hasPassword: !!website?.demo?.password,
+          passwordMasked: maskSecret(website?.demo?.password)
+        }
+      }
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

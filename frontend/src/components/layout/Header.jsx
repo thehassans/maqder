@@ -47,19 +47,19 @@ export default function Header() {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
       if (query.includes('invoice') || query.includes('فاتورة')) {
-        navigate('/dashboard/invoices')
+        navigate('/app/dashboard/invoices')
       } else if (query.includes('expense') || query.includes('expenses') || query.includes('مصروف') || query.includes('مصاريف')) {
-        navigate('/dashboard/expenses')
+        navigate('/app/dashboard/expenses')
       } else if (query.includes('employee') || query.includes('موظف')) {
-        navigate('/dashboard/employees')
+        navigate('/app/dashboard/employees')
       } else if (query.includes('customer') || query.includes('عميل')) {
-        navigate('/dashboard/customers')
+        navigate('/app/dashboard/customers')
       } else if (query.includes('contact') || query.includes('contacts') || query.includes('جهات') || query.includes('اتصال')) {
-        navigate('/dashboard/contacts')
+        navigate('/app/dashboard/contacts')
       } else if (query.includes('product') || query.includes('منتج')) {
-        navigate('/dashboard/products')
+        navigate('/app/dashboard/products')
       } else if (query.includes('report') || query.includes('تقرير')) {
-        navigate('/dashboard/reports')
+        navigate('/app/dashboard/reports')
       }
       setSearchQuery('')
       setSearchOpen(false)

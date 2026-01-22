@@ -77,7 +77,7 @@ export default function Login() {
           {/* Footer */}
           <div className="text-white/50 text-sm">
             © 2024 Maqder ERP. {language === 'ar' ? 'صُنع بـ ❤️ للشركات السعودية بواسطة' : 'Built with ❤️ for Saudi businesses by'}{' '}
-            <a href="https://hassanscode.com" target="_blank" rel="noopener noreferrer" className="text-white/70 hover:text-white underline transition-colors">Hassan Sarwar</a>
+            <a href="tel:+966595930045" className="text-white/70 hover:text-white underline transition-colors">+966595930045</a>
           </div>
         </div>
       </div>
