@@ -26,10 +26,45 @@ const maskSecret = (value) => {
   return `${v.slice(0, 2)}***${v.slice(-2)}`
 }
 
+const getDefaultPricingPlans = () => [
+  {
+    id: 'starter',
+    nameEn: 'Starter',
+    nameAr: 'البداية',
+    priceMonthly: 299,
+    priceYearly: 2990,
+    popular: false,
+    featuresEn: ['ZATCA E-Invoicing', 'Up to 500 invoices/month', 'Inventory & Warehouses', 'Basic Reports', 'Up to 5 users', 'Email Support'],
+    featuresAr: ['الفوترة الإلكترونية', 'حتى 500 فاتورة/شهر', 'المخزون والمستودعات', 'تقارير أساسية', 'حتى 5 مستخدمين', 'دعم بالبريد']
+  },
+  {
+    id: 'professional',
+    nameEn: 'Professional',
+    nameAr: 'الاحترافية',
+    priceMonthly: 699,
+    priceYearly: 6990,
+    popular: true,
+    featuresEn: ['Everything in Starter', 'Unlimited Invoices', 'HR & Payroll (GOSI/WPS)', 'Expenses & Finance', 'Projects & Tasks', 'Advanced Reports', 'Up to 25 users', 'Priority Support'],
+    featuresAr: ['كل ما في البداية', 'فواتير غير محدودة', 'الموارد البشرية والرواتب', 'المصروفات والمالية', 'المشاريع والمهام', 'تقارير متقدمة', 'حتى 25 مستخدم', 'دعم ذو أولوية']
+  },
+  {
+    id: 'enterprise',
+    nameEn: 'Enterprise',
+    nameAr: 'المؤسسات',
+    priceMonthly: 0,
+    priceYearly: 0,
+    popular: false,
+    featuresEn: ['Everything in Professional', 'Unlimited users', 'Dedicated Account Manager', 'Custom Integrations', 'On-premise Option', '24/7 Phone Support', 'SLA Guarantee'],
+    featuresAr: ['كل ما في الاحترافية', 'مستخدمون غير محدودين', 'مدير حساب مخصص', 'تكاملات مخصصة', 'خيار الخادم الخاص', 'دعم هاتفي 24/7', 'ضمان SLA']
+  }
+]
+
 const mergeWebsiteDefaults = (website) => {
   const defaultsDoc = new SystemSettings({ key: 'global' })
   const defaults = defaultsDoc.website?.toObject?.() || defaultsDoc.website || {}
   const current = website?.toObject?.() || website || {}
+  const currentPlans = current.pricing?.plans
+  const hasPlans = Array.isArray(currentPlans) && currentPlans.length > 0
   return {
     ...defaults,
     ...current,
@@ -39,7 +74,7 @@ const mergeWebsiteDefaults = (website) => {
     pricing: {
       ...(defaults.pricing || {}),
       ...(current.pricing || {}),
-      plans: (current.pricing?.plans && current.pricing.plans.length ? current.pricing.plans : defaults.pricing?.plans) || [],
+      plans: hasPlans ? currentPlans : getDefaultPricingPlans()
     },
   }
 }
