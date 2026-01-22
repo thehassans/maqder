@@ -16,7 +16,6 @@ import { useTranslation } from '../lib/translations'
 
 export default function SuperAdminLayout() {
   const dispatch = useDispatch()
-  const { user } = useSelector((state) => state.auth)
   const { theme, language } = useSelector((state) => state.ui)
   const { t } = useTranslation(language)
 
@@ -81,17 +80,7 @@ export default function SuperAdminLayout() {
             </button>
             
             <div className="w-px h-6 bg-white/20" />
-            
-            <div className="flex items-center gap-3">
-              <div className="text-end">
-                <p className="text-sm font-medium">{user?.firstName} {user?.lastName}</p>
-                <p className="text-xs text-gray-400">{user?.email}</p>
-              </div>
-              <div className="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full flex items-center justify-center text-white font-bold">
-                {user?.firstName?.[0]}{user?.lastName?.[0]}
-              </div>
-            </div>
-            
+
             <button
               onClick={() => dispatch(logout())}
               className="p-2 rounded-lg text-gray-300 hover:bg-red-500/20 hover:text-red-400 transition-colors"

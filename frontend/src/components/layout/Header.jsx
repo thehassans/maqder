@@ -1,7 +1,7 @@
 import { useSelector, useDispatch } from 'react-redux'
-import { Menu, Search, Bell, Moon, Sun, Globe, User, LogOut, Settings, X, FileText, Users, Package } from 'lucide-react'
+import { Menu, Search, Bell, Moon, Sun, Globe, LogOut, X, FileText, Users, Package } from 'lucide-react'
 import { Fragment, useState, useEffect, useRef } from 'react'
-import { Menu as HeadlessMenu, Transition, Popover } from '@headlessui/react'
+import { Transition, Popover } from '@headlessui/react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { logout } from '../../store/slices/authSlice'
 import { setTheme, setLanguage, setMobileMenuOpen } from '../../store/slices/uiSlice'
@@ -11,7 +11,7 @@ export default function Header() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const location = useLocation()
-  const { user, tenant } = useSelector((state) => state.auth)
+  const { tenant } = useSelector((state) => state.auth)
   const { theme, language } = useSelector((state) => state.ui)
   const { t } = useTranslation(language)
   const [searchQuery, setSearchQuery] = useState('')
@@ -219,87 +219,15 @@ export default function Header() {
 
           <div className="w-px h-6 bg-gray-200 dark:bg-dark-600 mx-1" />
 
-          {/* User Menu */}
-          <HeadlessMenu as="div" className="relative">
-            <HeadlessMenu.Button className="flex items-center gap-3 p-1.5 pe-3 rounded-xl hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors">
-              <div className="w-9 h-9 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center text-white font-semibold text-sm">
-                {user?.firstName?.[0]}{user?.lastName?.[0]}
-              </div>
-              <div className="hidden sm:block text-start">
-                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                  {user?.firstName} {user?.lastName}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {user?.role?.replace('_', ' ')}
-                </p>
-              </div>
-            </HeadlessMenu.Button>
-
-            <Transition
-              as={Fragment}
-              enter="transition ease-out duration-100"
-              enterFrom="transform opacity-0 scale-95"
-              enterTo="transform opacity-100 scale-100"
-              leave="transition ease-in duration-75"
-              leaveFrom="transform opacity-100 scale-100"
-              leaveTo="transform opacity-0 scale-95"
-            >
-              <HeadlessMenu.Items className="absolute end-0 mt-2 w-56 origin-top-right bg-white dark:bg-dark-800 rounded-xl shadow-lg ring-1 ring-black/5 dark:ring-white/10 focus:outline-none overflow-hidden">
-                <div className="p-3 border-b border-gray-100 dark:border-dark-700">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white">
-                    {user?.firstName} {user?.lastName}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                    {user?.email}
-                  </p>
-                </div>
-
-                <div className="p-1">
-                  <HeadlessMenu.Item>
-                    {({ active }) => (
-                      <button
-                        className={`${
-                          active ? 'bg-gray-100 dark:bg-dark-700' : ''
-                        } flex w-full items-center gap-3 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 rounded-lg`}
-                      >
-                        <User className="w-4 h-4" />
-                        {language === 'ar' ? 'الملف الشخصي' : 'Profile'}
-                      </button>
-                    )}
-                  </HeadlessMenu.Item>
-                  <HeadlessMenu.Item>
-                    {({ active }) => (
-                      <button
-                        onClick={() => navigate('/settings')}
-                        className={`${
-                          active ? 'bg-gray-100 dark:bg-dark-700' : ''
-                        } flex w-full items-center gap-3 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-300 rounded-lg`}
-                      >
-                        <Settings className="w-4 h-4" />
-                        {t('settings')}
-                      </button>
-                    )}
-                  </HeadlessMenu.Item>
-                </div>
-
-                <div className="p-1 border-t border-gray-100 dark:border-dark-700">
-                  <HeadlessMenu.Item>
-                    {({ active }) => (
-                      <button
-                        onClick={() => dispatch(logout())}
-                        className={`${
-                          active ? 'bg-red-50 dark:bg-red-900/20' : ''
-                        } flex w-full items-center gap-3 px-3 py-2.5 text-sm text-red-600 dark:text-red-400 rounded-lg`}
-                      >
-                        <LogOut className="w-4 h-4" />
-                        {t('logout')}
-                      </button>
-                    )}
-                  </HeadlessMenu.Item>
-                </div>
-              </HeadlessMenu.Items>
-            </Transition>
-          </HeadlessMenu>
+          <button
+            onClick={() => dispatch(logout())}
+            className="p-2.5 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors group relative"
+          >
+            <LogOut className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:text-red-600 dark:group-hover:text-red-400" />
+            <span className="tooltip -bottom-10 start-1/2 -translate-x-1/2 whitespace-nowrap">
+              {t('logout')}
+            </span>
+          </button>
         </div>
       </div>
     </header>

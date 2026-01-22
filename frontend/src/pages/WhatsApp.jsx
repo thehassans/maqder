@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Fragment } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { useTranslation } from '../lib/translations'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Popover, Transition } from '@headlessui/react'
 import {
   MessageCircle, Search, Send, Paperclip, Smile, MoreVertical,
   Phone, Video, Star, Archive, Trash2, Users, Settings, Plus,
@@ -88,6 +89,15 @@ export default function WhatsApp() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messagesData])
 
+  const refreshWhatsApp = () => {
+    queryClient.invalidateQueries(['whatsapp-contacts'])
+    queryClient.invalidateQueries(['whatsapp-messages', selectedContact?._id])
+    queryClient.invalidateQueries(['whatsapp-templates'])
+    queryClient.invalidateQueries(['whatsapp-quick-replies'])
+    queryClient.invalidateQueries(['whatsapp-config'])
+    queryClient.invalidateQueries(['whatsapp-stats'])
+  }
+
   const handleSendMessage = () => {
     if (!messageText.trim() || !selectedContact) return
     sendMessage.mutate({ contactId: selectedContact._id, text: messageText })
@@ -149,18 +159,138 @@ export default function WhatsApp() {
               WhatsApp
             </h1>
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowNewChatModal(true)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg"
-              >
-                <Plus className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => setShowSettings(true)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg"
-              >
-                <Settings className="w-5 h-5" />
-              </button>
+              <Popover className="relative">
+                <Popover.Button className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/40">
+                  <Plus className="w-5 h-5" />
+                </Popover.Button>
+                <Transition
+                  as={Fragment}
+                  enter="transition ease-out duration-150"
+                  enterFrom="transform opacity-0 scale-95"
+                  enterTo="transform opacity-100 scale-100"
+                  leave="transition ease-in duration-100"
+                  leaveFrom="transform opacity-100 scale-100"
+                  leaveTo="transform opacity-0 scale-95"
+                >
+                  <Popover.Panel className="absolute end-0 mt-2 w-72 origin-top-right rounded-2xl bg-white/95 dark:bg-dark-800/95 backdrop-blur-xl shadow-2xl ring-1 ring-black/5 dark:ring-white/10 overflow-hidden z-50">
+                    {({ close }) => (
+                      <div>
+                        <div className="px-4 py-3 border-b border-gray-100 dark:border-dark-700">
+                          <p className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                            {language === 'ar' ? 'إنشاء' : 'Create'}
+                          </p>
+                          <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                            {language === 'ar' ? 'إجراء سريع' : 'Quick actions'}
+                          </p>
+                        </div>
+                        <div className="p-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              close()
+                              setShowNewChatModal(true)
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors text-sm text-gray-800 dark:text-gray-200"
+                          >
+                            <Users className="w-4 h-4 text-green-600" />
+                            {language === 'ar' ? 'محادثة جديدة' : 'New Chat'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              close()
+                              setShowTemplateModal(true)
+                              setActiveTab('templates')
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors text-sm text-gray-800 dark:text-gray-200"
+                          >
+                            <FileText className="w-4 h-4 text-emerald-600" />
+                            {language === 'ar' ? 'قالب جديد' : 'New Template'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              close()
+                              setShowQuickReplyModal(true)
+                              setActiveTab('quick-replies')
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors text-sm text-gray-800 dark:text-gray-200"
+                          >
+                            <Zap className="w-4 h-4 text-green-600" />
+                            {language === 'ar' ? 'رد سريع جديد' : 'New Quick Reply'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              close()
+                              setShowBroadcastModal(true)
+                              setActiveTab('broadcasts')
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors text-sm text-gray-800 dark:text-gray-200"
+                          >
+                            <Radio className="w-4 h-4 text-green-600" />
+                            {language === 'ar' ? 'بث جديد' : 'New Broadcast'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </Popover.Panel>
+                </Transition>
+              </Popover>
+
+              <Popover className="relative">
+                <Popover.Button className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/40">
+                  <Settings className="w-5 h-5" />
+                </Popover.Button>
+                <Transition
+                  as={Fragment}
+                  enter="transition ease-out duration-150"
+                  enterFrom="transform opacity-0 scale-95"
+                  enterTo="transform opacity-100 scale-100"
+                  leave="transition ease-in duration-100"
+                  leaveFrom="transform opacity-100 scale-100"
+                  leaveTo="transform opacity-0 scale-95"
+                >
+                  <Popover.Panel className="absolute end-0 mt-2 w-64 origin-top-right rounded-2xl bg-white/95 dark:bg-dark-800/95 backdrop-blur-xl shadow-2xl ring-1 ring-black/5 dark:ring-white/10 overflow-hidden z-50">
+                    {({ close }) => (
+                      <div>
+                        <div className="px-4 py-3 border-b border-gray-100 dark:border-dark-700">
+                          <p className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                            {language === 'ar' ? 'واتساب' : 'WhatsApp'}
+                          </p>
+                          <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                            {language === 'ar' ? 'الإعدادات والمزامنة' : 'Settings & sync'}
+                          </p>
+                        </div>
+                        <div className="p-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              close()
+                              setShowSettings(true)
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors text-sm text-gray-800 dark:text-gray-200"
+                          >
+                            <Settings className="w-4 h-4 text-green-600" />
+                            {language === 'ar' ? 'فتح إعدادات واتساب' : 'Open WhatsApp Settings'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              close()
+                              refreshWhatsApp()
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors text-sm text-gray-800 dark:text-gray-200"
+                          >
+                            <RefreshCw className="w-4 h-4 text-emerald-600" />
+                            {language === 'ar' ? 'تحديث البيانات' : 'Refresh Data'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </Popover.Panel>
+                </Transition>
+              </Popover>
             </div>
           </div>
 
@@ -557,21 +687,21 @@ function SettingsModal({ config, onClose, language }) {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="fixed inset-0 bg-black/50 z-40"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
       />
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="fixed top-[5%] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-lg bg-white dark:bg-dark-800 rounded-2xl shadow-xl z-50"
+        className="fixed top-[5%] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-xl bg-white dark:bg-dark-800 rounded-3xl shadow-2xl ring-1 ring-black/10 dark:ring-white/10 overflow-hidden z-50"
       >
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-dark-700">
+        <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-emerald-700 via-emerald-600 to-emerald-700 text-white">
           <h3 className="text-lg font-semibold">{language === 'ar' ? 'إعدادات واتساب' : 'WhatsApp Settings'}</h3>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg">
+          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-xl">
             <X className="w-5 h-5" />
           </button>
         </div>
-        <div className="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
+        <div className="p-5 space-y-5 max-h-[70vh] overflow-y-auto">
           <div>
             <label className="label">{language === 'ar' ? 'معرف رقم الهاتف' : 'Phone Number ID'}</label>
             <input
