@@ -69,9 +69,14 @@ function LegacyDashboardRedirect() {
 }
 
 function ProtectedRoute({ children, allowedRoles, redirectSuperAdmin }) {
-  const { isAuthenticated, isLoading, user } = useSelector((state) => state.auth)
+  const { isAuthenticated, isLoading, user, token } = useSelector((state) => state.auth)
 
-  if (isLoading) return <LoadingScreen />
+  // No token = not logged in, redirect immediately (no loading)
+  if (!token) return <Navigate to="/login" replace />
+  
+  // Has token but still verifying - show brief loading only if not yet authenticated
+  if (isLoading && !isAuthenticated) return null
+  
   if (!isAuthenticated) return <Navigate to="/login" replace />
   
   // Redirect super_admin to their dashboard if they try to access regular routes
