@@ -1,0 +1,51 @@
+import mongoose from 'mongoose';
+
+const supplierSchema = new mongoose.Schema({
+  tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
+
+  code: { type: String, required: true },
+  nameEn: { type: String, required: true },
+  nameAr: { type: String },
+  type: { type: String, enum: ['company', 'individual'], default: 'company' },
+
+  vatNumber: { type: String },
+  crNumber: { type: String },
+
+  contactPerson: { type: String },
+  phone: { type: String },
+  email: { type: String },
+  website: { type: String },
+
+  address: {
+    street: { type: String },
+    district: { type: String },
+    city: { type: String },
+    postalCode: { type: String },
+    country: { type: String, default: 'SA' }
+  },
+
+  paymentTerms: {
+    term: { type: String, enum: ['immediate', 'net_7', 'net_15', 'net_30', 'net_60'], default: 'net_30' },
+    customDays: { type: Number }
+  },
+
+  bank: {
+    iban: { type: String },
+    bankName: { type: String },
+    beneficiaryName: { type: String }
+  },
+
+  notes: { type: String },
+
+  isActive: { type: Boolean, default: true },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+}, {
+  timestamps: true
+});
+
+supplierSchema.index({ tenantId: 1, code: 1 }, { unique: true });
+supplierSchema.index({ tenantId: 1, nameEn: 1 });
+supplierSchema.index({ tenantId: 1, vatNumber: 1 });
+
+const Supplier = mongoose.model('Supplier', supplierSchema);
+export default Supplier;
