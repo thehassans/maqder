@@ -290,14 +290,14 @@ export default function Dashboard() {
         </div>
         <div className="flex flex-col sm:flex-row sm:items-center gap-2">
           <Link
-            to="/invoices/new"
+            to="/app/dashboard/invoices/new"
             className="btn btn-primary flex items-center gap-2 justify-center"
           >
             <Plus className="w-4 h-4" />
             {language === 'ar' ? 'فاتورة جديدة' : 'New Invoice'}
           </Link>
           <Link
-            to="/customers/new"
+            to="/app/dashboard/customers/new"
             className="btn btn-secondary flex items-center gap-2 justify-center"
           >
             <UserPlus className="w-4 h-4" />

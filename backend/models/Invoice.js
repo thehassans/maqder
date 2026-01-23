@@ -61,8 +61,18 @@ const zatcaSchema = new mongoose.Schema({
   lastError: { type: String }
 });
 
+const inventorySchema = new mongoose.Schema({
+  warehouseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Warehouse' },
+  postedAt: { type: Date },
+  reversedAt: { type: Date }
+}, { _id: false });
+
 const invoiceSchema = new mongoose.Schema({
   tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
+
+  flow: { type: String, enum: ['sell', 'purchase'], default: 'sell', index: true },
+  warehouseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Warehouse', index: true },
+  supplierId: { type: mongoose.Schema.Types.ObjectId, ref: 'Supplier', index: true },
   
   // Invoice Identification
   invoiceNumber: { type: String, required: true },
@@ -115,6 +125,8 @@ const invoiceSchema = new mongoose.Schema({
   
   // ZATCA Compliance
   zatca: zatcaSchema,
+
+  inventory: inventorySchema,
   
   // Status
   status: {
@@ -144,9 +156,10 @@ invoiceSchema.index({ tenantId: 1, status: 1 });
 invoiceSchema.index({ tenantId: 1, issueDate: -1 });
 invoiceSchema.index({ tenantId: 1, 'zatca.submissionStatus': 1 });
 invoiceSchema.index({ tenantId: 1, transactionType: 1 });
+invoiceSchema.index({ tenantId: 1, flow: 1, issueDate: -1 });
 
 // Pre-save hook for Hijri dates
-invoiceSchema.pre('save', function(next) {
+invoiceSchema.pre('validate', function(next) {
   if (this.isModified('issueDate') && this.issueDate) {
     this.issueDateHijri = momentHijri(this.issueDate).format('iYYYY/iMM/iDD');
   }
@@ -154,8 +167,10 @@ invoiceSchema.pre('save', function(next) {
     this.supplyDateHijri = momentHijri(this.supplyDate).format('iYYYY/iMM/iDD');
   }
   
+  const lines = Array.isArray(this.lineItems) ? this.lineItems : [];
+
   // Calculate line totals
-  this.lineItems.forEach(line => {
+  lines.forEach(line => {
     const lineSubtotal = line.quantity * line.unitPrice;
     let discountAmount = 0;
     if (line.discountType === 'percentage') {
@@ -169,15 +184,15 @@ invoiceSchema.pre('save', function(next) {
   });
   
   // Calculate invoice totals
-  this.subtotal = this.lineItems.reduce((sum, line) => sum + (line.quantity * line.unitPrice), 0);
-  this.totalDiscount = this.lineItems.reduce((sum, line) => {
+  this.subtotal = lines.reduce((sum, line) => sum + (line.quantity * line.unitPrice), 0);
+  this.totalDiscount = lines.reduce((sum, line) => {
     if (line.discountType === 'percentage') {
       return sum + (line.quantity * line.unitPrice * line.discount / 100);
     }
     return sum + line.discount;
   }, 0);
   this.taxableAmount = this.subtotal - this.totalDiscount;
-  this.totalTax = this.lineItems.reduce((sum, line) => sum + (line.taxAmount || 0), 0);
+  this.totalTax = lines.reduce((sum, line) => sum + (line.taxAmount || 0), 0);
   this.grandTotal = this.taxableAmount + this.totalTax;
   
   next();

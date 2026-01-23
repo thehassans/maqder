@@ -56,7 +56,7 @@ export default function InvoiceView() {
           </div>
         </div>
         <div className="flex gap-3">
-          {invoice?.status === 'draft' && (
+          {invoice?.status === 'draft' && invoice?.flow !== 'purchase' && (
             <button
               onClick={() => signMutation.mutate()}
               disabled={signMutation.isPending}
@@ -126,7 +126,9 @@ export default function InvoiceView() {
               </div>
               {invoice?.buyer?.name && (
                 <div>
-                  <p className="text-sm font-medium text-gray-500 mb-2">{t('customer')}</p>
+                  <p className="text-sm font-medium text-gray-500 mb-2">
+                    {invoice?.flow === 'purchase' ? (language === 'ar' ? 'المشتري' : 'Buyer') : t('customer')}
+                  </p>
                   <p className="font-semibold text-gray-900 dark:text-white">{invoice?.buyer?.name}</p>
                   <p className="text-sm text-gray-500">{invoice?.buyer?.vatNumber}</p>
                   <p className="text-sm text-gray-500">{invoice?.buyer?.address?.city}</p>

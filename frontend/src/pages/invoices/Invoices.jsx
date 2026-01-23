@@ -51,7 +51,7 @@ export default function Invoices() {
             {language === 'ar' ? 'إدارة الفواتير الضريبية والمبسطة' : 'Manage tax and simplified invoices'}
           </p>
         </div>
-        <Link to="/invoices/new" className="btn btn-primary">
+        <Link to="/app/dashboard/invoices/new" className="btn btn-primary">
           <Plus className="w-4 h-4" />
           {t('newInvoice')}
         </Link>
@@ -149,7 +149,7 @@ export default function Invoices() {
                       <td>
                         <div className="flex items-center gap-2">
                           <Link
-                            to={`/invoices/${invoice._id}`}
+                            to={`/app/dashboard/invoices/${invoice._id}`}
                             className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors"
                           >
                             <Eye className="w-4 h-4 text-gray-600 dark:text-gray-400" />

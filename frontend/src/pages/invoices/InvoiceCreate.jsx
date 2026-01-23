@@ -33,16 +33,35 @@ export default function InvoiceCreate() {
     queryFn: () => api.get('/products', { params: { limit: 100 } }).then(res => res.data.products)
   })
 
+  const { data: warehouses } = useQuery({
+    queryKey: ['warehouses'],
+    queryFn: () => api.get('/warehouses').then(res => res.data)
+  })
+
   const createMutation = useMutation({
-    mutationFn: (data) => api.post('/invoices', data),
+    mutationFn: (data) => api.post('/invoices/sell', data),
     onSuccess: (res) => {
       toast.success(language === 'ar' ? 'تم إنشاء الفاتورة بنجاح' : 'Invoice created successfully')
-      navigate(`/invoices/${res.data._id}`)
+      navigate(`/app/dashboard/invoices/${res.data._id}`)
     },
     onError: (error) => {
       toast.error(error.response?.data?.error || 'Failed to create invoice')
     }
   })
+
+  const onSelectProduct = (index, productId) => {
+    const product = (products || []).find((p) => p._id === productId)
+    if (!product) return
+
+    setValue(`lineItems.${index}.productId`, product._id)
+    setValue(`lineItems.${index}.productName`, product.nameEn)
+    setValue(`lineItems.${index}.productNameAr`, product.nameAr || product.nameEn)
+    setValue(`lineItems.${index}.unitCode`, product.unitOfMeasure || 'PCE')
+    setValue(`lineItems.${index}.taxRate`, typeof product.taxRate === 'number' ? product.taxRate : 15)
+    if (typeof product.sellingPrice === 'number') {
+      setValue(`lineItems.${index}.unitPrice`, product.sellingPrice)
+    }
+  }
 
   const calculateLineTotal = (index) => {
     const line = lineItems[index]
@@ -67,6 +86,7 @@ export default function InvoiceCreate() {
   const onSubmit = (data) => {
     const invoiceData = {
       ...data,
+      flow: 'sell',
       transactionType: invoiceType,
       invoiceTypeCode: invoiceType === 'B2C' ? '0200000' : '0100000',
       issueDate: new Date(),
@@ -95,6 +115,33 @@ export default function InvoiceCreate() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <div className="card p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            {language === 'ar' ? 'نوع العملية' : 'Flow'}
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <button
+              type="button"
+              className="p-4 rounded-xl border-2 text-start transition-all border-primary-500 bg-primary-50 dark:bg-primary-900/20"
+            >
+              <p className="font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'بيع' : 'Sell'}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                {language === 'ar' ? 'فاتورة مبيعات (تخفيض المخزون عند التوقيع)' : 'Sales invoice (inventory decreases on signing)'}
+              </p>
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/app/dashboard/invoices/new/purchase')}
+              className="p-4 rounded-xl border-2 text-start transition-all border-gray-200 dark:border-dark-600 hover:border-gray-300"
+            >
+              <p className="font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'شراء' : 'Purchase'}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                {language === 'ar' ? 'فاتورة مشتريات (تحديث المخزون مباشرة)' : 'Purchase invoice (inventory updates immediately)'}
+              </p>
+            </button>
+          </div>
+        </div>
+
         {/* Invoice Type Selection */}
         <div className="card p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
@@ -129,6 +176,18 @@ export default function InvoiceCreate() {
                 {language === 'ar' ? 'للشركات - اعتماد فوري من هيئة الزكاة' : 'For businesses - Immediate clearance from ZATCA'}
               </p>
             </button>
+          </div>
+
+          <div className="mt-6">
+            <label className="label">{language === 'ar' ? 'المستودع' : 'Warehouse'} *</label>
+            <select {...register('warehouseId', { required: true })} className="select">
+              <option value="">{language === 'ar' ? 'اختر' : 'Select'}</option>
+              {(warehouses || []).map((w) => (
+                <option key={w._id} value={w._id}>
+                  {language === 'ar' ? (w.nameAr || w.nameEn) : w.nameEn}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -192,7 +251,7 @@ export default function InvoiceCreate() {
             </h3>
             <button
               type="button"
-              onClick={() => append({ productName: '', quantity: 1, unitPrice: 0, taxRate: 15 })}
+              onClick={() => append({ productId: '', productName: '', productNameAr: '', unitCode: 'PCE', quantity: 1, unitPrice: 0, taxRate: 15 })}
               className="btn btn-secondary"
             >
               <Plus className="w-4 h-4" />
@@ -211,11 +270,29 @@ export default function InvoiceCreate() {
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                   <div className="md:col-span-4">
                     <label className="label">{t('productName')}</label>
+                    <select
+                      {...register(`lineItems.${index}.productId`, {
+                        onChange: (e) => onSelectProduct(index, e.target.value),
+                      })}
+                      className="select"
+                    >
+                      <option value="">{language === 'ar' ? 'اختياري: اختر منتج' : 'Optional: Select product'}</option>
+                      {(products || []).map((p) => (
+                        <option key={p._id} value={p._id}>
+                          {language === 'ar' ? (p.nameAr || p.nameEn) : p.nameEn}
+                        </option>
+                      ))}
+                    </select>
+
                     <input
                       {...register(`lineItems.${index}.productName`, { required: true })}
-                      className="input"
+                      className="input mt-2"
                       placeholder={language === 'ar' ? 'اسم المنتج أو الخدمة' : 'Product or service name'}
+                      readOnly={Boolean(lineItems?.[index]?.productId)}
                     />
+
+                    <input type="hidden" {...register(`lineItems.${index}.productNameAr`)} />
+                    <input type="hidden" {...register(`lineItems.${index}.unitCode`)} />
                   </div>
                   <div className="md:col-span-2">
                     <label className="label">{t('quantity')}</label>

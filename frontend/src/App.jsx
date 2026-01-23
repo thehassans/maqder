@@ -20,6 +20,7 @@ import MarketingTerms from './pages/marketing/Terms'
 import Dashboard from './pages/Dashboard'
 import Invoices from './pages/invoices/Invoices'
 import InvoiceCreate from './pages/invoices/InvoiceCreate'
+import InvoiceCreatePurchase from './pages/invoices/InvoiceCreatePurchase'
 import InvoiceView from './pages/invoices/InvoiceView'
 import Employees from './pages/hr/Employees'
 import EmployeeForm from './pages/hr/EmployeeForm'
@@ -65,6 +66,12 @@ import LoadingScreen from './components/ui/LoadingScreen'
 function LegacyDashboardRedirect() {
   const location = useLocation()
   const nextPath = location.pathname.replace(/^\/dashboard/, '/app/dashboard')
+  return <Navigate to={`${nextPath}${location.search}${location.hash}`} replace />
+}
+
+function LegacyModuleRedirect({ module }) {
+  const location = useLocation()
+  const nextPath = location.pathname.replace(`/${module}`, `/app/dashboard/${module}`)
   return <Navigate to={`${nextPath}${location.search}${location.hash}`} replace />
 }
 
@@ -133,6 +140,26 @@ function App() {
       {/* Legacy redirect (backwards compatibility) */}
       <Route path="/dashboard/*" element={<LegacyDashboardRedirect />} />
 
+      {/* Legacy module redirects (backwards compatibility) */}
+      <Route path="/invoices/*" element={<LegacyModuleRedirect module="invoices" />} />
+      <Route path="/customers/*" element={<LegacyModuleRedirect module="customers" />} />
+      <Route path="/contacts/*" element={<LegacyModuleRedirect module="contacts" />} />
+      <Route path="/expenses/*" element={<LegacyModuleRedirect module="expenses" />} />
+      <Route path="/employees/*" element={<LegacyModuleRedirect module="employees" />} />
+      <Route path="/products/*" element={<LegacyModuleRedirect module="products" />} />
+      <Route path="/warehouses/*" element={<LegacyModuleRedirect module="warehouses" />} />
+      <Route path="/suppliers/*" element={<LegacyModuleRedirect module="suppliers" />} />
+      <Route path="/purchase-orders/*" element={<LegacyModuleRedirect module="purchase-orders" />} />
+      <Route path="/shipments/*" element={<LegacyModuleRedirect module="shipments" />} />
+      <Route path="/projects/*" element={<LegacyModuleRedirect module="projects" />} />
+      <Route path="/tasks/*" element={<LegacyModuleRedirect module="tasks" />} />
+      <Route path="/iot/*" element={<LegacyModuleRedirect module="iot" />} />
+      <Route path="/job-costing/*" element={<LegacyModuleRedirect module="job-costing" />} />
+      <Route path="/mrp/*" element={<LegacyModuleRedirect module="mrp" />} />
+      <Route path="/finance/*" element={<LegacyModuleRedirect module="finance" />} />
+      <Route path="/reports/*" element={<LegacyModuleRedirect module="reports" />} />
+      <Route path="/settings/*" element={<LegacyModuleRedirect module="settings" />} />
+
       {/* Super Admin Routes */}
       <Route
         path="/super-admin"
@@ -163,6 +190,7 @@ function App() {
         <Route index element={<Dashboard />} />
         <Route path="invoices" element={<Invoices />} />
         <Route path="invoices/new" element={<InvoiceCreate />} />
+        <Route path="invoices/new/purchase" element={<InvoiceCreatePurchase />} />
         <Route path="invoices/:id" element={<InvoiceView />} />
         <Route path="contacts" element={<Contacts />} />
         <Route path="customers" element={<CustomerList />} />
