@@ -79,7 +79,7 @@ export default function ProductForm() {
     targetLang: 'en'
   })
 
-  const { isLoading } = useQuery({
+  const { isLoading, error: productError } = useQuery({
     queryKey: ['product', id],
     queryFn: () => api.get(`/products/${id}`).then(res => res.data),
     enabled: isEdit,
@@ -168,6 +168,23 @@ export default function ProductForm() {
 
   if (isEdit && isLoading) {
     return <div className="flex justify-center p-8"><div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" /></div>
+  }
+
+  if (isEdit && productError) {
+    const msg = productError?.response?.data?.error || (language === 'ar' ? 'فشل تحميل المنتج' : 'Failed to load product')
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <button onClick={() => navigate(-1)} className="btn btn-ghost btn-icon"><ArrowLeft className="w-5 h-5" /></button>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {language === 'ar' ? 'تعديل منتج' : 'Edit Product'}
+            </h1>
+          </div>
+        </div>
+        <div className="card p-6 text-red-600">{msg}</div>
+      </div>
+    )
   }
 
   return (

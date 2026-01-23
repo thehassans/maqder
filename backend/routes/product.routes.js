@@ -14,6 +14,21 @@ const computeTotalStock = (product) => {
   return product;
 };
 
+const normalizeProductForClient = (product) => {
+  if (!product) return product;
+
+  const p = { ...product };
+  p.nameEn = p.nameEn ?? p.name ?? p.productNameEn ?? p.productName ?? '';
+  p.nameAr = p.nameAr ?? p.nameArabic ?? p.productNameAr ?? '';
+  p.descriptionEn = p.descriptionEn ?? p.description ?? '';
+  p.descriptionAr = p.descriptionAr ?? '';
+  p.costPrice = p.costPrice ?? p.cost ?? 0;
+  p.sellingPrice = p.sellingPrice ?? p.price ?? 0;
+  p.taxRate = p.taxRate ?? 15;
+  p.unitOfMeasure = p.unitOfMeasure ?? 'PCE';
+  return p;
+};
+
 // @route   GET /api/products
 router.get('/', checkPermission('inventory', 'read'), async (req, res) => {
   try {
@@ -74,7 +89,7 @@ router.get('/lookup', checkPermission('inventory', 'read'), async (req, res) => 
       return res.status(404).json({ error: 'Product not found' });
     }
     
-    res.json(computeTotalStock(product));
+    res.json(normalizeProductForClient(computeTotalStock(product)));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -120,13 +135,14 @@ router.get('/:id', checkPermission('inventory', 'read'), async (req, res) => {
   try {
     const product = await Product.findOne({ _id: req.params.id, ...req.tenantFilter })
       .populate('stocks.warehouseId', 'nameEn nameAr code')
-      .populate('suppliers.supplierId', 'name');
+      .populate('suppliers.supplierId', 'name')
+      .lean();
     
     if (!product) {
       return res.status(404).json({ error: 'Product not found' });
     }
     
-    res.json(computeTotalStock(product));
+    res.json(normalizeProductForClient(computeTotalStock(product)));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
