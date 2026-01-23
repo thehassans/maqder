@@ -20,6 +20,7 @@ import MarketingTerms from './pages/marketing/Terms'
 import Dashboard from './pages/Dashboard'
 import Invoices from './pages/invoices/Invoices'
 import InvoiceCreate from './pages/invoices/InvoiceCreate'
+import InvoiceCreateSell from './pages/invoices/InvoiceCreateSell'
 import InvoiceCreatePurchase from './pages/invoices/InvoiceCreatePurchase'
 import InvoiceView from './pages/invoices/InvoiceView'
 import Employees from './pages/hr/Employees'
@@ -190,6 +191,7 @@ function App() {
         <Route index element={<Dashboard />} />
         <Route path="invoices" element={<Invoices />} />
         <Route path="invoices/new" element={<InvoiceCreate />} />
+        <Route path="invoices/new/sell" element={<InvoiceCreateSell />} />
         <Route path="invoices/new/purchase" element={<InvoiceCreatePurchase />} />
         <Route path="invoices/:id" element={<InvoiceView />} />
         <Route path="contacts" element={<Contacts />} />
