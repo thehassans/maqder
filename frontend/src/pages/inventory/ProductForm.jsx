@@ -84,8 +84,19 @@ export default function ProductForm() {
     queryFn: () => api.get(`/products/${id}`).then(res => res.data),
     enabled: isEdit,
     onSuccess: (data) => {
-      setProduct(data)
-      reset(data)
+      const normalized = {
+        ...data,
+        nameEn: data?.nameEn ?? data?.name ?? data?.productNameEn ?? data?.productName ?? '',
+        nameAr: data?.nameAr ?? data?.nameArabic ?? data?.productNameAr ?? '',
+        descriptionEn: data?.descriptionEn ?? data?.description ?? '',
+        descriptionAr: data?.descriptionAr ?? '',
+        costPrice: data?.costPrice ?? data?.cost ?? 0,
+        sellingPrice: data?.sellingPrice ?? data?.price ?? 0,
+        taxRate: data?.taxRate ?? 15,
+        unitOfMeasure: data?.unitOfMeasure ?? 'PCE',
+      }
+      setProduct(normalized)
+      reset(normalized)
     }
   })
 

@@ -24,6 +24,8 @@ export default function Reports() {
   const totals = data?.totals
   const byCategory = totals?.byCategory
 
+  const [exportTable, setExportTable] = useState('byCategory')
+
   const years = Array.from({ length: 5 }, (_, i) => now.getFullYear() - 2 + i)
 
   const categories = [
@@ -87,58 +89,70 @@ export default function Reports() {
             <div className="text-sm text-gray-500">
               {language === 'ar' ? 'تصدير جداول التقرير' : 'Export report tables'}
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+              <select value={exportTable} onChange={(e) => setExportTable(e.target.value)} className="select sm:w-56">
+                <option value="byCategory">{language === 'ar' ? 'ملخص حسب التصنيف' : 'Summary by Category'}</option>
+                <option value="byTransactionType">{language === 'ar' ? 'حسب نوع المعاملة' : 'By Transaction Type'}</option>
+                <option value="byTaxCategory">{language === 'ar' ? 'تفاصيل حسب فئة الضريبة' : 'Details by Tax Category'}</option>
+              </select>
+
               <ExportMenu
                 language={language}
                 t={t}
-                rows={categories.map((c) => ({
-                  category: c.label,
-                  taxableAmount: byCategory?.[c.key]?.taxableAmount || 0,
-                  taxAmount: byCategory?.[c.key]?.taxAmount || 0,
-                }))}
-                columns={[
-                  { key: 'category', label: language === 'ar' ? 'التصنيف' : 'Category', value: (r) => r.category },
-                  { key: 'taxableAmount', label: language === 'ar' ? 'خاضع للضريبة' : 'Taxable', value: (r) => r.taxableAmount },
-                  { key: 'taxAmount', label: language === 'ar' ? 'الضريبة' : 'VAT', value: (r) => r.taxAmount },
-                ]}
-                fileBaseName={language === 'ar' ? 'تقرير_الضريبة_حسب_التصنيف' : 'VAT_Return_By_Category'}
-                title={language === 'ar' ? 'ملخص حسب التصنيف' : 'Summary by Category'}
-                disabled={false}
-              />
-              <ExportMenu
-                language={language}
-                t={t}
-                rows={(data?.breakdown?.byTransactionType || []).map((row) => ({
-                  type: row._id,
-                  invoiceCount: row.invoiceCount || 0,
-                  totalTax: row.totalTax || 0,
-                }))}
-                columns={[
-                  { key: 'type', label: language === 'ar' ? 'النوع' : 'Type', value: (r) => r.type },
-                  { key: 'invoiceCount', label: language === 'ar' ? 'عدد الفواتير' : 'Invoices', value: (r) => r.invoiceCount },
-                  { key: 'totalTax', label: language === 'ar' ? 'الضريبة' : 'VAT', value: (r) => r.totalTax },
-                ]}
-                fileBaseName={language === 'ar' ? 'تقرير_حسب_نوع_المعاملة' : 'VAT_Return_By_TransactionType'}
-                title={language === 'ar' ? 'حسب نوع المعاملة' : 'By Transaction Type'}
-                disabled={false}
-              />
-              <ExportMenu
-                language={language}
-                t={t}
-                rows={(data?.breakdown?.byTaxCategory || []).map((row) => ({
-                  category: row._id?.taxCategory || '-',
-                  rate: row._id?.taxRate ?? 0,
-                  taxableAmount: row.taxableAmount || 0,
-                  taxAmount: row.taxAmount || 0,
-                }))}
-                columns={[
-                  { key: 'category', label: language === 'ar' ? 'الفئة' : 'Category', value: (r) => r.category },
-                  { key: 'rate', label: language === 'ar' ? 'النسبة' : 'Rate', value: (r) => `${r.rate}%` },
-                  { key: 'taxableAmount', label: language === 'ar' ? 'خاضع للضريبة' : 'Taxable', value: (r) => r.taxableAmount },
-                  { key: 'taxAmount', label: language === 'ar' ? 'الضريبة' : 'VAT', value: (r) => r.taxAmount },
-                ]}
-                fileBaseName={language === 'ar' ? 'تفاصيل_حسب_فئة_الضريبة' : 'VAT_Return_By_TaxCategory'}
-                title={language === 'ar' ? 'تفاصيل حسب فئة الضريبة' : 'Details by Tax Category'}
+                rows={
+                  exportTable === 'byTransactionType'
+                    ? (data?.breakdown?.byTransactionType || []).map((row) => ({
+                      type: row._id,
+                      invoiceCount: row.invoiceCount || 0,
+                      totalTax: row.totalTax || 0,
+                    }))
+                    : exportTable === 'byTaxCategory'
+                      ? (data?.breakdown?.byTaxCategory || []).map((row) => ({
+                        category: row._id?.taxCategory || '-',
+                        rate: row._id?.taxRate ?? 0,
+                        taxableAmount: row.taxableAmount || 0,
+                        taxAmount: row.taxAmount || 0,
+                      }))
+                      : categories.map((c) => ({
+                        category: c.label,
+                        taxableAmount: byCategory?.[c.key]?.taxableAmount || 0,
+                        taxAmount: byCategory?.[c.key]?.taxAmount || 0,
+                      }))
+                }
+                columns={
+                  exportTable === 'byTransactionType'
+                    ? [
+                      { key: 'type', label: language === 'ar' ? 'النوع' : 'Type', value: (r) => r.type },
+                      { key: 'invoiceCount', label: language === 'ar' ? 'عدد الفواتير' : 'Invoices', value: (r) => r.invoiceCount },
+                      { key: 'totalTax', label: language === 'ar' ? 'الضريبة' : 'VAT', value: (r) => r.totalTax },
+                    ]
+                    : exportTable === 'byTaxCategory'
+                      ? [
+                        { key: 'category', label: language === 'ar' ? 'الفئة' : 'Category', value: (r) => r.category },
+                        { key: 'rate', label: language === 'ar' ? 'النسبة' : 'Rate', value: (r) => `${r.rate}%` },
+                        { key: 'taxableAmount', label: language === 'ar' ? 'خاضع للضريبة' : 'Taxable', value: (r) => r.taxableAmount },
+                        { key: 'taxAmount', label: language === 'ar' ? 'الضريبة' : 'VAT', value: (r) => r.taxAmount },
+                      ]
+                      : [
+                        { key: 'category', label: language === 'ar' ? 'التصنيف' : 'Category', value: (r) => r.category },
+                        { key: 'taxableAmount', label: language === 'ar' ? 'خاضع للضريبة' : 'Taxable', value: (r) => r.taxableAmount },
+                        { key: 'taxAmount', label: language === 'ar' ? 'الضريبة' : 'VAT', value: (r) => r.taxAmount },
+                      ]
+                }
+                fileBaseName={
+                  exportTable === 'byTransactionType'
+                    ? (language === 'ar' ? 'تقرير_حسب_نوع_المعاملة' : 'VAT_Return_By_TransactionType')
+                    : exportTable === 'byTaxCategory'
+                      ? (language === 'ar' ? 'تفاصيل_حسب_فئة_الضريبة' : 'VAT_Return_By_TaxCategory')
+                      : (language === 'ar' ? 'تقرير_الضريبة_حسب_التصنيف' : 'VAT_Return_By_Category')
+                }
+                title={
+                  exportTable === 'byTransactionType'
+                    ? (language === 'ar' ? 'حسب نوع المعاملة' : 'By Transaction Type')
+                    : exportTable === 'byTaxCategory'
+                      ? (language === 'ar' ? 'تفاصيل حسب فئة الضريبة' : 'Details by Tax Category')
+                      : (language === 'ar' ? 'ملخص حسب التصنيف' : 'Summary by Category')
+                }
                 disabled={false}
               />
             </div>
