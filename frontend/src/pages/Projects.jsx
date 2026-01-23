@@ -3,21 +3,25 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Search, FolderKanban, Calendar, User, AlertTriangle, Edit, Percent, X, Save } from 'lucide-react'
+import { Plus, Search, FolderKanban, Calendar, User, AlertTriangle, Edit, Percent, X, Save, Download } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
 import Money from '../components/ui/Money'
 import ExportMenu from '../components/ui/ExportMenu'
+import { downloadProjectProgressPdf } from '../lib/projectProgressPdf'
 
 export default function Projects() {
   const { language } = useSelector((state) => state.ui)
   const { t } = useTranslation(language)
   const queryClient = useQueryClient()
+  const { tenant } = useSelector((state) => state.auth)
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [status, setStatus] = useState('')
+
+  const [downloadingProjectPdfId, setDownloadingProjectPdfId] = useState(null)
 
   const [showProgressModal, setShowProgressModal] = useState(false)
   const [editingProject, setEditingProject] = useState(null)
@@ -323,6 +327,29 @@ export default function Projects() {
                       </td>
                       <td>
                         <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                setDownloadingProjectPdfId(p._id)
+                                const full = await api.get(`/projects/${p._id}`).then((r) => r.data)
+                                await downloadProjectProgressPdf({ project: full, language, tenant })
+                              } catch (e) {
+                                toast.error(language === 'ar' ? 'فشل تحميل PDF' : 'Failed to download PDF')
+                              } finally {
+                                setDownloadingProjectPdfId(null)
+                              }
+                            }}
+                            disabled={downloadingProjectPdfId === p._id}
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg disabled:opacity-50"
+                            title={language === 'ar' ? 'PDF التقدم' : 'Progress PDF'}
+                          >
+                            {downloadingProjectPdfId === p._id ? (
+                              <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <Download className="w-4 h-4 text-gray-600" />
+                            )}
+                          </button>
                           <button
                             type="button"
                             onClick={() => openProgressModal(p)}

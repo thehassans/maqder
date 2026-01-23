@@ -5,9 +5,13 @@ import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
 import Money from '../components/ui/Money'
 import ExportMenu from '../components/ui/ExportMenu'
+import { downloadBusinessReportPdf } from '../lib/businessReportPdf'
+import { Download } from 'lucide-react'
+import toast from 'react-hot-toast'
 
 export default function Reports() {
   const { language } = useSelector((state) => state.ui)
+  const { tenant } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
 
   const now = new Date()
@@ -15,6 +19,7 @@ export default function Reports() {
   const [year, setYear] = useState(now.getFullYear())
 
   const [reportType, setReportType] = useState('vat')
+  const [downloadingBusinessPdf, setDownloadingBusinessPdf] = useState(false)
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['reports', reportType, month, year],
@@ -92,6 +97,31 @@ export default function Reports() {
             ))}
           </select>
         </div>
+
+        {reportType === 'business' && data && !isLoading && !error && (
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                setDownloadingBusinessPdf(true)
+                await downloadBusinessReportPdf({ report: data, language, tenant })
+              } catch (e) {
+                toast.error(language === 'ar' ? 'فشل تحميل PDF' : 'Failed to download PDF')
+              } finally {
+                setDownloadingBusinessPdf(false)
+              }
+            }}
+            disabled={downloadingBusinessPdf}
+            className="btn btn-secondary"
+          >
+            {downloadingBusinessPdf ? (
+              <div className="w-5 h-5 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            {language === 'ar' ? 'PDF كامل' : 'Full PDF'}
+          </button>
+        )}
       </div>
 
       {isLoading ? (

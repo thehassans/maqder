@@ -93,11 +93,8 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
 
   const primary = tenant?.branding?.primaryColor || '#2563EB'
   const primaryRgb = hexToRgb(primary) || { r: 37, g: 99, b: 235 }
-  const darkRgb = mixRgb(primaryRgb, { r: 0, g: 0, b: 0 }, 0.55)
   const lightRgb = mixRgb(primaryRgb, { r: 255, g: 255, b: 255 }, 0.90)
-  const headerRgb = darkRgb
   const primaryLight = rgbToHex(lightRgb)
-  const headerColor = rgbToHex(headerRgb)
 
   const logo = tenant?.branding?.logo || null
 
@@ -144,12 +141,12 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
       const lineTotal = Number(l.lineTotalWithTax ?? (qty * unitPrice + taxAmount))
 
       return `<tr>
-        <td style="padding:10px 8px; border-bottom:1px solid #e2e8f0; text-align:center;">${idx + 1}</td>
-        <td style="padding:10px 8px; border-bottom:1px solid #e2e8f0;">${escapeHtml(l.productName || l.description || '')}</td>
-        <td style="padding:10px 8px; border-bottom:1px solid #e2e8f0; text-align:center;">${escapeHtml(qty)}</td>
-        <td style="padding:10px 8px; border-bottom:1px solid #e2e8f0; text-align:right; white-space:nowrap;">${escapeHtml(formatCurrency(unitPrice, currencyOpts))}</td>
-        <td style="padding:10px 8px; border-bottom:1px solid #e2e8f0; text-align:right; white-space:nowrap;">${escapeHtml(formatCurrency(taxAmount, currencyOpts))}</td>
-        <td style="padding:10px 8px; border-bottom:1px solid #e2e8f0; text-align:right; font-weight:700; white-space:nowrap;">${escapeHtml(formatCurrency(lineTotal, currencyOpts))}</td>
+        <td style="padding:10px 8px; border-bottom:1px solid #e2e8f0; text-align:center; width:30px;">${idx + 1}</td>
+        <td style="padding:10px 8px; border-bottom:1px solid #e2e8f0; width:235px; word-break:break-word; overflow-wrap:anywhere;">${escapeHtml(l.productName || l.description || '')}</td>
+        <td style="padding:10px 8px; border-bottom:1px solid #e2e8f0; text-align:center; width:45px;">${escapeHtml(qty)}</td>
+        <td style="padding:10px 8px; border-bottom:1px solid #e2e8f0; text-align:right; white-space:nowrap; width:70px;">${escapeHtml(formatCurrency(unitPrice, currencyOpts))}</td>
+        <td style="padding:10px 8px; border-bottom:1px solid #e2e8f0; text-align:right; white-space:nowrap; width:65px;">${escapeHtml(formatCurrency(taxAmount, currencyOpts))}</td>
+        <td style="padding:10px 8px; border-bottom:1px solid #e2e8f0; text-align:right; font-weight:700; white-space:nowrap; width:70px;">${escapeHtml(formatCurrency(lineTotal, currencyOpts))}</td>
       </tr>`
     })
     .join('')
@@ -159,18 +156,21 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
 
   const docHtml = `
   <div dir="${rootDir}" style="width:515px; font-family:Arial, sans-serif; color:#0f172a;">
-    <div style="background:linear-gradient(135deg, ${escapeHtml(headerColor)} 0%, ${escapeHtml(primary)} 100%); color:white; border-radius:16px; padding:18px 18px 16px;">
-      <div style="display:flex; flex-direction:${flexDir}; justify-content:space-between; align-items:center; gap:12px;">
-        <div style="display:flex; flex-direction:${flexDir}; align-items:center; gap:12px;">
-          ${logo ? `<img src="${escapeHtml(logo)}" style="height:38px; max-width:170px; object-fit:contain; background:white; padding:6px 10px; border-radius:12px;" />` : ''}
-          <div>
-            <div style="font-size:18px; font-weight:800; line-height:1.2; text-align:${align};">${escapeHtml(title)}</div>
-            <div style="opacity:0.9; font-size:12px; text-align:${align};">${escapeHtml(sellerName || seller.name || '')}</div>
+    <div style="background:white; border:1px solid #e2e8f0; border-radius:16px; overflow:hidden;">
+      <div style="height:6px; background:${escapeHtml(primary)};"></div>
+      <div style="padding:16px 16px 14px;">
+        <div style="display:flex; flex-direction:${flexDir}; justify-content:space-between; align-items:flex-start; gap:14px;">
+          <div style="display:flex; flex-direction:${flexDir}; align-items:center; gap:12px;">
+            ${logo ? `<img src="${escapeHtml(logo)}" style="height:34px; max-width:170px; object-fit:contain; background:white; padding:6px 10px; border-radius:12px; border:1px solid #e2e8f0;" />` : ''}
+            <div>
+              <div style="font-size:16px; font-weight:900; line-height:1.2; text-align:${align};">${escapeHtml(title)}</div>
+              <div style="color:#64748b; font-size:11px; margin-top:2px; text-align:${align};">${escapeHtml(sellerName || seller.name || '')}</div>
+            </div>
           </div>
-        </div>
-        <div style="text-align:${align}; font-size:12px;">
-          <div style="font-weight:800; font-size:14px;">${escapeHtml(safeText(invoice.invoiceNumber))}</div>
-          <div style="opacity:0.9;">${escapeHtml(formatDateTime(invoice.issueDate, language))}</div>
+          <div style="text-align:${align};">
+            <div style="font-weight:900; font-size:14px; color:#0f172a;">${escapeHtml(safeText(invoice.invoiceNumber))}</div>
+            <div style="color:#64748b; font-size:11px; margin-top:2px;">${escapeHtml(formatDateTime(invoice.issueDate, language))}</div>
+          </div>
         </div>
       </div>
     </div>
@@ -196,15 +196,15 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     </div>
 
     <div style="margin-top:12px; border:1px solid #e2e8f0; border-radius:14px; overflow:hidden; background:white;">
-      <table style="width:100%; border-collapse:collapse; font-size:11px;">
+      <table style="width:100%; border-collapse:collapse; font-size:11px; table-layout:fixed;">
         <thead>
           <tr style="background:${escapeHtml(primaryLight)};">
-            <th style="padding:10px 8px; text-align:center;">#</th>
-            <th style="padding:10px 8px; text-align:${align};">${escapeHtml(language === 'ar' ? 'الوصف' : 'Description')}</th>
-            <th style="padding:10px 8px; text-align:center;">${escapeHtml(language === 'ar' ? 'الكمية' : 'Qty')}</th>
-            <th style="padding:10px 8px; text-align:right;">${escapeHtml(language === 'ar' ? 'سعر الوحدة' : 'Unit Price')}</th>
-            <th style="padding:10px 8px; text-align:right;">${escapeHtml(language === 'ar' ? 'الضريبة' : 'Tax')}</th>
-            <th style="padding:10px 8px; text-align:right;">${escapeHtml(language === 'ar' ? 'الإجمالي' : 'Total')}</th>
+            <th style="padding:10px 8px; text-align:center; width:30px;">#</th>
+            <th style="padding:10px 8px; text-align:${align}; width:235px;">${escapeHtml(language === 'ar' ? 'الوصف' : 'Description')}</th>
+            <th style="padding:10px 8px; text-align:center; width:45px;">${escapeHtml(language === 'ar' ? 'الكمية' : 'Qty')}</th>
+            <th style="padding:10px 8px; text-align:right; width:70px;">${escapeHtml(language === 'ar' ? 'سعر الوحدة' : 'Unit Price')}</th>
+            <th style="padding:10px 8px; text-align:right; width:65px;">${escapeHtml(language === 'ar' ? 'الضريبة' : 'Tax')}</th>
+            <th style="padding:10px 8px; text-align:right; width:70px;">${escapeHtml(language === 'ar' ? 'الإجمالي' : 'Total')}</th>
           </tr>
         </thead>
         <tbody>

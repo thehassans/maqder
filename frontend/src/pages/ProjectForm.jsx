@@ -1,14 +1,16 @@
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Save, FolderKanban, Calendar, User, Percent, Wallet } from 'lucide-react'
+import { ArrowLeft, Save, FolderKanban, Calendar, User, Percent, Wallet, Download } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
 import SarIcon from '../components/ui/SarIcon'
 import { useLiveTranslation } from '../lib/liveTranslation'
+import { downloadProjectProgressPdf } from '../lib/projectProgressPdf'
 
 export default function ProjectForm() {
   const { id } = useParams()
@@ -18,6 +20,8 @@ export default function ProjectForm() {
   const { language } = useSelector((state) => state.ui)
   const { tenant } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
+
+  const [downloadingPdf, setDownloadingPdf] = useState(false)
 
   const isEdit = Boolean(id)
 
@@ -142,15 +146,43 @@ export default function ProjectForm() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <button onClick={() => navigate(-1)} className="btn btn-ghost btn-icon">
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            {isEdit ? (language === 'ar' ? 'تعديل مشروع' : 'Edit Project') : language === 'ar' ? 'إضافة مشروع' : 'Add Project'}
-          </h1>
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <button onClick={() => navigate(-1)} className="btn btn-ghost btn-icon">
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {isEdit ? (language === 'ar' ? 'تعديل مشروع' : 'Edit Project') : language === 'ar' ? 'إضافة مشروع' : 'Add Project'}
+            </h1>
+          </div>
         </div>
+
+        {isEdit && projectData && (
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                setDownloadingPdf(true)
+                const full = await api.get(`/projects/${id}`).then((r) => r.data)
+                await downloadProjectProgressPdf({ project: full, language, tenant })
+              } catch (e) {
+                toast.error(language === 'ar' ? 'فشل تحميل PDF' : 'Failed to download PDF')
+              } finally {
+                setDownloadingPdf(false)
+              }
+            }}
+            disabled={downloadingPdf}
+            className="btn btn-secondary"
+          >
+            {downloadingPdf ? (
+              <div className="w-5 h-5 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            {language === 'ar' ? 'PDF التقدم' : 'Progress PDF'}
+          </button>
+        )}
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">

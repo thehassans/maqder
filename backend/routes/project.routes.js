@@ -121,7 +121,8 @@ router.get('/stats', checkPermission('project_management', 'read'), async (req, 
 
 router.get('/:id', checkPermission('project_management', 'read'), async (req, res) => {
   try {
-    const project = await Project.findOne({ _id: req.params.id, ...req.tenantFilter });
+    const project = await Project.findOne({ _id: req.params.id, ...req.tenantFilter })
+      .populate('progressUpdates.createdBy', 'firstName lastName email');
 
     if (!project) {
       return res.status(404).json({ error: 'Project not found' });
