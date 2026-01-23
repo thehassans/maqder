@@ -21,6 +21,13 @@ export default function ProjectForm() {
 
   const isEdit = Boolean(id)
 
+  const formatDateTime = (value) => {
+    if (!value) return ''
+    const d = new Date(value)
+    if (Number.isNaN(d.getTime())) return ''
+    return d.toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US')
+  }
+
   const formatDateForInput = (value) => {
     if (!value) return ''
     const date = new Date(value)
@@ -66,7 +73,7 @@ export default function ProjectForm() {
 
   const progress = watch('progress')
 
-  const { isLoading } = useQuery({
+  const { data: projectData, isLoading } = useQuery({
     queryKey: ['project', id],
     queryFn: () => api.get(`/projects/${id}`).then((res) => res.data),
     enabled: isEdit,
@@ -131,6 +138,7 @@ export default function ProjectForm() {
   }
 
   const safeProgress = Math.max(0, Math.min(100, Number(progress || 0)))
+  const progressUpdates = Array.isArray(projectData?.progressUpdates) ? projectData.progressUpdates : []
 
   return (
     <div className="space-y-6">
@@ -263,6 +271,35 @@ export default function ProjectForm() {
 
           <textarea {...register('notes')} className="input" rows={4} />
         </motion.div>
+
+        {isEdit && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="card p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                <Percent className="w-5 h-5 text-amber-600" />
+              </div>
+              <h3 className="text-lg font-semibold">{language === 'ar' ? 'سجل التقدم' : 'Progress Updates'}</h3>
+            </div>
+
+            {progressUpdates.length === 0 ? (
+              <div className="text-sm text-gray-500">{language === 'ar' ? 'لا يوجد تحديثات بعد' : 'No updates yet'}</div>
+            ) : (
+              <div className="space-y-3">
+                {[...progressUpdates].reverse().map((u, idx) => (
+                  <div key={u?._id || `${u?.createdAt || idx}`} className="p-3 rounded-xl border border-gray-200 dark:border-dark-700">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">{Math.max(0, Math.min(100, Number(u?.progress || 0)))}%</div>
+                      <div className="text-xs text-gray-500">{formatDateTime(u?.createdAt)}</div>
+                    </div>
+                    {String(u?.note || '').trim() ? (
+                      <div className="mt-2 text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{String(u.note).trim()}</div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
 
         <div className="flex justify-end gap-3">
           <button type="button" onClick={() => navigate(-1)} className="btn btn-secondary">

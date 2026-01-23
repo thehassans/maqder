@@ -1,6 +1,6 @@
 import express from 'express';
 import Customer from '../models/Customer.js';
-import { protect, tenantFilter } from '../middleware/auth.js';
+import { protect, tenantFilter, checkPermission } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -9,7 +9,7 @@ router.use(tenantFilter);
 
 // @route   GET /api/customers
 // @desc    Get all customers
-router.get('/', async (req, res) => {
+router.get('/', checkPermission('invoicing', 'read'), async (req, res) => {
   try {
     const { search, type, isActive, page = 1, limit = 20 } = req.query;
     
@@ -59,7 +59,7 @@ router.get('/', async (req, res) => {
 
 // @route   GET /api/customers/search
 // @desc    Quick search for autocomplete
-router.get('/search', async (req, res) => {
+router.get('/search', checkPermission('invoicing', 'read'), async (req, res) => {
   try {
     const { q } = req.query;
     
@@ -87,7 +87,7 @@ router.get('/search', async (req, res) => {
 
 // @route   GET /api/customers/stats
 // @desc    Get customer statistics
-router.get('/stats', async (req, res) => {
+router.get('/stats', checkPermission('invoicing', 'read'), async (req, res) => {
   try {
     const stats = await Customer.aggregate([
       { $match: req.tenantFilter },
@@ -118,7 +118,7 @@ router.get('/stats', async (req, res) => {
 
 // @route   GET /api/customers/:id
 // @desc    Get single customer
-router.get('/:id', async (req, res) => {
+router.get('/:id', checkPermission('invoicing', 'read'), async (req, res) => {
   try {
     const customer = await Customer.findOne({
       _id: req.params.id,
@@ -137,7 +137,7 @@ router.get('/:id', async (req, res) => {
 
 // @route   POST /api/customers
 // @desc    Create new customer
-router.post('/', async (req, res) => {
+router.post('/', checkPermission('invoicing', 'create'), async (req, res) => {
   try {
     if (!req.user?.tenantId) {
       return res.status(400).json({ error: 'No tenant associated with user' });
@@ -175,12 +175,13 @@ router.post('/', async (req, res) => {
 
 // @route   PUT /api/customers/:id
 // @desc    Update customer
-router.put('/:id', async (req, res) => {
+router.put('/:id', checkPermission('invoicing', 'update'), async (req, res) => {
   try {
-    const customer = await Customer.findOne({
-      _id: req.params.id,
-      ...req.tenantFilter
-    });
+    const customer = await Customer.findOneAndUpdate(
+      { _id: req.params.id, ...req.tenantFilter },
+      req.body,
+      { new: true }
+    );
     
     if (!customer) {
       return res.status(404).json({ error: 'Customer not found' });
@@ -219,7 +220,7 @@ router.put('/:id', async (req, res) => {
 
 // @route   DELETE /api/customers/:id
 // @desc    Delete customer (soft delete)
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', checkPermission('invoicing', 'delete'), async (req, res) => {
   try {
     const customer = await Customer.findOne({
       _id: req.params.id,

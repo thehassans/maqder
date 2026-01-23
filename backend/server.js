@@ -31,6 +31,7 @@ import whatsappRoutes from './routes/whatsapp.routes.js';
 import customerRoutes from './routes/customer.routes.js';
 import contactsRoutes from './routes/contacts.routes.js';
 import expenseRoutes from './routes/expense.routes.js';
+import usersRoutes from './routes/users.routes.js';
 import publicRoutes from './routes/public.routes.js';
 
 import { checkIqamaExpiry } from './jobs/iqamaChecker.js';
@@ -86,6 +87,7 @@ app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/contacts', contactsRoutes);
 app.use('/api/expenses', expenseRoutes);
+app.use('/api/users', usersRoutes);
 app.use('/api/public', publicRoutes);
 
 // Health check

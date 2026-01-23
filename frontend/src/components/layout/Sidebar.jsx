@@ -32,8 +32,16 @@ import { useTranslation } from '../../lib/translations'
 export default function Sidebar() {
   const dispatch = useDispatch()
   const { sidebarCollapsed, mobileMenuOpen, language } = useSelector((state) => state.ui)
-  const { tenant } = useSelector((state) => state.auth)
+  const { tenant, user } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
+
+  const hasAccess = (module, action) => {
+    if (!user) return false
+    if (user.role === 'super_admin' || user.role === 'admin') return true
+    const perm = Array.isArray(user.permissions) ? user.permissions.find((p) => p?.module === module) : null
+    const actions = Array.isArray(perm?.actions) ? perm.actions : []
+    return actions.includes(action)
+  }
 
   const sidebarStyle = tenant?.branding?.sidebarStyle || 'solid'
   const sidebarClassName =
@@ -46,75 +54,87 @@ export default function Sidebar() {
       title: language === 'ar' ? 'الرئيسية' : 'Main',
       items: [
         { path: '/app/dashboard', icon: LayoutDashboard, label: t('dashboard'), end: true },
-        { path: '/app/dashboard/invoices', icon: FileText, label: t('invoices') },
-        { path: '/app/dashboard/contacts', icon: Users, label: language === 'ar' ? 'جهات الاتصال' : 'Contacts' },
-        { path: '/app/dashboard/customers', icon: Building, label: language === 'ar' ? 'العملاء' : 'Customers' },
+        { path: '/app/dashboard/invoices', icon: FileText, label: t('invoices'), perm: { module: 'invoicing', action: 'read' } },
+        { path: '/app/dashboard/contacts', icon: Users, label: language === 'ar' ? 'جهات الاتصال' : 'Contacts', perm: { module: 'invoicing', action: 'read' } },
+        { path: '/app/dashboard/customers', icon: Building, label: language === 'ar' ? 'العملاء' : 'Customers', perm: { module: 'invoicing', action: 'read' } },
       ]
     },
     {
       title: language === 'ar' ? 'الموارد البشرية' : 'Human Resources',
       items: [
-        { path: '/app/dashboard/employees', icon: Users, label: t('employees') },
-        { path: '/app/dashboard/payroll', icon: Wallet, label: t('payroll') },
-        { path: '/app/dashboard/payroll/calculators', icon: Calculator, label: 'GOSI/EOSB' },
+        { path: '/app/dashboard/employees', icon: Users, label: t('employees'), perm: { module: 'hr', action: 'read' } },
+        { path: '/app/dashboard/payroll', icon: Wallet, label: t('payroll'), perm: { module: 'payroll', action: 'read' } },
+        { path: '/app/dashboard/payroll/calculators', icon: Calculator, label: 'GOSI/EOSB', perm: { module: 'payroll', action: 'read' } },
       ]
     },
     {
       title: language === 'ar' ? 'المخزون' : 'Inventory',
       items: [
-        { path: '/app/dashboard/products', icon: Package, label: t('products') },
-        { path: '/app/dashboard/warehouses', icon: Warehouse, label: t('warehouses') },
+        { path: '/app/dashboard/products', icon: Package, label: t('products'), perm: { module: 'inventory', action: 'read' } },
+        { path: '/app/dashboard/warehouses', icon: Warehouse, label: t('warehouses'), perm: { module: 'inventory', action: 'read' } },
       ]
     },
     {
       title: language === 'ar' ? 'سلسلة التوريد' : 'Supply Chain',
       items: [
-        { path: '/app/dashboard/suppliers', icon: Building, label: language === 'ar' ? 'الموردين' : 'Suppliers' },
-        { path: '/app/dashboard/purchase-orders', icon: ShoppingCart, label: language === 'ar' ? 'طلبات الشراء' : 'Purchase Orders' },
-        { path: '/app/dashboard/shipments', icon: Truck, label: language === 'ar' ? 'الشحنات' : 'Shipments' },
+        { path: '/app/dashboard/suppliers', icon: Building, label: language === 'ar' ? 'الموردين' : 'Suppliers', perm: { module: 'supply_chain', action: 'read' } },
+        { path: '/app/dashboard/purchase-orders', icon: ShoppingCart, label: language === 'ar' ? 'طلبات الشراء' : 'Purchase Orders', perm: { module: 'supply_chain', action: 'read' } },
+        { path: '/app/dashboard/shipments', icon: Truck, label: language === 'ar' ? 'الشحنات' : 'Shipments', perm: { module: 'supply_chain', action: 'read' } },
       ]
     },
     {
       title: language === 'ar' ? 'إدارة المشاريع' : 'Project Management',
       items: [
-        { path: '/app/dashboard/projects', icon: FolderKanban, label: language === 'ar' ? 'المشاريع' : 'Projects' },
-        { path: '/app/dashboard/tasks', icon: ClipboardList, label: language === 'ar' ? 'المهام' : 'Tasks' },
+        { path: '/app/dashboard/projects', icon: FolderKanban, label: language === 'ar' ? 'المشاريع' : 'Projects', perm: { module: 'project_management', action: 'read' } },
+        { path: '/app/dashboard/tasks', icon: ClipboardList, label: language === 'ar' ? 'المهام' : 'Tasks', perm: { module: 'project_management', action: 'read' } },
       ]
     },
     {
       title: language === 'ar' ? 'التواصل' : 'Communication',
       items: [
-        { path: '/app/dashboard/whatsapp', icon: MessageCircle, label: 'WhatsApp' },
+        { path: '/app/dashboard/whatsapp', icon: MessageCircle, label: 'WhatsApp', perm: { module: 'settings', action: 'read' } },
       ]
     },
     {
       title: language === 'ar' ? 'إنترنت الأشياء' : 'Internet of Things',
       items: [
-        { path: '/app/dashboard/iot', icon: Cpu, label: language === 'ar' ? 'إنترنت الأشياء' : 'IoT' },
+        { path: '/app/dashboard/iot', icon: Cpu, label: language === 'ar' ? 'إنترنت الأشياء' : 'IoT', perm: { module: 'iot', action: 'read' } },
       ]
     },
     {
       title: language === 'ar' ? 'المالية' : 'Finance',
       items: [
-        { path: '/app/dashboard/finance', icon: Landmark, label: language === 'ar' ? 'المالية' : 'Finance' },
-        { path: '/app/dashboard/expenses', icon: Receipt, label: language === 'ar' ? 'المصروفات' : 'Expenses' },
+        { path: '/app/dashboard/finance', icon: Landmark, label: language === 'ar' ? 'المالية' : 'Finance', perm: { module: 'finance', action: 'read' } },
+        { path: '/app/dashboard/expenses', icon: Receipt, label: language === 'ar' ? 'المصروفات' : 'Expenses', perm: { module: 'finance', action: 'read' } },
       ]
     },
     {
       title: language === 'ar' ? 'التكلفة والتخطيط' : 'Costing & Planning',
       items: [
-        { path: '/app/dashboard/job-costing', icon: Briefcase, label: language === 'ar' ? 'تكلفة الأعمال' : 'Job Costing' },
-        { path: '/app/dashboard/mrp', icon: Factory, label: 'MRP' },
+        { path: '/app/dashboard/job-costing', icon: Briefcase, label: language === 'ar' ? 'تكلفة الأعمال' : 'Job Costing', perm: { module: 'job_costing', action: 'read' } },
+        { path: '/app/dashboard/mrp', icon: Factory, label: 'MRP', perm: { module: 'mrp', action: 'read' } },
       ]
     },
     {
       title: language === 'ar' ? 'الإعدادات' : 'Settings',
       items: [
         { path: '/app/dashboard/reports', icon: BarChart3, label: language === 'ar' ? 'التقارير' : 'Reports' },
+        { path: '/app/dashboard/users', icon: Users, label: t('users'), perm: { module: 'settings', action: 'read' } },
         { path: '/app/dashboard/settings', icon: Settings, label: t('settings') },
       ]
     },
   ]
+
+  const visibleNavSections = navSections
+    .map((section) => {
+      const items = (Array.isArray(section.items) ? section.items : []).filter((item) => {
+        if (!item?.perm) return true
+        return hasAccess(item.perm.module, item.perm.action)
+      })
+
+      return { ...section, items }
+    })
+    .filter((section) => (Array.isArray(section.items) ? section.items.length > 0 : false))
 
   const SidebarContent = () => (
     <>
@@ -167,7 +187,7 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-4">
-        {navSections.map((section, idx) => (
+        {visibleNavSections.map((section, idx) => (
           <div key={idx}>
             {!sidebarCollapsed && (
               <h3 className="px-3 mb-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">

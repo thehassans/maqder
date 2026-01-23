@@ -1,9 +1,11 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { Plus, Search, FolderKanban, Calendar, User, AlertTriangle, Edit } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Plus, Search, FolderKanban, Calendar, User, AlertTriangle, Edit, Percent, X, Save } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
 import Money from '../components/ui/Money'
@@ -12,9 +14,35 @@ import ExportMenu from '../components/ui/ExportMenu'
 export default function Projects() {
   const { language } = useSelector((state) => state.ui)
   const { t } = useTranslation(language)
+  const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [status, setStatus] = useState('')
+
+  const [showProgressModal, setShowProgressModal] = useState(false)
+  const [editingProject, setEditingProject] = useState(null)
+
+  const { register, handleSubmit, reset, watch } = useForm({
+    defaultValues: {
+      progress: 0,
+      note: '',
+    },
+  })
+
+  const openProgressModal = (project) => {
+    setEditingProject(project)
+    reset({
+      progress: project?.progress ?? 0,
+      note: '',
+    })
+    setShowProgressModal(true)
+  }
+
+  const closeProgressModal = () => {
+    setShowProgressModal(false)
+    setEditingProject(null)
+    reset({ progress: 0, note: '' })
+  }
 
   const exportColumns = [
     {
@@ -57,6 +85,17 @@ export default function Projects() {
   const { data, isLoading } = useQuery({
     queryKey: ['projects', page, search, status],
     queryFn: () => api.get('/projects', { params: { page, limit: 25, search, status } }).then((res) => res.data),
+  })
+
+  const progressMutation = useMutation({
+    mutationFn: ({ id, progress, note }) => api.post(`/projects/${id}/progress`, { progress, note }).then((r) => r.data),
+    onSuccess: () => {
+      toast.success(language === 'ar' ? 'تم تحديث التقدم' : 'Progress updated')
+      queryClient.invalidateQueries(['projects'])
+      queryClient.invalidateQueries(['projects-stats'])
+      closeProgressModal()
+    },
+    onError: (err) => toast.error(err.response?.data?.error || (language === 'ar' ? 'حدث خطأ' : 'Error')),
   })
 
   const getExportRows = async () => {
@@ -112,6 +151,8 @@ export default function Projects() {
     }
     return value
   }
+
+  const liveProgress = Math.max(0, Math.min(100, Number(watch('progress') || 0)))
 
   return (
     <div className="space-y-6">
@@ -232,6 +273,10 @@ export default function Projects() {
               <tbody>
                 {projects.map((p) => {
                   const progress = Math.max(0, Math.min(100, Number(p.progress || 0)))
+                  const lastProgressUpdate = Array.isArray(p.progressUpdates) && p.progressUpdates.length > 0
+                    ? p.progressUpdates[p.progressUpdates.length - 1]
+                    : null
+                  const lastNote = String(lastProgressUpdate?.note || '').trim()
                   return (
                     <tr key={p._id}>
                       <td className="font-mono text-sm">{p.code}</td>
@@ -269,6 +314,7 @@ export default function Projects() {
                           <div className="h-2 bg-gray-200 dark:bg-dark-600 rounded-full overflow-hidden">
                             <div className="h-full bg-primary-500 rounded-full" style={{ width: `${progress}%` }} />
                           </div>
+                          {lastNote ? <p className="text-[11px] text-gray-500 mt-2 line-clamp-1">{lastNote}</p> : null}
                         </div>
                       </td>
                       <td className="font-semibold"><Money value={p.budget} /></td>
@@ -277,6 +323,14 @@ export default function Projects() {
                       </td>
                       <td>
                         <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openProgressModal(p)}
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg"
+                            title={language === 'ar' ? 'تحديث التقدم' : 'Update progress'}
+                          >
+                            <Percent className="w-4 h-4 text-gray-600" />
+                          </button>
                           <Link to={`/projects/${p._id}`} className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg">
                             <Edit className="w-4 h-4 text-gray-600" />
                           </Link>
@@ -308,6 +362,93 @@ export default function Projects() {
           </button>
         </div>
       )}
+
+      <AnimatePresence>
+        {showProgressModal && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={closeProgressModal}
+              className="fixed inset-0 bg-black/50 z-40"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-lg bg-white dark:bg-dark-800 rounded-2xl shadow-xl z-50 overflow-hidden"
+            >
+              <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-dark-700">
+                <div>
+                  <h3 className="text-lg font-semibold">{language === 'ar' ? 'تحديث التقدم' : 'Update Progress'}</h3>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {editingProject?.code ? `${editingProject.code} - ` : ''}
+                    {(language === 'ar' ? editingProject?.nameAr || editingProject?.nameEn : editingProject?.nameEn || editingProject?.nameAr) || ''}
+                  </p>
+                </div>
+                <button onClick={closeProgressModal} className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form
+                onSubmit={handleSubmit((form) =>
+                  progressMutation.mutate({
+                    id: editingProject?._id,
+                    progress: Number(form.progress),
+                    note: String(form.note || ''),
+                  })
+                )}
+                className="p-6 space-y-4"
+              >
+                <div>
+                  <label className="label">{language === 'ar' ? 'التقدم (%)' : 'Progress (%)'}</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    {...register('progress', { required: true, valueAsNumber: true })}
+                    className="input"
+                  />
+                  <div className="mt-2">
+                    <div className="h-2 bg-gray-200 dark:bg-dark-600 rounded-full overflow-hidden">
+                      <div className="h-full bg-primary-500 rounded-full" style={{ width: `${liveProgress}%` }} />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="label">{language === 'ar' ? 'ملاحظة' : 'Note'} *</label>
+                  <textarea
+                    rows={3}
+                    {...register('note', { required: true })}
+                    className="input"
+                    placeholder={language === 'ar' ? 'اكتب ملاحظة التقدم...' : 'Write a progress note...'}
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3">
+                  <button type="button" onClick={closeProgressModal} className="btn btn-secondary">
+                    {t('cancel')}
+                  </button>
+                  <button type="submit" disabled={progressMutation.isPending || !editingProject?._id} className="btn btn-primary">
+                    {progressMutation.isPending ? (
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        {t('save')}
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

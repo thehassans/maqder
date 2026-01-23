@@ -55,6 +55,7 @@ import Expenses from './pages/Expenses'
 import ExpenseForm from './pages/ExpenseForm'
 import CustomerList from './pages/customers/CustomerList'
 import CustomerForm from './pages/customers/CustomerForm'
+import Users from './pages/Users'
 import SuperAdminDashboard from './pages/super-admin/SuperAdminDashboard'
 import TenantManagement from './pages/super-admin/TenantManagement'
 import TenantForm from './pages/super-admin/TenantForm'
@@ -238,6 +239,7 @@ function App() {
         <Route path="mrp" element={<MRP />} />
         <Route path="whatsapp" element={<WhatsApp />} />
         <Route path="reports" element={<Reports />} />
+        <Route path="users" element={<Users />} />
         <Route path="settings" element={<Settings />} />
       </Route>
 

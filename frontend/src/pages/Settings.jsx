@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector, useDispatch } from 'react-redux'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
-import { Building2, Shield, Globe, Palette, Bell, Save, Key, CheckCircle, Image } from 'lucide-react'
+import { Building2, Shield, Globe, Palette, Bell, Save, Key, CheckCircle, Image, Database, Download } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
@@ -17,6 +17,7 @@ export default function Settings() {
   const { language, theme } = useSelector((state) => state.ui)
   const { t } = useTranslation(language)
   const [activeTab, setActiveTab] = useState('company')
+  const [downloadingBackup, setDownloadingBackup] = useState(false)
   const [primaryColor, setPrimaryColor] = useState('#14B8A6')
   const [secondaryColor, setSecondaryColor] = useState('#D946EF')
   const [headerStyle, setHeaderStyle] = useState('glass')
@@ -116,7 +117,33 @@ export default function Settings() {
     { id: 'company', label: t('companySettings'), icon: Building2 },
     { id: 'zatca', label: t('zatcaSettings'), icon: Shield },
     { id: 'preferences', label: language === 'ar' ? 'التفضيلات' : 'Preferences', icon: Palette },
+    { id: 'backup', label: language === 'ar' ? 'النسخ الاحتياطي' : 'Backup', icon: Database },
   ]
+
+  const downloadBackup = async () => {
+    try {
+      setDownloadingBackup(true)
+      const res = await api.get('/tenants/backup', { responseType: 'blob' })
+
+      const blob = new Blob([res.data], { type: 'application/gzip' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+
+      const d = new Date()
+      const dateStr = d.toISOString().slice(0, 10)
+      const safeSlug = tenant?.slug || 'tenant'
+      a.href = url
+      a.download = `backup_${safeSlug}_${dateStr}.jsonl.gz`
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      toast.error(err.response?.data?.error || (language === 'ar' ? 'فشل تحميل النسخة الاحتياطية' : 'Failed to download backup'))
+    } finally {
+      setDownloadingBackup(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -580,6 +607,30 @@ export default function Settings() {
                     {updateMutation.isPending ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Save className="w-4 h-4" />{t('save')}</>}
                   </button>
                 </div>
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'backup' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card p-6">
+              <h3 className="text-lg font-semibold mb-2">{language === 'ar' ? 'النسخ الاحتياطي' : 'Backup'}</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {language === 'ar'
+                  ? 'قم بتنزيل نسخة احتياطية كاملة من بيانات المستأجر. قد يستغرق التحميل وقتاً حسب حجم البيانات.'
+                  : 'Download a full tenant backup. Download time depends on dataset size.'}
+              </p>
+
+              <div className="mt-6 flex items-center gap-3">
+                <button onClick={downloadBackup} disabled={downloadingBackup} className="btn btn-primary">
+                  {downloadingBackup ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      {language === 'ar' ? 'تنزيل النسخة الاحتياطية' : 'Download Backup'}
+                    </>
+                  )}
+                </button>
               </div>
             </motion.div>
           )}

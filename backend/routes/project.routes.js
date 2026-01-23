@@ -133,6 +133,54 @@ router.get('/:id', checkPermission('project_management', 'read'), async (req, re
   }
 });
 
+router.post('/:id/progress', checkPermission('project_management', 'update'), async (req, res) => {
+  try {
+    const existing = await Project.findOne({ _id: req.params.id, ...req.tenantFilter });
+    if (!existing) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    const rawProgress = Number(req.body?.progress);
+    const progress = Number.isFinite(rawProgress) ? Math.max(0, Math.min(100, rawProgress)) : NaN;
+    const note = String(req.body?.note || '').trim();
+
+    if (!Number.isFinite(progress)) {
+      return res.status(400).json({ error: 'Invalid progress' });
+    }
+    if (!note) {
+      return res.status(400).json({ error: 'Note is required' });
+    }
+
+    existing.progress = progress;
+    existing.progressUpdates = Array.isArray(existing.progressUpdates) ? existing.progressUpdates : [];
+    existing.progressUpdates.push({
+      progress,
+      note,
+      createdBy: req.user?._id,
+      createdAt: new Date(),
+    });
+
+    if (progress >= 100 && existing.status !== 'cancelled') {
+      existing.status = 'completed';
+      if (!existing.completedAt) existing.completedAt = new Date();
+    }
+
+    if (progress < 100 && existing.status === 'completed') {
+      existing.status = 'in_progress';
+      existing.completedAt = undefined;
+    }
+
+    if (progress > 0 && existing.status === 'planned') {
+      existing.status = 'in_progress';
+    }
+
+    await existing.save();
+    res.json(existing);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.post('/', checkPermission('project_management', 'create'), async (req, res) => {
   try {
     const code = req.body.code || (await generateProjectCode(req.tenantFilter));
