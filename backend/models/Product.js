@@ -126,6 +126,12 @@ productSchema.index({ tenantId: 1, category: 1 });
 productSchema.index({ tenantId: 1, status: 1 });
 productSchema.index({ tenantId: 1, nameEn: 'text', nameAr: 'text', sku: 'text', barcode: 'text' });
 
+productSchema.pre('save', function(next) {
+  const stocks = Array.isArray(this.stocks) ? this.stocks : [];
+  this.totalStock = stocks.reduce((sum, s) => sum + (Number(s.quantity) || 0), 0);
+  next();
+});
+
 // Virtual for available stock
 productSchema.virtual('availableStock').get(function() {
   return this.stocks.reduce((total, stock) => {

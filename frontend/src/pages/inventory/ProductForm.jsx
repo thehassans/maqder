@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
@@ -18,11 +19,47 @@ export default function ProductForm() {
   const { t } = useTranslation(language)
   const isEdit = Boolean(id)
 
-  const { register, handleSubmit, reset, setValue, watch } = useForm({
-    defaultValues: {
-      stocks: [{ warehouseId: '', quantity: 0, reorderPoint: 10 }]
+  const { register, handleSubmit, reset, setValue, watch } = useForm()
+  const [product, setProduct] = useState(null)
+  const [stockWarehouseId, setStockWarehouseId] = useState('')
+  const [stockQuantity, setStockQuantity] = useState(0)
+  const [stockReorderPoint, setStockReorderPoint] = useState(10)
+  const [savingStock, setSavingStock] = useState(false)
+
+  const buildPayload = (data) => {
+    const payload = { ...data }
+    delete payload._id
+    delete payload.id
+    delete payload.__v
+    delete payload.tenantId
+    delete payload.createdBy
+    delete payload.createdAt
+    delete payload.updatedAt
+    delete payload.totalStock
+    delete payload.availableStock
+    delete payload.landedCostHistory
+    delete payload.averageLandedCost
+    delete payload.predictedDemand
+
+    if (isEdit) {
+      delete payload.stocks
+    } else {
+      const s0 = payload?.stocks?.[0]
+      if (!s0?.warehouseId) {
+        delete payload.stocks
+      } else {
+        payload.stocks = [
+          {
+            warehouseId: s0.warehouseId,
+            quantity: Number.isFinite(Number(s0.quantity)) ? Number(s0.quantity) : 0,
+            reorderPoint: Number.isFinite(Number(s0.reorderPoint)) ? Number(s0.reorderPoint) : 10,
+          },
+        ]
+      }
     }
-  })
+
+    return payload
+  }
 
   useLiveTranslation({
     watch,
@@ -42,25 +79,13 @@ export default function ProductForm() {
     targetLang: 'en'
   })
 
-  const { isLoading, data: productData } = useQuery({
+  const { isLoading } = useQuery({
     queryKey: ['product', id],
     queryFn: () => api.get(`/products/${id}`).then(res => res.data),
     enabled: isEdit,
     onSuccess: (data) => {
-      // Ensure stocks array has at least one entry for the form
-      const formData = { ...data }
-      if (!formData.stocks || formData.stocks.length === 0) {
-        formData.stocks = [{ warehouseId: '', quantity: 0, reorderPoint: 10 }]
-      } else {
-        // Normalize warehouseId - it might be populated object or string
-        formData.stocks = formData.stocks.map(s => ({
-          ...s,
-          warehouseId: typeof s.warehouseId === 'object' ? s.warehouseId?._id : s.warehouseId,
-          quantity: s.quantity || 0,
-          reorderPoint: s.reorderPoint || 10
-        }))
-      }
-      reset(formData)
+      setProduct(data)
+      reset(data)
     }
   })
 
@@ -69,15 +94,66 @@ export default function ProductForm() {
     queryFn: () => api.get('/warehouses').then(res => res.data)
   })
 
+  const warehouseOptions = useMemo(() => {
+    return Array.isArray(warehouses) ? warehouses : []
+  }, [warehouses])
+
+  useEffect(() => {
+    if (!isEdit) return
+    if (stockWarehouseId) return
+    if (warehouseOptions.length === 0) return
+
+    const firstStockWh = product?.stocks?.[0]?.warehouseId?._id || product?.stocks?.[0]?.warehouseId
+    const nextId = String(firstStockWh || warehouseOptions[0]._id || '')
+    if (nextId) setStockWarehouseId(nextId)
+  }, [isEdit, product, stockWarehouseId, warehouseOptions])
+
+  useEffect(() => {
+    if (!isEdit) return
+    if (!stockWarehouseId) return
+
+    const stocks = Array.isArray(product?.stocks) ? product.stocks : []
+    const s = stocks.find((x) => String(x?.warehouseId?._id || x?.warehouseId) === String(stockWarehouseId))
+    setStockQuantity(Number(s?.quantity || 0))
+    setStockReorderPoint(Number.isFinite(Number(s?.reorderPoint)) ? Number(s.reorderPoint) : 10)
+  }, [isEdit, product, stockWarehouseId])
+
   const mutation = useMutation({
     mutationFn: (data) => isEdit ? api.put(`/products/${id}`, data) : api.post('/products', data),
     onSuccess: () => {
       toast.success(isEdit ? (language === 'ar' ? 'تم تحديث المنتج' : 'Product updated') : (language === 'ar' ? 'تم إضافة المنتج' : 'Product added'))
       queryClient.invalidateQueries(['products'])
+      queryClient.invalidateQueries(['products-stats'])
       navigate('/products')
     },
     onError: (err) => toast.error(err.response?.data?.error || 'Error saving product')
   })
+
+  const saveStock = async () => {
+    if (!isEdit) return
+    if (!stockWarehouseId) return
+    try {
+      setSavingStock(true)
+      const res = await api.post(`/products/${id}/stock/set`, {
+        warehouseId: stockWarehouseId,
+        quantity: stockQuantity,
+        reorderPoint: stockReorderPoint,
+      })
+      const updated = res?.data
+      if (updated) {
+        setProduct(updated)
+        reset(updated)
+        queryClient.setQueryData(['product', id], updated)
+      }
+      queryClient.invalidateQueries(['products'])
+      queryClient.invalidateQueries(['products-stats'])
+      toast.success(language === 'ar' ? 'تم تحديث المخزون' : 'Stock updated')
+    } catch (e) {
+      toast.error(e?.response?.data?.error || (language === 'ar' ? 'فشل تحديث المخزون' : 'Failed to update stock'))
+    } finally {
+      setSavingStock(false)
+    }
+  }
 
   if (isEdit && isLoading) {
     return <div className="flex justify-center p-8"><div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" /></div>
@@ -94,7 +170,7 @@ export default function ProductForm() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit((data) => mutation.mutate(data))} className="space-y-6">
+      <form onSubmit={handleSubmit((data) => mutation.mutate(buildPayload(data)))} className="space-y-6">
         {/* Basic Info */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card p-6">
           <div className="flex items-center gap-3 mb-6">
@@ -170,7 +246,7 @@ export default function ProductForm() {
             <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg"><Warehouse className="w-5 h-5 text-blue-600" /></div>
             <h3 className="text-lg font-semibold">{language === 'ar' ? 'المخزون' : 'Stock'}</h3>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="label">{language === 'ar' ? 'وحدة القياس' : 'Unit of Measure'}</label>
               <select {...register('unitOfMeasure')} className="select">
@@ -181,23 +257,104 @@ export default function ProductForm() {
                 <option value="BOX">{language === 'ar' ? 'صندوق' : 'Box'}</option>
               </select>
             </div>
-            {warehouses?.length > 0 && (
+            {!isEdit && warehouseOptions.length > 0 && (
               <>
                 <div>
                   <label className="label">{language === 'ar' ? 'المستودع' : 'Warehouse'}</label>
                   <select {...register('stocks.0.warehouseId')} className="select">
-                    {warehouses.map(w => <option key={w._id} value={w._id}>{language === 'ar' ? w.nameAr || w.nameEn : w.nameEn}</option>)}
+                    {warehouseOptions.map(w => <option key={w._id} value={w._id}>{language === 'ar' ? w.nameAr || w.nameEn : w.nameEn}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="label">{language === 'ar' ? 'الكمية' : 'Quantity'}</label>
-                  <input type="number" {...register('stocks.0.quantity', { valueAsNumber: true })} className="input" />
+                  <label className="label">{language === 'ar' ? 'الكمية الأولية' : 'Initial Quantity'}</label>
+                  <input
+                    type="number"
+                    {...register('stocks.0.quantity', { valueAsNumber: true })}
+                    className="input"
+                    defaultValue={0}
+                  />
                 </div>
                 <div>
                   <label className="label">{t('reorderPoint')}</label>
-                  <input type="number" {...register('stocks.0.reorderPoint', { valueAsNumber: true })} className="input" />
+                  <input type="number" {...register('stocks.0.reorderPoint', { valueAsNumber: true })} className="input" defaultValue={10} />
                 </div>
               </>
+            )}
+
+            {isEdit && (
+              <div className="md:col-span-3 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="label">{language === 'ar' ? 'المستودع' : 'Warehouse'}</label>
+                    <select
+                      value={stockWarehouseId}
+                      onChange={(e) => setStockWarehouseId(e.target.value)}
+                      className="select"
+                      disabled={warehouseOptions.length === 0}
+                    >
+                      {warehouseOptions.map((w) => (
+                        <option key={w._id} value={w._id}>
+                          {language === 'ar' ? w.nameAr || w.nameEn : w.nameEn}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label">{language === 'ar' ? 'الكمية' : 'Quantity'}</label>
+                    <input
+                      type="number"
+                      className="input"
+                      value={stockQuantity}
+                      onChange={(e) => setStockQuantity(Number(e.target.value))}
+                      min={0}
+                    />
+                  </div>
+                  <div>
+                    <label className="label">{t('reorderPoint')}</label>
+                    <input
+                      type="number"
+                      className="input"
+                      value={stockReorderPoint}
+                      onChange={(e) => setStockReorderPoint(Number(e.target.value))}
+                      min={0}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <button type="button" onClick={saveStock} disabled={savingStock || !stockWarehouseId} className="btn btn-secondary">
+                    {savingStock ? (
+                      <div className="w-5 h-5 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        {language === 'ar' ? 'تحديث المخزون' : 'Update Stock'}
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <div className="border border-gray-100 dark:border-dark-700 rounded-xl overflow-hidden">
+                  <div className="px-4 py-3 bg-gray-50 dark:bg-dark-700 text-sm font-medium">
+                    {language === 'ar' ? 'المخزون حسب المستودع' : 'Stock by warehouse'}
+                  </div>
+                  <div className="divide-y divide-gray-100 dark:divide-dark-700">
+                    {(Array.isArray(product?.stocks) ? product.stocks : []).map((s, idx) => {
+                      const wh = s?.warehouseId
+                      const whName = typeof wh === 'object' ? (language === 'ar' ? wh?.nameAr || wh?.nameEn : wh?.nameEn) : String(wh || '')
+                      return (
+                        <div key={String(wh?._id || wh || idx)} className="px-4 py-3 flex items-center justify-between">
+                          <div className="text-sm text-gray-700 dark:text-gray-200">{whName || '-'}</div>
+                          <div className="text-sm font-semibold text-gray-900 dark:text-white">{Number(s?.quantity || 0)}</div>
+                        </div>
+                      )
+                    })}
+                    {(Array.isArray(product?.stocks) ? product.stocks : []).length === 0 && (
+                      <div className="px-4 py-3 text-sm text-gray-500">{language === 'ar' ? 'لا يوجد مخزون' : 'No stock'}</div>
+                    )}
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         </motion.div>

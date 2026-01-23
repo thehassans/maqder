@@ -7,6 +7,13 @@ const router = express.Router();
 router.use(protect);
 router.use(tenantFilter);
 
+const computeTotalStock = (product) => {
+  const stocks = Array.isArray(product?.stocks) ? product.stocks : [];
+  const computed = stocks.reduce((sum, s) => sum + (Number(s.quantity) || 0), 0);
+  product.totalStock = computed;
+  return product;
+};
+
 // @route   GET /api/products
 router.get('/', checkPermission('inventory', 'read'), async (req, res) => {
   try {
@@ -29,6 +36,8 @@ router.get('/', checkPermission('inventory', 'read'), async (req, res) => {
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
+
+    products.forEach(computeTotalStock);
     
     if (lowStock === 'true') {
       products = products.filter(p => {
@@ -65,7 +74,7 @@ router.get('/lookup', checkPermission('inventory', 'read'), async (req, res) => 
       return res.status(404).json({ error: 'Product not found' });
     }
     
-    res.json(product);
+    res.json(computeTotalStock(product));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -76,9 +85,10 @@ router.get('/stats', checkPermission('inventory', 'read'), async (req, res) => {
   try {
     const stats = await Product.aggregate([
       { $match: { ...req.tenantFilter, isActive: true } },
+      { $addFields: { computedTotalStock: { $sum: '$stocks.quantity' } } },
       {
         $facet: {
-          byCategory: [{ $group: { _id: '$category', count: { $sum: 1 }, totalValue: { $sum: { $multiply: ['$costPrice', '$totalStock'] } } } }],
+          byCategory: [{ $group: { _id: '$category', count: { $sum: 1 }, totalValue: { $sum: { $multiply: ['$costPrice', '$computedTotalStock'] } } } }],
           byStatus: [{ $group: { _id: '$status', count: { $sum: 1 } } }],
           lowStock: [
             { $unwind: '$stocks' },
@@ -90,8 +100,8 @@ router.get('/stats', checkPermission('inventory', 'read'), async (req, res) => {
               $group: {
                 _id: null,
                 totalProducts: { $sum: 1 },
-                totalStock: { $sum: '$totalStock' },
-                totalValue: { $sum: { $multiply: ['$costPrice', '$totalStock'] } }
+                totalStock: { $sum: '$computedTotalStock' },
+                totalValue: { $sum: { $multiply: ['$costPrice', '$computedTotalStock'] } }
               }
             }
           ]
@@ -116,7 +126,7 @@ router.get('/:id', checkPermission('inventory', 'read'), async (req, res) => {
       return res.status(404).json({ error: 'Product not found' });
     }
     
-    res.json(product);
+    res.json(computeTotalStock(product));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -131,13 +141,8 @@ router.post('/', checkPermission('inventory', 'create'), async (req, res) => {
       createdBy: req.user._id
     };
     
-    // Calculate totalStock from stocks array
-    if (Array.isArray(productData.stocks)) {
-      productData.totalStock = productData.stocks.reduce((sum, s) => sum + (Number(s.quantity) || 0), 0);
-    }
-    
     const product = await Product.create(productData);
-    res.status(201).json(product);
+    res.status(201).json(computeTotalStock(product));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -146,24 +151,57 @@ router.post('/', checkPermission('inventory', 'create'), async (req, res) => {
 // @route   PUT /api/products/:id
 router.put('/:id', checkPermission('inventory', 'update'), async (req, res) => {
   try {
-    const updateData = { ...req.body };
-    
-    // Recalculate totalStock if stocks array is provided
-    if (Array.isArray(updateData.stocks)) {
-      updateData.totalStock = updateData.stocks.reduce((sum, s) => sum + (Number(s.quantity) || 0), 0);
-    }
-    
-    const product = await Product.findOneAndUpdate(
-      { _id: req.params.id, ...req.tenantFilter },
-      updateData,
-      { new: true, runValidators: true }
-    );
+    const product = await Product.findOne({ _id: req.params.id, ...req.tenantFilter });
     
     if (!product) {
       return res.status(404).json({ error: 'Product not found' });
     }
+
+    Object.assign(product, req.body);
+    await product.save();
     
-    res.json(product);
+    res.json(computeTotalStock(product));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/:id/stock/set', checkPermission('inventory', 'update'), async (req, res) => {
+  try {
+    const { warehouseId, quantity, reorderPoint } = req.body;
+
+    const safeQuantity = Number(quantity);
+    const safeReorderPoint = reorderPoint === undefined || reorderPoint === null ? null : Number(reorderPoint);
+    if (!warehouseId) {
+      return res.status(400).json({ error: 'warehouseId is required' });
+    }
+    if (!Number.isFinite(safeQuantity) || safeQuantity < 0) {
+      return res.status(400).json({ error: 'quantity must be a non-negative number' });
+    }
+    if (safeReorderPoint !== null && (!Number.isFinite(safeReorderPoint) || safeReorderPoint < 0)) {
+      return res.status(400).json({ error: 'reorderPoint must be a non-negative number' });
+    }
+
+    const product = await Product.findOne({ _id: req.params.id, ...req.tenantFilter });
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    const idx = product.stocks.findIndex((s) => String(s.warehouseId) === String(warehouseId));
+    if (idx === -1) {
+      product.stocks.push({
+        warehouseId,
+        quantity: safeQuantity,
+        ...(safeReorderPoint === null ? {} : { reorderPoint: safeReorderPoint }),
+      });
+    } else {
+      product.stocks[idx].quantity = safeQuantity;
+      if (safeReorderPoint !== null) product.stocks[idx].reorderPoint = safeReorderPoint;
+      product.stocks[idx].lastStockUpdate = new Date();
+    }
+
+    await product.save();
+    res.json(computeTotalStock(product));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -173,6 +211,14 @@ router.put('/:id', checkPermission('inventory', 'update'), async (req, res) => {
 router.post('/:id/stock', checkPermission('inventory', 'update'), async (req, res) => {
   try {
     const { warehouseId, quantity, type = 'add' } = req.body;
+
+    const safeQuantity = Number(quantity);
+    if (!warehouseId) {
+      return res.status(400).json({ error: 'warehouseId is required' });
+    }
+    if (!Number.isFinite(safeQuantity) || safeQuantity <= 0) {
+      return res.status(400).json({ error: 'quantity must be a positive number' });
+    }
     
     const product = await Product.findOne({ _id: req.params.id, ...req.tenantFilter });
     
@@ -180,11 +226,11 @@ router.post('/:id/stock', checkPermission('inventory', 'update'), async (req, re
       return res.status(404).json({ error: 'Product not found' });
     }
     
-    const quantityChange = type === 'add' ? quantity : -quantity;
+    const quantityChange = type === 'add' ? safeQuantity : -safeQuantity;
     product.updateStock(warehouseId, quantityChange);
     await product.save();
     
-    res.json(product);
+    res.json(computeTotalStock(product));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
