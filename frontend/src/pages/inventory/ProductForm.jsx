@@ -18,7 +18,11 @@ export default function ProductForm() {
   const { t } = useTranslation(language)
   const isEdit = Boolean(id)
 
-  const { register, handleSubmit, reset, setValue, watch } = useForm()
+  const { register, handleSubmit, reset, setValue, watch } = useForm({
+    defaultValues: {
+      stocks: [{ warehouseId: '', quantity: 0, reorderPoint: 10 }]
+    }
+  })
 
   useLiveTranslation({
     watch,
@@ -38,11 +42,26 @@ export default function ProductForm() {
     targetLang: 'en'
   })
 
-  const { isLoading } = useQuery({
+  const { isLoading, data: productData } = useQuery({
     queryKey: ['product', id],
     queryFn: () => api.get(`/products/${id}`).then(res => res.data),
     enabled: isEdit,
-    onSuccess: (data) => reset(data)
+    onSuccess: (data) => {
+      // Ensure stocks array has at least one entry for the form
+      const formData = { ...data }
+      if (!formData.stocks || formData.stocks.length === 0) {
+        formData.stocks = [{ warehouseId: '', quantity: 0, reorderPoint: 10 }]
+      } else {
+        // Normalize warehouseId - it might be populated object or string
+        formData.stocks = formData.stocks.map(s => ({
+          ...s,
+          warehouseId: typeof s.warehouseId === 'object' ? s.warehouseId?._id : s.warehouseId,
+          quantity: s.quantity || 0,
+          reorderPoint: s.reorderPoint || 10
+        }))
+      }
+      reset(formData)
+    }
   })
 
   const { data: warehouses } = useQuery({
@@ -151,7 +170,7 @@ export default function ProductForm() {
             <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg"><Warehouse className="w-5 h-5 text-blue-600" /></div>
             <h3 className="text-lg font-semibold">{language === 'ar' ? 'المخزون' : 'Stock'}</h3>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="label">{language === 'ar' ? 'وحدة القياس' : 'Unit of Measure'}</label>
               <select {...register('unitOfMeasure')} className="select">
@@ -162,11 +181,7 @@ export default function ProductForm() {
                 <option value="BOX">{language === 'ar' ? 'صندوق' : 'Box'}</option>
               </select>
             </div>
-            <div>
-              <label className="label">{t('reorderPoint')}</label>
-              <input type="number" {...register('stocks.0.reorderPoint', { valueAsNumber: true })} className="input" defaultValue={10} />
-            </div>
-            {!isEdit && warehouses?.length > 0 && (
+            {warehouses?.length > 0 && (
               <>
                 <div>
                   <label className="label">{language === 'ar' ? 'المستودع' : 'Warehouse'}</label>
@@ -175,8 +190,12 @@ export default function ProductForm() {
                   </select>
                 </div>
                 <div>
-                  <label className="label">{language === 'ar' ? 'الكمية الأولية' : 'Initial Quantity'}</label>
-                  <input type="number" {...register('stocks.0.quantity', { valueAsNumber: true })} className="input" defaultValue={0} />
+                  <label className="label">{language === 'ar' ? 'الكمية' : 'Quantity'}</label>
+                  <input type="number" {...register('stocks.0.quantity', { valueAsNumber: true })} className="input" />
+                </div>
+                <div>
+                  <label className="label">{t('reorderPoint')}</label>
+                  <input type="number" {...register('stocks.0.reorderPoint', { valueAsNumber: true })} className="input" />
                 </div>
               </>
             )}

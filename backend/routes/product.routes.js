@@ -131,6 +131,11 @@ router.post('/', checkPermission('inventory', 'create'), async (req, res) => {
       createdBy: req.user._id
     };
     
+    // Calculate totalStock from stocks array
+    if (Array.isArray(productData.stocks)) {
+      productData.totalStock = productData.stocks.reduce((sum, s) => sum + (Number(s.quantity) || 0), 0);
+    }
+    
     const product = await Product.create(productData);
     res.status(201).json(product);
   } catch (error) {
@@ -141,9 +146,16 @@ router.post('/', checkPermission('inventory', 'create'), async (req, res) => {
 // @route   PUT /api/products/:id
 router.put('/:id', checkPermission('inventory', 'update'), async (req, res) => {
   try {
+    const updateData = { ...req.body };
+    
+    // Recalculate totalStock if stocks array is provided
+    if (Array.isArray(updateData.stocks)) {
+      updateData.totalStock = updateData.stocks.reduce((sum, s) => sum + (Number(s.quantity) || 0), 0);
+    }
+    
     const product = await Product.findOneAndUpdate(
       { _id: req.params.id, ...req.tenantFilter },
-      req.body,
+      updateData,
       { new: true, runValidators: true }
     );
     
