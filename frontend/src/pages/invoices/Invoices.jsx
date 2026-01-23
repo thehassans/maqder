@@ -18,13 +18,18 @@ import {
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import Money from '../../components/ui/Money'
+import ExportMenu from '../../components/ui/ExportMenu'
+import toast from 'react-hot-toast'
+import { downloadInvoicePdf } from '../../lib/invoicePdf'
 
 export default function Invoices() {
   const { language } = useSelector((state) => state.ui)
+  const { tenant } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
   const [search, setSearch] = useState('')
   const [filters, setFilters] = useState({ status: '', transactionType: '' })
   const [page, setPage] = useState(1)
+  const [pdfLoadingId, setPdfLoadingId] = useState(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['invoices', page, search, filters],
@@ -41,6 +46,66 @@ export default function Invoices() {
     return <span className="badge badge-neutral"><Clock className="w-3 h-3 me-1" />{t('pending')}</span>
   }
 
+  const exportColumns = [
+    {
+      key: 'invoiceNumber',
+      label: t('invoiceNumber'),
+      value: (r) => r?.invoiceNumber || ''
+    },
+    {
+      key: 'buyerName',
+      label: t('customer'),
+      value: (r) => r?.buyer?.name || ''
+    },
+    {
+      key: 'flow',
+      label: language === 'ar' ? 'العملية' : 'Flow',
+      value: (r) => r?.flow || 'sell'
+    },
+    {
+      key: 'transactionType',
+      label: language === 'ar' ? 'النوع' : 'Type',
+      value: (r) => r?.transactionType || ''
+    },
+    {
+      key: 'issueDate',
+      label: t('date'),
+      value: (r) => (r?.issueDate ? new Date(r.issueDate).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US') : '')
+    },
+    {
+      key: 'grandTotal',
+      label: t('total'),
+      value: (r) => r?.grandTotal ?? ''
+    },
+    {
+      key: 'zatcaStatus',
+      label: t('zatcaStatus'),
+      value: (r) => r?.zatca?.submissionStatus || ''
+    },
+  ]
+
+  const getExportRows = async () => {
+    const limit = 200
+    let currentPage = 1
+    let all = []
+
+    while (true) {
+      const res = await api.get('/invoices', {
+        params: { page: currentPage, limit, search, ...filters }
+      })
+      const batch = res.data?.invoices || []
+      all = all.concat(batch)
+
+      const pages = res.data?.pagination?.pages || 1
+      if (currentPage >= pages) break
+      currentPage += 1
+
+      if (all.length >= 10000) break
+    }
+
+    return all
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -51,10 +116,22 @@ export default function Invoices() {
             {language === 'ar' ? 'إدارة الفواتير الضريبية والمبسطة' : 'Manage tax and simplified invoices'}
           </p>
         </div>
-        <Link to="/app/dashboard/invoices/new" className="btn btn-primary">
-          <Plus className="w-4 h-4" />
-          {t('newInvoice')}
-        </Link>
+        <div className="flex gap-2">
+          <ExportMenu
+            language={language}
+            t={t}
+            rows={data?.invoices || []}
+            getRows={getExportRows}
+            columns={exportColumns}
+            fileBaseName={language === 'ar' ? 'فواتير' : 'Invoices'}
+            title={language === 'ar' ? 'الفواتير' : 'Invoices'}
+            disabled={isLoading || (data?.invoices || []).length === 0}
+          />
+          <Link to="/app/dashboard/invoices/new" className="btn btn-primary">
+            <Plus className="w-4 h-4" />
+            {t('newInvoice')}
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}
@@ -154,8 +231,28 @@ export default function Invoices() {
                           >
                             <Eye className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                           </Link>
-                          <button className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors">
-                            <Download className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                setPdfLoadingId(invoice._id)
+                                const full = await api.get(`/invoices/${invoice._id}`).then((res) => res.data)
+                                await downloadInvoicePdf({ invoice: full, language, tenant })
+                              } catch (e) {
+                                toast.error(language === 'ar' ? 'فشل تحميل PDF' : 'Failed to download PDF')
+                              } finally {
+                                setPdfLoadingId(null)
+                              }
+                            }}
+                            disabled={pdfLoadingId === invoice._id}
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors"
+                            title={language === 'ar' ? 'تحميل PDF' : 'Download PDF'}
+                          >
+                            {pdfLoadingId === invoice._id ? (
+                              <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <Download className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                            )}
                           </button>
                         </div>
                       </td>

@@ -5,10 +5,44 @@ import { motion } from 'framer-motion'
 import { Plus, Warehouse as WarehouseIcon, MapPin } from 'lucide-react'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
+import ExportMenu from '../../components/ui/ExportMenu'
 
 export default function Warehouses() {
   const { language } = useSelector((state) => state.ui)
   const { t } = useTranslation(language)
+
+  const exportColumns = [
+    {
+      key: 'code',
+      label: language === 'ar' ? 'الرمز' : 'Code',
+      value: (r) => r?.code || ''
+    },
+    {
+      key: 'name',
+      label: language === 'ar' ? 'الاسم' : 'Name',
+      value: (r) => (language === 'ar' ? r?.nameAr || r?.nameEn : r?.nameEn || r?.nameAr) || ''
+    },
+    {
+      key: 'type',
+      label: language === 'ar' ? 'النوع' : 'Type',
+      value: (r) => r?.type || ''
+    },
+    {
+      key: 'city',
+      label: language === 'ar' ? 'المدينة' : 'City',
+      value: (r) => r?.address?.city || ''
+    },
+    {
+      key: 'district',
+      label: language === 'ar' ? 'الحي' : 'District',
+      value: (r) => r?.address?.district || ''
+    },
+    {
+      key: 'primary',
+      label: language === 'ar' ? 'رئيسي' : 'Primary',
+      value: (r) => (r?.isPrimary ? (language === 'ar' ? 'نعم' : 'Yes') : (language === 'ar' ? 'لا' : 'No'))
+    },
+  ]
 
   const { data: warehouses, isLoading } = useQuery({
     queryKey: ['warehouses'],
@@ -24,10 +58,21 @@ export default function Warehouses() {
             {language === 'ar' ? 'إدارة مستودعات المخزون' : 'Manage inventory warehouses'}
           </p>
         </div>
-        <Link to="/warehouses/new" className="btn btn-primary">
-          <Plus className="w-4 h-4" />
-          {language === 'ar' ? 'إضافة مستودع' : 'Add Warehouse'}
-        </Link>
+        <div className="flex gap-2">
+          <ExportMenu
+            language={language}
+            t={t}
+            rows={warehouses || []}
+            columns={exportColumns}
+            fileBaseName={language === 'ar' ? 'المستودعات' : 'Warehouses'}
+            title={language === 'ar' ? 'المستودعات' : 'Warehouses'}
+            disabled={isLoading || !(warehouses || []).length}
+          />
+          <Link to="/warehouses/new" className="btn btn-primary">
+            <Plus className="w-4 h-4" />
+            {language === 'ar' ? 'إضافة مستودع' : 'Add Warehouse'}
+          </Link>
+        </div>
       </div>
 
       {isLoading ? (

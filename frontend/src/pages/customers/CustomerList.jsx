@@ -22,6 +22,7 @@ import { Fragment } from 'react'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import Money from '../../components/ui/Money'
+import ExportMenu from '../../components/ui/ExportMenu'
 
 export default function CustomerList() {
   const { language } = useSelector((state) => state.ui)
@@ -58,6 +59,71 @@ export default function CustomerList() {
     }
   }
 
+  const exportColumns = [
+    {
+      key: 'name',
+      label: language === 'ar' ? 'العميل' : 'Customer',
+      value: (r) => (language === 'ar' ? r?.nameAr || r?.name : r?.name || r?.nameAr) || ''
+    },
+    {
+      key: 'type',
+      label: language === 'ar' ? 'النوع' : 'Type',
+      value: (r) => r?.type || ''
+    },
+    {
+      key: 'email',
+      label: language === 'ar' ? 'البريد' : 'Email',
+      value: (r) => r?.email || ''
+    },
+    {
+      key: 'phone',
+      label: language === 'ar' ? 'الهاتف' : 'Phone',
+      value: (r) => r?.phone || ''
+    },
+    {
+      key: 'vatNumber',
+      label: language === 'ar' ? 'الرقم الضريبي' : 'VAT Number',
+      value: (r) => r?.vatNumber || ''
+    },
+    {
+      key: 'totalInvoices',
+      label: language === 'ar' ? 'الفواتير' : 'Invoices',
+      value: (r) => r?.totalInvoices ?? ''
+    },
+    {
+      key: 'totalRevenue',
+      label: language === 'ar' ? 'الإيرادات' : 'Revenue',
+      value: (r) => r?.totalRevenue ?? ''
+    },
+    {
+      key: 'status',
+      label: language === 'ar' ? 'الحالة' : 'Status',
+      value: (r) => (r?.isActive ? (language === 'ar' ? 'نشط' : 'Active') : (language === 'ar' ? 'غير نشط' : 'Inactive'))
+    },
+  ]
+
+  const getExportRows = async () => {
+    const limit = 200
+    let currentPage = 1
+    let all = []
+
+    while (true) {
+      const res = await api.get('/customers', {
+        params: { search, type: typeFilter, page: currentPage, limit }
+      })
+      const batch = res.data?.customers || []
+      all = all.concat(batch)
+
+      const pages = res.data?.pagination?.pages || 1
+      if (currentPage >= pages) break
+      currentPage += 1
+
+      if (all.length >= 10000) break
+    }
+
+    return all
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -70,13 +136,25 @@ export default function CustomerList() {
             {language === 'ar' ? 'إدارة عملائك وبياناتهم' : 'Manage your customers and their data'}
           </p>
         </div>
-        <Link
-          to="/customers/new"
-          className="btn btn-primary flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          {language === 'ar' ? 'عميل جديد' : 'New Customer'}
-        </Link>
+        <div className="flex gap-2">
+          <ExportMenu
+            language={language}
+            t={t}
+            rows={data?.customers || []}
+            getRows={getExportRows}
+            columns={exportColumns}
+            fileBaseName={language === 'ar' ? 'العملاء' : 'Customers'}
+            title={language === 'ar' ? 'العملاء' : 'Customers'}
+            disabled={isLoading || (data?.customers || []).length === 0}
+          />
+          <Link
+            to="/customers/new"
+            className="btn btn-primary flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            {language === 'ar' ? 'عميل جديد' : 'New Customer'}
+          </Link>
+        </div>
       </div>
 
       {/* Stats Cards */}

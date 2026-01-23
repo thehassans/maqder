@@ -7,6 +7,7 @@ import { Search, Factory, Package, TrendingUp, ArrowUpRight, Edit } from 'lucide
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
 import Money from '../components/ui/Money'
+import ExportMenu from '../components/ui/ExportMenu'
 
 export default function MRP() {
   const { language } = useSelector((state) => state.ui)
@@ -15,6 +16,22 @@ export default function MRP() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [multiplier, setMultiplier] = useState(2)
+
+  const exportColumns = [
+    { key: 'sku', label: 'SKU', value: (r) => r?.sku || '' },
+    {
+      key: 'name',
+      label: language === 'ar' ? 'المنتج' : 'Product',
+      value: (r) => (language === 'ar' ? r?.nameAr || r?.nameEn : r?.nameEn || r?.nameAr) || ''
+    },
+    { key: 'category', label: language === 'ar' ? 'الفئة' : 'Category', value: (r) => r?.category || '' },
+    { key: 'currentStock', label: language === 'ar' ? 'الحالي' : 'On Hand', value: (r) => r?.currentStock ?? '' },
+    { key: 'incomingQty', label: language === 'ar' ? 'وارد' : 'Incoming', value: (r) => r?.incomingQty ?? '' },
+    { key: 'reorderPoint', label: language === 'ar' ? 'نقطة إعادة الطلب' : 'Reorder Point', value: (r) => r?.reorderPoint ?? '' },
+    { key: 'targetStock', label: language === 'ar' ? 'الهدف' : 'Target', value: (r) => r?.targetStock ?? '' },
+    { key: 'recommendedQty', label: language === 'ar' ? 'مقترح' : 'Suggested', value: (r) => r?.recommendedQty ?? '' },
+    { key: 'estimatedCost', label: language === 'ar' ? 'تكلفة' : 'Cost', value: (r) => r?.estimatedCost ?? '' },
+  ]
 
   const { data, isLoading } = useQuery({
     queryKey: ['mrp-suggestions', page, search, multiplier],
@@ -30,6 +47,28 @@ export default function MRP() {
         })
         .then((res) => res.data),
   })
+
+  const getExportRows = async () => {
+    const limit = 200
+    let currentPage = 1
+    let all = []
+
+    while (true) {
+      const res = await api.get('/mrp/suggestions', {
+        params: { page: currentPage, limit, search, multiplier }
+      })
+      const batch = res.data?.suggestions || []
+      all = all.concat(batch)
+
+      const pages = res.data?.pagination?.pages || 1
+      if (currentPage >= pages) break
+      currentPage += 1
+
+      if (all.length >= 10000) break
+    }
+
+    return all
+  }
 
   const { data: stats } = useQuery({
     queryKey: ['mrp-stats', search, multiplier],
@@ -62,6 +101,16 @@ export default function MRP() {
               : 'Reorder suggestions based on stock and incoming purchase orders'}
           </p>
         </div>
+        <ExportMenu
+          language={language}
+          t={t}
+          rows={suggestions}
+          getRows={getExportRows}
+          columns={exportColumns}
+          fileBaseName={language === 'ar' ? 'MRP' : 'MRP'}
+          title={language === 'ar' ? 'MRP' : 'MRP'}
+          disabled={isLoading || suggestions.length === 0}
+        />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">

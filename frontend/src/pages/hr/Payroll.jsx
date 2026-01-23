@@ -8,6 +8,7 @@ import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import Money from '../../components/ui/Money'
+import ExportMenu from '../../components/ui/ExportMenu'
 
 export default function Payroll() {
   const { language } = useSelector((state) => state.ui)
@@ -15,6 +16,44 @@ export default function Payroll() {
   const queryClient = useQueryClient()
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+
+  const exportColumns = [
+    {
+      key: 'employeeId',
+      label: t('employeeId'),
+      value: (r) => r?.employeeId?.employeeId || ''
+    },
+    {
+      key: 'employeeName',
+      label: language === 'ar' ? 'الاسم' : 'Name',
+      value: (r) => `${r?.employeeId?.firstNameEn || ''} ${r?.employeeId?.lastNameEn || ''}`.trim()
+    },
+    {
+      key: 'basic',
+      label: t('basicSalary'),
+      value: (r) => r?.earnings?.find(e => e.type === 'basic')?.amount ?? ''
+    },
+    {
+      key: 'allowances',
+      label: language === 'ar' ? 'البدلات' : 'Allowances',
+      value: (r) => (r?.totalEarnings || 0) - (r?.earnings?.find(e => e.type === 'basic')?.amount || 0)
+    },
+    {
+      key: 'gosi',
+      label: language === 'ar' ? 'التأمينات' : 'GOSI',
+      value: (r) => r?.gosi?.employeeShare ?? ''
+    },
+    {
+      key: 'netPay',
+      label: language === 'ar' ? 'صافي الراتب' : 'Net Pay',
+      value: (r) => r?.netPay ?? ''
+    },
+    {
+      key: 'status',
+      label: t('status'),
+      value: (r) => r?.status || ''
+    },
+  ]
 
   const { data, isLoading } = useQuery({
     queryKey: ['payroll', selectedMonth, selectedYear],
@@ -62,6 +101,15 @@ export default function Payroll() {
             <Calculator className="w-4 h-4" />
             GOSI/EOSB
           </Link>
+          <ExportMenu
+            language={language}
+            t={t}
+            rows={data?.payrolls || []}
+            columns={exportColumns}
+            fileBaseName={language === 'ar' ? `رواتب_${selectedYear}_${String(selectedMonth).padStart(2, '0')}` : `Payroll_${selectedYear}_${String(selectedMonth).padStart(2, '0')}`}
+            title={language === 'ar' ? 'الرواتب' : 'Payroll'}
+            disabled={isLoading || !(data?.payrolls || []).length}
+          />
           <button onClick={() => generateMutation.mutate()} disabled={generateMutation.isPending} className="btn btn-primary">
             {generateMutation.isPending ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Plus className="w-4 h-4" />{language === 'ar' ? 'إنشاء الرواتب' : 'Generate Payroll'}</>}
           </button>

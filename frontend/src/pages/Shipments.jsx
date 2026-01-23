@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { Plus, Search, Truck, Building, Warehouse as WarehouseIcon, Calendar, Edit } from 'lucide-react'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
+import ExportMenu from '../components/ui/ExportMenu'
 
 export default function Shipments() {
   const { language } = useSelector((state) => state.ui)
@@ -13,6 +14,80 @@ export default function Shipments() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [filters, setFilters] = useState({ status: '', type: '', supplierId: '', warehouseId: '' })
+
+  const exportColumns = [
+    {
+      key: 'shipmentNumber',
+      label: language === 'ar' ? 'رقم الشحنة' : 'Shipment #',
+      value: (r) => r?.shipmentNumber || ''
+    },
+    {
+      key: 'type',
+      label: language === 'ar' ? 'النوع' : 'Type',
+      value: (r) => r?.type || ''
+    },
+    {
+      key: 'supplier',
+      label: language === 'ar' ? 'المورد' : 'Supplier',
+      value: (r) => {
+        const s = r?.supplierId
+        return s ? (language === 'ar' ? s.nameAr || s.nameEn : s.nameEn || s.nameAr) : ''
+      }
+    },
+    {
+      key: 'warehouse',
+      label: language === 'ar' ? 'المستودع' : 'Warehouse',
+      value: (r) => {
+        const w = r?.warehouseId
+        return w ? (language === 'ar' ? w.nameAr || w.nameEn : w.nameEn || w.nameAr) : ''
+      }
+    },
+    {
+      key: 'carrier',
+      label: language === 'ar' ? 'الشحن' : 'Carrier',
+      value: (r) => r?.carrier || ''
+    },
+    {
+      key: 'trackingNumber',
+      label: language === 'ar' ? 'رقم التتبع' : 'Tracking #',
+      value: (r) => r?.trackingNumber || ''
+    },
+    {
+      key: 'status',
+      label: t('status'),
+      value: (r) => r?.status || ''
+    },
+  ]
+
+  const getExportRows = async () => {
+    const limit = 200
+    let currentPage = 1
+    let all = []
+
+    while (true) {
+      const res = await api.get('/shipments', {
+        params: {
+          page: currentPage,
+          limit,
+          search,
+          status: filters.status,
+          type: filters.type,
+          supplierId: filters.supplierId,
+          warehouseId: filters.warehouseId,
+        },
+      })
+      const batch = res.data?.shipments || []
+      all = all.concat(batch)
+
+      const pages = res.data?.pagination?.pages || 1
+      if (currentPage >= pages) break
+      currentPage += 1
+
+      if (all.length >= 10000) break
+    }
+
+    return all
+  }
 
   const { data, isLoading } = useQuery({
     queryKey: ['shipments', page, search, filters],
@@ -90,10 +165,22 @@ export default function Shipments() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{language === 'ar' ? 'الشحنات' : 'Shipments'}</h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">{language === 'ar' ? 'متابعة الشحنات' : 'Track shipments'}</p>
         </div>
-        <Link to="/shipments/new" className="btn btn-primary">
-          <Plus className="w-4 h-4" />
-          {language === 'ar' ? 'إضافة شحنة' : 'Add Shipment'}
-        </Link>
+        <div className="flex gap-2">
+          <ExportMenu
+            language={language}
+            t={t}
+            rows={shipments}
+            getRows={getExportRows}
+            columns={exportColumns}
+            fileBaseName={language === 'ar' ? 'الشحنات' : 'Shipments'}
+            title={language === 'ar' ? 'الشحنات' : 'Shipments'}
+            disabled={isLoading || shipments.length === 0}
+          />
+          <Link to="/shipments/new" className="btn btn-primary">
+            <Plus className="w-4 h-4" />
+            {language === 'ar' ? 'إضافة شحنة' : 'Add Shipment'}
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">

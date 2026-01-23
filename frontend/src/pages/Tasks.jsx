@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { Plus, Search, ClipboardList, FolderKanban, User, Calendar, AlertTriangle, Edit } from 'lucide-react'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
+import ExportMenu from '../components/ui/ExportMenu'
 
 export default function Tasks() {
   const { language } = useSelector((state) => state.ui)
@@ -14,6 +15,47 @@ export default function Tasks() {
   const [page, setPage] = useState(1)
   const [filters, setFilters] = useState({ status: '', priority: '', projectId: '' })
 
+  const exportColumns = [
+    {
+      key: 'taskNumber',
+      label: language === 'ar' ? 'رقم المهمة' : 'Task #',
+      value: (r) => r?.taskNumber || ''
+    },
+    {
+      key: 'title',
+      label: language === 'ar' ? 'العنوان' : 'Title',
+      value: (r) => (language === 'ar' ? r?.titleAr || r?.titleEn : r?.titleEn || r?.titleAr) || ''
+    },
+    {
+      key: 'project',
+      label: language === 'ar' ? 'المشروع' : 'Project',
+      value: (r) => {
+        const p = r?.projectId
+        return p ? (language === 'ar' ? p.nameAr || p.nameEn || p.code : p.nameEn || p.nameAr || p.code) : ''
+      }
+    },
+    {
+      key: 'assignee',
+      label: language === 'ar' ? 'المكلّف' : 'Assignee',
+      value: (r) => r?.assigneeName || ''
+    },
+    {
+      key: 'dueDate',
+      label: language === 'ar' ? 'تاريخ الانتهاء' : 'Due Date',
+      value: (r) => (r?.dueDate ? new Date(r.dueDate).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US') : '')
+    },
+    {
+      key: 'priority',
+      label: language === 'ar' ? 'الأولوية' : 'Priority',
+      value: (r) => r?.priority || ''
+    },
+    {
+      key: 'status',
+      label: t('status'),
+      value: (r) => r?.status || ''
+    },
+  ]
+
   const { data, isLoading } = useQuery({
     queryKey: ['tasks', page, search, filters],
     queryFn: () =>
@@ -21,6 +63,28 @@ export default function Tasks() {
         .get('/tasks', { params: { page, limit: 25, search, status: filters.status, priority: filters.priority, projectId: filters.projectId } })
         .then((res) => res.data),
   })
+
+  const getExportRows = async () => {
+    const limit = 200
+    let currentPage = 1
+    let all = []
+
+    while (true) {
+      const res = await api.get('/tasks', {
+        params: { page: currentPage, limit, search, status: filters.status, priority: filters.priority, projectId: filters.projectId }
+      })
+      const batch = res.data?.tasks || []
+      all = all.concat(batch)
+
+      const pages = res.data?.pagination?.pages || 1
+      if (currentPage >= pages) break
+      currentPage += 1
+
+      if (all.length >= 10000) break
+    }
+
+    return all
+  }
 
   const { data: stats } = useQuery({
     queryKey: ['tasks-stats'],
@@ -86,10 +150,22 @@ export default function Tasks() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{language === 'ar' ? 'المهام' : 'Tasks'}</h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">{language === 'ar' ? 'إدارة المهام' : 'Manage tasks'}</p>
         </div>
-        <Link to="/tasks/new" className="btn btn-primary">
-          <Plus className="w-4 h-4" />
-          {language === 'ar' ? 'إضافة مهمة' : 'Add Task'}
-        </Link>
+        <div className="flex gap-2">
+          <ExportMenu
+            language={language}
+            t={t}
+            rows={tasks}
+            getRows={getExportRows}
+            columns={exportColumns}
+            fileBaseName={language === 'ar' ? 'المهام' : 'Tasks'}
+            title={language === 'ar' ? 'المهام' : 'Tasks'}
+            disabled={isLoading || tasks.length === 0}
+          />
+          <Link to="/tasks/new" className="btn btn-primary">
+            <Plus className="w-4 h-4" />
+            {language === 'ar' ? 'إضافة مهمة' : 'Add Task'}
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">

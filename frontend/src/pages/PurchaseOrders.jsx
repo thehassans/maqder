@@ -7,6 +7,7 @@ import { Plus, Search, ShoppingCart, FileText, Building, Calendar, Edit } from '
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
 import Money from '../components/ui/Money'
+import ExportMenu from '../components/ui/ExportMenu'
 
 export default function PurchaseOrders() {
   const { language } = useSelector((state) => state.ui)
@@ -14,6 +15,59 @@ export default function PurchaseOrders() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [filters, setFilters] = useState({ status: '', supplierId: '' })
+
+  const exportColumns = [
+    {
+      key: 'poNumber',
+      label: language === 'ar' ? 'رقم الطلب' : 'PO Number',
+      value: (r) => r?.poNumber || ''
+    },
+    {
+      key: 'supplier',
+      label: language === 'ar' ? 'المورد' : 'Supplier',
+      value: (r) => {
+        const s = r?.supplierId
+        return s ? (language === 'ar' ? s.nameAr || s.nameEn : s.nameEn || s.nameAr) : ''
+      }
+    },
+    {
+      key: 'orderDate',
+      label: language === 'ar' ? 'تاريخ الطلب' : 'Order Date',
+      value: (r) => (r?.orderDate ? new Date(r.orderDate).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US') : '')
+    },
+    {
+      key: 'status',
+      label: t('status'),
+      value: (r) => r?.status || ''
+    },
+    {
+      key: 'grandTotal',
+      label: t('total'),
+      value: (r) => r?.grandTotal ?? ''
+    },
+  ]
+
+  const getExportRows = async () => {
+    const limit = 200
+    let currentPage = 1
+    let all = []
+
+    while (true) {
+      const res = await api.get('/purchase-orders', {
+        params: { page: currentPage, limit, search, status: filters.status, supplierId: filters.supplierId }
+      })
+      const batch = res.data?.purchaseOrders || []
+      all = all.concat(batch)
+
+      const pages = res.data?.pagination?.pages || 1
+      if (currentPage >= pages) break
+      currentPage += 1
+
+      if (all.length >= 10000) break
+    }
+
+    return all
+  }
 
   const { data, isLoading } = useQuery({
     queryKey: ['purchase-orders', page, search, filters],
@@ -71,10 +125,22 @@ export default function PurchaseOrders() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{language === 'ar' ? 'طلبات الشراء' : 'Purchase Orders'}</h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">{language === 'ar' ? 'إدارة أوامر الشراء' : 'Manage purchase orders'}</p>
         </div>
-        <Link to="/purchase-orders/new" className="btn btn-primary">
-          <Plus className="w-4 h-4" />
-          {language === 'ar' ? 'إضافة طلب شراء' : 'Add Purchase Order'}
-        </Link>
+        <div className="flex gap-2">
+          <ExportMenu
+            language={language}
+            t={t}
+            rows={orders}
+            getRows={getExportRows}
+            columns={exportColumns}
+            fileBaseName={language === 'ar' ? 'طلبات_الشراء' : 'PurchaseOrders'}
+            title={language === 'ar' ? 'طلبات الشراء' : 'Purchase Orders'}
+            disabled={isLoading || orders.length === 0}
+          />
+          <Link to="/purchase-orders/new" className="btn btn-primary">
+            <Plus className="w-4 h-4" />
+            {language === 'ar' ? 'إضافة طلب شراء' : 'Add Purchase Order'}
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">

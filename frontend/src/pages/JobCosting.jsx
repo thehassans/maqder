@@ -7,6 +7,7 @@ import { Plus, Search, Briefcase, FolderKanban, Calendar, Edit, AlertTriangle, C
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
 import Money from '../components/ui/Money'
+import ExportMenu from '../components/ui/ExportMenu'
 
 export default function JobCosting() {
   const { language } = useSelector((state) => state.ui)
@@ -15,6 +16,47 @@ export default function JobCosting() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [filters, setFilters] = useState({ status: '', projectId: '' })
+
+  const exportColumns = [
+    {
+      key: 'code',
+      label: language === 'ar' ? 'الكود' : 'Code',
+      value: (r) => r?.code || ''
+    },
+    {
+      key: 'name',
+      label: language === 'ar' ? 'العمل' : 'Job',
+      value: (r) => (language === 'ar' ? r?.nameAr || r?.nameEn : r?.nameEn || r?.nameAr) || ''
+    },
+    {
+      key: 'project',
+      label: language === 'ar' ? 'المشروع' : 'Project',
+      value: (r) => {
+        const p = r?.projectId
+        return p ? (language === 'ar' ? p.nameAr || p.nameEn || p.code : p.nameEn || p.nameAr || p.code) : ''
+      }
+    },
+    {
+      key: 'budget',
+      label: language === 'ar' ? 'الميزانية' : 'Budget',
+      value: (r) => r?.budget ?? ''
+    },
+    {
+      key: 'totalCost',
+      label: language === 'ar' ? 'التكلفة' : 'Cost',
+      value: (r) => r?.costSummary?.totalCost ?? ''
+    },
+    {
+      key: 'dueDate',
+      label: language === 'ar' ? 'آخر موعد' : 'Due',
+      value: (r) => (r?.dueDate ? new Date(r.dueDate).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US') : '')
+    },
+    {
+      key: 'status',
+      label: t('status'),
+      value: (r) => r?.status || ''
+    },
+  ]
 
   const { data, isLoading } = useQuery({
     queryKey: ['job-costing', page, search, filters],
@@ -31,6 +73,34 @@ export default function JobCosting() {
         })
         .then((res) => res.data),
   })
+
+  const getExportRows = async () => {
+    const limit = 200
+    let currentPage = 1
+    let all = []
+
+    while (true) {
+      const res = await api.get('/job-costing/jobs', {
+        params: {
+          page: currentPage,
+          limit,
+          search,
+          status: filters.status,
+          projectId: filters.projectId,
+        },
+      })
+      const batch = res.data?.jobs || []
+      all = all.concat(batch)
+
+      const pages = res.data?.pagination?.pages || 1
+      if (currentPage >= pages) break
+      currentPage += 1
+
+      if (all.length >= 10000) break
+    }
+
+    return all
+  }
 
   const { data: stats } = useQuery({
     queryKey: ['job-costing-stats'],
@@ -83,10 +153,22 @@ export default function JobCosting() {
             {language === 'ar' ? 'تتبع تكاليف العمل حسب البنود والتصنيفات' : 'Track job costs by entries and categories'}
           </p>
         </div>
-        <Link to="/job-costing/new" className="btn btn-primary">
-          <Plus className="w-4 h-4" />
-          {language === 'ar' ? 'إضافة عمل' : 'Add Job'}
-        </Link>
+        <div className="flex gap-2">
+          <ExportMenu
+            language={language}
+            t={t}
+            rows={jobs}
+            getRows={getExportRows}
+            columns={exportColumns}
+            fileBaseName={language === 'ar' ? 'تكلفة_الأعمال' : 'JobCosting'}
+            title={language === 'ar' ? 'تكلفة الأعمال' : 'Job Costing'}
+            disabled={isLoading || jobs.length === 0}
+          />
+          <Link to="/job-costing/new" className="btn btn-primary">
+            <Plus className="w-4 h-4" />
+            {language === 'ar' ? 'إضافة عمل' : 'Add Job'}
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">

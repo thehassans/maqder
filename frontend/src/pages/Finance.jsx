@@ -7,6 +7,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import api from '../lib/api'
 import Money from '../components/ui/Money'
 import { useTranslation } from '../lib/translations'
+import ExportMenu from '../components/ui/ExportMenu'
 
 const mergeMonthSeries = (revenue = [], expenses = [], language = 'en') => {
   const monthKey = (row) => `${row?._id?.year}-${String(row?._id?.month).padStart(2, '0')}`
@@ -92,6 +93,39 @@ export default function Finance() {
     [revenueData, expensesData, language]
   )
 
+  const exportColumns = [
+    {
+      key: 'label',
+      label: language === 'ar' ? 'الشهر' : 'Month',
+      value: (r) => r?.label || ''
+    },
+    {
+      key: 'revenue',
+      label: language === 'ar' ? 'الإيرادات' : 'Revenue',
+      value: (r) => r?.revenue ?? 0
+    },
+    {
+      key: 'expenses',
+      label: language === 'ar' ? 'المصروفات' : 'Expenses',
+      value: (r) => r?.expenses ?? 0
+    },
+    {
+      key: 'profit',
+      label: language === 'ar' ? 'الربح' : 'Profit',
+      value: (r) => r?.profit ?? 0
+    },
+    {
+      key: 'invoices',
+      label: language === 'ar' ? 'عدد الفواتير' : 'Invoices',
+      value: (r) => r?.invoices ?? 0
+    },
+    {
+      key: 'tax',
+      label: language === 'ar' ? 'الضريبة' : 'Tax',
+      value: (r) => r?.tax ?? 0
+    },
+  ]
+
   const totals = useMemo(() => {
     const revenue = chartData.reduce((sum, row) => sum + (row.revenue || 0), 0)
     const expenses = chartData.reduce((sum, row) => sum + (row.expenses || 0), 0)
@@ -142,6 +176,15 @@ export default function Finance() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
+          <ExportMenu
+            language={language}
+            t={t}
+            rows={[...chartData].reverse()}
+            columns={exportColumns}
+            fileBaseName={language === 'ar' ? 'Finance' : 'Finance'}
+            title={language === 'ar' ? 'تفاصيل الأشهر' : 'Monthly Breakdown'}
+            disabled={chartData.length === 0}
+          />
           <select value={month} onChange={(e) => setMonth(Number(e.target.value))} className="select sm:w-44">
             {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
               <option key={m} value={m}>

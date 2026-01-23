@@ -7,6 +7,7 @@ import { Plus, Search, Receipt, Edit, FileText } from 'lucide-react'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
 import Money from '../components/ui/Money'
+import ExportMenu from '../components/ui/ExportMenu'
 
 const statusMeta = {
   draft: { badge: 'badge-neutral', en: 'Draft', ar: 'مسودة' },
@@ -72,6 +73,64 @@ export default function Expenses() {
     [stats]
   )
 
+  const exportColumns = [
+    {
+      key: 'expenseNumber',
+      label: language === 'ar' ? 'الرقم' : 'Number',
+      value: (r) => r?.expenseNumber || ''
+    },
+    {
+      key: 'expenseDate',
+      label: t('date'),
+      value: (r) => formatDate(r?.expenseDate, language)
+    },
+    {
+      key: 'payee',
+      label: language === 'ar' ? 'الجهة' : 'Payee',
+      value: (r) => getPayeeLabel(r, language)
+    },
+    {
+      key: 'category',
+      label: language === 'ar' ? 'الفئة' : 'Category',
+      value: (r) => (language === 'ar' ? r?.categoryAr || r?.category : r?.category) || ''
+    },
+    {
+      key: 'amount',
+      label: t('amount'),
+      value: (r) => r?.totalAmount ?? (Number(r?.amount || 0) + Number(r?.taxAmount || 0))
+    },
+    {
+      key: 'status',
+      label: t('status'),
+      value: (r) => {
+        const meta = statusMeta[r?.status] || statusMeta.draft
+        return language === 'ar' ? meta.ar : meta.en
+      }
+    },
+  ]
+
+  const getExportRows = async () => {
+    const limit = 200
+    let currentPage = 1
+    let all = []
+
+    while (true) {
+      const res = await api.get('/expenses', {
+        params: { search, status, page: currentPage, limit }
+      })
+      const batch = res.data?.expenses || []
+      all = all.concat(batch)
+
+      const pages = res.data?.pagination?.pages || 1
+      if (currentPage >= pages) break
+      currentPage += 1
+
+      if (all.length >= 10000) break
+    }
+
+    return all
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -81,10 +140,22 @@ export default function Expenses() {
             {language === 'ar' ? 'إدارة مصروفات الشركة والموافقات والدفع' : 'Manage company expenses, approvals, and payments'}
           </p>
         </div>
-        <Link to="/expenses/new" className="btn btn-primary">
-          <Plus className="w-4 h-4" />
-          {language === 'ar' ? 'إضافة مصروف' : 'Add Expense'}
-        </Link>
+        <div className="flex gap-2">
+          <ExportMenu
+            language={language}
+            t={t}
+            rows={expenses}
+            getRows={getExportRows}
+            columns={exportColumns}
+            fileBaseName={language === 'ar' ? 'المصروفات' : 'Expenses'}
+            title={language === 'ar' ? 'المصروفات' : 'Expenses'}
+            disabled={isLoading || expenses.length === 0}
+          />
+          <Link to="/expenses/new" className="btn btn-primary">
+            <Plus className="w-4 h-4" />
+            {language === 'ar' ? 'إضافة مصروف' : 'Add Expense'}
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
@@ -8,13 +9,16 @@ import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import Money from '../../components/ui/Money'
+import { downloadInvoicePdf } from '../../lib/invoicePdf'
 
 export default function InvoiceView() {
   const { id } = useParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { language } = useSelector((state) => state.ui)
+  const { tenant } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
+  const [downloadingPdf, setDownloadingPdf] = useState(false)
 
   const { data: invoice, isLoading } = useQuery({
     queryKey: ['invoice', id],
@@ -56,6 +60,28 @@ export default function InvoiceView() {
           </div>
         </div>
         <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                setDownloadingPdf(true)
+                await downloadInvoicePdf({ invoice, language, tenant })
+              } catch (e) {
+                toast.error(language === 'ar' ? 'فشل تحميل PDF' : 'Failed to download PDF')
+              } finally {
+                setDownloadingPdf(false)
+              }
+            }}
+            disabled={!invoice || downloadingPdf}
+            className="btn btn-secondary"
+          >
+            {downloadingPdf ? (
+              <div className="w-5 h-5 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            {language === 'ar' ? 'PDF' : 'PDF'}
+          </button>
           {invoice?.status === 'draft' && invoice?.flow !== 'purchase' && (
             <button
               onClick={() => signMutation.mutate()}

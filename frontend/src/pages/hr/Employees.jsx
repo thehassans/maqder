@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { Plus, Search, Users, AlertTriangle, Eye, Edit } from 'lucide-react'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
+import ExportMenu from '../../components/ui/ExportMenu'
 
 export default function Employees() {
   const { language } = useSelector((state) => state.ui)
@@ -14,10 +15,72 @@ export default function Employees() {
   const [filters, setFilters] = useState({ status: '', nationality: '' })
   const [page, setPage] = useState(1)
 
+  const exportColumns = [
+    {
+      key: 'employeeId',
+      label: t('employeeId'),
+      value: (r) => r?.employeeId || ''
+    },
+    {
+      key: 'name',
+      label: language === 'ar' ? 'الاسم' : 'Name',
+      value: (r) => (language === 'ar'
+        ? `${r?.firstNameAr || r?.firstNameEn || ''} ${r?.lastNameAr || r?.lastNameEn || ''}`.trim()
+        : `${r?.firstNameEn || ''} ${r?.lastNameEn || ''}`.trim())
+    },
+    {
+      key: 'email',
+      label: t('email'),
+      value: (r) => r?.email || ''
+    },
+    {
+      key: 'department',
+      label: t('department'),
+      value: (r) => r?.department || ''
+    },
+    {
+      key: 'nationality',
+      label: t('nationality'),
+      value: (r) => r?.nationality || ''
+    },
+    {
+      key: 'joinDate',
+      label: t('joinDate'),
+      value: (r) => (r?.joinDate ? new Date(r.joinDate).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US') : '')
+    },
+    {
+      key: 'status',
+      label: t('status'),
+      value: (r) => r?.status || ''
+    },
+  ]
+
   const { data, isLoading } = useQuery({
     queryKey: ['employees', page, search, filters],
     queryFn: () => api.get('/employees', { params: { page, search, ...filters } }).then(res => res.data)
   })
+
+  const getExportRows = async () => {
+    const limit = 200
+    let currentPage = 1
+    let all = []
+
+    while (true) {
+      const res = await api.get('/employees', {
+        params: { page: currentPage, limit, search, ...filters }
+      })
+      const batch = res.data?.employees || []
+      all = all.concat(batch)
+
+      const pages = res.data?.pagination?.pages || 1
+      if (currentPage >= pages) break
+      currentPage += 1
+
+      if (all.length >= 10000) break
+    }
+
+    return all
+  }
 
   const { data: stats } = useQuery({
     queryKey: ['employees-stats'],
@@ -34,10 +97,22 @@ export default function Employees() {
             {language === 'ar' ? 'إدارة بيانات الموظفين والوثائق' : 'Manage employee data and documents'}
           </p>
         </div>
-        <Link to="/employees/new" className="btn btn-primary">
-          <Plus className="w-4 h-4" />
-          {language === 'ar' ? 'إضافة موظف' : 'Add Employee'}
-        </Link>
+        <div className="flex gap-2">
+          <ExportMenu
+            language={language}
+            t={t}
+            rows={data?.employees || []}
+            getRows={getExportRows}
+            columns={exportColumns}
+            fileBaseName={language === 'ar' ? 'الموظفين' : 'Employees'}
+            title={language === 'ar' ? 'الموظفين' : 'Employees'}
+            disabled={isLoading || (data?.employees || []).length === 0}
+          />
+          <Link to="/employees/new" className="btn btn-primary">
+            <Plus className="w-4 h-4" />
+            {language === 'ar' ? 'إضافة موظف' : 'Add Employee'}
+          </Link>
+        </div>
       </div>
 
       {/* Stats */}

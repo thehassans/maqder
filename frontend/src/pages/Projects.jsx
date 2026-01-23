@@ -7,6 +7,7 @@ import { Plus, Search, FolderKanban, Calendar, User, AlertTriangle, Edit } from 
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
 import Money from '../components/ui/Money'
+import ExportMenu from '../components/ui/ExportMenu'
 
 export default function Projects() {
   const { language } = useSelector((state) => state.ui)
@@ -15,10 +16,68 @@ export default function Projects() {
   const [page, setPage] = useState(1)
   const [status, setStatus] = useState('')
 
+  const exportColumns = [
+    {
+      key: 'code',
+      label: language === 'ar' ? 'الكود' : 'Code',
+      value: (r) => r?.code || ''
+    },
+    {
+      key: 'name',
+      label: language === 'ar' ? 'المشروع' : 'Project',
+      value: (r) => (language === 'ar' ? r?.nameAr || r?.nameEn : r?.nameEn || r?.nameAr) || ''
+    },
+    {
+      key: 'owner',
+      label: language === 'ar' ? 'المالك' : 'Owner',
+      value: (r) => r?.ownerName || ''
+    },
+    {
+      key: 'dueDate',
+      label: language === 'ar' ? 'تاريخ الانتهاء' : 'Due Date',
+      value: (r) => (r?.dueDate ? new Date(r.dueDate).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US') : '')
+    },
+    {
+      key: 'progress',
+      label: language === 'ar' ? 'التقدم' : 'Progress',
+      value: (r) => r?.progress ?? ''
+    },
+    {
+      key: 'budget',
+      label: language === 'ar' ? 'الميزانية' : 'Budget',
+      value: (r) => r?.budget ?? ''
+    },
+    {
+      key: 'status',
+      label: t('status'),
+      value: (r) => r?.status || ''
+    },
+  ]
+
   const { data, isLoading } = useQuery({
     queryKey: ['projects', page, search, status],
     queryFn: () => api.get('/projects', { params: { page, limit: 25, search, status } }).then((res) => res.data),
   })
+
+  const getExportRows = async () => {
+    const limit = 200
+    let currentPage = 1
+    let all = []
+
+    while (true) {
+      const res = await api.get('/projects', { params: { page: currentPage, limit, search, status } })
+      const batch = res.data?.projects || []
+      all = all.concat(batch)
+
+      const pages = res.data?.pagination?.pages || 1
+      if (currentPage >= pages) break
+      currentPage += 1
+
+      if (all.length >= 10000) break
+    }
+
+    return all
+  }
 
   const { data: stats } = useQuery({
     queryKey: ['projects-stats'],
@@ -61,10 +120,22 @@ export default function Projects() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{language === 'ar' ? 'المشاريع' : 'Projects'}</h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">{language === 'ar' ? 'إدارة المشاريع' : 'Manage projects'}</p>
         </div>
-        <Link to="/projects/new" className="btn btn-primary">
-          <Plus className="w-4 h-4" />
-          {language === 'ar' ? 'إضافة مشروع' : 'Add Project'}
-        </Link>
+        <div className="flex gap-2">
+          <ExportMenu
+            language={language}
+            t={t}
+            rows={projects}
+            getRows={getExportRows}
+            columns={exportColumns}
+            fileBaseName={language === 'ar' ? 'المشاريع' : 'Projects'}
+            title={language === 'ar' ? 'المشاريع' : 'Projects'}
+            disabled={isLoading || projects.length === 0}
+          />
+          <Link to="/projects/new" className="btn btn-primary">
+            <Plus className="w-4 h-4" />
+            {language === 'ar' ? 'إضافة مشروع' : 'Add Project'}
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">

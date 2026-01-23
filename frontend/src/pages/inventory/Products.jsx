@@ -7,6 +7,7 @@ import { Plus, Search, Package, AlertTriangle, Eye, Edit, QrCode } from 'lucide-
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import Money from '../../components/ui/Money'
+import ExportMenu from '../../components/ui/ExportMenu'
 
 export default function Products() {
   const { language } = useSelector((state) => state.ui)
@@ -15,10 +16,75 @@ export default function Products() {
   const [filters, setFilters] = useState({ category: '', status: '' })
   const [page, setPage] = useState(1)
 
+  const exportColumns = [
+    {
+      key: 'name',
+      label: t('productName'),
+      value: (r) => (language === 'ar' ? r?.nameAr || r?.nameEn : r?.nameEn || r?.nameAr) || ''
+    },
+    {
+      key: 'sku',
+      label: t('sku'),
+      value: (r) => r?.sku || ''
+    },
+    {
+      key: 'barcode',
+      label: t('barcode'),
+      value: (r) => r?.barcode || ''
+    },
+    {
+      key: 'category',
+      label: t('category'),
+      value: (r) => r?.category || ''
+    },
+    {
+      key: 'costPrice',
+      label: t('costPrice'),
+      value: (r) => r?.costPrice ?? ''
+    },
+    {
+      key: 'sellingPrice',
+      label: t('sellingPrice'),
+      value: (r) => r?.sellingPrice ?? ''
+    },
+    {
+      key: 'totalStock',
+      label: t('quantity'),
+      value: (r) => r?.totalStock ?? ''
+    },
+    {
+      key: 'status',
+      label: t('status'),
+      value: (r) => r?.status || ''
+    },
+  ]
+
   const { data, isLoading } = useQuery({
     queryKey: ['products', page, search, filters],
     queryFn: () => api.get('/products', { params: { page, search, ...filters } }).then(res => res.data)
   })
+
+  const getExportRows = async () => {
+    const limit = 200
+    let currentPage = 1
+    let all = []
+
+    while (true) {
+      const res = await api.get('/products', {
+        params: { page: currentPage, limit, search, ...filters }
+      })
+      const batch = res.data?.products || []
+      all = all.concat(batch)
+
+      const pages = res.data?.pagination?.pages || 1
+      if (currentPage >= pages) break
+      currentPage += 1
+
+      if (all.length >= 10000) break
+    }
+
+    return all
+  }
 
   const { data: stats } = useQuery({
     queryKey: ['products-stats'],
@@ -34,10 +100,22 @@ export default function Products() {
             {language === 'ar' ? 'إدارة المنتجات والمخزون' : 'Manage products and inventory'}
           </p>
         </div>
-        <Link to="/products/new" className="btn btn-primary">
-          <Plus className="w-4 h-4" />
-          {language === 'ar' ? 'إضافة منتج' : 'Add Product'}
-        </Link>
+        <div className="flex gap-2">
+          <ExportMenu
+            language={language}
+            t={t}
+            rows={data?.products || []}
+            getRows={getExportRows}
+            columns={exportColumns}
+            fileBaseName={language === 'ar' ? 'المنتجات' : 'Products'}
+            title={language === 'ar' ? 'المنتجات' : 'Products'}
+            disabled={isLoading || (data?.products || []).length === 0}
+          />
+          <Link to="/products/new" className="btn btn-primary">
+            <Plus className="w-4 h-4" />
+            {language === 'ar' ? 'إضافة منتج' : 'Add Product'}
+          </Link>
+        </div>
       </div>
 
       {/* Stats */}

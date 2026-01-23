@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { Search, Users, Building2, Briefcase, Edit, Phone, Mail, Hash } from 'lucide-react'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
+import ExportMenu from '../components/ui/ExportMenu'
 
 const typeMeta = {
   customer: { badge: 'badge-info', en: 'Customer', ar: 'عميل', icon: Building2 },
@@ -74,6 +75,78 @@ export default function Contacts() {
     })
   }, [contacts, language])
 
+  const exportColumns = [
+    {
+      key: 'name',
+      label: language === 'ar' ? 'الاسم' : 'Name',
+      value: (r) => r?.name || ''
+    },
+    {
+      key: 'type',
+      label: language === 'ar' ? 'النوع' : 'Type',
+      value: (r) => (language === 'ar' ? r?.meta?.ar : r?.meta?.en) || r?.entityType || ''
+    },
+    {
+      key: 'phone',
+      label: language === 'ar' ? 'الهاتف' : 'Phone',
+      value: (r) => r?.phone || ''
+    },
+    {
+      key: 'email',
+      label: language === 'ar' ? 'البريد' : 'Email',
+      value: (r) => r?.email || ''
+    },
+    {
+      key: 'code',
+      label: language === 'ar' ? 'الرمز' : 'Code',
+      value: (r) => r?.code || ''
+    },
+    {
+      key: 'vatNumber',
+      label: language === 'ar' ? 'الرقم الضريبي' : 'VAT',
+      value: (r) => r?.vatNumber || ''
+    },
+    {
+      key: 'status',
+      label: t('status'),
+      value: (r) => (r?.isActive ? (language === 'ar' ? 'نشط' : 'Active') : (language === 'ar' ? 'غير نشط' : 'Inactive'))
+    },
+  ]
+
+  const getExportRows = async () => {
+    const limit = 200
+    let currentPage = 1
+    let all = []
+
+    while (true) {
+      const res = await api.get('/contacts', {
+        params: {
+          search,
+          types: type || undefined,
+          isActive,
+          page: currentPage,
+          limit,
+        },
+      })
+      const batch = res.data?.contacts || []
+      const mapped = batch.map((c) => {
+        const meta = typeMeta[c.entityType] || { badge: 'badge-neutral', en: c.entityType, ar: c.entityType, icon: Users }
+        const name = language === 'ar' ? c.displayNameAr || c.displayName : c.displayName
+        const route = getEntityRoute(c)
+        return { ...c, meta, name, route }
+      })
+      all = all.concat(mapped)
+
+      const pages = res.data?.pagination?.pages || 1
+      if (currentPage >= pages) break
+      currentPage += 1
+
+      if (all.length >= 10000) break
+    }
+
+    return all
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -85,6 +158,17 @@ export default function Contacts() {
               : 'Unified directory for customers, suppliers, and employees'}
           </p>
         </div>
+
+        <ExportMenu
+          language={language}
+          t={t}
+          rows={rows}
+          getRows={getExportRows}
+          columns={exportColumns}
+          fileBaseName={language === 'ar' ? 'جهات_الاتصال' : 'Contacts'}
+          title={language === 'ar' ? 'جهات الاتصال' : 'Contacts'}
+          disabled={isLoading || rows.length === 0}
+        />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">

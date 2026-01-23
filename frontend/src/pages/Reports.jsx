@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
 import Money from '../components/ui/Money'
+import ExportMenu from '../components/ui/ExportMenu'
 
 export default function Reports() {
   const { language } = useSelector((state) => state.ui)
@@ -82,6 +83,67 @@ export default function Reports() {
         </div>
       ) : (
         <>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="text-sm text-gray-500">
+              {language === 'ar' ? 'تصدير جداول التقرير' : 'Export report tables'}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <ExportMenu
+                language={language}
+                t={t}
+                rows={categories.map((c) => ({
+                  category: c.label,
+                  taxableAmount: byCategory?.[c.key]?.taxableAmount || 0,
+                  taxAmount: byCategory?.[c.key]?.taxAmount || 0,
+                }))}
+                columns={[
+                  { key: 'category', label: language === 'ar' ? 'التصنيف' : 'Category', value: (r) => r.category },
+                  { key: 'taxableAmount', label: language === 'ar' ? 'خاضع للضريبة' : 'Taxable', value: (r) => r.taxableAmount },
+                  { key: 'taxAmount', label: language === 'ar' ? 'الضريبة' : 'VAT', value: (r) => r.taxAmount },
+                ]}
+                fileBaseName={language === 'ar' ? 'تقرير_الضريبة_حسب_التصنيف' : 'VAT_Return_By_Category'}
+                title={language === 'ar' ? 'ملخص حسب التصنيف' : 'Summary by Category'}
+                disabled={false}
+              />
+              <ExportMenu
+                language={language}
+                t={t}
+                rows={(data?.breakdown?.byTransactionType || []).map((row) => ({
+                  type: row._id,
+                  invoiceCount: row.invoiceCount || 0,
+                  totalTax: row.totalTax || 0,
+                }))}
+                columns={[
+                  { key: 'type', label: language === 'ar' ? 'النوع' : 'Type', value: (r) => r.type },
+                  { key: 'invoiceCount', label: language === 'ar' ? 'عدد الفواتير' : 'Invoices', value: (r) => r.invoiceCount },
+                  { key: 'totalTax', label: language === 'ar' ? 'الضريبة' : 'VAT', value: (r) => r.totalTax },
+                ]}
+                fileBaseName={language === 'ar' ? 'تقرير_حسب_نوع_المعاملة' : 'VAT_Return_By_TransactionType'}
+                title={language === 'ar' ? 'حسب نوع المعاملة' : 'By Transaction Type'}
+                disabled={false}
+              />
+              <ExportMenu
+                language={language}
+                t={t}
+                rows={(data?.breakdown?.byTaxCategory || []).map((row) => ({
+                  category: row._id?.taxCategory || '-',
+                  rate: row._id?.taxRate ?? 0,
+                  taxableAmount: row.taxableAmount || 0,
+                  taxAmount: row.taxAmount || 0,
+                }))}
+                columns={[
+                  { key: 'category', label: language === 'ar' ? 'الفئة' : 'Category', value: (r) => r.category },
+                  { key: 'rate', label: language === 'ar' ? 'النسبة' : 'Rate', value: (r) => `${r.rate}%` },
+                  { key: 'taxableAmount', label: language === 'ar' ? 'خاضع للضريبة' : 'Taxable', value: (r) => r.taxableAmount },
+                  { key: 'taxAmount', label: language === 'ar' ? 'الضريبة' : 'VAT', value: (r) => r.taxAmount },
+                ]}
+                fileBaseName={language === 'ar' ? 'تفاصيل_حسب_فئة_الضريبة' : 'VAT_Return_By_TaxCategory'}
+                title={language === 'ar' ? 'تفاصيل حسب فئة الضريبة' : 'Details by Tax Category'}
+                disabled={false}
+              />
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="card p-4">
               <p className="text-sm text-gray-500">{language === 'ar' ? 'عدد الفواتير' : 'Invoices'}</p>

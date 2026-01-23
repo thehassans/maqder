@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { Plus, Search, Cpu, MapPin, Clock, Edit } from 'lucide-react'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
+import ExportMenu from '../components/ui/ExportMenu'
 
 export default function IoT() {
   const { language } = useSelector((state) => state.ui)
@@ -14,6 +15,39 @@ export default function IoT() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [filters, setFilters] = useState({ status: '', type: '' })
+
+  const exportColumns = [
+    {
+      key: 'code',
+      label: language === 'ar' ? 'الكود' : 'Code',
+      value: (r) => r?.code || ''
+    },
+    {
+      key: 'name',
+      label: language === 'ar' ? 'الاسم' : 'Name',
+      value: (r) => (language === 'ar' ? r?.nameAr || r?.nameEn : r?.nameEn || r?.nameAr) || ''
+    },
+    {
+      key: 'type',
+      label: language === 'ar' ? 'النوع' : 'Type',
+      value: (r) => r?.type || ''
+    },
+    {
+      key: 'status',
+      label: t('status'),
+      value: (r) => r?.status || ''
+    },
+    {
+      key: 'lastSeenAt',
+      label: language === 'ar' ? 'آخر اتصال' : 'Last Seen',
+      value: (r) => (r?.lastSeenAt ? new Date(r.lastSeenAt).toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US') : '')
+    },
+    {
+      key: 'location',
+      label: language === 'ar' ? 'الموقع' : 'Location',
+      value: (r) => (r?.location?.name || r?.location?.zone) ? ((r.location.name || '-') + (r.location.zone ? ` · ${r.location.zone}` : '')) : ''
+    },
+  ]
 
   const { data, isLoading } = useQuery({
     queryKey: ['iot-devices', page, search, filters],
@@ -30,6 +64,34 @@ export default function IoT() {
         })
         .then((res) => res.data),
   })
+
+  const getExportRows = async () => {
+    const limit = 200
+    let currentPage = 1
+    let all = []
+
+    while (true) {
+      const res = await api.get('/iot/devices', {
+        params: {
+          page: currentPage,
+          limit,
+          search,
+          status: filters.status,
+          type: filters.type,
+        },
+      })
+      const batch = res.data?.devices || []
+      all = all.concat(batch)
+
+      const pages = res.data?.pagination?.pages || 1
+      if (currentPage >= pages) break
+      currentPage += 1
+
+      if (all.length >= 10000) break
+    }
+
+    return all
+  }
 
   const { data: stats } = useQuery({
     queryKey: ['iot-devices-stats'],
@@ -82,10 +144,22 @@ export default function IoT() {
             {language === 'ar' ? 'إدارة الأجهزة وقراءات المستشعرات' : 'Manage devices and sensor readings'}
           </p>
         </div>
-        <Link to="/iot/devices/new" className="btn btn-primary">
-          <Plus className="w-4 h-4" />
-          {language === 'ar' ? 'إضافة جهاز' : 'Add Device'}
-        </Link>
+        <div className="flex gap-2">
+          <ExportMenu
+            language={language}
+            t={t}
+            rows={devices}
+            getRows={getExportRows}
+            columns={exportColumns}
+            fileBaseName={language === 'ar' ? 'IoT' : 'IoT'}
+            title={language === 'ar' ? 'إنترنت الأشياء' : 'Internet of Things'}
+            disabled={isLoading || devices.length === 0}
+          />
+          <Link to="/iot/devices/new" className="btn btn-primary">
+            <Plus className="w-4 h-4" />
+            {language === 'ar' ? 'إضافة جهاز' : 'Add Device'}
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">

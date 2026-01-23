@@ -6,12 +6,71 @@ import { motion } from 'framer-motion'
 import { Plus, Search, Building, Phone, Mail, MapPin, Edit } from 'lucide-react'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
+import ExportMenu from '../components/ui/ExportMenu'
 
 export default function Suppliers() {
   const { language } = useSelector((state) => state.ui)
   const { t } = useTranslation(language)
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
+
+  const exportColumns = [
+    {
+      key: 'code',
+      label: language === 'ar' ? 'الرمز' : 'Code',
+      value: (r) => r?.code || ''
+    },
+    {
+      key: 'name',
+      label: language === 'ar' ? 'الاسم' : 'Name',
+      value: (r) => (language === 'ar' ? r?.nameAr || r?.nameEn : r?.nameEn || r?.nameAr) || ''
+    },
+    {
+      key: 'vatNumber',
+      label: language === 'ar' ? 'الرقم الضريبي' : 'VAT Number',
+      value: (r) => r?.vatNumber || ''
+    },
+    {
+      key: 'phone',
+      label: language === 'ar' ? 'الهاتف' : 'Phone',
+      value: (r) => r?.phone || ''
+    },
+    {
+      key: 'email',
+      label: language === 'ar' ? 'البريد' : 'Email',
+      value: (r) => r?.email || ''
+    },
+    {
+      key: 'city',
+      label: language === 'ar' ? 'المدينة' : 'City',
+      value: (r) => r?.address?.city || ''
+    },
+    {
+      key: 'status',
+      label: t('status'),
+      value: (r) => (r?.isActive ? (language === 'ar' ? 'نشط' : 'Active') : (language === 'ar' ? 'غير نشط' : 'Inactive'))
+    },
+  ]
+
+  const getExportRows = async () => {
+    const limit = 200
+    let currentPage = 1
+    let all = []
+
+    while (true) {
+      const res = await api.get('/suppliers', { params: { page: currentPage, limit, search } })
+      const batch = res.data?.suppliers || []
+      all = all.concat(batch)
+
+      const pages = res.data?.pagination?.pages || 1
+      if (currentPage >= pages) break
+      currentPage += 1
+
+      if (all.length >= 10000) break
+    }
+
+    return all
+  }
 
   const { data, isLoading } = useQuery({
     queryKey: ['suppliers', page, search],
@@ -41,10 +100,22 @@ export default function Suppliers() {
             {language === 'ar' ? 'إدارة الموردين وسجلهم' : 'Manage suppliers and vendor records'}
           </p>
         </div>
-        <Link to="/suppliers/new" className="btn btn-primary">
-          <Plus className="w-4 h-4" />
-          {language === 'ar' ? 'إضافة مورد' : 'Add Supplier'}
-        </Link>
+        <div className="flex gap-2">
+          <ExportMenu
+            language={language}
+            t={t}
+            rows={suppliers}
+            getRows={getExportRows}
+            columns={exportColumns}
+            fileBaseName={language === 'ar' ? 'الموردين' : 'Suppliers'}
+            title={language === 'ar' ? 'الموردين' : 'Suppliers'}
+            disabled={isLoading || suppliers.length === 0}
+          />
+          <Link to="/suppliers/new" className="btn btn-primary">
+            <Plus className="w-4 h-4" />
+            {language === 'ar' ? 'إضافة مورد' : 'Add Supplier'}
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
