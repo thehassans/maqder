@@ -15,6 +15,7 @@ router.use(tenantFilter);
 // @route   GET /api/dashboard
 router.get('/', async (req, res) => {
   try {
+    const businessType = req.tenant?.businessType || 'trading';
     const currentMonth = new Date().getMonth() + 1;
     const currentYear = new Date().getFullYear();
     
@@ -60,20 +61,28 @@ router.get('/', async (req, res) => {
         }
       ]),
       
-      // Product stats
-      Product.aggregate([
-        { $match: { ...req.tenantFilter, isActive: true } },
-        {
-          $facet: {
-            total: [{ $count: 'count' }],
-            totalValue: [{ $group: { _id: null, value: { $sum: { $multiply: ['$costPrice', '$totalStock'] } } } }],
-            lowStock: [
-              { $match: { $expr: { $lte: ['$totalStock', 10] } } },
-              { $count: 'count' }
-            ]
-          }
-        }
-      ]),
+      // Product stats (Trading only)
+      businessType === 'trading'
+        ? Product.aggregate([
+            { $match: { ...req.tenantFilter, isActive: true } },
+            {
+              $facet: {
+                total: [{ $count: 'count' }],
+                totalValue: [{ $group: { _id: null, value: { $sum: { $multiply: ['$costPrice', '$totalStock'] } } } }],
+                lowStock: [
+                  { $match: { $expr: { $lte: ['$totalStock', 10] } } },
+                  { $count: 'count' }
+                ]
+              }
+            }
+          ])
+        : Promise.resolve([
+            {
+              total: [{ count: 0 }],
+              totalValue: [{ value: 0 }],
+              lowStock: [{ count: 0 }]
+            }
+          ]),
       
       // Payroll stats for current month
       Payroll.aggregate([

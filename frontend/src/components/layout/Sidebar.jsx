@@ -35,6 +35,8 @@ export default function Sidebar() {
   const { tenant, user } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
 
+  const businessType = tenant?.businessType || 'trading'
+
   const hasAccess = (module, action) => {
     if (!user) return false
     if (user.role === 'super_admin' || user.role === 'admin') return true
@@ -69,6 +71,7 @@ export default function Sidebar() {
     },
     {
       title: language === 'ar' ? 'المخزون' : 'Inventory',
+      businessTypes: ['trading'],
       items: [
         { path: '/app/dashboard/products', icon: Package, label: t('products'), perm: { module: 'inventory', action: 'read' } },
         { path: '/app/dashboard/warehouses', icon: Warehouse, label: t('warehouses'), perm: { module: 'inventory', action: 'read' } },
@@ -76,6 +79,7 @@ export default function Sidebar() {
     },
     {
       title: language === 'ar' ? 'سلسلة التوريد' : 'Supply Chain',
+      businessTypes: ['trading'],
       items: [
         { path: '/app/dashboard/suppliers', icon: Building, label: language === 'ar' ? 'الموردين' : 'Suppliers', perm: { module: 'supply_chain', action: 'read' } },
         { path: '/app/dashboard/purchase-orders', icon: ShoppingCart, label: language === 'ar' ? 'طلبات الشراء' : 'Purchase Orders', perm: { module: 'supply_chain', action: 'read' } },
@@ -84,6 +88,7 @@ export default function Sidebar() {
     },
     {
       title: language === 'ar' ? 'إدارة المشاريع' : 'Project Management',
+      businessTypes: ['trading'],
       items: [
         { path: '/app/dashboard/projects', icon: FolderKanban, label: language === 'ar' ? 'المشاريع' : 'Projects', perm: { module: 'project_management', action: 'read' } },
         { path: '/app/dashboard/tasks', icon: ClipboardList, label: language === 'ar' ? 'المهام' : 'Tasks', perm: { module: 'project_management', action: 'read' } },
@@ -97,6 +102,7 @@ export default function Sidebar() {
     },
     {
       title: language === 'ar' ? 'إنترنت الأشياء' : 'Internet of Things',
+      businessTypes: ['trading'],
       items: [
         { path: '/app/dashboard/iot', icon: Cpu, label: language === 'ar' ? 'إنترنت الأشياء' : 'IoT', perm: { module: 'iot', action: 'read' } },
       ]
@@ -110,6 +116,7 @@ export default function Sidebar() {
     },
     {
       title: language === 'ar' ? 'التكلفة والتخطيط' : 'Costing & Planning',
+      businessTypes: ['trading'],
       items: [
         { path: '/app/dashboard/job-costing', icon: Briefcase, label: language === 'ar' ? 'تكلفة الأعمال' : 'Job Costing', perm: { module: 'job_costing', action: 'read' } },
         { path: '/app/dashboard/mrp', icon: Factory, label: 'MRP', perm: { module: 'mrp', action: 'read' } },
@@ -127,6 +134,10 @@ export default function Sidebar() {
 
   const visibleNavSections = navSections
     .map((section) => {
+      if (Array.isArray(section.businessTypes) && !section.businessTypes.includes(businessType)) {
+        return { ...section, items: [] }
+      }
+
       const items = (Array.isArray(section.items) ? section.items : []).filter((item) => {
         if (!item?.perm) return true
         return hasAccess(item.perm.module, item.perm.action)

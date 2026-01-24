@@ -4,12 +4,13 @@ import Supplier from '../models/Supplier.js';
 import PurchaseOrder from '../models/PurchaseOrder.js';
 import Product from '../models/Product.js';
 import Warehouse from '../models/Warehouse.js';
-import { protect, tenantFilter, checkPermission } from '../middleware/auth.js';
+import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
 
 const router = express.Router();
 
 router.use(protect);
 router.use(tenantFilter);
+router.use(requireBusinessType('trading'));
 
 function toNumber(value, fallback = 0) {
   const n = Number(value);

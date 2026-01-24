@@ -57,7 +57,11 @@ const DASHBOARD_CHART_REFRESH_MS = 60 * 1000
 
 export default function Dashboard() {
   const { language } = useSelector((state) => state.ui)
+  const { tenant } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
+
+  const businessType = tenant?.businessType || 'trading'
+  const isTrading = businessType === 'trading'
 
   const { data: dashboard, isLoading } = useQuery({
     queryKey: ['dashboard'],
@@ -85,7 +89,8 @@ export default function Dashboard() {
     queryFn: () => api.get('/purchase-orders/stats').then(res => res.data),
     refetchInterval: DASHBOARD_REFRESH_MS,
     refetchIntervalInBackground: true,
-    retry: false
+    retry: false,
+    enabled: isTrading
   })
 
   const { data: shipmentStats } = useQuery({
@@ -93,7 +98,8 @@ export default function Dashboard() {
     queryFn: () => api.get('/shipments/stats').then(res => res.data),
     refetchInterval: DASHBOARD_REFRESH_MS,
     refetchIntervalInBackground: true,
-    retry: false
+    retry: false,
+    enabled: isTrading
   })
 
   const { data: taskStats } = useQuery({
@@ -101,7 +107,8 @@ export default function Dashboard() {
     queryFn: () => api.get('/tasks/stats').then(res => res.data),
     refetchInterval: DASHBOARD_REFRESH_MS,
     refetchIntervalInBackground: true,
-    retry: false
+    retry: false,
+    enabled: isTrading
   })
 
   const { data: mrpStats } = useQuery({
@@ -109,7 +116,8 @@ export default function Dashboard() {
     queryFn: () => api.get('/mrp/stats?multiplier=2').then(res => res.data),
     refetchInterval: DASHBOARD_CHART_REFRESH_MS,
     refetchIntervalInBackground: true,
-    retry: false
+    retry: false,
+    enabled: isTrading
   })
 
   const { data: mrpTop } = useQuery({
@@ -117,7 +125,8 @@ export default function Dashboard() {
     queryFn: () => api.get('/mrp/suggestions?limit=5&page=1&multiplier=2').then(res => res.data),
     refetchInterval: DASHBOARD_CHART_REFRESH_MS,
     refetchIntervalInBackground: true,
-    retry: false
+    retry: false,
+    enabled: isTrading
   })
 
   const payrollPaidNet = (dashboard?.payroll?.stats || []).find((s) => s._id === 'paid')?.totalNet || 0
@@ -161,46 +170,50 @@ export default function Dashboard() {
       change: '+2',
       positive: true
     },
-    {
-      label: t('lowStockItems'),
-      value: dashboard?.products?.lowStock || 0,
-      icon: Package,
-      color: 'from-amber-500 to-amber-600',
-      change: '-3',
-      positive: false
-    },
-    {
-      label: language === 'ar' ? 'طلبات شراء مفتوحة' : 'Open Purchase Orders',
-      value: openPoCount,
-      icon: ShoppingCart,
-      color: 'from-sky-500 to-sky-600',
-      change: language === 'ar' ? 'تحت التنفيذ' : 'In progress',
-      positive: true
-    },
-    {
-      label: language === 'ar' ? 'شحنات قيد النقل' : 'Shipments In Transit',
-      value: inTransitShipments,
-      icon: Truck,
-      color: 'from-indigo-500 to-indigo-600',
-      change: language === 'ar' ? 'حي' : 'Live',
-      positive: true
-    },
-    {
-      label: language === 'ar' ? 'مهام متأخرة' : 'Overdue Tasks',
-      value: overdueTasks,
-      icon: ClipboardList,
-      color: 'from-red-500 to-red-600',
-      change: language === 'ar' ? 'يحتاج متابعة' : 'Needs attention',
-      positive: false
-    },
-    {
-      label: language === 'ar' ? 'توصيات MRP' : 'MRP Suggestions',
-      value: mrpSuggestions,
-      icon: Factory,
-      color: 'from-secondary-500 to-secondary-600',
-      change: language === 'ar' ? 'إعادة طلب' : 'Reorder',
-      positive: true
-    },
+    ...(isTrading
+      ? [
+          {
+            label: t('lowStockItems'),
+            value: dashboard?.products?.lowStock || 0,
+            icon: Package,
+            color: 'from-amber-500 to-amber-600',
+            change: '-3',
+            positive: false
+          },
+          {
+            label: language === 'ar' ? 'طلبات شراء مفتوحة' : 'Open Purchase Orders',
+            value: openPoCount,
+            icon: ShoppingCart,
+            color: 'from-sky-500 to-sky-600',
+            change: language === 'ar' ? 'تحت التنفيذ' : 'In progress',
+            positive: true
+          },
+          {
+            label: language === 'ar' ? 'شحنات قيد النقل' : 'Shipments In Transit',
+            value: inTransitShipments,
+            icon: Truck,
+            color: 'from-indigo-500 to-indigo-600',
+            change: language === 'ar' ? 'حي' : 'Live',
+            positive: true
+          },
+          {
+            label: language === 'ar' ? 'مهام متأخرة' : 'Overdue Tasks',
+            value: overdueTasks,
+            icon: ClipboardList,
+            color: 'from-red-500 to-red-600',
+            change: language === 'ar' ? 'يحتاج متابعة' : 'Needs attention',
+            positive: false
+          },
+          {
+            label: language === 'ar' ? 'توصيات MRP' : 'MRP Suggestions',
+            value: mrpSuggestions,
+            icon: Factory,
+            color: 'from-secondary-500 to-secondary-600',
+            change: language === 'ar' ? 'إعادة طلب' : 'Reorder',
+            positive: true
+          },
+        ]
+      : []),
   ]
 
   const zatcaStatusData = dashboard?.invoices?.zatcaStatus?.map(s => ({
@@ -666,177 +679,179 @@ export default function Dashboard() {
           </div>
         </motion.div>
 
-        {/* Top Products */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.74 }}
-          className="card"
-        >
-          <div className="p-6 border-b border-gray-100 dark:border-dark-700 flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {language === 'ar' ? 'أفضل المنتجات مبيعاً' : 'Top Selling Products'}
-            </h3>
-            <Link to="/products" className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1">
-              {language === 'ar' ? 'عرض الكل' : 'View All'}
-              <ArrowUpRight className="w-4 h-4" />
-            </Link>
-          </div>
-          <div className="divide-y divide-gray-100 dark:divide-dark-700">
-            {(dashboard?.topProducts || []).length === 0 ? (
-              <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                <Boxes className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p>{language === 'ar' ? 'لا توجد مبيعات بعد' : 'No sales yet'}</p>
-              </div>
-            ) : (
-              (dashboard?.topProducts || []).map((product, index) => (
-                <div key={product._id} className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
-                      index === 0 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
-                      index === 1 ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' :
-                      index === 2 ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
-                      'bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
-                    }`}>
-                      {index === 0 ? <Star className="w-4 h-4" /> : index + 1}
+        {isTrading && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.74 }}
+            className="card"
+          >
+            <div className="p-6 border-b border-gray-100 dark:border-dark-700 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {language === 'ar' ? 'أفضل المنتجات مبيعاً' : 'Top Selling Products'}
+              </h3>
+              <Link to="/products" className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1">
+                {language === 'ar' ? 'عرض الكل' : 'View All'}
+                <ArrowUpRight className="w-4 h-4" />
+              </Link>
+            </div>
+            <div className="divide-y divide-gray-100 dark:divide-dark-700">
+              {(dashboard?.topProducts || []).length === 0 ? (
+                <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                  <Boxes className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p>{language === 'ar' ? 'لا توجد مبيعات بعد' : 'No sales yet'}</p>
+                </div>
+              ) : (
+                (dashboard?.topProducts || []).map((product, index) => (
+                  <div key={product._id} className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${
+                        index === 0 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                        index === 1 ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' :
+                        index === 2 ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
+                        'bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400'
+                      }`}>
+                        {index === 0 ? <Star className="w-4 h-4" /> : index + 1}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-white">
+                          {language === 'ar' ? product.nameAr || product.name : product.name}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {language === 'ar' ? 'الكمية المباعة' : 'Qty Sold'}: {product.totalQty}
+                        </p>
+                      </div>
                     </div>
+                    <div className="text-end">
+                      <p className="font-semibold text-gray-900 dark:text-white">
+                        <Money value={product.totalRevenue || 0} minimumFractionDigits={0} maximumFractionDigits={0} />
+                      </p>
+                      <p className="text-xs text-green-600 dark:text-green-400">{language === 'ar' ? 'إجمالي المبيعات' : 'Total Sales'}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </motion.div>
+        )}
+      </div>
+
+      {isTrading && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.76 }}
+            className="card"
+          >
+            <div className="p-6 border-b border-gray-100 dark:border-dark-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {language === 'ar' ? 'أحدث طلبات الشراء' : 'Recent Purchase Orders'}
+              </h3>
+            </div>
+            <div className="divide-y divide-gray-100 dark:divide-dark-700">
+              {(poStats?.recent || []).length === 0 ? (
+                <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                  {language === 'ar' ? 'لا توجد بيانات' : 'No data'}
+                </div>
+              ) : (
+                (poStats?.recent || []).map((po) => (
+                  <div key={po._id} className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors">
                     <div>
-                      <p className="font-medium text-gray-900 dark:text-white">
-                        {language === 'ar' ? product.nameAr || product.name : product.name}
+                      <p className="font-medium text-gray-900 dark:text-white">{po.poNumber}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{po.status}</p>
+                    </div>
+                    <div className="text-end">
+                      <p className="font-semibold text-gray-900 dark:text-white">
+                        <Money value={po.grandTotal || 0} minimumFractionDigits={0} maximumFractionDigits={0} />
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {language === 'ar' ? 'الكمية المباعة' : 'Qty Sold'}: {product.totalQty}
+                        {po.orderDate ? new Date(po.orderDate).toLocaleDateString() : ''}
                       </p>
                     </div>
                   </div>
-                  <div className="text-end">
-                    <p className="font-semibold text-gray-900 dark:text-white">
-                      <Money value={product.totalRevenue || 0} minimumFractionDigits={0} maximumFractionDigits={0} />
-                    </p>
-                    <p className="text-xs text-green-600 dark:text-green-400">{language === 'ar' ? 'إجمالي المبيعات' : 'Total Sales'}</p>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </motion.div>
-      </div>
+                ))
+              )}
+            </div>
+          </motion.div>
 
-      {/* Supply Chain & MRP Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.76 }}
-          className="card"
-        >
-          <div className="p-6 border-b border-gray-100 dark:border-dark-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {language === 'ar' ? 'أحدث طلبات الشراء' : 'Recent Purchase Orders'}
-            </h3>
-          </div>
-          <div className="divide-y divide-gray-100 dark:divide-dark-700">
-            {(poStats?.recent || []).length === 0 ? (
-              <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                {language === 'ar' ? 'لا توجد بيانات' : 'No data'}
-              </div>
-            ) : (
-              (poStats?.recent || []).map((po) => (
-                <div key={po._id} className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors">
-                  <div>
-                    <p className="font-medium text-gray-900 dark:text-white">{po.poNumber}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{po.status}</p>
-                  </div>
-                  <div className="text-end">
-                    <p className="font-semibold text-gray-900 dark:text-white">
-                      <Money value={po.grandTotal || 0} minimumFractionDigits={0} maximumFractionDigits={0} />
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {po.orderDate ? new Date(po.orderDate).toLocaleDateString() : ''}
-                    </p>
-                  </div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.78 }}
+            className="card"
+          >
+            <div className="p-6 border-b border-gray-100 dark:border-dark-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {language === 'ar' ? 'أحدث الشحنات' : 'Recent Shipments'}
+              </h3>
+            </div>
+            <div className="divide-y divide-gray-100 dark:divide-dark-700">
+              {(shipmentStats?.recent || []).length === 0 ? (
+                <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                  {language === 'ar' ? 'لا توجد بيانات' : 'No data'}
                 </div>
-              ))
-            )}
-          </div>
-        </motion.div>
+              ) : (
+                (shipmentStats?.recent || []).map((s) => (
+                  <div key={s._id} className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors">
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">{s.shipmentNumber}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{s.status} • {s.type}</p>
+                    </div>
+                    <div className="text-end">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {s.shippedAt ? new Date(s.shippedAt).toLocaleDateString() : ''}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {s.expectedDelivery ? new Date(s.expectedDelivery).toLocaleDateString() : ''}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.78 }}
-          className="card"
-        >
-          <div className="p-6 border-b border-gray-100 dark:border-dark-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {language === 'ar' ? 'أحدث الشحنات' : 'Recent Shipments'}
-            </h3>
-          </div>
-          <div className="divide-y divide-gray-100 dark:divide-dark-700">
-            {(shipmentStats?.recent || []).length === 0 ? (
-              <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                {language === 'ar' ? 'لا توجد بيانات' : 'No data'}
-              </div>
-            ) : (
-              (shipmentStats?.recent || []).map((s) => (
-                <div key={s._id} className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors">
-                  <div>
-                    <p className="font-medium text-gray-900 dark:text-white">{s.shipmentNumber}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{s.status} • {s.type}</p>
-                  </div>
-                  <div className="text-end">
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {s.shippedAt ? new Date(s.shippedAt).toLocaleDateString() : ''}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {s.expectedDelivery ? new Date(s.expectedDelivery).toLocaleDateString() : ''}
-                    </p>
-                  </div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.80 }}
+            className="card"
+          >
+            <div className="p-6 border-b border-gray-100 dark:border-dark-700 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {language === 'ar' ? 'توصيات MRP' : 'MRP Suggestions'}
+              </h3>
+              <span className="badge badge-neutral">{mrpSuggestions}</span>
+            </div>
+            <div className="divide-y divide-gray-100 dark:divide-dark-700">
+              {(mrpTop?.suggestions || []).length === 0 ? (
+                <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                  {language === 'ar' ? 'لا توجد توصيات حالياً' : 'No suggestions right now'}
                 </div>
-              ))
-            )}
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.80 }}
-          className="card"
-        >
-          <div className="p-6 border-b border-gray-100 dark:border-dark-700 flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              {language === 'ar' ? 'توصيات MRP' : 'MRP Suggestions'}
-            </h3>
-            <span className="badge badge-neutral">{mrpSuggestions}</span>
-          </div>
-          <div className="divide-y divide-gray-100 dark:divide-dark-700">
-            {(mrpTop?.suggestions || []).length === 0 ? (
-              <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-                {language === 'ar' ? 'لا توجد توصيات حالياً' : 'No suggestions right now'}
-              </div>
-            ) : (
-              (mrpTop?.suggestions || []).map((row) => (
-                <div key={row.productId} className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors">
-                  <div>
-                    <p className="font-medium text-gray-900 dark:text-white">
-                      {language === 'ar' ? row.nameAr || row.nameEn : row.nameEn || row.nameAr}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {row.sku} • {language === 'ar' ? 'الكمية' : 'Qty'}: {Math.round(row.recommendedQty || 0)}
-                    </p>
+              ) : (
+                (mrpTop?.suggestions || []).map((row) => (
+                  <div key={row.productId} className="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors">
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        {language === 'ar' ? row.nameAr || row.nameEn : row.nameEn || row.nameAr}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {row.sku} • {language === 'ar' ? 'الكمية' : 'Qty'}: {Math.round(row.recommendedQty || 0)}
+                      </p>
+                    </div>
+                    <div className="text-end">
+                      <p className="font-semibold text-gray-900 dark:text-white">
+                        <Money value={row.estimatedCost || 0} minimumFractionDigits={0} maximumFractionDigits={0} />
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-end">
-                    <p className="font-semibold text-gray-900 dark:text-white">
-                      <Money value={row.estimatedCost || 0} minimumFractionDigits={0} maximumFractionDigits={0} />
-                    </p>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </motion.div>
-      </div>
+                ))
+              )}
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   )
 }

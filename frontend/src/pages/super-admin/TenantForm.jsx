@@ -125,6 +125,14 @@ export default function TenantForm() {
               <label className="label">{language === 'ar' ? 'الرمز (Slug)' : 'Slug'} *</label>
               <input {...register('slug', { required: true })} className="input" placeholder="company-name" />
             </div>
+
+            <div>
+              <label className="label">{language === 'ar' ? 'نوع النشاط' : 'Business Type'}</label>
+              <select {...register('businessType')} className="select" defaultValue="trading">
+                <option value="trading">{language === 'ar' ? 'تجارة (ERP)' : 'Trading (ERP)'}</option>
+                <option value="travel_agency">{language === 'ar' ? 'وكالة سفر' : 'Travel Agency'}</option>
+              </select>
+            </div>
             <div>
               <label className="label">{language === 'ar' ? 'الاسم القانوني (EN)' : 'Legal Name (EN)'} *</label>
               <input {...register('business.legalNameEn', { required: true })} className="input" />

@@ -1,11 +1,12 @@
 import express from 'express';
 import Product from '../models/Product.js';
-import { protect, tenantFilter, checkPermission } from '../middleware/auth.js';
+import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
 
 const router = express.Router();
 
 router.use(protect);
 router.use(tenantFilter);
+router.use(requireBusinessType('trading'));
 
 const computeTotalStock = (product) => {
   const stocks = Array.isArray(product?.stocks) ? product.stocks : [];

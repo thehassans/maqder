@@ -358,12 +358,17 @@ router.get('/tenants/:id', async (req, res) => {
 // @route   POST /api/super-admin/tenants
 router.post('/tenants', async (req, res) => {
   try {
-    const { name, slug, business, subscription, adminUser, branding } = req.body;
+    const { name, slug, businessType, business, subscription, adminUser, branding } = req.body;
+
+    if (businessType && !['trading', 'travel_agency'].includes(businessType)) {
+      return res.status(400).json({ error: 'Invalid business type' });
+    }
     
     // Create tenant
     const tenant = await Tenant.create({
       name,
       slug,
+      ...(businessType ? { businessType } : {}),
       business,
       ...(branding ? { branding } : {}),
       subscription: {

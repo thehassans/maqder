@@ -62,6 +62,7 @@ const zatcaConfigSchema = new mongoose.Schema({
 const tenantSchema = new mongoose.Schema({
   name: { type: String, required: true },
   slug: { type: String, required: true, unique: true, lowercase: true },
+  businessType: { type: String, enum: ['trading', 'travel_agency'], default: 'trading', index: true },
   business: businessDetailsSchema,
   subscription: subscriptionSchema,
   zatca: zatcaConfigSchema,
@@ -90,6 +91,7 @@ const tenantSchema = new mongoose.Schema({
 });
 
 tenantSchema.index({ isActive: 1 });
+tenantSchema.index({ businessType: 1 });
 
 const Tenant = mongoose.model('Tenant', tenantSchema);
 export default Tenant;

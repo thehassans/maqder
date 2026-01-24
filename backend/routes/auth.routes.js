@@ -132,7 +132,7 @@ router.post('/login', async (req, res) => {
     // Get tenant info
     let tenant = null;
     if (user.tenantId) {
-      tenant = await Tenant.findById(user.tenantId).select('name slug business settings branding subscription');
+      tenant = await Tenant.findById(user.tenantId).select('name slug businessType business settings branding subscription');
     }
     
     res.json({
@@ -163,7 +163,7 @@ router.get('/me', protect, async (req, res) => {
     let tenant = null;
     
     if (user.tenantId) {
-      tenant = await Tenant.findById(user.tenantId).select('name slug business settings branding subscription');
+      tenant = await Tenant.findById(user.tenantId).select('name slug businessType business settings branding subscription');
     }
     
     res.json({

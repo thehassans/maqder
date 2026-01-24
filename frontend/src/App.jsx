@@ -100,6 +100,17 @@ function ProtectedRoute({ children, allowedRoles, redirectSuperAdmin }) {
   return children
 }
 
+function BusinessTypeRoute({ children, allowedTypes }) {
+  const { tenant } = useSelector((state) => state.auth)
+  const businessType = tenant?.businessType || 'trading'
+
+  if (Array.isArray(allowedTypes) && allowedTypes.length > 0 && !allowedTypes.includes(businessType)) {
+    return <Navigate to="/app/dashboard" replace />
+  }
+
+  return children
+}
+
 function App() {
   const dispatch = useDispatch()
   const { token, tenant } = useSelector((state) => state.auth)
@@ -208,35 +219,35 @@ function App() {
         <Route path="employees/:id" element={<EmployeeForm />} />
         <Route path="payroll" element={<Payroll />} />
         <Route path="payroll/calculators" element={<PayrollCalculators />} />
-        <Route path="products" element={<Products />} />
-        <Route path="products/new" element={<ProductForm />} />
-        <Route path="products/:id" element={<ProductForm />} />
-        <Route path="warehouses" element={<Warehouses />} />
-        <Route path="warehouses/new" element={<WarehouseForm />} />
-        <Route path="warehouses/:id" element={<WarehouseForm />} />
-        <Route path="suppliers" element={<Suppliers />} />
-        <Route path="suppliers/new" element={<SupplierForm />} />
-        <Route path="suppliers/:id" element={<SupplierForm />} />
-        <Route path="purchase-orders" element={<PurchaseOrders />} />
-        <Route path="purchase-orders/new" element={<PurchaseOrderForm />} />
-        <Route path="purchase-orders/:id" element={<PurchaseOrderForm />} />
-        <Route path="shipments" element={<Shipments />} />
-        <Route path="shipments/new" element={<ShipmentForm />} />
-        <Route path="shipments/:id" element={<ShipmentForm />} />
-        <Route path="projects" element={<Projects />} />
-        <Route path="projects/new" element={<ProjectForm />} />
-        <Route path="projects/:id" element={<ProjectForm />} />
-        <Route path="tasks" element={<Tasks />} />
-        <Route path="tasks/new" element={<TaskForm />} />
-        <Route path="tasks/:id" element={<TaskForm />} />
-        <Route path="iot" element={<IoT />} />
-        <Route path="iot/devices/new" element={<IoTDeviceForm />} />
-        <Route path="iot/devices/:id" element={<IoTDeviceForm />} />
+        <Route path="products" element={<BusinessTypeRoute allowedTypes={['trading']}><Products /></BusinessTypeRoute>} />
+        <Route path="products/new" element={<BusinessTypeRoute allowedTypes={['trading']}><ProductForm /></BusinessTypeRoute>} />
+        <Route path="products/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><ProductForm /></BusinessTypeRoute>} />
+        <Route path="warehouses" element={<BusinessTypeRoute allowedTypes={['trading']}><Warehouses /></BusinessTypeRoute>} />
+        <Route path="warehouses/new" element={<BusinessTypeRoute allowedTypes={['trading']}><WarehouseForm /></BusinessTypeRoute>} />
+        <Route path="warehouses/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><WarehouseForm /></BusinessTypeRoute>} />
+        <Route path="suppliers" element={<BusinessTypeRoute allowedTypes={['trading']}><Suppliers /></BusinessTypeRoute>} />
+        <Route path="suppliers/new" element={<BusinessTypeRoute allowedTypes={['trading']}><SupplierForm /></BusinessTypeRoute>} />
+        <Route path="suppliers/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><SupplierForm /></BusinessTypeRoute>} />
+        <Route path="purchase-orders" element={<BusinessTypeRoute allowedTypes={['trading']}><PurchaseOrders /></BusinessTypeRoute>} />
+        <Route path="purchase-orders/new" element={<BusinessTypeRoute allowedTypes={['trading']}><PurchaseOrderForm /></BusinessTypeRoute>} />
+        <Route path="purchase-orders/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><PurchaseOrderForm /></BusinessTypeRoute>} />
+        <Route path="shipments" element={<BusinessTypeRoute allowedTypes={['trading']}><Shipments /></BusinessTypeRoute>} />
+        <Route path="shipments/new" element={<BusinessTypeRoute allowedTypes={['trading']}><ShipmentForm /></BusinessTypeRoute>} />
+        <Route path="shipments/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><ShipmentForm /></BusinessTypeRoute>} />
+        <Route path="projects" element={<BusinessTypeRoute allowedTypes={['trading']}><Projects /></BusinessTypeRoute>} />
+        <Route path="projects/new" element={<BusinessTypeRoute allowedTypes={['trading']}><ProjectForm /></BusinessTypeRoute>} />
+        <Route path="projects/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><ProjectForm /></BusinessTypeRoute>} />
+        <Route path="tasks" element={<BusinessTypeRoute allowedTypes={['trading']}><Tasks /></BusinessTypeRoute>} />
+        <Route path="tasks/new" element={<BusinessTypeRoute allowedTypes={['trading']}><TaskForm /></BusinessTypeRoute>} />
+        <Route path="tasks/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><TaskForm /></BusinessTypeRoute>} />
+        <Route path="iot" element={<BusinessTypeRoute allowedTypes={['trading']}><IoT /></BusinessTypeRoute>} />
+        <Route path="iot/devices/new" element={<BusinessTypeRoute allowedTypes={['trading']}><IoTDeviceForm /></BusinessTypeRoute>} />
+        <Route path="iot/devices/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><IoTDeviceForm /></BusinessTypeRoute>} />
         <Route path="finance" element={<Finance />} />
-        <Route path="job-costing" element={<JobCosting />} />
-        <Route path="job-costing/new" element={<JobCostingForm />} />
-        <Route path="job-costing/:id" element={<JobCostingForm />} />
-        <Route path="mrp" element={<MRP />} />
+        <Route path="job-costing" element={<BusinessTypeRoute allowedTypes={['trading']}><JobCosting /></BusinessTypeRoute>} />
+        <Route path="job-costing/new" element={<BusinessTypeRoute allowedTypes={['trading']}><JobCostingForm /></BusinessTypeRoute>} />
+        <Route path="job-costing/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><JobCostingForm /></BusinessTypeRoute>} />
+        <Route path="mrp" element={<BusinessTypeRoute allowedTypes={['trading']}><MRP /></BusinessTypeRoute>} />
         <Route path="whatsapp" element={<WhatsApp />} />
         <Route path="reports" element={<Reports />} />
         <Route path="users" element={<Users />} />

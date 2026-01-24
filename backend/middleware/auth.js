@@ -61,6 +61,21 @@ export const authorize = (...roles) => {
   };
 };
 
+export const requireBusinessType = (...allowedTypes) => {
+  return (req, res, next) => {
+    if (req.user.role === 'super_admin') {
+      return next();
+    }
+
+    const businessType = req.tenant?.businessType || 'trading';
+    if (allowedTypes.length > 0 && !allowedTypes.includes(businessType)) {
+      return res.status(403).json({ error: 'Not available for this business type' });
+    }
+
+    next();
+  };
+};
+
 export const checkPermission = (module, action) => {
   return (req, res, next) => {
     if (req.user.role === 'super_admin' || req.user.role === 'admin') {
@@ -85,4 +100,4 @@ export const tenantFilter = (req, res, next) => {
   next();
 };
 
-export default { protect, authorize, checkPermission, tenantFilter };
+export default { protect, authorize, checkPermission, tenantFilter, requireBusinessType };

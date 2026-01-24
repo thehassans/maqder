@@ -1,11 +1,12 @@
 import express from 'express';
 import Supplier from '../models/Supplier.js';
-import { protect, tenantFilter, checkPermission } from '../middleware/auth.js';
+import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
 
 const router = express.Router();
 
 router.use(protect);
 router.use(tenantFilter);
+router.use(requireBusinessType('trading'));
 
 // @route   GET /api/suppliers
 router.get('/', checkPermission('supply_chain', 'read'), async (req, res) => {
