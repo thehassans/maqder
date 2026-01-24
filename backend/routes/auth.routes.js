@@ -65,8 +65,9 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password, tenantSlug } = req.body;
+    const normalizedEmail = String(email || '').toLowerCase().trim();
     
-    let query = { email };
+    let query = { email: normalizedEmail };
     let user = null;
     
     if (tenantSlug) {
@@ -81,14 +82,25 @@ router.post('/login', async (req, res) => {
       query.tenantId = tenant._id;
     } else {
       // No tenant slug - first try super_admin, then find user by email
-      const superAdmin = await User.findOne({ email, role: 'super_admin' }).select('+password');
+      const superAdmin = await User.findOne({ email: normalizedEmail, role: 'super_admin' }).select('+password');
       if (superAdmin) {
         user = superAdmin;
       } else {
-        // Find any user with this email (tenant user)
-        user = await User.findOne({ email }).select('+password').populate('tenantId');
-        if (user && user.tenantId && !user.tenantId.isActive) {
-          return res.status(401).json({ error: 'Tenant account is inactive' });
+        // First, try a global (non-tenant) user for this email
+        const globalUser = await User.findOne({ email: normalizedEmail, tenantId: null }).select('+password');
+        if (globalUser) {
+          user = globalUser;
+        } else {
+          // Tenant users: email can exist in multiple tenants, so require tenantSlug if ambiguous
+          const matchingUsers = await User.find({ email: normalizedEmail }).select('+password').populate('tenantId');
+          if (matchingUsers.length > 1) {
+            return res.status(401).json({ error: 'Multiple accounts found. Please enter tenant code' });
+          }
+
+          user = matchingUsers[0] || null;
+          if (user && user.tenantId && !user.tenantId.isActive) {
+            return res.status(401).json({ error: 'Tenant account is inactive' });
+          }
         }
       }
     }
@@ -105,6 +117,12 @@ router.post('/login', async (req, res) => {
     if (!user.isActive) {
       return res.status(401).json({ error: 'Account is deactivated' });
     }
+
+    // If a previous lock has expired, clear it so the user isn't immediately re-locked
+    if (user.lockUntil && user.lockUntil <= Date.now()) {
+      user.loginAttempts = 0;
+      user.lockUntil = undefined;
+    }
     
     if (user.lockUntil && user.lockUntil > Date.now()) {
       return res.status(401).json({ error: 'Account is temporarily locked' });
@@ -115,7 +133,7 @@ router.post('/login', async (req, res) => {
     if (!isMatch) {
       user.loginAttempts = (user.loginAttempts || 0) + 1;
       if (user.loginAttempts >= 5) {
-        user.lockUntil = Date.now() + 30 * 60 * 1000; // 30 minutes
+        user.lockUntil = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
       }
       await user.save();
       return res.status(401).json({ error: 'Invalid credentials' });
