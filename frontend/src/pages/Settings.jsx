@@ -24,6 +24,8 @@ export default function Settings() {
   const [sidebarStyle, setSidebarStyle] = useState('solid')
   const [logoDataUrl, setLogoDataUrl] = useState(null)
   const [invoicePdfTemplate, setInvoicePdfTemplate] = useState(1)
+  const [invoicePdfPageSize, setInvoicePdfPageSize] = useState('a4')
+  const [invoicePdfOrientation, setInvoicePdfOrientation] = useState('portrait')
 
   const { data: tenant } = useQuery({
     queryKey: ['tenant-settings'],
@@ -39,6 +41,8 @@ export default function Settings() {
     setSidebarStyle(tenant.branding?.sidebarStyle || 'solid')
     setLogoDataUrl(tenant.branding?.logo || null)
     setInvoicePdfTemplate(Number(tenant.settings?.invoicePdfTemplate || 1))
+    setInvoicePdfPageSize(tenant.settings?.invoicePdfPageSize || 'a4')
+    setInvoicePdfOrientation(tenant.settings?.invoicePdfOrientation || 'portrait')
   }, [tenant])
 
   const { data: zatcaStatus } = useQuery({
@@ -508,13 +512,33 @@ export default function Settings() {
                 <div className="pt-2">
                   <label className="label flex items-center gap-2"><FileText className="w-4 h-4" />{language === 'ar' ? 'تصميم PDF للفواتير' : 'Invoice PDF Design'}</label>
                   <div className="card-glass p-4 mt-2">
-                    <select value={invoicePdfTemplate} onChange={(e) => setInvoicePdfTemplate(Number(e.target.value))} className="select">
-                      <option value={1}>{language === 'ar' ? 'قالب 1 (كلاسيكي)' : 'Template 1 (Classic)'}</option>
-                      <option value={2}>{language === 'ar' ? 'قالب 2 (مُتدرّج)' : 'Template 2 (Gradient)'}</option>
-                      <option value={3}>{language === 'ar' ? 'قالب 3 (شريط جانبي)' : 'Template 3 (Sidebar)'}</option>
-                      <option value={4}>{language === 'ar' ? 'قالب 4 (مُبسّط)' : 'Template 4 (Minimal)'}</option>
-                      <option value={5}>{language === 'ar' ? 'قالب 5 (داكن أنيق)' : 'Template 5 (Elegant Dark)'}</option>
-                    </select>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div>
+                        <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'القالب' : 'Template'}</label>
+                        <select value={invoicePdfTemplate} onChange={(e) => setInvoicePdfTemplate(Number(e.target.value))} className="select mt-1">
+                          <option value={1}>{language === 'ar' ? 'قالب 1 (كلاسيكي)' : 'Template 1 (Classic)'}</option>
+                          <option value={2}>{language === 'ar' ? 'قالب 2 (مُتدرّج)' : 'Template 2 (Gradient)'}</option>
+                          <option value={3}>{language === 'ar' ? 'قالب 3 (شريط جانبي)' : 'Template 3 (Sidebar)'}</option>
+                          <option value={4}>{language === 'ar' ? 'قالب 4 (مُبسّط)' : 'Template 4 (Minimal)'}</option>
+                          <option value={5}>{language === 'ar' ? 'قالب 5 (داكن أنيق)' : 'Template 5 (Elegant Dark)'}</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'حجم الصفحة' : 'Page Size'}</label>
+                        <select value={invoicePdfPageSize} onChange={(e) => setInvoicePdfPageSize(e.target.value)} className="select mt-1">
+                          <option value="a4">A4</option>
+                          <option value="letter">Letter</option>
+                          <option value="a5">A5</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'الاتجاه' : 'Orientation'}</label>
+                        <select value={invoicePdfOrientation} onChange={(e) => setInvoicePdfOrientation(e.target.value)} className="select mt-1">
+                          <option value="portrait">{language === 'ar' ? 'طولي' : 'Portrait'}</option>
+                          <option value="landscape">{language === 'ar' ? 'عرضي' : 'Landscape'}</option>
+                        </select>
+                      </div>
+                    </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                       {language === 'ar' ? 'يتم تطبيق هذا القالب عند تحميل PDF من شاشة الفواتير.' : 'This template is used when downloading invoice PDFs.'}
                     </p>
@@ -613,7 +637,9 @@ export default function Settings() {
                     onClick={() => updateMutation.mutate({
                       settings: {
                         ...(tenant?.settings || {}),
-                        invoicePdfTemplate
+                        invoicePdfTemplate,
+                        invoicePdfPageSize,
+                        invoicePdfOrientation
                       },
                       branding: {
                         ...(tenant?.branding || {}),

@@ -129,7 +129,9 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const autoTableModule = await import('jspdf-autotable')
   const autoTable = autoTableModule?.default || autoTableModule
 
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' })
+  const pdfOrientation = tenant?.settings?.invoicePdfOrientation || 'portrait'
+  const pdfPageSize = tenant?.settings?.invoicePdfPageSize || 'a4'
+  const doc = new jsPDF({ orientation: pdfOrientation, unit: 'pt', format: pdfPageSize })
 
   const pageW = doc.internal.pageSize.getWidth()
   const pageH = doc.internal.pageSize.getHeight()
@@ -339,11 +341,6 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const cardX = contentLeft
   const cardW = contentW
   const cardY = topMargin
-  const metaH = 62
-
-  doc.setFillColor(theme.metaFillRgb.r, theme.metaFillRgb.g, theme.metaFillRgb.b)
-  doc.setDrawColor(theme.metaStrokeRgb.r, theme.metaStrokeRgb.g, theme.metaStrokeRgb.b)
-  doc.roundedRect(cardX, cardY, cardW, metaH, 14, 14, 'FD')
 
   const metaRows = [
     { k: isRtl ? 'رقم الفاتورة' : 'Invoice #', v: invoice.invoiceNumber },
@@ -353,11 +350,21 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     invoice?.zatca?.submissionStatus ? { k: isRtl ? 'حالة ZATCA' : 'ZATCA', v: invoice.zatca.submissionStatus } : null,
   ].filter(Boolean)
 
+  const metaPairs = Math.ceil(metaRows.length / 2)
+  const metaRowH = 32
+  const metaYStart = 22
+  const metaBottomPad = 14
+  const metaH = metaYStart + metaPairs * metaRowH + metaBottomPad
+
+  doc.setFillColor(theme.metaFillRgb.r, theme.metaFillRgb.g, theme.metaFillRgb.b)
+  doc.setDrawColor(theme.metaStrokeRgb.r, theme.metaStrokeRgb.g, theme.metaStrokeRgb.b)
+  doc.roundedRect(cardX, cardY, cardW, metaH, 14, 14, 'FD')
+
   const leftColX = isRtl ? cardX + cardW - 14 : cardX + 14
   const rightColX = isRtl ? cardX + 14 : cardX + cardW - 14
 
   doc.setFontSize(9)
-  let metaY = cardY + 22
+  let metaY = cardY + metaYStart
 
   for (let i = 0; i < metaRows.length; i += 2) {
     const a = metaRows[i]
@@ -375,7 +382,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
       doc.text(shape(txt(b.v)), rightColX, metaY + 14, { align: isRtl ? 'left' : 'right' })
     }
 
-    metaY += 32
+    metaY += metaRowH
   }
 
   const boxGap = 12

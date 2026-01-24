@@ -72,7 +72,9 @@ const tenantSchema = new mongoose.Schema({
     fiscalYearStart: { type: Number, default: 1 },
     dateFormat: { type: String, default: 'DD/MM/YYYY' },
     useHijriDates: { type: Boolean, default: true },
-    invoicePdfTemplate: { type: Number, default: 1, min: 1, max: 5 }
+    invoicePdfTemplate: { type: Number, default: 1, min: 1, max: 5 },
+    invoicePdfPageSize: { type: String, enum: ['a4', 'letter', 'a5'], default: 'a4' },
+    invoicePdfOrientation: { type: String, enum: ['portrait', 'landscape'], default: 'portrait' }
   },
   branding: {
     logo: { type: String },
