@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Search, Factory, Package, TrendingUp, ArrowUpRight, Edit } from 'lucide-react'
+import { Search, Factory, Package, TrendingUp, ArrowUpRight, Edit, ShoppingCart, HelpCircle } from 'lucide-react'
+import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
 import Money from '../components/ui/Money'
@@ -13,9 +14,12 @@ export default function MRP() {
   const { language } = useSelector((state) => state.ui)
   const { t } = useTranslation(language)
 
+  const queryClient = useQueryClient()
+
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [multiplier, setMultiplier] = useState(2)
+  const [selected, setSelected] = useState({})
 
   const exportColumns = [
     { key: 'sku', label: 'SKU', value: (r) => r?.sku || '' },
@@ -25,7 +29,7 @@ export default function MRP() {
       value: (r) => (language === 'ar' ? r?.nameAr || r?.nameEn : r?.nameEn || r?.nameAr) || ''
     },
     { key: 'category', label: language === 'ar' ? 'الفئة' : 'Category', value: (r) => r?.category || '' },
-    { key: 'currentStock', label: language === 'ar' ? 'الحالي' : 'On Hand', value: (r) => r?.currentStock ?? '' },
+    { key: 'currentStock', label: language === 'ar' ? 'المتاح' : 'Available', value: (r) => r?.currentStock ?? '' },
     { key: 'incomingQty', label: language === 'ar' ? 'وارد' : 'Incoming', value: (r) => r?.incomingQty ?? '' },
     { key: 'reorderPoint', label: language === 'ar' ? 'نقطة إعادة الطلب' : 'Reorder Point', value: (r) => r?.reorderPoint ?? '' },
     { key: 'targetStock', label: language === 'ar' ? 'الهدف' : 'Target', value: (r) => r?.targetStock ?? '' },
@@ -78,6 +82,30 @@ export default function MRP() {
   const suggestions = data?.suggestions || []
   const pagination = data?.pagination
 
+  const createPoMutation = useMutation({
+    mutationFn: (payload) => api.post('/mrp/create-po', payload).then((res) => res.data),
+    onSuccess: (res) => {
+      const created = res?.purchaseOrders || []
+      queryClient.invalidateQueries(['purchase-orders'])
+      queryClient.invalidateQueries(['purchase-orders-stats'])
+      toast.success(
+        language === 'ar'
+          ? `تم إنشاء ${created.length} طلب/طلبات شراء (مسودة)`
+          : `Created ${created.length} draft purchase order(s)`
+      )
+      setSelected({})
+    },
+    onError: (err) => toast.error(err.response?.data?.error || 'Error'),
+  })
+
+  const selectedItems = useMemo(() => {
+    const map = selected || {}
+    return suggestions
+      .filter((s) => map[String(s.productId)])
+      .map((s) => ({ productId: s.productId, quantity: Number(s.recommendedQty || 0) }))
+      .filter((x) => x.productId && x.quantity > 0)
+  }, [selected, suggestions])
+
   const totals = stats?.totals
   const byCategory = stats?.byCategory || []
 
@@ -111,6 +139,46 @@ export default function MRP() {
           title={language === 'ar' ? 'MRP' : 'MRP'}
           disabled={isLoading || suggestions.length === 0}
         />
+      </div>
+
+      <div className="card p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-gray-100 dark:bg-dark-700 rounded-xl">
+              <HelpCircle className="w-5 h-5 text-gray-600" />
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'ما فائدة MRP؟' : 'What is MRP for?'}</div>
+              <div className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                {language === 'ar'
+                  ? 'MRP يساعدك على معرفة ما يجب شراؤه ومتى، بناءً على المخزون المتاح (بعد خصم المحجوز) والطلبات الواردة من أوامر الشراء.'
+                  : 'MRP helps you decide what to buy and when, based on available stock (on-hand minus reserved) and incoming quantities from purchase orders.'}
+              </div>
+              <div className="mt-3 text-sm text-gray-600 dark:text-gray-300">
+                <div className="font-medium text-gray-900 dark:text-white">{language === 'ar' ? 'المدخلات' : 'Inputs'}</div>
+                <div className="mt-1">{language === 'ar' ? 'المخزون/المحجوز + نقطة إعادة الطلب + أوامر شراء واردة.' : 'Stock/reserved + reorder point + incoming purchase orders.'}</div>
+                <div className="font-medium text-gray-900 dark:text-white mt-3">{language === 'ar' ? 'المخرجات' : 'Outputs'}</div>
+                <div className="mt-1">{language === 'ar' ? 'كمية مقترحة للشراء، ويمكن إنشاء طلب شراء (مسودة) مباشرة.' : 'Suggested purchase quantity, with the ability to create a draft purchase order.'}</div>
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => createPoMutation.mutate({ items: selectedItems, notes: 'Created from MRP' })}
+            disabled={createPoMutation.isPending || selectedItems.length === 0}
+            className="btn btn-primary"
+          >
+            {createPoMutation.isPending ? (
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <>
+                <ShoppingCart className="w-4 h-4" />
+                {language === 'ar' ? 'إنشاء طلب شراء (مسودة)' : 'Create Draft PO'}
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
@@ -218,10 +286,11 @@ export default function MRP() {
             <table className="table">
               <thead>
                 <tr>
+                  <th className="w-10"></th>
                   <th>{language === 'ar' ? 'SKU' : 'SKU'}</th>
                   <th>{language === 'ar' ? 'المنتج' : 'Product'}</th>
                   <th>{language === 'ar' ? 'الفئة' : 'Category'}</th>
-                  <th>{language === 'ar' ? 'الحالي' : 'On Hand'}</th>
+                  <th>{language === 'ar' ? 'المتاح' : 'Available'}</th>
                   <th>{language === 'ar' ? 'وارد' : 'Incoming'}</th>
                   <th>{language === 'ar' ? 'نقطة إعادة الطلب' : 'Reorder Point'}</th>
                   <th>{language === 'ar' ? 'الهدف' : 'Target'}</th>
@@ -233,13 +302,24 @@ export default function MRP() {
               <tbody>
                 {suggestions.map((s) => (
                   <tr key={s.productId}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(selected?.[String(s.productId)])}
+                        onChange={(e) => setSelected((prev) => ({ ...prev, [String(s.productId)]: e.target.checked }))}
+                      />
+                    </td>
                     <td className="font-mono text-sm">{s.sku}</td>
                     <td>
                       <div>
                         <p className="font-medium text-gray-900 dark:text-white">
                           {language === 'ar' ? s.nameAr || s.nameEn : s.nameEn || s.nameAr}
                         </p>
-                        <p className="text-xs text-gray-500">{language === 'ar' ? 'مخزون متوقع:' : 'Projected:'} {Number(s.projectedStock || 0).toLocaleString()}</p>
+                        <p className="text-xs text-gray-500">
+                          {language === 'ar' ? 'مخزون متوقع:' : 'Projected:'} {Number(s.projectedStock || 0).toLocaleString()}
+                          {typeof s?.onHand !== 'undefined' ? ` · ${language === 'ar' ? 'على الرف:' : 'On hand:'} ${Number(s.onHand || 0).toLocaleString()}` : ''}
+                          {typeof s?.reservedQty !== 'undefined' ? ` · ${language === 'ar' ? 'محجوز:' : 'Reserved:'} ${Number(s.reservedQty || 0).toLocaleString()}` : ''}
+                        </p>
                       </div>
                     </td>
                     <td>{s.category || '-'}</td>
@@ -253,6 +333,15 @@ export default function MRP() {
                     </td>
                     <td>
                       <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => createPoMutation.mutate({ items: [{ productId: s.productId, quantity: Number(s.recommendedQty || 0) }], notes: 'Created from MRP' })}
+                          disabled={createPoMutation.isPending}
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg"
+                          title={language === 'ar' ? 'إنشاء طلب شراء (مسودة)' : 'Create draft PO'}
+                        >
+                          <ShoppingCart className="w-4 h-4 text-gray-600" />
+                        </button>
                         <Link to={`/products/${s.productId}`} className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg">
                           <Edit className="w-4 h-4 text-gray-600" />
                         </Link>

@@ -15,6 +15,8 @@ import {
   Trash2,
   Edit3,
   XCircle,
+  HelpCircle,
+  Download,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
@@ -66,6 +68,24 @@ export default function JobCostingForm() {
       currency: tenant?.settings?.currency || 'SAR',
       notes: '',
     },
+  })
+
+  const importExpensesMutation = useMutation({
+    mutationFn: () => api.post(`/job-costing/jobs/${id}/import-expenses`).then((res) => res.data),
+    onSuccess: (res) => {
+      const created = res?.created || 0
+      const skipped = res?.skipped || 0
+      toast.success(
+        language === 'ar'
+          ? `تم الاستيراد: ${created} / تم التخطي: ${skipped}`
+          : `Imported: ${created} / Skipped: ${skipped}`
+      )
+      queryClient.invalidateQueries(['job-costing-costs', id])
+      queryClient.invalidateQueries(['job-costing-job', id])
+      queryClient.invalidateQueries(['job-costing-stats'])
+      queryClient.invalidateQueries(['job-costing'])
+    },
+    onError: (err) => toast.error(err.response?.data?.error || 'Error'),
   })
 
   useLiveTranslation({
@@ -420,6 +440,43 @@ export default function JobCostingForm() {
           </div>
         </div>
       )}
+
+      <div className="card p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-gray-100 dark:bg-dark-700 rounded-xl">
+              <HelpCircle className="w-5 h-5 text-gray-600" />
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'ما فائدة تكلفة الأعمال؟' : 'What is Job Costing for?'}</div>
+              <div className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                {language === 'ar'
+                  ? 'استخدم هذه الشاشة لتجميع كل تكاليف العمل (مواد/عمالة/مصروفات) ثم قارنها مع الميزانية. يمكن أيضاً استيراد مصروفات المشروع المرتبطة كتكاليف.'
+                  : 'Use this screen to collect all job costs (materials/labor/overhead) and compare to budget. You can also import linked project expenses as job costs.'}
+              </div>
+            </div>
+          </div>
+
+          {isEdit && job?.projectId && (
+            <button
+              type="button"
+              onClick={() => importExpensesMutation.mutate()}
+              disabled={importExpensesMutation.isPending}
+              className="btn btn-secondary"
+              title={language === 'ar' ? 'استيراد مصروفات المشروع' : 'Import project expenses'}
+            >
+              {importExpensesMutation.isPending ? (
+                <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  {language === 'ar' ? 'استيراد مصروفات المشروع' : 'Import Project Expenses'}
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card p-6">

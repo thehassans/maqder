@@ -2,6 +2,7 @@ import express from 'express';
 import JobCostingJob from '../models/JobCostingJob.js';
 import JobCostEntry from '../models/JobCostEntry.js';
 import Project from '../models/Project.js';
+import Expense from '../models/Expense.js';
 import { protect, tenantFilter, checkPermission } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -200,6 +201,81 @@ router.get('/jobs/:id', checkPermission('job_costing', 'read'), async (req, res)
         recent: summary?.recent || []
       }
     });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/jobs/:id/import-expenses', checkPermission('job_costing', 'update'), async (req, res) => {
+  try {
+    const job = await JobCostingJob.findOne({ _id: req.params.id, ...req.tenantFilter, isActive: true });
+    if (!job) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+
+    if (!job.projectId) {
+      return res.status(400).json({ error: 'Job has no linked project' });
+    }
+
+    const expenses = await Expense.find({
+      ...req.tenantFilter,
+      isActive: true,
+      projectId: job.projectId,
+      status: { $ne: 'cancelled' }
+    })
+      .select('_id expenseNumber expenseDate category description descriptionAr totalAmount amount taxAmount')
+      .sort({ expenseDate: 1, createdAt: 1 })
+      .lean();
+
+    if (expenses.length === 0) {
+      return res.json({ created: 0, skipped: 0, message: 'No project expenses found' });
+    }
+
+    const references = expenses.map((e) => `expense:${e._id}`);
+    const existing = await JobCostEntry.find({
+      ...req.tenantFilter,
+      jobId: job._id,
+      isActive: true,
+      reference: { $in: references }
+    })
+      .select('reference')
+      .lean();
+
+    const existingSet = new Set((existing || []).map((x) => String(x.reference)));
+
+    const toInsert = [];
+    let skipped = 0;
+
+    for (const e of expenses) {
+      const ref = `expense:${e._id}`;
+      if (existingSet.has(ref)) {
+        skipped += 1;
+        continue;
+      }
+
+      const amount = toNumber(e.totalAmount ?? (toNumber(e.amount, 0) + toNumber(e.taxAmount, 0)), 0);
+      const description = e.description || e.descriptionAr || e.expenseNumber;
+
+      toInsert.push({
+        tenantId: req.user.tenantId,
+        jobId: job._id,
+        date: e.expenseDate ? new Date(e.expenseDate) : new Date(),
+        type: 'other',
+        description: description ? `${e.expenseNumber} - ${description}` : e.expenseNumber,
+        quantity: 1,
+        unitCost: Math.max(0, amount),
+        totalCost: Math.max(0, amount),
+        reference: ref,
+        notes: 'Imported from project expenses',
+        createdBy: req.user._id
+      });
+    }
+
+    if (toInsert.length > 0) {
+      await JobCostEntry.insertMany(toInsert);
+    }
+
+    res.json({ created: toInsert.length, skipped });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

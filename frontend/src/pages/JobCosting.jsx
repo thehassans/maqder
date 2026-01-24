@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Search, Briefcase, FolderKanban, Calendar, Edit, AlertTriangle, Coins } from 'lucide-react'
+import { Plus, Search, Briefcase, FolderKanban, Calendar, Edit, AlertTriangle, Coins, HelpCircle } from 'lucide-react'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
 import Money from '../components/ui/Money'
@@ -153,6 +153,7 @@ export default function JobCosting() {
             {language === 'ar' ? 'تتبع تكاليف العمل حسب البنود والتصنيفات' : 'Track job costs by entries and categories'}
           </p>
         </div>
+
         <div className="flex gap-2">
           <ExportMenu
             language={language}
@@ -168,6 +169,28 @@ export default function JobCosting() {
             <Plus className="w-4 h-4" />
             {language === 'ar' ? 'إضافة عمل' : 'Add Job'}
           </Link>
+        </div>
+      </div>
+
+      <div className="card p-5">
+        <div className="flex items-start gap-3">
+          <div className="p-2 bg-gray-100 dark:bg-dark-700 rounded-xl">
+            <HelpCircle className="w-5 h-5 text-gray-600" />
+          </div>
+          <div>
+            <div className="text-sm font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'ما فائدة تكلفة الأعمال؟' : 'What is Job Costing for?'}</div>
+            <div className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+              {language === 'ar'
+                ? 'تكلفة الأعمال تساعدك على تجميع وتتبّع التكاليف (مواد/عمالة/مصروفات) لكل عمل أو مشروع، ومقارنة التكلفة الفعلية بالميزانية.'
+                : 'Job Costing lets you collect and track costs (materials/labor/overhead) per job/project, and compare actual cost against budget.'}
+            </div>
+            <div className="mt-3 text-sm text-gray-600 dark:text-gray-300">
+              <div className="font-medium text-gray-900 dark:text-white">{language === 'ar' ? 'المدخلات' : 'Inputs'}</div>
+              <div className="mt-1">{language === 'ar' ? 'بنود تكاليف يدوية + إمكانية استيراد مصروفات المشروع المرتبطة.' : 'Manual cost entries + ability to import linked project expenses.'}</div>
+              <div className="font-medium text-gray-900 dark:text-white mt-3">{language === 'ar' ? 'المخرجات' : 'Outputs'}</div>
+              <div className="mt-1">{language === 'ar' ? 'ملخص تكلفة، توزيع حسب النوع، وتقرير فرق الميزانية.' : 'Cost summary, breakdown by type, and budget variance.'}</div>
+            </div>
+          </div>
         </div>
       </div>
 

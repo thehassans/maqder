@@ -1,6 +1,7 @@
 import express from 'express';
 import Product from '../models/Product.js';
 import PurchaseOrder from '../models/PurchaseOrder.js';
+import Supplier from '../models/Supplier.js';
 import { protect, tenantFilter, checkPermission } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -23,6 +24,20 @@ function computeReorderPoint(product) {
 
   if (!points.length) return 10;
   return Math.min(...points);
+}
+
+function computeAvailableStock(product) {
+  const stocks = Array.isArray(product?.stocks) ? product.stocks : [];
+
+  const onHand = stocks.reduce((sum, s) => sum + safeNumber(s?.quantity, 0), 0);
+  const reserved = stocks.reduce((sum, s) => sum + safeNumber(s?.reservedQuantity, 0), 0);
+  const available = onHand - reserved;
+
+  return {
+    onHand,
+    reserved,
+    available: Number.isFinite(available) ? available : 0
+  };
 }
 
 async function getIncomingMap(tenantFilterValue) {
@@ -71,7 +86,7 @@ router.get('/suggestions', checkPermission('mrp', 'read'), async (req, res) => {
 
     const [products, incomingMap] = await Promise.all([
       Product.find(productQuery)
-        .select('sku nameEn nameAr category totalStock costPrice stocks')
+        .select('sku nameEn nameAr category totalStock costPrice stocks suppliers taxRate')
         .sort({ createdAt: -1 })
         .lean(),
       getIncomingMap(req.tenantFilter)
@@ -80,7 +95,8 @@ router.get('/suggestions', checkPermission('mrp', 'read'), async (req, res) => {
     const suggestions = (products || [])
       .map((prod) => {
         const reorderPoint = computeReorderPoint(prod);
-        const currentStock = safeNumber(prod?.totalStock, 0);
+        const stockInfo = computeAvailableStock(prod);
+        const currentStock = safeNumber(stockInfo.available, 0);
         const incomingQty = safeNumber(incomingMap.get(String(prod._id)), 0);
         const projectedStock = currentStock + incomingQty;
 
@@ -99,6 +115,8 @@ router.get('/suggestions', checkPermission('mrp', 'read'), async (req, res) => {
           nameAr: prod.nameAr,
           category: prod.category,
           currentStock,
+          onHand: stockInfo.onHand,
+          reservedQty: stockInfo.reserved,
           incomingQty,
           projectedStock,
           reorderPoint,
@@ -162,7 +180,8 @@ router.get('/stats', checkPermission('mrp', 'read'), async (req, res) => {
 
     for (const prod of products || []) {
       const reorderPoint = computeReorderPoint(prod);
-      const currentStock = safeNumber(prod?.totalStock, 0);
+      const stockInfo = computeAvailableStock(prod);
+      const currentStock = safeNumber(stockInfo.available, 0);
       const incomingQty = safeNumber(incomingMap.get(String(prod._id)), 0);
       const projectedStock = currentStock + incomingQty;
 
@@ -201,6 +220,164 @@ router.get('/stats', checkPermission('mrp', 'read'), async (req, res) => {
       byCategory: categories.slice(0, 12)
     });
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+function toNumber(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function normalizeLineItems(lineItems = []) {
+  const normalized = (Array.isArray(lineItems) ? lineItems : []).map((li) => {
+    const quantityOrdered = Math.max(0, toNumber(li.quantityOrdered ?? li.quantity ?? 0, 0));
+    const unitCost = Math.max(0, toNumber(li.unitCost ?? 0, 0));
+    const taxRate = Math.max(0, toNumber(li.taxRate ?? 15, 15));
+
+    const lineSubtotal = quantityOrdered * unitCost;
+    const lineTax = lineSubtotal * (taxRate / 100);
+    const lineTotal = lineSubtotal + lineTax;
+
+    return {
+      productId: li.productId,
+      description: li.description,
+      quantityOrdered,
+      quantityReceived: 0,
+      unitCost,
+      taxRate,
+      lineSubtotal,
+      lineTax,
+      lineTotal
+    };
+  });
+
+  const subtotal = normalized.reduce((sum, li) => sum + (li.lineSubtotal || 0), 0);
+  const totalTax = normalized.reduce((sum, li) => sum + (li.lineTax || 0), 0);
+  const grandTotal = subtotal + totalTax;
+
+  return { normalized, subtotal, totalTax, grandTotal };
+}
+
+async function generatePoNumber(tenantFilterValue) {
+  const today = new Date();
+  const y = today.getFullYear();
+  const m = String(today.getMonth() + 1).padStart(2, '0');
+  const d = String(today.getDate()).padStart(2, '0');
+  const prefix = `PO-${y}${m}${d}`;
+
+  const last = await PurchaseOrder.findOne({
+    ...tenantFilterValue,
+    poNumber: { $regex: `^${prefix}-` }
+  })
+    .sort({ createdAt: -1 })
+    .select('poNumber');
+
+  let seq = 1;
+  if (last?.poNumber) {
+    const parts = last.poNumber.split('-');
+    const lastSeq = Number(parts[parts.length - 1]);
+    if (Number.isFinite(lastSeq)) seq = lastSeq + 1;
+  }
+
+  return `${prefix}-${String(seq).padStart(3, '0')}`;
+}
+
+// Create draft purchase order(s) from MRP suggestions
+router.post('/create-po', checkPermission('supply_chain', 'create'), async (req, res) => {
+  try {
+    const { items, supplierId, expectedDate, notes } = req.body;
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'items is required' });
+    }
+
+    const cleaned = items
+      .map((x) => ({
+        productId: x?.productId,
+        quantity: Math.max(0, toNumber(x?.quantity ?? x?.qty ?? 0, 0))
+      }))
+      .filter((x) => x.productId && x.quantity > 0);
+
+    if (cleaned.length === 0) {
+      return res.status(400).json({ error: 'No valid items' });
+    }
+
+    const productIds = [...new Set(cleaned.map((x) => String(x.productId)))];
+
+    const products = await Product.find({ _id: { $in: productIds }, ...req.tenantFilter, isActive: true }).lean();
+    const byId = new Map(products.map((p) => [String(p._id), p]));
+
+    const missing = productIds.filter((id) => !byId.has(String(id)));
+    if (missing.length) {
+      return res.status(400).json({ error: 'Invalid product in items' });
+    }
+
+    const supplierGroups = new Map();
+
+    for (const row of cleaned) {
+      const prod = byId.get(String(row.productId));
+
+      let resolvedSupplierId = supplierId;
+      let supplierUnitCost;
+
+      if (!resolvedSupplierId) {
+        const suppliers = Array.isArray(prod?.suppliers) ? prod.suppliers : [];
+        const preferred = suppliers.find((s) => s?.isPreferred && s?.supplierId);
+        const fallback = suppliers.find((s) => s?.supplierId);
+        resolvedSupplierId = preferred?.supplierId || fallback?.supplierId || null;
+        supplierUnitCost = preferred?.cost ?? fallback?.cost;
+      }
+
+      if (!resolvedSupplierId) {
+        return res.status(400).json({ error: `No supplier configured for product ${prod?.sku || prod?._id}` });
+      }
+
+      const key = String(resolvedSupplierId);
+      const group = supplierGroups.get(key) || [];
+      group.push({
+        productId: prod._id,
+        description: prod?.nameEn || prod?.nameAr || prod?.sku,
+        quantityOrdered: row.quantity,
+        unitCost: toNumber(supplierUnitCost, toNumber(prod?.costPrice, 0)),
+        taxRate: toNumber(prod?.taxRate, 15)
+      });
+      supplierGroups.set(key, group);
+    }
+
+    const supplierIds = [...supplierGroups.keys()];
+    const supplierCount = await Supplier.countDocuments({ _id: { $in: supplierIds }, ...req.tenantFilter, isActive: true });
+    if (supplierCount !== supplierIds.length) {
+      return res.status(400).json({ error: 'Invalid supplier for one or more items' });
+    }
+
+    const created = [];
+    for (const [sid, lineItems] of supplierGroups.entries()) {
+      const poNumber = await generatePoNumber(req.tenantFilter);
+      const { normalized, subtotal, totalTax, grandTotal } = normalizeLineItems(lineItems);
+
+      const order = await PurchaseOrder.create({
+        tenantId: req.user.tenantId,
+        poNumber,
+        supplierId: sid,
+        status: 'draft',
+        expectedDate: expectedDate ? new Date(expectedDate) : undefined,
+        notes,
+        lineItems: normalized,
+        subtotal,
+        totalTax,
+        grandTotal,
+        createdBy: req.user._id
+      });
+
+      created.push(order);
+    }
+
+    res.status(201).json({ purchaseOrders: created });
+  } catch (error) {
+    if (error?.code === 11000) {
+      return res.status(400).json({ error: 'Duplicate purchase order number' });
+    }
     res.status(500).json({ error: error.message });
   }
 });
