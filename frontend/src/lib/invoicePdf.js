@@ -42,33 +42,70 @@ const rgbToHex = (rgb) => {
   return `#${to(rgb.r)}${to(rgb.g)}${to(rgb.b)}`
 }
 
-const escapeHtml = (value) => {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
+const rgbArr = (rgb) => [rgb.r, rgb.g, rgb.b]
+
+const detectImageFormat = (dataUrl) => {
+  const m = /^data:image\/(png|jpeg|jpg);/i.exec(String(dataUrl || ''))
+  if (!m) return null
+  const ext = m[1].toLowerCase()
+  return ext === 'jpg' ? 'JPEG' : ext === 'jpeg' ? 'JPEG' : 'PNG'
 }
 
-const waitForImages = async (root, timeoutMs = 6000) => {
-  const images = Array.from(root?.querySelectorAll?.('img') || [])
-  if (images.length === 0) return
+let tajawalRegularBase64
+let tajawalBoldBase64
+let tajawalLoadPromise
 
-  const waitOne = (img) => {
-    if (!img) return Promise.resolve()
-    if (img.complete) return Promise.resolve()
-    return new Promise((resolve) => {
-      const done = () => resolve()
-      img.addEventListener('load', done, { once: true })
-      img.addEventListener('error', done, { once: true })
-    })
+const bufferToBase64 = (buffer) => {
+  const bytes = new Uint8Array(buffer)
+  let binary = ''
+  const chunk = 0x8000
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk))
+  }
+  return btoa(binary)
+}
+
+const tryFetchFontBase64 = async (url) => {
+  const res = await fetch(url)
+  if (!res.ok) return null
+  const buf = await res.arrayBuffer()
+  return bufferToBase64(buf)
+}
+
+const ensureTajawalFont = async (doc) => {
+  if (!doc || typeof doc.addFileToVFS !== 'function' || typeof doc.addFont !== 'function') return false
+
+  if (!tajawalLoadPromise) {
+    tajawalLoadPromise = (async () => {
+      tajawalRegularBase64 = await tryFetchFontBase64('/fonts/Tajawal-Regular.ttf')
+      tajawalBoldBase64 = await tryFetchFontBase64('/fonts/Tajawal-Bold.ttf')
+    })()
   }
 
-  await Promise.race([
-    Promise.all(images.map(waitOne)),
-    new Promise((resolve) => setTimeout(resolve, timeoutMs)),
-  ])
+  try {
+    await tajawalLoadPromise
+  } catch {
+    tajawalLoadPromise = null
+    return false
+  }
+
+  if (!tajawalRegularBase64) {
+    tajawalLoadPromise = null
+    return false
+  }
+
+  try {
+    doc.addFileToVFS('Tajawal-Regular.ttf', tajawalRegularBase64)
+    doc.addFont('Tajawal-Regular.ttf', 'Tajawal', 'normal')
+    if (tajawalBoldBase64) {
+      doc.addFileToVFS('Tajawal-Bold.ttf', tajawalBoldBase64)
+      doc.addFont('Tajawal-Bold.ttf', 'Tajawal', 'bold')
+    }
+    doc.setFont('Tajawal', 'normal')
+    return true
+  } catch {
+    return false
+  }
 }
 
 const safeText = (value) => {
@@ -89,195 +126,482 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const jspdfModule = await import('jspdf')
   const jsPDF = jspdfModule?.jsPDF || jspdfModule?.default || jspdfModule
 
+  const autoTableModule = await import('jspdf-autotable')
+  const autoTable = autoTableModule?.default || autoTableModule
+
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' })
+
+  const pageW = doc.internal.pageSize.getWidth()
+  const pageH = doc.internal.pageSize.getHeight()
+  const margin = 40
+  const footerH = 44
+  const headerH = 98
+  const topMargin = headerH + 26
+
+  const isRtl = language === 'ar'
+  const align = isRtl ? 'right' : 'left'
+  const oppositeAlign = isRtl ? 'left' : 'right'
+
+  const arabicFontReady = isRtl ? await ensureTajawalFont(doc) : false
+
+  if (isRtl && typeof doc.setR2L === 'function') {
+    try {
+      doc.setR2L(true)
+    } catch {
+      // ignore
+    }
+  }
 
   const primary = tenant?.branding?.primaryColor || '#2563EB'
   const primaryRgb = hexToRgb(primary) || { r: 37, g: 99, b: 235 }
   const lightRgb = mixRgb(primaryRgb, { r: 255, g: 255, b: 255 }, 0.90)
-  const primaryLight = rgbToHex(lightRgb)
+
+  const secondary = tenant?.branding?.secondaryColor || '#D946EF'
+  const secondaryRgb = hexToRgb(secondary) || { r: 217, g: 70, b: 239 }
+
+  const templateId = Number(tenant?.settings?.invoicePdfTemplate || 1)
+
+  const theme = (() => {
+    const base = {
+      sidebarW: 0,
+      headerBgRgb: null,
+      headerTitleRgb: { r: 15, g: 23, b: 42 },
+      headerMutedRgb: { r: 100, g: 116, b: 139 },
+      metaFillRgb: lightRgb,
+      metaStrokeRgb: { r: 226, g: 232, b: 240 },
+      boxFillRgb: { r: 255, g: 255, b: 255 },
+      boxStrokeRgb: { r: 226, g: 232, b: 240 },
+      tableHeadFillRgb: lightRgb,
+      tableHeadTextRgb: { r: 15, g: 23, b: 42 },
+      altRowFillRgb: { r: 248, g: 250, b: 252 },
+      drawFrame: () => {
+        doc.setFillColor(primaryRgb.r, primaryRgb.g, primaryRgb.b)
+        doc.rect(0, 0, pageW, 6, 'F')
+      },
+    }
+
+    const drawGradientTop = () => {
+      const steps = 18
+      const stepW = pageW / steps
+      for (let i = 0; i < steps; i += 1) {
+        const w = i / Math.max(1, steps - 1)
+        const c = mixRgb(primaryRgb, secondaryRgb, w)
+        doc.setFillColor(c.r, c.g, c.b)
+        doc.rect(i * stepW, 0, stepW + 1, 6, 'F')
+      }
+    }
+
+    if (templateId === 2) {
+      return {
+        ...base,
+        drawFrame: drawGradientTop,
+      }
+    }
+
+    if (templateId === 3) {
+      const sidebarW = 56
+      return {
+        ...base,
+        sidebarW,
+        drawFrame: () => {
+          const x = isRtl ? pageW - sidebarW : 0
+          doc.setFillColor(primaryRgb.r, primaryRgb.g, primaryRgb.b)
+          doc.rect(x, 0, sidebarW, pageH, 'F')
+        },
+      }
+    }
+
+    if (templateId === 4) {
+      return {
+        ...base,
+        metaFillRgb: { r: 255, g: 255, b: 255 },
+        tableHeadFillRgb: primaryRgb,
+        tableHeadTextRgb: { r: 255, g: 255, b: 255 },
+        altRowFillRgb: { r: 255, g: 255, b: 255 },
+        drawFrame: () => {
+          doc.setFillColor(primaryRgb.r, primaryRgb.g, primaryRgb.b)
+          doc.rect(0, 0, pageW, 2, 'F')
+        },
+      }
+    }
+
+    if (templateId === 5) {
+      const headerBgRgb = { r: 15, g: 23, b: 42 }
+      return {
+        ...base,
+        headerBgRgb,
+        headerTitleRgb: { r: 255, g: 255, b: 255 },
+        headerMutedRgb: { r: 203, g: 213, b: 225 },
+        metaFillRgb: { r: 255, g: 255, b: 255 },
+        tableHeadFillRgb: headerBgRgb,
+        tableHeadTextRgb: { r: 255, g: 255, b: 255 },
+        drawFrame: () => {
+          doc.setFillColor(headerBgRgb.r, headerBgRgb.g, headerBgRgb.b)
+          doc.rect(0, 0, pageW, headerH, 'F')
+          drawGradientTop()
+        },
+      }
+    }
+
+    return base
+  })()
+
+  const contentLeft = margin + (theme.sidebarW && !isRtl ? theme.sidebarW : 0)
+  const contentRight = margin + (theme.sidebarW && isRtl ? theme.sidebarW : 0)
+  const contentRightEdge = pageW - contentRight
+  const contentW = pageW - contentLeft - contentRight
 
   const logo = tenant?.branding?.logo || null
+  const logoFormat = detectImageFormat(logo)
+
+  const qr = invoice?.zatca?.qrCodeImage || null
+  const qrFormat = detectImageFormat(qr)
 
   const seller = invoice.seller || {}
   const buyer = invoice.buyer || {}
 
-  const currencyOpts = { language, currency: 'SAR', currencyDisplay: 'code', minimumFractionDigits: 2, maximumFractionDigits: 2 }
+  const currency = invoice.currency || tenant?.settings?.currency || 'SAR'
+  const currencyOpts = { language, currency, currencyDisplay: 'code', minimumFractionDigits: 2, maximumFractionDigits: 2 }
+
+  const money = (value) => formatCurrency(Number(value || 0), currencyOpts)
+  const txt = (value) => safeText(value)
+
+  const shape = (value) => {
+    const raw = safeText(value)
+    if (!raw) return ''
+    if (isRtl && typeof doc.processArabic === 'function') {
+      try {
+        return doc.processArabic(raw)
+      } catch {
+        return raw
+      }
+    }
+    return raw
+  }
+
+  const sellerName = isRtl ? (seller.nameAr || seller.name) : (seller.name || seller.nameAr)
+  const buyerName = isRtl ? (buyer.nameAr || buyer.name) : (buyer.name || buyer.nameAr)
+
+  const title = isRtl ? 'فاتورة' : 'Invoice'
+  const customerLabel = invoice.flow === 'purchase'
+    ? (isRtl ? 'المشتري' : 'Buyer')
+    : (isRtl ? 'العميل' : 'Customer')
+
+  const drawHeader = ({ pageNumber }) => {
+    theme.drawFrame({ pageNumber })
+
+    const y = 18
+    const boxPad = 6
+    const logoW = 92
+    const logoH = 28
+    const qrSize = 72
+
+    if (logo && logoFormat) {
+      const x = isRtl ? contentRightEdge - logoW : contentLeft
+      doc.setFillColor(255, 255, 255)
+      doc.roundedRect(x - boxPad, y - boxPad, logoW + boxPad * 2, logoH + boxPad * 2, 10, 10, 'F')
+      doc.setDrawColor(226, 232, 240)
+      doc.roundedRect(x - boxPad, y - boxPad, logoW + boxPad * 2, logoH + boxPad * 2, 10, 10, 'S')
+      doc.addImage(logo, logoFormat, x, y, logoW, logoH)
+    }
+
+    if (qr && qrFormat && pageNumber === 1) {
+      const x = isRtl ? contentLeft : contentRightEdge - qrSize
+      doc.setFillColor(255, 255, 255)
+      doc.roundedRect(x - boxPad, y - boxPad, qrSize + boxPad * 2, qrSize + boxPad * 2, 10, 10, 'F')
+      doc.setDrawColor(226, 232, 240)
+      doc.roundedRect(x - boxPad, y - boxPad, qrSize + boxPad * 2, qrSize + boxPad * 2, 10, 10, 'S')
+      doc.addImage(qr, qrFormat, x, y, qrSize, qrSize)
+    }
+
+    const titleX = isRtl ? contentRightEdge : contentLeft
+    const rightX = isRtl ? contentLeft : contentRightEdge
+
+    doc.setTextColor(theme.headerTitleRgb.r, theme.headerTitleRgb.g, theme.headerTitleRgb.b)
+    doc.setFontSize(16)
+    doc.text(shape(title), titleX, y + 56, { align })
+
+    doc.setFontSize(10)
+    doc.setTextColor(theme.headerMutedRgb.r, theme.headerMutedRgb.g, theme.headerMutedRgb.b)
+    doc.text(shape(sellerName || ''), titleX, y + 72, { align })
+
+    doc.setFontSize(12)
+    doc.setTextColor(theme.headerTitleRgb.r, theme.headerTitleRgb.g, theme.headerTitleRgb.b)
+    doc.text(shape(txt(invoice.invoiceNumber)), rightX, y + 56, { align: oppositeAlign })
+
+    doc.setFontSize(9)
+    doc.setTextColor(theme.headerMutedRgb.r, theme.headerMutedRgb.g, theme.headerMutedRgb.b)
+    doc.text(shape(formatDateTime(invoice.issueDate, language)), rightX, y + 72, { align: oppositeAlign })
+  }
+
+  drawHeader({ pageNumber: 1 })
+
+  const cardX = contentLeft
+  const cardW = contentW
+  const cardY = topMargin
+  const metaH = 62
+
+  doc.setFillColor(theme.metaFillRgb.r, theme.metaFillRgb.g, theme.metaFillRgb.b)
+  doc.setDrawColor(theme.metaStrokeRgb.r, theme.metaStrokeRgb.g, theme.metaStrokeRgb.b)
+  doc.roundedRect(cardX, cardY, cardW, metaH, 14, 14, 'FD')
+
+  const metaRows = [
+    { k: isRtl ? 'رقم الفاتورة' : 'Invoice #', v: invoice.invoiceNumber },
+    { k: isRtl ? 'التاريخ' : 'Date', v: formatDateTime(invoice.issueDate, language) },
+    { k: isRtl ? 'النوع' : 'Type', v: invoice.transactionType },
+    { k: isRtl ? 'التدفق' : 'Flow', v: invoice.flow || 'sell' },
+    invoice?.zatca?.submissionStatus ? { k: isRtl ? 'حالة ZATCA' : 'ZATCA', v: invoice.zatca.submissionStatus } : null,
+  ].filter(Boolean)
+
+  const leftColX = isRtl ? cardX + cardW - 14 : cardX + 14
+  const rightColX = isRtl ? cardX + 14 : cardX + cardW - 14
+
+  doc.setFontSize(9)
+  let metaY = cardY + 22
+
+  for (let i = 0; i < metaRows.length; i += 2) {
+    const a = metaRows[i]
+    const b = metaRows[i + 1]
+
+    doc.setTextColor(100)
+    doc.text(shape(`${txt(a.k)}:`), leftColX, metaY, { align })
+    doc.setTextColor(15, 23, 42)
+    doc.text(shape(txt(a.v)), leftColX, metaY + 14, { align })
+
+    if (b) {
+      doc.setTextColor(100)
+      doc.text(shape(`${txt(b.k)}:`), rightColX, metaY, { align: isRtl ? 'left' : 'right' })
+      doc.setTextColor(15, 23, 42)
+      doc.text(shape(txt(b.v)), rightColX, metaY + 14, { align: isRtl ? 'left' : 'right' })
+    }
+
+    metaY += 32
+  }
+
+  const boxGap = 12
+  const boxY = cardY + metaH + 12
+  const boxH = 92
+  const boxW = (cardW - boxGap) / 2
+
+  const drawPartyBox = ({ x, y, label, name, vat, address }) => {
+    doc.setFillColor(theme.boxFillRgb.r, theme.boxFillRgb.g, theme.boxFillRgb.b)
+    doc.setDrawColor(theme.boxStrokeRgb.r, theme.boxStrokeRgb.g, theme.boxStrokeRgb.b)
+    doc.roundedRect(x, y, boxW, boxH, 14, 14, 'FD')
+
+    const pad = 12
+    const tx = isRtl ? x + boxW - pad : x + pad
+
+    doc.setFontSize(9)
+    doc.setTextColor(100)
+    doc.text(shape(label), tx, y + 22, { align })
+
+    doc.setFontSize(11)
+    doc.setTextColor(15, 23, 42)
+    doc.text(shape(name || ''), tx, y + 38, { align, maxWidth: boxW - pad * 2 })
+
+    doc.setFontSize(9)
+    doc.setTextColor(51, 65, 85)
+    let ty = y + 56
+
+    if (vat) {
+      const vatLabel = isRtl ? 'الرقم الضريبي' : 'VAT'
+      doc.text(shape(`${vatLabel}: ${vat}`), tx, ty, { align, maxWidth: boxW - pad * 2 })
+      ty += 14
+    }
+
+    if (address) {
+      doc.text(shape(address), tx, ty, { align, maxWidth: boxW - pad * 2 })
+    }
+  }
+
+  const sellerAddress = [seller.address?.city, seller.address?.district].filter(Boolean).join(', ')
+  const buyerAddress = [buyer.address?.city, buyer.address?.district].filter(Boolean).join(', ')
+
+  const leftX = contentLeft
+  const rightBoxX = contentLeft + boxW + boxGap
+
+  const firstBoxX = isRtl ? rightBoxX : leftX
+  const secondBoxX = isRtl ? leftX : rightBoxX
+
+  drawPartyBox({
+    x: firstBoxX,
+    y: boxY,
+    label: isRtl ? 'البائع' : 'Seller',
+    name: sellerName,
+    vat: seller.vatNumber,
+    address: sellerAddress,
+  })
+
+  drawPartyBox({
+    x: secondBoxX,
+    y: boxY,
+    label: customerLabel,
+    name: buyerName,
+    vat: buyer.vatNumber,
+    address: buyerAddress,
+  })
+
+  let y = boxY + boxH + 24
+
+  doc.setFontSize(12)
+  doc.setTextColor(15, 23, 42)
+  doc.text(shape(isRtl ? 'البنود' : 'Items'), isRtl ? contentRightEdge : contentLeft, y, { align })
+  y += 10
 
   const lineItems = Array.isArray(invoice.lineItems) ? invoice.lineItems : []
 
-  const subtotal = Number(invoice.taxableAmount ?? invoice.subtotalAmount ?? 0)
+  const itemsBaseWidths = {
+    idx: 28,
+    desc: 214,
+    qty: 48,
+    unit: 72,
+    tax: 66,
+    total: 72,
+  }
+  const baseSum = Object.values(itemsBaseWidths).reduce((a, b) => a + b, 0)
+  const scale = Math.min(1, contentW / baseSum)
+  const idxW = Math.max(22, Math.round(itemsBaseWidths.idx * scale))
+  const qtyW = Math.max(36, Math.round(itemsBaseWidths.qty * scale))
+  const unitW = Math.max(56, Math.round(itemsBaseWidths.unit * scale))
+  const taxW = Math.max(50, Math.round(itemsBaseWidths.tax * scale))
+  const totalW = Math.max(56, Math.round(itemsBaseWidths.total * scale))
+  const fixedW = idxW + qtyW + unitW + taxW + totalW
+  const descW = Math.max(110, Math.floor(contentW - fixedW))
+
+  const bodyRows = (lineItems.length ? lineItems : [{}]).map((l, idx) => {
+    if (!l || !l.productName) {
+      return [
+        '',
+        shape(isRtl ? 'لا توجد بنود' : 'No line items'),
+        '',
+        '',
+        '',
+        '',
+      ]
+    }
+
+    const qty = Number(l.quantity || 0)
+    const unitPrice = Number(l.unitPrice || 0)
+    const taxRate = Number(l.taxRate || 0)
+    const taxAmount = Number(l.taxAmount ?? (Number(l.lineTotal || qty * unitPrice) * taxRate / 100))
+    const lineTotalWithTax = Number(l.lineTotalWithTax ?? (Number(l.lineTotal || qty * unitPrice) + taxAmount))
+    const desc = isRtl ? (l.productNameAr || l.productName || l.description) : (l.productName || l.productNameAr || l.description)
+
+    return [
+      String(idx + 1),
+      shape(desc || ''),
+      String(qty),
+      money(unitPrice),
+      money(taxAmount),
+      money(lineTotalWithTax),
+    ]
+  })
+
+  autoTable(doc, {
+    startY: y,
+    margin: { left: contentLeft, right: contentRight, top: topMargin, bottom: footerH },
+    head: [[
+      '#',
+      isRtl ? 'الوصف' : 'Description',
+      isRtl ? 'الكمية' : 'Qty',
+      isRtl ? 'سعر الوحدة' : 'Unit Price',
+      isRtl ? 'الضريبة' : 'Tax',
+      isRtl ? 'الإجمالي' : 'Total',
+    ]],
+    body: bodyRows,
+    styles: {
+      fontSize: 9,
+      cellPadding: 6,
+      ...(arabicFontReady ? { font: 'Tajawal' } : {}),
+      textColor: [15, 23, 42],
+      lineColor: [226, 232, 240],
+      lineWidth: 0.5,
+    },
+    headStyles: {
+      fillColor: rgbArr(theme.tableHeadFillRgb),
+      textColor: rgbArr(theme.tableHeadTextRgb),
+      fontStyle: 'bold',
+    },
+    alternateRowStyles: theme.altRowFillRgb ? { fillColor: rgbArr(theme.altRowFillRgb) } : {},
+    columnStyles: {
+      0: { cellWidth: idxW, halign: 'center' },
+      1: { cellWidth: descW, halign: isRtl ? 'right' : 'left' },
+      2: { cellWidth: qtyW, halign: 'center' },
+      3: { cellWidth: unitW, halign: 'right' },
+      4: { cellWidth: taxW, halign: 'right' },
+      5: { cellWidth: totalW, halign: 'right', fontStyle: 'bold' },
+    },
+    didDrawPage: () => {
+      const pageNumber = doc.getCurrentPageInfo().pageNumber
+      drawHeader({ pageNumber })
+    },
+  })
+
+  const taxable = Number(invoice.taxableAmount ?? invoice.subtotal ?? 0)
   const totalTax = Number(invoice.totalTax ?? 0)
   const grandTotal = Number(invoice.grandTotal ?? 0)
 
-  const title = language === 'ar' ? 'فاتورة' : 'Invoice'
-  const customerLabel = invoice.flow === 'purchase'
-    ? (language === 'ar' ? 'المشتري' : 'Buyer')
-    : (language === 'ar' ? 'العميل' : 'Customer')
+  const totalsRows = [
+    [isRtl ? 'الإجمالي قبل الضريبة' : 'Subtotal', money(taxable)],
+    [isRtl ? 'الضريبة' : 'Tax', money(totalTax)],
+    [isRtl ? 'الإجمالي' : 'Total', money(grandTotal)],
+  ]
 
-  const invoiceMeta = [
-    { k: language === 'ar' ? 'رقم الفاتورة' : 'Invoice #', v: invoice.invoiceNumber },
-    { k: language === 'ar' ? 'التاريخ' : 'Date', v: formatDateTime(invoice.issueDate, language) },
-    { k: language === 'ar' ? 'النوع' : 'Type', v: invoice.transactionType },
-    { k: language === 'ar' ? 'التدفق' : 'Flow', v: invoice.flow || 'sell' },
-    invoice?.zatca?.submissionStatus ? { k: language === 'ar' ? 'حالة ZATCA' : 'ZATCA', v: invoice.zatca.submissionStatus } : null,
-  ].filter(Boolean)
+  const totalsW = 220
+  const totalsLeft = isRtl ? contentLeft : contentRightEdge - totalsW
 
-  const rootDir = language === 'ar' ? 'rtl' : 'ltr'
-  const align = language === 'ar' ? 'right' : 'left'
-  const flexDir = language === 'ar' ? 'row-reverse' : 'row'
+  autoTable(doc, {
+    startY: doc.lastAutoTable.finalY + 16,
+    margin: { left: totalsLeft, right: contentRight, top: topMargin, bottom: footerH },
+    tableWidth: totalsW,
+    theme: 'plain',
+    body: totalsRows,
+    styles: {
+      fontSize: 10,
+      cellPadding: { top: 2, right: 2, bottom: 2, left: 2 },
+      ...(arabicFontReady ? { font: 'Tajawal' } : {}),
+      textColor: [15, 23, 42],
+    },
+    columnStyles: {
+      0: { cellWidth: 120, halign: align, textColor: [100, 116, 139] },
+      1: { cellWidth: 100, halign: oppositeAlign },
+    },
+    didParseCell: (data) => {
+      if (data.row.index !== 2) return
+      data.cell.styles.fontStyle = 'bold'
+      if (data.column.index === 1) {
+        data.cell.styles.textColor = [primaryRgb.r, primaryRgb.g, primaryRgb.b]
+      }
+    },
+    didDrawPage: () => {
+      const pageNumber = doc.getCurrentPageInfo().pageNumber
+      drawHeader({ pageNumber })
+    },
+  })
 
-  const metaHtml = invoiceMeta
-    .map((m) => `<div style="display:flex; flex-direction:${flexDir}; justify-content:space-between; gap:12px;">
-      <div style="color:#64748b; text-align:${align};">${escapeHtml(m.k)}</div>
-      <div style="font-weight:700; text-align:${align};">${escapeHtml(safeText(m.v))}</div>
-    </div>`)
-    .join('')
+  const pageCount = doc.getNumberOfPages()
+  const generatedAt = `${isRtl ? 'تاريخ الإنشاء' : 'Generated'}: ${formatDateTime(new Date(), language)}`
 
-  const itemsHtml = lineItems
-    .map((l, idx) => {
-      const qty = Number(l.quantity || 0)
-      const unitPrice = Number(l.unitPrice || 0)
-      const taxAmount = Number(l.taxAmount ?? (qty * unitPrice * Number(l.taxRate || 0) / 100))
-      const lineTotal = Number(l.lineTotalWithTax ?? (qty * unitPrice + taxAmount))
+  for (let i = 1; i <= pageCount; i += 1) {
+    doc.setPage(i)
+    doc.setFontSize(9)
+    doc.setTextColor(100)
 
-      return `<tr>
-        <td style="padding:10px 8px; border-bottom:1px solid #e2e8f0; text-align:center; width:30px;">${idx + 1}</td>
-        <td style="padding:10px 8px; border-bottom:1px solid #e2e8f0; width:235px; word-break:break-word; overflow-wrap:anywhere;">${escapeHtml(l.productName || l.description || '')}</td>
-        <td style="padding:10px 8px; border-bottom:1px solid #e2e8f0; text-align:center; width:45px;">${escapeHtml(qty)}</td>
-        <td style="padding:10px 8px; border-bottom:1px solid #e2e8f0; text-align:right; white-space:nowrap; width:70px;">${escapeHtml(formatCurrency(unitPrice, currencyOpts))}</td>
-        <td style="padding:10px 8px; border-bottom:1px solid #e2e8f0; text-align:right; white-space:nowrap; width:65px;">${escapeHtml(formatCurrency(taxAmount, currencyOpts))}</td>
-        <td style="padding:10px 8px; border-bottom:1px solid #e2e8f0; text-align:right; font-weight:700; white-space:nowrap; width:70px;">${escapeHtml(formatCurrency(lineTotal, currencyOpts))}</td>
-      </tr>`
-    })
-    .join('')
+    doc.text(
+      shape(generatedAt),
+      isRtl ? contentRightEdge : contentLeft,
+      pageH - 22,
+      { align }
+    )
 
-  const sellerName = language === 'ar' ? seller.nameAr || seller.name : seller.name || seller.nameAr
-  const buyerName = language === 'ar' ? buyer.nameAr || buyer.name : buyer.name || buyer.nameAr
-
-  const docHtml = `
-  <div dir="${rootDir}" style="width:515px; font-family:Arial, sans-serif; color:#0f172a;">
-    <div style="background:white; border:1px solid #e2e8f0; border-radius:16px; overflow:hidden;">
-      <div style="height:6px; background:${escapeHtml(primary)};"></div>
-      <div style="padding:16px 16px 14px;">
-        <div style="display:flex; flex-direction:${flexDir}; justify-content:space-between; align-items:flex-start; gap:14px;">
-          <div style="display:flex; flex-direction:${flexDir}; align-items:center; gap:12px;">
-            ${logo ? `<img src="${escapeHtml(logo)}" style="height:34px; max-width:170px; object-fit:contain; background:white; padding:6px 10px; border-radius:12px; border:1px solid #e2e8f0;" />` : ''}
-            <div>
-              <div style="font-size:16px; font-weight:900; line-height:1.2; text-align:${align};">${escapeHtml(title)}</div>
-              <div style="color:#64748b; font-size:11px; margin-top:2px; text-align:${align};">${escapeHtml(sellerName || seller.name || '')}</div>
-            </div>
-          </div>
-          <div style="text-align:${align};">
-            <div style="font-weight:900; font-size:14px; color:#0f172a;">${escapeHtml(safeText(invoice.invoiceNumber))}</div>
-            <div style="color:#64748b; font-size:11px; margin-top:2px;">${escapeHtml(formatDateTime(invoice.issueDate, language))}</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div style="margin-top:12px; background:${escapeHtml(primaryLight)}; border-radius:14px; padding:12px 14px; border:1px solid #e2e8f0;">
-      <div style="display:grid; grid-template-columns:1fr; gap:8px; font-size:11px;">${metaHtml}</div>
-    </div>
-
-    <div style="display:flex; flex-direction:${flexDir}; gap:12px; margin-top:12px;">
-      <div style="flex:1; background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; padding:12px;">
-        <div style="font-size:11px; color:#64748b; margin-bottom:6px; text-align:${align};">${escapeHtml(language === 'ar' ? 'البائع' : 'Seller')}</div>
-        <div style="font-size:13px; font-weight:800; text-align:${align};">${escapeHtml(sellerName || '')}</div>
-        ${seller.vatNumber ? `<div style="margin-top:6px; font-size:11px; color:#334155; text-align:${align};">${escapeHtml(language === 'ar' ? 'الرقم الضريبي' : 'VAT')}: <span style="font-weight:700;">${escapeHtml(seller.vatNumber)}</span></div>` : ''}
-        ${(seller.address?.city || seller.address?.district) ? `<div style="margin-top:6px; font-size:11px; color:#334155; text-align:${align};">${escapeHtml([seller.address?.city, seller.address?.district].filter(Boolean).join(', '))}</div>` : ''}
-      </div>
-
-      <div style="flex:1; background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; padding:12px;">
-        <div style="font-size:11px; color:#64748b; margin-bottom:6px; text-align:${align};">${escapeHtml(customerLabel)}</div>
-        <div style="font-size:13px; font-weight:800; text-align:${align};">${escapeHtml(buyerName || '')}</div>
-        ${buyer.vatNumber ? `<div style="margin-top:6px; font-size:11px; color:#334155; text-align:${align};">${escapeHtml(language === 'ar' ? 'الرقم الضريبي' : 'VAT')}: <span style="font-weight:700;">${escapeHtml(buyer.vatNumber)}</span></div>` : ''}
-        ${(buyer.address?.city || buyer.address?.district) ? `<div style="margin-top:6px; font-size:11px; color:#334155; text-align:${align};">${escapeHtml([buyer.address?.city, buyer.address?.district].filter(Boolean).join(', '))}</div>` : ''}
-      </div>
-    </div>
-
-    <div style="margin-top:12px; border:1px solid #e2e8f0; border-radius:14px; overflow:hidden; background:white;">
-      <table style="width:100%; border-collapse:collapse; font-size:11px; table-layout:fixed;">
-        <thead>
-          <tr style="background:${escapeHtml(primaryLight)};">
-            <th style="padding:10px 8px; text-align:center; width:30px;">#</th>
-            <th style="padding:10px 8px; text-align:${align}; width:235px;">${escapeHtml(language === 'ar' ? 'الوصف' : 'Description')}</th>
-            <th style="padding:10px 8px; text-align:center; width:45px;">${escapeHtml(language === 'ar' ? 'الكمية' : 'Qty')}</th>
-            <th style="padding:10px 8px; text-align:right; width:70px;">${escapeHtml(language === 'ar' ? 'سعر الوحدة' : 'Unit Price')}</th>
-            <th style="padding:10px 8px; text-align:right; width:65px;">${escapeHtml(language === 'ar' ? 'الضريبة' : 'Tax')}</th>
-            <th style="padding:10px 8px; text-align:right; width:70px;">${escapeHtml(language === 'ar' ? 'الإجمالي' : 'Total')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${itemsHtml || `<tr><td colspan="6" style="padding:14px; text-align:center; color:#64748b;">${escapeHtml(language === 'ar' ? 'لا توجد بنود' : 'No line items')}</td></tr>`}
-        </tbody>
-      </table>
-    </div>
-
-    <div style="display:flex; flex-direction:${flexDir}; justify-content:flex-end; margin-top:12px;">
-      <div style="width:240px; background:#ffffff; border:1px solid #e2e8f0; border-radius:14px; padding:12px;">
-        <div style="display:flex; flex-direction:${flexDir}; justify-content:space-between; gap:12px; font-size:11px; margin-bottom:8px;">
-          <div style="color:#64748b; text-align:${align};">${escapeHtml(language === 'ar' ? 'الإجمالي قبل الضريبة' : 'Subtotal')}</div>
-          <div style="font-weight:800; white-space:nowrap; text-align:${align};">${escapeHtml(formatCurrency(subtotal, currencyOpts))}</div>
-        </div>
-        <div style="display:flex; flex-direction:${flexDir}; justify-content:space-between; gap:12px; font-size:11px; margin-bottom:8px;">
-          <div style="color:#64748b; text-align:${align};">${escapeHtml(language === 'ar' ? 'الضريبة' : 'Tax')}</div>
-          <div style="font-weight:800; white-space:nowrap; text-align:${align};">${escapeHtml(formatCurrency(totalTax, currencyOpts))}</div>
-        </div>
-        <div style="height:1px; background:#e2e8f0; margin:10px 0;"></div>
-        <div style="display:flex; flex-direction:${flexDir}; justify-content:space-between; gap:12px; font-size:12px;">
-          <div style="font-weight:900; text-align:${align};">${escapeHtml(language === 'ar' ? 'الإجمالي' : 'Total')}</div>
-          <div style="font-weight:900; color:${escapeHtml(primary)}; white-space:nowrap; text-align:${align};">${escapeHtml(formatCurrency(grandTotal, currencyOpts))}</div>
-        </div>
-      </div>
-    </div>
-
-    <div style="margin-top:12px; color:#64748b; font-size:10px; text-align:${align};">
-      ${escapeHtml(language === 'ar' ? 'تم إنشاء هذا الملف تلقائياً من النظام.' : 'This document was generated automatically by the system.')}
-    </div>
-  </div>
-  `
-
-  const wrapper = document.createElement('div')
-  wrapper.style.position = 'fixed'
-  wrapper.style.left = '-10000px'
-  wrapper.style.top = '0'
-  wrapper.style.background = 'white'
-  wrapper.style.padding = '0'
-  wrapper.innerHTML = docHtml
-  document.body.appendChild(wrapper)
-
-  try {
-    const content = wrapper.firstElementChild
-    await waitForImages(content)
-    await doc.html(content, {
-      x: 40,
-      y: 40,
-      width: 515,
-      html2canvas: {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-      },
-      autoPaging: 'text',
-    })
-
-    const pageCount = doc.getNumberOfPages()
-    const pageW = doc.internal.pageSize.getWidth()
-    const pageH = doc.internal.pageSize.getHeight()
-
-    const generatedAt = `${language === 'ar' ? 'تاريخ الإنشاء' : 'Generated'}: ${formatDateTime(new Date(), language)}`
-
-    for (let i = 1; i <= pageCount; i += 1) {
-      doc.setPage(i)
-      doc.setFontSize(9)
-      doc.setTextColor(100)
-      doc.text(generatedAt, 40, pageH - 22)
-      doc.text(`${i} / ${pageCount}`, pageW - 40, pageH - 22, { align: 'right' })
-    }
-
-    const name = sanitizeFileName(invoice.invoiceNumber || 'invoice')
-    doc.save(`${name}.pdf`)
-  } finally {
-    wrapper.remove()
+    doc.text(
+      `${i} / ${pageCount}`,
+      isRtl ? contentLeft : contentRightEdge,
+      pageH - 22,
+      { align: oppositeAlign }
+    )
   }
+
+  const name = sanitizeFileName(invoice.invoiceNumber || 'invoice')
+  doc.save(`${name}.pdf`)
 }

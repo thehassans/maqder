@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector, useDispatch } from 'react-redux'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
-import { Building2, Shield, Globe, Palette, Bell, Save, Key, CheckCircle, Image, Database, Download } from 'lucide-react'
+import { Building2, Shield, Globe, Palette, Bell, Save, Key, CheckCircle, Image, Database, Download, FileText } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
@@ -23,6 +23,7 @@ export default function Settings() {
   const [headerStyle, setHeaderStyle] = useState('glass')
   const [sidebarStyle, setSidebarStyle] = useState('solid')
   const [logoDataUrl, setLogoDataUrl] = useState(null)
+  const [invoicePdfTemplate, setInvoicePdfTemplate] = useState(1)
 
   const { data: tenant } = useQuery({
     queryKey: ['tenant-settings'],
@@ -37,6 +38,7 @@ export default function Settings() {
     setHeaderStyle(tenant.branding?.headerStyle || 'glass')
     setSidebarStyle(tenant.branding?.sidebarStyle || 'solid')
     setLogoDataUrl(tenant.branding?.logo || null)
+    setInvoicePdfTemplate(Number(tenant.settings?.invoicePdfTemplate || 1))
   }, [tenant])
 
   const { data: zatcaStatus } = useQuery({
@@ -504,6 +506,22 @@ export default function Settings() {
                 </div>
 
                 <div className="pt-2">
+                  <label className="label flex items-center gap-2"><FileText className="w-4 h-4" />{language === 'ar' ? 'تصميم PDF للفواتير' : 'Invoice PDF Design'}</label>
+                  <div className="card-glass p-4 mt-2">
+                    <select value={invoicePdfTemplate} onChange={(e) => setInvoicePdfTemplate(Number(e.target.value))} className="select">
+                      <option value={1}>{language === 'ar' ? 'قالب 1 (كلاسيكي)' : 'Template 1 (Classic)'}</option>
+                      <option value={2}>{language === 'ar' ? 'قالب 2 (مُتدرّج)' : 'Template 2 (Gradient)'}</option>
+                      <option value={3}>{language === 'ar' ? 'قالب 3 (شريط جانبي)' : 'Template 3 (Sidebar)'}</option>
+                      <option value={4}>{language === 'ar' ? 'قالب 4 (مُبسّط)' : 'Template 4 (Minimal)'}</option>
+                      <option value={5}>{language === 'ar' ? 'قالب 5 (داكن أنيق)' : 'Template 5 (Elegant Dark)'}</option>
+                    </select>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      {language === 'ar' ? 'يتم تطبيق هذا القالب عند تحميل PDF من شاشة الفواتير.' : 'This template is used when downloading invoice PDFs.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-2">
                   <label className="label flex items-center gap-2"><Palette className="w-4 h-4" />{language === 'ar' ? 'ألوان العلامة' : 'Brand Colors'}</label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                     <div className="card-glass p-4">
@@ -593,6 +611,10 @@ export default function Settings() {
                     type="button"
                     disabled={updateMutation.isPending}
                     onClick={() => updateMutation.mutate({
+                      settings: {
+                        ...(tenant?.settings || {}),
+                        invoicePdfTemplate
+                      },
                       branding: {
                         ...(tenant?.branding || {}),
                         primaryColor,

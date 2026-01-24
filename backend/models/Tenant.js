@@ -71,7 +71,8 @@ const tenantSchema = new mongoose.Schema({
     timezone: { type: String, default: 'Asia/Riyadh' },
     fiscalYearStart: { type: Number, default: 1 },
     dateFormat: { type: String, default: 'DD/MM/YYYY' },
-    useHijriDates: { type: Boolean, default: true }
+    useHijriDates: { type: Boolean, default: true },
+    invoicePdfTemplate: { type: Number, default: 1, min: 1, max: 5 }
   },
   branding: {
     logo: { type: String },
