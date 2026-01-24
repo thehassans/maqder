@@ -122,11 +122,43 @@ router.get('/stats', checkPermission('project_management', 'read'), async (req, 
 router.get('/:id', checkPermission('project_management', 'read'), async (req, res) => {
   try {
     const project = await Project.findOne({ _id: req.params.id, ...req.tenantFilter })
-      .populate('progressUpdates.createdBy', 'firstName lastName email');
+      .populate('progressUpdates.createdBy', 'firstName lastName email')
+      .populate('projectNotes.createdBy', 'firstName lastName email');
 
     if (!project) {
       return res.status(404).json({ error: 'Project not found' });
     }
+
+    res.json(project);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/:id/notes', checkPermission('project_management', 'update'), async (req, res) => {
+  try {
+    const existing = await Project.findOne({ _id: req.params.id, ...req.tenantFilter });
+    if (!existing) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    const note = String(req.body?.note || '').trim();
+    if (!note) {
+      return res.status(400).json({ error: 'Note is required' });
+    }
+
+    existing.projectNotes = Array.isArray(existing.projectNotes) ? existing.projectNotes : [];
+    existing.projectNotes.push({
+      note,
+      createdBy: req.user?._id,
+      createdAt: new Date(),
+    });
+
+    await existing.save();
+
+    const project = await Project.findOne({ _id: req.params.id, ...req.tenantFilter })
+      .populate('progressUpdates.createdBy', 'firstName lastName email')
+      .populate('projectNotes.createdBy', 'firstName lastName email');
 
     res.json(project);
   } catch (error) {

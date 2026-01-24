@@ -10,6 +10,8 @@ const attachmentSchema = new mongoose.Schema({
 const expenseSchema = new mongoose.Schema({
   tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
 
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', index: true },
+
   expenseNumber: { type: String, required: true },
   expenseDate: { type: Date, required: true, index: true },
 
@@ -58,6 +60,7 @@ expenseSchema.index({ tenantId: 1, expenseNumber: 1 }, { unique: true });
 expenseSchema.index({ tenantId: 1, status: 1 });
 expenseSchema.index({ tenantId: 1, expenseDate: -1 });
 expenseSchema.index({ tenantId: 1, category: 1 });
+expenseSchema.index({ tenantId: 1, projectId: 1, expenseDate: -1 });
 
 expenseSchema.pre('save', function(next) {
   const amount = Number(this.amount) || 0;

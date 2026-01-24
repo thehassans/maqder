@@ -35,6 +35,14 @@ const projectSchema = new mongoose.Schema({
     }
   ],
 
+  projectNotes: [
+    {
+      note: { type: String },
+      createdAt: { type: Date, default: Date.now },
+      createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+    }
+  ],
+
   isActive: { type: Boolean, default: true },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, {

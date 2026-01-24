@@ -1,5 +1,7 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Expense from '../models/Expense.js';
+import Project from '../models/Project.js';
 import Supplier from '../models/Supplier.js';
 import Employee from '../models/Employee.js';
 import Customer from '../models/Customer.js';
@@ -53,6 +55,7 @@ router.get('/', checkPermission('finance', 'read'), async (req, res) => {
       search,
       status,
       category,
+      projectId,
       supplierId,
       employeeId,
       customerId,
@@ -72,6 +75,12 @@ router.get('/', checkPermission('finance', 'read'), async (req, res) => {
 
     if (status) query.status = status;
     if (category) query.category = category;
+    if (projectId) {
+      if (!mongoose.Types.ObjectId.isValid(projectId)) {
+        return res.status(400).json({ error: 'Invalid projectId' });
+      }
+      query.projectId = projectId;
+    }
     if (supplierId) query.supplierId = supplierId;
     if (employeeId) query.employeeId = employeeId;
     if (customerId) query.customerId = customerId;
@@ -99,6 +108,7 @@ router.get('/', checkPermission('finance', 'read'), async (req, res) => {
 
     const [expenses, total] = await Promise.all([
       Expense.find(query)
+        .populate('projectId', 'code nameEn nameAr')
         .populate('supplierId', 'code nameEn nameAr phone email')
         .populate('employeeId', 'employeeId firstNameEn lastNameEn firstNameAr lastNameAr')
         .populate('customerId', 'name nameAr email phone')
@@ -119,9 +129,16 @@ router.get('/', checkPermission('finance', 'read'), async (req, res) => {
 
 router.get('/stats', checkPermission('finance', 'read'), async (req, res) => {
   try {
-    const { isActive } = req.query;
+    const { isActive, projectId } = req.query;
 
     const match = { ...req.tenantFilter };
+
+    if (projectId) {
+      if (!mongoose.Types.ObjectId.isValid(projectId)) {
+        return res.status(400).json({ error: 'Invalid projectId' });
+      }
+      match.projectId = new mongoose.Types.ObjectId(projectId);
+    }
 
     if (isActive === 'false') {
       match.isActive = false;
@@ -139,6 +156,7 @@ router.get('/stats', checkPermission('finance', 'read'), async (req, res) => {
               $group: {
                 _id: null,
                 total: { $sum: 1 },
+                grossTotal: { $sum: { $ifNull: ['$totalAmount', 0] } },
                 paidTotal: {
                   $sum: {
                     $cond: [
@@ -190,7 +208,7 @@ router.get('/stats', checkPermission('finance', 'read'), async (req, res) => {
       }
     ]);
 
-    const totals = result?.totals?.[0] || { total: 0, paidTotal: 0, approvedTotal: 0 };
+    const totals = result?.totals?.[0] || { total: 0, grossTotal: 0, paidTotal: 0, approvedTotal: 0 };
 
     res.json({
       totals,
@@ -206,6 +224,7 @@ router.get('/stats', checkPermission('finance', 'read'), async (req, res) => {
 router.get('/:id', checkPermission('finance', 'read'), async (req, res) => {
   try {
     const expense = await Expense.findOne({ _id: req.params.id, ...req.tenantFilter })
+      .populate('projectId', 'code nameEn nameAr')
       .populate('supplierId', 'code nameEn nameAr phone email')
       .populate('employeeId', 'employeeId firstNameEn lastNameEn firstNameAr lastNameAr')
       .populate('customerId', 'name nameAr email phone');
@@ -231,6 +250,7 @@ router.post('/', checkPermission('finance', 'create'), async (req, res) => {
     const supplierId = req.body.supplierId || null;
     const employeeId = req.body.employeeId || null;
     const customerId = req.body.customerId || null;
+    const projectId = req.body.projectId || null;
 
     if (supplierId) {
       const supplier = await Supplier.findOne({ _id: supplierId, ...req.tenantFilter });
@@ -245,6 +265,12 @@ router.post('/', checkPermission('finance', 'create'), async (req, res) => {
     if (customerId) {
       const customer = await Customer.findOne({ _id: customerId, ...req.tenantFilter });
       if (!customer) return res.status(400).json({ error: 'Invalid customer' });
+    }
+
+    if (projectId) {
+      if (!mongoose.Types.ObjectId.isValid(projectId)) return res.status(400).json({ error: 'Invalid projectId' });
+      const project = await Project.findOne({ _id: projectId, ...req.tenantFilter });
+      if (!project) return res.status(400).json({ error: 'Invalid project' });
     }
 
     const expenseNumber = req.body.expenseNumber || (await generateExpenseNumber(req.tenantFilter));
@@ -306,6 +332,13 @@ router.put('/:id', checkPermission('finance', 'update'), async (req, res) => {
     if (updateData.customerId) {
       const customer = await Customer.findOne({ _id: updateData.customerId, ...req.tenantFilter });
       if (!customer) return res.status(400).json({ error: 'Invalid customer' });
+    }
+
+    if (updateData.projectId === '') updateData.projectId = null;
+    if (updateData.projectId) {
+      if (!mongoose.Types.ObjectId.isValid(updateData.projectId)) return res.status(400).json({ error: 'Invalid projectId' });
+      const project = await Project.findOne({ _id: updateData.projectId, ...req.tenantFilter });
+      if (!project) return res.status(400).json({ error: 'Invalid project' });
     }
 
     Object.assign(existing, updateData);

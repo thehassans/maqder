@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Plus, Search, Receipt, Edit, FileText } from 'lucide-react'
 import api from '../lib/api'
@@ -39,18 +39,25 @@ export default function Expenses() {
   const { language } = useSelector((state) => state.ui)
   const { t } = useTranslation(language)
 
+  const location = useLocation()
+  const projectIdFromQuery = useMemo(() => {
+    const params = new URLSearchParams(location.search)
+    return String(params.get('projectId') || '').trim()
+  }, [location.search])
+
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
   const [page, setPage] = useState(1)
 
   const { data, isLoading } = useQuery({
-    queryKey: ['expenses', { search, status, page }],
+    queryKey: ['expenses', { search, status, page, projectId: projectIdFromQuery }],
     queryFn: () =>
       api
         .get('/expenses', {
           params: {
             search,
             status,
+            ...(projectIdFromQuery ? { projectId: projectIdFromQuery } : {}),
             page,
             limit: 25,
           },
@@ -59,8 +66,8 @@ export default function Expenses() {
   })
 
   const { data: stats } = useQuery({
-    queryKey: ['expense-stats'],
-    queryFn: () => api.get('/expenses/stats').then((res) => res.data),
+    queryKey: ['expense-stats', { projectId: projectIdFromQuery }],
+    queryFn: () => api.get('/expenses/stats', { params: projectIdFromQuery ? { projectId: projectIdFromQuery } : {} }).then((res) => res.data),
   })
 
   const expenses = data?.expenses || []
@@ -116,7 +123,7 @@ export default function Expenses() {
 
     while (true) {
       const res = await api.get('/expenses', {
-        params: { search, status, page: currentPage, limit }
+        params: { search, status, ...(projectIdFromQuery ? { projectId: projectIdFromQuery } : {}), page: currentPage, limit }
       })
       const batch = res.data?.expenses || []
       all = all.concat(batch)
@@ -151,7 +158,7 @@ export default function Expenses() {
             title={language === 'ar' ? 'المصروفات' : 'Expenses'}
             disabled={isLoading || expenses.length === 0}
           />
-          <Link to="/expenses/new" className="btn btn-primary">
+          <Link to={projectIdFromQuery ? `/expenses/new?projectId=${projectIdFromQuery}` : '/expenses/new'} className="btn btn-primary">
             <Plus className="w-4 h-4" />
             {language === 'ar' ? 'إضافة مصروف' : 'Add Expense'}
           </Link>

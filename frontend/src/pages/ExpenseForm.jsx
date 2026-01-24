@@ -1,10 +1,10 @@
 import { useEffect, useMemo } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Save, Receipt, CheckCircle2, DollarSign, XCircle, Building2, Users, User } from 'lucide-react'
+import { ArrowLeft, Save, Receipt, CheckCircle2, DollarSign, XCircle, Building2, Users, User, FolderKanban } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
@@ -41,6 +41,12 @@ export default function ExpenseForm() {
   const { id } = useParams()
   const isEdit = Boolean(id)
 
+  const location = useLocation()
+  const projectIdFromQuery = useMemo(() => {
+    const params = new URLSearchParams(location.search)
+    return String(params.get('projectId') || '').trim()
+  }, [location.search])
+
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
@@ -64,6 +70,7 @@ export default function ExpenseForm() {
       categoryAr: '',
       description: '',
       descriptionAr: '',
+      projectId: projectIdFromQuery,
       payeeType: 'supplier',
       supplierId: '',
       employeeId: '',
@@ -98,6 +105,12 @@ export default function ExpenseForm() {
   })
 
   const payeeType = watch('payeeType')
+
+  const { data: projects } = useQuery({
+    queryKey: ['projects-lookup'],
+    queryFn: () => api.get('/projects', { params: { limit: 200 } }).then((res) => res.data.projects),
+    retry: false,
+  })
 
   useEffect(() => {
     if (payeeType === 'supplier') {
@@ -139,6 +152,7 @@ export default function ExpenseForm() {
         categoryAr: data?.categoryAr || '',
         description: data?.description || '',
         descriptionAr: data?.descriptionAr || '',
+        projectId: data?.projectId?._id || data?.projectId || projectIdFromQuery,
         payeeType: initialPayeeType,
         supplierId: data?.supplierId?._id || data?.supplierId || '',
         employeeId: data?.employeeId?._id || data?.employeeId || '',
@@ -281,6 +295,7 @@ export default function ExpenseForm() {
       categoryAr: data.categoryAr,
       description: data.description,
       descriptionAr: data.descriptionAr,
+      projectId: String(data.projectId || '').trim() === '' ? '' : String(data.projectId || '').trim(),
       currency: data.currency,
       amount: Number(data.amount || 0),
       taxAmount: Number(data.taxAmount || 0),
@@ -392,6 +407,23 @@ export default function ExpenseForm() {
               <label className="label">{language === 'ar' ? 'تاريخ المصروف' : 'Expense Date'} *</label>
               <input type="date" {...register('expenseDate', { required: true })} className="input" disabled={isLocked} />
               {errors.expenseDate && <p className="mt-1 text-sm text-red-500">{language === 'ar' ? 'مطلوب' : 'Required'}</p>}
+            </div>
+
+            <div>
+              <label className="label">
+                <span className="inline-flex items-center gap-2">
+                  <FolderKanban className="w-4 h-4 text-gray-400" />
+                  {language === 'ar' ? 'المشروع' : 'Project'}
+                </span>
+              </label>
+              <select {...register('projectId')} className="select" disabled={isLocked}>
+                <option value="">{language === 'ar' ? 'بدون مشروع' : 'No project'}</option>
+                {(projects || []).map((p) => (
+                  <option key={p._id} value={p._id}>
+                    {(language === 'ar' ? p.nameAr || p.nameEn : p.nameEn) || p.code}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>
