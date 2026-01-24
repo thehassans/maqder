@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Save, Package, DollarSign, Warehouse } from 'lucide-react'
+import { ArrowLeft, Save, Package, DollarSign, Warehouse, Factory, Plus, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
@@ -25,6 +25,8 @@ export default function ProductForm() {
   const [stockQuantity, setStockQuantity] = useState(0)
   const [stockReorderPoint, setStockReorderPoint] = useState(10)
   const [savingStock, setSavingStock] = useState(false)
+  const [isManufactured, setIsManufactured] = useState(false)
+  const [bomComponents, setBomComponents] = useState([])
 
   const buildPayload = (data) => {
     const payload = { ...data }
@@ -40,6 +42,15 @@ export default function ProductForm() {
     delete payload.landedCostHistory
     delete payload.averageLandedCost
     delete payload.predictedDemand
+
+    payload.isManufactured = Boolean(isManufactured)
+    payload.bomComponents = (Array.isArray(bomComponents) ? bomComponents : [])
+      .filter((c) => c?.productId)
+      .map((c) => ({
+        productId: c.productId,
+        quantity: Number.isFinite(Number(c.quantity)) ? Number(c.quantity) : 0,
+        notes: c.notes || undefined,
+      }))
 
     if (isEdit) {
       delete payload.stocks
@@ -97,8 +108,27 @@ export default function ProductForm() {
       }
       setProduct(normalized)
       reset(normalized)
+      setIsManufactured(Boolean(normalized?.isManufactured))
+      setBomComponents(
+        (Array.isArray(normalized?.bomComponents) ? normalized.bomComponents : []).map((c) => ({
+          productId: String(c?.productId?._id || c?.productId || ''),
+          quantity: c?.quantity ?? 0,
+          notes: c?.notes || ''
+        }))
+      )
     }
   })
+
+  const { data: productsList } = useQuery({
+    queryKey: ['products-list-lookup'],
+    queryFn: () => api.get('/products', { params: { limit: 200 } }).then((res) => res.data.products),
+  })
+
+  const bomProductOptions = useMemo(() => {
+    const rows = Array.isArray(productsList) ? productsList : []
+    const currentId = String(id || '')
+    return rows.filter((p) => String(p._id) !== currentId)
+  }, [productsList, id])
 
   const { data: warehouses } = useQuery({
     queryKey: ['warehouses'],
@@ -231,6 +261,112 @@ export default function ProductForm() {
               <textarea {...register('descriptionEn')} className="input" rows={2} />
             </div>
           </div>
+        </motion.div>
+
+        {/* Manufacturing / BOM */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="card p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg"><Factory className="w-5 h-5 text-amber-600" /></div>
+            <h3 className="text-lg font-semibold">{language === 'ar' ? 'التصنيع (BOM)' : 'Manufacturing (BOM)'}</h3>
+          </div>
+
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="text-sm font-medium text-gray-900 dark:text-white">{language === 'ar' ? 'هل هذا المنتج يُصنع؟' : 'Is this product manufactured?'}</div>
+              <div className="text-sm text-gray-500 mt-1">
+                {language === 'ar' ? 'فعّل BOM لإتاحة تخطيط MRP حسب المكونات.' : 'Enable BOM to allow component-based MRP planning.'}
+              </div>
+            </div>
+            <label className="inline-flex items-center gap-2">
+              <input type="checkbox" checked={isManufactured} onChange={(e) => setIsManufactured(e.target.checked)} />
+              <span className="text-sm">{language === 'ar' ? 'مُصنّع' : 'Manufactured'}</span>
+            </label>
+          </div>
+
+          {isManufactured && (
+            <div className="mt-6 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-medium text-gray-900 dark:text-white">{language === 'ar' ? 'مكوّنات BOM' : 'BOM Components'}</div>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setBomComponents((prev) => prev.concat({ productId: '', quantity: 1, notes: '' }))}
+                >
+                  <Plus className="w-4 h-4" />
+                  {language === 'ar' ? 'إضافة مكوّن' : 'Add component'}
+                </button>
+              </div>
+
+              {bomComponents.length === 0 ? (
+                <div className="text-sm text-gray-500">{language === 'ar' ? 'لا توجد مكوّنات بعد.' : 'No components yet.'}</div>
+              ) : (
+                <div className="space-y-3">
+                  {bomComponents.map((c, idx) => (
+                    <div key={idx} className="p-4 bg-gray-50 dark:bg-dark-700 rounded-xl">
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                        <div className="md:col-span-7">
+                          <label className="label">{language === 'ar' ? 'المكوّن' : 'Component'}</label>
+                          <select
+                            className="select"
+                            value={c.productId}
+                            onChange={(e) =>
+                              setBomComponents((prev) =>
+                                prev.map((x, i) => (i === idx ? { ...x, productId: e.target.value } : x))
+                              )
+                            }
+                          >
+                            <option value="">{language === 'ar' ? 'اختر منتج' : 'Select product'}</option>
+                            {bomProductOptions.map((p) => (
+                              <option key={p._id} value={p._id}>
+                                {(language === 'ar' ? p.nameAr || p.nameEn : p.nameEn) || p.sku}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="md:col-span-3">
+                          <label className="label">{language === 'ar' ? 'الكمية لكل 1' : 'Qty per 1'}</label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.0001"
+                            className="input"
+                            value={c.quantity}
+                            onChange={(e) =>
+                              setBomComponents((prev) =>
+                                prev.map((x, i) => (i === idx ? { ...x, quantity: e.target.value } : x))
+                              )
+                            }
+                          />
+                        </div>
+                        <div className="md:col-span-2 flex justify-end">
+                          <button
+                            type="button"
+                            className="btn btn-danger"
+                            onClick={() => setBomComponents((prev) => prev.filter((_, i) => i !== idx))}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="mt-3">
+                        <label className="label">{language === 'ar' ? 'ملاحظات' : 'Notes'}</label>
+                        <input
+                          className="input"
+                          value={c.notes}
+                          onChange={(e) =>
+                            setBomComponents((prev) =>
+                              prev.map((x, i) => (i === idx ? { ...x, notes: e.target.value } : x))
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </motion.div>
 
         {/* Pricing */}

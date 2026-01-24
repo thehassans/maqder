@@ -136,6 +136,7 @@ router.get('/:id', checkPermission('inventory', 'read'), async (req, res) => {
     const product = await Product.findOne({ _id: req.params.id, ...req.tenantFilter })
       .populate('stocks.warehouseId', 'nameEn nameAr code')
       .populate('suppliers.supplierId', 'name')
+      .populate('bomComponents.productId', 'sku nameEn nameAr costPrice')
       .lean();
     
     if (!product) {

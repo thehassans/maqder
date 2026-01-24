@@ -147,6 +147,105 @@ router.get('/suggestions', checkPermission('mrp', 'read'), async (req, res) => {
   }
 });
 
+router.post('/bom-plan', checkPermission('mrp', 'read'), async (req, res) => {
+  try {
+    const { productId, quantity } = req.body;
+
+    const demandQty = safeNumber(quantity, 0);
+    if (!productId) {
+      return res.status(400).json({ error: 'productId is required' });
+    }
+    if (!Number.isFinite(demandQty) || demandQty <= 0) {
+      return res.status(400).json({ error: 'quantity must be a positive number' });
+    }
+
+    const finished = await Product.findOne({ _id: productId, ...req.tenantFilter, isActive: true })
+      .select('sku nameEn nameAr isManufactured bomComponents')
+      .populate('bomComponents.productId', 'sku nameEn nameAr costPrice stocks suppliers taxRate')
+      .lean();
+
+    if (!finished) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    if (!finished.isManufactured) {
+      return res.status(400).json({ error: 'Selected product is not marked as manufactured' });
+    }
+
+    const components = Array.isArray(finished.bomComponents) ? finished.bomComponents : [];
+    if (components.length === 0) {
+      return res.status(400).json({ error: 'No BOM components configured for this product' });
+    }
+
+    const incomingMap = await getIncomingMap(req.tenantFilter);
+
+    const lines = [];
+
+    for (const c of components) {
+      const compProd = c?.productId;
+      if (!compProd || !compProd._id) continue;
+
+      const perUnit = safeNumber(c?.quantity, 0);
+      if (!Number.isFinite(perUnit) || perUnit <= 0) continue;
+
+      const requiredQty = demandQty * perUnit;
+      const stockInfo = computeAvailableStock(compProd);
+
+      const availableQty = safeNumber(stockInfo.available, 0);
+      const incomingQty = safeNumber(incomingMap.get(String(compProd._id)), 0);
+      const projectedQty = availableQty + incomingQty;
+      const shortageQty = Math.max(0, requiredQty - projectedQty);
+
+      const suppliers = Array.isArray(compProd?.suppliers) ? compProd.suppliers : [];
+      const preferred = suppliers.find((s) => s?.isPreferred && s?.supplierId);
+      const fallback = suppliers.find((s) => s?.supplierId);
+      const unitCost = safeNumber(preferred?.cost ?? fallback?.cost ?? compProd?.costPrice, 0);
+
+      lines.push({
+        componentId: compProd._id,
+        sku: compProd.sku,
+        nameEn: compProd.nameEn,
+        nameAr: compProd.nameAr,
+        perUnit,
+        requiredQty,
+        onHand: stockInfo.onHand,
+        reservedQty: stockInfo.reserved,
+        availableQty,
+        incomingQty,
+        projectedQty,
+        shortageQty,
+        unitCost,
+        estimatedCost: shortageQty * unitCost
+      });
+    }
+
+    const shortages = lines.filter((l) => (l.shortageQty || 0) > 0);
+    const totals = shortages.reduce(
+      (acc, l) => {
+        acc.shortageQty += safeNumber(l.shortageQty, 0);
+        acc.estimatedCost += safeNumber(l.estimatedCost, 0);
+        return acc;
+      },
+      { shortageQty: 0, estimatedCost: 0 }
+    );
+
+    res.json({
+      product: {
+        productId: finished._id,
+        sku: finished.sku,
+        nameEn: finished.nameEn,
+        nameAr: finished.nameAr,
+        quantity: demandQty
+      },
+      components: lines,
+      shortages,
+      totals
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.get('/stats', checkPermission('mrp', 'read'), async (req, res) => {
   try {
     const { search, multiplier = 2 } = req.query;

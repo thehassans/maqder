@@ -4,6 +4,7 @@ const jobCostingJobSchema = new mongoose.Schema({
   tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
 
   code: { type: String, required: true },
+  jobType: { type: String, enum: ['project', 'manufacturing'], default: 'project', index: true },
   nameEn: { type: String, required: true },
   nameAr: { type: String },
   description: { type: String },
@@ -32,6 +33,7 @@ const jobCostingJobSchema = new mongoose.Schema({
 jobCostingJobSchema.index({ tenantId: 1, code: 1 }, { unique: true });
 jobCostingJobSchema.index({ tenantId: 1, status: 1 });
 jobCostingJobSchema.index({ tenantId: 1, dueDate: 1 });
+jobCostingJobSchema.index({ tenantId: 1, jobType: 1 });
 
 const JobCostingJob = mongoose.model('JobCostingJob', jobCostingJobSchema);
 export default JobCostingJob;

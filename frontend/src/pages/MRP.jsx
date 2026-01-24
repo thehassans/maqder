@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Search, Factory, Package, TrendingUp, ArrowUpRight, Edit, ShoppingCart, HelpCircle } from 'lucide-react'
+import { Search, Factory, Package, TrendingUp, ArrowUpRight, Edit, ShoppingCart, HelpCircle, Boxes } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
@@ -20,6 +20,10 @@ export default function MRP() {
   const [page, setPage] = useState(1)
   const [multiplier, setMultiplier] = useState(2)
   const [selected, setSelected] = useState({})
+  const [planningMode, setPlanningMode] = useState('reorder')
+  const [bomProductId, setBomProductId] = useState('')
+  const [bomQuantity, setBomQuantity] = useState(1)
+  const [bomResult, setBomResult] = useState(null)
 
   const exportColumns = [
     { key: 'sku', label: 'SKU', value: (r) => r?.sku || '' },
@@ -50,6 +54,25 @@ export default function MRP() {
           },
         })
         .then((res) => res.data),
+  })
+
+  const { data: products } = useQuery({
+    queryKey: ['products-list-mrp'],
+    queryFn: () => api.get('/products', { params: { limit: 200 } }).then((res) => res.data.products),
+  })
+
+  const manufacturedProducts = useMemo(() => {
+    const rows = Array.isArray(products) ? products : []
+    return rows.filter((p) => p?.isManufactured)
+  }, [products])
+
+  const bomPlanMutation = useMutation({
+    mutationFn: (payload) => api.post('/mrp/bom-plan', payload).then((res) => res.data),
+    onSuccess: (res) => {
+      setBomResult(res)
+      toast.success(language === 'ar' ? 'تم إنشاء خطة BOM' : 'BOM plan generated')
+    },
+    onError: (err) => toast.error(err.response?.data?.error || 'Error'),
   })
 
   const getExportRows = async () => {
@@ -105,6 +128,13 @@ export default function MRP() {
       .map((s) => ({ productId: s.productId, quantity: Number(s.recommendedQty || 0) }))
       .filter((x) => x.productId && x.quantity > 0)
   }, [selected, suggestions])
+
+  const bomShortageItems = useMemo(() => {
+    const shortages = bomResult?.shortages || []
+    return shortages
+      .map((l) => ({ productId: l.componentId, quantity: Number(l.shortageQty || 0) }))
+      .filter((x) => x.productId && x.quantity > 0)
+  }, [bomResult])
 
   const totals = stats?.totals
   const byCategory = stats?.byCategory || []
@@ -249,12 +279,26 @@ export default function MRP() {
                 setPage(1)
               }}
               className="select w-full sm:w-56"
+              disabled={planningMode !== 'reorder'}
             >
               {[1, 2, 3, 4, 5].map((m) => (
                 <option key={m} value={m}>
                   {language === 'ar' ? `هدف المخزون: ${m}× نقطة إعادة الطلب` : `Target: ${m}× reorder point`}
                 </option>
               ))}
+            </select>
+
+            <select
+              value={planningMode}
+              onChange={(e) => {
+                setPlanningMode(e.target.value)
+                setSelected({})
+                setBomResult(null)
+              }}
+              className="select w-full sm:w-56"
+            >
+              <option value="reorder">{language === 'ar' ? 'تخطيط إعادة الطلب' : 'Reorder Planning'}</option>
+              <option value="bom">{language === 'ar' ? 'تخطيط BOM' : 'BOM Planning'}</option>
             </select>
           </div>
         </div>
@@ -279,10 +323,11 @@ export default function MRP() {
       </div>
 
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card">
-        {isLoading ? (
-          <div className="p-8 text-center"><div className="inline-block w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" /></div>
-        ) : (
-          <div className="table-container">
+        {planningMode === 'reorder' ? (
+          isLoading ? (
+            <div className="p-8 text-center"><div className="inline-block w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" /></div>
+          ) : (
+            <div className="table-container">
             <table className="table">
               <thead>
                 <tr>
@@ -351,11 +396,95 @@ export default function MRP() {
                 ))}
               </tbody>
             </table>
+            </div>
+          )
+        ) : (
+          <div className="p-6 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-2">
+                <label className="label">{language === 'ar' ? 'منتج مُصنّع' : 'Manufactured Product'}</label>
+                <select value={bomProductId} onChange={(e) => setBomProductId(e.target.value)} className="select">
+                  <option value="">{language === 'ar' ? 'اختر منتج' : 'Select product'}</option>
+                  {manufacturedProducts.map((p) => (
+                    <option key={p._id} value={p._id}>
+                      {(language === 'ar' ? p.nameAr || p.nameEn : p.nameEn) || p.sku}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'الكمية المطلوبة' : 'Required Quantity'}</label>
+                <input type="number" min="1" step="1" value={bomQuantity} onChange={(e) => setBomQuantity(Number(e.target.value))} className="input" />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={!bomProductId || bomPlanMutation.isPending || !(Number(bomQuantity) > 0)}
+                onClick={() => bomPlanMutation.mutate({ productId: bomProductId, quantity: Number(bomQuantity || 0) })}
+              >
+                {bomPlanMutation.isPending ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <Boxes className="w-4 h-4" />
+                    {language === 'ar' ? 'إنشاء خطة BOM' : 'Generate BOM Plan'}
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-secondary"
+                disabled={createPoMutation.isPending || bomShortageItems.length === 0}
+                onClick={() => createPoMutation.mutate({ items: bomShortageItems, notes: 'Created from MRP BOM plan' })}
+              >
+                <ShoppingCart className="w-4 h-4" />
+                {language === 'ar' ? 'إنشاء طلب شراء للنواقص' : 'Create PO for Shortages'}
+              </button>
+            </div>
+
+            <div className="table-container">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>{language === 'ar' ? 'المكوّن' : 'Component'}</th>
+                    <th>{language === 'ar' ? 'المطلوب' : 'Required'}</th>
+                    <th>{language === 'ar' ? 'المتاح' : 'Available'}</th>
+                    <th>{language === 'ar' ? 'وارد' : 'Incoming'}</th>
+                    <th>{language === 'ar' ? 'نقص' : 'Shortage'}</th>
+                    <th>{language === 'ar' ? 'تكلفة' : 'Cost'}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(bomResult?.components || []).map((l) => (
+                    <tr key={l.componentId}>
+                      <td className="font-medium">
+                        {(language === 'ar' ? l.nameAr || l.nameEn : l.nameEn || l.nameAr) || l.sku}
+                        <div className="text-xs text-gray-500 font-mono">{l.sku}</div>
+                      </td>
+                      <td className="font-mono text-sm">{Number(l.requiredQty || 0).toLocaleString()}</td>
+                      <td className="font-mono text-sm">{Number(l.availableQty || 0).toLocaleString()}</td>
+                      <td className="font-mono text-sm">{Number(l.incomingQty || 0).toLocaleString()}</td>
+                      <td className="font-mono text-sm font-semibold text-amber-600">{Number(l.shortageQty || 0).toLocaleString()}</td>
+                      <td className="font-semibold"><Money value={l.estimatedCost || 0} minimumFractionDigits={0} maximumFractionDigits={0} /></td>
+                    </tr>
+                  ))}
+                  {(bomResult?.components || []).length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="text-center text-sm text-gray-500 py-8">{language === 'ar' ? 'لا توجد بيانات' : 'No data'}</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </motion.div>
 
-      {pagination?.pages > 1 && (
+      {planningMode === 'reorder' && pagination?.pages > 1 && (
         <div className="flex items-center justify-between">
           <button className="btn btn-secondary" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
             {language === 'ar' ? 'السابق' : 'Previous'}

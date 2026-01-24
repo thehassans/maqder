@@ -15,7 +15,7 @@ export default function JobCosting() {
 
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
-  const [filters, setFilters] = useState({ status: '', projectId: '' })
+  const [filters, setFilters] = useState({ status: '', projectId: '', jobType: '' })
 
   const exportColumns = [
     {
@@ -69,6 +69,7 @@ export default function JobCosting() {
             search,
             status: filters.status,
             projectId: filters.projectId,
+            jobType: filters.jobType,
           },
         })
         .then((res) => res.data),
@@ -87,6 +88,7 @@ export default function JobCosting() {
           search,
           status: filters.status,
           projectId: filters.projectId,
+          jobType: filters.jobType,
         },
       })
       const batch = res.data?.jobs || []
@@ -103,8 +105,8 @@ export default function JobCosting() {
   }
 
   const { data: stats } = useQuery({
-    queryKey: ['job-costing-stats'],
-    queryFn: () => api.get('/job-costing/jobs/stats').then((res) => res.data),
+    queryKey: ['job-costing-stats', filters.jobType],
+    queryFn: () => api.get('/job-costing/jobs/stats', { params: { jobType: filters.jobType || undefined } }).then((res) => res.data),
   })
 
   const { data: projects } = useQuery({
@@ -278,6 +280,19 @@ export default function JobCosting() {
             <option value="on_hold">{language === 'ar' ? 'متوقف' : 'On Hold'}</option>
             <option value="completed">{language === 'ar' ? 'مكتمل' : 'Completed'}</option>
             <option value="cancelled">{language === 'ar' ? 'ملغي' : 'Cancelled'}</option>
+          </select>
+
+          <select
+            value={filters.jobType}
+            onChange={(e) => {
+              setFilters((f) => ({ ...f, jobType: e.target.value }))
+              setPage(1)
+            }}
+            className="select w-full lg:w-56"
+          >
+            <option value="">{language === 'ar' ? 'كل الأنواع' : 'All Types'}</option>
+            <option value="project">{language === 'ar' ? 'مشروع' : 'Project'}</option>
+            <option value="manufacturing">{language === 'ar' ? 'تصنيع' : 'Manufacturing'}</option>
           </select>
 
           <select

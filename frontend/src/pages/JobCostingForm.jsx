@@ -57,6 +57,7 @@ export default function JobCostingForm() {
   } = useForm({
     defaultValues: {
       code: '',
+      jobType: 'project',
       nameEn: '',
       nameAr: '',
       description: '',
@@ -147,6 +148,7 @@ export default function JobCostingForm() {
     onSuccess: (data) => {
       reset({
         code: data?.code || '',
+        jobType: data?.jobType || 'project',
         nameEn: data?.nameEn || '',
         nameAr: data?.nameAr || '',
         description: data?.description || '',
@@ -160,6 +162,8 @@ export default function JobCostingForm() {
       })
     },
   })
+
+  const jobTypeValue = watch('jobType')
 
   const { data: costsData, isLoading: costsLoading } = useQuery({
     queryKey: ['job-costing-costs', id, costsPage, costsType],
@@ -261,11 +265,12 @@ export default function JobCostingForm() {
   const onSubmit = (data) => {
     const payload = {
       code: data.code || undefined,
+      jobType: data.jobType || 'project',
       nameEn: data.nameEn,
       nameAr: data.nameAr || undefined,
       description: data.description || undefined,
       status: data.status,
-      projectId: data.projectId || undefined,
+      projectId: data.jobType === 'project' ? (data.projectId || undefined) : undefined,
       startDate: data.startDate || undefined,
       dueDate: data.dueDate || undefined,
       budget: Number(data.budget || 0),
@@ -457,7 +462,7 @@ export default function JobCostingForm() {
             </div>
           </div>
 
-          {isEdit && job?.projectId && (
+          {isEdit && (job?.jobType || 'project') === 'project' && job?.projectId && (
             <button
               type="button"
               onClick={() => importExpensesMutation.mutate()}
@@ -499,6 +504,14 @@ export default function JobCostingForm() {
             </div>
 
             <div>
+              <label className="label">{language === 'ar' ? 'نوع العمل' : 'Job Type'}</label>
+              <select {...register('jobType')} className="select" disabled={isEdit && (job?.jobType === 'manufacturing')}>
+                <option value="project">{language === 'ar' ? 'مشروع' : 'Project'}</option>
+                <option value="manufacturing">{language === 'ar' ? 'تصنيع' : 'Manufacturing'}</option>
+              </select>
+            </div>
+
+            <div>
               <label className="label">{t('status')}</label>
               <select {...register('status')} className="select">
                 <option value="planned">{language === 'ar' ? 'مخطط' : 'Planned'}</option>
@@ -511,8 +524,8 @@ export default function JobCostingForm() {
 
             <div>
               <label className="label">{language === 'ar' ? 'المشروع' : 'Project'}</label>
-              <select {...register('projectId')} className="select">
-                <option value="">{language === 'ar' ? 'اختياري' : 'Optional'}</option>
+              <select {...register('projectId')} className="select" disabled={jobTypeValue !== 'project'}>
+                <option value="">{language === 'ar' ? (jobTypeValue === 'project' ? 'اختياري' : 'غير متاح للتصنيع') : (jobTypeValue === 'project' ? 'Optional' : 'Not for manufacturing')}</option>
                 {(projects || []).map((p) => (
                   <option key={p._id} value={p._id}>
                     {(language === 'ar' ? p.nameAr || p.nameEn : p.nameEn) || p.code}

@@ -7,6 +7,10 @@ const isSaudiNationality = (nationality) => {
   const s = raw.toLowerCase();
   if (!s) return false;
 
+  if (s === 'non-saudi' || s === 'non saudi') return false;
+  if (s.includes('non') && s.includes('saudi')) return false;
+  if (raw.includes('غير') && raw.includes('سعود')) return false;
+
   if (s === 'saudi' || s === 'sa' || s === 'ksa') return true;
   if (s === 'saudi arabia' || s === 'kingdom of saudi arabia') return true;
   if (s.includes('saudi')) return true;

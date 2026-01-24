@@ -85,7 +85,9 @@ export default function Payroll() {
   })
 
   const totalNet = data?.payrolls?.reduce((sum, p) => sum + p.netPay, 0) || 0
-  const totalGOSI = data?.payrolls?.reduce((sum, p) => sum + (p.gosi?.totalContribution || 0), 0) || 0
+  const totalGosiEmployee = data?.payrolls?.reduce((sum, p) => sum + (p.gosi?.employeeShare || 0), 0) || 0
+  const totalGosiEmployer = data?.payrolls?.reduce((sum, p) => sum + (p.gosi?.employerShare || 0), 0) || 0
+  const totalGOSI = totalGosiEmployee + totalGosiEmployer
 
   return (
     <div className="space-y-6">
@@ -140,7 +142,7 @@ export default function Payroll() {
       </div>
 
       {/* Summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div className="card p-4">
           <p className="text-sm text-gray-500">{language === 'ar' ? 'عدد الموظفين' : 'Employees'}</p>
           <p className="text-2xl font-bold">{data?.payrolls?.length || 0}</p>
@@ -150,8 +152,12 @@ export default function Payroll() {
           <p className="text-2xl font-bold text-primary-600"><Money value={totalNet} /></p>
         </div>
         <div className="card p-4">
-          <p className="text-sm text-gray-500">{language === 'ar' ? 'إجمالي التأمينات' : 'Total GOSI'}</p>
-          <p className="text-2xl font-bold"><Money value={totalGOSI} /></p>
+          <p className="text-sm text-gray-500">{language === 'ar' ? 'التأمينات (حصة الموظف)' : 'GOSI (Employee)'}</p>
+          <p className="text-2xl font-bold text-red-600"><Money value={totalGosiEmployee} /></p>
+        </div>
+        <div className="card p-4">
+          <p className="text-sm text-gray-500">{language === 'ar' ? 'التأمينات (حصة صاحب العمل)' : 'GOSI (Employer)'}</p>
+          <p className="text-2xl font-bold text-blue-600"><Money value={totalGosiEmployer} /></p>
         </div>
       </div>
 

@@ -14,7 +14,7 @@ export default function PayrollCalculators() {
   const { language } = useSelector((state) => state.ui)
   const { t } = useTranslation(language)
 
-  const [gosiInput, setGosiInput] = useState({ salary: '', nationality: 'Saudi' })
+  const [gosiInput, setGosiInput] = useState({ salary: '', nationality: 'Saudi', dateOfBirth: '', asOfDate: '' })
   const [gosiResult, setGosiResult] = useState(null)
   
   const [eosbInput, setEosbInput] = useState({ yearsService: '', lastSalary: '', terminationReason: 'end_of_contract' })
@@ -60,6 +60,11 @@ export default function PayrollCalculators() {
           </div>
 
           <div className="space-y-4 mb-6">
+            <p className="text-sm text-gray-500">
+              {language === 'ar'
+                ? 'هذه الحاسبة تحسب التأمينات بناءً على أساس الأجر الشهري (وقد يُطبّق حد أقصى 45,000). إذا أدخلت تاريخ الميلاد، سيتم احتساب أهلية ساند بدقة.'
+                : 'This calculator uses the monthly GOSI base (cap applies at 45,000). If you provide a date of birth, SANED eligibility is calculated deterministically.'}
+            </p>
             <div>
               <label className="label">
                 <span className="inline-flex items-center gap-1">
@@ -69,11 +74,16 @@ export default function PayrollCalculators() {
               </label>
               <input
                 type="number"
+                min="0"
+                step="0.01"
                 value={gosiInput.salary}
                 onChange={(e) => setGosiInput({ ...gosiInput, salary: e.target.value })}
                 className="input"
                 placeholder="5000"
               />
+              {Number(gosiInput.salary) < 0 && (
+                <p className="text-xs text-red-600 mt-1">{language === 'ar' ? 'الراتب يجب أن يكون 0 أو أكثر' : 'Salary must be 0 or more'}</p>
+              )}
             </div>
             <div>
               <label className="label">{t('nationality')}</label>
@@ -86,9 +96,45 @@ export default function PayrollCalculators() {
                 <option value="Non-Saudi">{language === 'ar' ? 'غير سعودي' : 'Non-Saudi'}</option>
               </select>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="label">{language === 'ar' ? 'تاريخ الميلاد (اختياري)' : 'Date of Birth (optional)'}</label>
+                <input
+                  type="date"
+                  value={gosiInput.dateOfBirth}
+                  onChange={(e) => setGosiInput({ ...gosiInput, dateOfBirth: e.target.value })}
+                  className="input"
+                />
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'تاريخ الاحتساب (اختياري)' : 'As-of Date (optional)'}</label>
+                <input
+                  type="date"
+                  value={gosiInput.asOfDate}
+                  onChange={(e) => setGosiInput({ ...gosiInput, asOfDate: e.target.value })}
+                  className="input"
+                />
+              </div>
+            </div>
+
             <button
-              onClick={() => gosiMutation.mutate({ salary: Number(gosiInput.salary), nationality: gosiInput.nationality, asOfDate: new Date().toISOString() })}
-              disabled={!gosiInput.salary || gosiMutation.isPending}
+              onClick={() => {
+                const salary = Number(gosiInput.salary)
+                if (!Number.isFinite(salary) || salary < 0) return
+                gosiMutation.mutate({
+                  salary,
+                  nationality: gosiInput.nationality,
+                  dateOfBirth: gosiInput.dateOfBirth || undefined,
+                  asOfDate: gosiInput.asOfDate ? new Date(gosiInput.asOfDate).toISOString() : new Date().toISOString()
+                })
+              }}
+              disabled={
+                !gosiInput.salary ||
+                !Number.isFinite(Number(gosiInput.salary)) ||
+                Number(gosiInput.salary) < 0 ||
+                gosiMutation.isPending
+              }
               className="btn btn-primary w-full"
             >
               <Calculator className="w-4 h-4" />
@@ -141,26 +187,40 @@ export default function PayrollCalculators() {
           </div>
 
           <div className="space-y-4 mb-6">
+            <p className="text-sm text-gray-500">
+              {language === 'ar'
+                ? 'أدخل سنوات الخدمة (يمكن أن تكون كسور) وآخر راتب شهري كإجمالي الأجر الشهري. سيتم تطبيق معامل الاستحقاق تلقائياً حسب سبب الانتهاء.'
+                : 'Enter years of service (can be fractional) and the last monthly salary (total monthly wage). Entitlement modifiers are applied automatically based on termination reason.'}
+            </p>
             <div>
               <label className="label">{language === 'ar' ? 'سنوات الخدمة' : 'Years of Service'}</label>
               <input
                 type="number"
+                min="0"
                 step="0.1"
                 value={eosbInput.yearsService}
                 onChange={(e) => setEosbInput({ ...eosbInput, yearsService: e.target.value })}
                 className="input"
                 placeholder="5"
               />
+              {Number(eosbInput.yearsService) < 0 && (
+                <p className="text-xs text-red-600 mt-1">{language === 'ar' ? 'سنوات الخدمة يجب أن تكون 0 أو أكثر' : 'Years of service must be 0 or more'}</p>
+              )}
             </div>
             <div>
               <label className="label">{language === 'ar' ? 'آخر راتب شهري' : 'Last Monthly Salary'}</label>
               <input
                 type="number"
+                min="0"
+                step="0.01"
                 value={eosbInput.lastSalary}
                 onChange={(e) => setEosbInput({ ...eosbInput, lastSalary: e.target.value })}
                 className="input"
                 placeholder="10000"
               />
+              {Number(eosbInput.lastSalary) < 0 && (
+                <p className="text-xs text-red-600 mt-1">{language === 'ar' ? 'الراتب يجب أن يكون 0 أو أكثر' : 'Salary must be 0 or more'}</p>
+              )}
             </div>
             <div>
               <label className="label">{language === 'ar' ? 'سبب انتهاء الخدمة' : 'Termination Reason'}</label>
@@ -180,7 +240,15 @@ export default function PayrollCalculators() {
             </div>
             <button
               onClick={() => eosbMutation.mutate({ yearsService: Number(eosbInput.yearsService), lastSalary: Number(eosbInput.lastSalary), terminationReason: eosbInput.terminationReason })}
-              disabled={!eosbInput.yearsService || !eosbInput.lastSalary || eosbMutation.isPending}
+              disabled={
+                !eosbInput.yearsService ||
+                !eosbInput.lastSalary ||
+                !Number.isFinite(Number(eosbInput.yearsService)) ||
+                !Number.isFinite(Number(eosbInput.lastSalary)) ||
+                Number(eosbInput.yearsService) < 0 ||
+                Number(eosbInput.lastSalary) < 0 ||
+                eosbMutation.isPending
+              }
               className="btn btn-primary w-full"
             >
               <Calculator className="w-4 h-4" />

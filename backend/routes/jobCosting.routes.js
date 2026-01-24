@@ -41,7 +41,7 @@ async function generateJobCode(tenantFilterValue) {
 
 router.get('/jobs', checkPermission('job_costing', 'read'), async (req, res) => {
   try {
-    const { page = 1, limit = 25, status, search, projectId, isActive } = req.query;
+    const { page = 1, limit = 25, status, search, projectId, jobType, isActive } = req.query;
 
     const query = { ...req.tenantFilter };
 
@@ -55,6 +55,7 @@ router.get('/jobs', checkPermission('job_costing', 'read'), async (req, res) => 
 
     if (status) query.status = status;
     if (projectId) query.projectId = projectId;
+    if (jobType) query.jobType = jobType;
 
     if (search) {
       query.$or = [
@@ -111,8 +112,12 @@ router.get('/jobs/stats', checkPermission('job_costing', 'read'), async (req, re
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
+    const { jobType } = req.query;
+    const match = { ...req.tenantFilter, isActive: true, ...(jobType ? { jobType } : {}) };
+    const tenantId = req.tenantFilter?.tenantId;
+
     const [jobStats] = await JobCostingJob.aggregate([
-      { $match: { ...req.tenantFilter, isActive: true } },
+      { $match: match },
       {
         $facet: {
           totals: [
@@ -139,13 +144,87 @@ router.get('/jobs/stats', checkPermission('job_costing', 'read'), async (req, re
               }
             },
             { $count: 'count' }
-          ]
+          ],
+          costs: {
+            totalCost: [
+              {
+                $lookup: {
+                  from: 'jobcostentries',
+                  let: { jobId: '$_id', tenantId: '$tenantId' },
+                  pipeline: [
+                    {
+                      $match: {
+                        $expr: {
+                          $and: [
+                            { $eq: ['$jobId', '$$jobId'] },
+                            { $eq: ['$tenantId', '$$tenantId'] },
+                            { $eq: ['$isActive', true] }
+                          ]
+                        }
+                      }
+                    },
+                    { $group: { _id: null, totalCost: { $sum: '$totalCost' } } }
+                  ],
+                  as: 'costs'
+                }
+              },
+              { $unwind: { path: '$costs', preserveNullAndEmptyArrays: true } },
+              { $group: { _id: null, totalCost: { $sum: '$costs.totalCost' } } }
+            ],
+            monthCost: [
+              {
+                $lookup: {
+                  from: 'jobcostentries',
+                  let: { jobId: '$_id', tenantId: '$tenantId' },
+                  pipeline: [
+                    {
+                      $match: {
+                        date: { $gte: startOfMonth },
+                        $expr: {
+                          $and: [
+                            { $eq: ['$jobId', '$$jobId'] },
+                            { $eq: ['$tenantId', '$$tenantId'] },
+                            { $eq: ['$isActive', true] }
+                          ]
+                        }
+                      }
+                    },
+                    { $group: { _id: null, totalCost: { $sum: '$totalCost' } } }
+                  ],
+                  as: 'costs'
+                }
+              },
+              { $unwind: { path: '$costs', preserveNullAndEmptyArrays: true } },
+              { $group: { _id: null, totalCost: { $sum: '$costs.totalCost' } } }
+            ]
+          },
+          byType: [{ $group: { _id: '$type', totalCost: { $sum: '$totalCost' }, entries: { $sum: 1 } } }]
         }
       }
     ]);
 
     const [costStats] = await JobCostEntry.aggregate([
       { $match: { ...req.tenantFilter, isActive: true } },
+      ...(jobType
+        ? [
+            {
+              $lookup: {
+                from: 'jobcostingjobs',
+                localField: 'jobId',
+                foreignField: '_id',
+                as: 'job'
+              }
+            },
+            { $unwind: '$job' },
+            {
+              $match: {
+                ...(tenantId ? { 'job.tenantId': tenantId } : {}),
+                'job.isActive': true,
+                'job.jobType': jobType
+              }
+            }
+          ]
+        : []),
       {
         $facet: {
           totalCost: [{ $group: { _id: null, totalCost: { $sum: '$totalCost' } } }],
@@ -211,6 +290,10 @@ router.post('/jobs/:id/import-expenses', checkPermission('job_costing', 'update'
     const job = await JobCostingJob.findOne({ _id: req.params.id, ...req.tenantFilter, isActive: true });
     if (!job) {
       return res.status(404).json({ error: 'Job not found' });
+    }
+
+    if (job.jobType && job.jobType !== 'project') {
+      return res.status(400).json({ error: 'Project expenses can only be imported for project jobs' });
     }
 
     if (!job.projectId) {
@@ -287,6 +370,16 @@ router.post('/jobs', checkPermission('job_costing', 'create'), async (req, res) 
       return res.status(400).json({ error: 'No tenant associated with user' });
     }
 
+    const allowedJobTypes = ['project', 'manufacturing'];
+    const requestedType = req.body.jobType;
+    if (requestedType && !allowedJobTypes.includes(requestedType)) {
+      return res.status(400).json({ error: 'Invalid jobType' });
+    }
+
+    if (req.body.projectId && (req.body.jobType || 'project') !== 'project') {
+      return res.status(400).json({ error: 'projectId is only allowed for project jobs' });
+    }
+
     if (req.body.projectId) {
       const project = await Project.findOne({ _id: req.body.projectId, ...req.tenantFilter, isActive: true });
       if (!project) {
@@ -319,6 +412,19 @@ router.put('/jobs/:id', checkPermission('job_costing', 'update'), async (req, re
     const existing = await JobCostingJob.findOne({ _id: req.params.id, ...req.tenantFilter });
     if (!existing) {
       return res.status(404).json({ error: 'Job not found' });
+    }
+
+    const allowedJobTypes = ['project', 'manufacturing'];
+    if (typeof req.body.jobType !== 'undefined') {
+      if (req.body.jobType && !allowedJobTypes.includes(req.body.jobType)) {
+        return res.status(400).json({ error: 'Invalid jobType' });
+      }
+    }
+
+    const nextType = (typeof req.body.jobType !== 'undefined' ? req.body.jobType : existing.jobType) || 'project';
+
+    if (req.body.projectId && nextType !== 'project') {
+      return res.status(400).json({ error: 'projectId is only allowed for project jobs' });
     }
 
     if (req.body.projectId) {

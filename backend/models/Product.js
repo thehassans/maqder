@@ -30,6 +30,12 @@ const landedCostSchema = new mongoose.Schema({
   notes: { type: String }
 });
 
+const bomComponentSchema = new mongoose.Schema({
+  productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+  quantity: { type: Number, required: true, min: 0 },
+  notes: { type: String }
+}, { _id: false });
+
 const productSchema = new mongoose.Schema({
   tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
   
@@ -97,6 +103,10 @@ const productSchema = new mongoose.Schema({
     leadTimeDays: { type: Number },
     isPreferred: { type: Boolean, default: false }
   }],
+
+  // BOM (optional)
+  isManufactured: { type: Boolean, default: false },
+  bomComponents: { type: [bomComponentSchema], default: [] },
   
   // Status
   status: {
