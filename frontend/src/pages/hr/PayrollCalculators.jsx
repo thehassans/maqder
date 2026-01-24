@@ -87,7 +87,7 @@ export default function PayrollCalculators() {
               </select>
             </div>
             <button
-              onClick={() => gosiMutation.mutate({ salary: Number(gosiInput.salary), nationality: gosiInput.nationality })}
+              onClick={() => gosiMutation.mutate({ salary: Number(gosiInput.salary), nationality: gosiInput.nationality, asOfDate: new Date().toISOString() })}
               disabled={!gosiInput.salary || gosiMutation.isPending}
               className="btn btn-primary w-full"
             >

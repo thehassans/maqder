@@ -1,5 +1,32 @@
 import momentHijri from 'moment-hijri';
 
+const round2 = (n) => Math.round((Number(n || 0) + Number.EPSILON) * 100) / 100;
+
+const isSaudiNationality = (nationality) => {
+  const raw = String(nationality || '').trim();
+  const s = raw.toLowerCase();
+  if (!s) return false;
+
+  if (s === 'saudi' || s === 'sa' || s === 'ksa') return true;
+  if (s === 'saudi arabia' || s === 'kingdom of saudi arabia') return true;
+  if (s.includes('saudi')) return true;
+  if (raw === 'سعودي' || raw === 'السعودية' || raw === 'سعودية') return true;
+
+  return false;
+};
+
+const getAgeAtDate = (dateOfBirth, asOfDate) => {
+  if (!dateOfBirth) return null;
+  const dob = new Date(dateOfBirth);
+  const asOf = asOfDate ? new Date(asOfDate) : new Date();
+  if (Number.isNaN(dob.getTime()) || Number.isNaN(asOf.getTime())) return null;
+
+  let age = asOf.getFullYear() - dob.getFullYear();
+  const m = asOf.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && asOf.getDate() < dob.getDate())) age -= 1;
+  return age;
+};
+
 /**
  * Calculate GOSI contributions based on Saudi Labor Law
  * @param {number} salary - Basic salary (GOSI calculation base)
@@ -7,17 +34,27 @@ import momentHijri from 'moment-hijri';
  * @returns {object} - GOSI breakdown
  */
 export function calculateGOSI(salary, nationality) {
-  const isSaudi = nationality?.toLowerCase() === 'saudi' || nationality?.toLowerCase() === 'sa';
+  const isSaudi = isSaudiNationality(nationality);
+
+  const salaryNumber = Number(salary);
+  if (Number.isNaN(salaryNumber) || salaryNumber < 0) {
+    throw new Error('Invalid input: salary must be a non-negative number');
+  }
+
+  const dateOfBirth = arguments?.[2]?.dateOfBirth;
+  const asOfDate = arguments?.[2]?.asOfDate;
+  const age = getAgeAtDate(dateOfBirth, asOfDate);
+  const sanedEligible = isSaudi && (age === null || age < 60);
   
   // GOSI rates as per Saudi regulations
   const rates = {
     saudi: {
-      employeeShare: 9.75,  // Pension + SANED
-      employerShare: 11.75, // Pension + SANED + Occupational Hazards
+      employeeShare: sanedEligible ? 9.75 : 9.0,  // Pension + (SANED if eligible)
+      employerShare: sanedEligible ? 11.75 : 11.0, // Pension + (SANED if eligible) + Occupational Hazards
       pensionEmployee: 9.0,
       pensionEmployer: 9.0,
-      sanedEmployee: 0.75,
-      sanedEmployer: 0.75,
+      sanedEmployee: sanedEligible ? 0.75 : 0,
+      sanedEmployer: sanedEligible ? 0.75 : 0,
       occupationalHazards: 2.0
     },
     nonSaudi: {
@@ -30,27 +67,29 @@ export function calculateGOSI(salary, nationality) {
   const rateConfig = isSaudi ? rates.saudi : rates.nonSaudi;
   
   // Cap salary at 45,000 SAR for GOSI calculations
-  const cappedSalary = Math.min(salary, 45000);
+  const cappedSalary = Math.min(salaryNumber, 45000);
   
   const employeeShare = (cappedSalary * rateConfig.employeeShare) / 100;
   const employerShare = (cappedSalary * rateConfig.employerShare) / 100;
   const totalContribution = employeeShare + employerShare;
   
   return {
-    baseSalary: salary,
+    baseSalary: salaryNumber,
     cappedSalary,
     isSaudi,
-    employeeShare: Math.round(employeeShare * 100) / 100,
-    employerShare: Math.round(employerShare * 100) / 100,
-    totalContribution: Math.round(totalContribution * 100) / 100,
+    age,
+    sanedEligible,
+    employeeShare: round2(employeeShare),
+    employerShare: round2(employerShare),
+    totalContribution: round2(totalContribution),
     breakdown: isSaudi ? {
-      pensionEmployee: Math.round((cappedSalary * rates.saudi.pensionEmployee / 100) * 100) / 100,
-      pensionEmployer: Math.round((cappedSalary * rates.saudi.pensionEmployer / 100) * 100) / 100,
-      sanedEmployee: Math.round((cappedSalary * rates.saudi.sanedEmployee / 100) * 100) / 100,
-      sanedEmployer: Math.round((cappedSalary * rates.saudi.sanedEmployer / 100) * 100) / 100,
-      occupationalHazards: Math.round((cappedSalary * rates.saudi.occupationalHazards / 100) * 100) / 100
+      pensionEmployee: round2(cappedSalary * rates.saudi.pensionEmployee / 100),
+      pensionEmployer: round2(cappedSalary * rates.saudi.pensionEmployer / 100),
+      sanedEmployee: round2(cappedSalary * rates.saudi.sanedEmployee / 100),
+      sanedEmployer: round2(cappedSalary * rates.saudi.sanedEmployer / 100),
+      occupationalHazards: round2(cappedSalary * rates.saudi.occupationalHazards / 100)
     } : {
-      occupationalHazards: Math.round((cappedSalary * rates.nonSaudi.occupationalHazards / 100) * 100) / 100
+      occupationalHazards: round2(cappedSalary * rates.nonSaudi.occupationalHazards / 100)
     },
     rates: rateConfig
   };
@@ -67,6 +106,12 @@ export function calculateEOSB(yearsService, lastSalary, terminationReason = 'end
   if (yearsService < 0 || lastSalary < 0) {
     throw new Error('Invalid input: years of service and salary must be positive');
   }
+
+  const yearsServiceNumber = Number(yearsService);
+  const lastSalaryNumber = Number(lastSalary);
+  if (Number.isNaN(yearsServiceNumber) || Number.isNaN(lastSalaryNumber)) {
+    throw new Error('Invalid input: years of service and salary must be numbers');
+  }
   
   // EOSB calculation rules:
   // - First 5 years: 0.5 * monthly_salary * years
@@ -76,8 +121,8 @@ export function calculateEOSB(yearsService, lastSalary, terminationReason = 'end
   let breakdown = [];
   
   // Calculate for first 5 years
-  const firstFiveYears = Math.min(yearsService, 5);
-  const firstFiveYearsAmount = 0.5 * lastSalary * firstFiveYears;
+  const firstFiveYears = Math.min(yearsServiceNumber, 5);
+  const firstFiveYearsAmount = 0.5 * lastSalaryNumber * firstFiveYears;
   
   if (firstFiveYears > 0) {
     breakdown.push({
@@ -90,9 +135,9 @@ export function calculateEOSB(yearsService, lastSalary, terminationReason = 'end
   }
   
   // Calculate for years beyond 5
-  if (yearsService > 5) {
-    const remainingYears = yearsService - 5;
-    const remainingAmount = 1.0 * lastSalary * remainingYears;
+  if (yearsServiceNumber > 5) {
+    const remainingYears = yearsServiceNumber - 5;
+    const remainingAmount = 1.0 * lastSalaryNumber * remainingYears;
     
     breakdown.push({
       period: `Remaining ${remainingYears.toFixed(2)} year(s)`,
@@ -106,6 +151,22 @@ export function calculateEOSB(yearsService, lastSalary, terminationReason = 'end
   // Apply modifiers based on termination reason
   let modifier = 1.0;
   let modifierReason = 'Full entitlement';
+
+  if (terminationReason === 'resignation') {
+    if (yearsServiceNumber < 2) {
+      modifier = 0;
+      modifierReason = 'No entitlement (resigned before 2 years)';
+    } else if (yearsServiceNumber >= 2 && yearsServiceNumber < 5) {
+      modifier = 1 / 3;
+      modifierReason = '1/3 entitlement (resigned between 2-5 years)';
+    } else if (yearsServiceNumber >= 5 && yearsServiceNumber < 10) {
+      modifier = 2 / 3;
+      modifierReason = '2/3 entitlement (resigned between 5-10 years)';
+    } else {
+      modifier = 1.0;
+      modifierReason = 'Full entitlement';
+    }
+  } else {
   
   switch (terminationReason) {
     case 'resignation_less_than_2_years':
@@ -136,17 +197,18 @@ export function calculateEOSB(yearsService, lastSalary, terminationReason = 'end
     default:
       modifier = 1.0;
   }
+  }
   
   const finalAmount = eosb * modifier;
   
   return {
-    yearsOfService: yearsService,
-    lastSalary,
+    yearsOfService: yearsServiceNumber,
+    lastSalary: lastSalaryNumber,
     terminationReason,
-    grossEOSB: Math.round(eosb * 100) / 100,
+    grossEOSB: round2(eosb),
     modifier,
     modifierReason,
-    finalAmount: Math.round(finalAmount * 100) / 100,
+    finalAmount: round2(finalAmount),
     breakdown
   };
 }

@@ -39,8 +39,8 @@ router.get('/', checkPermission('payroll', 'read'), async (req, res) => {
 // @route   POST /api/payroll/calculate-gosi
 router.post('/calculate-gosi', checkPermission('payroll', 'read'), async (req, res) => {
   try {
-    const { salary, nationality } = req.body;
-    const result = calculateGOSI(salary, nationality);
+    const { salary, nationality, dateOfBirth, asOfDate } = req.body;
+    const result = calculateGOSI(salary, nationality, { dateOfBirth, asOfDate });
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -120,7 +120,13 @@ router.post('/generate', checkPermission('payroll', 'create'), async (req, res) 
       if (existing) continue;
       
       const salary = employee.currentSalary || {};
-      const gosi = calculateGOSI(salary.basicSalary || 0, employee.nationality);
+      const gosiBase =
+        (salary.basicSalary || 0) +
+        (salary.housingAllowance || 0) +
+        (salary.transportAllowance || 0) +
+        (salary.foodAllowance || 0) +
+        (salary.otherAllowances || 0);
+      const gosi = calculateGOSI(gosiBase, employee.nationality, { dateOfBirth: employee.dateOfBirth, asOfDate: periodEnd });
       
       const earnings = [
         { type: 'basic', description: 'Basic Salary', descriptionAr: 'الراتب الأساسي', amount: salary.basicSalary || 0 },
