@@ -25,6 +25,8 @@ import {
   Briefcase,
   Factory,
   Receipt,
+  Plane,
+  UtensilsCrossed,
 } from 'lucide-react'
 import { toggleSidebarCollapse, setMobileMenuOpen } from '../../store/slices/uiSlice'
 import { useTranslation } from '../../lib/translations'
@@ -75,6 +77,22 @@ export default function Sidebar() {
       items: [
         { path: '/app/dashboard/products', icon: Package, label: t('products'), perm: { module: 'inventory', action: 'read' } },
         { path: '/app/dashboard/warehouses', icon: Warehouse, label: t('warehouses'), perm: { module: 'inventory', action: 'read' } },
+      ]
+    },
+    {
+      title: language === 'ar' ? 'السفر' : 'Travel',
+      businessTypes: ['travel_agency'],
+      items: [
+        { path: '/app/dashboard/travel-bookings', icon: Plane, label: language === 'ar' ? 'الحجوزات' : 'Bookings', perm: { module: 'travel', action: 'read' } },
+      ]
+    },
+    {
+      title: language === 'ar' ? 'المطعم' : 'Restaurant',
+      businessTypes: ['restaurant'],
+      items: [
+        { path: '/app/dashboard/restaurant/menu-items', icon: UtensilsCrossed, label: language === 'ar' ? 'قائمة الطعام' : 'Menu Items', perm: { module: 'restaurant', action: 'read' } },
+        { path: '/app/dashboard/restaurant/orders', icon: Receipt, label: language === 'ar' ? 'طلبات' : 'Orders', perm: { module: 'restaurant', action: 'read' } },
+        { path: '/app/dashboard/restaurant/kitchen', icon: ClipboardList, label: language === 'ar' ? 'المطبخ' : 'Kitchen', perm: { module: 'restaurant', action: 'read' } },
       ]
     },
     {

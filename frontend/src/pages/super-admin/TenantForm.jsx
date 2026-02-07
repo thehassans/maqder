@@ -131,6 +131,7 @@ export default function TenantForm() {
               <select {...register('businessType')} className="select" defaultValue="trading">
                 <option value="trading">{language === 'ar' ? 'تجارة (ERP)' : 'Trading (ERP)'}</option>
                 <option value="travel_agency">{language === 'ar' ? 'وكالة سفر' : 'Travel Agency'}</option>
+                <option value="restaurant">{language === 'ar' ? 'مطعم' : 'Restaurant'}</option>
               </select>
             </div>
             <div>

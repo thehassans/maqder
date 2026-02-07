@@ -120,7 +120,10 @@ router.post('/', checkPermission('settings', 'create'), async (req, res) => {
       return res.status(400).json({ error: 'Invalid role' });
     }
 
-    const permissions = Array.isArray(req.body?.permissions) ? req.body.permissions : [];
+    let permissions = Array.isArray(req.body?.permissions) ? req.body.permissions : [];
+    if (role === 'kitchen_staff' && permissions.length === 0) {
+      permissions = [{ module: 'restaurant', actions: ['read', 'update'] }];
+    }
 
     const created = await User.create({
       tenantId,
@@ -179,7 +182,11 @@ router.put('/:id', checkPermission('settings', 'update'), async (req, res) => {
     }
 
     if (typeof req.body?.permissions !== 'undefined') {
-      existing.permissions = Array.isArray(req.body.permissions) ? req.body.permissions : [];
+      let permissions = Array.isArray(req.body.permissions) ? req.body.permissions : [];
+      if (existing.role === 'kitchen_staff' && permissions.length === 0) {
+        permissions = [{ module: 'restaurant', actions: ['read', 'update'] }];
+      }
+      existing.permissions = permissions;
     }
 
     if (typeof req.body?.isActive !== 'undefined') {

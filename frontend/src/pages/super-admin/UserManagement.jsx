@@ -53,7 +53,7 @@ export default function UserManagement() {
     reset({})
   }
 
-  const roles = ['admin', 'manager', 'accountant', 'hr_manager', 'inventory_manager', 'sales', 'viewer']
+  const roles = ['admin', 'manager', 'accountant', 'hr_manager', 'inventory_manager', 'sales', 'kitchen_staff', 'viewer']
 
   return (
     <div className="space-y-6">

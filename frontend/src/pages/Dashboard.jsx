@@ -21,6 +21,7 @@ import {
   Plus,
   UserPlus,
   Receipt,
+  Plane,
   BarChart3,
   Calendar,
   Star,
@@ -62,6 +63,8 @@ export default function Dashboard() {
 
   const businessType = tenant?.businessType || 'trading'
   const isTrading = businessType === 'trading'
+  const isTravelAgency = businessType === 'travel_agency'
+  const isRestaurant = businessType === 'restaurant'
 
   const { data: dashboard, isLoading } = useQuery({
     queryKey: ['dashboard'],
@@ -135,6 +138,11 @@ export default function Dashboard() {
   const overdueTasks = taskStats?.overdue?.[0]?.count || 0
   const mrpSuggestions = mrpStats?.totals?.suggestions || 0
 
+  const openTravelBookings = dashboard?.travel?.totals?.[0]?.open || 0
+  const travelRevenue = dashboard?.travel?.totals?.[0]?.revenue || 0
+  const openRestaurantOrders = dashboard?.restaurant?.totals?.[0]?.open || 0
+  const restaurantRevenue = dashboard?.restaurant?.totals?.[0]?.revenue || 0
+
   const stats = [
     {
       label: t('totalRevenue'),
@@ -170,6 +178,48 @@ export default function Dashboard() {
       change: '+2',
       positive: true
     },
+    ...(isTravelAgency
+      ? [
+          {
+            label: language === 'ar' ? 'حجوزات مفتوحة' : 'Open Bookings',
+            value: openTravelBookings,
+            icon: Plane,
+            color: 'from-sky-500 to-sky-600',
+            change: language === 'ar' ? 'قيد المتابعة' : 'In progress',
+            positive: true,
+          },
+          {
+            label: language === 'ar' ? 'إيرادات الحجوزات' : 'Booking Revenue',
+            value: travelRevenue,
+            format: 'currency',
+            icon: TrendingUp,
+            color: 'from-emerald-500 to-emerald-600',
+            change: language === 'ar' ? 'إجمالي' : 'Total',
+            positive: true,
+          },
+        ]
+      : []),
+    ...(isRestaurant
+      ? [
+          {
+            label: language === 'ar' ? 'طلبات مفتوحة' : 'Open Orders',
+            value: openRestaurantOrders,
+            icon: Receipt,
+            color: 'from-amber-500 to-amber-600',
+            change: language === 'ar' ? 'قيد التحضير' : 'In progress',
+            positive: true,
+          },
+          {
+            label: language === 'ar' ? 'إيرادات الطلبات' : 'Order Revenue',
+            value: restaurantRevenue,
+            format: 'currency',
+            icon: TrendingUp,
+            color: 'from-emerald-500 to-emerald-600',
+            change: language === 'ar' ? 'إجمالي' : 'Total',
+            positive: true,
+          },
+        ]
+      : []),
     ...(isTrading
       ? [
           {

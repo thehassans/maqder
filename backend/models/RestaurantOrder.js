@@ -1,0 +1,60 @@
+import mongoose from 'mongoose';
+
+const orderLineSchema = new mongoose.Schema({
+  menuItemId: { type: mongoose.Schema.Types.ObjectId, ref: 'RestaurantMenuItem' },
+  name: { type: String, required: true },
+  nameAr: { type: String },
+  quantity: { type: Number, required: true },
+  unitPrice: { type: Number, required: true },
+  taxRate: { type: Number, default: 15 },
+  lineSubtotal: { type: Number, default: 0 },
+  lineTax: { type: Number, default: 0 },
+  lineTotal: { type: Number, default: 0 }
+}, { _id: false });
+
+const restaurantOrderSchema = new mongoose.Schema({
+  tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
+
+  orderNumber: { type: String, required: true },
+  status: {
+    type: String,
+    enum: ['open', 'paid', 'cancelled'],
+    default: 'open',
+    index: true
+  },
+
+  kitchenStatus: {
+    type: String,
+    enum: ['new', 'preparing', 'ready', 'served', 'cancelled'],
+    default: 'new',
+    index: true
+  },
+  kitchenPrintedAt: { type: Date },
+  kitchenStatusUpdatedAt: { type: Date },
+
+  tableNumber: { type: String },
+  customerName: { type: String },
+  customerPhone: { type: String },
+
+  currency: { type: String, default: 'SAR' },
+  lineItems: [orderLineSchema],
+  subtotal: { type: Number, default: 0 },
+  totalTax: { type: Number, default: 0 },
+  grandTotal: { type: Number, default: 0 },
+
+  paymentMethod: { type: String, enum: ['cash', 'card', 'transfer', 'other'], default: 'cash' },
+
+  notes: { type: String },
+
+  isActive: { type: Boolean, default: true },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+}, {
+  timestamps: true
+});
+
+restaurantOrderSchema.index({ tenantId: 1, orderNumber: 1 }, { unique: true });
+restaurantOrderSchema.index({ tenantId: 1, status: 1, createdAt: -1 });
+restaurantOrderSchema.index({ tenantId: 1, kitchenStatus: 1, createdAt: -1 });
+
+const RestaurantOrder = mongoose.model('RestaurantOrder', restaurantOrderSchema);
+export default RestaurantOrder;

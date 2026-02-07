@@ -13,8 +13,12 @@ import Money from '../../components/ui/Money'
 export default function InvoiceCreateSell() {
   const navigate = useNavigate()
   const { language } = useSelector((state) => state.ui)
+  const { tenant } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
   const [invoiceType, setInvoiceType] = useState('B2C')
+
+  const businessType = tenant?.businessType || 'trading'
+  const isTrading = businessType === 'trading'
 
   const { register, control, handleSubmit, watch, setValue } = useForm({
     defaultValues: {
@@ -31,12 +35,14 @@ export default function InvoiceCreateSell() {
 
   const { data: products } = useQuery({
     queryKey: ['products-list'],
-    queryFn: () => api.get('/products', { params: { limit: 200 } }).then(res => res.data.products)
+    queryFn: () => api.get('/products', { params: { limit: 200 } }).then(res => res.data.products),
+    enabled: isTrading,
   })
 
   const { data: warehouses } = useQuery({
     queryKey: ['warehouses'],
-    queryFn: () => api.get('/warehouses').then(res => res.data)
+    queryFn: () => api.get('/warehouses').then(res => res.data),
+    enabled: isTrading,
   })
 
   const { data: customers } = useQuery({
@@ -117,6 +123,14 @@ export default function InvoiceCreateSell() {
         taxCategory: 'S'
       }))
     }
+
+    if (!isTrading) {
+      delete invoiceData.warehouseId
+      invoiceData.lineItems = (invoiceData.lineItems || []).map((li) => ({
+        ...li,
+        productId: undefined,
+      }))
+    }
     createMutation.mutate(invoiceData)
   }
 
@@ -172,17 +186,19 @@ export default function InvoiceCreateSell() {
             </button>
           </div>
 
-          <div className="mt-6">
-            <label className="label">{language === 'ar' ? 'المستودع' : 'Warehouse'} *</label>
-            <select {...register('warehouseId', { required: true })} className="select">
-              <option value="">{language === 'ar' ? 'اختر' : 'Select'}</option>
-              {(warehouses || []).map((w) => (
-                <option key={w._id} value={w._id}>
-                  {language === 'ar' ? (w.nameAr || w.nameEn) : w.nameEn}
-                </option>
-              ))}
-            </select>
-          </div>
+          {isTrading && (
+            <div className="mt-6">
+              <label className="label">{language === 'ar' ? 'المستودع' : 'Warehouse'} *</label>
+              <select {...register('warehouseId', { required: isTrading })} className="select">
+                <option value="">{language === 'ar' ? 'اختر' : 'Select'}</option>
+                {(warehouses || []).map((w) => (
+                  <option key={w._id} value={w._id}>
+                    {language === 'ar' ? (w.nameAr || w.nameEn) : w.nameEn}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         <motion.div

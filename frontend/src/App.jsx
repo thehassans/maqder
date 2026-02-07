@@ -39,6 +39,13 @@ import PurchaseOrders from './pages/PurchaseOrders'
 import PurchaseOrderForm from './pages/PurchaseOrderForm'
 import Shipments from './pages/Shipments'
 import ShipmentForm from './pages/ShipmentForm'
+import TravelBookings from './pages/travel/TravelBookings'
+import TravelBookingForm from './pages/travel/TravelBookingForm'
+import RestaurantMenuItems from './pages/restaurant/RestaurantMenuItems'
+import RestaurantMenuItemForm from './pages/restaurant/RestaurantMenuItemForm'
+import RestaurantOrders from './pages/restaurant/RestaurantOrders'
+import RestaurantOrderForm from './pages/restaurant/RestaurantOrderForm'
+import RestaurantKitchen from './pages/restaurant/RestaurantKitchen'
 import Projects from './pages/Projects'
 import ProjectForm from './pages/ProjectForm'
 import Tasks from './pages/Tasks'
@@ -204,13 +211,23 @@ function App() {
         <Route path="invoices" element={<Invoices />} />
         <Route path="invoices/new" element={<InvoiceCreate />} />
         <Route path="invoices/new/sell" element={<InvoiceCreateSell />} />
-        <Route path="invoices/new/purchase" element={<InvoiceCreatePurchase />} />
+        <Route path="invoices/new/purchase" element={<BusinessTypeRoute allowedTypes={['trading']}><InvoiceCreatePurchase /></BusinessTypeRoute>} />
         <Route path="invoices/:id" element={<InvoiceView />} />
         <Route path="contacts" element={<Contacts />} />
         <Route path="customers" element={<CustomerList />} />
         <Route path="customers/new" element={<CustomerForm />} />
         <Route path="customers/:id" element={<CustomerForm />} />
         <Route path="customers/:id/edit" element={<CustomerForm />} />
+        <Route path="travel-bookings" element={<BusinessTypeRoute allowedTypes={['travel_agency']}><TravelBookings /></BusinessTypeRoute>} />
+        <Route path="travel-bookings/new" element={<BusinessTypeRoute allowedTypes={['travel_agency']}><TravelBookingForm /></BusinessTypeRoute>} />
+        <Route path="travel-bookings/:id" element={<BusinessTypeRoute allowedTypes={['travel_agency']}><TravelBookingForm /></BusinessTypeRoute>} />
+        <Route path="restaurant/menu-items" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantMenuItems /></BusinessTypeRoute>} />
+        <Route path="restaurant/menu-items/new" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantMenuItemForm /></BusinessTypeRoute>} />
+        <Route path="restaurant/menu-items/:id" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantMenuItemForm /></BusinessTypeRoute>} />
+        <Route path="restaurant/orders" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantOrders /></BusinessTypeRoute>} />
+        <Route path="restaurant/orders/new" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantOrderForm /></BusinessTypeRoute>} />
+        <Route path="restaurant/orders/:id" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantOrderForm /></BusinessTypeRoute>} />
+        <Route path="restaurant/kitchen" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantKitchen /></BusinessTypeRoute>} />
         <Route path="expenses" element={<Expenses />} />
         <Route path="expenses/new" element={<ExpenseForm />} />
         <Route path="expenses/:id" element={<ExpenseForm />} />

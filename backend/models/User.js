@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema({
   avatar: { type: String },
   role: {
     type: String,
-    enum: ['super_admin', 'admin', 'manager', 'accountant', 'hr_manager', 'inventory_manager', 'sales', 'viewer'],
+    enum: ['super_admin', 'admin', 'manager', 'accountant', 'hr_manager', 'inventory_manager', 'sales', 'kitchen_staff', 'viewer'],
     default: 'viewer'
   },
   permissions: [{

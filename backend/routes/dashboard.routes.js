@@ -5,6 +5,8 @@ import Product from '../models/Product.js';
 import Payroll from '../models/Payroll.js';
 import Customer from '../models/Customer.js';
 import Expense from '../models/Expense.js';
+import TravelBooking from '../models/TravelBooking.js';
+import RestaurantOrder from '../models/RestaurantOrder.js';
 import { protect, tenantFilter } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -24,7 +26,7 @@ router.get('/', async (req, res) => {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const [invoiceStats, employeeStats, productStats, payrollStats, recentInvoices, expiringDocuments, recentCustomers, topProducts, todayStats] = await Promise.all([
+    const [invoiceStats, employeeStats, productStats, payrollStats, recentInvoices, expiringDocuments, recentCustomers, topProducts, todayStats, travelStats, restaurantStats] = await Promise.all([
       // Invoice stats
       Invoice.aggregate([
         { $match: req.tenantFilter },
@@ -173,7 +175,63 @@ router.get('/', async (req, res) => {
             revenue: { $sum: '$grandTotal' }
           }
         }
-      ])
+      ]),
+
+      businessType === 'travel_agency'
+        ? TravelBooking.aggregate([
+            { $match: { ...req.tenantFilter, isActive: true } },
+            {
+              $facet: {
+                totals: [
+                  {
+                    $group: {
+                      _id: null,
+                      total: { $sum: 1 },
+                      revenue: { $sum: '$grandTotal' },
+                      open: {
+                        $sum: {
+                          $cond: [{ $in: ['$status', ['draft', 'confirmed', 'ticketed']] }, 1, 0]
+                        }
+                      }
+                    }
+                  }
+                ],
+                byStatus: [{ $group: { _id: '$status', count: { $sum: 1 } } }],
+                recent: [
+                  { $sort: { createdAt: -1 } },
+                  { $limit: 5 },
+                  { $project: { bookingNumber: 1, status: 1, customerName: 1, grandTotal: 1, createdAt: 1 } }
+                ]
+              }
+            }
+          ])
+        : Promise.resolve([{ totals: [{ total: 0, revenue: 0, open: 0 }], byStatus: [], recent: [] }]),
+
+      businessType === 'restaurant'
+        ? RestaurantOrder.aggregate([
+            { $match: { ...req.tenantFilter, isActive: true } },
+            {
+              $facet: {
+                totals: [
+                  {
+                    $group: {
+                      _id: null,
+                      total: { $sum: 1 },
+                      revenue: { $sum: '$grandTotal' },
+                      open: { $sum: { $cond: [{ $eq: ['$status', 'open'] }, 1, 0] } }
+                    }
+                  }
+                ],
+                byStatus: [{ $group: { _id: '$status', count: { $sum: 1 } } }],
+                recent: [
+                  { $sort: { createdAt: -1 } },
+                  { $limit: 5 },
+                  { $project: { orderNumber: 1, status: 1, tableNumber: 1, grandTotal: 1, createdAt: 1 } }
+                ]
+              }
+            }
+          ])
+        : Promise.resolve([{ totals: [{ total: 0, revenue: 0, open: 0 }], byStatus: [], recent: [] }])
     ]);
     
     res.json({
@@ -201,7 +259,9 @@ router.get('/', async (req, res) => {
       expiringDocuments,
       recentCustomers,
       topProducts,
-      todayStats: todayStats[0] || { count: 0, revenue: 0 }
+      todayStats: todayStats[0] || { count: 0, revenue: 0 },
+      travel: travelStats?.[0] || { totals: [{ total: 0, revenue: 0, open: 0 }], byStatus: [], recent: [] },
+      restaurant: restaurantStats?.[0] || { totals: [{ total: 0, revenue: 0, open: 0 }], byStatus: [], recent: [] }
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

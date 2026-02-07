@@ -33,6 +33,9 @@ import contactsRoutes from './routes/contacts.routes.js';
 import expenseRoutes from './routes/expense.routes.js';
 import usersRoutes from './routes/users.routes.js';
 import publicRoutes from './routes/public.routes.js';
+import travelBookingRoutes from './routes/travelBooking.routes.js';
+import restaurantMenuItemRoutes from './routes/restaurantMenuItem.routes.js';
+import restaurantOrderRoutes from './routes/restaurantOrder.routes.js';
 
 import { checkIqamaExpiry } from './jobs/iqamaChecker.js';
 import { syncZatcaInvoices } from './jobs/zatcaSync.js';
@@ -89,6 +92,9 @@ app.use('/api/contacts', contactsRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/public', publicRoutes);
+app.use('/api/travel-bookings', travelBookingRoutes);
+app.use('/api/restaurant/menu-items', restaurantMenuItemRoutes);
+app.use('/api/restaurant/orders', restaurantOrderRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

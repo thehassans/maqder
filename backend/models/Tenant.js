@@ -62,7 +62,7 @@ const zatcaConfigSchema = new mongoose.Schema({
 const tenantSchema = new mongoose.Schema({
   name: { type: String, required: true },
   slug: { type: String, required: true, unique: true, lowercase: true },
-  businessType: { type: String, enum: ['trading', 'travel_agency'], default: 'trading', index: true },
+  businessType: { type: String, enum: ['trading', 'travel_agency', 'restaurant'], default: 'trading', index: true },
   business: businessDetailsSchema,
   subscription: subscriptionSchema,
   zatca: zatcaConfigSchema,

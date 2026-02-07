@@ -360,7 +360,7 @@ router.post('/tenants', async (req, res) => {
   try {
     const { name, slug, businessType, business, subscription, adminUser, branding } = req.body;
 
-    if (businessType && !['trading', 'travel_agency'].includes(businessType)) {
+    if (businessType && !['trading', 'travel_agency', 'restaurant'].includes(businessType)) {
       return res.status(400).json({ error: 'Invalid business type' });
     }
     

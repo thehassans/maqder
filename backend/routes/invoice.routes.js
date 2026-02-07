@@ -6,7 +6,7 @@ import Customer from '../models/Customer.js';
 import Supplier from '../models/Supplier.js';
 import Product from '../models/Product.js';
 import Warehouse from '../models/Warehouse.js';
-import { protect, tenantFilter, checkPermission } from '../middleware/auth.js';
+import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
 import ZatcaService from '../utils/zatca/ZatcaService.js';
 
 const router = express.Router();
@@ -308,15 +308,18 @@ router.post('/', checkPermission('invoicing', 'create'), async (req, res) => {
 // @route   POST /api/invoices/sell
 router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) => {
   try {
+    const businessType = req.tenant?.businessType || 'trading';
     const tenant = await Tenant.findById(req.user.tenantId);
 
-    if (!req.body.warehouseId) {
-      return res.status(400).json({ error: 'warehouseId is required' });
-    }
+    if (businessType === 'trading') {
+      if (!req.body.warehouseId) {
+        return res.status(400).json({ error: 'warehouseId is required' });
+      }
 
-    const warehouse = await Warehouse.findOne({ _id: req.body.warehouseId, ...req.tenantFilter, isActive: true });
-    if (!warehouse) {
-      return res.status(400).json({ error: 'Warehouse not found' });
+      const warehouse = await Warehouse.findOne({ _id: req.body.warehouseId, ...req.tenantFilter, isActive: true });
+      if (!warehouse) {
+        return res.status(400).json({ error: 'Warehouse not found' });
+      }
     }
 
     const tenantId = req.user.tenantId;
@@ -378,7 +381,7 @@ router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) =>
       .filter(Boolean)
       .map((id) => id.toString());
     const uniqueProductIds = [...new Set(productIds)];
-    if (uniqueProductIds.length) {
+    if (businessType === 'trading' && uniqueProductIds.length) {
       const existingCount = await Product.countDocuments({ _id: { $in: uniqueProductIds }, ...req.tenantFilter });
       if (existingCount !== uniqueProductIds.length) {
         return res.status(400).json({ error: 'Invalid product in line items' });
@@ -421,6 +424,10 @@ router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) =>
 // @route   POST /api/invoices/purchase
 router.post('/purchase', checkPermission('invoicing', 'create'), async (req, res) => {
   try {
+    const businessType = req.tenant?.businessType || 'trading';
+    if (businessType !== 'trading') {
+      return res.status(403).json({ error: 'Not available for this business type' });
+    }
     const tenant = await Tenant.findById(req.user.tenantId);
 
     if (!req.body.warehouseId) {
@@ -521,7 +528,7 @@ router.post('/purchase', checkPermission('invoicing', 'create'), async (req, res
 });
 
 // @route   POST /api/invoices/:id/post-inventory
-router.post('/:id/post-inventory', checkPermission('invoicing', 'update'), async (req, res) => {
+router.post('/:id/post-inventory', requireBusinessType('trading'), checkPermission('invoicing', 'update'), async (req, res) => {
   try {
     const invoice = await Invoice.findOne({ _id: req.params.id, ...req.tenantFilter });
     if (!invoice) {
@@ -572,6 +579,7 @@ router.put('/:id', checkPermission('invoicing', 'update'), async (req, res) => {
 // @route   POST /api/invoices/:id/sign
 router.post('/:id/sign', checkPermission('invoicing', 'approve'), async (req, res) => {
   try {
+    const businessType = req.tenant?.businessType || 'trading';
     const invoice = await Invoice.findOne({ _id: req.params.id, ...req.tenantFilter });
     
     if (!invoice) {
@@ -586,7 +594,7 @@ router.post('/:id/sign', checkPermission('invoicing', 'approve'), async (req, re
       return res.status(400).json({ error: 'Invoice already signed' });
     }
 
-    if (invoice.flow === 'sell' && !invoice.inventory?.postedAt) {
+    if (businessType === 'trading' && invoice.flow === 'sell' && !invoice.inventory?.postedAt) {
       try {
         await postInventoryForInvoice(invoice, req.tenantFilter);
       } catch (err) {
