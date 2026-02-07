@@ -162,6 +162,37 @@ export default function InvoiceView() {
               )}
             </div>
 
+            {(invoice?.restaurantOrderId || invoice?.travelBookingId || invoice?.contractNumber) && (
+              <div className="border-t border-gray-200 dark:border-dark-600 pt-4 mb-6">
+                <p className="text-sm font-medium text-gray-500 mb-2">{language === 'ar' ? 'المرجع' : 'Reference'}</p>
+                <div className="space-y-1 text-sm">
+                  {invoice?.restaurantOrderId && (
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/app/dashboard/restaurant/orders/${invoice.restaurantOrderId}`)}
+                      className="text-primary-600 hover:underline text-start"
+                    >
+                      {language === 'ar' ? 'طلب مطعم' : 'Restaurant Order'}: {String(invoice.restaurantOrderId).slice(-6)}
+                    </button>
+                  )}
+                  {invoice?.travelBookingId && (
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/app/dashboard/travel-bookings/${invoice.travelBookingId}`)}
+                      className="text-primary-600 hover:underline text-start"
+                    >
+                      {language === 'ar' ? 'حجز سفر' : 'Travel Booking'}: {String(invoice.travelBookingId).slice(-6)}
+                    </button>
+                  )}
+                  {invoice?.contractNumber && (
+                    <div className="text-gray-700 dark:text-gray-200">
+                      {language === 'ar' ? 'رقم العقد/المرجع' : 'Contract/Ref'}: {invoice.contractNumber}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Line Items */}
             <div className="border-t border-gray-200 dark:border-dark-600 pt-6">
               <table className="w-full">

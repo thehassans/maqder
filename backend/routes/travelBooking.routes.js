@@ -155,9 +155,16 @@ router.post('/:id/create-invoice', checkPermission('travel', 'update'), checkPer
 
     const invoiceNumber = `INV-${new Date().getFullYear()}-${String(invoiceCount).padStart(6, '0')}`;
 
-    const subtotal = toNumber(booking.subtotal, 0);
-    const totalTax = toNumber(booking.totalTax, 0);
-    const taxRate = subtotal > 0 ? Math.round((totalTax / subtotal) * 10000) / 100 : 0;
+    const bookingSubtotal = toNumber(booking.subtotal, 0);
+    const bookingTotalTax = toNumber(booking.totalTax, 0);
+    const bookingGrandTotal = toNumber(booking.grandTotal, bookingSubtotal + bookingTotalTax);
+
+    let taxableAmount = bookingSubtotal;
+    if (taxableAmount <= 0 && bookingGrandTotal > 0) {
+      taxableAmount = Math.max(0, bookingGrandTotal - bookingTotalTax);
+    }
+
+    const taxRate = taxableAmount > 0 ? Math.round((bookingTotalTax / taxableAmount) * 10000) / 100 : 0;
 
     const invoice = await Invoice.create({
       tenantId: req.user.tenantId,
@@ -168,6 +175,7 @@ router.post('/:id/create-invoice', checkPermission('travel', 'update'), checkPer
       issueDate: new Date(),
       currency: booking.currency || 'SAR',
       contractNumber: booking.bookingNumber,
+      travelBookingId: booking._id,
       seller: {
         name: tenant.business.legalNameEn,
         nameAr: tenant.business.legalNameAr,
@@ -176,7 +184,8 @@ router.post('/:id/create-invoice', checkPermission('travel', 'update'), checkPer
         address: tenant.business.address,
       },
       buyer: {
-        name: booking.customerName,
+        name: booking.customerName || 'Cash Customer',
+        nameAr: booking.customerName ? undefined : 'عميل نقدي',
         contactEmail: booking.customerEmail,
         contactPhone: booking.customerPhone,
       },
@@ -187,7 +196,7 @@ router.post('/:id/create-invoice', checkPermission('travel', 'update'), checkPer
           description: booking.serviceType ? `Service: ${booking.serviceType}` : undefined,
           quantity: 1,
           unitCode: 'PCE',
-          unitPrice: subtotal,
+          unitPrice: taxableAmount,
           taxRate,
           taxCategory: 'S',
         },

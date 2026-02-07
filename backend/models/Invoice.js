@@ -122,6 +122,9 @@ const invoiceSchema = new mongoose.Schema({
   purchaseOrderNumber: { type: String },
   contractNumber: { type: String },
   originalInvoiceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Invoice' },
+
+  restaurantOrderId: { type: mongoose.Schema.Types.ObjectId, ref: 'RestaurantOrder', index: true },
+  travelBookingId: { type: mongoose.Schema.Types.ObjectId, ref: 'TravelBooking', index: true },
   
   // ZATCA Compliance
   zatca: zatcaSchema,
@@ -157,6 +160,8 @@ invoiceSchema.index({ tenantId: 1, issueDate: -1 });
 invoiceSchema.index({ tenantId: 1, 'zatca.submissionStatus': 1 });
 invoiceSchema.index({ tenantId: 1, transactionType: 1 });
 invoiceSchema.index({ tenantId: 1, flow: 1, issueDate: -1 });
+invoiceSchema.index({ tenantId: 1, restaurantOrderId: 1 });
+invoiceSchema.index({ tenantId: 1, travelBookingId: 1 });
 
 // Pre-save hook for Hijri dates
 invoiceSchema.pre('validate', function(next) {

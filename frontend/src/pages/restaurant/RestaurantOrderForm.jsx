@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Save, Plus, Trash2, Receipt } from 'lucide-react'
+import { ArrowLeft, Save, Plus, Trash2, Receipt, FileText } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
@@ -30,6 +30,23 @@ export default function RestaurantOrderForm() {
     customerPhone: '',
     paymentMethod: 'cash',
     notes: '',
+  })
+
+  const createInvoiceMutation = useMutation({
+    mutationFn: () => api.post(`/restaurant/orders/${id}/create-invoice`).then((res) => res.data),
+    onSuccess: (data) => {
+      const invoiceId = data?.invoice?._id
+      if (invoiceId) {
+        toast.success(language === 'ar' ? 'تم إنشاء الفاتورة' : 'Invoice created')
+        queryClient.invalidateQueries(['restaurant-order', id])
+        queryClient.invalidateQueries(['restaurant-orders'])
+        queryClient.invalidateQueries(['invoices'])
+        navigate(`/app/dashboard/invoices/${invoiceId}`)
+      } else {
+        toast.error(language === 'ar' ? 'لم يتم إنشاء الفاتورة' : 'Invoice not created')
+      }
+    },
+    onError: (err) => toast.error(err.response?.data?.error || 'Error'),
   })
 
   const [lineItems, setLineItems] = useState([])
@@ -334,6 +351,21 @@ export default function RestaurantOrderForm() {
         </motion.div>
 
         <div className="flex justify-end gap-3">
+          {isEdit && (
+            <button
+              type="button"
+              onClick={() => createInvoiceMutation.mutate()}
+              disabled={createInvoiceMutation.isPending}
+              className="btn btn-secondary"
+            >
+              {createInvoiceMutation.isPending ? (
+                <div className="w-5 h-5 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <FileText className="w-4 h-4" />
+              )}
+              {language === 'ar' ? 'إنشاء فاتورة' : 'Create Invoice'}
+            </button>
+          )}
           <button type="button" onClick={() => navigate(-1)} className="btn btn-secondary">
             {t('cancel')}
           </button>

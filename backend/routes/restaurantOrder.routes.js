@@ -1,6 +1,8 @@
 import express from 'express';
 import RestaurantOrder from '../models/RestaurantOrder.js';
 import RestaurantMenuItem from '../models/RestaurantMenuItem.js';
+import Invoice from '../models/Invoice.js';
+import Tenant from '../models/Tenant.js';
 import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -124,6 +126,92 @@ router.get('/', checkPermission('restaurant', 'read'), async (req, res) => {
       orders,
       pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / limit) },
     });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/:id/create-invoice', checkPermission('restaurant', 'update'), checkPermission('invoicing', 'create'), async (req, res) => {
+  try {
+    const order = await RestaurantOrder.findOne({ _id: req.params.id, ...req.tenantFilter, isActive: true });
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    if (order.invoiceId) {
+      const existing = await Invoice.findOne({ _id: order.invoiceId, ...req.tenantFilter });
+      if (existing) {
+        return res.json({ invoice: existing, order });
+      }
+    }
+
+    const tenant = await Tenant.findById(req.user.tenantId);
+    if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+
+    const lastInvoice = await Invoice.findOne({ tenantId: req.user.tenantId, invoiceNumber: { $regex: '^INV-' } })
+      .sort({ createdAt: -1 })
+      .select('invoiceNumber');
+
+    let invoiceCount = 1;
+    if (lastInvoice?.invoiceNumber) {
+      const maybe = parseInt(String(lastInvoice.invoiceNumber).split('-').pop());
+      if (Number.isFinite(maybe)) invoiceCount = maybe + 1;
+    }
+
+    const invoiceNumber = `INV-${new Date().getFullYear()}-${String(invoiceCount).padStart(6, '0')}`;
+
+    const lineItems = (Array.isArray(order.lineItems) ? order.lineItems : []).map((li, i) => ({
+      lineNumber: i + 1,
+      productName: li.name,
+      productNameAr: li.nameAr,
+      quantity: toNumber(li.quantity, 0),
+      unitCode: 'PCE',
+      unitPrice: toNumber(li.unitPrice, 0),
+      taxRate: toNumber(li.taxRate ?? 15, 15),
+      taxCategory: 'S',
+      productId: undefined,
+    }));
+
+    const paymentMethod =
+      order.paymentMethod === 'cash'
+        ? 'cash'
+        : order.paymentMethod === 'transfer'
+          ? 'bank_transfer'
+          : 'other';
+
+    const invoice = await Invoice.create({
+      tenantId: req.user.tenantId,
+      flow: 'sell',
+      invoiceNumber,
+      transactionType: 'B2C',
+      invoiceTypeCode: '0200000',
+      issueDate: new Date(),
+      currency: order.currency || 'SAR',
+      paymentMethod,
+      contractNumber: order.orderNumber,
+      restaurantOrderId: order._id,
+      seller: {
+        name: tenant.business.legalNameEn,
+        nameAr: tenant.business.legalNameAr,
+        vatNumber: tenant.business.vatNumber,
+        crNumber: tenant.business.crNumber,
+        address: tenant.business.address,
+      },
+      buyer: {
+        name: order.customerName || 'Cash Customer',
+        nameAr: order.customerName ? undefined : 'عميل نقدي',
+        contactPhone: order.customerPhone,
+      },
+      lineItems,
+      createdBy: req.user._id,
+      notes: order.notes,
+    });
+
+    const updatedOrder = await RestaurantOrder.findOneAndUpdate(
+      { _id: order._id, ...req.tenantFilter },
+      { invoiceId: invoice._id, invoiceNumber: invoice.invoiceNumber, invoicedAt: new Date() },
+      { new: true }
+    );
+
+    res.status(201).json({ invoice, order: updatedOrder });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
