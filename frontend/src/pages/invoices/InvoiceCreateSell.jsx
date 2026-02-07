@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
@@ -25,12 +25,15 @@ export default function InvoiceCreateSell() {
       transactionType: 'B2C',
       invoiceTypeCode: '0200000',
       warehouseId: '',
+      restaurantOrderId: '',
+      travelBookingId: '',
+      contractNumber: '',
       buyer: {},
       lineItems: [{ productId: '', productName: '', productNameAr: '', unitCode: 'PCE', quantity: 1, unitPrice: 0, taxRate: 15 }]
     }
   })
 
-  const { fields, append, remove } = useFieldArray({ control, name: 'lineItems' })
+  const { fields, append, remove, replace } = useFieldArray({ control, name: 'lineItems' })
   const lineItems = watch('lineItems')
 
   const { data: products } = useQuery({
@@ -48,6 +51,100 @@ export default function InvoiceCreateSell() {
   const { data: customers } = useQuery({
     queryKey: ['customers-lookup'],
     queryFn: () => api.get('/customers', { params: { limit: 200 } }).then(res => res.data.customers)
+  })
+
+  const [sourceId, setSourceId] = useState('')
+
+  useEffect(() => {
+    setSourceId('')
+    setValue('restaurantOrderId', '')
+    setValue('travelBookingId', '')
+    setValue('contractNumber', '')
+  }, [businessType, setValue])
+
+  const { data: restaurantOrders } = useQuery({
+    queryKey: ['restaurant-orders-lookup'],
+    queryFn: () => api.get('/restaurant/orders', { params: { page: 1, limit: 200 } }).then((res) => res.data.orders || []),
+    enabled: businessType === 'restaurant',
+  })
+
+  const { data: travelBookings } = useQuery({
+    queryKey: ['travel-bookings-lookup'],
+    queryFn: () => api.get('/travel-bookings', { params: { page: 1, limit: 200 } }).then((res) => res.data.bookings || []),
+    enabled: businessType === 'travel_agency',
+  })
+
+  const importSourceMutation = useMutation({
+    mutationFn: async () => {
+      if (!sourceId) throw new Error('Missing sourceId')
+
+      if (businessType === 'restaurant') {
+        return api.get(`/restaurant/orders/${sourceId}`).then((res) => ({ type: 'restaurant', data: res.data }))
+      }
+      if (businessType === 'travel_agency') {
+        return api.get(`/travel-bookings/${sourceId}`).then((res) => ({ type: 'travel', data: res.data }))
+      }
+
+      throw new Error('Unsupported business type')
+    },
+    onSuccess: ({ type, data }) => {
+      setInvoiceType('B2C')
+
+      if (type === 'restaurant') {
+        const items = (Array.isArray(data?.lineItems) ? data.lineItems : []).map((li) => ({
+          productId: '',
+          productName: li?.name || '',
+          productNameAr: li?.nameAr || '',
+          unitCode: 'PCE',
+          quantity: li?.quantity ?? 1,
+          unitPrice: li?.unitPrice ?? 0,
+          taxRate: li?.taxRate ?? 15,
+        }))
+
+        replace(items.length ? items : [{ productId: '', productName: '', productNameAr: '', unitCode: 'PCE', quantity: 1, unitPrice: 0, taxRate: 15 }])
+
+        setValue('buyer.name', data?.customerName || 'Cash Customer')
+        setValue('buyer.contactPhone', data?.customerPhone || '')
+        setValue('restaurantOrderId', data?._id || '')
+        setValue('travelBookingId', '')
+        setValue('contractNumber', data?.orderNumber || '')
+
+        toast.success(language === 'ar' ? 'تم استيراد الطلب' : 'Order imported')
+        return
+      }
+
+      if (type === 'travel') {
+        const subtotal = Number(data?.subtotal) || 0
+        const totalTax = Number(data?.totalTax) || 0
+        const grandTotal = Number(data?.grandTotal) || subtotal + totalTax
+        const taxableAmount = subtotal > 0 ? subtotal : Math.max(0, grandTotal - totalTax)
+        const taxRate = taxableAmount > 0 ? Math.round((totalTax / taxableAmount) * 10000) / 100 : 0
+
+        replace([
+          {
+            productId: '',
+            productName: `Travel Booking ${data?.bookingNumber || ''}`.trim(),
+            productNameAr: '',
+            unitCode: 'PCE',
+            quantity: 1,
+            unitPrice: taxableAmount,
+            taxRate,
+          },
+        ])
+
+        setValue('buyer.name', data?.customerName || 'Cash Customer')
+        setValue('buyer.contactEmail', data?.customerEmail || '')
+        setValue('buyer.contactPhone', data?.customerPhone || '')
+        setValue('travelBookingId', data?._id || '')
+        setValue('restaurantOrderId', '')
+        setValue('contractNumber', data?.bookingNumber || '')
+
+        toast.success(language === 'ar' ? 'تم استيراد الحجز' : 'Booking imported')
+      }
+    },
+    onError: (error) => {
+      toast.error(error?.response?.data?.error || error.message || 'Failed')
+    },
   })
 
   const createMutation = useMutation({
@@ -124,6 +221,10 @@ export default function InvoiceCreateSell() {
       }))
     }
 
+    if (!invoiceData.restaurantOrderId) delete invoiceData.restaurantOrderId
+    if (!invoiceData.travelBookingId) delete invoiceData.travelBookingId
+    if (!invoiceData.contractNumber) delete invoiceData.contractNumber
+
     if (!isTrading) {
       delete invoiceData.warehouseId
       invoiceData.lineItems = (invoiceData.lineItems || []).map((li) => ({
@@ -151,6 +252,78 @@ export default function InvoiceCreateSell() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        {(businessType === 'restaurant' || businessType === 'travel_agency') && (
+          <div className="card p-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              {language === 'ar' ? 'مصدر الفاتورة (اختياري)' : 'Invoice Source (Optional)'}
+            </h3>
+
+            {businessType === 'restaurant' && (
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                <div className="md:col-span-9">
+                  <label className="label">{language === 'ar' ? 'طلب مطعم' : 'Restaurant Order'}</label>
+                  <select value={sourceId} onChange={(e) => setSourceId(e.target.value)} className="select">
+                    <option value="">{language === 'ar' ? 'اختر طلب' : 'Select order'}</option>
+                    {(restaurantOrders || []).map((o) => (
+                      <option key={o._id} value={o._id}>
+                        {o.orderNumber} - {Number(o.grandTotal || 0).toFixed(2)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="md:col-span-3">
+                  <button
+                    type="button"
+                    className="btn btn-secondary w-full"
+                    disabled={!sourceId || importSourceMutation.isPending}
+                    onClick={() => importSourceMutation.mutate()}
+                  >
+                    {importSourceMutation.isPending ? (
+                      <div className="w-5 h-5 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      language === 'ar' ? 'استيراد' : 'Import'
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {businessType === 'travel_agency' && (
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                <div className="md:col-span-9">
+                  <label className="label">{language === 'ar' ? 'حجز سفر' : 'Travel Booking'}</label>
+                  <select value={sourceId} onChange={(e) => setSourceId(e.target.value)} className="select">
+                    <option value="">{language === 'ar' ? 'اختر حجز' : 'Select booking'}</option>
+                    {(travelBookings || []).map((b) => (
+                      <option key={b._id} value={b._id}>
+                        {b.bookingNumber} - {Number(b.grandTotal || 0).toFixed(2)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="md:col-span-3">
+                  <button
+                    type="button"
+                    className="btn btn-secondary w-full"
+                    disabled={!sourceId || importSourceMutation.isPending}
+                    onClick={() => importSourceMutation.mutate()}
+                  >
+                    {importSourceMutation.isPending ? (
+                      <div className="w-5 h-5 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      language === 'ar' ? 'استيراد' : 'Import'
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <input type="hidden" {...register('restaurantOrderId')} />
+            <input type="hidden" {...register('travelBookingId')} />
+            <input type="hidden" {...register('contractNumber')} />
+          </div>
+        )}
+
         <div className="card p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             {language === 'ar' ? 'نوع الفاتورة' : 'Invoice Type'}

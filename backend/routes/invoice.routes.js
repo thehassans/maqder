@@ -6,6 +6,8 @@ import Customer from '../models/Customer.js';
 import Supplier from '../models/Supplier.js';
 import Product from '../models/Product.js';
 import Warehouse from '../models/Warehouse.js';
+import RestaurantOrder from '../models/RestaurantOrder.js';
+import TravelBooking from '../models/TravelBooking.js';
 import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
 import ZatcaService from '../utils/zatca/ZatcaService.js';
 
@@ -295,6 +297,20 @@ router.post('/', checkPermission('invoicing', 'create'), async (req, res) => {
     
     const invoice = await Invoice.create(invoiceData);
 
+    if (restaurantOrder) {
+      await RestaurantOrder.updateOne(
+        { _id: restaurantOrder._id, ...req.tenantFilter },
+        { invoiceId: invoice._id, invoiceNumber: invoice.invoiceNumber, invoicedAt: new Date() }
+      );
+    }
+
+    if (travelBooking) {
+      await TravelBooking.updateOne(
+        { _id: travelBooking._id, ...req.tenantFilter },
+        { invoiceId: invoice._id, invoiceNumber: invoice.invoiceNumber, invoicedAt: new Date() }
+      );
+    }
+
     if (invoice.customerId) {
       await syncCustomerStats(invoice.tenantId, invoice.customerId);
     }
@@ -310,6 +326,37 @@ router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) =>
   try {
     const businessType = req.tenant?.businessType || 'trading';
     const tenant = await Tenant.findById(req.user.tenantId);
+
+    const restaurantOrderId = req.body?.restaurantOrderId;
+    const travelBookingId = req.body?.travelBookingId;
+    let restaurantOrder = null;
+    let travelBooking = null;
+
+    if (restaurantOrderId) {
+      if (businessType !== 'restaurant') {
+        return res.status(403).json({ error: 'Not available for this business type' });
+      }
+      if (!mongoose.Types.ObjectId.isValid(restaurantOrderId)) {
+        return res.status(400).json({ error: 'Invalid restaurantOrderId' });
+      }
+      restaurantOrder = await RestaurantOrder.findOne({ _id: restaurantOrderId, ...req.tenantFilter, isActive: true });
+      if (!restaurantOrder) {
+        return res.status(400).json({ error: 'Restaurant order not found' });
+      }
+    }
+
+    if (travelBookingId) {
+      if (businessType !== 'travel_agency') {
+        return res.status(403).json({ error: 'Not available for this business type' });
+      }
+      if (!mongoose.Types.ObjectId.isValid(travelBookingId)) {
+        return res.status(400).json({ error: 'Invalid travelBookingId' });
+      }
+      travelBooking = await TravelBooking.findOne({ _id: travelBookingId, ...req.tenantFilter, isActive: true });
+      if (!travelBooking) {
+        return res.status(400).json({ error: 'Travel booking not found' });
+      }
+    }
 
     if (businessType === 'trading') {
       if (!req.body.warehouseId) {
