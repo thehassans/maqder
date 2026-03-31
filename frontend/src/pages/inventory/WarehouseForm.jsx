@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { useForm } from 'react-hook-form'
@@ -12,10 +12,12 @@ import { useLiveTranslation } from '../../lib/liveTranslation'
 export default function WarehouseForm() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const queryClient = useQueryClient()
   const { language } = useSelector((state) => state.ui)
   const { t } = useTranslation(language)
   const isEdit = Boolean(id)
+  const returnTo = searchParams.get('returnTo')
 
   const { register, handleSubmit, reset, setValue, watch } = useForm({
     defaultValues: {
@@ -71,7 +73,7 @@ export default function WarehouseForm() {
             : 'Warehouse added'
       )
       queryClient.invalidateQueries(['warehouses'])
-      navigate('/warehouses')
+      navigate(returnTo || '/warehouses')
     },
     onError: (err) => toast.error(err.response?.data?.error || 'Error'),
   })

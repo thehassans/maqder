@@ -43,6 +43,10 @@ const rgbToHex = (rgb) => {
 }
 
 const rgbArr = (rgb) => [rgb.r, rgb.g, rgb.b]
+const toNumber = (value, fallback = 0) => {
+  const numericValue = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(numericValue) ? numericValue : fallback
+}
 
 const detectImageFormat = (dataUrl) => {
   const m = /^data:image\/(png|jpeg|jpg);/i.exec(String(dataUrl || ''))
@@ -204,33 +208,22 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
       },
     }
 
-    const drawGradientTop = () => {
-      const steps = 18
-      const stepW = pageW / steps
-      for (let i = 0; i < steps; i += 1) {
-        const w = i / Math.max(1, steps - 1)
-        const c = mixRgb(primaryRgb, secondaryRgb, w)
-        doc.setFillColor(c.r, c.g, c.b)
-        doc.rect(i * stepW, 0, stepW + 1, 6, 'F')
-      }
-    }
-
     if (templateId === 2) {
       return {
         ...base,
-        drawFrame: drawGradientTop,
+        drawFrame: () => {
+          doc.setFillColor(primaryRgb.r, primaryRgb.g, primaryRgb.b)
+          doc.rect(0, 0, pageW, 4, 'F')
+        },
       }
     }
 
     if (templateId === 3) {
-      const sidebarW = 56
       return {
         ...base,
-        sidebarW,
         drawFrame: () => {
-          const x = isRtl ? pageW - sidebarW : 0
           doc.setFillColor(primaryRgb.r, primaryRgb.g, primaryRgb.b)
-          doc.rect(x, 0, sidebarW, pageH, 'F')
+          doc.rect(0, 0, pageW, 2, 'F')
         },
       }
     }
@@ -250,20 +243,15 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     }
 
     if (templateId === 5) {
-      const headerBgRgb = { r: 15, g: 23, b: 42 }
       return {
         ...base,
-        headerBgRgb,
-        headerTitleRgb: { r: 255, g: 255, b: 255 },
-        headerMutedRgb: { r: 203, g: 213, b: 225 },
+        headerTitleRgb: { r: 15, g: 23, b: 42 },
+        headerMutedRgb: { r: 100, g: 116, b: 139 },
         metaFillRgb: { r: 255, g: 255, b: 255 },
-        tableHeadFillRgb: headerBgRgb,
-        tableHeadTextRgb: { r: 255, g: 255, b: 255 },
-        drawFrame: () => {
-          doc.setFillColor(headerBgRgb.r, headerBgRgb.g, headerBgRgb.b)
-          doc.rect(0, 0, pageW, headerH, 'F')
-          drawGradientTop()
-        },
+        tableHeadFillRgb: { r: 241, g: 245, b: 249 },
+        tableHeadTextRgb: { r: 15, g: 23, b: 42 },
+        boxStrokeRgb: { r: 203, g: 213, b: 225 },
+        altRowFillRgb: { r: 248, g: 250, b: 252 },
       }
     }
 
@@ -271,15 +259,14 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
       return {
         ...base,
         metaFillRgb: { r: 255, g: 255, b: 255 },
-        metaStrokeRgb: { r: 148, g: 163, b: 184 },
+        metaStrokeRgb: { r: 203, g: 213, b: 225 },
         boxStrokeRgb: { r: 148, g: 163, b: 184 },
         tableHeadFillRgb: { r: 226, g: 232, b: 240 },
         tableHeadTextRgb: { r: 15, g: 23, b: 42 },
         altRowFillRgb: { r: 255, g: 255, b: 255 },
         drawFrame: () => {
-          doc.setDrawColor(100, 116, 139)
-          doc.setLineWidth(1.2)
-          doc.roundedRect(10, 10, pageW - 20, pageH - 20, 6, 6, 'S')
+          doc.setFillColor(primaryRgb.r, primaryRgb.g, primaryRgb.b)
+          doc.rect(0, 0, pageW, 3, 'F')
         },
       }
     }
@@ -305,7 +292,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const currency = invoice.currency || tenant?.settings?.currency || 'SAR'
   const currencyOpts = { language, currency, currencyDisplay: 'code', minimumFractionDigits: 2, maximumFractionDigits: 2 }
 
-  const money = (value) => formatCurrency(Number(value || 0), currencyOpts)
+  const money = (value) => formatCurrency(toNumber(value), currencyOpts)
   const txt = (value) => safeText(value)
 
   const shape = (value) => {
@@ -564,16 +551,17 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
       ]
     }
 
-    const qty = Number(l.quantity || 0)
-    const unitPrice = Number(l.unitPrice || 0)
-    const taxRate = Number(l.taxRate || 0)
-    const taxAmount = Number(l.taxAmount ?? (Number(l.lineTotal || qty * unitPrice) * taxRate / 100))
-    const lineTotalWithTax = Number(l.lineTotalWithTax ?? (Number(l.lineTotal || qty * unitPrice) + taxAmount))
+    const qty = toNumber(l.quantity)
+    const unitPrice = toNumber(l.unitPrice)
+    const taxRate = toNumber(l.taxRate)
+    const lineSubtotal = l.lineTotal === 0 || l.lineTotal ? toNumber(l.lineTotal) : qty * unitPrice
+    const taxAmount = l.taxAmount === 0 || l.taxAmount ? toNumber(l.taxAmount) : (lineSubtotal * taxRate / 100)
+    const lineTotalWithTax = l.lineTotalWithTax === 0 || l.lineTotalWithTax ? toNumber(l.lineTotalWithTax) : (lineSubtotal + taxAmount)
     const desc = isRtl ? (l.productNameAr || l.productName || l.description) : (l.productName || l.productNameAr || l.description)
 
     return [
       String(idx + 1),
-      shape(desc || ''),
+      txt(desc),
       String(qty),
       money(unitPrice),
       money(taxAmount),

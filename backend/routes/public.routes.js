@@ -186,6 +186,8 @@ router.post('/demo-login', async (req, res) => {
         _id: tenant._id,
         name: tenant.name,
         slug: tenant.slug,
+        businessType: tenant.businessType,
+        businessTypes: tenant.businessTypes,
         business: tenant.business,
         settings: tenant.settings,
         branding: tenant.branding,

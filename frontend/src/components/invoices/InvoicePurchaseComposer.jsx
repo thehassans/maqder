@@ -16,6 +16,10 @@ import TravelInvoiceFields from './TravelInvoiceFields'
 
 const emptyLine = { productId: '', productName: '', productNameAr: '', unitCode: 'PCE', quantity: 1, unitPrice: 0, taxRate: 15 }
 const purchaseContexts = ['trading', 'construction', 'travel_agency']
+const toNumber = (value, fallback = 0) => {
+  const numericValue = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(numericValue) ? numericValue : fallback
+}
 
 export default function InvoicePurchaseComposer() {
   const navigate = useNavigate()
@@ -53,6 +57,7 @@ export default function InvoicePurchaseComposer() {
   const businessContext = values.businessContext || defaultBusinessContext
   const invoiceSubtype = values.invoiceSubtype || 'standard'
   const selectedTemplateId = Number(values.pdfTemplateId || tenant?.settings?.invoicePdfTemplate || 1)
+  const selectedWarehouseId = values.warehouseId || ''
   const isTradingContext = businessContext === 'trading'
   const isTravelContext = businessContext === 'travel_agency'
 
@@ -124,8 +129,8 @@ export default function InvoicePurchaseComposer() {
   const calculateLineTotal = (index) => {
     const line = lineItems[index]
     if (!line) return { subtotal: 0, tax: 0, total: 0 }
-    const subtotal = Number(line.quantity || 0) * Number(line.unitPrice || 0)
-    const tax = subtotal * (Number(line.taxRate || 15) / 100)
+    const subtotal = toNumber(line.quantity) * toNumber(line.unitPrice)
+    const tax = subtotal * (toNumber(line.taxRate, 0) / 100)
     return { subtotal, tax, total: subtotal + tax }
   }
 
@@ -220,7 +225,11 @@ export default function InvoicePurchaseComposer() {
                 <>
                   <div>
                     <label className="label">{language === 'ar' ? 'المستودع' : 'Warehouse'} *</label>
-                    <select {...register('warehouseId', { required: isTradingContext })} className="select"><option value="">{language === 'ar' ? 'اختر' : 'Select'}</option>{(warehouses || []).map((item) => <option key={item._id} value={item._id}>{language === 'ar' ? (item.nameAr || item.nameEn) : item.nameEn}</option>)}</select>
+                    <select {...register('warehouseId', { required: isTradingContext })} className="select"><option value="">{language === 'ar' ? 'بدون تحديد حالياً' : 'No warehouse selected yet'}</option>{(warehouses || []).map((item) => <option key={item._id} value={item._id}>{language === 'ar' ? (item.nameAr || item.nameEn) : item.nameEn}</option>)}</select>
+                    <div className="mt-2 flex gap-2">
+                      <button type="button" className="btn btn-secondary" onClick={() => setValue('warehouseId', '')} disabled={!selectedWarehouseId}>{language === 'ar' ? 'إلغاء التحديد' : 'Clear'}</button>
+                      <button type="button" className="btn btn-secondary" onClick={() => navigate(`/app/dashboard/warehouses/new?returnTo=${encodeURIComponent('/app/dashboard/invoices/new/purchase')}`)}>{language === 'ar' ? 'إضافة مستودع' : 'Add Warehouse'}</button>
+                    </div>
                   </div>
                   <div>
                     <label className="label">{language === 'ar' ? 'المورد' : 'Supplier'} *</label>
