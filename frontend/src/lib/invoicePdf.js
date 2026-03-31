@@ -65,10 +65,28 @@ const bufferToBase64 = (buffer) => {
   return btoa(binary)
 }
 
+const hasFontSignature = (buffer) => {
+  const bytes = new Uint8Array(buffer)
+  if (bytes.length < 4) return false
+  if (bytes[0] === 0x00 && bytes[1] === 0x01 && bytes[2] === 0x00 && bytes[3] === 0x00) return true
+  const signature = String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3])
+  return signature === 'OTTO' || signature === 'true' || signature === 'ttcf'
+}
+
+const looksLikeHtmlDocument = (buffer) => {
+  try {
+    const sample = new TextDecoder('utf-8').decode(buffer.slice(0, 160)).trim().toLowerCase()
+    return sample.startsWith('<!doctype html') || sample.startsWith('<html') || sample.includes('<html')
+  } catch {
+    return false
+  }
+}
+
 const tryFetchFontBase64 = async (url) => {
   const res = await fetch(url)
   if (!res.ok) return null
   const buf = await res.arrayBuffer()
+  if (looksLikeHtmlDocument(buf) || !hasFontSignature(buf)) return null
   return bufferToBase64(buf)
 }
 
@@ -102,8 +120,10 @@ const ensureTajawalFont = async (doc) => {
       doc.addFont('Tajawal-Bold.ttf', 'Tajawal', 'bold')
     }
     doc.setFont('Tajawal', 'normal')
+    doc.getTextWidth('اختبار')
     return true
   } catch {
+    doc.setFont('helvetica', 'normal')
     return false
   }
 }
@@ -271,7 +291,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const shape = (value) => {
     const raw = safeText(value)
     if (!raw) return ''
-    if (isRtl && typeof doc.processArabic === 'function') {
+    if (isRtl && arabicFontReady && typeof doc.processArabic === 'function') {
       try {
         return doc.processArabic(raw)
       } catch {

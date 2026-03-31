@@ -273,6 +273,11 @@ const pricingPlans = [
   },
 ]
 
+const complianceLogos = [
+  { src: '/zatca-logo-scaled.jpg', alt: 'ZATCA' },
+  { src: '/saudi-vision-2030-logo.png', alt: 'Saudi Vision 2030' },
+]
+
 export default function Landing() {
   const [language, setLanguage] = useState('en')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -317,6 +322,13 @@ export default function Landing() {
                 <Globe className="w-4 h-4" />
                 {isArabic ? 'English' : 'العربية'}
               </button>
+              <div className="hidden xl:flex items-center gap-2 rounded-2xl border border-gray-200 bg-white/80 px-3 py-2">
+                {complianceLogos.map((logo) => (
+                  <div key={logo.alt} className="flex h-10 w-20 items-center justify-center rounded-xl bg-white px-2 py-1 shadow-sm">
+                    <img src={logo.src} alt={logo.alt} className="max-h-full max-w-full object-contain" />
+                  </div>
+                ))}
+              </div>
               <Link
                 to="/login"
                 className="hidden sm:inline-flex px-5 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-semibold shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 transition-all hover:-translate-y-0.5"
@@ -402,6 +414,14 @@ export default function Landing() {
                   <Play className="w-5 h-5" />
                   {isArabic ? 'شاهد العرض' : 'Watch Demo'}
                 </a>
+              </div>
+
+              <div className="mt-8 flex flex-wrap items-center gap-4">
+                {complianceLogos.map((logo) => (
+                  <div key={logo.alt} className="flex h-16 w-36 items-center justify-center rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
+                    <img src={logo.src} alt={logo.alt} className="max-h-full max-w-full object-contain" />
+                  </div>
+                ))}
               </div>
 
               {/* Trust Badges */}
