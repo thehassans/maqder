@@ -54,6 +54,7 @@ const detectImageFormat = (dataUrl) => {
 let tajawalRegularBase64
 let tajawalBoldBase64
 let tajawalLoadPromise
+const customArabicFontEnabled = false
 
 const bufferToBase64 = (buffer) => {
   const bytes = new Uint8Array(buffer)
@@ -91,6 +92,7 @@ const tryFetchFontBase64 = async (url) => {
 }
 
 const ensureTajawalFont = async (doc) => {
+  if (!customArabicFontEnabled) return false
   if (!doc || typeof doc.addFileToVFS !== 'function' || typeof doc.addFont !== 'function') return false
 
   if (!tajawalLoadPromise) {

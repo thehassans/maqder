@@ -8,8 +8,8 @@ import { setLanguage } from '../../store/slices/uiSlice'
 import { useTranslation } from '../../lib/translations'
 
 const complianceLogos = [
-  { src: '/zatca-logo-scaled.jpg', alt: 'ZATCA' },
-  { src: '/saudi-vision-2030-logo.png', alt: 'Saudi Vision 2030' },
+  { src: '/zatca-logo-scaled.jpg', alt: 'ZATCA', cardClassName: 'w-44', imageClassName: 'scale-[1.45]' },
+  { src: '/saudi-vision-2030-logo.png', alt: 'Saudi Vision 2030', cardClassName: 'w-36', imageClassName: 'scale-100' },
 ]
 
 export default function Login() {
@@ -36,20 +36,11 @@ export default function Login() {
         {/* Content */}
         <div className="relative z-10 flex flex-col justify-between p-12 text-white">
           {/* Logo */}
-          <div className="flex items-start justify-between gap-6">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-white rounded-xl p-1 shadow-lg">
-                <img src="/maqder-logo.png" alt="Maqder" className="w-full h-full object-contain" />
-              </div>
-              <span className="text-2xl font-bold tracking-tight">Maqder ERP</span>
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-white rounded-xl p-1 shadow-lg">
+              <img src="/maqder-logo.png" alt="Maqder" className="w-full h-full object-contain" />
             </div>
-            <div className="flex items-center gap-3 rounded-2xl bg-white/10 px-4 py-3 backdrop-blur-sm border border-white/15">
-              {complianceLogos.map((logo) => (
-                <div key={logo.alt} className="h-12 w-24 rounded-xl bg-white px-3 py-2 shadow-sm">
-                  <img src={logo.src} alt={logo.alt} className="h-full w-full object-contain" />
-                </div>
-              ))}
-            </div>
+            <span className="text-2xl font-bold tracking-tight">Maqder ERP</span>
           </div>
 
           {/* Hero */}
@@ -65,14 +56,6 @@ export default function Login() {
                   ? 'الفوترة الإلكترونية، الموارد البشرية، المخزون - كل شيء في مكان واحد'
                   : 'E-Invoicing, HR & Payroll, Inventory - All in one platform'}
               </p>
-            </div>
-
-            <div className="flex items-center gap-4">
-              {complianceLogos.map((logo) => (
-                <div key={logo.alt} className="flex h-16 w-32 items-center justify-center rounded-2xl bg-white px-4 py-3 shadow-xl shadow-black/10">
-                  <img src={logo.src} alt={logo.alt} className="max-h-full max-w-full object-contain" />
-                </div>
-              ))}
             </div>
 
             {/* Features */}
@@ -124,18 +107,9 @@ export default function Login() {
           </div>
 
           {/* Mobile Logo */}
-          <div className="lg:hidden flex flex-col items-center justify-center gap-4 mb-8">
-            <div className="flex items-center justify-center gap-3">
-              <img src="/maqder-logo.png" alt="Maqder" className="w-14 h-14 object-contain" />
-              <span className="text-2xl font-bold text-gray-900">Maqder ERP</span>
-            </div>
-            <div className="flex items-center justify-center gap-3">
-              {complianceLogos.map((logo) => (
-                <div key={logo.alt} className="flex h-14 w-28 items-center justify-center rounded-2xl border border-gray-200 bg-white px-3 py-2 shadow-sm">
-                  <img src={logo.src} alt={logo.alt} className="max-h-full max-w-full object-contain" />
-                </div>
-              ))}
-            </div>
+          <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
+            <img src="/maqder-logo.png" alt="Maqder" className="w-14 h-14 object-contain" />
+            <span className="text-2xl font-bold text-gray-900">Maqder ERP</span>
           </div>
 
           {/* Header */}
@@ -257,10 +231,10 @@ export default function Login() {
           {/* Trust Badges */}
           <div className="mt-10 pt-8 border-t border-gray-200">
             <p className="text-center text-xs text-gray-400 mb-4">{language === 'ar' ? 'معتمد من' : 'Trusted & Certified'}</p>
-            <div className="flex items-center justify-center gap-4">
+            <div className="flex flex-wrap items-center justify-center gap-4">
               {complianceLogos.map((logo) => (
-                <div key={logo.alt} className="flex h-16 w-36 items-center justify-center rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
-                  <img src={logo.src} alt={logo.alt} className="max-h-full max-w-full object-contain" />
+                <div key={logo.alt} className={`flex h-20 ${logo.cardClassName} items-center justify-center overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm`}>
+                  <img src={logo.src} alt={logo.alt} className={`max-h-full max-w-full object-contain ${logo.imageClassName}`} />
                 </div>
               ))}
             </div>

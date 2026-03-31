@@ -20,7 +20,7 @@ import { useTranslation } from '../../lib/translations'
 import Money from '../../components/ui/Money'
 import ExportMenu from '../../components/ui/ExportMenu'
 import toast from 'react-hot-toast'
-import { downloadInvoicePdf } from '../../lib/invoicePdfClassic'
+import { downloadInvoicePdf } from '../../lib/invoicePdf'
 
 export default function Invoices() {
   const { language } = useSelector((state) => state.ui)
