@@ -120,6 +120,7 @@ const formatDateTime = (value, language) => {
   return d.toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US')
 }
 
+<<<<<<< HEAD
 const formatInvoiceDate = (value) => {
   if (!value) return ''
   const d = new Date(value)
@@ -196,6 +197,25 @@ const renderClassicInvoicePdf = async ({ invoice, language, tenant, jsPDF, autoT
   const accentRgb = hexToRgb(tenant?.branding?.primaryColor) || { r: 31, g: 107, b: 67 }
   const arabicFontReady = await ensureTajawalFont(doc)
   const currency = invoice.currency || tenant?.settings?.currency || 'SAR'
+=======
+export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) => {
+  if (!invoice) return
+
+  const jspdfModule = await import('jspdf')
+  const jsPDF = jspdfModule?.jsPDF || jspdfModule?.default || jspdfModule
+
+  const autoTableModule = await import('jspdf-autotable')
+  const autoTable = autoTableModule?.default || autoTableModule
+
+  const pdfOrientation = tenant?.settings?.invoicePdfOrientation || 'portrait'
+  const pdfPageSize = tenant?.settings?.invoicePdfPageSize || 'a4'
+  const doc = new jsPDF({ orientation: pdfOrientation, unit: 'pt', format: pdfPageSize })
+
+  const pageW = doc.internal.pageSize.getWidth()
+  const pageH = doc.internal.pageSize.getHeight()
+  const margin = 40
+  const footerH = 44
+>>>>>>> 3a0f875b2b8467a6857d178ec88a9830f0073750
   const headerH = 98
   const topMargin = headerH + 26
 
