@@ -120,84 +120,6 @@ const formatDateTime = (value, language) => {
   return d.toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US')
 }
 
-<<<<<<< HEAD
-const formatInvoiceDate = (value) => {
-  if (!value) return ''
-  const d = new Date(value)
-  if (Number.isNaN(d.getTime())) return ''
-  const year = d.getFullYear()
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-const formatInvoiceTime = (value) => {
-  if (!value) return ''
-  const d = new Date(value)
-  if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleTimeString('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  })
-}
-
-const numberToEnglishWords = (value) => {
-  const small = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen']
-  const tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety']
-
-  const toWords = (n) => {
-    if (n < 20) return small[n]
-    if (n < 100) {
-      const rem = n % 10
-      return `${tens[Math.floor(n / 10)]}${rem ? `-${small[rem]}` : ''}`
-    }
-    if (n < 1000) {
-      const rem = n % 100
-      return `${small[Math.floor(n / 100)]} hundred${rem ? ` ${toWords(rem)}` : ''}`
-    }
-    if (n < 1000000) {
-      const rem = n % 1000
-      return `${toWords(Math.floor(n / 1000))} thousand${rem ? ` ${toWords(rem)}` : ''}`
-    }
-    if (n < 1000000000) {
-      const rem = n % 1000000
-      return `${toWords(Math.floor(n / 1000000))} million${rem ? ` ${toWords(rem)}` : ''}`
-    }
-    const rem = n % 1000000000
-    return `${toWords(Math.floor(n / 1000000000))} billion${rem ? ` ${toWords(rem)}` : ''}`
-  }
-
-  const safe = Math.max(0, Math.floor(Number(value) || 0))
-  return toWords(safe)
-}
-
-const amountToWords = (value, currency) => {
-  const numeric = Number(value) || 0
-  const whole = Math.floor(numeric)
-  const fraction = Math.round((numeric - whole) * 100)
-  const currencyLabel = currency === 'SAR' ? 'Saudi Riyals' : currency
-  const wholeWords = numberToEnglishWords(whole)
-  const fractionWords = fraction > 0 ? numberToEnglishWords(fraction) : 'zero'
-  return `${wholeWords} ${currencyLabel} and ${fractionWords} Halalas only`.toUpperCase()
-}
-
-const renderClassicInvoicePdf = async ({ invoice, language, tenant, jsPDF, autoTable }) => {
-  const pdfOrientation = tenant?.settings?.invoicePdfOrientation || 'portrait'
-  const pdfPageSize = tenant?.settings?.invoicePdfPageSize || 'a4'
-  const doc = new jsPDF({ orientation: pdfOrientation, unit: 'pt', format: pdfPageSize })
-  const pageW = doc.internal.pageSize.getWidth()
-  const pageH = doc.internal.pageSize.getHeight()
-  const margin = 34
-  const contentW = pageW - margin * 2
-  const footerH = 32
-  const tableTop = 346
-  const neutralRgb = { r: 20, g: 20, b: 20 }
-  const fillRgb = { r: 224, g: 224, b: 224 }
-  const accentRgb = hexToRgb(tenant?.branding?.primaryColor) || { r: 31, g: 107, b: 67 }
-  const arabicFontReady = await ensureTajawalFont(doc)
-  const currency = invoice.currency || tenant?.settings?.currency || 'SAR'
-=======
 export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) => {
   if (!invoice) return
 
@@ -215,7 +137,6 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const pageH = doc.internal.pageSize.getHeight()
   const margin = 40
   const footerH = 44
->>>>>>> 3a0f875b2b8467a6857d178ec88a9830f0073750
   const headerH = 98
   const topMargin = headerH + 26
 

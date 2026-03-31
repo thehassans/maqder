@@ -9,11 +9,7 @@ import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import Money from '../../components/ui/Money'
-<<<<<<< HEAD
 import { downloadInvoicePdf } from '../../lib/invoicePdfClassic'
-=======
-import { downloadInvoicePdf } from '../../lib/invoicePdf'
->>>>>>> 3a0f875b2b8467a6857d178ec88a9830f0073750
 
 export default function InvoiceView() {
   const { id } = useParams()
