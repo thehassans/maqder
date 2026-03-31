@@ -7,6 +7,7 @@ import Invoice from '../models/Invoice.js';
 import Employee from '../models/Employee.js';
 import SystemSettings from '../models/SystemSettings.js';
 import { protect, authorize } from '../middleware/auth.js';
+import { getPrimaryBusinessType, normalizeBusinessTypes } from '../utils/businessTypes.js';
 
 const router = express.Router();
 
@@ -358,17 +359,19 @@ router.get('/tenants/:id', async (req, res) => {
 // @route   POST /api/super-admin/tenants
 router.post('/tenants', async (req, res) => {
   try {
-    const { name, slug, businessType, business, subscription, adminUser, branding } = req.body;
+    const { name, slug, businessType, businessTypes, business, subscription, adminUser, branding } = req.body;
 
-    if (businessType && !['trading', 'travel_agency', 'restaurant'].includes(businessType)) {
-      return res.status(400).json({ error: 'Invalid business type' });
-    }
-    
+    const nextBusinessTypes = normalizeBusinessTypes(businessTypes || businessType);
+    const primaryBusinessType = businessType && nextBusinessTypes.includes(businessType)
+      ? businessType
+      : getPrimaryBusinessType({ businessTypes: nextBusinessTypes, businessType });
+
     // Create tenant
     const tenant = await Tenant.create({
       name,
       slug,
-      ...(businessType ? { businessType } : {}),
+      businessType: primaryBusinessType,
+      businessTypes: nextBusinessTypes,
       business,
       ...(branding ? { branding } : {}),
       subscription: {
@@ -389,6 +392,7 @@ router.post('/tenants', async (req, res) => {
     }
     
     res.status(201).json(tenant);
+
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -397,9 +401,28 @@ router.post('/tenants', async (req, res) => {
 // @route   PUT /api/super-admin/tenants/:id
 router.put('/tenants/:id', async (req, res) => {
   try {
+    const existingTenant = await Tenant.findById(req.params.id);
+    if (!existingTenant) {
+      return res.status(404).json({ error: 'Tenant not found' });
+    }
+
+    const hasBusinessTypePayload = Object.prototype.hasOwnProperty.call(req.body || {}, 'businessType') || Object.prototype.hasOwnProperty.call(req.body || {}, 'businessTypes');
+    const nextBusinessTypes = hasBusinessTypePayload
+      ? normalizeBusinessTypes(req.body?.businessTypes || req.body?.businessType)
+      : normalizeBusinessTypes(existingTenant.businessTypes || existingTenant.businessType);
+    const primaryBusinessType = hasBusinessTypePayload
+      ? (req.body?.businessType && nextBusinessTypes.includes(req.body.businessType)
+          ? req.body.businessType
+          : getPrimaryBusinessType({ businessTypes: nextBusinessTypes, businessType: req.body?.businessType }))
+      : getPrimaryBusinessType(existingTenant);
+
     const tenant = await Tenant.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      {
+        ...req.body,
+        businessType: primaryBusinessType,
+        businessTypes: nextBusinessTypes,
+      },
       { new: true, runValidators: true }
     );
     

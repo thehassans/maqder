@@ -1,6 +1,18 @@
 import mongoose from 'mongoose';
 import momentHijri from 'moment-hijri';
 
+const travelDetailsSchema = new mongoose.Schema({
+  travelerName: { type: String },
+  passportNumber: { type: String },
+  ticketNumber: { type: String },
+  pnr: { type: String },
+  airlineName: { type: String },
+  routeFrom: { type: String },
+  routeTo: { type: String },
+  departureDate: { type: Date },
+  returnDate: { type: Date },
+}, { _id: false });
+
 const invoiceLineSchema = new mongoose.Schema({
   lineNumber: { type: Number, required: true },
   productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
@@ -71,12 +83,15 @@ const invoiceSchema = new mongoose.Schema({
   tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
 
   flow: { type: String, enum: ['sell', 'purchase'], default: 'sell', index: true },
+  businessContext: { type: String, enum: ['trading', 'construction', 'travel_agency', 'restaurant'], default: 'trading', index: true },
   warehouseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Warehouse', index: true },
   supplierId: { type: mongoose.Schema.Types.ObjectId, ref: 'Supplier', index: true },
   
   // Invoice Identification
   invoiceNumber: { type: String, required: true },
   invoiceType: { type: String, enum: ['388', '381', '383'], default: '388' },
+  invoiceSubtype: { type: String, enum: ['standard', 'travel_ticket'], default: 'standard' },
+  pdfTemplateId: { type: Number, min: 1, max: 6 },
   invoiceTypeCode: {
     type: String,
     enum: ['0100000', '0200000', '0100100', '0200100'],
@@ -125,6 +140,7 @@ const invoiceSchema = new mongoose.Schema({
 
   restaurantOrderId: { type: mongoose.Schema.Types.ObjectId, ref: 'RestaurantOrder', index: true },
   travelBookingId: { type: mongoose.Schema.Types.ObjectId, ref: 'TravelBooking', index: true },
+  travelDetails: travelDetailsSchema,
   
   // ZATCA Compliance
   zatca: zatcaSchema,

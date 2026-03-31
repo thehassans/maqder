@@ -1,8 +1,9 @@
 import { useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { motion } from 'framer-motion'
-import { ArrowLeft, ShoppingCart, Package } from 'lucide-react'
+import { ArrowLeft, ShoppingCart, Package, Plane } from 'lucide-react'
 import { useTranslation } from '../../lib/translations'
+import { getTenantBusinessTypes } from '../../lib/businessTypes'
 
 export default function InvoiceCreate() {
   const navigate = useNavigate()
@@ -10,8 +11,9 @@ export default function InvoiceCreate() {
   const { tenant } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
 
-  const businessType = tenant?.businessType || 'trading'
-  const isTrading = businessType === 'trading'
+  const businessTypes = getTenantBusinessTypes(tenant)
+  const canCreatePurchase = businessTypes.some((type) => ['trading', 'construction', 'travel_agency'].includes(type))
+  const hasTravel = businessTypes.includes('travel_agency')
 
   return (
     <div className="space-y-6">
@@ -54,12 +56,18 @@ export default function InvoiceCreate() {
               {language === 'ar' ? 'توقيع ZATCA' : 'ZATCA Signing'}
             </span>
             <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-xs font-medium rounded-full">
-              {language === 'ar' ? 'تخفيض المخزون' : 'Stock Decrease'}
+              {language === 'ar' ? 'معاينة مباشرة + قوالب' : 'Live Preview + Templates'}
             </span>
+            {hasTravel && (
+              <span className="px-3 py-1 bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400 text-xs font-medium rounded-full inline-flex items-center gap-1">
+                <Plane className="w-3 h-3" />
+                {language === 'ar' ? 'فواتير سفر' : 'Travel Invoices'}
+              </span>
+            )}
           </div>
         </motion.button>
 
-        {isTrading && (
+        {canCreatePurchase && (
           <motion.button
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -83,10 +91,10 @@ export default function InvoiceCreate() {
                 {language === 'ar' ? 'مورد' : 'Supplier'}
               </span>
               <span className="px-3 py-1 bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400 text-xs font-medium rounded-full">
-                {language === 'ar' ? 'زيادة المخزون' : 'Stock Increase'}
+                {language === 'ar' ? 'تجاري أو خدمي' : 'Trading or Service'}
               </span>
               <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-400 text-xs font-medium rounded-full">
-                {language === 'ar' ? 'بدون ZATCA' : 'No ZATCA'}
+                {language === 'ar' ? 'قالب طباعة قابل للتخصيص' : 'Custom Print Template'}
               </span>
             </div>
           </motion.button>
@@ -99,8 +107,8 @@ export default function InvoiceCreate() {
         </h3>
         <p className="text-sm text-blue-700 dark:text-blue-300">
           {language === 'ar'
-            ? 'فواتير البيع تتطلب توقيع ZATCA وتخفض المخزون عند التوقيع. فواتير الشراء تحدث المخزون فوراً ولا تتطلب توقيع ZATCA لأن شركتك هي المشتري.'
-            : 'Sell invoices require ZATCA signing and reduce inventory on signing. Purchase invoices update inventory immediately and do not require ZATCA signing since your company is the buyer.'}
+            ? 'يمكنك الآن اختيار القالب أثناء الإنشاء ومشاهدة معاينة مباشرة. عند تفعيل نشاط السفر ستتوفر فواتير السفر مع بيانات المسافر والجواز والطباعة.'
+            : 'You can now choose the template during creation and see a live preview. When travel business is enabled, travel invoices with passenger and passport details are available for printing.'}
         </p>
       </div>
     </div>

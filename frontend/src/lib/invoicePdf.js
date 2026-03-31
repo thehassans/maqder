@@ -183,7 +183,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const secondary = tenant?.branding?.secondaryColor || '#D946EF'
   const secondaryRgb = hexToRgb(secondary) || { r: 217, g: 70, b: 239 }
 
-  const templateId = Number(tenant?.settings?.invoicePdfTemplate || 1)
+  const templateId = Number(invoice?.pdfTemplateId || tenant?.settings?.invoicePdfTemplate || 1)
 
   const theme = (() => {
     const base = {
@@ -267,6 +267,23 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
       }
     }
 
+    if (templateId === 6) {
+      return {
+        ...base,
+        metaFillRgb: { r: 255, g: 255, b: 255 },
+        metaStrokeRgb: { r: 148, g: 163, b: 184 },
+        boxStrokeRgb: { r: 148, g: 163, b: 184 },
+        tableHeadFillRgb: { r: 226, g: 232, b: 240 },
+        tableHeadTextRgb: { r: 15, g: 23, b: 42 },
+        altRowFillRgb: { r: 255, g: 255, b: 255 },
+        drawFrame: () => {
+          doc.setDrawColor(100, 116, 139)
+          doc.setLineWidth(1.2)
+          doc.roundedRect(10, 10, pageW - 20, pageH - 20, 6, 6, 'S')
+        },
+      }
+    }
+
     return base
   })()
 
@@ -283,6 +300,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
 
   const seller = invoice.seller || {}
   const buyer = invoice.buyer || {}
+  const travelDetails = invoice.travelDetails || {}
 
   const currency = invoice.currency || tenant?.settings?.currency || 'SAR'
   const currencyOpts = { language, currency, currencyDisplay: 'code', minimumFractionDigits: 2, maximumFractionDigits: 2 }
@@ -471,6 +489,43 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   })
 
   let y = boxY + boxH + 24
+
+  if (invoice?.invoiceSubtype === 'travel_ticket') {
+    const travelRows = [
+      [isRtl ? 'اسم المسافر' : 'Passenger', travelDetails.travelerName || buyerName || ''],
+      [isRtl ? 'رقم الجواز' : 'Passport', travelDetails.passportNumber || ''],
+      [isRtl ? 'التذكرة / PNR' : 'Ticket / PNR', [travelDetails.ticketNumber, travelDetails.pnr].filter(Boolean).join(' / ')],
+      [isRtl ? 'المسار' : 'Route', [travelDetails.routeFrom, travelDetails.routeTo].filter(Boolean).join(' → ')],
+      [isRtl ? 'شركة الطيران' : 'Airline', travelDetails.airlineName || ''],
+      [isRtl ? 'تاريخ السفر' : 'Travel Date', formatDateTime(travelDetails.departureDate, language)],
+    ]
+
+    autoTable(doc, {
+      startY: y,
+      margin: { left: contentLeft, right: contentRight, top: topMargin, bottom: footerH },
+      theme: 'grid',
+      tableWidth: contentW,
+      body: travelRows,
+      styles: {
+        fontSize: 9,
+        cellPadding: 5,
+        ...(arabicFontReady ? { font: 'Tajawal' } : {}),
+        textColor: [15, 23, 42],
+        lineColor: [203, 213, 225],
+        lineWidth: 0.4,
+      },
+      columnStyles: {
+        0: { cellWidth: 120, fontStyle: 'bold', halign: align },
+        1: { cellWidth: contentW - 120, halign: align },
+      },
+      didDrawPage: () => {
+        const pageNumber = doc.getCurrentPageInfo().pageNumber
+        drawHeader({ pageNumber })
+      },
+    })
+
+    y = doc.lastAutoTable.finalY + 18
+  }
 
   doc.setFontSize(12)
   doc.setTextColor(15, 23, 42)

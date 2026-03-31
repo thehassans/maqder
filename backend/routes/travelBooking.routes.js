@@ -3,6 +3,7 @@ import TravelBooking from '../models/TravelBooking.js';
 import Invoice from '../models/Invoice.js';
 import Tenant from '../models/Tenant.js';
 import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
+import { buildDraftInvoiceQr } from '../utils/zatca/draftInvoiceQr.js';
 
 const router = express.Router();
 
@@ -166,10 +167,13 @@ router.post('/:id/create-invoice', checkPermission('travel', 'update'), checkPer
 
     const taxRate = taxableAmount > 0 ? Math.round((bookingTotalTax / taxableAmount) * 10000) / 100 : 0;
 
-    const invoice = await Invoice.create({
+    const createdInvoice = await Invoice.create({
       tenantId: req.user.tenantId,
       flow: 'sell',
+      businessContext: 'travel_agency',
       invoiceNumber,
+      invoiceSubtype: 'travel_ticket',
+      pdfTemplateId: Number(tenant?.settings?.invoicePdfTemplate || 1),
       transactionType: 'B2C',
       invoiceTypeCode: '0200000',
       issueDate: new Date(),
@@ -189,6 +193,17 @@ router.post('/:id/create-invoice', checkPermission('travel', 'update'), checkPer
         contactEmail: booking.customerEmail,
         contactPhone: booking.customerPhone,
       },
+      travelDetails: {
+        travelerName: booking.travelerName || booking.customerName,
+        passportNumber: booking.passportNumber,
+        ticketNumber: booking.ticketNumber,
+        pnr: booking.pnr,
+        airlineName: booking.airlineName,
+        routeFrom: booking.routeFrom,
+        routeTo: booking.routeTo,
+        departureDate: booking.departureDate,
+        returnDate: booking.returnDate,
+      },
       lineItems: [
         {
           lineNumber: 1,
@@ -203,6 +218,20 @@ router.post('/:id/create-invoice', checkPermission('travel', 'update'), checkPer
       ],
       createdBy: req.user._id,
     });
+
+    const draftQr = await buildDraftInvoiceQr({
+      seller: tenant.business,
+      issueDate: createdInvoice.issueDate,
+      grandTotal: createdInvoice.grandTotal,
+      totalTax: createdInvoice.totalTax,
+    });
+
+    createdInvoice.zatca = {
+      ...(createdInvoice.zatca || {}),
+      ...draftQr,
+    };
+
+    const invoice = await createdInvoice.save();
 
     const updatedBooking = await TravelBooking.findOneAndUpdate(
       { _id: booking._id, ...req.tenantFilter },

@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import Tenant from '../models/Tenant.js';
+import { getTenantBusinessTypes } from '../utils/businessTypes.js';
 
 export const protect = async (req, res, next) => {
   try {
@@ -67,8 +68,8 @@ export const requireBusinessType = (...allowedTypes) => {
       return next();
     }
 
-    const businessType = req.tenant?.businessType || 'trading';
-    if (allowedTypes.length > 0 && !allowedTypes.includes(businessType)) {
+    const businessTypes = getTenantBusinessTypes(req.tenant);
+    if (allowedTypes.length > 0 && !allowedTypes.some((type) => businessTypes.includes(type))) {
       return res.status(403).json({ error: 'Not available for this business type' });
     }
 

@@ -10,6 +10,7 @@ import { useTranslation } from '../lib/translations'
 import { setLanguage, setTheme } from '../store/slices/uiSlice'
 import { updateTenant } from '../store/slices/authSlice'
 import { useLiveTranslation } from '../lib/liveTranslation'
+import { getBusinessTypeOptions, getPrimaryBusinessType, getTenantBusinessTypes } from '../lib/businessTypes'
 
 export default function Settings() {
   const dispatch = useDispatch()
@@ -26,6 +27,9 @@ export default function Settings() {
   const [invoicePdfTemplate, setInvoicePdfTemplate] = useState(1)
   const [invoicePdfPageSize, setInvoicePdfPageSize] = useState('a4')
   const [invoicePdfOrientation, setInvoicePdfOrientation] = useState('portrait')
+  const [selectedBusinessTypes, setSelectedBusinessTypes] = useState(['trading'])
+  const [primaryBusinessType, setPrimaryBusinessType] = useState('trading')
+  const businessTypeOptions = getBusinessTypeOptions(language)
 
   const { data: tenant } = useQuery({
     queryKey: ['tenant-settings'],
@@ -43,7 +47,22 @@ export default function Settings() {
     setInvoicePdfTemplate(Number(tenant.settings?.invoicePdfTemplate || 1))
     setInvoicePdfPageSize(tenant.settings?.invoicePdfPageSize || 'a4')
     setInvoicePdfOrientation(tenant.settings?.invoicePdfOrientation || 'portrait')
+    const nextBusinessTypes = getTenantBusinessTypes(tenant)
+    setSelectedBusinessTypes(nextBusinessTypes)
+    setPrimaryBusinessType(getPrimaryBusinessType(tenant))
   }, [tenant])
+
+  const toggleBusinessType = (businessTypeId) => {
+    setSelectedBusinessTypes((current) => {
+      const exists = current.includes(businessTypeId)
+      const next = exists ? current.filter((item) => item !== businessTypeId) : [...current, businessTypeId]
+      const normalized = next.length > 0 ? next : ['trading']
+      if (!normalized.includes(primaryBusinessType)) {
+        setPrimaryBusinessType(normalized[0])
+      }
+      return normalized
+    })
+  }
 
   const { data: zatcaStatus } = useQuery({
     queryKey: ['zatca-status'],
@@ -184,7 +203,7 @@ export default function Settings() {
           {activeTab === 'company' && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card p-6">
               <h3 className="text-lg font-semibold mb-6">{t('companySettings')}</h3>
-              <form onSubmit={handleSubmit((data) => updateMutation.mutate({ business: data }))} className="space-y-4">
+              <form onSubmit={handleSubmit((data) => updateMutation.mutate({ business: data, businessTypes: selectedBusinessTypes, businessType: primaryBusinessType }))} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="label">{language === 'ar' ? 'الاسم القانوني (EN)' : 'Legal Name (EN)'}</label>
@@ -218,6 +237,34 @@ export default function Settings() {
                     <label className="label">{language === 'ar' ? 'الهاتف' : 'Phone'}</label>
                     <input {...register('contactPhone')} className="input" />
                   </div>
+                </div>
+                <div className="pt-2">
+                  <label className="label">{language === 'ar' ? 'أنشطة الشركة' : 'Business Profiles'}</label>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2 mt-2">
+                    {businessTypeOptions.map((option) => {
+                      const active = selectedBusinessTypes.includes(option.id)
+                      return (
+                        <button
+                          key={option.id}
+                          type="button"
+                          onClick={() => toggleBusinessType(option.id)}
+                          className={`rounded-2xl border p-4 text-start transition-all ${active ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-dark-600'}`}
+                        >
+                          <p className="font-semibold text-gray-900 dark:text-white">{option.label}</p>
+                          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{option.description}</p>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+                <div>
+                  <label className="label">{language === 'ar' ? 'النشاط الافتراضي' : 'Primary Business Profile'}</label>
+                  <select value={primaryBusinessType} onChange={(e) => setPrimaryBusinessType(e.target.value)} className="select">
+                    {selectedBusinessTypes.map((businessTypeId) => {
+                      const option = businessTypeOptions.find((item) => item.id === businessTypeId)
+                      return <option key={businessTypeId} value={businessTypeId}>{option?.label || businessTypeId}</option>
+                    })}
+                  </select>
                 </div>
                 <div className="flex justify-end pt-4">
                   <button type="submit" disabled={updateMutation.isPending} className="btn btn-primary">
@@ -521,6 +568,7 @@ export default function Settings() {
                           <option value={3}>{language === 'ar' ? 'قالب 3 (شريط جانبي)' : 'Template 3 (Sidebar)'}</option>
                           <option value={4}>{language === 'ar' ? 'قالب 4 (مُبسّط)' : 'Template 4 (Minimal)'}</option>
                           <option value={5}>{language === 'ar' ? 'قالب 5 (داكن أنيق)' : 'Template 5 (Elegant Dark)'}</option>
+                          <option value={6}>{language === 'ar' ? 'قالب 6 (شبكة ضريبية)' : 'Template 6 (Tax Grid)'}</option>
                         </select>
                       </div>
                       <div>

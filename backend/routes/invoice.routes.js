@@ -9,6 +9,8 @@ import Warehouse from '../models/Warehouse.js';
 import RestaurantOrder from '../models/RestaurantOrder.js';
 import TravelBooking from '../models/TravelBooking.js';
 import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
+import { getPrimaryBusinessType, getTenantBusinessTypes } from '../utils/businessTypes.js';
+import { buildDraftInvoiceQr } from '../utils/zatca/draftInvoiceQr.js';
 import ZatcaService from '../utils/zatca/ZatcaService.js';
 
 const router = express.Router();
@@ -19,6 +21,29 @@ router.use(tenantFilter);
 function toNumber(value, fallback = 0) {
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
+}
+
+function resolvePdfTemplateId(requestedTemplateId, tenant) {
+  const value = Number(requestedTemplateId || tenant?.settings?.invoicePdfTemplate || 1);
+  if (!Number.isFinite(value)) return 1;
+  return Math.min(6, Math.max(1, value));
+}
+
+async function attachDraftQr(invoice, seller) {
+  const qr = await buildDraftInvoiceQr({
+    seller,
+    issueDate: invoice.issueDate,
+    grandTotal: invoice.grandTotal,
+    totalTax: invoice.totalTax,
+  });
+
+  invoice.zatca = {
+    ...(invoice.zatca || {}),
+    ...qr,
+  };
+
+  await invoice.save();
+  return invoice;
 }
 
 async function postInventoryForInvoice(invoice, tenantFilterValue) {
@@ -324,8 +349,13 @@ router.post('/', checkPermission('invoicing', 'create'), async (req, res) => {
 // @route   POST /api/invoices/sell
 router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) => {
   try {
-    const businessType = req.tenant?.businessType || 'trading';
+    const tenantBusinessTypes = getTenantBusinessTypes(req.tenant);
+    const primaryBusinessType = getPrimaryBusinessType(req.tenant);
     const tenant = await Tenant.findById(req.user.tenantId);
+
+    const businessContext = tenantBusinessTypes.includes(req.body?.businessContext)
+      ? req.body.businessContext
+      : primaryBusinessType;
 
     const restaurantOrderId = req.body?.restaurantOrderId;
     const travelBookingId = req.body?.travelBookingId;
@@ -333,7 +363,7 @@ router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) =>
     let travelBooking = null;
 
     if (restaurantOrderId) {
-      if (businessType !== 'restaurant') {
+      if (!tenantBusinessTypes.includes('restaurant')) {
         return res.status(403).json({ error: 'Not available for this business type' });
       }
       if (!mongoose.Types.ObjectId.isValid(restaurantOrderId)) {
@@ -346,7 +376,7 @@ router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) =>
     }
 
     if (travelBookingId) {
-      if (businessType !== 'travel_agency') {
+      if (!tenantBusinessTypes.includes('travel_agency')) {
         return res.status(403).json({ error: 'Not available for this business type' });
       }
       if (!mongoose.Types.ObjectId.isValid(travelBookingId)) {
@@ -358,7 +388,7 @@ router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) =>
       }
     }
 
-    if (businessType === 'trading') {
+    if (businessContext === 'trading') {
       if (!req.body.warehouseId) {
         return res.status(400).json({ error: 'warehouseId is required' });
       }
@@ -414,8 +444,10 @@ router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) =>
     const invoiceNumber = `INV-${new Date().getFullYear()}-${String(invoiceCount).padStart(6, '0')}`;
 
     const transactionType = req.body.transactionType || 'B2C';
+    const invoiceSubtype = req.body.invoiceSubtype === 'travel_ticket' ? 'travel_ticket' : 'standard';
     const invoiceTypeCode = req.body.invoiceTypeCode || (transactionType === 'B2C' ? '0200000' : '0100000');
     const issueDate = req.body.issueDate ? new Date(req.body.issueDate) : new Date();
+    const pdfTemplateId = resolvePdfTemplateId(req.body?.pdfTemplateId, tenant);
 
     const lineItems = (req.body.lineItems || []).map((line, i) => ({
       ...line,
@@ -428,7 +460,7 @@ router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) =>
       .filter(Boolean)
       .map((id) => id.toString());
     const uniqueProductIds = [...new Set(productIds)];
-    if (businessType === 'trading' && uniqueProductIds.length) {
+    if (businessContext === 'trading' && uniqueProductIds.length) {
       const existingCount = await Product.countDocuments({ _id: { $in: uniqueProductIds }, ...req.tenantFilter });
       if (existingCount !== uniqueProductIds.length) {
         return res.status(400).json({ error: 'Invalid product in line items' });
@@ -439,8 +471,11 @@ router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) =>
       ...req.body,
       tenantId: req.user.tenantId,
       flow: 'sell',
+      businessContext,
       invoiceNumber,
       transactionType,
+      invoiceSubtype,
+      pdfTemplateId,
       invoiceTypeCode,
       issueDate,
       buyer,
@@ -450,13 +485,50 @@ router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) =>
         nameAr: tenant.business.legalNameAr,
         vatNumber: tenant.business.vatNumber,
         crNumber: tenant.business.crNumber,
-        address: tenant.business.address
+        address: tenant.business.address,
+        contactPhone: tenant.business.contactPhone,
+        contactEmail: tenant.business.contactEmail,
       },
       createdBy: req.user._id,
-      lineItems
+      lineItems,
     };
 
-    const invoice = await Invoice.create(invoiceData);
+    if (businessContext !== 'trading') {
+      delete invoiceData.warehouseId;
+    }
+
+    if (travelBooking) {
+      invoiceData.travelDetails = {
+        travelerName: req.body?.travelDetails?.travelerName || travelBooking.travelerName || travelBooking.customerName,
+        passportNumber: req.body?.travelDetails?.passportNumber || travelBooking.passportNumber,
+        ticketNumber: req.body?.travelDetails?.ticketNumber || travelBooking.ticketNumber,
+        pnr: req.body?.travelDetails?.pnr || travelBooking.pnr,
+        airlineName: req.body?.travelDetails?.airlineName || travelBooking.airlineName,
+        routeFrom: req.body?.travelDetails?.routeFrom || travelBooking.routeFrom,
+        routeTo: req.body?.travelDetails?.routeTo || travelBooking.routeTo,
+        departureDate: req.body?.travelDetails?.departureDate || travelBooking.departureDate,
+        returnDate: req.body?.travelDetails?.returnDate || travelBooking.returnDate,
+      };
+    } else if (req.body?.travelDetails) {
+      invoiceData.travelDetails = req.body.travelDetails;
+    }
+
+    const createdInvoice = await Invoice.create(invoiceData);
+    const invoice = await attachDraftQr(createdInvoice, tenant.business);
+
+    if (restaurantOrder) {
+      await RestaurantOrder.updateOne(
+        { _id: restaurantOrder._id, ...req.tenantFilter },
+        { invoiceId: invoice._id, invoiceNumber: invoice.invoiceNumber, invoicedAt: new Date() }
+      );
+    }
+
+    if (travelBooking) {
+      await TravelBooking.updateOne(
+        { _id: travelBooking._id, ...req.tenantFilter },
+        { invoiceId: invoice._id, invoiceNumber: invoice.invoiceNumber, invoicedAt: new Date() }
+      );
+    }
 
     if (invoice.customerId) {
       await syncCustomerStats(invoice.tenantId, invoice.customerId);
@@ -471,19 +543,26 @@ router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) =>
 // @route   POST /api/invoices/purchase
 router.post('/purchase', checkPermission('invoicing', 'create'), async (req, res) => {
   try {
-    const businessType = req.tenant?.businessType || 'trading';
-    if (businessType !== 'trading') {
+    const tenantBusinessTypes = getTenantBusinessTypes(req.tenant);
+    const primaryBusinessType = getPrimaryBusinessType(req.tenant);
+    if (!tenantBusinessTypes.some((type) => ['trading', 'construction', 'travel_agency'].includes(type))) {
       return res.status(403).json({ error: 'Not available for this business type' });
     }
+
     const tenant = await Tenant.findById(req.user.tenantId);
+    const businessContext = tenantBusinessTypes.includes(req.body?.businessContext)
+      ? req.body.businessContext
+      : (tenantBusinessTypes.includes(primaryBusinessType) ? primaryBusinessType : 'trading');
 
-    if (!req.body.warehouseId) {
-      return res.status(400).json({ error: 'warehouseId is required' });
-    }
+    if (businessContext === 'trading') {
+      if (!req.body.warehouseId) {
+        return res.status(400).json({ error: 'warehouseId is required' });
+      }
 
-    const warehouse = await Warehouse.findOne({ _id: req.body.warehouseId, ...req.tenantFilter, isActive: true });
-    if (!warehouse) {
-      return res.status(400).json({ error: 'Warehouse not found' });
+      const warehouse = await Warehouse.findOne({ _id: req.body.warehouseId, ...req.tenantFilter, isActive: true });
+      if (!warehouse) {
+        return res.status(400).json({ error: 'Warehouse not found' });
+      }
     }
 
     let supplier = null;
@@ -524,8 +603,10 @@ router.post('/purchase', checkPermission('invoicing', 'create'), async (req, res
     const invoiceNumber = `PINV-${new Date().getFullYear()}-${String(invoiceCount).padStart(6, '0')}`;
 
     const transactionType = req.body.transactionType || 'B2B';
+    const invoiceSubtype = req.body.invoiceSubtype === 'travel_ticket' ? 'travel_ticket' : 'standard';
     const invoiceTypeCode = req.body.invoiceTypeCode || '0100000';
     const issueDate = req.body.issueDate ? new Date(req.body.issueDate) : new Date();
+    const pdfTemplateId = resolvePdfTemplateId(req.body?.pdfTemplateId, tenant);
 
     const lineItems = (req.body.lineItems || []).map((line, i) => ({
       ...line,
@@ -538,7 +619,7 @@ router.post('/purchase', checkPermission('invoicing', 'create'), async (req, res
       .filter(Boolean)
       .map((id) => id.toString());
     const uniqueProductIds = [...new Set(productIds)];
-    if (uniqueProductIds.length) {
+    if (businessContext === 'trading' && uniqueProductIds.length) {
       const existingCount = await Product.countDocuments({ _id: { $in: uniqueProductIds }, ...req.tenantFilter });
       if (existingCount !== uniqueProductIds.length) {
         return res.status(400).json({ error: 'Invalid product in line items' });
@@ -549,8 +630,11 @@ router.post('/purchase', checkPermission('invoicing', 'create'), async (req, res
       ...req.body,
       tenantId: req.user.tenantId,
       flow: 'purchase',
+      businessContext,
       invoiceNumber,
       transactionType,
+      invoiceSubtype,
+      pdfTemplateId,
       invoiceTypeCode,
       issueDate,
       seller,
@@ -560,15 +644,31 @@ router.post('/purchase', checkPermission('invoicing', 'create'), async (req, res
         nameAr: tenant.business.legalNameAr,
         vatNumber: tenant.business.vatNumber,
         crNumber: tenant.business.crNumber,
-        address: tenant.business.address
+        address: tenant.business.address,
+        contactPhone: tenant.business.contactPhone,
+        contactEmail: tenant.business.contactEmail,
       },
       createdBy: req.user._id,
-      lineItems
+      lineItems,
     };
 
-    const invoice = await Invoice.create(invoiceData);
-    const posted = await postInventoryForInvoice(invoice, req.tenantFilter);
-    res.status(201).json(posted);
+    if (businessContext !== 'trading') {
+      delete invoiceData.warehouseId;
+    }
+
+    if (req.body?.travelDetails) {
+      invoiceData.travelDetails = req.body.travelDetails;
+    }
+
+    const createdInvoice = await Invoice.create(invoiceData);
+    const invoice = await attachDraftQr(createdInvoice, seller);
+
+    if (businessContext === 'trading') {
+      const posted = await postInventoryForInvoice(invoice, req.tenantFilter);
+      return res.status(201).json(posted);
+    }
+
+    res.status(201).json(invoice);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -623,10 +723,8 @@ router.put('/:id', checkPermission('invoicing', 'update'), async (req, res) => {
   }
 });
 
-// @route   POST /api/invoices/:id/sign
 router.post('/:id/sign', checkPermission('invoicing', 'approve'), async (req, res) => {
   try {
-    const businessType = req.tenant?.businessType || 'trading';
     const invoice = await Invoice.findOne({ _id: req.params.id, ...req.tenantFilter });
     
     if (!invoice) {
@@ -641,7 +739,7 @@ router.post('/:id/sign', checkPermission('invoicing', 'approve'), async (req, re
       return res.status(400).json({ error: 'Invoice already signed' });
     }
 
-    if (businessType === 'trading' && invoice.flow === 'sell' && !invoice.inventory?.postedAt) {
+    if ((invoice.businessContext || getPrimaryBusinessType(req.tenant)) === 'trading' && invoice.flow === 'sell' && !invoice.inventory?.postedAt) {
       try {
         await postInventoryForInvoice(invoice, req.tenantFilter);
       } catch (err) {

@@ -18,6 +18,7 @@ import Payroll from '../models/Payroll.js';
 import IoTDevice from '../models/IoTDevice.js';
 import IoTReading from '../models/IoTReading.js';
 import { WhatsAppConfig, WhatsAppContact, WhatsAppMessage, WhatsAppTemplate, QuickReply, Broadcast } from '../models/WhatsApp.js';
+import { getPrimaryBusinessType, normalizeBusinessTypes } from '../utils/businessTypes.js';
 
 const router = express.Router();
 
@@ -40,7 +41,7 @@ router.get('/current', async (req, res) => {
 // @route   PUT /api/tenants/current
 router.put('/current', authorize('admin'), async (req, res) => {
   try {
-    const { business, settings, branding } = req.body;
+    const { business, settings, branding, businessType, businessTypes } = req.body;
     
     const tenant = await Tenant.findById(req.user.tenantId);
     if (!tenant) {
@@ -67,9 +68,19 @@ router.put('/current', authorize('admin'), async (req, res) => {
       tenant.branding = { ...tenant.branding?.toObject?.() || tenant.branding || {}, ...branding };
     }
 
+    if (businessType || businessTypes) {
+      const nextBusinessTypes = normalizeBusinessTypes(businessTypes || businessType || tenant.businessTypes || tenant.businessType);
+      tenant.businessTypes = nextBusinessTypes;
+      tenant.businessType = businessType && nextBusinessTypes.includes(businessType)
+        ? businessType
+        : getPrimaryBusinessType({ businessTypes: nextBusinessTypes, businessType: tenant.businessType });
+    }
+
     tenant.markModified('business');
     tenant.markModified('settings');
     tenant.markModified('branding');
+    tenant.markModified('businessType');
+    tenant.markModified('businessTypes');
     await tenant.save();
     
     res.json(tenant);

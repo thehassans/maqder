@@ -8,6 +8,7 @@ import Expense from '../models/Expense.js';
 import TravelBooking from '../models/TravelBooking.js';
 import RestaurantOrder from '../models/RestaurantOrder.js';
 import { protect, tenantFilter } from '../middleware/auth.js';
+import { getTenantBusinessTypes } from '../utils/businessTypes.js';
 
 const router = express.Router();
 
@@ -17,7 +18,7 @@ router.use(tenantFilter);
 // @route   GET /api/dashboard
 router.get('/', async (req, res) => {
   try {
-    const businessType = req.tenant?.businessType || 'trading';
+    const businessTypes = getTenantBusinessTypes(req.tenant);
     const currentMonth = new Date().getMonth() + 1;
     const currentYear = new Date().getFullYear();
     
@@ -64,7 +65,7 @@ router.get('/', async (req, res) => {
       ]),
       
       // Product stats (Trading only)
-      businessType === 'trading'
+      businessTypes.includes('trading')
         ? Product.aggregate([
             { $match: { ...req.tenantFilter, isActive: true } },
             {
@@ -177,7 +178,7 @@ router.get('/', async (req, res) => {
         }
       ]),
 
-      businessType === 'travel_agency'
+      businessTypes.includes('travel_agency')
         ? TravelBooking.aggregate([
             { $match: { ...req.tenantFilter, isActive: true } },
             {
@@ -207,7 +208,7 @@ router.get('/', async (req, res) => {
           ])
         : Promise.resolve([{ totals: [{ total: 0, revenue: 0, open: 0 }], byStatus: [], recent: [] }]),
 
-      businessType === 'restaurant'
+      businessTypes.includes('restaurant')
         ? RestaurantOrder.aggregate([
             { $match: { ...req.tenantFilter, isActive: true } },
             {

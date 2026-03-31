@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { getMe } from './store/slices/authSlice'
 import { setLanguage, setTheme } from './store/slices/uiSlice'
 import { applyTenantBranding } from './lib/branding'
+import { getTenantBusinessTypes } from './lib/businessTypes'
 
 import MainLayout from './layouts/MainLayout'
 import AuthLayout from './layouts/AuthLayout'
@@ -20,8 +21,8 @@ import MarketingTerms from './pages/marketing/Terms'
 import Dashboard from './pages/Dashboard'
 import Invoices from './pages/invoices/Invoices'
 import InvoiceCreate from './pages/invoices/InvoiceCreate'
-import InvoiceCreateSell from './pages/invoices/InvoiceCreateSell'
-import InvoiceCreatePurchase from './pages/invoices/InvoiceCreatePurchase'
+import InvoiceCreateSell from './pages/invoices/InvoiceCreateSellPage'
+import InvoiceCreatePurchase from './pages/invoices/InvoiceCreatePurchasePage'
 import InvoiceView from './pages/invoices/InvoiceView'
 import Employees from './pages/hr/Employees'
 import EmployeeForm from './pages/hr/EmployeeForm'
@@ -109,12 +110,12 @@ function ProtectedRoute({ children, allowedRoles, redirectSuperAdmin }) {
 
 function BusinessTypeRoute({ children, allowedTypes }) {
   const { tenant } = useSelector((state) => state.auth)
-  const businessType = tenant?.businessType || 'trading'
-
-  if (Array.isArray(allowedTypes) && allowedTypes.length > 0 && !allowedTypes.includes(businessType)) {
+  const businessTypes = getTenantBusinessTypes(tenant)
+  
+  if (Array.isArray(allowedTypes) && allowedTypes.length > 0 && !allowedTypes.some((type) => businessTypes.includes(type))) {
     return <Navigate to="/app/dashboard" replace />
   }
-
+  
   return children
 }
 
@@ -211,7 +212,7 @@ function App() {
         <Route path="invoices" element={<Invoices />} />
         <Route path="invoices/new" element={<InvoiceCreate />} />
         <Route path="invoices/new/sell" element={<InvoiceCreateSell />} />
-        <Route path="invoices/new/purchase" element={<BusinessTypeRoute allowedTypes={['trading']}><InvoiceCreatePurchase /></BusinessTypeRoute>} />
+        <Route path="invoices/new/purchase" element={<BusinessTypeRoute allowedTypes={['trading', 'construction', 'travel_agency']}><InvoiceCreatePurchase /></BusinessTypeRoute>} />
         <Route path="invoices/:id" element={<InvoiceView />} />
         <Route path="contacts" element={<Contacts />} />
         <Route path="customers" element={<CustomerList />} />

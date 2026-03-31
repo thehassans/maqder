@@ -51,6 +51,7 @@ import { Link } from 'react-router-dom'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
 import Money from '../components/ui/Money'
+import { getTenantBusinessTypes } from '../lib/businessTypes'
 
 const COLORS = ['rgb(var(--color-primary-500))', '#f59e0b', '#ef4444', 'rgb(var(--color-secondary-500))']
 const DASHBOARD_REFRESH_MS = 30 * 1000
@@ -61,10 +62,10 @@ export default function Dashboard() {
   const { tenant } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
 
-  const businessType = tenant?.businessType || 'trading'
-  const isTrading = businessType === 'trading'
-  const isTravelAgency = businessType === 'travel_agency'
-  const isRestaurant = businessType === 'restaurant'
+  const businessTypes = getTenantBusinessTypes(tenant)
+  const isTrading = businessTypes.includes('trading')
+  const isTravelAgency = businessTypes.includes('travel_agency')
+  const isRestaurant = businessTypes.includes('restaurant')
 
   const { data: dashboard, isLoading } = useQuery({
     queryKey: ['dashboard'],

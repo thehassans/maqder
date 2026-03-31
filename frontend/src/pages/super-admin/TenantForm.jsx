@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
@@ -8,6 +9,7 @@ import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import SarIcon from '../../components/ui/SarIcon'
+import { getBusinessTypeOptions, getPrimaryBusinessType, getTenantBusinessTypes, normalizeBusinessTypes } from '../../lib/businessTypes'
 
 export default function TenantForm() {
   const { id } = useParams()
@@ -17,15 +19,54 @@ export default function TenantForm() {
   const { t } = useTranslation(language)
   const isEdit = Boolean(id)
 
-  const { register, handleSubmit, reset, setValue, watch } = useForm()
+  const { register, handleSubmit, reset, setValue, watch } = useForm({
+    defaultValues: {
+      businessType: 'trading',
+      businessTypes: ['trading'],
+    },
+  })
 
   const logoValue = watch('branding.logo')
+  const businessTypeOptions = getBusinessTypeOptions(language)
+  const watchedBusinessTypes = normalizeBusinessTypes(watch('businessTypes'), watch('businessType') || 'trading')
+  const watchedPrimaryBusinessType = watch('businessType') || 'trading'
 
   const { data: tenant, isLoading } = useQuery({
     queryKey: ['tenant', id],
     queryFn: () => api.get(`/super-admin/tenants/${id}`).then(res => res.data),
     enabled: isEdit,
-    onSuccess: (data) => reset(data.tenant)
+  })
+
+  useEffect(() => {
+    if (!tenant?.tenant) return
+    reset({
+      ...tenant.tenant,
+      businessTypes: getTenantBusinessTypes(tenant.tenant),
+      businessType: getPrimaryBusinessType(tenant.tenant),
+    })
+  }, [reset, tenant])
+
+  useEffect(() => {
+    if (!watchedBusinessTypes.includes(watchedPrimaryBusinessType)) {
+      setValue('businessType', watchedBusinessTypes[0] || 'trading')
+    }
+  }, [setValue, watchedBusinessTypes, watchedPrimaryBusinessType])
+
+  const toggleBusinessType = (businessTypeId) => {
+    const next = watchedBusinessTypes.includes(businessTypeId)
+      ? watchedBusinessTypes.filter((item) => item !== businessTypeId)
+      : [...watchedBusinessTypes, businessTypeId]
+    const normalized = normalizeBusinessTypes(next)
+    setValue('businessTypes', normalized)
+    if (!normalized.includes(watchedPrimaryBusinessType)) {
+      setValue('businessType', normalized[0])
+    }
+  }
+
+  const onSubmit = (data) => mutation.mutate({
+    ...data,
+    businessTypes: watchedBusinessTypes,
+    businessType: watchedBusinessTypes.includes(watchedPrimaryBusinessType) ? watchedPrimaryBusinessType : watchedBusinessTypes[0],
   })
 
   const mutation = useMutation({
@@ -90,7 +131,7 @@ export default function TenantForm() {
         )}
       </div>
 
-      <form onSubmit={handleSubmit((data) => mutation.mutate(data))} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Basic Info */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card p-6">
           <div className="flex items-center gap-3 mb-6">
@@ -128,10 +169,31 @@ export default function TenantForm() {
 
             <div>
               <label className="label">{language === 'ar' ? 'نوع النشاط' : 'Business Type'}</label>
-              <select {...register('businessType')} className="select" defaultValue="trading">
-                <option value="trading">{language === 'ar' ? 'تجارة (ERP)' : 'Trading (ERP)'}</option>
-                <option value="travel_agency">{language === 'ar' ? 'وكالة سفر' : 'Travel Agency'}</option>
-                <option value="restaurant">{language === 'ar' ? 'مطعم' : 'Restaurant'}</option>
+              <div className="grid grid-cols-1 gap-3 mt-2">
+                {businessTypeOptions.map((option) => {
+                  const active = watchedBusinessTypes.includes(option.id)
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => toggleBusinessType(option.id)}
+                      className={`rounded-2xl border p-4 text-start transition-all ${active ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-dark-600'}`}
+                    >
+                      <p className="font-semibold text-gray-900 dark:text-white">{option.label}</p>
+                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{option.description}</p>
+                    </button>
+                  )
+                })}
+              </div>
+              <input type="hidden" {...register('businessTypes')} />
+            </div>
+            <div>
+              <label className="label">{language === 'ar' ? 'النشاط الافتراضي' : 'Primary Business Type'}</label>
+              <select {...register('businessType')} className="select">
+                {watchedBusinessTypes.map((businessTypeId) => {
+                  const option = businessTypeOptions.find((item) => item.id === businessTypeId)
+                  return <option key={businessTypeId} value={businessTypeId}>{option?.label || businessTypeId}</option>
+                })}
               </select>
             </div>
             <div>

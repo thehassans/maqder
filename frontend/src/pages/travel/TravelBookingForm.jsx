@@ -164,8 +164,43 @@ export default function TravelBookingForm() {
             </div>
 
             <div>
+              <label className="label">{language === 'ar' ? 'اسم المسافر' : 'Traveler Name'}</label>
+              <input {...register('travelerName')} className="input" />
+            </div>
+
+            <div>
               <label className="label">{language === 'ar' ? 'البريد الإلكتروني' : 'Email'}</label>
               <input type="email" {...register('customerEmail')} className="input" />
+            </div>
+
+            <div>
+              <label className="label">{language === 'ar' ? 'رقم الجواز' : 'Passport Number'}</label>
+              <input {...register('passportNumber')} className="input" />
+            </div>
+
+            <div>
+              <label className="label">{language === 'ar' ? 'رقم التذكرة' : 'Ticket Number'}</label>
+              <input {...register('ticketNumber')} className="input" />
+            </div>
+
+            <div>
+              <label className="label">{language === 'ar' ? 'رقم PNR' : 'PNR'}</label>
+              <input {...register('pnr')} className="input" />
+            </div>
+
+            <div>
+              <label className="label">{language === 'ar' ? 'شركة الطيران / المورد' : 'Airline / Vendor'}</label>
+              <input {...register('airlineName')} className="input" />
+            </div>
+
+            <div>
+              <label className="label">{language === 'ar' ? 'من' : 'From'}</label>
+              <input {...register('routeFrom')} className="input" />
+            </div>
+
+            <div>
+              <label className="label">{language === 'ar' ? 'إلى' : 'To'}</label>
+              <input {...register('routeTo')} className="input" />
             </div>
 
             <div>

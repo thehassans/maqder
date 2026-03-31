@@ -30,6 +30,7 @@ import {
 } from 'lucide-react'
 import { toggleSidebarCollapse, setMobileMenuOpen } from '../../store/slices/uiSlice'
 import { useTranslation } from '../../lib/translations'
+import { getTenantBusinessTypes } from '../../lib/businessTypes'
 
 export default function Sidebar() {
   const dispatch = useDispatch()
@@ -37,7 +38,7 @@ export default function Sidebar() {
   const { tenant, user } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
 
-  const businessType = tenant?.businessType || 'trading'
+  const businessTypes = getTenantBusinessTypes(tenant)
 
   const hasAccess = (module, action) => {
     if (!user) return false
@@ -152,7 +153,7 @@ export default function Sidebar() {
 
   const visibleNavSections = navSections
     .map((section) => {
-      if (Array.isArray(section.businessTypes) && !section.businessTypes.includes(businessType)) {
+      if (Array.isArray(section.businessTypes) && !section.businessTypes.some((type) => businessTypes.includes(type))) {
         return { ...section, items: [] }
       }
 

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { motion } from 'framer-motion'
-import { ArrowLeft, FileText, Download, Send, CheckCircle, Clock, QrCode } from 'lucide-react'
+import { ArrowLeft, FileText, Download, Send, CheckCircle, Clock, QrCode, Printer } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
@@ -60,6 +60,12 @@ export default function InvoiceView() {
           </div>
         </div>
         <div className="flex gap-3">
+          {invoice?.invoiceSubtype === 'travel_ticket' && (
+            <button type="button" onClick={() => window.print()} className="btn btn-secondary">
+              <Printer className="w-4 h-4" />
+              {language === 'ar' ? 'طباعة' : 'Print'}
+            </button>
+          )}
           <button
             type="button"
             onClick={async () => {
@@ -189,6 +195,38 @@ export default function InvoiceView() {
                       {language === 'ar' ? 'رقم العقد/المرجع' : 'Contract/Ref'}: {invoice.contractNumber}
                     </div>
                   )}
+                </div>
+              </div>
+            )}
+
+            {invoice?.invoiceSubtype === 'travel_ticket' && (
+              <div className="border-t border-gray-200 dark:border-dark-600 pt-4 mb-6">
+                <p className="text-sm font-medium text-gray-500 mb-3">{language === 'ar' ? 'بيانات السفر' : 'Travel Details'}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-500">{language === 'ar' ? 'اسم المسافر' : 'Passenger Name'}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{invoice?.travelDetails?.travelerName || invoice?.buyer?.name || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">{language === 'ar' ? 'رقم الجواز' : 'Passport Number'}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{invoice?.travelDetails?.passportNumber || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">{language === 'ar' ? 'رقم التذكرة / PNR' : 'Ticket / PNR'}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{invoice?.travelDetails?.ticketNumber || invoice?.travelDetails?.pnr || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">{language === 'ar' ? 'شركة الطيران / المورد' : 'Airline / Vendor'}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{invoice?.travelDetails?.airlineName || invoice?.seller?.name || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">{language === 'ar' ? 'المسار' : 'Route'}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{[invoice?.travelDetails?.routeFrom, invoice?.travelDetails?.routeTo].filter(Boolean).join(' → ') || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">{language === 'ar' ? 'تاريخ الرحلة' : 'Travel Date'}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{invoice?.travelDetails?.departureDate ? new Date(invoice.travelDetails.departureDate).toLocaleDateString() : '—'}</p>
+                  </div>
                 </div>
               </div>
             )}

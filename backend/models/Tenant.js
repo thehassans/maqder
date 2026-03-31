@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { BUSINESS_TYPES } from '../utils/businessTypes.js';
 
 const subscriptionSchema = new mongoose.Schema({
   plan: {
@@ -62,7 +63,11 @@ const zatcaConfigSchema = new mongoose.Schema({
 const tenantSchema = new mongoose.Schema({
   name: { type: String, required: true },
   slug: { type: String, required: true, unique: true, lowercase: true },
-  businessType: { type: String, enum: ['trading', 'travel_agency', 'restaurant'], default: 'trading', index: true },
+  businessType: { type: String, enum: BUSINESS_TYPES, default: 'trading', index: true },
+  businessTypes: {
+    type: [{ type: String, enum: BUSINESS_TYPES }],
+    default: ['trading'],
+  },
   business: businessDetailsSchema,
   subscription: subscriptionSchema,
   zatca: zatcaConfigSchema,
@@ -73,7 +78,7 @@ const tenantSchema = new mongoose.Schema({
     fiscalYearStart: { type: Number, default: 1 },
     dateFormat: { type: String, default: 'DD/MM/YYYY' },
     useHijriDates: { type: Boolean, default: true },
-    invoicePdfTemplate: { type: Number, default: 1, min: 1, max: 5 },
+    invoicePdfTemplate: { type: Number, default: 1, min: 1, max: 6 },
     invoicePdfPageSize: { type: String, enum: ['a4', 'letter', 'a5'], default: 'a4' },
     invoicePdfOrientation: { type: String, enum: ['portrait', 'landscape'], default: 'portrait' }
   },
@@ -90,8 +95,24 @@ const tenantSchema = new mongoose.Schema({
   timestamps: true
 });
 
+tenantSchema.pre('validate', function(next) {
+  const values = Array.isArray(this.businessTypes) && this.businessTypes.length > 0
+    ? this.businessTypes
+    : [this.businessType || 'trading'];
+
+  const normalized = [...new Set(values.filter((value) => BUSINESS_TYPES.includes(value)))];
+  this.businessTypes = normalized.length ? normalized : ['trading'];
+
+  if (!this.businessType || !this.businessTypes.includes(this.businessType)) {
+    this.businessType = this.businessTypes[0] || 'trading';
+  }
+
+  next();
+});
+
 tenantSchema.index({ isActive: 1 });
 tenantSchema.index({ businessType: 1 });
+tenantSchema.index({ businessTypes: 1 });
 
 const Tenant = mongoose.model('Tenant', tenantSchema);
 export default Tenant;

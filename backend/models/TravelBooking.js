@@ -14,6 +14,13 @@ const travelBookingSchema = new mongoose.Schema({
   customerName: { type: String, required: true },
   customerEmail: { type: String },
   customerPhone: { type: String },
+  passportNumber: { type: String },
+  travelerName: { type: String },
+  ticketNumber: { type: String },
+  pnr: { type: String },
+  airlineName: { type: String },
+  routeFrom: { type: String },
+  routeTo: { type: String },
 
   serviceType: {
     type: String,
