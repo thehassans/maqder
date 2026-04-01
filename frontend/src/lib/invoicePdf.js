@@ -1,6 +1,6 @@
 import { formatCurrency } from './currency'
 import { calculateInvoiceSummary, normalizeTravelDetails } from './invoiceDocument'
-import { getInvoiceBranding, splitBrandingText } from './invoiceBranding'
+import { getInvoiceBranding, getInvoiceTemplateId, splitBrandingText } from './invoiceBranding'
 
 const sanitizeFileName = (value) => {
   return String(value || 'invoice')
@@ -248,7 +248,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const isRtl = language === 'ar'
   const align = isRtl ? 'right' : 'left'
   const oppositeAlign = isRtl ? 'left' : 'right'
-  const invoiceBranding = getInvoiceBranding(tenant, language)
+  const invoiceBranding = getInvoiceBranding(tenant, language, invoice?.businessContext)
 
   const arabicFontReady = isRtl ? await ensureTajawalFont(doc) : false
 
@@ -264,7 +264,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const secondaryRgb = hexToRgb(invoiceBranding.secondaryColor) || { r: 203, g: 213, b: 225 }
   const lightRgb = mixRgb(primaryRgb, { r: 255, g: 255, b: 255 }, 0.94)
 
-  const templateId = Number(invoice?.pdfTemplateId || tenant?.settings?.invoicePdfTemplate || 1)
+  const templateId = getInvoiceTemplateId(tenant, invoice?.businessContext, invoice?.pdfTemplateId)
 
   const theme = (() => {
     const base = {
@@ -408,14 +408,14 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     theme.drawFrame({ pageNumber })
 
     const y = 20
-    const logoW = 56
-    const logoH = 56
+    const logoW = 68
+    const logoH = 68
     const rightPanelW = 148
     const rightPanelX = isRtl ? contentLeft : contentRightEdge - rightPanelW
     const logoX = isRtl ? contentRightEdge - logoW : contentLeft
     const brandBlockX = isRtl ? logoX - 16 : contentLeft + logoW + 16
     const brandBlockW = Math.max(160, contentW - logoW - rightPanelW - 40)
-    const dividerY = y + 60
+    const dividerY = y + 68
 
     if (logo && logoFormat) {
       doc.addImage(logo, logoFormat, logoX, y + 2, logoW, logoH)

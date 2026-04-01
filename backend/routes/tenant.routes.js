@@ -149,6 +149,120 @@ router.get('/zatca/status', async (req, res) => {
   }
 });
 
+router.post('/zatca/test-connection', authorize('admin'), async (req, res) => {
+  try {
+    const { type = 'phase1' } = req.body || {};
+    const tenant = await Tenant.findById(req.user.tenantId)
+      .select('business zatca');
+
+    if (!tenant) {
+      return res.status(404).json({ error: 'Tenant not found' });
+    }
+
+    const business = tenant.business || {};
+    const missingFields = [];
+
+    if (!business.legalNameEn && !business.legalNameAr) missingFields.push('legalName');
+    if (!business.vatNumber) missingFields.push('vatNumber');
+    if (!business.crNumber) missingFields.push('crNumber');
+    if (!business.address?.city) missingFields.push('address.city');
+    if (!business.address?.district) missingFields.push('address.district');
+    if (!business.address?.country) missingFields.push('address.country');
+
+    if (type === 'phase2') {
+      return res.json({
+        success: true,
+        type,
+        status: tenant.zatca?.isOnboarded ? 'connected' : 'not_connected',
+        checks: {
+          hasPrivateKey: Boolean(tenant.zatca?.privateKey),
+          hasComplianceCsid: Boolean(tenant.zatca?.complianceCsid),
+          hasProductionCsid: Boolean(tenant.zatca?.productionCsid),
+          isOnboarded: Boolean(tenant.zatca?.isOnboarded),
+        },
+        missingFields,
+      });
+    }
+
+    if (type !== 'phase1') {
+      return res.status(400).json({ error: 'Unsupported test type' });
+    }
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        success: false,
+        type,
+        status: 'missing_configuration',
+        error: 'Missing required company details for ZATCA Phase 1 test',
+        missingFields,
+      });
+    }
+
+    const sampleIssueDate = new Date();
+    const sampleInvoice = {
+      invoiceNumber: `PH1-TEST-${Date.now()}`,
+      invoiceType: '388',
+      invoiceTypeCode: '0200000',
+      issueDate: sampleIssueDate,
+      issueTime: sampleIssueDate.toISOString().slice(11, 19),
+      currency: 'SAR',
+      buyer: {
+        name: 'Phase 1 Test Customer',
+        address: { country: 'SA' },
+      },
+      totalDiscount: 0,
+      taxableAmount: 100,
+      totalTax: 15,
+      grandTotal: 115,
+      lineItems: [{
+        lineNumber: 1,
+        productName: 'Phase 1 Test Item',
+        quantity: 1,
+        unitCode: 'PCE',
+        unitPrice: 100,
+        lineTotal: 100,
+        taxAmount: 15,
+        taxRate: 15,
+        lineTotalWithTax: 115,
+      }],
+    };
+
+    const zatcaService = new ZatcaService();
+    const xml = zatcaService.generateXML(sampleInvoice, business, true);
+    const invoiceHash = zatcaService.calculateHash(xml);
+    const qrCodeData = zatcaService.generateTLV({
+      sellerName: business.legalNameAr || business.legalNameEn,
+      vatNumber: business.vatNumber,
+      timestamp: sampleIssueDate.toISOString(),
+      totalWithVat: sampleInvoice.grandTotal.toFixed(2),
+      vatTotal: sampleInvoice.totalTax.toFixed(2),
+    });
+    const qrCodeImage = await zatcaService.generateQRCode(qrCodeData);
+
+    return res.json({
+      success: true,
+      type,
+      status: 'ready',
+      checks: {
+        vatConfigured: Boolean(business.vatNumber),
+        crConfigured: Boolean(business.crNumber),
+        xmlGenerated: Boolean(xml),
+        hashGenerated: Boolean(invoiceHash),
+        qrGenerated: Boolean(qrCodeImage),
+      },
+      missingFields,
+      sample: {
+        invoiceNumber: sampleInvoice.invoiceNumber,
+        invoiceHash,
+        qrCodeImage,
+        xmlPreview: xml.slice(0, 400),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.get('/backup', authorize('admin'), async (req, res) => {
   try {
     if (!req.user.tenantId) {

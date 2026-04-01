@@ -10,6 +10,35 @@ import { useTranslation } from '../lib/translations'
 import { setLanguage, setTheme } from '../store/slices/uiSlice'
 import { updateTenant } from '../store/slices/authSlice'
 import { useLiveTranslation } from '../lib/liveTranslation'
+import { getInvoiceBrandingProfile, getInvoiceTemplateId } from '../lib/invoiceBranding'
+import { invoiceTemplateOptions } from '../lib/invoiceTemplates'
+
+const invoiceBrandingContexts = [
+  { key: 'trading', labelEn: 'Trading Invoice', labelAr: 'فاتورة تجارة' },
+  { key: 'construction', labelEn: 'Contracting Invoice', labelAr: 'فاتورة مقاولات' },
+  { key: 'travel_agency', labelEn: 'Travel Agency Invoice', labelAr: 'فاتورة وكالة سفر' },
+]
+
+const buildInvoiceBrandingProfilesState = (tenant) => invoiceBrandingContexts.reduce((acc, item) => {
+  const profile = getInvoiceBrandingProfile(tenant, item.key)
+  acc[item.key] = {
+    templateId: Number(profile.templateId || getInvoiceTemplateId(tenant, item.key)),
+    logo: profile.logo || '',
+    headerTextEn: profile.headerTextEn || '',
+    headerTextAr: profile.headerTextAr || '',
+    footerTextEn: profile.footerTextEn || '',
+    footerTextAr: profile.footerTextAr || '',
+  }
+  return acc
+}, {})
+
+const updateInvoiceBrandingProfileState = (profiles, contextKey, patch) => ({
+  ...profiles,
+  [contextKey]: {
+    ...(profiles?.[contextKey] || {}),
+    ...patch,
+  },
+})
 
 export default function Settings() {
   const dispatch = useDispatch()
@@ -33,6 +62,9 @@ export default function Settings() {
   const [invoiceFooterTextAr, setInvoiceFooterTextAr] = useState('')
   const [showVision2030, setShowVision2030] = useState(true)
   const [vision2030LogoDataUrl, setVision2030LogoDataUrl] = useState('/saudi-vision-2030-logo.png')
+  const [invoiceBrandingProfiles, setInvoiceBrandingProfiles] = useState(() => buildInvoiceBrandingProfilesState(null))
+  const [zatcaTestType, setZatcaTestType] = useState('phase1')
+  const [zatcaTestResult, setZatcaTestResult] = useState(null)
 
   const { data: tenant } = useQuery({
     queryKey: ['tenant-settings'],
@@ -57,6 +89,7 @@ export default function Settings() {
     setInvoiceFooterTextAr(tenant.settings?.invoiceBranding?.footerTextAr || '')
     setShowVision2030(tenant.settings?.invoiceBranding?.showVision2030 !== false)
     setVision2030LogoDataUrl(tenant.settings?.invoiceBranding?.vision2030Logo || '/saudi-vision-2030-logo.png')
+    setInvoiceBrandingProfiles(buildInvoiceBrandingProfilesState(tenant))
   }, [tenant])
 
   const { data: zatcaStatus } = useQuery({
@@ -136,11 +169,29 @@ export default function Settings() {
     applyImageFile(e.target.files?.[0], setVision2030LogoDataUrl)
   }
 
+  const handleInvoiceContextLogoFile = (contextKey) => (e) => {
+    applyImageFile(e.target.files?.[0], (result) => {
+      setInvoiceBrandingProfiles((current) => updateInvoiceBrandingProfileState(current, contextKey, { logo: result }))
+    })
+  }
+
   const generateKeysMutation = useMutation({
     mutationFn: () => api.post('/tenants/zatca/generate-keys'),
     onSuccess: () => {
       toast.success(language === 'ar' ? 'تم إنشاء المفاتيح' : 'Keys generated')
       queryClient.invalidateQueries(['zatca-status'])
+    }
+  })
+
+  const zatcaTestMutation = useMutation({
+    mutationFn: (type) => api.post('/tenants/zatca/test-connection', { type }).then((res) => res.data),
+    onSuccess: (result) => {
+      setZatcaTestResult(result)
+      toast.success(language === 'ar' ? 'تم تنفيذ اختبار ZATCA' : 'ZATCA test completed')
+    },
+    onError: (error) => {
+      setZatcaTestResult(error.response?.data || null)
+      toast.error(error.response?.data?.error || (language === 'ar' ? 'فشل اختبار ZATCA' : 'ZATCA test failed'))
     }
   })
 
@@ -328,6 +379,68 @@ export default function Settings() {
                       : 'Submit invoices to ZATCA for clearance and reporting'}
                   </p>
                 </div>
+              </div>
+
+              <div className="card p-6">
+                <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                  <div>
+                    <h4 className="font-semibold">{language === 'ar' ? 'اختبار اتصال ZATCA' : 'ZATCA Test Connection'}</h4>
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{language === 'ar' ? 'اختبر الجاهزية المحلية للمرحلة الأولى أو حالة الربط للمرحلة الثانية باستخدام بيانات الشركة الحالية.' : 'Test local Phase 1 readiness or Phase 2 connection status using your current company details.'}</p>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-[220px_auto] md:items-end">
+                    <div>
+                      <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'نوع الاختبار' : 'Test Type'}</label>
+                      <select value={zatcaTestType} onChange={(e) => { setZatcaTestType(e.target.value); setZatcaTestResult(null) }} className="select mt-1">
+                        <option value="phase1">{language === 'ar' ? 'اختبار المرحلة الأولى' : 'Phase 1 Test'}</option>
+                        <option value="phase2">{language === 'ar' ? 'فحص المرحلة الثانية' : 'Phase 2 Check'}</option>
+                      </select>
+                    </div>
+                    <button type="button" onClick={() => zatcaTestMutation.mutate(zatcaTestType)} disabled={zatcaTestMutation.isPending} className="btn btn-primary">
+                      {zatcaTestMutation.isPending ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Shield className="w-4 h-4" />{language === 'ar' ? 'تشغيل الاختبار' : 'Run Test'}</>}
+                    </button>
+                  </div>
+                </div>
+
+                {zatcaTestResult ? (
+                  <div className={`mt-5 rounded-2xl border p-4 ${zatcaTestResult?.success ? 'border-green-200 bg-green-50/70 dark:border-green-900/30 dark:bg-green-900/10' : 'border-amber-200 bg-amber-50/70 dark:border-amber-900/30 dark:bg-amber-900/10'}`}>
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <p className="font-semibold text-gray-900 dark:text-white">{zatcaTestResult?.success ? (language === 'ar' ? 'نجح الاختبار' : 'Test passed') : (language === 'ar' ? 'الاختبار يحتاج مراجعة' : 'Test needs review')}</p>
+                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{zatcaTestType === 'phase1' ? (language === 'ar' ? 'تم التحقق من توليد XML وQR محلياً للمرحلة الأولى.' : 'Validated local XML and QR generation for Phase 1.') : (language === 'ar' ? 'تم فحص حالة الربط الحالية للمرحلة الثانية.' : 'Checked the current Phase 2 connection state.')}</p>
+                      </div>
+                      <span className="inline-flex rounded-full bg-white/80 px-3 py-1 text-xs font-medium text-gray-700 dark:bg-dark-700 dark:text-gray-300">{zatcaTestType === 'phase1' ? 'Phase 1' : 'Phase 2'}</span>
+                    </div>
+
+                    {Array.isArray(zatcaTestResult?.missingFields) && zatcaTestResult.missingFields.length > 0 ? (
+                      <div className="mt-4 rounded-xl bg-white/80 p-3 text-sm text-amber-700 dark:bg-dark-700/60 dark:text-amber-300">
+                        <span className="font-medium">{language === 'ar' ? 'حقول ناقصة:' : 'Missing fields:'}</span> {zatcaTestResult.missingFields.join(', ')}
+                      </div>
+                    ) : null}
+
+                    {zatcaTestResult?.checks ? (
+                      <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
+                        {Object.entries(zatcaTestResult.checks).map(([key, value]) => (
+                          <div key={key} className="rounded-xl bg-white/80 p-3 dark:bg-dark-700/60">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{key.replace(/([A-Z])/g, ' $1').replace(/^./, (char) => char.toUpperCase())}</p>
+                            <p className={`mt-1 text-sm font-semibold ${value ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400'}`}>{value ? (language === 'ar' ? 'جاهز' : 'Ready') : (language === 'ar' ? 'غير مكتمل' : 'Incomplete')}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+
+                    {zatcaTestResult?.sample?.qrCodeImage ? (
+                      <div className="mt-4 flex flex-col gap-4 md:flex-row md:items-start">
+                        <div className="flex h-28 w-28 items-center justify-center rounded-2xl border border-gray-200 bg-white p-2 dark:border-dark-600 dark:bg-dark-800">
+                          <img src={zatcaTestResult.sample.qrCodeImage} alt="" className="h-full w-full object-contain" />
+                        </div>
+                        <div className="min-w-0 flex-1 rounded-2xl bg-white/80 p-4 text-sm dark:bg-dark-700/60">
+                          <p className="font-medium text-gray-900 dark:text-white">{zatcaTestResult.sample.invoiceNumber}</p>
+                          <p className="mt-2 break-all text-xs text-gray-500 dark:text-gray-400">{zatcaTestResult.sample.invoiceHash}</p>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
 
               {/* Phase Documentation */}
@@ -604,9 +717,9 @@ export default function Settings() {
                       <div>
                         <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'شعار الفاتورة' : 'Invoice Logo'}</label>
                         <div className="mt-3 flex items-center gap-4">
-                          <div className="h-20 w-20 rounded-3xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 overflow-hidden flex items-center justify-center">
+                          <div className="h-28 w-32 rounded-3xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 overflow-hidden flex items-center justify-center p-2">
                             {invoiceLogoDataUrl ? (
-                              <img src={invoiceLogoDataUrl} alt="" className="h-full w-full object-contain" />
+                              <img src={invoiceLogoDataUrl} alt="" className="h-full w-full object-contain scale-110" />
                             ) : (
                               <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-slate-200 to-slate-100 dark:from-dark-600 dark:to-dark-700" />
                             )}
@@ -661,6 +774,60 @@ export default function Settings() {
                         <textarea value={invoiceFooterTextAr} onChange={(e) => setInvoiceFooterTextAr(e.target.value)} rows={5} dir="rtl" className="input mt-2 min-h-[120px]" placeholder={language === 'ar' ? 'العنوان، الهاتف، الموقع، البريد...' : 'Example: العنوان، الهاتف، الموقع، البريد...'} />
                       </div>
                     </div>
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <label className="label flex items-center gap-2"><FileText className="w-4 h-4" />{language === 'ar' ? 'أنماط الفواتير حسب النشاط' : 'Invoice Patterns by Business Type'}</label>
+                  <div className="mt-2 grid grid-cols-1 gap-4 xl:grid-cols-3">
+                    {invoiceBrandingContexts.map((item) => {
+                      const profile = invoiceBrandingProfiles?.[item.key] || {}
+                      return (
+                        <div key={item.key} className="card-glass p-4 space-y-4">
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white">{language === 'ar' ? item.labelAr : item.labelEn}</p>
+                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'يمكنك تخصيص القالب والشعار والنصوص لهذا النوع من الفواتير.' : 'Set a dedicated template, logo, and texts for this invoice type.'}</p>
+                          </div>
+
+                          <div>
+                            <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'القالب الافتراضي' : 'Default Template'}</label>
+                            <select value={Number(profile.templateId || getInvoiceTemplateId(tenant, item.key))} onChange={(e) => setInvoiceBrandingProfiles((current) => updateInvoiceBrandingProfileState(current, item.key, { templateId: Number(e.target.value) }))} className="select mt-1">
+                              {invoiceTemplateOptions.map((option) => (
+                                <option key={option.id} value={option.id}>{language === 'ar' ? option.nameAr : option.nameEn}</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div className="grid grid-cols-[112px_minmax(0,1fr)] gap-4 items-center">
+                            <div className="flex h-24 w-28 items-center justify-center overflow-hidden rounded-3xl border border-gray-200 bg-white p-2 dark:border-dark-600 dark:bg-dark-800">
+                              {profile.logo ? <img src={profile.logo} alt="" className="h-full w-full object-contain scale-110" /> : <div className="h-14 w-16 rounded-2xl bg-gradient-to-br from-slate-200 to-slate-100 dark:from-dark-600 dark:to-dark-700" />}
+                            </div>
+                            <div>
+                              <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'شعار هذا النوع' : 'Context Logo'}</label>
+                              <input type="file" accept="image/*" onChange={handleInvoiceContextLogoFile(item.key)} className="input mt-1" />
+                              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'اختياري: يطبّق فقط على هذا النوع من الفواتير.' : 'Optional: applies only to this invoice type.'}</p>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'نص أعلى الفاتورة (EN)' : 'Header Text (EN)'}</label>
+                            <textarea value={profile.headerTextEn || ''} onChange={(e) => setInvoiceBrandingProfiles((current) => updateInvoiceBrandingProfileState(current, item.key, { headerTextEn: e.target.value }))} rows={3} className="input mt-2 min-h-[88px]" />
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'نص أعلى الفاتورة (AR)' : 'Header Text (AR)'}</label>
+                            <textarea value={profile.headerTextAr || ''} onChange={(e) => setInvoiceBrandingProfiles((current) => updateInvoiceBrandingProfileState(current, item.key, { headerTextAr: e.target.value }))} rows={3} dir="rtl" className="input mt-2 min-h-[88px]" />
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'نص التذييل (EN)' : 'Footer Text (EN)'}</label>
+                            <textarea value={profile.footerTextEn || ''} onChange={(e) => setInvoiceBrandingProfiles((current) => updateInvoiceBrandingProfileState(current, item.key, { footerTextEn: e.target.value }))} rows={3} className="input mt-2 min-h-[88px]" />
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'نص التذييل (AR)' : 'Footer Text (AR)'}</label>
+                            <textarea value={profile.footerTextAr || ''} onChange={(e) => setInvoiceBrandingProfiles((current) => updateInvoiceBrandingProfileState(current, item.key, { footerTextAr: e.target.value }))} rows={3} dir="rtl" className="input mt-2 min-h-[88px]" />
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
 
@@ -746,7 +913,19 @@ export default function Settings() {
                           footerTextEn: invoiceFooterTextEn,
                           footerTextAr: invoiceFooterTextAr,
                           showVision2030,
-                          vision2030Logo: vision2030LogoDataUrl || tenant?.settings?.invoiceBranding?.vision2030Logo || '/saudi-vision-2030-logo.png'
+                          vision2030Logo: vision2030LogoDataUrl || tenant?.settings?.invoiceBranding?.vision2030Logo || '/saudi-vision-2030-logo.png',
+                          contextProfiles: invoiceBrandingContexts.reduce((acc, item) => {
+                            const profile = invoiceBrandingProfiles?.[item.key] || {}
+                            acc[item.key] = {
+                              templateId: Number(profile.templateId || getInvoiceTemplateId(tenant, item.key)),
+                              logo: profile.logo || '',
+                              headerTextEn: profile.headerTextEn || '',
+                              headerTextAr: profile.headerTextAr || '',
+                              footerTextEn: profile.footerTextEn || '',
+                              footerTextAr: profile.footerTextAr || '',
+                            }
+                            return acc
+                          }, {})
                         }
                       },
                       branding: {

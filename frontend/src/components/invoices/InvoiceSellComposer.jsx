@@ -11,6 +11,7 @@ import { useTranslation } from '../../lib/translations'
 import Money from '../ui/Money'
 import { getPrimaryBusinessType, getTenantBusinessTypes } from '../../lib/businessTypes'
 import { calculateInvoiceSummary, toNumber } from '../../lib/invoiceDocument'
+import { getInvoiceTemplateId } from '../../lib/invoiceBranding'
 import InvoiceLivePreview from './InvoiceLivePreview'
 import InvoiceTemplateSelector from './InvoiceTemplateSelector'
 import TravelInvoiceFields from './TravelInvoiceFields'
@@ -63,7 +64,7 @@ export default function InvoiceSellComposer() {
     defaultValues: {
       businessContext: defaultBusinessContext,
       invoiceSubtype: tenantBusinessTypes.includes('travel_agency') ? 'travel_ticket' : 'standard',
-      pdfTemplateId: Number(tenant?.settings?.invoicePdfTemplate || 1),
+      pdfTemplateId: getInvoiceTemplateId(tenant, defaultBusinessContext),
       transactionType: 'B2C',
       invoiceTypeCode: '0200000',
       customerId: '',
@@ -84,7 +85,7 @@ export default function InvoiceSellComposer() {
   const lineItems = Array.isArray(values.lineItems) ? values.lineItems : []
   const businessContext = values.businessContext || defaultBusinessContext
   const invoiceSubtype = values.invoiceSubtype || 'standard'
-  const selectedTemplateId = Number(values.pdfTemplateId || tenant?.settings?.invoicePdfTemplate || 1)
+  const selectedTemplateId = Number(values.pdfTemplateId || getInvoiceTemplateId(tenant, businessContext))
   const selectedWarehouseId = values.warehouseId || ''
   const isTradingContext = businessContext === 'trading'
   const isTravelContext = businessContext === 'travel_agency'
@@ -116,6 +117,7 @@ export default function InvoiceSellComposer() {
     setValue('restaurantOrderId', '')
     setValue('travelBookingId', '')
     setValue('contractNumber', '')
+    setValue('pdfTemplateId', getInvoiceTemplateId(tenant, businessContext))
   }, [businessContext, setValue])
 
   const { data: products } = useQuery({

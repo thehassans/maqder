@@ -60,6 +60,15 @@ const zatcaConfigSchema = new mongoose.Schema({
   onboardedAt: { type: Date }
 });
 
+const invoiceBrandingProfileSchema = new mongoose.Schema({
+  templateId: { type: Number, min: 1, max: 6 },
+  logo: { type: String },
+  headerTextEn: { type: String, default: '' },
+  headerTextAr: { type: String, default: '' },
+  footerTextEn: { type: String, default: '' },
+  footerTextAr: { type: String, default: '' },
+}, { _id: false });
+
 const tenantSchema = new mongoose.Schema({
   name: { type: String, required: true },
   slug: { type: String, required: true, unique: true, lowercase: true },
@@ -89,6 +98,11 @@ const tenantSchema = new mongoose.Schema({
       footerTextAr: { type: String, default: '' },
       showVision2030: { type: Boolean, default: true },
       vision2030Logo: { type: String },
+      contextProfiles: {
+        trading: { type: invoiceBrandingProfileSchema, default: () => ({ templateId: 5 }) },
+        construction: { type: invoiceBrandingProfileSchema, default: () => ({ templateId: 6 }) },
+        travel_agency: { type: invoiceBrandingProfileSchema, default: () => ({ templateId: 4 }) },
+      }
     }
   },
   branding: {

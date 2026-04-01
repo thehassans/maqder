@@ -9,6 +9,7 @@ import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import InvoiceLivePreview from '../../components/invoices/InvoiceLivePreview'
+import { getInvoiceTemplateId } from '../../lib/invoiceBranding'
 import { downloadInvoicePdf } from '../../lib/invoicePdf'
 
 export default function InvoiceView() {
@@ -25,7 +26,7 @@ export default function InvoiceView() {
     queryFn: () => api.get(`/invoices/${id}`).then(res => res.data)
   })
 
-  const templateId = Number(invoice?.pdfTemplateId || tenant?.settings?.invoicePdfTemplate || 4)
+  const templateId = getInvoiceTemplateId(tenant, invoice?.businessContext, invoice?.pdfTemplateId)
   const invoiceTypeLabel = invoice?.transactionType === 'B2B' ? t('b2bInvoice') : t('b2cInvoice')
 
   const signMutation = useMutation({

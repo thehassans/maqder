@@ -106,8 +106,8 @@ const getInvoiceEyebrow = (invoice, language = 'en') => {
 
 export default function InvoiceLivePreview({ invoice, tenant, language = 'en', templateId = 1 }) {
   const currency = invoice?.currency || tenant?.settings?.currency || 'SAR'
-  const styles = getTemplateClasses(templateId)
-  const invoiceBranding = getInvoiceBranding(tenant, language)
+  const invoiceBranding = getInvoiceBranding(tenant, language, invoice?.businessContext)
+  const styles = getTemplateClasses(Number(templateId || invoiceBranding.templateId || 1))
   const sellerName = language === 'ar' ? (invoice?.seller?.nameAr || invoice?.seller?.name || tenant?.business?.legalNameAr || tenant?.business?.legalNameEn) : (invoice?.seller?.name || invoice?.seller?.nameAr || tenant?.business?.legalNameEn || tenant?.business?.legalNameAr)
   const buyerName = language === 'ar' ? (invoice?.buyer?.nameAr || invoice?.buyer?.name || 'Cash Customer') : (invoice?.buyer?.name || invoice?.buyer?.nameAr || 'Cash Customer')
   const customerLabel = invoice?.flow === 'purchase' ? (language === 'ar' ? 'المشتري' : 'Buyer') : (language === 'ar' ? 'العميل' : 'Customer')
@@ -147,8 +147,8 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
         <div className="border-b border-slate-200 pb-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex min-w-0 items-start gap-4">
-              <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white p-3">
-                <img src={logoSrc} alt="" className="h-full w-full object-contain" />
+              <div className="flex h-24 w-28 shrink-0 items-center justify-center overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white p-2">
+                <img src={logoSrc} alt="" className="h-full w-full object-contain scale-110" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className={`text-[11px] uppercase tracking-[0.24em] ${mutedText}`}>{getInvoiceEyebrow(invoice, language)}</p>
