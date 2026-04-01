@@ -3,6 +3,7 @@ import { generateZatcaQrValue } from '../../lib/zatcaQr'
 import { calculateInvoiceSummary, normalizeTravelDetails, toNumber } from '../../lib/invoiceDocument'
 import { getInvoiceBranding, getInvoiceCssFontFamily, splitBrandingText } from '../../lib/invoiceBranding'
 import { getZatcaStatusMeta } from '../../lib/zatcaStatus'
+import { getAmountInWords } from '../../lib/amountInWords'
 
 const formatAddress = (address = {}) => {
   return [address?.street, address?.district, address?.city, address?.postalCode, address?.country]
@@ -10,31 +11,34 @@ const formatAddress = (address = {}) => {
     .join(', ')
 }
 
-const getPartyDetailLines = (party = {}, language = 'en') => {
+const getPartyDetailLines = (party = {}, language = 'en', role = 'party') => {
   const lines = []
+  const vatLabel = role === 'seller'
+    ? (language === 'ar' ? 'الرقم الضريبي للشركة' : 'Company VAT')
+    : (language === 'ar' ? 'الرقم الضريبي' : 'VAT')
 
   if (party?.vatNumber) {
-    lines.push(`${language === 'ar' ? 'الرقم الضريبي' : 'VAT'}: ${party.vatNumber}`)
+    lines.push({ label: vatLabel, value: party.vatNumber })
   }
 
   if (party?.crNumber) {
-    lines.push(`${language === 'ar' ? 'السجل التجاري' : 'CR'}: ${party.crNumber}`)
+    lines.push({ label: language === 'ar' ? 'السجل التجاري' : 'CR', value: party.crNumber })
   }
 
   if (party?.contactPhone) {
-    lines.push(`${language === 'ar' ? 'الهاتف' : 'Phone'}: ${party.contactPhone}`)
+    lines.push({ label: language === 'ar' ? 'الهاتف' : 'Phone', value: party.contactPhone })
   }
 
   if (party?.contactEmail) {
-    lines.push(`${language === 'ar' ? 'البريد الإلكتروني' : 'Email'}: ${party.contactEmail}`)
+    lines.push({ label: language === 'ar' ? 'البريد الإلكتروني' : 'Email', value: party.contactEmail })
   }
 
   const addressText = formatAddress(party?.address)
   if (addressText) {
-    lines.push(`${language === 'ar' ? 'العنوان' : 'Address'}: ${addressText}`)
+    lines.push({ label: language === 'ar' ? 'العنوان' : 'Address', value: addressText })
   }
 
-  return lines.length > 0 ? lines : ['—']
+  return lines.length > 0 ? lines : [{ label: '', value: '—' }]
 }
 
 const formatMoney = (value, currency = 'SAR', language = 'en') => {
@@ -131,14 +135,15 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
   const totals = calculateInvoiceSummary(invoice)
   const travelDetails = normalizeTravelDetails(invoice?.travelDetails || {}, buyerName, language)
   const lineItems = totals.lines.length > 0 ? totals.lines : [{ raw: { productName: language === 'ar' ? 'خدمة' : 'Service' }, quantity: 1, unitPrice: 0, taxAmount: 0, lineTotalWithTax: 0 }]
-  const sellerDetails = getPartyDetailLines(invoice?.seller || tenant?.business || {}, language)
-  const buyerDetails = getPartyDetailLines(invoice?.buyer || {}, language)
+  const sellerDetails = getPartyDetailLines(invoice?.seller || tenant?.business || {}, language, 'seller')
+  const buyerDetails = getPartyDetailLines(invoice?.buyer || {}, language, 'buyer')
   const companyName = invoiceBranding.companyName || sellerName || '—'
   const headerLines = splitBrandingText(invoiceBranding.headerText)
   const footerLines = splitBrandingText(invoiceBranding.footerText)
   const showVisionLogo = invoiceBranding.showVision2030 && invoiceBranding.vision2030LogoSrc
   const typography = invoiceBranding.typography || {}
   const zatcaStatusMeta = getZatcaStatusMeta(invoice, language)
+  const amountInWords = getAmountInWords(totals.grandTotal, currency, language)
   const accentBarStyle = {
     background: invoiceBranding.primaryColor,
   }
@@ -208,26 +213,29 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
         <div className="grid grid-cols-1 gap-4 pt-6 lg:grid-cols-[minmax(0,1fr)_188px]">
           <div className="space-y-4">
             <div className="text-center lg:text-start">
-              <p className={`text-[11px] uppercase tracking-[0.26em] ${mutedText}`}>{getInvoiceEyebrow(invoice, language)}</p>
               <h2 className={`mt-2 text-3xl font-semibold ${titleText}`} style={invoiceTitleStyle}>{getInvoiceTitle(invoice, language)}</h2>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className={`rounded-[1.5rem] p-5 ${styles.block}`} style={metaCardStyle}>
                 <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${mutedText}`}>{language === 'ar' ? 'البائع' : 'Seller'}</p>
-                <p className={`mt-3 text-base font-semibold ${titleText}`}>{sellerName || '—'}</p>
-                <div className="mt-3 space-y-1.5">
+                <p className={`mt-3 text-[1.05rem] font-bold leading-7 ${titleText}`}>{sellerName || '—'}</p>
+                <div className="mt-3 space-y-2">
                   {sellerDetails.map((detail, index) => (
-                    <p key={index} className={`text-sm leading-6 ${mutedText}`}>{detail}</p>
+                    <p key={`${detail.label}-${index}`} className="text-sm font-semibold leading-6 text-slate-800 break-words">
+                      {detail.label ? <span className="font-bold text-slate-900">{detail.label}:</span> : null} {detail.value}
+                    </p>
                   ))}
                 </div>
               </div>
               <div className={`rounded-[1.5rem] p-5 ${styles.block}`} style={metaCardStyle}>
                 <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${mutedText}`}>{customerLabel}</p>
-                <p className={`mt-3 text-base font-semibold ${titleText}`}>{buyerName || '—'}</p>
-                <div className="mt-3 space-y-1.5">
+                <p className={`mt-3 text-[1.05rem] font-bold leading-7 ${titleText}`}>{buyerName || '—'}</p>
+                <div className="mt-3 space-y-2">
                   {buyerDetails.map((detail, index) => (
-                    <p key={index} className={`text-sm leading-6 ${mutedText}`}>{detail}</p>
+                    <p key={`${detail.label}-${index}`} className="text-sm font-semibold leading-6 text-slate-800 break-words">
+                      {detail.label ? <span className="font-bold text-slate-900">{detail.label}:</span> : null} {detail.value}
+                    </p>
                   ))}
                 </div>
               </div>
@@ -342,31 +350,32 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
             </tbody>
           </table>
         </div>
-        <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_280px]">
+        <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
           <div className={`rounded-2xl p-4 ${styles.block}`}>
-            <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${mutedText}`}>{language === 'ar' ? 'ملاحظات' : 'Remarks'}</p>
-            {invoice?.notes ? <p className={`mt-3 text-sm ${titleText}`}>{invoice.notes}</p> : <div className="min-h-12" />}
+            <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${mutedText}`}>{language === 'ar' ? 'المبلغ كتابةً' : 'Amount in Words'}</p>
+            <p className={`mt-3 text-base font-bold leading-8 ${titleText}`}>{amountInWords}</p>
+            {invoice?.notes ? <p className={`mt-4 text-sm font-semibold leading-7 text-slate-700`}>{invoice.notes}</p> : null}
           </div>
           <div className={`rounded-2xl p-4 ${styles.block}`}>
-            <div className={`flex items-center justify-between text-sm ${mutedText}`}>
+            <div className="flex items-center justify-between text-sm font-bold text-slate-800">
               <span>{language === 'ar' ? 'الإجمالي الفرعي' : 'Subtotal'}</span>
               <span>{formatMoney(totals.subtotal, currency, language)}</span>
             </div>
-            <div className={`mt-2 flex items-center justify-between text-sm ${mutedText}`}>
+            <div className="mt-2 flex items-center justify-between text-sm font-bold text-slate-800">
               <span>{language === 'ar' ? 'الخصم' : 'Discount'}</span>
               <span>{formatMoney(totals.totalDiscount, currency, language)}</span>
             </div>
-            <div className={`mt-2 flex items-center justify-between text-sm ${mutedText}`}>
+            <div className="mt-2 flex items-center justify-between text-sm font-bold text-slate-800">
               <span>{language === 'ar' ? 'المبلغ الخاضع للضريبة' : 'Taxable Amount'}</span>
               <span>{formatMoney(totals.taxableAmount, currency, language)}</span>
             </div>
-            <div className={`mt-2 flex items-center justify-between text-sm ${mutedText}`}>
+            <div className="mt-2 flex items-center justify-between text-sm font-bold text-slate-800">
               <span>{language === 'ar' ? 'الضريبة' : 'VAT'}</span>
               <span>{formatMoney(totals.totalTax, currency, language)}</span>
             </div>
             <div className={`mt-4 flex items-center justify-between border-t border-slate-200 pt-4 ${titleText}`}>
-              <span className="text-sm font-semibold">{language === 'ar' ? 'الإجمالي النهائي' : 'Grand Total'}</span>
-              <span className="text-lg font-semibold">{formatMoney(totals.grandTotal, currency, language)}</span>
+              <span className="text-base font-bold">{language === 'ar' ? 'الإجمالي النهائي' : 'Grand Total'}</span>
+              <span className="text-2xl font-bold">{formatMoney(totals.grandTotal, currency, language)}</span>
             </div>
           </div>
         </div>

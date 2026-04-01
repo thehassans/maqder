@@ -4,6 +4,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import { formatCurrency } from './currency'
 import { calculateInvoiceSummary, normalizeTravelDetails } from './invoiceDocument'
 import { getInvoiceBranding, getInvoiceTemplateId, splitBrandingText } from './invoiceBranding'
+import { getAmountInWords } from './amountInWords'
 import { generateZatcaQrValue } from './zatcaQr'
 
 const sanitizeFileName = (value) => {
@@ -233,31 +234,34 @@ const formatAddress = (address = {}) => {
     .join(', ')
 }
 
-const getPartyDetailLines = (party = {}, language = 'en') => {
+const getPartyDetailLines = (party = {}, language = 'en', role = 'party') => {
   const lines = []
+  const vatLabel = role === 'seller'
+    ? (language === 'ar' ? 'الرقم الضريبي للشركة' : 'Company VAT')
+    : (language === 'ar' ? 'الرقم الضريبي' : 'VAT')
 
   if (party?.vatNumber) {
-    lines.push(`${language === 'ar' ? 'الرقم الضريبي' : 'VAT'}: ${party.vatNumber}`)
+    lines.push({ label: vatLabel, value: party.vatNumber })
   }
 
   if (party?.crNumber) {
-    lines.push(`${language === 'ar' ? 'السجل التجاري' : 'CR'}: ${party.crNumber}`)
+    lines.push({ label: language === 'ar' ? 'السجل التجاري' : 'CR', value: party.crNumber })
   }
 
   if (party?.contactPhone) {
-    lines.push(`${language === 'ar' ? 'الهاتف' : 'Phone'}: ${party.contactPhone}`)
+    lines.push({ label: language === 'ar' ? 'الهاتف' : 'Phone', value: party.contactPhone })
   }
 
   if (party?.contactEmail) {
-    lines.push(`${language === 'ar' ? 'البريد الإلكتروني' : 'Email'}: ${party.contactEmail}`)
+    lines.push({ label: language === 'ar' ? 'البريد الإلكتروني' : 'Email', value: party.contactEmail })
   }
 
   const addressText = formatAddress(party?.address)
   if (addressText) {
-    lines.push(`${language === 'ar' ? 'العنوان' : 'Address'}: ${addressText}`)
+    lines.push({ label: language === 'ar' ? 'العنوان' : 'Address', value: addressText })
   }
 
-  return lines.filter(Boolean)
+  return lines.length > 0 ? lines : [{ label: '', value: '—' }]
 }
 
 const getInvoiceEyebrow = (invoice, language = 'en') => {
@@ -446,8 +450,8 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
 
   const sellerName = isRtl ? (seller.nameAr || seller.name) : (seller.name || seller.nameAr)
   const buyerName = isRtl ? (buyer.nameAr || buyer.name) : (buyer.name || buyer.nameAr)
-  const sellerDetailLines = getPartyDetailLines(seller, language)
-  const buyerDetailLines = getPartyDetailLines(buyer, language)
+  const sellerDetailLines = getPartyDetailLines(seller, language, 'seller')
+  const buyerDetailLines = getPartyDetailLines(buyer, language, 'buyer')
   const totals = calculateInvoiceSummary(invoice)
   const travelDetails = normalizeTravelDetails(invoice.travelDetails || {}, buyerName, language)
   const qrValue = invoice?.zatca?.qrCodeData || generateZatcaQrValue({
@@ -469,6 +473,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const customerLabel = invoice.flow === 'purchase'
     ? (isRtl ? 'المشتري' : 'Buyer')
     : (isRtl ? 'العميل' : 'Customer')
+  const amountInWords = getAmountInWords(totals.grandTotal, currency, language)
   const typography = invoiceBranding.typography || {}
   const bodyFontName = arabicFontReady ? 'Tajawal' : (typography.bodyFontFamily || 'helvetica')
   const headingFontName = arabicFontReady ? 'Tajawal' : (typography.headingFontFamily || 'helvetica')
@@ -553,13 +558,9 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     doc.setDrawColor(226, 232, 240)
     doc.line(contentLeft, dividerY, contentRightEdge, dividerY)
 
-    doc.setTextColor(theme.headerMutedRgb.r, theme.headerMutedRgb.g, theme.headerMutedRgb.b)
-    setBodyFont(8, 'normal')
-    doc.text(shape(invoiceEyebrow), pageW / 2, dividerY + 12, { align: 'center' })
-
     doc.setTextColor(theme.headerTitleRgb.r, theme.headerTitleRgb.g, theme.headerTitleRgb.b)
     setHeadingFont(Math.max(headingFontSize, 18), 'bold')
-    doc.text(shape(title), pageW / 2, dividerY + 29, { align: 'center' })
+    doc.text(shape(title), pageW / 2, dividerY + 23, { align: 'center' })
   }
 
   drawHeader({ pageNumber: 1 })
@@ -613,18 +614,29 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const boxGap = 10
   const boxY = cardY + metaH + 10
   const boxW = (cardW - boxGap) / 2
-  const partyLineHeight = 11
-  const detailStartOffset = 46
-  const partyDetailsCount = Math.max(sellerDetailLines.length, buyerDetailLines.length, 1)
-  const boxH = Math.max(74, detailStartOffset + partyDetailsCount * partyLineHeight + 10)
+  const partyLineHeight = 13
+  const partyPad = 12
+  const measureTextLines = (value, width, setter) => {
+    setter()
+    const lines = doc.splitTextToSize(shape(value || '—'), width)
+    return Array.isArray(lines) && lines.length > 0 ? lines : ['—']
+  }
+  const sellerNameLines = measureTextLines(sellerName || '—', boxW - partyPad * 2, () => setHeadingFont(Math.max(bodyFontSize + 1, 10), 'bold'))
+  const buyerNameLines = measureTextLines(buyerName || '—', boxW - partyPad * 2, () => setHeadingFont(Math.max(bodyFontSize + 1, 10), 'bold'))
+  const sellerDetailTextLines = sellerDetailLines.flatMap((detail) => measureTextLines(detail.label ? `${detail.label}: ${detail.value}` : detail.value, boxW - partyPad * 2, () => setBodyFont(Math.max(bodyFontSize - 1, 8), 'bold')))
+  const buyerDetailTextLines = buyerDetailLines.flatMap((detail) => measureTextLines(detail.label ? `${detail.label}: ${detail.value}` : detail.value, boxW - partyPad * 2, () => setBodyFont(Math.max(bodyFontSize - 1, 8), 'bold')))
+  const sellerNameHeight = sellerNameLines.length * 13
+  const buyerNameHeight = buyerNameLines.length * 13
+  const detailStartOffset = 33 + Math.max(sellerNameHeight, buyerNameHeight)
+  const partyDetailsCount = Math.max(sellerDetailTextLines.length, buyerDetailTextLines.length, 1)
+  const boxH = Math.max(94, detailStartOffset + partyDetailsCount * partyLineHeight + 14)
 
-  const drawPartyBox = ({ x, y, label, name, detailLines }) => {
+  const drawPartyBox = ({ x, y, label, nameLines, detailLines }) => {
     doc.setFillColor(theme.boxFillRgb.r, theme.boxFillRgb.g, theme.boxFillRgb.b)
     doc.setDrawColor(theme.boxStrokeRgb.r, theme.boxStrokeRgb.g, theme.boxStrokeRgb.b)
     doc.roundedRect(x, y, boxW, boxH, 14, 14, 'FD')
 
-    const pad = 12
-    const tx = isRtl ? x + boxW - pad : x + pad
+    const tx = isRtl ? x + boxW - partyPad : x + partyPad
 
     setBodyFont(8, 'normal')
     doc.setTextColor(100)
@@ -632,14 +644,14 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
 
     setHeadingFont(Math.max(bodyFontSize + 1, 10), 'bold')
     doc.setTextColor(15, 23, 42)
-    doc.text(shape(name || ''), tx, y + 31, { align, maxWidth: boxW - pad * 2 })
+    doc.text(nameLines, tx, y + 31, { align, maxWidth: boxW - partyPad * 2 })
 
-    setBodyFont(8, 'normal')
-    doc.setTextColor(51, 65, 85)
+    setBodyFont(Math.max(bodyFontSize - 1, 8), 'bold')
+    doc.setTextColor(31, 41, 55)
     let ty = y + detailStartOffset
 
     for (const detailLine of detailLines.length > 0 ? detailLines : ['—']) {
-      doc.text(shape(detailLine), tx, ty, { align, maxWidth: boxW - pad * 2 })
+      doc.text(shape(detailLine), tx, ty, { align, maxWidth: boxW - partyPad * 2 })
       ty += partyLineHeight
     }
   }
@@ -654,16 +666,16 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     x: firstBoxX,
     y: boxY,
     label: isRtl ? 'البائع' : 'Seller',
-    name: sellerName,
-    detailLines: sellerDetailLines,
+    nameLines: sellerNameLines,
+    detailLines: sellerDetailTextLines,
   })
 
   drawPartyBox({
     x: secondBoxX,
     y: boxY,
     label: customerLabel,
-    name: buyerName,
-    detailLines: buyerDetailLines,
+    nameLines: buyerNameLines,
+    detailLines: buyerDetailTextLines,
   })
 
   let y = boxY + boxH + 14
@@ -815,10 +827,34 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     [isRtl ? 'الإجمالي' : 'Total', money(grandTotal)],
   ]
 
-  const totalsW = 228
-  const totalsH = 88
+  const summaryGap = 12
+  const totalsW = 250
+  const amountWordsW = Math.max(180, contentW - totalsW - summaryGap)
+  const amountWordsLeft = isRtl ? contentRightEdge - amountWordsW : contentLeft
   const totalsLeft = isRtl ? contentLeft : contentRightEdge - totalsW
   const totalsTop = doc.lastAutoTable.finalY + 10
+  const amountWordsH = Math.max(74, invoice?.notes ? 110 : 84)
+  const totalsH = 118
+
+  doc.setFillColor(255, 255, 255)
+  doc.setDrawColor(theme.boxStrokeRgb.r, theme.boxStrokeRgb.g, theme.boxStrokeRgb.b)
+  doc.roundedRect(amountWordsLeft, totalsTop, amountWordsW, amountWordsH, 12, 12, 'FD')
+
+  setBodyFont(8, 'normal')
+  doc.setTextColor(theme.headerMutedRgb.r, theme.headerMutedRgb.g, theme.headerMutedRgb.b)
+  doc.text(shape(isRtl ? 'المبلغ كتابةً' : 'Amount in Words'), isRtl ? amountWordsLeft + amountWordsW - 12 : amountWordsLeft + 12, totalsTop + 18, { align, maxWidth: amountWordsW - 24 })
+
+  setHeadingFont(Math.max(bodyFontSize + 1, 10), 'bold')
+  doc.setTextColor(theme.headerTitleRgb.r, theme.headerTitleRgb.g, theme.headerTitleRgb.b)
+  const amountWordLines = doc.splitTextToSize(shape(amountInWords), amountWordsW - 24)
+  doc.text(amountWordLines, isRtl ? amountWordsLeft + amountWordsW - 12 : amountWordsLeft + 12, totalsTop + 38, { align, maxWidth: amountWordsW - 24 })
+
+  if (invoice?.notes) {
+    setBodyFont(Math.max(bodyFontSize - 1, 8), 'bold')
+    doc.setTextColor(51, 65, 85)
+    const noteLines = doc.splitTextToSize(shape(invoice.notes), amountWordsW - 24)
+    doc.text(noteLines, isRtl ? amountWordsLeft + amountWordsW - 12 : amountWordsLeft + 12, totalsTop + 68, { align, maxWidth: amountWordsW - 24 })
+  }
 
   doc.setFillColor(lightRgb.r, lightRgb.g, lightRgb.b)
   doc.setDrawColor(theme.boxStrokeRgb.r, theme.boxStrokeRgb.g, theme.boxStrokeRgb.b)
@@ -830,22 +866,22 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     const isGrandTotal = i === totalsRows.length - 1
 
     if (isGrandTotal) {
-      setHeadingFont(Math.max(bodyFontSize + 2, 10), 'bold')
+      setHeadingFont(Math.max(bodyFontSize + 4, 12), 'bold')
     } else {
-      setBodyFont(8, 'normal')
+      setBodyFont(Math.max(bodyFontSize - 1, 8), 'bold')
     }
     doc.setTextColor(isGrandTotal ? theme.headerTitleRgb.r : theme.headerMutedRgb.r, isGrandTotal ? theme.headerTitleRgb.g : theme.headerMutedRgb.g, isGrandTotal ? theme.headerTitleRgb.b : theme.headerMutedRgb.b)
-    doc.text(shape(label), isRtl ? totalsLeft + totalsW - 12 : totalsLeft + 12, totalsY, { align, maxWidth: 126 })
+    doc.text(shape(label), isRtl ? totalsLeft + totalsW - 14 : totalsLeft + 14, totalsY, { align, maxWidth: 132 })
 
     doc.setTextColor(theme.headerTitleRgb.r, theme.headerTitleRgb.g, theme.headerTitleRgb.b)
-    doc.text(shape(value), isRtl ? totalsLeft + 12 : totalsLeft + totalsW - 12, totalsY, { align: oppositeAlign, maxWidth: 90 })
+    doc.text(shape(value), isRtl ? totalsLeft + 14 : totalsLeft + totalsW - 14, totalsY, { align: oppositeAlign, maxWidth: 110 })
 
     if (isGrandTotal) {
       doc.setDrawColor(203, 213, 225)
-      doc.line(totalsLeft + 12, totalsY - 10, totalsLeft + totalsW - 12, totalsY - 10)
+      doc.line(totalsLeft + 14, totalsY - 12, totalsLeft + totalsW - 14, totalsY - 12)
     }
 
-    totalsY += isGrandTotal ? 16 : 13
+    totalsY += isGrandTotal ? 20 : 16
   }
 
   const pageCount = doc.getNumberOfPages()
