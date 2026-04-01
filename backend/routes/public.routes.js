@@ -149,7 +149,7 @@ router.get('/website', async (req, res) => {
 router.post('/demo-login', async (req, res) => {
   try {
     if (SystemSettings.db.readyState !== 1) {
-      return res.status(503).json({ error: 'Service temporarily unavailable. Please try again in a moment.' })
+      return res.status(503).json({ error: 'Live demo is temporarily unavailable. Please try again in a moment.' })
     }
 
     const settings = await getGlobalSettings()
@@ -240,7 +240,7 @@ router.post('/demo-login', async (req, res) => {
       },
     })
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    sendRouteError(res, error)
   }
 })
 

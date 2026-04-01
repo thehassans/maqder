@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
@@ -53,17 +54,44 @@ export default function MarketingHome() {
   const navigate = useNavigate()
   const { language } = useSelector((state) => state.ui)
   const { data } = usePublicWebsiteSettings()
+  const [isStartingDemo, setIsStartingDemo] = useState(false)
 
   const isArabic = language === 'ar'
 
   const phone = data?.contactPhone || '+966595930045'
+  const isDemoConfigured = !!data?.demo?.enabled && !!data?.demo?.tenantSlug && !!data?.demo?.email
+
+  const showDemoUnavailableToast = () => {
+    toast.dismiss('marketing-demo-unavailable')
+    toast.error(
+      isArabic
+        ? 'التجربة المباشرة غير متاحة حالياً. تواصل معنا وسنقوم بترتيب عرض مباشر لك.'
+        : 'Live demo is not available right now. Contact us and we will arrange a guided demo for you.',
+      { id: 'marketing-demo-unavailable' }
+    )
+  }
 
   const startDemo = async () => {
+    if (isStartingDemo) {
+      return
+    }
+
+    if (!isDemoConfigured) {
+      showDemoUnavailableToast()
+      navigate('/contact')
+      return
+    }
+
+    setIsStartingDemo(true)
+
     try {
       await dispatch(demoLogin()).unwrap()
       navigate('/app/dashboard')
     } catch (e) {
-      toast.error(typeof e === 'string' ? e : 'Demo login failed')
+      showDemoUnavailableToast()
+      navigate('/contact')
+    } finally {
+      setIsStartingDemo(false)
     }
   }
 
@@ -229,10 +257,11 @@ export default function MarketingHome() {
 
                 <button
                   onClick={startDemo}
+                  disabled={isStartingDemo}
                   className="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-7 py-3.5 font-semibold text-slate-900 shadow-sm transition hover:border-emerald-200 hover:bg-emerald-50"
                 >
                   <PlayCircle className="h-5 w-5 text-emerald-700" />
-                  {isArabic ? 'تجربة مباشرة' : 'Live demo'}
+                  {isStartingDemo ? (isArabic ? 'جارٍ التحضير...' : 'Preparing...') : (isArabic ? 'تجربة مباشرة' : 'Live demo')}
                 </button>
               </div>
 
@@ -439,9 +468,10 @@ export default function MarketingHome() {
             <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
               <button
                 onClick={startDemo}
+                disabled={isStartingDemo}
                 className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#1f6b43] to-[#155234] px-7 py-3.5 font-semibold text-white transition hover:from-[#185636] hover:to-[#12472d]"
               >
-                {isArabic ? 'تجربة مباشرة' : 'Live demo'}
+                {isStartingDemo ? (isArabic ? 'جارٍ التحضير...' : 'Preparing...') : (isArabic ? 'تجربة مباشرة' : 'Live demo')}
                 <ArrowRight className="h-5 w-5" />
               </button>
               <Link
