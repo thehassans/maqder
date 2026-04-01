@@ -359,7 +359,7 @@ router.get('/tenants/:id', async (req, res) => {
 // @route   POST /api/super-admin/tenants
 router.post('/tenants', async (req, res) => {
   try {
-    const { name, slug, businessType, businessTypes, business, subscription, adminUser, branding } = req.body;
+    const { name, slug, businessType, businessTypes, business, subscription, adminUser, branding, settings } = req.body;
 
     const nextBusinessTypes = normalizeBusinessTypes(businessTypes || businessType);
     const primaryBusinessType = businessType && nextBusinessTypes.includes(businessType)
@@ -373,6 +373,7 @@ router.post('/tenants', async (req, res) => {
       businessType: primaryBusinessType,
       businessTypes: nextBusinessTypes,
       business,
+      ...(settings ? { settings } : {}),
       ...(branding ? { branding } : {}),
       subscription: {
         ...subscription,

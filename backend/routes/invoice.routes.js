@@ -24,8 +24,10 @@ function toNumber(value, fallback = 0) {
   return Number.isFinite(n) ? n : fallback;
 }
 
-function resolvePdfTemplateId(requestedTemplateId, tenant) {
-  const value = Number(requestedTemplateId || tenant?.settings?.invoicePdfTemplate || 1);
+function resolvePdfTemplateId(requestedTemplateId, tenant, businessContext = 'trading') {
+  const normalizedContext = ['trading', 'construction', 'travel_agency'].includes(businessContext) ? businessContext : 'trading';
+  const contextTemplateId = tenant?.settings?.invoiceBranding?.contextProfiles?.[normalizedContext]?.templateId;
+  const value = Number(requestedTemplateId || contextTemplateId || tenant?.settings?.invoicePdfTemplate || 1);
   if (!Number.isFinite(value)) return 1;
   return Math.min(6, Math.max(1, value));
 }
@@ -499,7 +501,7 @@ router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) =>
       ? '0200000'
       : (req.body.invoiceTypeCode || (transactionType === 'B2C' ? '0200000' : '0100000'));
     const issueDate = req.body.issueDate ? new Date(req.body.issueDate) : new Date();
-    const pdfTemplateId = resolvePdfTemplateId(req.body?.pdfTemplateId, tenant);
+    const pdfTemplateId = resolvePdfTemplateId(req.body?.pdfTemplateId, tenant, businessContext);
 
     const lineItems = (req.body.lineItems || []).map((line, i) => ({
       ...line,
@@ -664,7 +666,7 @@ router.post('/purchase', checkPermission('invoicing', 'create'), async (req, res
     const invoiceSubtype = req.body.invoiceSubtype === 'travel_ticket' ? 'travel_ticket' : 'standard';
     const invoiceTypeCode = req.body.invoiceTypeCode || '0100000';
     const issueDate = req.body.issueDate ? new Date(req.body.issueDate) : new Date();
-    const pdfTemplateId = resolvePdfTemplateId(req.body?.pdfTemplateId, tenant);
+    const pdfTemplateId = resolvePdfTemplateId(req.body?.pdfTemplateId, tenant, businessContext);
 
     const lineItems = (req.body.lineItems || []).map((line, i) => ({
       ...line,

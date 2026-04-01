@@ -250,6 +250,9 @@ export default function InvoiceSellComposer() {
     setValue('buyer.address.district', customer.address?.district || '')
     setValue('buyer.address.street', customer.address?.street || '')
     setValue('buyer.address.postalCode', customer.address?.postalCode || '')
+    setValue('buyer.address.country', customer.address?.country || 'SA')
+    setValue('buyer.address.buildingNumber', customer.address?.buildingNumber || '')
+    setValue('buyer.address.additionalNumber', customer.address?.additionalNumber || '')
     setValue('buyer.contactPhone', customer.phone || getValues('buyer.contactPhone') || '')
     setValue('buyer.contactEmail', customer.email || getValues('buyer.contactEmail') || '')
   }
@@ -504,6 +507,26 @@ export default function InvoiceSellComposer() {
                 <div>
                   <label className="label">{language === 'ar' ? 'الحي' : 'District'}</label>
                   <input {...register('buyer.address.district')} className="input" />
+                </div>
+                <div>
+                  <label className="label">{language === 'ar' ? 'الشارع' : 'Street'}</label>
+                  <input {...register('buyer.address.street')} className="input" />
+                </div>
+                <div>
+                  <label className="label">{language === 'ar' ? 'الرمز البريدي' : 'Postal Code'}</label>
+                  <input {...register('buyer.address.postalCode')} className="input" />
+                </div>
+                <div>
+                  <label className="label">{language === 'ar' ? 'الدولة' : 'Country'}</label>
+                  <input {...register('buyer.address.country')} className="input" placeholder="SA" />
+                </div>
+                <div>
+                  <label className="label">{language === 'ar' ? 'رقم المبنى' : 'Building Number'}</label>
+                  <input {...register('buyer.address.buildingNumber')} className="input" />
+                </div>
+                <div>
+                  <label className="label">{language === 'ar' ? 'الرقم الإضافي' : 'Additional Number'}</label>
+                  <input {...register('buyer.address.additionalNumber')} className="input" />
                 </div>
               </div>
             )}
