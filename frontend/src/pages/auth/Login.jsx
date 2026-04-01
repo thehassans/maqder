@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
@@ -8,7 +8,7 @@ import { setLanguage } from '../../store/slices/uiSlice'
 import { useTranslation } from '../../lib/translations'
 
 const complianceLogos = [
-  { src: '/zatca-logo-scaled.jpg', alt: 'ZATCA', cardClassName: 'w-48', imageClassName: 'scale-[2.9]' },
+  { src: '/ZATCA_Logo.svg', alt: 'ZATCA', cardClassName: 'w-48', imageClassName: 'scale-[1.35]' },
   { src: '/saudi-vision-2030-logo.png', alt: 'Saudi Vision 2030', cardClassName: 'w-36', imageClassName: 'scale-100' },
 ]
 
@@ -20,6 +20,10 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
 
   const { register, handleSubmit, formState: { errors } } = useForm()
+
+  useEffect(() => {
+    dispatch(clearError())
+  }, [dispatch])
 
   const onSubmit = (data) => {
     dispatch(clearError())

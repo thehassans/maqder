@@ -6,17 +6,37 @@ import SystemSettings from '../models/SystemSettings.js'
 
 const router = express.Router()
 
+const createDefaultSettings = () => new SystemSettings({ key: 'global', website: {} })
+
 const getGlobalSettings = async () => {
-  const existing = await SystemSettings.findOne({ key: 'global' })
-  if (existing) {
-    if (!existing.website) {
-      existing.website = {}
-      existing.markModified('website')
-      await existing.save()
-    }
-    return existing
+  const defaultSettings = createDefaultSettings()
+
+  if (SystemSettings.db.readyState !== 1) {
+    return defaultSettings
   }
-  return SystemSettings.create({ key: 'global', website: {} })
+
+  try {
+    const existing = await SystemSettings.findOne({ key: 'global' }).maxTimeMS(3000)
+    if (existing) {
+      if (!existing.website) {
+        existing.website = defaultSettings.website?.toObject?.() || {}
+        existing.markModified('website')
+        try {
+          await existing.save()
+        } catch {
+        }
+      }
+      return existing
+    }
+
+    try {
+      return await SystemSettings.create({ key: 'global', website: {} })
+    } catch {
+      return defaultSettings
+    }
+  } catch {
+    return defaultSettings
+  }
 }
 
 const maskSecret = (value) => {

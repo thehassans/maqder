@@ -274,7 +274,7 @@ const pricingPlans = [
 ]
 
 const complianceLogos = [
-  { src: '/zatca-logo-scaled.jpg', alt: 'ZATCA', imageClassName: 'scale-[2.5]' },
+  { src: '/ZATCA_Logo.svg', alt: 'ZATCA', imageClassName: 'scale-[1.35]' },
   { src: '/saudi-vision-2030-logo.png', alt: 'Saudi Vision 2030', imageClassName: 'scale-100' },
 ]
 
