@@ -5,6 +5,27 @@ import Tenant from '../models/Tenant.js';
 import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
+const databaseQueryTimeoutMs = 3000;
+
+const withQueryTimeout = (query) => query.maxTimeMS(databaseQueryTimeoutMs);
+
+const isDatabaseAvailabilityError = (error) => {
+  const message = String(error?.message || '').toLowerCase();
+
+  return message.includes('buffering timed out')
+    || message.includes('timed out after')
+    || message.includes('server selection')
+    || message.includes('ecconnrefused')
+    || message.includes('not connected');
+};
+
+const sendRouteError = (res, error) => {
+  if (isDatabaseAvailabilityError(error)) {
+    return res.status(503).json({ error: 'Authentication service is temporarily unavailable. Please try again in a moment.' });
+  }
+
+  return res.status(500).json({ error: error.message });
+};
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -16,26 +37,28 @@ const generateToken = (id) => {
 router.post('/register', async (req, res) => {
   try {
     const { email, password, firstName, lastName, tenantSlug } = req.body;
+    const normalizedEmail = String(email || '').toLowerCase().trim();
+    const normalizedTenantSlug = String(tenantSlug || '').trim().toLowerCase();
     
     let tenant = null;
-    if (tenantSlug) {
-      tenant = await Tenant.findOne({ slug: tenantSlug, isActive: true });
+    if (normalizedTenantSlug) {
+      tenant = await withQueryTimeout(Tenant.findOne({ slug: normalizedTenantSlug, isActive: true }));
       if (!tenant) {
         return res.status(400).json({ error: 'Invalid tenant' });
       }
     }
     
-    const existingUser = await User.findOne({ 
-      email, 
+    const existingUser = await withQueryTimeout(User.findOne({ 
+      email: normalizedEmail, 
       tenantId: tenant?._id || null 
-    });
+    }));
     
     if (existingUser) {
       return res.status(400).json({ error: 'User already exists' });
     }
     
     const user = await User.create({
-      email,
+      email: normalizedEmail,
       password,
       firstName,
       lastName,
@@ -57,7 +80,7 @@ router.post('/register', async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendRouteError(res, error);
   }
 });
 
@@ -66,13 +89,14 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password, tenantSlug } = req.body;
     const normalizedEmail = String(email || '').toLowerCase().trim();
+    const normalizedTenantSlug = String(tenantSlug || '').trim().toLowerCase();
     
     let query = { email: normalizedEmail };
     let user = null;
     
-    if (tenantSlug) {
+    if (normalizedTenantSlug) {
       // Login with specific tenant
-      const tenant = await Tenant.findOne({ slug: tenantSlug });
+      const tenant = await withQueryTimeout(Tenant.findOne({ slug: normalizedTenantSlug }));
       if (!tenant) {
         return res.status(401).json({ error: 'Invalid tenant code' });
       }
@@ -82,17 +106,17 @@ router.post('/login', async (req, res) => {
       query.tenantId = tenant._id;
     } else {
       // No tenant slug - first try super_admin, then find user by email
-      const superAdmin = await User.findOne({ email: normalizedEmail, role: 'super_admin' }).select('+password');
+      const superAdmin = await withQueryTimeout(User.findOne({ email: normalizedEmail, role: 'super_admin' }).select('+password'));
       if (superAdmin) {
         user = superAdmin;
       } else {
         // First, try a global (non-tenant) user for this email
-        const globalUser = await User.findOne({ email: normalizedEmail, tenantId: null }).select('+password');
+        const globalUser = await withQueryTimeout(User.findOne({ email: normalizedEmail, tenantId: null }).select('+password'));
         if (globalUser) {
           user = globalUser;
         } else {
           // Tenant users: email can exist in multiple tenants, so require tenantSlug if ambiguous
-          const matchingUsers = await User.find({ email: normalizedEmail }).select('+password').populate('tenantId');
+          const matchingUsers = await withQueryTimeout(User.find({ email: normalizedEmail }).select('+password').populate('tenantId'));
           if (matchingUsers.length > 1) {
             return res.status(401).json({ error: 'Multiple accounts found. Please enter tenant code' });
           }
@@ -106,8 +130,8 @@ router.post('/login', async (req, res) => {
     }
     
     // If tenant slug was provided, find user with that query
-    if (tenantSlug && !user) {
-      user = await User.findOne(query).select('+password');
+    if (normalizedTenantSlug && !user) {
+      user = await withQueryTimeout(User.findOne(query).select('+password'));
     }
     
     if (!user) {
@@ -150,7 +174,7 @@ router.post('/login', async (req, res) => {
     // Get tenant info
     let tenant = null;
     if (user.tenantId) {
-      tenant = await Tenant.findById(user.tenantId).select('name slug businessType businessTypes business settings branding subscription');
+      tenant = await withQueryTimeout(Tenant.findById(user.tenantId).select('name slug businessType businessTypes business settings branding subscription'));
     }
     
     res.json({
@@ -170,18 +194,18 @@ router.post('/login', async (req, res) => {
       tenant
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendRouteError(res, error);
   }
 });
 
 // @route   GET /api/auth/me
 router.get('/me', protect, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
+    const user = await withQueryTimeout(User.findById(req.user._id));
     let tenant = null;
     
     if (user.tenantId) {
-      tenant = await Tenant.findById(user.tenantId).select('name slug businessType businessTypes business settings branding subscription');
+      tenant = await withQueryTimeout(Tenant.findById(user.tenantId).select('name slug businessType businessTypes business settings branding subscription'));
     }
     
     res.json({
@@ -200,7 +224,7 @@ router.get('/me', protect, async (req, res) => {
       tenant
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendRouteError(res, error);
   }
 });
 
@@ -209,15 +233,15 @@ router.put('/profile', protect, async (req, res) => {
   try {
     const { firstName, lastName, firstNameAr, lastNameAr, phone, preferences } = req.body;
     
-    const user = await User.findByIdAndUpdate(
+    const user = await withQueryTimeout(User.findByIdAndUpdate(
       req.user._id,
       { firstName, lastName, firstNameAr, lastNameAr, phone, preferences },
       { new: true, runValidators: true }
-    );
+    ));
     
     res.json({ user });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendRouteError(res, error);
   }
 });
 
@@ -226,7 +250,7 @@ router.put('/password', protect, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     
-    const user = await User.findById(req.user._id).select('+password');
+    const user = await withQueryTimeout(User.findById(req.user._id).select('+password'));
     
     const isMatch = await user.comparePassword(currentPassword);
     if (!isMatch) {
@@ -238,7 +262,7 @@ router.put('/password', protect, async (req, res) => {
     
     res.json({ message: 'Password updated successfully' });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendRouteError(res, error);
   }
 });
 

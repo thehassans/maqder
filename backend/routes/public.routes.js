@@ -5,6 +5,27 @@ import User from '../models/User.js'
 import SystemSettings from '../models/SystemSettings.js'
 
 const router = express.Router()
+const databaseQueryTimeoutMs = 3000
+
+const withQueryTimeout = (query) => query.maxTimeMS(databaseQueryTimeoutMs)
+
+const isDatabaseAvailabilityError = (error) => {
+  const message = String(error?.message || '').toLowerCase()
+
+  return message.includes('buffering timed out')
+    || message.includes('timed out after')
+    || message.includes('server selection')
+    || message.includes('ecconnrefused')
+    || message.includes('not connected')
+}
+
+const sendRouteError = (res, error) => {
+  if (isDatabaseAvailabilityError(error)) {
+    return res.status(503).json({ error: 'Service temporarily unavailable. Please try again in a moment.' })
+  }
+
+  return res.status(500).json({ error: error.message })
+}
 
 const createDefaultSettings = () => new SystemSettings({ key: 'global', website: {} })
 
@@ -121,12 +142,16 @@ router.get('/website', async (req, res) => {
       },
     })
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    sendRouteError(res, error)
   }
 })
 
 router.post('/demo-login', async (req, res) => {
   try {
+    if (SystemSettings.db.readyState !== 1) {
+      return res.status(503).json({ error: 'Service temporarily unavailable. Please try again in a moment.' })
+    }
+
     const settings = await getGlobalSettings()
     const demo = settings.website?.demo
 
@@ -141,7 +166,7 @@ router.post('/demo-login', async (req, res) => {
       return res.status(400).json({ error: 'Demo settings are incomplete' })
     }
 
-    let tenant = await Tenant.findOne({ slug: tenantSlug }).select('name slug business settings branding subscription isActive')
+    let tenant = await withQueryTimeout(Tenant.findOne({ slug: tenantSlug }).select('name slug business settings branding subscription isActive'))
 
     if (!tenant) {
       const now = Date.now()
@@ -170,7 +195,7 @@ router.post('/demo-login', async (req, res) => {
       return res.status(401).json({ error: 'Demo tenant is inactive' })
     }
 
-    let user = await User.findOne({ email, tenantId: tenant._id })
+    let user = await withQueryTimeout(User.findOne({ email, tenantId: tenant._id }))
 
     if (!user) {
       user = await User.create({

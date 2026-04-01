@@ -34,7 +34,11 @@ NODE_ENV=production
 MONGODB_URI=mongodb+srv://hassansarwar2112_db_user:GvozITy6hCKgrIH4@maqder.se7slkz.mongodb.net/zatca-erp?retryWrites=true&w=majority&appName=Maqder
 JWT_SECRET=maqder-zatca-erp-jwt-secret-CHANGE-THIS-TO-RANDOM-STRING
 JWT_EXPIRE=7d
-FRONTEND_URL=https://maqder.com
+FRONTEND_URL=https://maqder.com,https://www.maqder.com
+TRUST_PROXY_HOPS=1
+MONGODB_SERVER_SELECTION_TIMEOUT_MS=5000
+MONGODB_SOCKET_TIMEOUT_MS=45000
+MONGODB_RECONNECT_INTERVAL_MS=5000
 ```
 
 > ⚠️ **IMPORTANT**: Change `JWT_SECRET` to a unique random string (32+ characters)
@@ -113,6 +117,9 @@ location /api {
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection 'upgrade';
     proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_cache_bypass $http_upgrade;
 }
 
@@ -123,7 +130,33 @@ location / {
 
 ---
 
-## 5. SSL Certificate
+## 5. Cloudflare / Load Balancer Setup
+
+### Cloudflare DNS
+
+1. Point your `@` record and `www` record to the Plesk server IP
+2. Keep them **Proxied** if you want Cloudflare protection enabled
+3. In Cloudflare SSL/TLS, use **Full (strict)**
+
+### If Using Cloudflare Load Balancer
+
+- Configure the origin pool to your Plesk server
+- Use `https://your-domain.com/api/health/ready` as the health check path
+- Expect `200` as healthy and `503` as unhealthy
+- Enable Host header forwarding to your real domain
+
+### Required Proxy Behavior
+
+- Preserve the `Host` header
+- Forward `X-Forwarded-For`
+- Forward `X-Forwarded-Proto`
+- Forward `X-Forwarded-Host`
+
+This app is already configured to trust the upstream proxy hop count using `TRUST_PROXY_HOPS`, so real client IPs and rate limiting work correctly behind Cloudflare or a reverse proxy.
+
+---
+
+## 6. SSL Certificate
 
 1. In Plesk, go to **SSL/TLS Certificates**
 2. Click **Install** → **Let's Encrypt**
@@ -131,7 +164,7 @@ location / {
 
 ---
 
-## 6. MongoDB Atlas Network Access
+## 7. MongoDB Atlas Network Access
 
 1. Go to [MongoDB Atlas](https://cloud.mongodb.com)
 2. Navigate to **Network Access**
@@ -140,7 +173,7 @@ location / {
 
 ---
 
-## 7. Environment Variables Summary
+## 8. Environment Variables Summary
 
 | Variable | Production Value |
 |----------|------------------|
@@ -149,14 +182,18 @@ location / {
 | `MONGODB_URI` | `mongodb+srv://hassansarwar2112_db_user:***@maqder.se7slkz.mongodb.net/zatca-erp?retryWrites=true&w=majority&appName=Maqder` |
 | `JWT_SECRET` | `<random-32-char-string>` |
 | `JWT_EXPIRE` | `7d` |
-| `FRONTEND_URL` | `https://maqder.com` |
+| `FRONTEND_URL` | `https://maqder.com,https://www.maqder.com` |
+| `TRUST_PROXY_HOPS` | `1` |
+| `MONGODB_SERVER_SELECTION_TIMEOUT_MS` | `5000` |
+| `MONGODB_SOCKET_TIMEOUT_MS` | `45000` |
+| `MONGODB_RECONNECT_INTERVAL_MS` | `5000` |
 | `OPENAI_API_KEY` | (optional) |
 | `SUPER_ADMIN_EMAIL` | `admin@maqder.com` |
 | `SUPER_ADMIN_PASSWORD` | `SuperAdmin@123` |
 
 ---
 
-## 8. First Login
+## 9. First Login
 
 After deployment:
 1. Visit `https://maqder.com`
@@ -167,7 +204,7 @@ After deployment:
 
 ---
 
-## 9. Troubleshooting
+## 10. Troubleshooting
 
 ### Check Node.js Logs
 In Plesk: **Domains** → **Maqder.com** → **Node.js** → **Logs**
@@ -176,14 +213,14 @@ In Plesk: **Domains** → **Maqder.com** → **Node.js** → **Logs**
 
 | Issue | Solution |
 |-------|----------|
-| 502 Bad Gateway | Check if Node.js app is running, check PORT |
+| 502 Bad Gateway | Check Node.js logs, verify proxy points to the running app, verify `MONGODB_URI`, and test `/api/health/live` and `/api/health/ready` |
 | MongoDB connection error | Verify IP whitelist in Atlas, check URI |
-| CORS errors | Ensure `FRONTEND_URL` matches your domain |
+| CORS errors | Ensure `FRONTEND_URL` includes every live domain, including `www` if used |
 | Static files not loading | Check document root and build output |
 
 ---
 
-## 10. Security Checklist
+## 11. Security Checklist
 
 - [ ] Change `JWT_SECRET` to a unique random string
 - [ ] Change Super Admin password after first login

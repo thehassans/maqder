@@ -20,7 +20,7 @@ export const login = createAsyncThunk(
       localStorage.setItem('token', data.token)
       return data
     } catch (error) {
-      return rejectWithValue(error.response?.data?.error || 'Login failed')
+      return rejectWithValue(error.userMessage || error.response?.data?.error || 'Login failed')
     }
   }
 )
@@ -31,7 +31,7 @@ export const demoLogin = createAsyncThunk('auth/demoLogin', async (_, { rejectWi
     localStorage.setItem('token', data.token)
     return data
   } catch (error) {
-    return rejectWithValue(error.response?.data?.error || 'Demo login failed')
+    return rejectWithValue(error.userMessage || error.response?.data?.error || 'Demo login failed')
   }
 })
 
@@ -43,7 +43,7 @@ export const getMe = createAsyncThunk(
       return data
     } catch (error) {
       localStorage.removeItem('token')
-      return rejectWithValue(error.response?.data?.error || 'Session expired')
+      return rejectWithValue(error.userMessage || error.response?.data?.error || 'Session expired')
     }
   }
 )

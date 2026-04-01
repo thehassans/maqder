@@ -45,14 +45,119 @@ import User from './models/User.js';
 
 dotenv.config();
 
+mongoose.set('bufferCommands', false);
+
 const app = express();
 const parsedApiRateLimitMax = Number(process.env.API_RATE_LIMIT_MAX || 600);
 const apiRateLimitMax = Number.isFinite(parsedApiRateLimitMax) && parsedApiRateLimitMax > 0 ? parsedApiRateLimitMax : 600;
+const parsedTrustProxyHops = Number(process.env.TRUST_PROXY_HOPS || 1);
+const trustProxyHops = Number.isFinite(parsedTrustProxyHops) && parsedTrustProxyHops >= 0 ? parsedTrustProxyHops : 1;
+const parsedMongoServerSelectionTimeoutMs = Number(process.env.MONGODB_SERVER_SELECTION_TIMEOUT_MS || 5000);
+const mongoServerSelectionTimeoutMs = Number.isFinite(parsedMongoServerSelectionTimeoutMs) && parsedMongoServerSelectionTimeoutMs > 0 ? parsedMongoServerSelectionTimeoutMs : 5000;
+const parsedMongoSocketTimeoutMs = Number(process.env.MONGODB_SOCKET_TIMEOUT_MS || 45000);
+const mongoSocketTimeoutMs = Number.isFinite(parsedMongoSocketTimeoutMs) && parsedMongoSocketTimeoutMs > 0 ? parsedMongoSocketTimeoutMs : 45000;
+const parsedMongoReconnectIntervalMs = Number(process.env.MONGODB_RECONNECT_INTERVAL_MS || 5000);
+const mongoReconnectIntervalMs = Number.isFinite(parsedMongoReconnectIntervalMs) && parsedMongoReconnectIntervalMs > 0 ? parsedMongoReconnectIntervalMs : 5000;
+const configuredOrigins = String(process.env.FRONTEND_URL || 'http://localhost:5173')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/zatca-erp';
+const databaseReadyState = () => mongoose.connection.readyState;
+const isDatabaseReady = () => databaseReadyState() === 1;
+let reconnectTimer = null;
+let jobsStarted = false;
+
+const seedSuperAdmin = async () => {
+  try {
+    const existingAdmin = await User.findOne({ role: 'super_admin' });
+    if (!existingAdmin) {
+      await User.create({
+        email: process.env.SUPER_ADMIN_EMAIL || 'admin@maqder.com',
+        password: process.env.SUPER_ADMIN_PASSWORD || 'SuperAdmin@123',
+        firstName: 'Super',
+        lastName: 'Admin',
+        firstNameAr: 'المشرف',
+        lastNameAr: 'العام',
+        role: 'super_admin',
+        isActive: true,
+        preferences: { language: 'en', theme: 'light' }
+      });
+      logger.info('Super Admin created: ' + (process.env.SUPER_ADMIN_EMAIL || 'admin@maqder.com'));
+    }
+  } catch (err) {
+    logger.error('Auto-seed super admin error:', err.message);
+  }
+};
+
+const startJobs = () => {
+  if (jobsStarted) {
+    return;
+  }
+
+  jobsStarted = true;
+
+  cron.schedule('0 8 * * *', () => {
+    logger.info('Running Iqama expiry check...');
+    checkIqamaExpiry();
+  });
+
+  cron.schedule('0 */6 * * *', () => {
+    logger.info('Running ZATCA B2C invoice sync...');
+    syncZatcaInvoices();
+  });
+};
+
+const scheduleReconnect = () => {
+  if (reconnectTimer) {
+    return;
+  }
+
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    connectToDatabase();
+  }, mongoReconnectIntervalMs);
+};
+
+const connectToDatabase = async () => {
+  if (databaseReadyState() === 1 || databaseReadyState() === 2) {
+    return;
+  }
+
+  try {
+    await mongoose.connect(mongoUri, {
+      serverSelectionTimeoutMS: mongoServerSelectionTimeoutMs,
+      socketTimeoutMS: mongoSocketTimeoutMs,
+    });
+
+    logger.info('MongoDB connected successfully');
+    await seedSuperAdmin();
+    startJobs();
+  } catch (err) {
+    logger.error('MongoDB connection error:', err);
+    scheduleReconnect();
+  }
+};
+
+const ensureDatabaseReady = (req, res, next) => {
+  if (isDatabaseReady()) {
+    return next();
+  }
+
+  return res.status(503).json({ error: 'Service temporarily unavailable. Please try again in a moment.' });
+};
 
 // Security middleware
+app.set('trust proxy', trustProxyHops);
 app.use(helmet());
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    if (!origin || configuredOrigins.length === 0 || configuredOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true
 }));
 
@@ -62,6 +167,7 @@ const limiter = rateLimit({
   max: apiRateLimitMax,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.path === '/health' || req.path === '/health/live' || req.path === '/health/ready',
   message: { error: 'Too many requests, please try again later.' }
 });
 app.use('/api/', limiter);
@@ -70,40 +176,73 @@ app.use('/api/', limiter);
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/tenants', tenantRoutes);
-app.use('/api/employees', employeeRoutes);
-app.use('/api/payroll', payrollRoutes);
-app.use('/api/invoices', invoiceRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/warehouses', warehouseRoutes);
-app.use('/api/suppliers', supplierRoutes);
-app.use('/api/purchase-orders', purchaseOrderRoutes);
-app.use('/api/shipments', shipmentRoutes);
-app.use('/api/projects', projectRoutes);
-app.use('/api/tasks', taskRoutes);
-app.use('/api/iot', iotRoutes);
-app.use('/api/job-costing', jobCostingRoutes);
-app.use('/api/mrp', mrpRoutes);
-app.use('/api/super-admin', superAdminRoutes);
-app.use('/api/ai', aiRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/reports', reportsRoutes);
-app.use('/api/whatsapp', whatsappRoutes);
-app.use('/api/customers', customerRoutes);
-app.use('/api/contacts', contactsRoutes);
-app.use('/api/expenses', expenseRoutes);
-app.use('/api/users', usersRoutes);
-app.use('/api/public', publicRoutes);
-app.use('/api/travel-bookings', travelBookingRoutes);
-app.use('/api/restaurant/menu-items', restaurantMenuItemRoutes);
-app.use('/api/restaurant/orders', restaurantOrderRoutes);
-
 // Health check
 app.get('/api/health', (req, res) => {
+  res.json({
+    status: isDatabaseReady() ? 'OK' : 'DEGRADED',
+    database: {
+      readyState: databaseReadyState(),
+      connected: isDatabaseReady(),
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/api/health/live', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
+
+app.get('/api/health/ready', (req, res) => {
+  if (!isDatabaseReady()) {
+    return res.status(503).json({
+      status: 'NOT_READY',
+      database: {
+        readyState: databaseReadyState(),
+        connected: false,
+      },
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  return res.json({
+    status: 'READY',
+    database: {
+      readyState: databaseReadyState(),
+      connected: true,
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
+// API Routes
+app.use('/api/public', publicRoutes);
+app.use('/api/auth', ensureDatabaseReady, authRoutes);
+app.use('/api/tenants', ensureDatabaseReady, tenantRoutes);
+app.use('/api/employees', ensureDatabaseReady, employeeRoutes);
+app.use('/api/payroll', ensureDatabaseReady, payrollRoutes);
+app.use('/api/invoices', ensureDatabaseReady, invoiceRoutes);
+app.use('/api/products', ensureDatabaseReady, productRoutes);
+app.use('/api/warehouses', ensureDatabaseReady, warehouseRoutes);
+app.use('/api/suppliers', ensureDatabaseReady, supplierRoutes);
+app.use('/api/purchase-orders', ensureDatabaseReady, purchaseOrderRoutes);
+app.use('/api/shipments', ensureDatabaseReady, shipmentRoutes);
+app.use('/api/projects', ensureDatabaseReady, projectRoutes);
+app.use('/api/tasks', ensureDatabaseReady, taskRoutes);
+app.use('/api/iot', ensureDatabaseReady, iotRoutes);
+app.use('/api/job-costing', ensureDatabaseReady, jobCostingRoutes);
+app.use('/api/mrp', ensureDatabaseReady, mrpRoutes);
+app.use('/api/super-admin', ensureDatabaseReady, superAdminRoutes);
+app.use('/api/ai', ensureDatabaseReady, aiRoutes);
+app.use('/api/dashboard', ensureDatabaseReady, dashboardRoutes);
+app.use('/api/reports', ensureDatabaseReady, reportsRoutes);
+app.use('/api/whatsapp', ensureDatabaseReady, whatsappRoutes);
+app.use('/api/customers', ensureDatabaseReady, customerRoutes);
+app.use('/api/contacts', ensureDatabaseReady, contactsRoutes);
+app.use('/api/expenses', ensureDatabaseReady, expenseRoutes);
+app.use('/api/users', ensureDatabaseReady, usersRoutes);
+app.use('/api/travel-bookings', ensureDatabaseReady, travelBookingRoutes);
+app.use('/api/restaurant/menu-items', ensureDatabaseReady, restaurantMenuItemRoutes);
+app.use('/api/restaurant/orders', ensureDatabaseReady, restaurantOrderRoutes);
 
 // Serve static frontend files in production
 const __filename = fileURLToPath(import.meta.url);
@@ -125,48 +264,16 @@ app.use(notFound);
 app.use(errorHandler);
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/zatca-erp')
-  .then(async () => {
-    logger.info('MongoDB connected successfully');
-    
-    // Auto-seed super admin if not exists
-    try {
-      const existingAdmin = await User.findOne({ role: 'super_admin' });
-      if (!existingAdmin) {
-        await User.create({
-          email: process.env.SUPER_ADMIN_EMAIL || 'admin@maqder.com',
-          password: process.env.SUPER_ADMIN_PASSWORD || 'SuperAdmin@123',
-          firstName: 'Super',
-          lastName: 'Admin',
-          firstNameAr: 'المشرف',
-          lastNameAr: 'العام',
-          role: 'super_admin',
-          isActive: true,
-          preferences: { language: 'en', theme: 'light' }
-        });
-        logger.info('Super Admin created: ' + (process.env.SUPER_ADMIN_EMAIL || 'admin@maqder.com'));
-      }
-    } catch (err) {
-      logger.error('Auto-seed super admin error:', err.message);
-    }
-    
-    // Cron Jobs
-    // Check Iqama expiry daily at 8 AM
-    cron.schedule('0 8 * * *', () => {
-      logger.info('Running Iqama expiry check...');
-      checkIqamaExpiry();
-    });
-    
-    // Sync B2C invoices to ZATCA every 6 hours
-    cron.schedule('0 */6 * * *', () => {
-      logger.info('Running ZATCA B2C invoice sync...');
-      syncZatcaInvoices();
-    });
-  })
-  .catch(err => {
-    logger.error('MongoDB connection error:', err);
-    process.exit(1);
-  });
+mongoose.connection.on('disconnected', () => {
+  logger.warn('MongoDB disconnected');
+  scheduleReconnect();
+});
+
+mongoose.connection.on('error', (err) => {
+  logger.error('MongoDB runtime error:', err);
+});
+
+connectToDatabase();
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

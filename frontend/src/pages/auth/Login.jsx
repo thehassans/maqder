@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
@@ -14,12 +15,18 @@ const complianceLogos = [
 
 export default function Login() {
   const dispatch = useDispatch()
+  const [searchParams] = useSearchParams()
   const { isLoading, error } = useSelector((state) => state.auth)
   const { language } = useSelector((state) => state.ui)
   const { t } = useTranslation(language)
   const [showPassword, setShowPassword] = useState(false)
+  const initialTenantSlug = String(searchParams.get('tenant') || searchParams.get('tenantSlug') || '').trim().toLowerCase()
 
-  const { register, handleSubmit, formState: { errors } } = useForm()
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    defaultValues: {
+      tenantSlug: initialTenantSlug,
+    },
+  })
 
   useEffect(() => {
     dispatch(clearError())
@@ -186,6 +193,26 @@ export default function Login() {
                 </button>
               </div>
               {errors.password && <p className="mt-2 text-sm text-red-500 font-medium">{errors.password.message}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">{t('tenantCodeOptional')}</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 start-0 flex items-center ps-4 pointer-events-none">
+                  <Building2 className="w-5 h-5 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  {...register('tenantSlug', {
+                    setValueAs: (value) => String(value || '').trim().toLowerCase(),
+                  })}
+                  className="w-full h-14 ps-12 pe-4 bg-white border-2 border-gray-200 focus:border-[#244D33] rounded-2xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-[#244D33]/10 transition-all"
+                  placeholder="demo"
+                />
+              </div>
+              <p className="mt-2 text-xs text-gray-500">{t('tenantCodeHelper')}</p>
             </div>
 
             {/* Remember & Forgot */}
