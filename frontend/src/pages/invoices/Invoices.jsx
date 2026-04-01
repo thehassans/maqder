@@ -22,6 +22,7 @@ import ExportMenu from '../../components/ui/ExportMenu'
 import toast from 'react-hot-toast'
 import { downloadInvoicePdf } from '../../lib/invoicePdf'
 import { getTenantBusinessTypes } from '../../lib/businessTypes'
+import { getZatcaStatusMeta } from '../../lib/zatcaStatus'
 
 const getInvoiceContextLabel = (invoice, language = 'en') => {
   const context = String(invoice?.businessContext || '').trim()
@@ -59,12 +60,27 @@ export default function Invoices() {
     }).then(res => res.data)
   })
 
-  const getStatusBadge = (status, zatcaStatus) => {
-    if (zatcaStatus === 'cleared') return <span className="badge badge-success"><CheckCircle className="w-3 h-3 me-1" />{t('cleared')}</span>
-    if (zatcaStatus === 'reported') return <span className="badge badge-info"><CheckCircle className="w-3 h-3 me-1" />{t('reported')}</span>
-    if (zatcaStatus === 'rejected') return <span className="badge badge-danger"><XCircle className="w-3 h-3 me-1" />{t('rejected')}</span>
-    if (zatcaStatus === 'warning') return <span className="badge badge-warning"><AlertTriangle className="w-3 h-3 me-1" />Warning</span>
-    return <span className="badge badge-neutral"><Clock className="w-3 h-3 me-1" />{t('pending')}</span>
+  const getStatusBadge = (invoice) => {
+    const meta = getZatcaStatusMeta(invoice, language)
+    const badgeClass = meta.tone === 'success'
+      ? 'badge-success'
+      : meta.tone === 'info'
+        ? 'badge-info'
+        : meta.tone === 'danger'
+          ? 'badge-danger'
+          : meta.tone === 'warning'
+            ? 'badge-warning'
+            : 'badge-neutral'
+
+    const icon = meta.tone === 'success'
+      ? <CheckCircle className="w-3 h-3 me-1" />
+      : meta.tone === 'danger'
+        ? <XCircle className="w-3 h-3 me-1" />
+        : meta.tone === 'warning'
+          ? <AlertTriangle className="w-3 h-3 me-1" />
+          : <Clock className="w-3 h-3 me-1" />
+
+    return <span className={`badge ${badgeClass}`}>{icon}{meta.label}</span>
   }
 
   const exportColumns = [
@@ -95,7 +111,7 @@ export default function Invoices() {
     {
       key: 'zatcaStatus',
       label: t('zatcaStatus'),
-      value: (r) => r?.zatca?.submissionStatus || ''
+      value: (r) => getZatcaStatusMeta(r, language).label
     },
   ]
 
@@ -250,7 +266,7 @@ export default function Invoices() {
                         {new Date(invoice.issueDate).toLocaleDateString()}
                       </td>
                       <td className="font-semibold"><Money value={invoice.grandTotal} /></td>
-                      <td>{getStatusBadge(invoice.status, invoice.zatca?.submissionStatus)}</td>
+                      <td>{getStatusBadge(invoice)}</td>
                       <td>
                         <div className="flex items-center gap-2">
                           <Link

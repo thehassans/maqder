@@ -11,6 +11,7 @@ import { useTranslation } from '../../lib/translations'
 import InvoiceLivePreview from '../../components/invoices/InvoiceLivePreview'
 import { getInvoiceTemplateId } from '../../lib/invoiceBranding'
 import { downloadInvoicePdf } from '../../lib/invoicePdf'
+import { getZatcaStatusMeta } from '../../lib/zatcaStatus'
 
 export default function InvoiceView() {
   const { id } = useParams()
@@ -28,6 +29,7 @@ export default function InvoiceView() {
 
   const templateId = getInvoiceTemplateId(tenant, invoice?.businessContext, invoice?.pdfTemplateId)
   const invoiceTypeLabel = invoice?.transactionType === 'B2B' ? t('b2bInvoice') : t('b2cInvoice')
+  const zatcaStatusMeta = getZatcaStatusMeta(invoice, language)
 
   const signMutation = useMutation({
     mutationFn: () => api.post(`/invoices/${id}/sign`),
@@ -141,14 +143,15 @@ export default function InvoiceView() {
                 </div>
               </div>
               <span className={`badge ${
-                invoice?.zatca?.submissionStatus === 'cleared' ? 'badge-success' :
-                invoice?.zatca?.submissionStatus === 'reported' ? 'badge-info' :
-                invoice?.zatca?.submissionStatus === 'rejected' ? 'badge-danger' :
-                'badge-warning'
+                zatcaStatusMeta.tone === 'success' ? 'badge-success' :
+                zatcaStatusMeta.tone === 'info' ? 'badge-info' :
+                zatcaStatusMeta.tone === 'danger' ? 'badge-danger' :
+                zatcaStatusMeta.tone === 'warning' ? 'badge-warning' :
+                'badge-neutral'
               }`}>
-                {invoice?.zatca?.submissionStatus === 'cleared' && <CheckCircle className="w-3 h-3 me-1" />}
-                {invoice?.zatca?.submissionStatus === 'pending' && <Clock className="w-3 h-3 me-1" />}
-                {invoice?.zatca?.submissionStatus || 'Draft'}
+                {zatcaStatusMeta.tone === 'success' && <CheckCircle className="w-3 h-3 me-1" />}
+                {zatcaStatusMeta.tone !== 'success' && <Clock className="w-3 h-3 me-1" />}
+                {zatcaStatusMeta.label}
               </span>
             </div>
 

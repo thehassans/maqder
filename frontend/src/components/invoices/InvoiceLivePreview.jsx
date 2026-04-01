@@ -1,7 +1,8 @@
 import { QRCodeSVG } from 'qrcode.react'
 import { generateZatcaQrValue } from '../../lib/zatcaQr'
 import { calculateInvoiceSummary, normalizeTravelDetails, toNumber } from '../../lib/invoiceDocument'
-import { getInvoiceBranding, splitBrandingText } from '../../lib/invoiceBranding'
+import { getInvoiceBranding, getInvoiceCssFontFamily, splitBrandingText } from '../../lib/invoiceBranding'
+import { getZatcaStatusMeta } from '../../lib/zatcaStatus'
 
 const formatAddress = (address = {}) => {
   return [address?.street, address?.district, address?.city, address?.postalCode, address?.country]
@@ -136,6 +137,8 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
   const headerLines = splitBrandingText(invoiceBranding.headerText)
   const footerLines = splitBrandingText(invoiceBranding.footerText)
   const showVisionLogo = invoiceBranding.showVision2030 && invoiceBranding.vision2030LogoSrc
+  const typography = invoiceBranding.typography || {}
+  const zatcaStatusMeta = getZatcaStatusMeta(invoice, language)
   const accentBarStyle = {
     background: invoiceBranding.primaryColor,
   }
@@ -145,9 +148,24 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
   }
   const mutedText = 'text-slate-500'
   const titleText = 'text-slate-900'
+  const shellStyle = {
+    fontFamily: getInvoiceCssFontFamily(typography.bodyFontFamily),
+    fontSize: `${typography.bodyFontSize || 12}px`,
+  }
+  const headingStyle = {
+    fontFamily: getInvoiceCssFontFamily(typography.headingFontFamily),
+  }
+  const companyHeadingStyle = {
+    ...headingStyle,
+    fontSize: `${Math.max((typography.headingFontSize || 18) + 10, 28)}px`,
+  }
+  const invoiceTitleStyle = {
+    ...headingStyle,
+    fontSize: `${Math.max((typography.headingFontSize || 18) + 6, 24)}px`,
+  }
 
   return (
-    <div className={`relative overflow-hidden rounded-[2rem] border shadow-[0_30px_80px_-40px_rgba(15,23,42,0.30)] ${styles.shell}`}>
+    <div className={`relative overflow-hidden rounded-[2rem] border shadow-[0_30px_80px_-40px_rgba(15,23,42,0.30)] ${styles.shell}`} style={shellStyle}>
       <div className="absolute inset-x-0 top-0 h-1.5" style={accentBarStyle} />
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
         {logoSrc ? <img src={logoSrc} alt="" className="h-52 w-52 object-contain opacity-[0.05]" /> : null}
@@ -161,7 +179,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
               </div>
               <div className="min-w-0 max-w-[34rem] flex-1">
                 <p className={`text-[11px] uppercase tracking-[0.24em] ${mutedText}`}>{getInvoiceEyebrow(invoice, language)}</p>
-                <h3 className={`mt-2 text-[1.75rem] font-semibold leading-tight ${titleText}`}>{companyName || '—'}</h3>
+                <h3 className={`mt-2 text-[1.75rem] font-semibold leading-tight ${titleText}`} style={companyHeadingStyle}>{companyName || '—'}</h3>
                 {headerLines.length > 0 && (
                   <div className="mt-2 max-w-[30rem] space-y-1 overflow-hidden">
                     {headerLines.slice(0, 2).map((line, index) => (
@@ -171,12 +189,11 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
                 )}
               </div>
             </div>
-            <div className="flex min-w-[148px] flex-col items-end gap-3 self-start text-end">
+            <div className="flex min-w-[148px] flex-col items-center gap-3 self-start text-center">
               <div className="rounded-[1.5rem] border border-slate-200 bg-white p-2 shadow-sm">
                 <QRCodeSVG value={qrValue} size={88} bgColor="transparent" fgColor="#0F172A" />
               </div>
-              <p className={`text-[11px] font-medium ${mutedText}`}>{language === 'ar' ? 'رمز الاستجابة السريعة للزكاة' : 'ZATCA QR Code'}</p>
-              <div className="space-y-1 text-sm text-slate-600 text-end">
+              <div className="w-full max-w-[132px] space-y-1 text-[11px] leading-4 text-slate-600 text-center">
                 {(invoice?.seller?.vatNumber || invoiceBranding.vatNumber) && (
                   <p><span className="font-medium text-slate-900">{language === 'ar' ? 'الرقم الضريبي' : 'VAT'}:</span> {invoice?.seller?.vatNumber || invoiceBranding.vatNumber}</p>
                 )}
@@ -192,7 +209,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
           <div className="space-y-4">
             <div className="text-center lg:text-start">
               <p className={`text-[11px] uppercase tracking-[0.26em] ${mutedText}`}>{getInvoiceEyebrow(invoice, language)}</p>
-              <h2 className={`mt-2 text-3xl font-semibold ${titleText}`}>{getInvoiceTitle(invoice, language)}</h2>
+              <h2 className={`mt-2 text-3xl font-semibold ${titleText}`} style={invoiceTitleStyle}>{getInvoiceTitle(invoice, language)}</h2>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -225,7 +242,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
             <p className={`mt-1 text-center text-xs ${mutedText}`}>{formatDate(invoice?.issueDate || new Date(), language)}</p>
             <div className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center">
               <p className={`text-[11px] font-medium uppercase tracking-[0.2em] ${mutedText}`}>{language === 'ar' ? 'الحالة' : 'Status'}</p>
-              <p className={`mt-2 text-sm font-semibold ${titleText}`}>{language === 'ar' ? 'جاهز للفوترة الإلكترونية' : 'Ready for E-Invoicing'}</p>
+              <p className={`mt-2 text-sm font-semibold ${titleText}`} style={headingStyle}>{zatcaStatusMeta.label}</p>
             </div>
           </div>
         </div>

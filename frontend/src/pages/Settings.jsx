@@ -10,7 +10,7 @@ import { useTranslation } from '../lib/translations'
 import { setLanguage, setTheme } from '../store/slices/uiSlice'
 import { updateTenant } from '../store/slices/authSlice'
 import { useLiveTranslation } from '../lib/liveTranslation'
-import { getInvoiceBrandingProfile, getInvoiceTemplateId } from '../lib/invoiceBranding'
+import { getInvoiceBrandingProfile, getInvoiceTemplateId, getInvoiceTypography, INVOICE_FONT_OPTIONS } from '../lib/invoiceBranding'
 import { invoiceTemplateOptions } from '../lib/invoiceTemplates'
 
 const invoiceBrandingContexts = [
@@ -60,6 +60,10 @@ export default function Settings() {
   const [invoiceHeaderTextAr, setInvoiceHeaderTextAr] = useState('')
   const [invoiceFooterTextEn, setInvoiceFooterTextEn] = useState('')
   const [invoiceFooterTextAr, setInvoiceFooterTextAr] = useState('')
+  const [invoiceBodyFontFamily, setInvoiceBodyFontFamily] = useState('helvetica')
+  const [invoiceHeadingFontFamily, setInvoiceHeadingFontFamily] = useState('helvetica')
+  const [invoiceBodyFontSize, setInvoiceBodyFontSize] = useState(12)
+  const [invoiceHeadingFontSize, setInvoiceHeadingFontSize] = useState(18)
   const [showVision2030, setShowVision2030] = useState(true)
   const [vision2030LogoDataUrl, setVision2030LogoDataUrl] = useState('/saudi-vision-2030-logo.png')
   const [invoiceBrandingProfiles, setInvoiceBrandingProfiles] = useState(() => buildInvoiceBrandingProfilesState(null))
@@ -87,6 +91,11 @@ export default function Settings() {
     setInvoiceHeaderTextAr(tenant.settings?.invoiceBranding?.headerTextAr || '')
     setInvoiceFooterTextEn(tenant.settings?.invoiceBranding?.footerTextEn || '')
     setInvoiceFooterTextAr(tenant.settings?.invoiceBranding?.footerTextAr || '')
+    const typography = getInvoiceTypography(tenant)
+    setInvoiceBodyFontFamily(typography.bodyFontFamily)
+    setInvoiceHeadingFontFamily(typography.headingFontFamily)
+    setInvoiceBodyFontSize(typography.bodyFontSize)
+    setInvoiceHeadingFontSize(typography.headingFontSize)
     setShowVision2030(tenant.settings?.invoiceBranding?.showVision2030 !== false)
     setVision2030LogoDataUrl(tenant.settings?.invoiceBranding?.vision2030Logo || '/saudi-vision-2030-logo.png')
     setInvoiceBrandingProfiles(buildInvoiceBrandingProfilesState(tenant))
@@ -773,6 +782,26 @@ export default function Settings() {
                         <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'نص التذييل (AR)' : 'Invoice Footer Text (AR)'}</label>
                         <textarea value={invoiceFooterTextAr} onChange={(e) => setInvoiceFooterTextAr(e.target.value)} rows={5} dir="rtl" className="input mt-2 min-h-[120px]" placeholder={language === 'ar' ? 'العنوان، الهاتف، الموقع، البريد...' : 'Example: العنوان، الهاتف، الموقع، البريد...'} />
                       </div>
+                      <div className="card-glass p-4">
+                        <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'خط النص العام' : 'Body Font'}</label>
+                        <select value={invoiceBodyFontFamily} onChange={(e) => setInvoiceBodyFontFamily(e.target.value)} className="select mt-2">
+                          {INVOICE_FONT_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>{language === 'ar' ? option.labelAr : option.labelEn}</option>
+                          ))}
+                        </select>
+                        <label className="mt-4 block text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'حجم النص العام' : 'Body Font Size'}</label>
+                        <input type="number" min="9" max="40" value={invoiceBodyFontSize} onChange={(e) => setInvoiceBodyFontSize(Number(e.target.value || 12))} className="input mt-2" />
+                      </div>
+                      <div className="card-glass p-4">
+                        <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'خط العناوين' : 'Heading Font'}</label>
+                        <select value={invoiceHeadingFontFamily} onChange={(e) => setInvoiceHeadingFontFamily(e.target.value)} className="select mt-2">
+                          {INVOICE_FONT_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>{language === 'ar' ? option.labelAr : option.labelEn}</option>
+                          ))}
+                        </select>
+                        <label className="mt-4 block text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'حجم العناوين' : 'Heading Font Size'}</label>
+                        <input type="number" min="9" max="40" value={invoiceHeadingFontSize} onChange={(e) => setInvoiceHeadingFontSize(Number(e.target.value || 18))} className="input mt-2" />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -912,6 +941,12 @@ export default function Settings() {
                           headerTextAr: invoiceHeaderTextAr,
                           footerTextEn: invoiceFooterTextEn,
                           footerTextAr: invoiceFooterTextAr,
+                          typography: {
+                            bodyFontFamily: invoiceBodyFontFamily,
+                            headingFontFamily: invoiceHeadingFontFamily,
+                            bodyFontSize: Number(invoiceBodyFontSize || 12),
+                            headingFontSize: Number(invoiceHeadingFontSize || 18),
+                          },
                           showVision2030,
                           vision2030Logo: vision2030LogoDataUrl || tenant?.settings?.invoiceBranding?.vision2030Logo || '/saudi-vision-2030-logo.png',
                           contextProfiles: invoiceBrandingContexts.reduce((acc, item) => {

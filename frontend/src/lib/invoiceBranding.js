@@ -1,11 +1,26 @@
 export const DEFAULT_VISION_2030_LOGO = '/saudi-vision-2030-logo.png'
 export const INVOICE_BRANDING_CONTEXTS = ['trading', 'construction', 'travel_agency']
+export const INVOICE_FONT_OPTIONS = [
+  { value: 'helvetica', labelEn: 'Helvetica', labelAr: 'هيلفيتيكا' },
+  { value: 'times', labelEn: 'Times', labelAr: 'تايمز' },
+  { value: 'courier', labelEn: 'Courier', labelAr: 'كوريير' },
+]
 
 const CONTEXT_TEMPLATE_DEFAULTS = {
   trading: 5,
   construction: 6,
   travel_agency: 4,
 }
+
+const DEFAULT_INVOICE_TYPOGRAPHY = {
+  bodyFontFamily: 'helvetica',
+  headingFontFamily: 'helvetica',
+  bodyFontSize: 12,
+  headingFontSize: 18,
+}
+
+const LEGACY_TRAVEL_HEADER_TEXT_EN = 'Professional travel management and reservation services tailored for corporate and international journeys.'
+const LEGACY_TRAVEL_HEADER_TEXT_AR = 'خدمات سفر وحجوزات احترافية مصممة لرحلات الأعمال والرحلات الدولية بثقة عالية.'
 
 const pickLocalizedText = (englishValue, arabicValue, language = 'en') => {
   if (language === 'ar') return arabicValue || englishValue || ''
@@ -15,12 +30,6 @@ const pickLocalizedText = (englishValue, arabicValue, language = 'en') => {
 const pickFirstText = (...values) => values.find((value) => String(value || '').trim()) || ''
 
 const buildDefaultHeaderText = (context, language = 'en') => {
-  if (context === 'travel_agency') {
-    return language === 'ar'
-      ? 'خدمات سفر وحجوزات احترافية مصممة لرحلات الأعمال والرحلات الدولية بثقة عالية.'
-      : 'Professional travel management and reservation services tailored for corporate and international journeys.'
-  }
-
   return ''
 }
 
@@ -37,6 +46,41 @@ const buildDefaultContextFooterText = (context, language = 'en') => {
 const normalizeInvoiceContext = (businessContext = 'trading') => {
   if (INVOICE_BRANDING_CONTEXTS.includes(businessContext)) return businessContext
   return 'trading'
+}
+
+const normalizeFontFamily = (value, fallback = DEFAULT_INVOICE_TYPOGRAPHY.bodyFontFamily) => {
+  const normalized = String(value || '').trim().toLowerCase()
+  if (INVOICE_FONT_OPTIONS.some((option) => option.value === normalized)) return normalized
+  return fallback
+}
+
+const normalizeFontSize = (value, fallback) => {
+  const size = Number(value)
+  if (!Number.isFinite(size)) return fallback
+  return Math.min(40, Math.max(9, size))
+}
+
+const sanitizeLegacyTravelHeaderText = (value, context) => {
+  const raw = String(value || '').trim()
+  if (context !== 'travel_agency') return raw
+  if (raw === LEGACY_TRAVEL_HEADER_TEXT_EN || raw === LEGACY_TRAVEL_HEADER_TEXT_AR) return ''
+  return raw
+}
+
+export const getInvoiceTypography = (tenant) => {
+  const typography = tenant?.settings?.invoiceBranding?.typography || {}
+  return {
+    bodyFontFamily: normalizeFontFamily(typography?.bodyFontFamily, DEFAULT_INVOICE_TYPOGRAPHY.bodyFontFamily),
+    headingFontFamily: normalizeFontFamily(typography?.headingFontFamily, DEFAULT_INVOICE_TYPOGRAPHY.headingFontFamily),
+    bodyFontSize: normalizeFontSize(typography?.bodyFontSize, DEFAULT_INVOICE_TYPOGRAPHY.bodyFontSize),
+    headingFontSize: normalizeFontSize(typography?.headingFontSize, DEFAULT_INVOICE_TYPOGRAPHY.headingFontSize),
+  }
+}
+
+export const getInvoiceCssFontFamily = (fontFamily = 'helvetica') => {
+  if (fontFamily === 'times') return '"Times New Roman", Times, serif'
+  if (fontFamily === 'courier') return '"Courier New", Courier, monospace'
+  return 'Arial, Helvetica, sans-serif'
 }
 
 export const getInvoiceBrandingProfile = (tenant, businessContext = 'trading') => {
@@ -82,6 +126,7 @@ export const getInvoiceBranding = (tenant, language = 'en', businessContext = 't
   const business = tenant?.business || {}
   const context = normalizeInvoiceContext(businessContext)
   const contextProfile = getInvoiceBrandingProfile(tenant, context)
+  const typography = getInvoiceTypography(tenant)
 
   return {
     businessContext: context,
@@ -89,8 +134,8 @@ export const getInvoiceBranding = (tenant, language = 'en', businessContext = 't
     companyName: pickLocalizedText(business?.legalNameEn, business?.legalNameAr, language),
     logoSrc: contextProfile.logo || invoiceBranding?.logo || tenant?.branding?.logo || '/maqder-logo.png',
     headerText: pickLocalizedText(
-      pickFirstText(contextProfile.headerTextEn, invoiceBranding?.headerTextEn) || buildDefaultHeaderText(context, 'en'),
-      pickFirstText(contextProfile.headerTextAr, invoiceBranding?.headerTextAr) || buildDefaultHeaderText(context, 'ar'),
+      sanitizeLegacyTravelHeaderText(pickFirstText(contextProfile.headerTextEn, invoiceBranding?.headerTextEn), context) || buildDefaultHeaderText(context, 'en'),
+      sanitizeLegacyTravelHeaderText(pickFirstText(contextProfile.headerTextAr, invoiceBranding?.headerTextAr), context) || buildDefaultHeaderText(context, 'ar'),
       language,
     ),
     footerText: pickLocalizedText(
@@ -104,6 +149,7 @@ export const getInvoiceBranding = (tenant, language = 'en', businessContext = 't
     crNumber: business?.crNumber || '',
     primaryColor: '#0F172A',
     secondaryColor: '#334155',
+    typography,
   }
 }
 

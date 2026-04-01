@@ -69,6 +69,13 @@ const invoiceBrandingProfileSchema = new mongoose.Schema({
   footerTextAr: { type: String, default: '' },
 }, { _id: false });
 
+const invoiceTypographySchema = new mongoose.Schema({
+  bodyFontFamily: { type: String, enum: ['helvetica', 'times', 'courier'], default: 'helvetica' },
+  headingFontFamily: { type: String, enum: ['helvetica', 'times', 'courier'], default: 'helvetica' },
+  bodyFontSize: { type: Number, min: 9, max: 40, default: 12 },
+  headingFontSize: { type: Number, min: 9, max: 40, default: 18 },
+}, { _id: false });
+
 const tenantSchema = new mongoose.Schema({
   name: { type: String, required: true },
   slug: { type: String, required: true, unique: true, lowercase: true },
@@ -96,6 +103,7 @@ const tenantSchema = new mongoose.Schema({
       headerTextAr: { type: String, default: '' },
       footerTextEn: { type: String, default: '' },
       footerTextAr: { type: String, default: '' },
+      typography: { type: invoiceTypographySchema, default: () => ({}) },
       showVision2030: { type: Boolean, default: true },
       vision2030Logo: { type: String },
       contextProfiles: {

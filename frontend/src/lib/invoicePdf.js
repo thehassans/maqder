@@ -301,7 +301,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const pageH = doc.internal.pageSize.getHeight()
   const margin = 40
   const footerH = 76
-  const headerH = 120
+  const headerH = 132
   const topMargin = headerH + 14
 
   const isRtl = language === 'ar'
@@ -469,6 +469,29 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const customerLabel = invoice.flow === 'purchase'
     ? (isRtl ? 'المشتري' : 'Buyer')
     : (isRtl ? 'العميل' : 'Customer')
+  const typography = invoiceBranding.typography || {}
+  const bodyFontName = arabicFontReady ? 'Tajawal' : (typography.bodyFontFamily || 'helvetica')
+  const headingFontName = arabicFontReady ? 'Tajawal' : (typography.headingFontFamily || 'helvetica')
+  const bodyFontSize = Number(typography.bodyFontSize || 12)
+  const headingFontSize = Number(typography.headingFontSize || 18)
+
+  const setBodyFont = (size = bodyFontSize, style = 'normal') => {
+    try {
+      doc.setFont(bodyFontName, style)
+    } catch {
+      doc.setFont(arabicFontReady ? 'Tajawal' : 'helvetica', style)
+    }
+    doc.setFontSize(size)
+  }
+
+  const setHeadingFont = (size = headingFontSize, style = 'bold') => {
+    try {
+      doc.setFont(headingFontName, style)
+    } catch {
+      doc.setFont(arabicFontReady ? 'Tajawal' : 'helvetica', style)
+    }
+    doc.setFontSize(size)
+  }
 
   const drawHeader = ({ pageNumber }) => {
     theme.drawFrame({ pageNumber })
@@ -483,24 +506,25 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     const logoX = isRtl ? contentRightEdge - logoW : contentLeft
     const brandBlockX = isRtl ? logoX - 16 : contentLeft + logoW + 16
     const brandBlockW = Math.max(160, contentW - logoW - rightPanelW - 40)
+    const qrX = isRtl ? rightPanelX : rightPanelX + rightPanelW - qrW
 
     if (logo && logoFormat) {
       doc.addImage(logo, logoFormat, logoX, y + 4, logoW, logoH)
     }
 
     doc.setTextColor(theme.headerMutedRgb.r, theme.headerMutedRgb.g, theme.headerMutedRgb.b)
-    doc.setFontSize(8)
+    setBodyFont(8, 'normal')
     doc.text(shape(invoiceEyebrow), brandBlockX, y + 14, { align, maxWidth: brandBlockW })
 
     doc.setTextColor(theme.headerTitleRgb.r, theme.headerTitleRgb.g, theme.headerTitleRgb.b)
-    doc.setFontSize(17)
+    setHeadingFont(Math.max(headingFontSize + 1, 17), 'bold')
     const companyLines = doc.splitTextToSize(shape(companyName), brandBlockW).slice(0, 2)
     doc.text(companyLines, brandBlockX, y + 32, { align, maxWidth: brandBlockW })
     const companyBottomY = y + 32 + Math.max(0, companyLines.length - 1) * 15
 
     if (headerLines.length > 0) {
       doc.setTextColor(theme.headerMutedRgb.r, theme.headerMutedRgb.g, theme.headerMutedRgb.b)
-      doc.setFontSize(8)
+      setBodyFont(8, 'normal')
       let headerY = companyBottomY + 13
       for (const line of headerLines.slice(0, 2)) {
         doc.text(shape(line), brandBlockX, headerY, { align, maxWidth: brandBlockW })
@@ -509,33 +533,32 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     }
 
     if (qr && qrFormat) {
-      const qrX = isRtl ? rightPanelX : rightPanelX + rightPanelW - qrW
       doc.addImage(qr, qrFormat, qrX, y + 2, qrW, qrH)
     }
 
-    const rightTextX = isRtl ? rightPanelX : rightPanelX + rightPanelW
+    const qrCenterX = qrX + qrW / 2
     const vatValue = seller.vatNumber || invoiceBranding.vatNumber
     const crValue = seller.crNumber || invoiceBranding.crNumber
-    doc.setFontSize(8)
     doc.setTextColor(theme.headerTitleRgb.r, theme.headerTitleRgb.g, theme.headerTitleRgb.b)
+    setBodyFont(8, 'normal')
     if (vatValue) {
-      doc.text(shape(`${isRtl ? 'الرقم الضريبي' : 'VAT'}: ${vatValue}`), rightTextX, y + 48, { align: oppositeAlign, maxWidth: rightPanelW })
+      doc.text(shape(`${isRtl ? 'الرقم الضريبي' : 'VAT'}: ${vatValue}`), qrCenterX, y + 76, { align: 'center', maxWidth: rightPanelW })
     }
     if (crValue) {
-      doc.text(shape(`${isRtl ? 'السجل التجاري' : 'CR'}: ${crValue}`), rightTextX, y + 59, { align: oppositeAlign, maxWidth: rightPanelW })
+      doc.text(shape(`${isRtl ? 'السجل التجاري' : 'CR'}: ${crValue}`), qrCenterX, y + 87, { align: 'center', maxWidth: rightPanelW })
     }
 
-    const dividerY = y + 82
+    const dividerY = y + 100
 
     doc.setDrawColor(226, 232, 240)
     doc.line(contentLeft, dividerY, contentRightEdge, dividerY)
 
     doc.setTextColor(theme.headerMutedRgb.r, theme.headerMutedRgb.g, theme.headerMutedRgb.b)
-    doc.setFontSize(8)
+    setBodyFont(8, 'normal')
     doc.text(shape(invoiceEyebrow), pageW / 2, dividerY + 12, { align: 'center' })
 
     doc.setTextColor(theme.headerTitleRgb.r, theme.headerTitleRgb.g, theme.headerTitleRgb.b)
-    doc.setFontSize(18)
+    setHeadingFont(Math.max(headingFontSize, 18), 'bold')
     doc.text(shape(title), pageW / 2, dividerY + 29, { align: 'center' })
   }
 
@@ -565,7 +588,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const leftColX = isRtl ? cardX + cardW - 14 : cardX + 14
   const rightColX = isRtl ? cardX + 14 : cardX + cardW - 14
 
-  doc.setFontSize(8)
+  setBodyFont(8, 'normal')
   let metaY = cardY + metaYStart
 
   for (let i = 0; i < metaRows.length; i += 2) {
@@ -603,15 +626,15 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     const pad = 12
     const tx = isRtl ? x + boxW - pad : x + pad
 
-    doc.setFontSize(8)
+    setBodyFont(8, 'normal')
     doc.setTextColor(100)
     doc.text(shape(label), tx, y + 18, { align })
 
-    doc.setFontSize(10)
+    setHeadingFont(Math.max(bodyFontSize + 1, 10), 'bold')
     doc.setTextColor(15, 23, 42)
     doc.text(shape(name || ''), tx, y + 31, { align, maxWidth: boxW - pad * 2 })
 
-    doc.setFontSize(8)
+    setBodyFont(8, 'normal')
     doc.setTextColor(51, 65, 85)
     let ty = y + detailStartOffset
 
@@ -665,9 +688,9 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
       tableWidth: contentW,
       body: travelRows,
       styles: {
-        fontSize: 8,
+        fontSize: Math.max(8, Math.min(14, bodyFontSize - 1)),
         cellPadding: 3.5,
-        ...(arabicFontReady ? { font: 'Tajawal' } : {}),
+        font: bodyFontName,
         textColor: [15, 23, 42],
         lineColor: [203, 213, 225],
         lineWidth: 0.35,
@@ -685,7 +708,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     y = doc.lastAutoTable.finalY + 10
   }
 
-  doc.setFontSize(11)
+  setHeadingFont(Math.max(bodyFontSize + 1, 11), 'bold')
   doc.setTextColor(15, 23, 42)
   doc.text(shape(isRtl ? 'البنود' : 'Items'), isRtl ? contentRightEdge : contentLeft, y, { align })
   y += 8
@@ -753,9 +776,9 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     ]],
     body: bodyRows,
     styles: {
-      fontSize: 8,
+      fontSize: Math.max(8, Math.min(14, bodyFontSize - 1)),
       cellPadding: 4,
-      ...(arabicFontReady ? { font: 'Tajawal' } : {}),
+      font: bodyFontName,
       textColor: [15, 23, 42],
       lineColor: [226, 232, 240],
       lineWidth: 0.4,
@@ -806,7 +829,11 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     const [label, value] = totalsRows[i]
     const isGrandTotal = i === totalsRows.length - 1
 
-    doc.setFontSize(isGrandTotal ? 10 : 8)
+    if (isGrandTotal) {
+      setHeadingFont(Math.max(bodyFontSize + 2, 10), 'bold')
+    } else {
+      setBodyFont(8, 'normal')
+    }
     doc.setTextColor(isGrandTotal ? theme.headerTitleRgb.r : theme.headerMutedRgb.r, isGrandTotal ? theme.headerTitleRgb.g : theme.headerMutedRgb.g, isGrandTotal ? theme.headerTitleRgb.b : theme.headerMutedRgb.b)
     doc.text(shape(label), isRtl ? totalsLeft + totalsW - 12 : totalsLeft + 12, totalsY, { align, maxWidth: 126 })
 
@@ -831,7 +858,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
 
   for (let i = 1; i <= pageCount; i += 1) {
     doc.setPage(i)
-    doc.setFontSize(9)
+    setBodyFont(9, 'normal')
     doc.setTextColor(100)
 
     doc.setDrawColor(226, 232, 240)
@@ -842,13 +869,13 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     }
 
     if (footerTextLines.length > 0) {
-      doc.setFontSize(8)
+      setBodyFont(8, 'normal')
       let footerY = pageH - footerH + 22
       for (const line of footerTextLines.slice(0, 3)) {
         doc.text(shape(line), pageW / 2, footerY, { align: 'center', maxWidth: contentW - (visionLogo && visionLogoFormat ? 160 : 120) })
         footerY += 10
       }
-      doc.setFontSize(9)
+      setBodyFont(9, 'normal')
     }
 
     doc.text(

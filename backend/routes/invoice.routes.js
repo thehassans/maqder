@@ -862,6 +862,27 @@ router.post('/:id/sign', checkPermission('invoicing', 'approve'), async (req, re
       await invoice.save();
     }
 
+    if (isB2C && tenant.zatca.isOnboarded) {
+      const reportingResult = await zatcaService.submitForReporting(
+        zatcaResult.xml,
+        zatcaResult.invoiceHash,
+        zatcaResult.uuid
+      );
+
+      invoice.zatca.submissionStatus = reportingResult.success ? 'reported' : 'rejected';
+      invoice.zatca.reportingStatus = reportingResult.reportingStatus;
+      invoice.zatca.zatcaResponse = reportingResult;
+      invoice.zatca.submittedAt = new Date();
+
+      if (reportingResult.success) {
+        invoice.status = 'approved';
+      } else {
+        invoice.zatca.lastError = reportingResult.errors?.join(', ') || reportingResult.error;
+      }
+
+      await invoice.save();
+    }
+
     if (invoice.customerId) {
       await syncCustomerStats(invoice.tenantId, invoice.customerId);
     }
