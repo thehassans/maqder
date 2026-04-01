@@ -1,6 +1,10 @@
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { QRCodeSVG } from 'qrcode.react'
 import { formatCurrency } from './currency'
 import { calculateInvoiceSummary, normalizeTravelDetails } from './invoiceDocument'
 import { getInvoiceBranding, getInvoiceTemplateId, splitBrandingText } from './invoiceBranding'
+import { generateZatcaQrValue } from './zatcaQr'
 
 const sanitizeFileName = (value) => {
   return String(value || 'invoice')
@@ -74,6 +78,53 @@ const resolveImageSource = async (value) => {
     if (!res.ok) return null
     const blob = await res.blob()
     return await blobToDataUrl(blob)
+  } catch {
+    return null
+  }
+}
+
+const renderQrToDataUrl = async (value, size = 112) => {
+  const raw = String(value || '').trim()
+  if (!raw || typeof document === 'undefined' || typeof Image === 'undefined') return null
+
+  try {
+    const svgMarkup = renderToStaticMarkup(createElement(QRCodeSVG, {
+      value: raw,
+      size,
+      includeMargin: true,
+      bgColor: '#FFFFFF',
+      fgColor: '#0F172A',
+    }))
+
+    const svgBlob = new Blob([svgMarkup], { type: 'image/svg+xml;charset=utf-8' })
+    const svgUrl = URL.createObjectURL(svgBlob)
+
+    const dataUrl = await new Promise((resolve) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        canvas.width = size
+        canvas.height = size
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          URL.revokeObjectURL(svgUrl)
+          resolve(null)
+          return
+        }
+        ctx.fillStyle = '#FFFFFF'
+        ctx.fillRect(0, 0, size, size)
+        ctx.drawImage(img, 0, 0, size, size)
+        URL.revokeObjectURL(svgUrl)
+        resolve(canvas.toDataURL('image/png'))
+      }
+      img.onerror = () => {
+        URL.revokeObjectURL(svgUrl)
+        resolve(null)
+      }
+      img.src = svgUrl
+    })
+
+    return dataUrl
   } catch {
     return null
   }
@@ -249,8 +300,8 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const pageW = doc.internal.pageSize.getWidth()
   const pageH = doc.internal.pageSize.getHeight()
   const margin = 40
-  const footerH = 48
-  const headerH = 108
+  const footerH = 76
+  const headerH = 120
   const topMargin = headerH + 14
 
   const isRtl = language === 'ar'
@@ -371,9 +422,6 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const visionLogo = invoiceBranding.showVision2030 ? await resolveImageSource(invoiceBranding.vision2030LogoSrc) : null
   const visionLogoFormat = detectImageFormat(visionLogo)
 
-  const qr = await resolveImageSource(invoice?.zatca?.qrCodeImage || null)
-  const qrFormat = detectImageFormat(qr)
-
   const seller = invoice.seller || {}
   const buyer = invoice.buyer || {}
 
@@ -402,6 +450,16 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const buyerDetailLines = getPartyDetailLines(buyer, language)
   const totals = calculateInvoiceSummary(invoice)
   const travelDetails = normalizeTravelDetails(invoice.travelDetails || {}, buyerName, language)
+  const qrValue = invoice?.zatca?.qrCodeData || generateZatcaQrValue({
+    sellerName,
+    vatNumber: seller?.vatNumber || tenant?.business?.vatNumber,
+    timestamp: invoice?.issueDate || new Date().toISOString(),
+    totalWithVat: totals.grandTotal,
+    vatTotal: totals.totalTax,
+  })
+  const fallbackQrImage = invoice?.zatca?.qrCodeImage ? null : await renderQrToDataUrl(qrValue, 120)
+  const qr = await resolveImageSource(invoice?.zatca?.qrCodeImage || fallbackQrImage || null)
+  const qrFormat = detectImageFormat(qr)
   const companyName = invoiceBranding.companyName || sellerName || ''
   const headerLines = splitBrandingText(invoiceBranding.headerText)
   const footerLines = splitBrandingText(invoiceBranding.footerText)
@@ -419,11 +477,12 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     const logoW = 64
     const logoH = 64
     const rightPanelW = 148
+    const qrW = 64
+    const qrH = 64
     const rightPanelX = isRtl ? contentLeft : contentRightEdge - rightPanelW
     const logoX = isRtl ? contentRightEdge - logoW : contentLeft
     const brandBlockX = isRtl ? logoX - 16 : contentLeft + logoW + 16
     const brandBlockW = Math.max(160, contentW - logoW - rightPanelW - 40)
-    const dividerY = y + 68
 
     if (logo && logoFormat) {
       doc.addImage(logo, logoFormat, logoX, y + 4, logoW, logoH)
@@ -435,23 +494,23 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
 
     doc.setTextColor(theme.headerTitleRgb.r, theme.headerTitleRgb.g, theme.headerTitleRgb.b)
     doc.setFontSize(17)
-    doc.text(shape(companyName), brandBlockX, y + 32, { align, maxWidth: brandBlockW })
+    const companyLines = doc.splitTextToSize(shape(companyName), brandBlockW).slice(0, 2)
+    doc.text(companyLines, brandBlockX, y + 32, { align, maxWidth: brandBlockW })
+    const companyBottomY = y + 32 + Math.max(0, companyLines.length - 1) * 15
 
     if (headerLines.length > 0) {
       doc.setTextColor(theme.headerMutedRgb.r, theme.headerMutedRgb.g, theme.headerMutedRgb.b)
       doc.setFontSize(8)
-      let headerY = y + 46
-      for (const line of headerLines.slice(0, 3)) {
+      let headerY = companyBottomY + 13
+      for (const line of headerLines.slice(0, 2)) {
         doc.text(shape(line), brandBlockX, headerY, { align, maxWidth: brandBlockW })
-        headerY += 11
+        headerY += 10
       }
     }
 
-    if (visionLogo && visionLogoFormat) {
-      const visionW = 86
-      const visionH = 36
-      const visionX = isRtl ? rightPanelX : rightPanelX + rightPanelW - visionW
-      doc.addImage(visionLogo, visionLogoFormat, visionX, y + 2, visionW, visionH)
+    if (qr && qrFormat) {
+      const qrX = isRtl ? rightPanelX : rightPanelX + rightPanelW - qrW
+      doc.addImage(qr, qrFormat, qrX, y + 2, qrW, qrH)
     }
 
     const rightTextX = isRtl ? rightPanelX : rightPanelX + rightPanelW
@@ -465,6 +524,8 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     if (crValue) {
       doc.text(shape(`${isRtl ? 'السجل التجاري' : 'CR'}: ${crValue}`), rightTextX, y + 59, { align: oppositeAlign, maxWidth: rightPanelW })
     }
+
+    const dividerY = y + 82
 
     doc.setDrawColor(226, 232, 240)
     doc.line(contentLeft, dividerY, contentRightEdge, dividerY)
@@ -763,6 +824,10 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const pageCount = doc.getNumberOfPages()
   const generatedAt = `${isRtl ? 'تاريخ الإنشاء' : 'Generated'}: ${formatDateTime(new Date(), language)}`
   const footerTextLines = footerLines.length > 0 ? footerLines : []
+  const footerVisionW = 74
+  const footerVisionH = 30
+  const footerVisionX = contentLeft
+  const footerVisionY = pageH - footerH + 20
 
   for (let i = 1; i <= pageCount; i += 1) {
     doc.setPage(i)
@@ -772,11 +837,15 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     doc.setDrawColor(226, 232, 240)
     doc.line(contentLeft, pageH - footerH + 6, contentRightEdge, pageH - footerH + 6)
 
+    if (visionLogo && visionLogoFormat) {
+      doc.addImage(visionLogo, visionLogoFormat, footerVisionX, footerVisionY, footerVisionW, footerVisionH)
+    }
+
     if (footerTextLines.length > 0) {
       doc.setFontSize(8)
       let footerY = pageH - footerH + 22
       for (const line of footerTextLines.slice(0, 3)) {
-        doc.text(shape(line), pageW / 2, footerY, { align: 'center', maxWidth: contentW - 120 })
+        doc.text(shape(line), pageW / 2, footerY, { align: 'center', maxWidth: contentW - (visionLogo && visionLogoFormat ? 160 : 120) })
         footerY += 10
       }
       doc.setFontSize(9)
@@ -784,7 +853,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
 
     doc.text(
       shape(generatedAt),
-      isRtl ? contentRightEdge : contentLeft,
+      isRtl ? contentRightEdge : contentLeft + (visionLogo && visionLogoFormat ? footerVisionW + 12 : 0),
       pageH - 16,
       { align }
     )

@@ -135,6 +135,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
   const companyName = invoiceBranding.companyName || sellerName || '—'
   const headerLines = splitBrandingText(invoiceBranding.headerText)
   const footerLines = splitBrandingText(invoiceBranding.footerText)
+  const showVisionLogo = invoiceBranding.showVision2030 && invoiceBranding.vision2030LogoSrc
   const accentBarStyle = {
     background: invoiceBranding.primaryColor,
   }
@@ -154,28 +155,27 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
       <div className="relative px-6 pb-6 pt-7">
         <div className="border-b border-slate-200 pb-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-            <div className="flex min-w-0 items-start gap-4">
+            <div className="flex min-w-0 flex-1 items-start gap-4">
               <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-[1.75rem] border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-3 shadow-sm">
                 <img src={logoSrc} alt="" className="h-full w-full object-contain" />
               </div>
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 max-w-[34rem] flex-1">
                 <p className={`text-[11px] uppercase tracking-[0.24em] ${mutedText}`}>{getInvoiceEyebrow(invoice, language)}</p>
                 <h3 className={`mt-2 text-[1.75rem] font-semibold leading-tight ${titleText}`}>{companyName || '—'}</h3>
                 {headerLines.length > 0 && (
-                  <div className="mt-2 space-y-1">
-                    {headerLines.map((line, index) => (
-                      <p key={`${line}-${index}`} className={`text-sm leading-6 ${mutedText}`}>{line}</p>
+                  <div className="mt-2 max-w-[30rem] space-y-1 overflow-hidden">
+                    {headerLines.slice(0, 2).map((line, index) => (
+                      <p key={`${line}-${index}`} className={`text-sm leading-5 ${mutedText}`}>{line}</p>
                     ))}
                   </div>
                 )}
               </div>
             </div>
             <div className="flex min-w-[148px] flex-col items-end gap-3 self-start text-end">
-              {invoiceBranding.showVision2030 && invoiceBranding.vision2030LogoSrc ? (
-                <div className="flex h-16 w-28 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white px-3 py-2">
-                  <img src={invoiceBranding.vision2030LogoSrc} alt="" className="h-full w-full object-contain" />
-                </div>
-              ) : null}
+              <div className="rounded-[1.5rem] border border-slate-200 bg-white p-2 shadow-sm">
+                <QRCodeSVG value={qrValue} size={88} bgColor="transparent" fgColor="#0F172A" />
+              </div>
+              <p className={`text-[11px] font-medium ${mutedText}`}>{language === 'ar' ? 'رمز الاستجابة السريعة للزكاة' : 'ZATCA QR Code'}</p>
               <div className="space-y-1 text-sm text-slate-600 text-end">
                 {(invoice?.seller?.vatNumber || invoiceBranding.vatNumber) && (
                   <p><span className="font-medium text-slate-900">{language === 'ar' ? 'الرقم الضريبي' : 'VAT'}:</span> {invoice?.seller?.vatNumber || invoiceBranding.vatNumber}</p>
@@ -223,10 +223,10 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
             </div>
             <p className={`mt-4 text-center text-base font-semibold ${titleText}`}>{invoice?.invoiceNumber || 'DRAFT-PREVIEW'}</p>
             <p className={`mt-1 text-center text-xs ${mutedText}`}>{formatDate(invoice?.issueDate || new Date(), language)}</p>
-            <div className="mt-4 rounded-3xl border border-slate-200 bg-white p-3">
-              <QRCodeSVG value={qrValue} size={104} bgColor="transparent" fgColor="#0F172A" />
+            <div className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center">
+              <p className={`text-[11px] font-medium uppercase tracking-[0.2em] ${mutedText}`}>{language === 'ar' ? 'الحالة' : 'Status'}</p>
+              <p className={`mt-2 text-sm font-semibold ${titleText}`}>{language === 'ar' ? 'جاهز للفوترة الإلكترونية' : 'Ready for E-Invoicing'}</p>
             </div>
-            <p className={`mt-3 text-[11px] font-medium ${mutedText}`}>{language === 'ar' ? 'رمز QR' : 'QR Code'}</p>
           </div>
         </div>
 
@@ -354,14 +354,21 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
           </div>
         </div>
 
-        <div className="mt-6 border-t border-slate-200 pt-4 text-center">
+        <div className="mt-6 flex flex-col gap-4 border-t border-slate-200 pt-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex min-h-16 items-end justify-center lg:justify-start">
+            {showVisionLogo ? (
+              <div className="flex h-16 w-28 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white px-3 py-2">
+                <img src={invoiceBranding.vision2030LogoSrc} alt="" className="h-full w-full object-contain" />
+              </div>
+            ) : <div />}
+          </div>
           {footerLines.length > 0 ? (
-            <div className="space-y-1">
+            <div className="flex-1 space-y-1 text-center lg:text-end">
               {footerLines.map((line, index) => (
                 <p key={`${line}-${index}`} className={`text-sm leading-6 ${mutedText}`}>{line}</p>
               ))}
             </div>
-          ) : null}
+          ) : <div className="flex-1" />}
         </div>
       </div>
     </div>
