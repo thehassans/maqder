@@ -80,7 +80,16 @@ const tenantSchema = new mongoose.Schema({
     useHijriDates: { type: Boolean, default: true },
     invoicePdfTemplate: { type: Number, default: 1, min: 1, max: 6 },
     invoicePdfPageSize: { type: String, enum: ['a4', 'letter', 'a5'], default: 'a4' },
-    invoicePdfOrientation: { type: String, enum: ['portrait', 'landscape'], default: 'portrait' }
+    invoicePdfOrientation: { type: String, enum: ['portrait', 'landscape'], default: 'portrait' },
+    invoiceBranding: {
+      logo: { type: String },
+      headerTextEn: { type: String, default: '' },
+      headerTextAr: { type: String, default: '' },
+      footerTextEn: { type: String, default: '' },
+      footerTextAr: { type: String, default: '' },
+      showVision2030: { type: Boolean, default: true },
+      vision2030Logo: { type: String },
+    }
   },
   branding: {
     logo: { type: String },

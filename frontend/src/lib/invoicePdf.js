@@ -1,5 +1,6 @@
 import { formatCurrency } from './currency'
 import { calculateInvoiceSummary, normalizeTravelDetails } from './invoiceDocument'
+import { getInvoiceBranding, splitBrandingText } from './invoiceBranding'
 
 const sanitizeFileName = (value) => {
   return String(value || 'invoice')
@@ -54,6 +55,28 @@ const detectImageFormat = (dataUrl) => {
   if (!m) return null
   const ext = m[1].toLowerCase()
   return ext === 'jpg' ? 'JPEG' : ext === 'jpeg' ? 'JPEG' : 'PNG'
+}
+
+const blobToDataUrl = (blob) => new Promise((resolve, reject) => {
+  const reader = new FileReader()
+  reader.onload = () => resolve(reader.result)
+  reader.onerror = () => reject(reader.error)
+  reader.readAsDataURL(blob)
+})
+
+const resolveImageSource = async (value) => {
+  const raw = String(value || '').trim()
+  if (!raw) return null
+  if (/^data:image\//i.test(raw)) return raw
+
+  try {
+    const res = await fetch(raw)
+    if (!res.ok) return null
+    const blob = await res.blob()
+    return await blobToDataUrl(blob)
+  } catch {
+    return null
+  }
 }
 
 let tajawalRegularBase64
@@ -186,6 +209,22 @@ const getPartyDetailLines = (party = {}, language = 'en') => {
   return lines.filter(Boolean)
 }
 
+const getInvoiceEyebrow = (invoice, language = 'en') => {
+  if (invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency') {
+    return language === 'ar' ? 'فاتورة وكالة سفر' : 'Travel Agency Invoice'
+  }
+
+  if (invoice?.businessContext === 'construction') {
+    return language === 'ar' ? 'فاتورة مقاولات' : 'Construction Invoice'
+  }
+
+  if (invoice?.businessContext === 'restaurant') {
+    return language === 'ar' ? 'فاتورة مطعم' : 'Restaurant Invoice'
+  }
+
+  return language === 'ar' ? 'فاتورة تجارة' : 'Trading Invoice'
+}
+
 export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) => {
   if (!invoice) return
 
@@ -202,13 +241,14 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const pageW = doc.internal.pageSize.getWidth()
   const pageH = doc.internal.pageSize.getHeight()
   const margin = 40
-  const footerH = 44
-  const headerH = 98
+  const footerH = 64
+  const headerH = 132
   const topMargin = headerH + 26
 
   const isRtl = language === 'ar'
   const align = isRtl ? 'right' : 'left'
   const oppositeAlign = isRtl ? 'left' : 'right'
+  const invoiceBranding = getInvoiceBranding(tenant, language)
 
   const arabicFontReady = isRtl ? await ensureTajawalFont(doc) : false
 
@@ -220,8 +260,9 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     }
   }
 
-  const primaryRgb = { r: 15, g: 23, b: 42 }
-  const lightRgb = { r: 248, g: 250, b: 252 }
+  const primaryRgb = hexToRgb(invoiceBranding.primaryColor) || { r: 15, g: 23, b: 42 }
+  const secondaryRgb = hexToRgb(invoiceBranding.secondaryColor) || { r: 203, g: 213, b: 225 }
+  const lightRgb = mixRgb(primaryRgb, { r: 255, g: 255, b: 255 }, 0.94)
 
   const templateId = Number(invoice?.pdfTemplateId || tenant?.settings?.invoicePdfTemplate || 1)
 
@@ -240,7 +281,9 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
       altRowFillRgb: { r: 248, g: 250, b: 252 },
       drawFrame: () => {
         doc.setFillColor(primaryRgb.r, primaryRgb.g, primaryRgb.b)
-        doc.rect(0, 0, pageW, 5, 'F')
+        doc.rect(0, 0, pageW, 4, 'F')
+        doc.setFillColor(secondaryRgb.r, secondaryRgb.g, secondaryRgb.b)
+        doc.rect(0, 8, pageW, 2, 'F')
       },
     }
 
@@ -315,10 +358,12 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const contentRightEdge = pageW - contentRight
   const contentW = pageW - contentLeft - contentRight
 
-  const logo = tenant?.branding?.logo || null
+  const logo = await resolveImageSource(invoiceBranding.logoSrc)
   const logoFormat = detectImageFormat(logo)
+  const visionLogo = invoiceBranding.showVision2030 ? await resolveImageSource(invoiceBranding.vision2030LogoSrc) : null
+  const visionLogoFormat = detectImageFormat(visionLogo)
 
-  const qr = invoice?.zatca?.qrCodeImage || null
+  const qr = await resolveImageSource(invoice?.zatca?.qrCodeImage || null)
   const qrFormat = detectImageFormat(qr)
 
   const seller = invoice.seller || {}
@@ -349,6 +394,10 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const buyerDetailLines = getPartyDetailLines(buyer, language)
   const totals = calculateInvoiceSummary(invoice)
   const travelDetails = normalizeTravelDetails(invoice.travelDetails || {}, buyerName, language)
+  const companyName = invoiceBranding.companyName || sellerName || ''
+  const headerLines = splitBrandingText(invoiceBranding.headerText)
+  const footerLines = splitBrandingText(invoiceBranding.footerText)
+  const invoiceEyebrow = getInvoiceEyebrow(invoice, language)
 
   const title = isRtl ? 'فاتورة ضريبية' : 'Tax Invoice'
   const customerLabel = invoice.flow === 'purchase'
@@ -358,70 +407,67 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const drawHeader = ({ pageNumber }) => {
     theme.drawFrame({ pageNumber })
 
-    const y = 18
-    const boxPad = 6
-    const logoW = 42
-    const logoH = 42
-    const qrSize = 72
-    const qrVisible = Boolean(qr && qrFormat && pageNumber === 1)
-    const identityPanelW = Math.min(250, contentW * 0.42)
-    const identityPanelH = 84
-    const identityPanelX = isRtl ? contentRightEdge - identityPanelW : contentLeft
-    const identityPanelTextX = isRtl ? identityPanelX + identityPanelW - 64 : identityPanelX + 64
-    const identityTextWidth = identityPanelW - 76
-
-    doc.setFillColor(248, 250, 252)
-    doc.setDrawColor(203, 213, 225)
-    doc.roundedRect(identityPanelX, y - 2, identityPanelW, identityPanelH, 14, 14, 'FD')
+    const y = 26
+    const logoW = 56
+    const logoH = 56
+    const rightPanelW = 122
+    const rightPanelX = isRtl ? contentLeft : contentRightEdge - rightPanelW
+    const logoX = isRtl ? contentRightEdge - logoW : contentLeft
+    const brandBlockX = isRtl ? logoX - 16 : contentLeft + logoW + 16
+    const brandBlockW = Math.max(160, contentW - logoW - rightPanelW - 40)
+    const dividerY = y + 68
 
     if (logo && logoFormat) {
-      const x = isRtl ? identityPanelX + identityPanelW - logoW - 12 : identityPanelX + 12
-      doc.setFillColor(255, 255, 255)
-      doc.roundedRect(x - boxPad, y + 6 - boxPad, logoW + boxPad * 2, logoH + boxPad * 2, 10, 10, 'F')
-      doc.setDrawColor(226, 232, 240)
-      doc.roundedRect(x - boxPad, y + 6 - boxPad, logoW + boxPad * 2, logoH + boxPad * 2, 10, 10, 'S')
-      doc.addImage(logo, logoFormat, x, y + 6, logoW, logoH)
+      doc.addImage(logo, logoFormat, logoX, y + 2, logoW, logoH)
     }
 
-    doc.setFontSize(8)
     doc.setTextColor(theme.headerMutedRgb.r, theme.headerMutedRgb.g, theme.headerMutedRgb.b)
-    doc.text(shape(isRtl ? 'البائع' : 'Seller'), identityPanelTextX, y + 25, { align, maxWidth: identityTextWidth })
-    doc.text(shape(customerLabel), identityPanelTextX, y + 54, { align, maxWidth: identityTextWidth })
+    doc.setFontSize(8)
+    doc.text(shape(invoiceEyebrow), brandBlockX, y + 14, { align, maxWidth: brandBlockW })
 
-    doc.setFontSize(10)
     doc.setTextColor(theme.headerTitleRgb.r, theme.headerTitleRgb.g, theme.headerTitleRgb.b)
-    doc.text(shape(sellerName || ''), identityPanelTextX, y + 38, { align, maxWidth: identityTextWidth })
-    doc.text(shape(buyerName || ''), identityPanelTextX, y + 67, { align, maxWidth: identityTextWidth })
+    doc.setFontSize(16)
+    doc.text(shape(companyName), brandBlockX, y + 32, { align, maxWidth: brandBlockW })
 
-    if (qrVisible) {
-      const x = isRtl ? contentLeft : contentRightEdge - qrSize
-      doc.setFillColor(255, 255, 255)
-      doc.roundedRect(x - boxPad, y - boxPad, qrSize + boxPad * 2, qrSize + boxPad * 2, 10, 10, 'F')
-      doc.setDrawColor(226, 232, 240)
-      doc.roundedRect(x - boxPad, y - boxPad, qrSize + boxPad * 2, qrSize + boxPad * 2, 10, 10, 'S')
-      doc.addImage(qr, qrFormat, x, y, qrSize, qrSize)
+    if (headerLines.length > 0) {
+      doc.setTextColor(theme.headerMutedRgb.r, theme.headerMutedRgb.g, theme.headerMutedRgb.b)
+      doc.setFontSize(8)
+      let headerY = y + 46
+      for (const line of headerLines.slice(0, 3)) {
+        doc.text(shape(line), brandBlockX, headerY, { align, maxWidth: brandBlockW })
+        headerY += 11
+      }
     }
 
-    const titleX = pageW / 2
-    const rightX = qrVisible
-      ? (isRtl ? contentLeft + qrSize + 18 : contentRightEdge - qrSize - 18)
-      : (isRtl ? contentLeft : contentRightEdge)
+    if (visionLogo && visionLogoFormat) {
+      const visionW = 62
+      const visionH = 34
+      const visionX = isRtl ? rightPanelX + rightPanelW - visionW : rightPanelX
+      doc.addImage(visionLogo, visionLogoFormat, visionX, y + 2, visionW, visionH)
+    }
+
+    const rightTextX = isRtl ? rightPanelX : rightPanelX + rightPanelW
+    const vatValue = seller.vatNumber || invoiceBranding.vatNumber
+    const crValue = seller.crNumber || invoiceBranding.crNumber
+    doc.setFontSize(8)
+    doc.setTextColor(theme.headerTitleRgb.r, theme.headerTitleRgb.g, theme.headerTitleRgb.b)
+    if (vatValue) {
+      doc.text(shape(`${isRtl ? 'الرقم الضريبي' : 'VAT'}: ${vatValue}`), rightTextX, y + 48, { align: oppositeAlign, maxWidth: rightPanelW })
+    }
+    if (crValue) {
+      doc.text(shape(`${isRtl ? 'السجل التجاري' : 'CR'}: ${crValue}`), rightTextX, y + 60, { align: oppositeAlign, maxWidth: rightPanelW })
+    }
+
+    doc.setDrawColor(226, 232, 240)
+    doc.line(contentLeft, dividerY, contentRightEdge, dividerY)
+
+    doc.setTextColor(theme.headerMutedRgb.r, theme.headerMutedRgb.g, theme.headerMutedRgb.b)
+    doc.setFontSize(8)
+    doc.text(shape(invoiceEyebrow), pageW / 2, dividerY + 14, { align: 'center' })
 
     doc.setTextColor(theme.headerTitleRgb.r, theme.headerTitleRgb.g, theme.headerTitleRgb.b)
     doc.setFontSize(18)
-    doc.text(shape(title), titleX, y + 32, { align: 'center', maxWidth: Math.max(180, contentW - identityPanelW - qrSize - 54) })
-
-    doc.setFontSize(9)
-    doc.setTextColor(theme.headerMutedRgb.r, theme.headerMutedRgb.g, theme.headerMutedRgb.b)
-    doc.text(shape(sellerName || ''), titleX, y + 48, { align: 'center', maxWidth: Math.max(180, contentW - identityPanelW - qrSize - 54) })
-
-    doc.setFontSize(12)
-    doc.setTextColor(theme.headerTitleRgb.r, theme.headerTitleRgb.g, theme.headerTitleRgb.b)
-    doc.text(shape(txt(invoice.invoiceNumber)), rightX, y + 34, { align: oppositeAlign, maxWidth: Math.max(120, contentW * 0.35) })
-
-    doc.setFontSize(9)
-    doc.setTextColor(theme.headerMutedRgb.r, theme.headerMutedRgb.g, theme.headerMutedRgb.b)
-    doc.text(shape(formatDateTime(invoice.issueDate, language)), rightX, y + 50, { align: oppositeAlign, maxWidth: Math.max(120, contentW * 0.35) })
+    doc.text(shape(title), pageW / 2, dividerY + 33, { align: 'center' })
   }
 
   drawHeader({ pageNumber: 1 })
@@ -433,6 +479,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const metaRows = [
     { k: isRtl ? 'رقم الفاتورة' : 'Invoice #', v: invoice.invoiceNumber },
     { k: isRtl ? 'التاريخ' : 'Date', v: formatDateTime(invoice.issueDate, language) },
+    { k: isRtl ? 'المستند' : 'Document', v: invoiceEyebrow },
     { k: isRtl ? 'النوع' : 'Type', v: invoice.transactionType },
     { k: isRtl ? 'التدفق' : 'Flow', v: invoice.flow || 'sell' },
   ].filter(Boolean)
@@ -711,23 +758,37 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
 
   const pageCount = doc.getNumberOfPages()
   const generatedAt = `${isRtl ? 'تاريخ الإنشاء' : 'Generated'}: ${formatDateTime(new Date(), language)}`
+  const footerTextLines = footerLines.length > 0 ? footerLines : []
 
   for (let i = 1; i <= pageCount; i += 1) {
     doc.setPage(i)
     doc.setFontSize(9)
     doc.setTextColor(100)
 
+    doc.setDrawColor(226, 232, 240)
+    doc.line(contentLeft, pageH - footerH + 6, contentRightEdge, pageH - footerH + 6)
+
+    if (footerTextLines.length > 0) {
+      doc.setFontSize(8)
+      let footerY = pageH - footerH + 22
+      for (const line of footerTextLines.slice(0, 3)) {
+        doc.text(shape(line), pageW / 2, footerY, { align: 'center', maxWidth: contentW - 120 })
+        footerY += 10
+      }
+      doc.setFontSize(9)
+    }
+
     doc.text(
       shape(generatedAt),
       isRtl ? contentRightEdge : contentLeft,
-      pageH - 22,
+      pageH - 16,
       { align }
     )
 
     doc.text(
       `${i} / ${pageCount}`,
       isRtl ? contentLeft : contentRightEdge,
-      pageH - 22,
+      pageH - 16,
       { align: oppositeAlign }
     )
   }

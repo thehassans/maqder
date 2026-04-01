@@ -1,6 +1,7 @@
 import { QRCodeSVG } from 'qrcode.react'
 import { generateZatcaQrValue } from '../../lib/zatcaQr'
 import { calculateInvoiceSummary, normalizeTravelDetails, toNumber } from '../../lib/invoiceDocument'
+import { getInvoiceBranding, splitBrandingText } from '../../lib/invoiceBranding'
 
 const formatAddress = (address = {}) => {
   return [address?.street, address?.district, address?.city, address?.postalCode, address?.country]
@@ -63,64 +64,54 @@ const formatDate = (value, language = 'en') => {
 
 const getTemplateClasses = (templateId) => {
   switch (Number(templateId)) {
-    case 2:
-      return {
-        shell: 'bg-white border-slate-200',
-        header: 'border-b border-slate-100',
-        badge: 'bg-slate-50 text-slate-700 border-slate-200',
-        block: 'border border-slate-200 bg-slate-50/40',
-        tableHead: 'bg-slate-50 text-slate-700',
-      }
-    case 3:
-      return {
-        shell: 'bg-white border-slate-200',
-        header: 'border-b border-slate-200',
-        badge: 'bg-white text-slate-700 border-slate-300',
-        block: 'border border-slate-200 bg-white',
-        tableHead: 'bg-slate-100 text-slate-700',
-      }
-    case 4:
-      return {
-        shell: 'bg-white border-slate-200 shadow-none',
-        header: 'border-b border-slate-100',
-        badge: 'bg-white text-slate-700 border-slate-200',
-        block: 'border border-slate-100 bg-slate-50/60',
-        tableHead: 'bg-slate-50 text-slate-600',
-      }
     case 5:
       return {
-        shell: 'bg-white border-slate-300',
-        header: 'border-b border-slate-300',
+        shell: 'bg-white border-slate-300 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)]',
         badge: 'bg-slate-100 text-slate-800 border-slate-300',
         block: 'border border-slate-300 bg-white',
         tableHead: 'bg-slate-100 text-slate-800',
       }
     case 6:
       return {
-        shell: 'bg-white border-slate-300 shadow-md',
-        header: 'border-b-2 border-slate-300',
+        shell: 'bg-white border-slate-300 shadow-[0_24px_70px_-36px_rgba(15,23,42,0.4)]',
         badge: 'bg-slate-100 text-slate-800 border-slate-300',
         block: 'border-2 border-slate-300 bg-white',
         tableHead: 'bg-slate-200 text-slate-800',
       }
     default:
       return {
-        shell: 'bg-white border-slate-200',
-        header: 'border-b border-slate-200',
+        shell: 'bg-white border-slate-200 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.32)]',
         badge: 'bg-slate-50 text-slate-700 border-slate-200',
         block: 'border border-slate-200 bg-white',
-        tableHead: 'bg-slate-100 text-slate-700',
+        tableHead: 'bg-slate-50 text-slate-700',
       }
   }
+}
+
+const getInvoiceEyebrow = (invoice, language = 'en') => {
+  if (invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency') {
+    return language === 'ar' ? 'فاتورة وكالة سفر' : 'Travel Agency Invoice'
+  }
+
+  if (invoice?.businessContext === 'construction') {
+    return language === 'ar' ? 'فاتورة مقاولات' : 'Construction Invoice'
+  }
+
+  if (invoice?.businessContext === 'restaurant') {
+    return language === 'ar' ? 'فاتورة مطعم' : 'Restaurant Invoice'
+  }
+
+  return language === 'ar' ? 'فاتورة تجارة' : 'Trading Invoice'
 }
 
 export default function InvoiceLivePreview({ invoice, tenant, language = 'en', templateId = 1 }) {
   const currency = invoice?.currency || tenant?.settings?.currency || 'SAR'
   const styles = getTemplateClasses(templateId)
+  const invoiceBranding = getInvoiceBranding(tenant, language)
   const sellerName = language === 'ar' ? (invoice?.seller?.nameAr || invoice?.seller?.name || tenant?.business?.legalNameAr || tenant?.business?.legalNameEn) : (invoice?.seller?.name || invoice?.seller?.nameAr || tenant?.business?.legalNameEn || tenant?.business?.legalNameAr)
   const buyerName = language === 'ar' ? (invoice?.buyer?.nameAr || invoice?.buyer?.name || 'Cash Customer') : (invoice?.buyer?.name || invoice?.buyer?.nameAr || 'Cash Customer')
   const customerLabel = invoice?.flow === 'purchase' ? (language === 'ar' ? 'المشتري' : 'Buyer') : (language === 'ar' ? 'العميل' : 'Customer')
-  const logoSrc = tenant?.branding?.logo || '/maqder-logo.png'
+  const logoSrc = invoiceBranding.logoSrc
   const qrValue = invoice?.zatca?.qrCodeData || generateZatcaQrValue({
     sellerName,
     vatNumber: invoice?.seller?.vatNumber || tenant?.business?.vatNumber,
@@ -133,49 +124,105 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
   const lineItems = totals.lines.length > 0 ? totals.lines : [{ raw: { productName: language === 'ar' ? 'خدمة' : 'Service' }, quantity: 1, unitPrice: 0, taxAmount: 0, lineTotalWithTax: 0 }]
   const sellerDetails = getPartyDetailLines(invoice?.seller || tenant?.business || {}, language)
   const buyerDetails = getPartyDetailLines(invoice?.buyer || {}, language)
+  const companyName = invoiceBranding.companyName || sellerName || '—'
+  const headerLines = splitBrandingText(invoiceBranding.headerText)
+  const footerLines = splitBrandingText(invoiceBranding.footerText)
+  const accentBarStyle = {
+    background: `linear-gradient(90deg, ${invoiceBranding.primaryColor} 0%, ${invoiceBranding.secondaryColor} 100%)`,
+  }
+  const metaCardStyle = {
+    borderColor: `${invoiceBranding.primaryColor}22`,
+    backgroundColor: `${invoiceBranding.primaryColor}08`,
+  }
   const mutedText = 'text-slate-500'
   const titleText = 'text-slate-900'
 
   return (
     <div className={`relative overflow-hidden rounded-[2rem] border shadow-[0_30px_80px_-40px_rgba(15,23,42,0.30)] ${styles.shell}`}>
-      <div className={`flex flex-col gap-6 p-7 ${styles.header}`}>
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)_176px] lg:items-start">
-          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
-            <div className="flex items-center gap-4">
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white">
+      <div className="absolute inset-x-0 top-0 h-1.5" style={accentBarStyle} />
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+        {logoSrc ? <img src={logoSrc} alt="" className="h-52 w-52 object-contain opacity-[0.05]" /> : null}
+      </div>
+      <div className="relative px-6 pb-6 pt-7">
+        <div className="border-b border-slate-200 pb-6">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div className="flex min-w-0 items-start gap-4">
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white p-3">
                 <img src={logoSrc} alt="" className="h-full w-full object-contain" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className={`text-[11px] uppercase tracking-[0.24em] ${mutedText}`}>{language === 'ar' ? 'هوية الفاتورة' : 'Invoice Identity'}</p>
-                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3">
-                    <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${mutedText}`}>{language === 'ar' ? 'البائع' : 'Seller'}</p>
-                    <p className={`mt-2 truncate text-sm font-semibold ${titleText}`}>{sellerName || '—'}</p>
+                <p className={`text-[11px] uppercase tracking-[0.24em] ${mutedText}`}>{getInvoiceEyebrow(invoice, language)}</p>
+                <h3 className={`mt-2 text-2xl font-semibold ${titleText}`}>{companyName || '—'}</h3>
+                {headerLines.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {headerLines.map((line, index) => (
+                      <p key={`${line}-${index}`} className={`text-sm leading-6 ${mutedText}`}>{line}</p>
+                    ))}
                   </div>
-                  <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3">
-                    <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${mutedText}`}>{customerLabel}</p>
-                    <p className={`mt-2 truncate text-sm font-semibold ${titleText}`}>{buyerName || '—'}</p>
-                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-col items-start gap-3 lg:items-end">
+              {invoiceBranding.showVision2030 && invoiceBranding.vision2030LogoSrc ? (
+                <div className="flex h-16 w-24 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white px-3 py-2">
+                  <img src={invoiceBranding.vision2030LogoSrc} alt="" className="h-full w-full object-contain" />
+                </div>
+              ) : null}
+              <div className="space-y-1 text-sm text-slate-600 lg:text-end">
+                {(invoice?.seller?.vatNumber || invoiceBranding.vatNumber) && (
+                  <p><span className="font-medium text-slate-900">{language === 'ar' ? 'الرقم الضريبي' : 'VAT'}:</span> {invoice?.seller?.vatNumber || invoiceBranding.vatNumber}</p>
+                )}
+                {(invoice?.seller?.crNumber || invoiceBranding.crNumber) && (
+                  <p><span className="font-medium text-slate-900">{language === 'ar' ? 'السجل التجاري' : 'CR'}:</span> {invoice?.seller?.crNumber || invoiceBranding.crNumber}</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 pt-6 lg:grid-cols-[minmax(0,1fr)_188px]">
+          <div className="space-y-4">
+            <div className="text-center lg:text-start">
+              <p className={`text-[11px] uppercase tracking-[0.26em] ${mutedText}`}>{getInvoiceEyebrow(invoice, language)}</p>
+              <h2 className={`mt-2 text-3xl font-semibold ${titleText}`}>{language === 'ar' ? 'فاتورة ضريبية' : 'Tax Invoice'}</h2>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className={`rounded-[1.5rem] p-5 ${styles.block}`} style={metaCardStyle}>
+                <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${mutedText}`}>{language === 'ar' ? 'البائع' : 'Seller'}</p>
+                <p className={`mt-3 text-base font-semibold ${titleText}`}>{sellerName || '—'}</p>
+                <div className="mt-3 space-y-1.5">
+                  {sellerDetails.map((detail, index) => (
+                    <p key={index} className={`text-sm leading-6 ${mutedText}`}>{detail}</p>
+                  ))}
+                </div>
+              </div>
+              <div className={`rounded-[1.5rem] p-5 ${styles.block}`} style={metaCardStyle}>
+                <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${mutedText}`}>{customerLabel}</p>
+                <p className={`mt-3 text-base font-semibold ${titleText}`}>{buyerName || '—'}</p>
+                <div className="mt-3 space-y-1.5">
+                  {buyerDetails.map((detail, index) => (
+                    <p key={index} className={`text-sm leading-6 ${mutedText}`}>{detail}</p>
+                  ))}
                 </div>
               </div>
             </div>
           </div>
-          <div className="flex min-h-[120px] flex-col items-center justify-center text-center">
-            <p className={`text-xs uppercase tracking-[0.25em] ${mutedText}`}>{language === 'ar' ? 'فاتورة أعمال' : 'Business Invoice'}</p>
-            <h3 className={`mt-2 text-3xl font-semibold ${titleText}`}>{language === 'ar' ? 'فاتورة ضريبية' : 'Tax Invoice'}</h3>
-            <p className={`mt-2 text-sm ${mutedText}`}>{sellerName || '—'}</p>
-          </div>
-          <div className={`flex w-full flex-col items-center justify-center rounded-[1.5rem] p-5 ${styles.block}`}>
+
+          <div className={`flex flex-col items-center justify-center rounded-[1.75rem] p-5 ${styles.block}`}>
             <div className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${styles.badge}`}>
               {invoice?.transactionType || 'B2C'}
             </div>
-            <p className={`mt-3 text-center text-base font-semibold ${titleText}`}>{invoice?.invoiceNumber || 'DRAFT-PREVIEW'}</p>
+            <p className={`mt-4 text-center text-base font-semibold ${titleText}`}>{invoice?.invoiceNumber || 'DRAFT-PREVIEW'}</p>
             <p className={`mt-1 text-center text-xs ${mutedText}`}>{formatDate(invoice?.issueDate || new Date(), language)}</p>
-            <QRCodeSVG value={qrValue} size={116} bgColor="transparent" fgColor="#0F172A" className="mt-4" />
+            <div className="mt-4 rounded-3xl border border-slate-200 bg-white p-3">
+              <QRCodeSVG value={qrValue} size={104} bgColor="transparent" fgColor="#0F172A" />
+            </div>
             <p className={`mt-3 text-[11px] font-medium ${mutedText}`}>{language === 'ar' ? 'رمز QR' : 'QR Code'}</p>
           </div>
         </div>
-        <div className="grid grid-cols-1 gap-4 rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-5 md:grid-cols-3">
+
+        <div className="mt-4 grid grid-cols-1 gap-4 rounded-[1.5rem] border border-slate-200 bg-white p-5 md:grid-cols-3">
           <div>
             <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'رقم الفاتورة' : 'Invoice #'}</p>
             <p className={`mt-1 text-sm font-semibold ${titleText}`}>{invoice?.invoiceNumber || 'DRAFT-PREVIEW'}</p>
@@ -187,28 +234,6 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
           <div>
             <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'التدفق' : 'Flow'}</p>
             <p className={`mt-1 text-sm font-semibold ${titleText}`}>{invoice?.flow || 'sell'}</p>
-          </div>
-        </div>
-        <div className="grid grid-cols-1 gap-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className={`rounded-[1.5rem] p-5 ${styles.block}`}>
-              <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${mutedText}`}>{language === 'ar' ? 'البائع' : 'Seller'}</p>
-              <p className={`mt-3 text-base font-semibold ${titleText}`}>{sellerName || '—'}</p>
-              <div className="mt-3 space-y-1.5">
-                {sellerDetails.map((detail, index) => (
-                  <p key={index} className={`text-sm leading-6 ${mutedText}`}>{detail}</p>
-                ))}
-              </div>
-            </div>
-            <div className={`rounded-[1.5rem] p-5 ${styles.block}`}>
-              <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${mutedText}`}>{customerLabel}</p>
-              <p className={`mt-3 text-base font-semibold ${titleText}`}>{buyerName}</p>
-              <div className="mt-3 space-y-1.5">
-                {buyerDetails.map((detail, index) => (
-                  <p key={index} className={`text-sm leading-6 ${mutedText}`}>{detail}</p>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -319,6 +344,16 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
               <span className="text-lg font-semibold">{formatMoney(totals.grandTotal, currency, language)}</span>
             </div>
           </div>
+        </div>
+
+        <div className="mt-6 border-t border-slate-200 pt-4 text-center">
+          {footerLines.length > 0 ? (
+            <div className="space-y-1">
+              {footerLines.map((line, index) => (
+                <p key={`${line}-${index}`} className={`text-sm leading-6 ${mutedText}`}>{line}</p>
+              ))}
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

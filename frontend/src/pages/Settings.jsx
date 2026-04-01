@@ -26,6 +26,13 @@ export default function Settings() {
   const [invoicePdfTemplate, setInvoicePdfTemplate] = useState(1)
   const [invoicePdfPageSize, setInvoicePdfPageSize] = useState('a4')
   const [invoicePdfOrientation, setInvoicePdfOrientation] = useState('portrait')
+  const [invoiceLogoDataUrl, setInvoiceLogoDataUrl] = useState(null)
+  const [invoiceHeaderTextEn, setInvoiceHeaderTextEn] = useState('')
+  const [invoiceHeaderTextAr, setInvoiceHeaderTextAr] = useState('')
+  const [invoiceFooterTextEn, setInvoiceFooterTextEn] = useState('')
+  const [invoiceFooterTextAr, setInvoiceFooterTextAr] = useState('')
+  const [showVision2030, setShowVision2030] = useState(true)
+  const [vision2030LogoDataUrl, setVision2030LogoDataUrl] = useState('/saudi-vision-2030-logo.png')
 
   const { data: tenant } = useQuery({
     queryKey: ['tenant-settings'],
@@ -43,6 +50,13 @@ export default function Settings() {
     setInvoicePdfTemplate(Number(tenant.settings?.invoicePdfTemplate || 1))
     setInvoicePdfPageSize(tenant.settings?.invoicePdfPageSize || 'a4')
     setInvoicePdfOrientation(tenant.settings?.invoicePdfOrientation || 'portrait')
+    setInvoiceLogoDataUrl(tenant.settings?.invoiceBranding?.logo || tenant.branding?.logo || null)
+    setInvoiceHeaderTextEn(tenant.settings?.invoiceBranding?.headerTextEn || '')
+    setInvoiceHeaderTextAr(tenant.settings?.invoiceBranding?.headerTextAr || '')
+    setInvoiceFooterTextEn(tenant.settings?.invoiceBranding?.footerTextEn || '')
+    setInvoiceFooterTextAr(tenant.settings?.invoiceBranding?.footerTextAr || '')
+    setShowVision2030(tenant.settings?.invoiceBranding?.showVision2030 !== false)
+    setVision2030LogoDataUrl(tenant.settings?.invoiceBranding?.vision2030Logo || '/saudi-vision-2030-logo.png')
   }, [tenant])
 
   const { data: zatcaStatus } = useQuery({
@@ -100,15 +114,26 @@ export default function Settings() {
     onError: (err) => toast.error(err.response?.data?.error || 'Error saving')
   })
 
-  const handleLogoFile = (e) => {
-    const file = e.target.files?.[0]
+  const applyImageFile = (file, setter) => {
     if (!file) return
 
     const reader = new FileReader()
     reader.onload = () => {
-      setLogoDataUrl(reader.result)
+      setter(reader.result)
     }
     reader.readAsDataURL(file)
+  }
+
+  const handleLogoFile = (e) => {
+    applyImageFile(e.target.files?.[0], setLogoDataUrl)
+  }
+
+  const handleInvoiceLogoFile = (e) => {
+    applyImageFile(e.target.files?.[0], setInvoiceLogoDataUrl)
+  }
+
+  const handleVision2030LogoFile = (e) => {
+    applyImageFile(e.target.files?.[0], setVision2030LogoDataUrl)
   }
 
   const generateKeysMutation = useMutation({
@@ -573,6 +598,73 @@ export default function Settings() {
                 </div>
 
                 <div className="pt-2">
+                  <label className="label flex items-center gap-2"><Image className="w-4 h-4" />{language === 'ar' ? 'هوية الفاتورة' : 'Invoice Branding'}</label>
+                  <div className="grid grid-cols-1 gap-4 mt-2 xl:grid-cols-[320px_minmax(0,1fr)]">
+                    <div className="card-glass p-4 space-y-4">
+                      <div>
+                        <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'شعار الفاتورة' : 'Invoice Logo'}</label>
+                        <div className="mt-3 flex items-center gap-4">
+                          <div className="h-20 w-20 rounded-3xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 overflow-hidden flex items-center justify-center">
+                            {invoiceLogoDataUrl ? (
+                              <img src={invoiceLogoDataUrl} alt="" className="h-full w-full object-contain" />
+                            ) : (
+                              <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-slate-200 to-slate-100 dark:from-dark-600 dark:to-dark-700" />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <input type="file" accept="image/*" onChange={handleInvoiceLogoFile} className="input" />
+                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                              {language === 'ar' ? 'يظهر هذا الشعار في أعلى الفاتورة وداخل المعاينة وPDF.' : 'This logo appears in the invoice header, preview, and PDF.'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="rounded-2xl border border-gray-200 dark:border-dark-600 bg-white/70 dark:bg-dark-800/40 p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">{language === 'ar' ? 'رؤية 2030' : 'Vision 2030'}</p>
+                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'إظهار شعار رؤية 2030 في أعلى الفاتورة.' : 'Show the Vision 2030 mark in the invoice header.'}</p>
+                          </div>
+                          <label className="inline-flex items-center cursor-pointer">
+                            <input type="checkbox" checked={showVision2030} onChange={(e) => setShowVision2030(e.target.checked)} className="sr-only peer" />
+                            <span className="relative h-6 w-11 rounded-full bg-gray-300 transition peer-checked:bg-primary-500 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:after:translate-x-5 rtl:peer-checked:after:-translate-x-5" />
+                          </label>
+                        </div>
+                        <div className="mt-4 flex items-center gap-4">
+                          <div className="h-16 w-16 rounded-2xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 overflow-hidden flex items-center justify-center">
+                            {vision2030LogoDataUrl ? <img src={vision2030LogoDataUrl} alt="" className="h-full w-full object-contain" /> : null}
+                          </div>
+                          <div className="flex-1">
+                            <input type="file" accept="image/*" onChange={handleVision2030LogoFile} className="input" />
+                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'اختياري: ارفع شعاراً مختلفاً أو اترك الشعار الافتراضي.' : 'Optional: upload a different mark or keep the default asset.'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="card-glass p-4">
+                        <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'نص أعلى الفاتورة (EN)' : 'Invoice Header Text (EN)'}</label>
+                        <textarea value={invoiceHeaderTextEn} onChange={(e) => setInvoiceHeaderTextEn(e.target.value)} rows={5} className="input mt-2 min-h-[120px]" placeholder={language === 'ar' ? 'مثال: Your Trusted Partner for Travel & Tours Worldwide.' : 'Example: Your Trusted Partner for Travel & Tours Worldwide.'} />
+                      </div>
+                      <div className="card-glass p-4">
+                        <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'نص أعلى الفاتورة (AR)' : 'Invoice Header Text (AR)'}</label>
+                        <textarea value={invoiceHeaderTextAr} onChange={(e) => setInvoiceHeaderTextAr(e.target.value)} rows={5} dir="rtl" className="input mt-2 min-h-[120px]" placeholder={language === 'ar' ? 'مثال: شريككم الموثوق للسفر والسياحة حول العالم.' : 'Example: شريككم الموثوق للسفر والسياحة حول العالم.'} />
+                      </div>
+                      <div className="card-glass p-4">
+                        <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'نص التذييل (EN)' : 'Invoice Footer Text (EN)'}</label>
+                        <textarea value={invoiceFooterTextEn} onChange={(e) => setInvoiceFooterTextEn(e.target.value)} rows={5} className="input mt-2 min-h-[120px]" placeholder={language === 'ar' ? 'العنوان، الهاتف، الموقع، البريد...' : 'Address, phone, website, email...'} />
+                      </div>
+                      <div className="card-glass p-4">
+                        <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'نص التذييل (AR)' : 'Invoice Footer Text (AR)'}</label>
+                        <textarea value={invoiceFooterTextAr} onChange={(e) => setInvoiceFooterTextAr(e.target.value)} rows={5} dir="rtl" className="input mt-2 min-h-[120px]" placeholder={language === 'ar' ? 'العنوان، الهاتف، الموقع، البريد...' : 'Example: العنوان، الهاتف، الموقع، البريد...'} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2">
                   <label className="label flex items-center gap-2"><Palette className="w-4 h-4" />{language === 'ar' ? 'ألوان العلامة' : 'Brand Colors'}</label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                     <div className="card-glass p-4">
@@ -645,7 +737,17 @@ export default function Settings() {
                         ...(tenant?.settings || {}),
                         invoicePdfTemplate,
                         invoicePdfPageSize,
-                        invoicePdfOrientation
+                        invoicePdfOrientation,
+                        invoiceBranding: {
+                          ...(tenant?.settings?.invoiceBranding || {}),
+                          logo: invoiceLogoDataUrl || tenant?.settings?.invoiceBranding?.logo || tenant?.branding?.logo || null,
+                          headerTextEn: invoiceHeaderTextEn,
+                          headerTextAr: invoiceHeaderTextAr,
+                          footerTextEn: invoiceFooterTextEn,
+                          footerTextAr: invoiceFooterTextAr,
+                          showVision2030,
+                          vision2030Logo: vision2030LogoDataUrl || tenant?.settings?.invoiceBranding?.vision2030Logo || '/saudi-vision-2030-logo.png'
+                        }
                       },
                       branding: {
                         ...(tenant?.branding || {}),
