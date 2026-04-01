@@ -21,6 +21,27 @@ const toNumber = (value, fallback = 0) => {
   return Number.isFinite(numericValue) ? numericValue : fallback
 }
 
+const sanitizeTravelDetails = (travelDetails = {}) => ({
+  passengerTitle: ['mr', 'mrs', 'ms'].includes(travelDetails?.passengerTitle) ? travelDetails.passengerTitle : 'mr',
+  travelerName: String(travelDetails?.travelerName || '').trim(),
+  passportNumber: String(travelDetails?.passportNumber || '').trim(),
+  ticketNumber: String(travelDetails?.ticketNumber || '').trim(),
+  pnr: String(travelDetails?.pnr || '').trim(),
+  airlineName: String(travelDetails?.airlineName || '').trim(),
+  routeFrom: String(travelDetails?.routeFrom || '').trim(),
+  routeTo: String(travelDetails?.routeTo || '').trim(),
+  departureDate: travelDetails?.departureDate || '',
+  returnDate: travelDetails?.returnDate || '',
+  layoverStay: String(travelDetails?.layoverStay || '').trim(),
+  passengers: (Array.isArray(travelDetails?.passengers) ? travelDetails.passengers : [])
+    .map((passenger) => ({
+      title: ['mr', 'mrs', 'ms'].includes(passenger?.title) ? passenger.title : 'mr',
+      name: String(passenger?.name || '').trim(),
+      passportNumber: String(passenger?.passportNumber || '').trim(),
+    }))
+    .filter((passenger) => passenger.name || passenger.passportNumber),
+})
+
 export default function InvoiceSellComposer() {
   const navigate = useNavigate()
   const { language } = useSelector((state) => state.ui)
@@ -48,7 +69,7 @@ export default function InvoiceSellComposer() {
       contractNumber: '',
       notes: '',
       buyer: {},
-      travelDetails: {},
+      travelDetails: { passengerTitle: 'mr', layoverStay: '', passengers: [] },
       lineItems: [emptyLine],
     }
   })
@@ -70,7 +91,14 @@ export default function InvoiceSellComposer() {
   }, [defaultBusinessContext, setValue])
 
   useEffect(() => {
-    if (!isTravelContext && invoiceSubtype === 'travel_ticket') {
+    if (isTravelContext) {
+      setInvoiceType('B2C')
+      setValue('transactionType', 'B2C')
+      setValue('invoiceTypeCode', '0200000')
+      if (invoiceSubtype !== 'travel_ticket') {
+        setValue('invoiceSubtype', 'travel_ticket')
+      }
+    } else if (invoiceSubtype === 'travel_ticket') {
       setValue('invoiceSubtype', 'standard')
     }
     if (isTravelContext && !invoiceSubtype) {
@@ -171,6 +199,9 @@ export default function InvoiceSellComposer() {
       setValue('travelDetails.routeTo', data?.routeTo || '')
       setValue('travelDetails.departureDate', data?.departureDate ? String(data.departureDate).slice(0, 10) : '')
       setValue('travelDetails.returnDate', data?.returnDate ? String(data.returnDate).slice(0, 10) : '')
+      setValue('travelDetails.layoverStay', data?.layoverStay || '')
+      setValue('travelDetails.passengerTitle', 'mr')
+      setValue('travelDetails.passengers', Array.isArray(data?.passengers) ? data.passengers : [])
       toast.success(language === 'ar' ? 'تم استيراد الحجز' : 'Booking imported')
     },
     onError: (error) => toast.error(error?.response?.data?.error || error.message || 'Failed'),
@@ -231,14 +262,16 @@ export default function InvoiceSellComposer() {
   }, { subtotal: 0, totalTax: 0, grandTotal: 0 })
 
   const onSubmit = (data) => {
+    const transactionType = isTravelContext ? 'B2C' : invoiceType
+    const invoiceTypeCode = transactionType === 'B2C' ? '0200000' : '0100000'
     const payload = {
       ...data,
       flow: 'sell',
       businessContext,
-      invoiceSubtype,
+      invoiceSubtype: isTravelContext ? 'travel_ticket' : invoiceSubtype,
       pdfTemplateId: selectedTemplateId,
-      transactionType: invoiceType,
-      invoiceTypeCode: invoiceType === 'B2C' ? '0200000' : '0100000',
+      transactionType,
+      invoiceTypeCode,
       issueDate: new Date(),
       lineItems: (data.lineItems || []).map((line, index) => ({
         ...line,
@@ -252,7 +285,14 @@ export default function InvoiceSellComposer() {
     if (!payload.travelBookingId) delete payload.travelBookingId
     if (!payload.contractNumber) delete payload.contractNumber
     if (!isTradingContext) delete payload.warehouseId
-    if (invoiceSubtype !== 'travel_ticket') delete payload.travelDetails
+    if (isTravelContext || invoiceSubtype === 'travel_ticket') {
+      payload.travelDetails = sanitizeTravelDetails({
+        ...data.travelDetails,
+        travelerName: data?.buyer?.name || data?.travelDetails?.travelerName || '',
+      })
+    } else {
+      delete payload.travelDetails
+    }
     createMutation.mutate(payload)
   }
 
@@ -261,8 +301,8 @@ export default function InvoiceSellComposer() {
     invoiceNumber: 'DRAFT-PREVIEW',
     issueDate: new Date(),
     flow: 'sell',
-    transactionType: invoiceType,
-    invoiceSubtype,
+    transactionType: isTravelContext ? 'B2C' : invoiceType,
+    invoiceSubtype: isTravelContext ? 'travel_ticket' : invoiceSubtype,
     pdfTemplateId: selectedTemplateId,
     subtotal: totals.subtotal,
     totalTax: totals.totalTax,
@@ -275,6 +315,10 @@ export default function InvoiceSellComposer() {
       contactPhone: tenant?.business?.contactPhone,
       contactEmail: tenant?.business?.contactEmail,
     },
+    travelDetails: sanitizeTravelDetails({
+      ...values.travelDetails,
+      travelerName: values?.buyer?.name || values?.travelDetails?.travelerName || '',
+    }),
   }
 
   return (
@@ -360,23 +404,20 @@ export default function InvoiceSellComposer() {
 
           <div className="card p-6">
             <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'نوع الفاتورة' : 'Invoice Type'}</h3>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <button type="button" onClick={() => setInvoiceType('B2C')} className={`rounded-2xl border-2 p-4 text-start ${invoiceType === 'B2C' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-dark-600'}`}>
-                <p className="font-semibold text-gray-900 dark:text-white">{t('b2cInvoice')}</p>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{language === 'ar' ? 'مبيعات نقدية أو مباشرة' : 'Cash or direct sale invoices'}</p>
-              </button>
-              <button type="button" onClick={() => setInvoiceType('B2B')} className={`rounded-2xl border-2 p-4 text-start ${invoiceType === 'B2B' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-dark-600'}`}>
-                <p className="font-semibold text-gray-900 dark:text-white">{t('b2bInvoice')}</p>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{language === 'ar' ? 'فواتير الشركات والجهات' : 'Invoices for business customers'}</p>
-              </button>
-            </div>
-            {tenantBusinessTypes.includes('travel_agency') && isTravelContext && (
-              <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
-                <button type="button" onClick={() => setValue('invoiceSubtype', 'travel_ticket')} className={`rounded-2xl border p-4 text-start ${invoiceSubtype === 'travel_ticket' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-dark-600'}`}>
-                  <p className="font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'فاتورة سفر / تذاكر' : 'Travel / Ticket Invoice'}</p>
+            {isTravelContext ? (
+              <div className="rounded-2xl border-2 border-primary-500 bg-primary-50 p-4 text-start dark:bg-primary-900/20">
+                <p className="font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'فاتورة سفر / تذاكر' : 'Travel / Ticket Invoice'}</p>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{language === 'ar' ? 'لفواتير السفر يتم استخدام صيغة B2C فقط' : 'Travel invoices use the B2C ticket-invoice format only'}</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <button type="button" onClick={() => setInvoiceType('B2C')} className={`rounded-2xl border-2 p-4 text-start ${invoiceType === 'B2C' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-dark-600'}`}>
+                  <p className="font-semibold text-gray-900 dark:text-white">{t('b2cInvoice')}</p>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{language === 'ar' ? 'مبيعات نقدية أو مباشرة' : 'Cash or direct sale invoices'}</p>
                 </button>
-                <button type="button" onClick={() => setValue('invoiceSubtype', 'standard')} className={`rounded-2xl border p-4 text-start ${invoiceSubtype === 'standard' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-dark-600'}`}>
-                  <p className="font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'فاتورة قياسية' : 'Standard Invoice'}</p>
+                <button type="button" onClick={() => setInvoiceType('B2B')} className={`rounded-2xl border-2 p-4 text-start ${invoiceType === 'B2B' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-dark-600'}`}>
+                  <p className="font-semibold text-gray-900 dark:text-white">{t('b2bInvoice')}</p>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{language === 'ar' ? 'فواتير الشركات والجهات' : 'Invoices for business customers'}</p>
                 </button>
               </div>
             )}
@@ -424,7 +465,7 @@ export default function InvoiceSellComposer() {
             </div>
             <input type="hidden" {...register('customerId')} />
             {invoiceSubtype === 'travel_ticket' ? (
-              <TravelInvoiceFields language={language} register={register} />
+              <TravelInvoiceFields language={language} register={register} control={control} watch={watch} setValue={setValue} />
             ) : (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>

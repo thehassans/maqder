@@ -169,10 +169,14 @@ class ZatcaService {
     tlvData.push(this.createTLVField(5, data.vatTotal.toString()));
     
     // Tag 6: Invoice Hash
-    tlvData.push(this.createTLVField(6, data.invoiceHash));
+    if (data.invoiceHash) {
+      tlvData.push(this.createTLVField(6, data.invoiceHash));
+    }
     
     // Tag 7: ECDSA Signature
-    tlvData.push(this.createTLVField(7, data.signature));
+    if (data.signature) {
+      tlvData.push(this.createTLVField(7, data.signature));
+    }
     
     // Tag 8: Public Key (ECDSA)
     if (data.publicKey) {
@@ -192,7 +196,8 @@ class ZatcaService {
    * Create individual TLV field
    */
   createTLVField(tag, value) {
-    const valueBuffer = Buffer.from(value, 'utf8');
+    const safeValue = value === null || value === undefined ? '' : String(value);
+    const valueBuffer = Buffer.from(safeValue, 'utf8');
     const tagBuffer = Buffer.from([tag]);
     const lengthBuffer = Buffer.from([valueBuffer.length]);
     

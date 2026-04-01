@@ -8,7 +8,7 @@ import { setLanguage } from '../../store/slices/uiSlice'
 import { useTranslation } from '../../lib/translations'
 
 const complianceLogos = [
-  { src: '/zatca-logo-scaled.jpg', alt: 'ZATCA', cardClassName: 'w-44', imageClassName: 'scale-[1.45]' },
+  { src: '/zatca-logo-scaled.jpg', alt: 'ZATCA', cardClassName: 'w-48', imageClassName: 'scale-[2.9]' },
   { src: '/saudi-vision-2030-logo.png', alt: 'Saudi Vision 2030', cardClassName: 'w-36', imageClassName: 'scale-100' },
 ]
 

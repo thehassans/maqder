@@ -1,7 +1,14 @@
 import mongoose from 'mongoose';
 import momentHijri from 'moment-hijri';
 
+const travelPassengerSchema = new mongoose.Schema({
+  title: { type: String, enum: ['mr', 'mrs', 'ms'], default: 'mr' },
+  name: { type: String },
+  passportNumber: { type: String },
+}, { _id: false });
+
 const travelDetailsSchema = new mongoose.Schema({
+  passengerTitle: { type: String, enum: ['mr', 'mrs', 'ms'], default: 'mr' },
   travelerName: { type: String },
   passportNumber: { type: String },
   ticketNumber: { type: String },
@@ -11,6 +18,8 @@ const travelDetailsSchema = new mongoose.Schema({
   routeTo: { type: String },
   departureDate: { type: Date },
   returnDate: { type: Date },
+  layoverStay: { type: String },
+  passengers: [travelPassengerSchema],
 }, { _id: false });
 
 const invoiceLineSchema = new mongoose.Schema({

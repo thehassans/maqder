@@ -45,7 +45,7 @@ export default function InvoicePurchaseComposer() {
       supplierId: '',
       seller: {},
       buyer: {},
-      travelDetails: {},
+      travelDetails: { passengerTitle: 'mr', layoverStay: '', passengers: [] },
       notes: '',
       lineItems: [emptyLine],
     }
@@ -256,7 +256,7 @@ export default function InvoicePurchaseComposer() {
           <div className="card p-6">
             <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'بيانات المورد / البائع' : 'Vendor / Seller Details'}</h3>
             {invoiceSubtype === 'travel_ticket' ? (
-              <TravelInvoiceFields language={language} register={register} partyPrefix="seller" partyNameLabel={language === 'ar' ? 'اسم المورد / الجهة' : 'Vendor / Supplier Name'} />
+              <TravelInvoiceFields language={language} register={register} control={control} watch={watch} setValue={setValue} partyPrefix="seller" partyNameLabel={language === 'ar' ? 'اسم المورد / الجهة' : 'Vendor / Supplier Name'} />
             ) : (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div><label className="label">{language === 'ar' ? 'الاسم / الشركة' : 'Name / Company'}</label><input {...register('seller.name', { required: true })} className="input" /></div>

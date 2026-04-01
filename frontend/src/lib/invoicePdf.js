@@ -146,6 +146,30 @@ const formatDateTime = (value, language) => {
   return d.toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US')
 }
 
+const passengerTitleLabel = (value, language = 'en') => {
+  const labels = {
+    mr: language === 'ar' ? 'السيد' : 'Mr.',
+    mrs: language === 'ar' ? 'السيدة' : 'Mrs.',
+    ms: language === 'ar' ? 'الآنسة' : 'Ms.',
+  }
+  return labels[value] || ''
+}
+
+const formatPassengerList = (passengers = [], language = 'en') => {
+  const safePassengers = Array.isArray(passengers) ? passengers : []
+  return safePassengers
+    .map((passenger) => {
+      const title = passengerTitleLabel(passenger?.title, language)
+      const name = safeText(passenger?.name)
+      const passportNumber = safeText(passenger?.passportNumber)
+      const label = [title, name].filter(Boolean).join(' ')
+      if (label && passportNumber) return `${label} (${passportNumber})`
+      return label || passportNumber
+    })
+    .filter(Boolean)
+    .join(', ')
+}
+
 export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) => {
   if (!invoice) return
 
@@ -478,13 +502,17 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   let y = boxY + boxH + 24
 
   if (invoice?.invoiceSubtype === 'travel_ticket') {
+    const travelerName = [passengerTitleLabel(travelDetails.passengerTitle, language), travelDetails.travelerName || buyerName].filter(Boolean).join(' ')
+    const additionalPassengers = formatPassengerList(travelDetails.passengers, language)
     const travelRows = [
-      [isRtl ? 'اسم المسافر' : 'Passenger', travelDetails.travelerName || buyerName || ''],
+      [isRtl ? 'اسم العميل / الراكب' : 'Customer / Traveler Name', travelerName || buyerName || ''],
       [isRtl ? 'رقم الجواز' : 'Passport', travelDetails.passportNumber || ''],
       [isRtl ? 'التذكرة / PNR' : 'Ticket / PNR', [travelDetails.ticketNumber, travelDetails.pnr].filter(Boolean).join(' / ')],
       [isRtl ? 'المسار' : 'Route', [travelDetails.routeFrom, travelDetails.routeTo].filter(Boolean).join(' → ')],
       [isRtl ? 'شركة الطيران' : 'Airline', travelDetails.airlineName || ''],
       [isRtl ? 'تاريخ السفر' : 'Travel Date', formatDateTime(travelDetails.departureDate, language)],
+      [isRtl ? 'التوقف / الإقامة' : 'Layover / Stay', travelDetails.layoverStay || ''],
+      [isRtl ? 'مسافرون إضافيون' : 'Additional Passengers', additionalPassengers || ''],
     ]
 
     autoTable(doc, {

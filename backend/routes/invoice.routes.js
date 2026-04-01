@@ -29,6 +29,31 @@ function resolvePdfTemplateId(requestedTemplateId, tenant) {
   return Math.min(6, Math.max(1, value));
 }
 
+function sanitizeTravelDetails(travelDetails = {}, fallbackTravelerName = '') {
+  const passengers = Array.isArray(travelDetails?.passengers) ? travelDetails.passengers : [];
+
+  return {
+    passengerTitle: ['mr', 'mrs', 'ms'].includes(travelDetails?.passengerTitle) ? travelDetails.passengerTitle : 'mr',
+    travelerName: String(travelDetails?.travelerName || fallbackTravelerName || '').trim(),
+    passportNumber: String(travelDetails?.passportNumber || '').trim(),
+    ticketNumber: String(travelDetails?.ticketNumber || '').trim(),
+    pnr: String(travelDetails?.pnr || '').trim(),
+    airlineName: String(travelDetails?.airlineName || '').trim(),
+    routeFrom: String(travelDetails?.routeFrom || '').trim(),
+    routeTo: String(travelDetails?.routeTo || '').trim(),
+    departureDate: travelDetails?.departureDate || undefined,
+    returnDate: travelDetails?.returnDate || undefined,
+    layoverStay: String(travelDetails?.layoverStay || '').trim(),
+    passengers: passengers
+      .map((passenger) => ({
+        title: ['mr', 'mrs', 'ms'].includes(passenger?.title) ? passenger.title : 'mr',
+        name: String(passenger?.name || '').trim(),
+        passportNumber: String(passenger?.passportNumber || '').trim(),
+      }))
+      .filter((passenger) => passenger.name || passenger.passportNumber),
+  };
+}
+
 async function attachDraftQr(invoice, seller) {
   const qr = await buildDraftInvoiceQr({
     seller,
@@ -443,9 +468,13 @@ router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) =>
 
     const invoiceNumber = `INV-${new Date().getFullYear()}-${String(invoiceCount).padStart(6, '0')}`;
 
-    const transactionType = req.body.transactionType || 'B2C';
-    const invoiceSubtype = req.body.invoiceSubtype === 'travel_ticket' ? 'travel_ticket' : 'standard';
-    const invoiceTypeCode = req.body.invoiceTypeCode || (transactionType === 'B2C' ? '0200000' : '0100000');
+    const transactionType = businessContext === 'travel_agency' ? 'B2C' : (req.body.transactionType || 'B2C');
+    const invoiceSubtype = businessContext === 'travel_agency'
+      ? 'travel_ticket'
+      : (req.body.invoiceSubtype === 'travel_ticket' ? 'travel_ticket' : 'standard');
+    const invoiceTypeCode = businessContext === 'travel_agency'
+      ? '0200000'
+      : (req.body.invoiceTypeCode || (transactionType === 'B2C' ? '0200000' : '0100000'));
     const issueDate = req.body.issueDate ? new Date(req.body.issueDate) : new Date();
     const pdfTemplateId = resolvePdfTemplateId(req.body?.pdfTemplateId, tenant);
 
@@ -497,20 +526,23 @@ router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) =>
       delete invoiceData.warehouseId;
     }
 
+    const requestTravelDetails = sanitizeTravelDetails(req.body?.travelDetails, buyer.name || travelBooking?.travelerName || travelBooking?.customerName || '');
+
     if (travelBooking) {
-      invoiceData.travelDetails = {
-        travelerName: req.body?.travelDetails?.travelerName || travelBooking.travelerName || travelBooking.customerName,
-        passportNumber: req.body?.travelDetails?.passportNumber || travelBooking.passportNumber,
-        ticketNumber: req.body?.travelDetails?.ticketNumber || travelBooking.ticketNumber,
-        pnr: req.body?.travelDetails?.pnr || travelBooking.pnr,
-        airlineName: req.body?.travelDetails?.airlineName || travelBooking.airlineName,
-        routeFrom: req.body?.travelDetails?.routeFrom || travelBooking.routeFrom,
-        routeTo: req.body?.travelDetails?.routeTo || travelBooking.routeTo,
-        departureDate: req.body?.travelDetails?.departureDate || travelBooking.departureDate,
-        returnDate: req.body?.travelDetails?.returnDate || travelBooking.returnDate,
-      };
-    } else if (req.body?.travelDetails) {
-      invoiceData.travelDetails = req.body.travelDetails;
+      invoiceData.travelDetails = sanitizeTravelDetails({
+        ...requestTravelDetails,
+        travelerName: requestTravelDetails.travelerName || travelBooking.travelerName || travelBooking.customerName,
+        passportNumber: requestTravelDetails.passportNumber || travelBooking.passportNumber,
+        ticketNumber: requestTravelDetails.ticketNumber || travelBooking.ticketNumber,
+        pnr: requestTravelDetails.pnr || travelBooking.pnr,
+        airlineName: requestTravelDetails.airlineName || travelBooking.airlineName,
+        routeFrom: requestTravelDetails.routeFrom || travelBooking.routeFrom,
+        routeTo: requestTravelDetails.routeTo || travelBooking.routeTo,
+        departureDate: requestTravelDetails.departureDate || travelBooking.departureDate,
+        returnDate: requestTravelDetails.returnDate || travelBooking.returnDate,
+      }, buyer.name || travelBooking.travelerName || travelBooking.customerName || '');
+    } else if (req.body?.travelDetails || businessContext === 'travel_agency') {
+      invoiceData.travelDetails = requestTravelDetails;
     }
 
     const createdInvoice = await Invoice.create(invoiceData);

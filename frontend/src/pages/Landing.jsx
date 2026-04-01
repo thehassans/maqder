@@ -274,8 +274,8 @@ const pricingPlans = [
 ]
 
 const complianceLogos = [
-  { src: '/zatca-logo-scaled.jpg', alt: 'ZATCA' },
-  { src: '/saudi-vision-2030-logo.png', alt: 'Saudi Vision 2030' },
+  { src: '/zatca-logo-scaled.jpg', alt: 'ZATCA', imageClassName: 'scale-[2.5]' },
+  { src: '/saudi-vision-2030-logo.png', alt: 'Saudi Vision 2030', imageClassName: 'scale-100' },
 ]
 
 export default function Landing() {
@@ -325,7 +325,7 @@ export default function Landing() {
               <div className="hidden xl:flex items-center gap-2 rounded-2xl border border-gray-200 bg-white/80 px-3 py-2">
                 {complianceLogos.map((logo) => (
                   <div key={logo.alt} className="flex h-10 w-20 items-center justify-center rounded-xl bg-white px-2 py-1 shadow-sm">
-                    <img src={logo.src} alt={logo.alt} className="max-h-full max-w-full object-contain" />
+                    <img src={logo.src} alt={logo.alt} className={`max-h-full max-w-full object-contain ${logo.imageClassName || ''}`} />
                   </div>
                 ))}
               </div>
@@ -419,7 +419,7 @@ export default function Landing() {
               <div className="mt-8 flex flex-wrap items-center gap-4">
                 {complianceLogos.map((logo) => (
                   <div key={logo.alt} className="flex h-16 w-36 items-center justify-center rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
-                    <img src={logo.src} alt={logo.alt} className="max-h-full max-w-full object-contain" />
+                    <img src={logo.src} alt={logo.alt} className={`max-h-full max-w-full object-contain ${logo.imageClassName || ''}`} />
                   </div>
                 ))}
               </div>

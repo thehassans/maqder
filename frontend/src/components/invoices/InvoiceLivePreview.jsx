@@ -33,6 +33,32 @@ const formatDate = (value, language = 'en') => {
   })
 }
 
+const passengerTitleLabel = (value, language = 'en') => {
+  const labels = {
+    mr: language === 'ar' ? 'السيد' : 'Mr.',
+    mrs: language === 'ar' ? 'السيدة' : 'Mrs.',
+    ms: language === 'ar' ? 'الآنسة' : 'Ms.',
+  }
+  return labels[value] || ''
+}
+
+const formatPassengerList = (passengers = [], language = 'en') => {
+  const safePassengers = Array.isArray(passengers) ? passengers : []
+  const value = safePassengers
+    .map((passenger) => {
+      const title = passengerTitleLabel(passenger?.title, language)
+      const name = String(passenger?.name || '').trim()
+      const passportNumber = String(passenger?.passportNumber || '').trim()
+      const label = [title, name].filter(Boolean).join(' ')
+      if (label && passportNumber) return `${label} (${passportNumber})`
+      return label || passportNumber
+    })
+    .filter(Boolean)
+    .join(', ')
+
+  return value || '—'
+}
+
 const getTemplateClasses = (templateId) => {
   switch (Number(templateId)) {
     case 2:
@@ -99,6 +125,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
     vatTotal: toNumber(invoice?.totalTax),
   })
   const travelDetails = invoice?.travelDetails || {}
+  const travelerDisplayName = [passengerTitleLabel(travelDetails?.passengerTitle, language), travelDetails?.travelerName || buyerName].filter(Boolean).join(' ')
   const lineItems = Array.isArray(invoice?.lineItems) && invoice.lineItems.length > 0 ? invoice.lineItems : [{ productName: language === 'ar' ? 'خدمة' : 'Service', quantity: 1, unitPrice: 0, taxRate: 15, lineTotalWithTax: 0 }]
   const mutedText = 'text-slate-500'
   const titleText = 'text-slate-900'
@@ -151,10 +178,10 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
 
       {invoice?.invoiceSubtype === 'travel_ticket' && (
         <div className="px-6 pt-6">
-          <div className={`grid grid-cols-1 gap-4 rounded-2xl p-4 md:grid-cols-3 ${styles.block}`}>
+          <div className={`grid grid-cols-1 gap-4 rounded-2xl p-4 md:grid-cols-4 ${styles.block}`}>
             <div>
-              <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'اسم المسافر' : 'Passenger Name'}</p>
-              <p className={`mt-1 text-sm font-semibold ${titleText}`}>{travelDetails?.travelerName || buyerName}</p>
+              <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'اسم العميل / الراكب' : 'Customer / Traveler Name'}</p>
+              <p className={`mt-1 text-sm font-semibold ${titleText}`}>{travelerDisplayName || '—'}</p>
             </div>
             <div>
               <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'رقم الجواز' : 'Passport Number'}</p>
@@ -175,6 +202,14 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
             <div>
               <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'تاريخ الرحلة' : 'Travel Date'}</p>
               <p className={`mt-1 text-sm font-semibold ${titleText}`}>{formatDate(travelDetails?.departureDate, language)}</p>
+            </div>
+            <div>
+              <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'التوقف / الإقامة' : 'Layover / Stay'}</p>
+              <p className={`mt-1 text-sm font-semibold ${titleText}`}>{travelDetails?.layoverStay || '—'}</p>
+            </div>
+            <div className="md:col-span-3">
+              <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'مسافرون إضافيون' : 'Additional Passengers'}</p>
+              <p className={`mt-1 text-sm font-semibold ${titleText}`}>{formatPassengerList(travelDetails?.passengers, language)}</p>
             </div>
           </div>
         </div>

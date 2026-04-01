@@ -46,6 +46,8 @@ import User from './models/User.js';
 dotenv.config();
 
 const app = express();
+const parsedApiRateLimitMax = Number(process.env.API_RATE_LIMIT_MAX || 600);
+const apiRateLimitMax = Number.isFinite(parsedApiRateLimitMax) && parsedApiRateLimitMax > 0 ? parsedApiRateLimitMax : 600;
 
 // Security middleware
 app.use(helmet());
@@ -57,7 +59,9 @@ app.use(cors({
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: apiRateLimitMax,
+  standardHeaders: true,
+  legacyHeaders: false,
   message: { error: 'Too many requests, please try again later.' }
 });
 app.use('/api/', limiter);

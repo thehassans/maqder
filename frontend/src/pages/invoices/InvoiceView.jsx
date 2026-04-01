@@ -11,6 +11,30 @@ import { useTranslation } from '../../lib/translations'
 import Money from '../../components/ui/Money'
 import { downloadInvoicePdf } from '../../lib/invoicePdf'
 
+const passengerTitleLabel = (value, language = 'en') => {
+  const labels = {
+    mr: language === 'ar' ? 'السيد' : 'Mr.',
+    mrs: language === 'ar' ? 'السيدة' : 'Mrs.',
+    ms: language === 'ar' ? 'الآنسة' : 'Ms.',
+  }
+  return labels[value] || ''
+}
+
+const formatPassengerList = (passengers = [], language = 'en') => {
+  const safePassengers = Array.isArray(passengers) ? passengers : []
+  return safePassengers
+    .map((passenger) => {
+      const title = passengerTitleLabel(passenger?.title, language)
+      const name = String(passenger?.name || '').trim()
+      const passportNumber = String(passenger?.passportNumber || '').trim()
+      const label = [title, name].filter(Boolean).join(' ')
+      if (label && passportNumber) return `${label} (${passportNumber})`
+      return label || passportNumber
+    })
+    .filter(Boolean)
+    .join(', ')
+}
+
 export default function InvoiceView() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -24,6 +48,10 @@ export default function InvoiceView() {
     queryKey: ['invoice', id],
     queryFn: () => api.get(`/invoices/${id}`).then(res => res.data)
   })
+
+  const travelDetails = invoice?.travelDetails || {}
+  const travelerDisplayName = [passengerTitleLabel(travelDetails?.passengerTitle, language), travelDetails?.travelerName || invoice?.buyer?.name || ''].filter(Boolean).join(' ')
+  const additionalPassengers = formatPassengerList(travelDetails?.passengers, language)
 
   const signMutation = useMutation({
     mutationFn: () => api.post(`/invoices/${id}/sign`),
@@ -204,28 +232,36 @@ export default function InvoiceView() {
                 <p className="text-sm font-medium text-gray-500 mb-3">{language === 'ar' ? 'بيانات السفر' : 'Travel Details'}</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className="text-gray-500">{language === 'ar' ? 'اسم المسافر' : 'Passenger Name'}</p>
-                    <p className="font-medium text-gray-900 dark:text-white">{invoice?.travelDetails?.travelerName || invoice?.buyer?.name || '—'}</p>
+                    <p className="text-gray-500">{language === 'ar' ? 'اسم العميل / الراكب' : 'Customer / Traveler Name'}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{travelerDisplayName || '—'}</p>
                   </div>
                   <div>
                     <p className="text-gray-500">{language === 'ar' ? 'رقم الجواز' : 'Passport Number'}</p>
-                    <p className="font-medium text-gray-900 dark:text-white">{invoice?.travelDetails?.passportNumber || '—'}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{travelDetails?.passportNumber || '—'}</p>
                   </div>
                   <div>
                     <p className="text-gray-500">{language === 'ar' ? 'رقم التذكرة / PNR' : 'Ticket / PNR'}</p>
-                    <p className="font-medium text-gray-900 dark:text-white">{invoice?.travelDetails?.ticketNumber || invoice?.travelDetails?.pnr || '—'}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{travelDetails?.ticketNumber || travelDetails?.pnr || '—'}</p>
                   </div>
                   <div>
                     <p className="text-gray-500">{language === 'ar' ? 'شركة الطيران / المورد' : 'Airline / Vendor'}</p>
-                    <p className="font-medium text-gray-900 dark:text-white">{invoice?.travelDetails?.airlineName || invoice?.seller?.name || '—'}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{travelDetails?.airlineName || invoice?.seller?.name || '—'}</p>
                   </div>
                   <div>
                     <p className="text-gray-500">{language === 'ar' ? 'المسار' : 'Route'}</p>
-                    <p className="font-medium text-gray-900 dark:text-white">{[invoice?.travelDetails?.routeFrom, invoice?.travelDetails?.routeTo].filter(Boolean).join(' → ') || '—'}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{[travelDetails?.routeFrom, travelDetails?.routeTo].filter(Boolean).join(' → ') || '—'}</p>
                   </div>
                   <div>
                     <p className="text-gray-500">{language === 'ar' ? 'تاريخ الرحلة' : 'Travel Date'}</p>
-                    <p className="font-medium text-gray-900 dark:text-white">{invoice?.travelDetails?.departureDate ? new Date(invoice.travelDetails.departureDate).toLocaleDateString() : '—'}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{travelDetails?.departureDate ? new Date(travelDetails.departureDate).toLocaleDateString() : '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">{language === 'ar' ? 'التوقف / الإقامة' : 'Layover / Stay'}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{travelDetails?.layoverStay || '—'}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <p className="text-gray-500">{language === 'ar' ? 'مسافرون إضافيون' : 'Additional Passengers'}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{additionalPassengers || '—'}</p>
                   </div>
                 </div>
               </div>
