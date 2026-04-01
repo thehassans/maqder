@@ -2,6 +2,39 @@ import { QRCodeSVG } from 'qrcode.react'
 import { generateZatcaQrValue } from '../../lib/zatcaQr'
 import { calculateInvoiceSummary, normalizeTravelDetails, toNumber } from '../../lib/invoiceDocument'
 
+const formatAddress = (address = {}) => {
+  return [address?.street, address?.district, address?.city, address?.postalCode, address?.country]
+    .filter(Boolean)
+    .join(', ')
+}
+
+const getPartyDetailLines = (party = {}, language = 'en') => {
+  const lines = []
+
+  if (party?.vatNumber) {
+    lines.push(`${language === 'ar' ? 'الرقم الضريبي' : 'VAT'}: ${party.vatNumber}`)
+  }
+
+  if (party?.crNumber) {
+    lines.push(`${language === 'ar' ? 'السجل التجاري' : 'CR'}: ${party.crNumber}`)
+  }
+
+  if (party?.contactPhone) {
+    lines.push(`${language === 'ar' ? 'الهاتف' : 'Phone'}: ${party.contactPhone}`)
+  }
+
+  if (party?.contactEmail) {
+    lines.push(`${language === 'ar' ? 'البريد الإلكتروني' : 'Email'}: ${party.contactEmail}`)
+  }
+
+  const addressText = formatAddress(party?.address)
+  if (addressText) {
+    lines.push(`${language === 'ar' ? 'العنوان' : 'Address'}: ${addressText}`)
+  }
+
+  return lines.length > 0 ? lines : ['—']
+}
+
 const formatMoney = (value, currency = 'SAR', language = 'en') => {
   try {
     return new Intl.NumberFormat(language === 'ar' ? 'ar-SA' : 'en-US', {
@@ -86,6 +119,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
   const styles = getTemplateClasses(templateId)
   const sellerName = language === 'ar' ? (invoice?.seller?.nameAr || invoice?.seller?.name || tenant?.business?.legalNameAr || tenant?.business?.legalNameEn) : (invoice?.seller?.name || invoice?.seller?.nameAr || tenant?.business?.legalNameEn || tenant?.business?.legalNameAr)
   const buyerName = language === 'ar' ? (invoice?.buyer?.nameAr || invoice?.buyer?.name || 'Cash Customer') : (invoice?.buyer?.name || invoice?.buyer?.nameAr || 'Cash Customer')
+  const customerLabel = invoice?.flow === 'purchase' ? (language === 'ar' ? 'المشتري' : 'Buyer') : (language === 'ar' ? 'العميل' : 'Customer')
   const qrValue = invoice?.zatca?.qrCodeData || generateZatcaQrValue({
     sellerName,
     vatNumber: invoice?.seller?.vatNumber || tenant?.business?.vatNumber,
@@ -96,12 +130,14 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
   const totals = calculateInvoiceSummary(invoice)
   const travelDetails = normalizeTravelDetails(invoice?.travelDetails || {}, buyerName, language)
   const lineItems = totals.lines.length > 0 ? totals.lines : [{ raw: { productName: language === 'ar' ? 'خدمة' : 'Service' }, quantity: 1, unitPrice: 0, taxAmount: 0, lineTotalWithTax: 0 }]
+  const sellerDetails = getPartyDetailLines(invoice?.seller || tenant?.business || {}, language)
+  const buyerDetails = getPartyDetailLines(invoice?.buyer || {}, language)
   const mutedText = 'text-slate-500'
   const titleText = 'text-slate-900'
 
   return (
-    <div className={`relative overflow-hidden rounded-3xl border shadow-sm ${styles.shell}`}>
-      <div className={`flex flex-col gap-6 p-6 ${styles.header}`}>
+    <div className={`relative overflow-hidden rounded-[2rem] border shadow-[0_30px_80px_-40px_rgba(15,23,42,0.30)] ${styles.shell}`}>
+      <div className={`flex flex-col gap-6 p-7 ${styles.header}`}>
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white">
@@ -121,11 +157,11 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
             <div className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${styles.badge}`}>
               {invoice?.transactionType || 'B2C'}
             </div>
-            <p className={`mt-3 text-sm font-medium ${titleText}`}>{invoice?.invoiceNumber || 'DRAFT-PREVIEW'}</p>
-            <p className={`text-xs ${mutedText}`}>{formatDate(invoice?.issueDate || new Date(), language)}</p>
+            <p className={`mt-3 text-base font-semibold ${titleText}`}>{invoice?.invoiceNumber || 'DRAFT-PREVIEW'}</p>
+            <p className={`mt-1 text-xs ${mutedText}`}>{formatDate(invoice?.issueDate || new Date(), language)}</p>
           </div>
         </div>
-        <div className={`grid grid-cols-2 gap-4 rounded-2xl p-4 md:grid-cols-4 ${styles.block}`}>
+        <div className="grid grid-cols-1 gap-4 rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-5 md:grid-cols-3">
           <div>
             <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'رقم الفاتورة' : 'Invoice #'}</p>
             <p className={`mt-1 text-sm font-semibold ${titleText}`}>{invoice?.invoiceNumber || 'DRAFT-PREVIEW'}</p>
@@ -138,28 +174,31 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
             <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'التدفق' : 'Flow'}</p>
             <p className={`mt-1 text-sm font-semibold ${titleText}`}>{invoice?.flow || 'sell'}</p>
           </div>
-          <div>
-            <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'حالة ZATCA' : 'ZATCA'}</p>
-            <p className={`mt-1 text-sm font-semibold ${titleText}`}>{invoice?.zatca?.submissionStatus || 'pending'}</p>
-          </div>
         </div>
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto]">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_176px]">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className={`rounded-2xl p-4 ${styles.block}`}>
+            <div className={`rounded-[1.5rem] p-5 ${styles.block}`}>
               <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${mutedText}`}>{language === 'ar' ? 'البائع' : 'Seller'}</p>
-              <p className={`mt-2 text-sm font-semibold ${titleText}`}>{sellerName || '—'}</p>
-              <p className={`mt-1 text-sm ${mutedText}`}>{invoice?.seller?.vatNumber || tenant?.business?.vatNumber || '—'}</p>
-              <p className={`text-sm ${mutedText}`}>{invoice?.seller?.address?.city || tenant?.business?.address?.city || '—'}</p>
+              <p className={`mt-3 text-base font-semibold ${titleText}`}>{sellerName || '—'}</p>
+              <div className="mt-3 space-y-1.5">
+                {sellerDetails.map((detail, index) => (
+                  <p key={index} className={`text-sm leading-6 ${mutedText}`}>{detail}</p>
+                ))}
+              </div>
             </div>
-            <div className={`rounded-2xl p-4 ${styles.block}`}>
-              <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${mutedText}`}>{language === 'ar' ? 'المشتري' : 'Buyer'}</p>
-              <p className={`mt-2 text-sm font-semibold ${titleText}`}>{buyerName}</p>
-              <p className={`mt-1 text-sm ${mutedText}`}>{invoice?.buyer?.contactPhone || invoice?.buyer?.vatNumber || '—'}</p>
-              <p className={`text-sm ${mutedText}`}>{invoice?.buyer?.address?.city || '—'}</p>
+            <div className={`rounded-[1.5rem] p-5 ${styles.block}`}>
+              <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${mutedText}`}>{customerLabel}</p>
+              <p className={`mt-3 text-base font-semibold ${titleText}`}>{buyerName}</p>
+              <div className="mt-3 space-y-1.5">
+                {buyerDetails.map((detail, index) => (
+                  <p key={index} className={`text-sm leading-6 ${mutedText}`}>{detail}</p>
+                ))}
+              </div>
             </div>
           </div>
-          <div className={`flex w-full flex-col items-center justify-center rounded-2xl p-4 lg:w-[160px] ${styles.block}`}>
-            <QRCodeSVG value={qrValue} size={108} bgColor="transparent" fgColor="#0F172A" />
+          <div className={`flex w-full flex-col items-center justify-center rounded-[1.5rem] p-5 ${styles.block}`}>
+            <QRCodeSVG value={qrValue} size={120} bgColor="transparent" fgColor="#0F172A" />
+            <p className={`mt-3 text-[11px] font-medium ${mutedText}`}>{language === 'ar' ? 'رمز QR' : 'QR Code'}</p>
           </div>
         </div>
       </div>

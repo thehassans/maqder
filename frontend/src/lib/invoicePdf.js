@@ -144,7 +144,46 @@ const formatDateTime = (value, language) => {
   if (!value) return ''
   const d = new Date(value)
   if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US')
+  return d.toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+const formatAddress = (address = {}) => {
+  return [address?.street, address?.district, address?.city, address?.postalCode, address?.country]
+    .filter(Boolean)
+    .join(', ')
+}
+
+const getPartyDetailLines = (party = {}, language = 'en') => {
+  const lines = []
+
+  if (party?.vatNumber) {
+    lines.push(`${language === 'ar' ? 'الرقم الضريبي' : 'VAT'}: ${party.vatNumber}`)
+  }
+
+  if (party?.crNumber) {
+    lines.push(`${language === 'ar' ? 'السجل التجاري' : 'CR'}: ${party.crNumber}`)
+  }
+
+  if (party?.contactPhone) {
+    lines.push(`${language === 'ar' ? 'الهاتف' : 'Phone'}: ${party.contactPhone}`)
+  }
+
+  if (party?.contactEmail) {
+    lines.push(`${language === 'ar' ? 'البريد الإلكتروني' : 'Email'}: ${party.contactEmail}`)
+  }
+
+  const addressText = formatAddress(party?.address)
+  if (addressText) {
+    lines.push(`${language === 'ar' ? 'العنوان' : 'Address'}: ${addressText}`)
+  }
+
+  return lines.filter(Boolean)
 }
 
 export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) => {
@@ -181,12 +220,8 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     }
   }
 
-  const primary = tenant?.branding?.primaryColor || '#2563EB'
-  const primaryRgb = hexToRgb(primary) || { r: 37, g: 99, b: 235 }
-  const lightRgb = mixRgb(primaryRgb, { r: 255, g: 255, b: 255 }, 0.90)
-
-  const secondary = tenant?.branding?.secondaryColor || '#D946EF'
-  const secondaryRgb = hexToRgb(secondary) || { r: 217, g: 70, b: 239 }
+  const primaryRgb = { r: 15, g: 23, b: 42 }
+  const lightRgb = { r: 248, g: 250, b: 252 }
 
   const templateId = Number(invoice?.pdfTemplateId || tenant?.settings?.invoicePdfTemplate || 1)
 
@@ -196,16 +231,16 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
       headerBgRgb: null,
       headerTitleRgb: { r: 15, g: 23, b: 42 },
       headerMutedRgb: { r: 100, g: 116, b: 139 },
-      metaFillRgb: lightRgb,
-      metaStrokeRgb: { r: 226, g: 232, b: 240 },
+      metaFillRgb: { r: 248, g: 250, b: 252 },
+      metaStrokeRgb: { r: 203, g: 213, b: 225 },
       boxFillRgb: { r: 255, g: 255, b: 255 },
-      boxStrokeRgb: { r: 226, g: 232, b: 240 },
-      tableHeadFillRgb: lightRgb,
-      tableHeadTextRgb: { r: 15, g: 23, b: 42 },
+      boxStrokeRgb: { r: 203, g: 213, b: 225 },
+      tableHeadFillRgb: { r: 15, g: 23, b: 42 },
+      tableHeadTextRgb: { r: 255, g: 255, b: 255 },
       altRowFillRgb: { r: 248, g: 250, b: 252 },
       drawFrame: () => {
         doc.setFillColor(primaryRgb.r, primaryRgb.g, primaryRgb.b)
-        doc.rect(0, 0, pageW, 6, 'F')
+        doc.rect(0, 0, pageW, 5, 'F')
       },
     }
 
@@ -310,6 +345,8 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
 
   const sellerName = isRtl ? (seller.nameAr || seller.name) : (seller.name || seller.nameAr)
   const buyerName = isRtl ? (buyer.nameAr || buyer.name) : (buyer.name || buyer.nameAr)
+  const sellerDetailLines = getPartyDetailLines(seller, language)
+  const buyerDetailLines = getPartyDetailLines(buyer, language)
   const totals = calculateInvoiceSummary(invoice)
   const travelDetails = normalizeTravelDetails(invoice.travelDetails || {}, buyerName, language)
 
@@ -326,6 +363,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     const logoW = 92
     const logoH = 28
     const qrSize = 72
+    const qrVisible = Boolean(qr && qrFormat && pageNumber === 1)
 
     if (logo && logoFormat) {
       const x = isRtl ? contentRightEdge - logoW : contentLeft
@@ -336,7 +374,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
       doc.addImage(logo, logoFormat, x, y, logoW, logoH)
     }
 
-    if (qr && qrFormat && pageNumber === 1) {
+    if (qrVisible) {
       const x = isRtl ? contentLeft : contentRightEdge - qrSize
       doc.setFillColor(255, 255, 255)
       doc.roundedRect(x - boxPad, y - boxPad, qrSize + boxPad * 2, qrSize + boxPad * 2, 10, 10, 'F')
@@ -346,23 +384,25 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     }
 
     const titleX = isRtl ? contentRightEdge : contentLeft
-    const rightX = isRtl ? contentLeft : contentRightEdge
+    const rightX = qrVisible
+      ? (isRtl ? contentLeft + qrSize + 18 : contentRightEdge - qrSize - 18)
+      : (isRtl ? contentLeft : contentRightEdge)
 
     doc.setTextColor(theme.headerTitleRgb.r, theme.headerTitleRgb.g, theme.headerTitleRgb.b)
     doc.setFontSize(16)
-    doc.text(shape(title), titleX, y + 56, { align })
+    doc.text(shape(title), titleX, y + 56, { align, maxWidth: Math.max(180, contentW - qrSize - 36) })
 
     doc.setFontSize(10)
     doc.setTextColor(theme.headerMutedRgb.r, theme.headerMutedRgb.g, theme.headerMutedRgb.b)
-    doc.text(shape(sellerName || ''), titleX, y + 72, { align })
+    doc.text(shape(sellerName || ''), titleX, y + 72, { align, maxWidth: Math.max(180, contentW - qrSize - 36) })
 
     doc.setFontSize(12)
     doc.setTextColor(theme.headerTitleRgb.r, theme.headerTitleRgb.g, theme.headerTitleRgb.b)
-    doc.text(shape(txt(invoice.invoiceNumber)), rightX, y + 56, { align: oppositeAlign })
+    doc.text(shape(txt(invoice.invoiceNumber)), rightX, y + 56, { align: oppositeAlign, maxWidth: Math.max(120, contentW * 0.35) })
 
     doc.setFontSize(9)
     doc.setTextColor(theme.headerMutedRgb.r, theme.headerMutedRgb.g, theme.headerMutedRgb.b)
-    doc.text(shape(formatDateTime(invoice.issueDate, language)), rightX, y + 72, { align: oppositeAlign })
+    doc.text(shape(formatDateTime(invoice.issueDate, language)), rightX, y + 72, { align: oppositeAlign, maxWidth: Math.max(120, contentW * 0.35) })
   }
 
   drawHeader({ pageNumber: 1 })
@@ -376,7 +416,6 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     { k: isRtl ? 'التاريخ' : 'Date', v: formatDateTime(invoice.issueDate, language) },
     { k: isRtl ? 'النوع' : 'Type', v: invoice.transactionType },
     { k: isRtl ? 'التدفق' : 'Flow', v: invoice.flow || 'sell' },
-    invoice?.zatca?.submissionStatus ? { k: isRtl ? 'حالة ZATCA' : 'ZATCA', v: invoice.zatca.submissionStatus } : null,
   ].filter(Boolean)
 
   const metaPairs = Math.ceil(metaRows.length / 2)
@@ -416,10 +455,13 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
 
   const boxGap = 12
   const boxY = cardY + metaH + 12
-  const boxH = 92
   const boxW = (cardW - boxGap) / 2
+  const partyLineHeight = 13
+  const detailStartOffset = 56
+  const partyDetailsCount = Math.max(sellerDetailLines.length, buyerDetailLines.length, 1)
+  const boxH = Math.max(92, detailStartOffset + partyDetailsCount * partyLineHeight + 16)
 
-  const drawPartyBox = ({ x, y, label, name, vat, address }) => {
+  const drawPartyBox = ({ x, y, label, name, detailLines }) => {
     doc.setFillColor(theme.boxFillRgb.r, theme.boxFillRgb.g, theme.boxFillRgb.b)
     doc.setDrawColor(theme.boxStrokeRgb.r, theme.boxStrokeRgb.g, theme.boxStrokeRgb.b)
     doc.roundedRect(x, y, boxW, boxH, 14, 14, 'FD')
@@ -437,21 +479,13 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
 
     doc.setFontSize(9)
     doc.setTextColor(51, 65, 85)
-    let ty = y + 56
+    let ty = y + detailStartOffset
 
-    if (vat) {
-      const vatLabel = isRtl ? 'الرقم الضريبي' : 'VAT'
-      doc.text(shape(`${vatLabel}: ${vat}`), tx, ty, { align, maxWidth: boxW - pad * 2 })
-      ty += 14
-    }
-
-    if (address) {
-      doc.text(shape(address), tx, ty, { align, maxWidth: boxW - pad * 2 })
+    for (const detailLine of detailLines.length > 0 ? detailLines : ['—']) {
+      doc.text(shape(detailLine), tx, ty, { align, maxWidth: boxW - pad * 2 })
+      ty += partyLineHeight
     }
   }
-
-  const sellerAddress = [seller.address?.city, seller.address?.district].filter(Boolean).join(', ')
-  const buyerAddress = [buyer.address?.city, buyer.address?.district].filter(Boolean).join(', ')
 
   const leftX = contentLeft
   const rightBoxX = contentLeft + boxW + boxGap
@@ -464,8 +498,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     y: boxY,
     label: isRtl ? 'البائع' : 'Seller',
     name: sellerName,
-    vat: seller.vatNumber,
-    address: sellerAddress,
+    detailLines: sellerDetailLines,
   })
 
   drawPartyBox({
@@ -473,8 +506,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     y: boxY,
     label: customerLabel,
     name: buyerName,
-    vat: buyer.vatNumber,
-    address: buyerAddress,
+    detailLines: buyerDetailLines,
   })
 
   let y = boxY + boxH + 24

@@ -40,13 +40,13 @@ export const getRouteText = (travelDetails = {}, language = 'en') => {
   const segments = sanitizeTravelSegments(travelDetails?.segments)
   if (segments.length > 0) {
     return segments
-      .map((segment) => [segment.from || (language === 'ar' ? 'غير محدد' : 'Unknown'), segment.to || (language === 'ar' ? 'غير محدد' : 'Unknown')].join(' → '))
-      .join('   •   ')
+      .map((segment) => [segment.from || (language === 'ar' ? 'غير محدد' : 'Unknown'), segment.to || (language === 'ar' ? 'غير محدد' : 'Unknown')].join(' -> '))
+      .join('  |  ')
   }
 
   const routeFrom = String(travelDetails?.routeFrom || '').trim()
   const routeTo = String(travelDetails?.routeTo || '').trim()
-  if (routeFrom && routeTo) return `${routeFrom} → ${routeTo}`
+  if (routeFrom && routeTo) return `${routeFrom} -> ${routeTo}`
   return routeFrom || routeTo || '—'
 }
 
