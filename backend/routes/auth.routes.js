@@ -5,7 +5,8 @@ import Tenant from '../models/Tenant.js';
 import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
-const databaseQueryTimeoutMs = 3000;
+const parsedDatabaseQueryTimeoutMs = Number(process.env.MONGODB_QUERY_TIMEOUT_MS || 10000);
+const databaseQueryTimeoutMs = Number.isFinite(parsedDatabaseQueryTimeoutMs) && parsedDatabaseQueryTimeoutMs > 0 ? parsedDatabaseQueryTimeoutMs : 10000;
 
 const withQueryTimeout = (query) => query.maxTimeMS(databaseQueryTimeoutMs);
 
@@ -16,7 +17,10 @@ const isDatabaseAvailabilityError = (error) => {
     || message.includes('timed out after')
     || message.includes('server selection')
     || message.includes('ecconnrefused')
-    || message.includes('not connected');
+    || message.includes('not connected')
+    || message.includes('initial connection')
+    || message.includes('topology is closed')
+    || message.includes('client must be connected');
 };
 
 const sendRouteError = (res, error) => {

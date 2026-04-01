@@ -5,7 +5,8 @@ import User from '../models/User.js'
 import SystemSettings from '../models/SystemSettings.js'
 
 const router = express.Router()
-const databaseQueryTimeoutMs = 3000
+const parsedDatabaseQueryTimeoutMs = Number(process.env.MONGODB_QUERY_TIMEOUT_MS || 10000)
+const databaseQueryTimeoutMs = Number.isFinite(parsedDatabaseQueryTimeoutMs) && parsedDatabaseQueryTimeoutMs > 0 ? parsedDatabaseQueryTimeoutMs : 10000
 
 const withQueryTimeout = (query) => query.maxTimeMS(databaseQueryTimeoutMs)
 
@@ -17,6 +18,9 @@ const isDatabaseAvailabilityError = (error) => {
     || message.includes('server selection')
     || message.includes('ecconnrefused')
     || message.includes('not connected')
+    || message.includes('initial connection')
+    || message.includes('topology is closed')
+    || message.includes('client must be connected')
 }
 
 const sendRouteError = (res, error) => {
@@ -148,7 +152,9 @@ router.get('/website', async (req, res) => {
 
 router.post('/demo-login', async (req, res) => {
   try {
-    if (SystemSettings.db.readyState !== 1) {
+    const databaseReady = await req.app.locals.waitForDatabaseReady?.()
+
+    if (!databaseReady) {
       return res.status(503).json({ error: 'Live demo is temporarily unavailable. Please try again in a moment.' })
     }
 

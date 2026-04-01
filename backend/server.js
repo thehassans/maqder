@@ -58,6 +58,9 @@ const parsedMongoSocketTimeoutMs = Number(process.env.MONGODB_SOCKET_TIMEOUT_MS 
 const mongoSocketTimeoutMs = Number.isFinite(parsedMongoSocketTimeoutMs) && parsedMongoSocketTimeoutMs > 0 ? parsedMongoSocketTimeoutMs : 45000;
 const parsedMongoReconnectIntervalMs = Number(process.env.MONGODB_RECONNECT_INTERVAL_MS || 5000);
 const mongoReconnectIntervalMs = Number.isFinite(parsedMongoReconnectIntervalMs) && parsedMongoReconnectIntervalMs > 0 ? parsedMongoReconnectIntervalMs : 5000;
+const defaultMongoRequestWaitTimeoutMs = Math.max(mongoServerSelectionTimeoutMs + 1000, 10000);
+const parsedMongoRequestWaitTimeoutMs = Number(process.env.MONGODB_REQUEST_WAIT_TIMEOUT_MS || defaultMongoRequestWaitTimeoutMs);
+const mongoRequestWaitTimeoutMs = Number.isFinite(parsedMongoRequestWaitTimeoutMs) && parsedMongoRequestWaitTimeoutMs > 0 ? parsedMongoRequestWaitTimeoutMs : defaultMongoRequestWaitTimeoutMs;
 const configuredOrigins = String(process.env.FRONTEND_URL || 'http://localhost:5173')
   .split(',')
   .map((origin) => origin.trim())
@@ -121,8 +124,12 @@ const scheduleReconnect = () => {
 };
 
 const connectToDatabase = async () => {
-  if (databaseReadyState() === 1 || databaseReadyState() === 2) {
-    return databaseConnectionPromise;
+  if (databaseReadyState() === 1) {
+    return Promise.resolve(mongoose.connection);
+  }
+
+  if (databaseReadyState() === 2) {
+    return databaseConnectionPromise || mongoose.connection.asPromise();
   }
 
   if (databaseConnectionPromise) {
@@ -150,20 +157,24 @@ const connectToDatabase = async () => {
   return databaseConnectionPromise;
 };
 
-const ensureDatabaseReady = async (req, res, next) => {
+const waitForDatabaseReady = async () => {
   if (isDatabaseReady()) {
-    return next();
+    return true;
   }
 
   try {
     await Promise.race([
       connectToDatabase(),
-      new Promise((resolve) => setTimeout(resolve, 2000))
+      new Promise((resolve) => setTimeout(resolve, mongoRequestWaitTimeoutMs))
     ]);
   } catch {
   }
 
-  if (isDatabaseReady()) {
+  return isDatabaseReady();
+};
+
+const ensureDatabaseReady = async (req, res, next) => {
+  if (await waitForDatabaseReady()) {
     return next();
   }
 
@@ -198,6 +209,7 @@ app.use('/api/', limiter);
 // Body parsing
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.locals.waitForDatabaseReady = waitForDatabaseReady;
 
 // Health check
 app.get('/api/health', (req, res) => {
