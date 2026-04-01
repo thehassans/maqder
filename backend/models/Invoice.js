@@ -4,28 +4,36 @@ import momentHijri from 'moment-hijri';
 const travelSegmentSchema = new mongoose.Schema({
   from: { type: String },
   to: { type: String },
+  fromAr: { type: String },
+  toAr: { type: String },
 }, { _id: false });
 
 const travelPassengerSchema = new mongoose.Schema({
   title: { type: String, enum: ['mr', 'mrs', 'ms'], default: 'mr' },
   name: { type: String },
+  nameAr: { type: String },
   passportNumber: { type: String },
 }, { _id: false });
 
 const travelDetailsSchema = new mongoose.Schema({
   passengerTitle: { type: String, enum: ['mr', 'mrs', 'ms'], default: 'mr' },
   travelerName: { type: String },
+  travelerNameAr: { type: String },
   passportNumber: { type: String },
   ticketNumber: { type: String },
   pnr: { type: String },
   airlineName: { type: String },
+  airlineNameAr: { type: String },
   routeFrom: { type: String },
+  routeFromAr: { type: String },
   routeTo: { type: String },
+  routeToAr: { type: String },
   segments: [travelSegmentSchema],
   departureDate: { type: Date },
   hasReturnDate: { type: Boolean, default: false },
   returnDate: { type: Date },
   layoverStay: { type: String },
+  layoverStayAr: { type: String },
   passengers: [travelPassengerSchema],
 }, { _id: false });
 
@@ -35,6 +43,7 @@ const invoiceLineSchema = new mongoose.Schema({
   productName: { type: String, required: true },
   productNameAr: { type: String },
   description: { type: String },
+  descriptionAr: { type: String },
   quantity: { type: Number, required: true },
   unitCode: { type: String, default: 'PCE' },
   unitPrice: { type: Number, required: true },

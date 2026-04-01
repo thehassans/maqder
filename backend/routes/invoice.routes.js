@@ -10,6 +10,7 @@ import RestaurantOrder from '../models/RestaurantOrder.js';
 import TravelBooking from '../models/TravelBooking.js';
 import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
 import { getPrimaryBusinessType, getTenantBusinessTypes } from '../utils/businessTypes.js';
+import { enrichInvoiceArabicFields } from '../utils/invoiceArabic.js';
 import { buildDraftInvoiceQr } from '../utils/zatca/draftInvoiceQr.js';
 import ZatcaService from '../utils/zatca/ZatcaService.js';
 
@@ -36,8 +37,10 @@ function sanitizeTravelDetails(travelDetails = {}, fallbackTravelerName = '') {
     .map((segment) => ({
       from: String(segment?.from || '').trim(),
       to: String(segment?.to || '').trim(),
+      fromAr: String(segment?.fromAr || '').trim(),
+      toAr: String(segment?.toAr || '').trim(),
     }))
-    .filter((segment) => segment.from || segment.to);
+    .filter((segment) => segment.from || segment.to || segment.fromAr || segment.toAr);
   const firstSegment = sanitizedSegments[0];
   const lastSegment = sanitizedSegments[sanitizedSegments.length - 1];
   const hasReturnDate = Boolean(travelDetails?.hasReturnDate && travelDetails?.returnDate);
@@ -45,24 +48,30 @@ function sanitizeTravelDetails(travelDetails = {}, fallbackTravelerName = '') {
   return {
     passengerTitle: ['mr', 'mrs', 'ms'].includes(travelDetails?.passengerTitle) ? travelDetails.passengerTitle : 'mr',
     travelerName: String(travelDetails?.travelerName || fallbackTravelerName || '').trim(),
+    travelerNameAr: String(travelDetails?.travelerNameAr || '').trim(),
     passportNumber: String(travelDetails?.passportNumber || '').trim(),
     ticketNumber: String(travelDetails?.ticketNumber || '').trim(),
     pnr: String(travelDetails?.pnr || '').trim(),
     airlineName: String(travelDetails?.airlineName || '').trim(),
+    airlineNameAr: String(travelDetails?.airlineNameAr || '').trim(),
     routeFrom: String(travelDetails?.routeFrom || firstSegment?.from || '').trim(),
+    routeFromAr: String(travelDetails?.routeFromAr || firstSegment?.fromAr || '').trim(),
     routeTo: String(travelDetails?.routeTo || lastSegment?.to || '').trim(),
+    routeToAr: String(travelDetails?.routeToAr || lastSegment?.toAr || '').trim(),
     segments: sanitizedSegments,
     departureDate: travelDetails?.departureDate || undefined,
     hasReturnDate,
     returnDate: hasReturnDate ? travelDetails?.returnDate : undefined,
     layoverStay: String(travelDetails?.layoverStay || '').trim(),
+    layoverStayAr: String(travelDetails?.layoverStayAr || '').trim(),
     passengers: passengers
       .map((passenger) => ({
         title: ['mr', 'mrs', 'ms'].includes(passenger?.title) ? passenger.title : 'mr',
         name: String(passenger?.name || '').trim(),
+        nameAr: String(passenger?.nameAr || '').trim(),
         passportNumber: String(passenger?.passportNumber || '').trim(),
       }))
-      .filter((passenger) => passenger.name || passenger.passportNumber),
+      .filter((passenger) => passenger.name || passenger.nameAr || passenger.passportNumber),
   };
 }
 
@@ -356,8 +365,9 @@ router.post('/', checkPermission('invoicing', 'create'), async (req, res) => {
       },
       createdBy: req.user._id
     };
-    
-    const invoice = await Invoice.create(invoiceData);
+
+    const enrichedInvoiceData = await enrichInvoiceArabicFields(invoiceData);
+    const invoice = await Invoice.create(enrichedInvoiceData);
 
     if (restaurantOrder) {
       await RestaurantOrder.updateOne(
@@ -559,7 +569,8 @@ router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) =>
       invoiceData.travelDetails = requestTravelDetails;
     }
 
-    const createdInvoice = await Invoice.create(invoiceData);
+    const enrichedInvoiceData = await enrichInvoiceArabicFields(invoiceData);
+    const createdInvoice = await Invoice.create(enrichedInvoiceData);
     const invoice = await attachDraftQr(createdInvoice, tenant.business);
 
     if (restaurantOrder) {
@@ -706,7 +717,8 @@ router.post('/purchase', checkPermission('invoicing', 'create'), async (req, res
       invoiceData.travelDetails = req.body.travelDetails;
     }
 
-    const createdInvoice = await Invoice.create(invoiceData);
+    const enrichedInvoiceData = await enrichInvoiceArabicFields(invoiceData);
+    const createdInvoice = await Invoice.create(enrichedInvoiceData);
     const invoice = await attachDraftQr(createdInvoice, seller);
 
     if (businessContext === 'trading') {

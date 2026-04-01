@@ -12,6 +12,26 @@ import Money from '../../components/ui/Money'
 import { downloadInvoicePdf } from '../../lib/invoicePdf'
 import { calculateInvoiceSummary, normalizeTravelDetails } from '../../lib/invoiceDocument'
 
+const formatAddress = (address = {}) => {
+  return [address?.street, address?.district, address?.city, address?.postalCode, address?.country]
+    .filter(Boolean)
+    .join(', ')
+}
+
+const getPartyDetailLines = (party = {}, language = 'en') => {
+  const lines = []
+
+  if (party?.vatNumber) lines.push(`${language === 'ar' ? 'الرقم الضريبي' : 'VAT'}: ${party.vatNumber}`)
+  if (party?.crNumber) lines.push(`${language === 'ar' ? 'السجل التجاري' : 'CR'}: ${party.crNumber}`)
+  if (party?.contactPhone) lines.push(`${language === 'ar' ? 'الهاتف' : 'Phone'}: ${party.contactPhone}`)
+  if (party?.contactEmail) lines.push(`${language === 'ar' ? 'البريد الإلكتروني' : 'Email'}: ${party.contactEmail}`)
+
+  const addressText = formatAddress(party?.address)
+  if (addressText) lines.push(`${language === 'ar' ? 'العنوان' : 'Address'}: ${addressText}`)
+
+  return lines.length > 0 ? lines : ['—']
+}
+
 export default function InvoiceView() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -28,6 +48,12 @@ export default function InvoiceView() {
 
   const totals = calculateInvoiceSummary(invoice)
   const travelDetails = normalizeTravelDetails(invoice?.travelDetails || {}, invoice?.buyer?.name || '', language)
+  const sellerName = language === 'ar' ? (invoice?.seller?.nameAr || invoice?.seller?.name || tenant?.business?.legalNameAr || tenant?.business?.legalNameEn) : (invoice?.seller?.name || invoice?.seller?.nameAr || tenant?.business?.legalNameEn || tenant?.business?.legalNameAr)
+  const buyerName = language === 'ar' ? (invoice?.buyer?.nameAr || invoice?.buyer?.name || 'Cash Customer') : (invoice?.buyer?.name || invoice?.buyer?.nameAr || 'Cash Customer')
+  const customerLabel = invoice?.flow === 'purchase' ? (language === 'ar' ? 'المشتري' : 'Buyer') : t('customer')
+  const sellerDetails = getPartyDetailLines(invoice?.seller || {}, language)
+  const buyerDetails = getPartyDetailLines(invoice?.buyer || {}, language)
+  const logoSrc = tenant?.branding?.logo || '/maqder-logo.png'
 
   const signMutation = useMutation({
     mutationFn: () => api.post(`/invoices/${id}/sign`),
@@ -152,22 +178,67 @@ export default function InvoiceView() {
               </span>
             </div>
 
-            {/* Seller & Buyer */}
+            <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)_160px]">
+              <div className="rounded-3xl border border-gray-200 bg-gray-50/80 p-4 dark:border-dark-600 dark:bg-dark-700/60">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-dark-500">
+                    <img src={logoSrc} alt="" className="h-full w-full object-contain" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium uppercase tracking-[0.24em] text-gray-500">{language === 'ar' ? 'هوية الفاتورة' : 'Invoice Identity'}</p>
+                    <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <div className="rounded-2xl border border-gray-200 bg-white px-3 py-3 dark:border-dark-500 dark:bg-dark-800">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">{language === 'ar' ? 'البائع' : 'Seller'}</p>
+                        <p className="mt-2 truncate font-semibold text-gray-900 dark:text-white">{sellerName || '—'}</p>
+                      </div>
+                      <div className="rounded-2xl border border-gray-200 bg-white px-3 py-3 dark:border-dark-500 dark:bg-dark-800">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">{customerLabel}</p>
+                        <p className="mt-2 truncate font-semibold text-gray-900 dark:text-white">{buyerName || '—'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="flex min-h-[124px] flex-col items-center justify-center rounded-3xl border border-gray-200 bg-white px-4 text-center dark:border-dark-600 dark:bg-dark-800">
+                <p className="text-xs uppercase tracking-[0.24em] text-gray-500">{language === 'ar' ? 'فاتورة أعمال' : 'Business Invoice'}</p>
+                <h2 className="mt-2 text-3xl font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'فاتورة ضريبية' : 'Tax Invoice'}</h2>
+                <p className="mt-2 text-sm text-gray-500">{sellerName || '—'}</p>
+              </div>
+              {invoice?.zatca?.qrCodeData ? (
+                <div className="flex flex-col items-center justify-center rounded-3xl border border-gray-200 bg-white p-4 dark:border-dark-600 dark:bg-dark-800">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{invoice?.invoiceNumber}</p>
+                  <p className="mt-1 text-xs text-gray-500">{new Date(invoice?.issueDate).toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US')}</p>
+                  <div className="mt-3 rounded-2xl bg-white p-2">
+                    <QRCodeSVG value={invoice.zatca.qrCodeData} size={104} />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center rounded-3xl border border-gray-200 bg-white p-4 text-center dark:border-dark-600 dark:bg-dark-800">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{invoice?.invoiceNumber}</p>
+                  <p className="mt-1 text-xs text-gray-500">{new Date(invoice?.issueDate).toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US')}</p>
+                </div>
+              )}
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
                 <p className="text-sm font-medium text-gray-500 mb-2">{language === 'ar' ? 'البائع' : 'Seller'}</p>
-                <p className="font-semibold text-gray-900 dark:text-white">{invoice?.seller?.name}</p>
-                <p className="text-sm text-gray-500">{invoice?.seller?.vatNumber}</p>
-                <p className="text-sm text-gray-500">{invoice?.seller?.address?.city}</p>
+                <p className="font-semibold text-gray-900 dark:text-white">{sellerName}</p>
+                <div className="mt-2 space-y-1">
+                  {sellerDetails.map((detail, index) => (
+                    <p key={index} className="text-sm text-gray-500">{detail}</p>
+                  ))}
+                </div>
               </div>
               {invoice?.buyer?.name && (
                 <div>
-                  <p className="text-sm font-medium text-gray-500 mb-2">
-                    {invoice?.flow === 'purchase' ? (language === 'ar' ? 'المشتري' : 'Buyer') : t('customer')}
-                  </p>
-                  <p className="font-semibold text-gray-900 dark:text-white">{invoice?.buyer?.name}</p>
-                  <p className="text-sm text-gray-500">{invoice?.buyer?.vatNumber}</p>
-                  <p className="text-sm text-gray-500">{invoice?.buyer?.address?.city}</p>
+                  <p className="text-sm font-medium text-gray-500 mb-2">{customerLabel}</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">{buyerName}</p>
+                  <div className="mt-2 space-y-1">
+                    {buyerDetails.map((detail, index) => (
+                      <p key={index} className="text-sm text-gray-500">{detail}</p>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -221,7 +292,7 @@ export default function InvoiceView() {
                   </div>
                   <div>
                     <p className="text-gray-500">{language === 'ar' ? 'شركة الطيران / المورد' : 'Airline / Vendor'}</p>
-                    <p className="font-medium text-gray-900 dark:text-white">{travelDetails?.airlineName || invoice?.seller?.name || '—'}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{travelDetails?.airlineDisplayName || sellerName || '—'}</p>
                   </div>
                   <div>
                     <p className="text-gray-500">{language === 'ar' ? 'المسار' : 'Route'}</p>
@@ -237,7 +308,7 @@ export default function InvoiceView() {
                   </div>
                   <div>
                     <p className="text-gray-500">{language === 'ar' ? 'التوقف / الإقامة' : 'Layover / Stay'}</p>
-                    <p className="font-medium text-gray-900 dark:text-white">{travelDetails?.layoverStay || '—'}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{travelDetails?.layoverStayDisplay || '—'}</p>
                   </div>
                   <div className="md:col-span-2">
                     <p className="text-gray-500">{language === 'ar' ? 'مسافرون إضافيون' : 'Additional Passengers'}</p>
@@ -263,8 +334,8 @@ export default function InvoiceView() {
                   {invoice?.lineItems?.map((item, i) => (
                     <tr key={i} className="border-t border-gray-100 dark:border-dark-700">
                       <td className="py-3">
-                        <p className="font-medium">{item.productName}</p>
-                        {item.description && <p className="text-sm text-gray-500">{item.description}</p>}
+                        <p className="font-medium">{language === 'ar' ? (item.productNameAr || item.productName || '—') : (item.productName || item.productNameAr || '—')}</p>
+                        {(item.description || item.descriptionAr) && <p className="text-sm text-gray-500">{language === 'ar' ? (item.descriptionAr || item.description) : (item.description || item.descriptionAr)}</p>}
                       </td>
                       <td className="text-center py-3">{item.quantity}</td>
                       <td className="text-end py-3"><Money value={item.unitPrice} /></td>

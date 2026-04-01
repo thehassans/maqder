@@ -17,8 +17,10 @@ export const sanitizeTravelSegments = (segments = []) => {
     .map((segment) => ({
       from: String(segment?.from || '').trim(),
       to: String(segment?.to || '').trim(),
+      fromAr: String(segment?.fromAr || '').trim(),
+      toAr: String(segment?.toAr || '').trim(),
     }))
-    .filter((segment) => segment.from || segment.to)
+    .filter((segment) => segment.from || segment.to || segment.fromAr || segment.toAr)
 }
 
 export const formatPassengerList = (passengers = [], language = 'en') => {
@@ -26,7 +28,7 @@ export const formatPassengerList = (passengers = [], language = 'en') => {
   return safePassengers
     .map((passenger) => {
       const title = passengerTitleLabel(passenger?.title, language)
-      const name = String(passenger?.name || '').trim()
+      const name = String(language === 'ar' ? (passenger?.nameAr || passenger?.name || '') : (passenger?.name || passenger?.nameAr || '')).trim()
       const passportNumber = String(passenger?.passportNumber || '').trim()
       const label = [title, name].filter(Boolean).join(' ')
       if (label && passportNumber) return `${label} (${passportNumber})`
@@ -40,12 +42,12 @@ export const getRouteText = (travelDetails = {}, language = 'en') => {
   const segments = sanitizeTravelSegments(travelDetails?.segments)
   if (segments.length > 0) {
     return segments
-      .map((segment) => [segment.from || (language === 'ar' ? 'غير محدد' : 'Unknown'), segment.to || (language === 'ar' ? 'غير محدد' : 'Unknown')].join(' -> '))
+      .map((segment) => [language === 'ar' ? (segment.fromAr || segment.from || 'غير محدد') : (segment.from || segment.fromAr || 'Unknown'), language === 'ar' ? (segment.toAr || segment.to || 'غير محدد') : (segment.to || segment.toAr || 'Unknown')].join(' -> '))
       .join('  |  ')
   }
 
-  const routeFrom = String(travelDetails?.routeFrom || '').trim()
-  const routeTo = String(travelDetails?.routeTo || '').trim()
+  const routeFrom = String(language === 'ar' ? (travelDetails?.routeFromAr || travelDetails?.routeFrom || '') : (travelDetails?.routeFrom || travelDetails?.routeFromAr || '')).trim()
+  const routeTo = String(language === 'ar' ? (travelDetails?.routeToAr || travelDetails?.routeTo || '') : (travelDetails?.routeTo || travelDetails?.routeToAr || '')).trim()
   if (routeFrom && routeTo) return `${routeFrom} -> ${routeTo}`
   return routeFrom || routeTo || '—'
 }
@@ -54,11 +56,13 @@ export const normalizeTravelDetails = (travelDetails = {}, buyerName = '', langu
   const segments = sanitizeTravelSegments(travelDetails?.segments)
   const firstSegment = segments[0]
   const lastSegment = segments[segments.length - 1]
-  const routeFrom = String(travelDetails?.routeFrom || firstSegment?.from || '').trim()
-  const routeTo = String(travelDetails?.routeTo || lastSegment?.to || '').trim()
+  const routeFrom = String(language === 'ar' ? (travelDetails?.routeFromAr || travelDetails?.routeFrom || firstSegment?.fromAr || firstSegment?.from || '') : (travelDetails?.routeFrom || travelDetails?.routeFromAr || firstSegment?.from || firstSegment?.fromAr || '')).trim()
+  const routeTo = String(language === 'ar' ? (travelDetails?.routeToAr || travelDetails?.routeTo || lastSegment?.toAr || lastSegment?.to || '') : (travelDetails?.routeTo || travelDetails?.routeToAr || lastSegment?.to || lastSegment?.toAr || '')).trim()
   const hasReturnDate = Boolean((travelDetails?.hasReturnDate ?? true) && travelDetails?.returnDate)
-  const travelerName = String(travelDetails?.travelerName || buyerName || '').trim()
+  const travelerName = String(language === 'ar' ? (travelDetails?.travelerNameAr || travelDetails?.travelerName || buyerName || '') : (travelDetails?.travelerName || travelDetails?.travelerNameAr || buyerName || '')).trim()
   const travelerDisplayName = [passengerTitleLabel(travelDetails?.passengerTitle, language), travelerName].filter(Boolean).join(' ')
+  const airlineDisplayName = String(language === 'ar' ? (travelDetails?.airlineNameAr || travelDetails?.airlineName || '') : (travelDetails?.airlineName || travelDetails?.airlineNameAr || '')).trim()
+  const layoverStayDisplay = String(language === 'ar' ? (travelDetails?.layoverStayAr || travelDetails?.layoverStay || '') : (travelDetails?.layoverStay || travelDetails?.layoverStayAr || '')).trim()
 
   return {
     ...travelDetails,
@@ -68,6 +72,8 @@ export const normalizeTravelDetails = (travelDetails = {}, buyerName = '', langu
     hasReturnDate,
     travelerName,
     travelerDisplayName,
+    airlineDisplayName,
+    layoverStayDisplay,
     routeText: getRouteText({ ...travelDetails, routeFrom, routeTo, segments }, language),
     additionalPassengersText: formatPassengerList(travelDetails?.passengers, language) || '—',
   }

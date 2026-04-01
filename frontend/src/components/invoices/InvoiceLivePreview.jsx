@@ -120,6 +120,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
   const sellerName = language === 'ar' ? (invoice?.seller?.nameAr || invoice?.seller?.name || tenant?.business?.legalNameAr || tenant?.business?.legalNameEn) : (invoice?.seller?.name || invoice?.seller?.nameAr || tenant?.business?.legalNameEn || tenant?.business?.legalNameAr)
   const buyerName = language === 'ar' ? (invoice?.buyer?.nameAr || invoice?.buyer?.name || 'Cash Customer') : (invoice?.buyer?.name || invoice?.buyer?.nameAr || 'Cash Customer')
   const customerLabel = invoice?.flow === 'purchase' ? (language === 'ar' ? 'المشتري' : 'Buyer') : (language === 'ar' ? 'العميل' : 'Customer')
+  const logoSrc = tenant?.branding?.logo || '/maqder-logo.png'
   const qrValue = invoice?.zatca?.qrCodeData || generateZatcaQrValue({
     sellerName,
     vatNumber: invoice?.seller?.vatNumber || tenant?.business?.vatNumber,
@@ -138,27 +139,40 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
   return (
     <div className={`relative overflow-hidden rounded-[2rem] border shadow-[0_30px_80px_-40px_rgba(15,23,42,0.30)] ${styles.shell}`}>
       <div className={`flex flex-col gap-6 p-7 ${styles.header}`}>
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white">
-              {tenant?.branding?.logo ? (
-                <img src={tenant.branding.logo} alt="" className="h-full w-full object-contain" />
-              ) : (
-                <img src="/maqder-logo.png" alt="Maqder" className="h-full w-full object-contain" />
-              )}
-            </div>
-            <div>
-              <p className={`text-xs uppercase tracking-[0.25em] ${mutedText}`}>{language === 'ar' ? 'فاتورة أعمال' : 'Business Invoice'}</p>
-              <h3 className={`mt-1 text-2xl font-semibold ${titleText}`}>{language === 'ar' ? 'فاتورة ضريبية' : 'Tax Invoice'}</h3>
-              <p className={`mt-1 text-sm ${mutedText}`}>{sellerName || '—'}</p>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)_176px] lg:items-start">
+          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
+            <div className="flex items-center gap-4">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                <img src={logoSrc} alt="" className="h-full w-full object-contain" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className={`text-[11px] uppercase tracking-[0.24em] ${mutedText}`}>{language === 'ar' ? 'هوية الفاتورة' : 'Invoice Identity'}</p>
+                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3">
+                    <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${mutedText}`}>{language === 'ar' ? 'البائع' : 'Seller'}</p>
+                    <p className={`mt-2 truncate text-sm font-semibold ${titleText}`}>{sellerName || '—'}</p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3">
+                    <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${mutedText}`}>{customerLabel}</p>
+                    <p className={`mt-2 truncate text-sm font-semibold ${titleText}`}>{buyerName || '—'}</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="text-end">
+          <div className="flex min-h-[120px] flex-col items-center justify-center text-center">
+            <p className={`text-xs uppercase tracking-[0.25em] ${mutedText}`}>{language === 'ar' ? 'فاتورة أعمال' : 'Business Invoice'}</p>
+            <h3 className={`mt-2 text-3xl font-semibold ${titleText}`}>{language === 'ar' ? 'فاتورة ضريبية' : 'Tax Invoice'}</h3>
+            <p className={`mt-2 text-sm ${mutedText}`}>{sellerName || '—'}</p>
+          </div>
+          <div className={`flex w-full flex-col items-center justify-center rounded-[1.5rem] p-5 ${styles.block}`}>
             <div className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${styles.badge}`}>
               {invoice?.transactionType || 'B2C'}
             </div>
-            <p className={`mt-3 text-base font-semibold ${titleText}`}>{invoice?.invoiceNumber || 'DRAFT-PREVIEW'}</p>
-            <p className={`mt-1 text-xs ${mutedText}`}>{formatDate(invoice?.issueDate || new Date(), language)}</p>
+            <p className={`mt-3 text-center text-base font-semibold ${titleText}`}>{invoice?.invoiceNumber || 'DRAFT-PREVIEW'}</p>
+            <p className={`mt-1 text-center text-xs ${mutedText}`}>{formatDate(invoice?.issueDate || new Date(), language)}</p>
+            <QRCodeSVG value={qrValue} size={116} bgColor="transparent" fgColor="#0F172A" className="mt-4" />
+            <p className={`mt-3 text-[11px] font-medium ${mutedText}`}>{language === 'ar' ? 'رمز QR' : 'QR Code'}</p>
           </div>
         </div>
         <div className="grid grid-cols-1 gap-4 rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-5 md:grid-cols-3">
@@ -175,7 +189,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
             <p className={`mt-1 text-sm font-semibold ${titleText}`}>{invoice?.flow || 'sell'}</p>
           </div>
         </div>
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_176px]">
+        <div className="grid grid-cols-1 gap-4">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className={`rounded-[1.5rem] p-5 ${styles.block}`}>
               <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${mutedText}`}>{language === 'ar' ? 'البائع' : 'Seller'}</p>
@@ -195,10 +209,6 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
                 ))}
               </div>
             </div>
-          </div>
-          <div className={`flex w-full flex-col items-center justify-center rounded-[1.5rem] p-5 ${styles.block}`}>
-            <QRCodeSVG value={qrValue} size={120} bgColor="transparent" fgColor="#0F172A" />
-            <p className={`mt-3 text-[11px] font-medium ${mutedText}`}>{language === 'ar' ? 'رمز QR' : 'QR Code'}</p>
           </div>
         </div>
       </div>
@@ -224,7 +234,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
             </div>
             <div>
               <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'شركة الطيران / المورد' : 'Airline / Vendor'}</p>
-              <p className={`mt-1 text-sm font-semibold ${titleText}`}>{travelDetails?.airlineName || invoice?.seller?.name || '—'}</p>
+              <p className={`mt-1 text-sm font-semibold ${titleText}`}>{travelDetails?.airlineDisplayName || invoice?.seller?.name || '—'}</p>
             </div>
             <div>
               <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'تاريخ الرحلة' : 'Travel Date'}</p>
@@ -236,7 +246,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
             </div>
             <div>
               <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'التوقف / الإقامة' : 'Layover / Stay'}</p>
-              <p className={`mt-1 text-sm font-semibold ${titleText}`}>{travelDetails?.layoverStay || '—'}</p>
+              <p className={`mt-1 text-sm font-semibold ${titleText}`}>{travelDetails?.layoverStayDisplay || '—'}</p>
             </div>
             <div className="md:col-span-3">
               <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'مسافرون إضافيون' : 'Additional Passengers'}</p>
@@ -270,7 +280,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
                     <td className="px-4 py-3">{index + 1}</td>
                     <td className="px-4 py-3">
                       <div className="font-medium">{language === 'ar' ? (line?.raw?.productNameAr || line?.raw?.productName || line?.productNameAr || line?.productName || '—') : (line?.raw?.productName || line?.raw?.productNameAr || line?.productName || line?.productNameAr || '—')}</div>
-                      {(line?.raw?.description || line?.description) && <div className={`mt-1 text-xs ${mutedText}`}>{line?.raw?.description || line?.description}</div>}
+                      {(line?.raw?.description || line?.raw?.descriptionAr || line?.description || line?.descriptionAr) && <div className={`mt-1 text-xs ${mutedText}`}>{language === 'ar' ? (line?.raw?.descriptionAr || line?.raw?.description || line?.descriptionAr || line?.description) : (line?.raw?.description || line?.raw?.descriptionAr || line?.description || line?.descriptionAr)}</div>}
                     </td>
                     <td className="px-4 py-3 text-center">{quantity || '—'}</td>
                     <td className="px-4 py-3 text-end">{formatMoney(unitPrice, currency, language)}</td>

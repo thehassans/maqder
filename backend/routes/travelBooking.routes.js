@@ -3,6 +3,7 @@ import TravelBooking from '../models/TravelBooking.js';
 import Invoice from '../models/Invoice.js';
 import Tenant from '../models/Tenant.js';
 import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
+import { enrichInvoiceArabicFields } from '../utils/invoiceArabic.js';
 import { buildDraftInvoiceQr } from '../utils/zatca/draftInvoiceQr.js';
 
 const router = express.Router();
@@ -193,7 +194,7 @@ router.post('/:id/create-invoice', checkPermission('travel', 'update'), checkPer
 
     const taxRate = taxableAmount > 0 ? Math.round((bookingTotalTax / taxableAmount) * 10000) / 100 : 0;
 
-    const createdInvoice = await Invoice.create({
+    const invoiceData = {
       tenantId: req.user.tenantId,
       flow: 'sell',
       businessContext: 'travel_agency',
@@ -246,7 +247,10 @@ router.post('/:id/create-invoice', checkPermission('travel', 'update'), checkPer
         },
       ],
       createdBy: req.user._id,
-    });
+    };
+
+    const enrichedInvoiceData = await enrichInvoiceArabicFields(invoiceData);
+    const createdInvoice = await Invoice.create(enrichedInvoiceData);
 
     const draftQr = await buildDraftInvoiceQr({
       seller: tenant.business,

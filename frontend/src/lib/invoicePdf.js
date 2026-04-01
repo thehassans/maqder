@@ -360,19 +360,38 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
 
     const y = 18
     const boxPad = 6
-    const logoW = 92
-    const logoH = 28
+    const logoW = 42
+    const logoH = 42
     const qrSize = 72
     const qrVisible = Boolean(qr && qrFormat && pageNumber === 1)
+    const identityPanelW = Math.min(250, contentW * 0.42)
+    const identityPanelH = 84
+    const identityPanelX = isRtl ? contentRightEdge - identityPanelW : contentLeft
+    const identityPanelTextX = isRtl ? identityPanelX + identityPanelW - 64 : identityPanelX + 64
+    const identityTextWidth = identityPanelW - 76
+
+    doc.setFillColor(248, 250, 252)
+    doc.setDrawColor(203, 213, 225)
+    doc.roundedRect(identityPanelX, y - 2, identityPanelW, identityPanelH, 14, 14, 'FD')
 
     if (logo && logoFormat) {
-      const x = isRtl ? contentRightEdge - logoW : contentLeft
+      const x = isRtl ? identityPanelX + identityPanelW - logoW - 12 : identityPanelX + 12
       doc.setFillColor(255, 255, 255)
-      doc.roundedRect(x - boxPad, y - boxPad, logoW + boxPad * 2, logoH + boxPad * 2, 10, 10, 'F')
+      doc.roundedRect(x - boxPad, y + 6 - boxPad, logoW + boxPad * 2, logoH + boxPad * 2, 10, 10, 'F')
       doc.setDrawColor(226, 232, 240)
-      doc.roundedRect(x - boxPad, y - boxPad, logoW + boxPad * 2, logoH + boxPad * 2, 10, 10, 'S')
-      doc.addImage(logo, logoFormat, x, y, logoW, logoH)
+      doc.roundedRect(x - boxPad, y + 6 - boxPad, logoW + boxPad * 2, logoH + boxPad * 2, 10, 10, 'S')
+      doc.addImage(logo, logoFormat, x, y + 6, logoW, logoH)
     }
+
+    doc.setFontSize(8)
+    doc.setTextColor(theme.headerMutedRgb.r, theme.headerMutedRgb.g, theme.headerMutedRgb.b)
+    doc.text(shape(isRtl ? 'البائع' : 'Seller'), identityPanelTextX, y + 25, { align, maxWidth: identityTextWidth })
+    doc.text(shape(customerLabel), identityPanelTextX, y + 54, { align, maxWidth: identityTextWidth })
+
+    doc.setFontSize(10)
+    doc.setTextColor(theme.headerTitleRgb.r, theme.headerTitleRgb.g, theme.headerTitleRgb.b)
+    doc.text(shape(sellerName || ''), identityPanelTextX, y + 38, { align, maxWidth: identityTextWidth })
+    doc.text(shape(buyerName || ''), identityPanelTextX, y + 67, { align, maxWidth: identityTextWidth })
 
     if (qrVisible) {
       const x = isRtl ? contentLeft : contentRightEdge - qrSize
@@ -383,26 +402,26 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
       doc.addImage(qr, qrFormat, x, y, qrSize, qrSize)
     }
 
-    const titleX = isRtl ? contentRightEdge : contentLeft
+    const titleX = pageW / 2
     const rightX = qrVisible
       ? (isRtl ? contentLeft + qrSize + 18 : contentRightEdge - qrSize - 18)
       : (isRtl ? contentLeft : contentRightEdge)
 
     doc.setTextColor(theme.headerTitleRgb.r, theme.headerTitleRgb.g, theme.headerTitleRgb.b)
-    doc.setFontSize(16)
-    doc.text(shape(title), titleX, y + 56, { align, maxWidth: Math.max(180, contentW - qrSize - 36) })
-
-    doc.setFontSize(10)
-    doc.setTextColor(theme.headerMutedRgb.r, theme.headerMutedRgb.g, theme.headerMutedRgb.b)
-    doc.text(shape(sellerName || ''), titleX, y + 72, { align, maxWidth: Math.max(180, contentW - qrSize - 36) })
-
-    doc.setFontSize(12)
-    doc.setTextColor(theme.headerTitleRgb.r, theme.headerTitleRgb.g, theme.headerTitleRgb.b)
-    doc.text(shape(txt(invoice.invoiceNumber)), rightX, y + 56, { align: oppositeAlign, maxWidth: Math.max(120, contentW * 0.35) })
+    doc.setFontSize(18)
+    doc.text(shape(title), titleX, y + 32, { align: 'center', maxWidth: Math.max(180, contentW - identityPanelW - qrSize - 54) })
 
     doc.setFontSize(9)
     doc.setTextColor(theme.headerMutedRgb.r, theme.headerMutedRgb.g, theme.headerMutedRgb.b)
-    doc.text(shape(formatDateTime(invoice.issueDate, language)), rightX, y + 72, { align: oppositeAlign, maxWidth: Math.max(120, contentW * 0.35) })
+    doc.text(shape(sellerName || ''), titleX, y + 48, { align: 'center', maxWidth: Math.max(180, contentW - identityPanelW - qrSize - 54) })
+
+    doc.setFontSize(12)
+    doc.setTextColor(theme.headerTitleRgb.r, theme.headerTitleRgb.g, theme.headerTitleRgb.b)
+    doc.text(shape(txt(invoice.invoiceNumber)), rightX, y + 34, { align: oppositeAlign, maxWidth: Math.max(120, contentW * 0.35) })
+
+    doc.setFontSize(9)
+    doc.setTextColor(theme.headerMutedRgb.r, theme.headerMutedRgb.g, theme.headerMutedRgb.b)
+    doc.text(shape(formatDateTime(invoice.issueDate, language)), rightX, y + 50, { align: oppositeAlign, maxWidth: Math.max(120, contentW * 0.35) })
   }
 
   drawHeader({ pageNumber: 1 })
@@ -517,10 +536,10 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
       [isRtl ? 'رقم الجواز' : 'Passport', travelDetails.passportNumber || ''],
       [isRtl ? 'التذكرة / PNR' : 'Ticket / PNR', [travelDetails.ticketNumber, travelDetails.pnr].filter(Boolean).join(' / ')],
       [isRtl ? 'المسار' : 'Route', travelDetails.routeText || ''],
-      [isRtl ? 'شركة الطيران' : 'Airline', travelDetails.airlineName || ''],
+      [isRtl ? 'شركة الطيران' : 'Airline', travelDetails.airlineDisplayName || ''],
       [isRtl ? 'تاريخ السفر' : 'Travel Date', formatDateTime(travelDetails.departureDate, language)],
       [isRtl ? 'تاريخ العودة' : 'Return Date', travelDetails.hasReturnDate ? formatDateTime(travelDetails.returnDate, language) : ''],
-      [isRtl ? 'التوقف / الإقامة' : 'Layover / Stay', travelDetails.layoverStay || ''],
+      [isRtl ? 'التوقف / الإقامة' : 'Layover / Stay', travelDetails.layoverStayDisplay || ''],
       [isRtl ? 'مسافرون إضافيون' : 'Additional Passengers', travelDetails.additionalPassengersText === '—' ? '' : travelDetails.additionalPassengersText],
     ]
 
@@ -580,24 +599,26 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     if (!l || !(l.raw?.productName || l.productName)) {
       return [
         '',
-        shape(isRtl ? 'لا توجد بنود' : 'No line items'),
-        '',
-        '',
-        '',
-        '',
+        shape(isRtl ? 'خدمة' : 'Service'),
+        '1',
+        money(0),
+        money(0),
+        money(0),
       ]
     }
 
-    const qty = toNumber(l.quantity)
+    const quantity = toNumber(l.quantity)
     const unitPrice = toNumber(l.unitPrice)
     const taxAmount = toNumber(l.taxAmount)
     const lineTotalWithTax = toNumber(l.lineTotalWithTax)
-    const desc = isRtl ? (l.raw?.productNameAr || l.raw?.productName || l.raw?.description || l.productNameAr || l.productName || l.description) : (l.raw?.productName || l.raw?.productNameAr || l.raw?.description || l.productName || l.productNameAr || l.description)
+    const productName = isRtl ? (l.raw?.productNameAr || l.raw?.productName || l.productNameAr || l.productName) : (l.raw?.productName || l.raw?.productNameAr || l.productName || l.productNameAr)
+    const description = isRtl ? (l.raw?.descriptionAr || l.raw?.description || l.descriptionAr || l.description) : (l.raw?.description || l.raw?.descriptionAr || l.description || l.descriptionAr)
+    const desc = [productName, description].filter((value, index, list) => value && list.indexOf(value) === index).join('\n')
 
     return [
       String(idx + 1),
-      txt(desc),
-      String(qty),
+      shape(desc),
+      String(quantity),
       money(unitPrice),
       money(taxAmount),
       money(lineTotalWithTax),
