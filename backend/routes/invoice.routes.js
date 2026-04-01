@@ -198,11 +198,12 @@ async function syncCustomerStats(tenantId, customerId) {
 // @route   GET /api/invoices
 router.get('/', checkPermission('invoicing', 'read'), async (req, res) => {
   try {
-    const { page = 1, limit = 20, status, transactionType, search, startDate, endDate } = req.query;
+    const { page = 1, limit = 20, status, transactionType, businessContext, search, startDate, endDate } = req.query;
     
     const query = { ...req.tenantFilter };
     if (status) query.status = status;
     if (transactionType) query.transactionType = transactionType;
+    if (businessContext) query.businessContext = businessContext;
     if (startDate || endDate) {
       query.issueDate = {};
       if (startDate) query.issueDate.$gte = new Date(startDate);

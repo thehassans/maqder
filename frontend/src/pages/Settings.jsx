@@ -10,7 +10,6 @@ import { useTranslation } from '../lib/translations'
 import { setLanguage, setTheme } from '../store/slices/uiSlice'
 import { updateTenant } from '../store/slices/authSlice'
 import { useLiveTranslation } from '../lib/liveTranslation'
-import { getBusinessTypeOptions, getPrimaryBusinessType, getTenantBusinessTypes } from '../lib/businessTypes'
 
 export default function Settings() {
   const dispatch = useDispatch()
@@ -27,9 +26,6 @@ export default function Settings() {
   const [invoicePdfTemplate, setInvoicePdfTemplate] = useState(1)
   const [invoicePdfPageSize, setInvoicePdfPageSize] = useState('a4')
   const [invoicePdfOrientation, setInvoicePdfOrientation] = useState('portrait')
-  const [selectedBusinessTypes, setSelectedBusinessTypes] = useState(['trading'])
-  const [primaryBusinessType, setPrimaryBusinessType] = useState('trading')
-  const businessTypeOptions = getBusinessTypeOptions(language)
 
   const { data: tenant } = useQuery({
     queryKey: ['tenant-settings'],
@@ -47,22 +43,7 @@ export default function Settings() {
     setInvoicePdfTemplate(Number(tenant.settings?.invoicePdfTemplate || 1))
     setInvoicePdfPageSize(tenant.settings?.invoicePdfPageSize || 'a4')
     setInvoicePdfOrientation(tenant.settings?.invoicePdfOrientation || 'portrait')
-    const nextBusinessTypes = getTenantBusinessTypes(tenant)
-    setSelectedBusinessTypes(nextBusinessTypes)
-    setPrimaryBusinessType(getPrimaryBusinessType(tenant))
   }, [tenant])
-
-  const toggleBusinessType = (businessTypeId) => {
-    setSelectedBusinessTypes((current) => {
-      const exists = current.includes(businessTypeId)
-      const next = exists ? current.filter((item) => item !== businessTypeId) : [...current, businessTypeId]
-      const normalized = next.length > 0 ? next : ['trading']
-      if (!normalized.includes(primaryBusinessType)) {
-        setPrimaryBusinessType(normalized[0])
-      }
-      return normalized
-    })
-  }
 
   const { data: zatcaStatus } = useQuery({
     queryKey: ['zatca-status'],
@@ -203,7 +184,13 @@ export default function Settings() {
           {activeTab === 'company' && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card p-6">
               <h3 className="text-lg font-semibold mb-6">{t('companySettings')}</h3>
-              <form onSubmit={handleSubmit((data) => updateMutation.mutate({ business: data, businessTypes: selectedBusinessTypes, businessType: primaryBusinessType }))} className="space-y-4">
+              <form onSubmit={handleSubmit((data) => updateMutation.mutate({
+                business: data,
+                branding: {
+                  ...(tenant?.branding || {}),
+                  logo: logoDataUrl || tenant?.branding?.logo || null,
+                },
+              }))} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="label">{language === 'ar' ? 'الاسم القانوني (EN)' : 'Legal Name (EN)'}</label>
@@ -238,33 +225,25 @@ export default function Settings() {
                     <input {...register('contactPhone')} className="input" />
                   </div>
                 </div>
-                <div className="pt-2">
-                  <label className="label">{language === 'ar' ? 'أنشطة الشركة' : 'Business Profiles'}</label>
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2 mt-2">
-                    {businessTypeOptions.map((option) => {
-                      const active = selectedBusinessTypes.includes(option.id)
-                      return (
-                        <button
-                          key={option.id}
-                          type="button"
-                          onClick={() => toggleBusinessType(option.id)}
-                          className={`rounded-2xl border p-4 text-start transition-all ${active ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-dark-600'}`}
-                        >
-                          <p className="font-semibold text-gray-900 dark:text-white">{option.label}</p>
-                          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{option.description}</p>
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
                 <div>
-                  <label className="label">{language === 'ar' ? 'النشاط الافتراضي' : 'Primary Business Profile'}</label>
-                  <select value={primaryBusinessType} onChange={(e) => setPrimaryBusinessType(e.target.value)} className="select">
-                    {selectedBusinessTypes.map((businessTypeId) => {
-                      const option = businessTypeOptions.find((item) => item.id === businessTypeId)
-                      return <option key={businessTypeId} value={businessTypeId}>{option?.label || businessTypeId}</option>
-                    })}
-                  </select>
+                  <label className="label flex items-center gap-2"><Image className="w-4 h-4" />{language === 'ar' ? 'شعار لوحة الإدارة' : 'Admin Panel Logo'}</label>
+                  <div className="card-glass p-4 mt-2">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-dark-700 border border-gray-200 dark:border-dark-600 flex items-center justify-center overflow-hidden">
+                        {logoDataUrl ? (
+                          <img src={logoDataUrl} alt="" className="w-full h-full object-contain" />
+                        ) : (
+                          <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <input type="file" accept="image/*" onChange={handleLogoFile} className="input" />
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                          {language === 'ar' ? 'يتم تطبيق الشعار على الشريط الجانبي وترويسة الفواتير' : 'This logo is used in the sidebar and invoice header'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 <div className="flex justify-end pt-4">
                   <button type="submit" disabled={updateMutation.isPending} className="btn btn-primary">
@@ -652,27 +631,6 @@ export default function Settings() {
                         >
                           <span className="font-medium">{language === 'ar' ? 'زجاجي' : 'Glass'}</span>
                         </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="label flex items-center gap-2"><Image className="w-4 h-4" />{language === 'ar' ? 'الشعار' : 'Logo'}</label>
-                  <div className="card-glass p-4 mt-2">
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-dark-700 border border-gray-200 dark:border-dark-600 flex items-center justify-center overflow-hidden">
-                        {logoDataUrl ? (
-                          <img src={logoDataUrl} alt="" className="w-full h-full object-contain" />
-                        ) : (
-                          <div className="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <input type="file" accept="image/*" onChange={handleLogoFile} className="input" />
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                          {language === 'ar' ? 'يتم حفظ الشعار داخل بيانات الشركة' : 'Logo is stored in the tenant branding settings'}
-                        </p>
                       </div>
                     </div>
                   </div>

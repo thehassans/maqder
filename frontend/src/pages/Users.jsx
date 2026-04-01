@@ -7,6 +7,7 @@ import { Plus, Search, User, X, Save, Shield, CheckCircle2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
+import { getTenantBusinessTypes } from '../lib/businessTypes'
 
 const MODULES = [
   { key: 'invoicing', labelEn: 'Invoicing', labelAr: 'الفوترة' },
@@ -45,6 +46,7 @@ function ActionPill({ active, label, onClick }) {
 export default function Users() {
   const queryClient = useQueryClient()
   const { language } = useSelector((state) => state.ui)
+  const { tenant } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
 
   const [search, setSearch] = useState('')
@@ -85,6 +87,13 @@ export default function Users() {
   const activeUsers = Number(stats?.activeUsers ?? 0)
   const isLimitEnabled = Number.isFinite(maxUsers) && maxUsers > 0
   const isAtLimit = isLimitEnabled && activeUsers >= maxUsers
+  const tenantBusinessTypes = getTenantBusinessTypes(tenant)
+  const enabledModules = useMemo(() => {
+    const blocked = new Set()
+    if (!tenantBusinessTypes.includes('travel_agency')) blocked.add('travel')
+    if (!tenantBusinessTypes.includes('restaurant')) blocked.add('restaurant')
+    return MODULES.filter((module) => !blocked.has(module.key))
+  }, [tenantBusinessTypes])
 
   const roles = useMemo(
     () => [
@@ -96,8 +105,8 @@ export default function Users() {
       { key: 'kitchen_staff', label: language === 'ar' ? 'طاقم مطبخ' : 'Kitchen Staff' },
       { key: 'sales', label: language === 'ar' ? 'مبيعات' : 'Sales' },
       { key: 'viewer', label: language === 'ar' ? 'مشاهدة فقط' : 'Viewer' },
-    ],
-    [language]
+    ].filter((role) => role.key !== 'kitchen_staff' || tenantBusinessTypes.includes('restaurant')),
+    [language, tenantBusinessTypes]
   )
 
   const openPanel = (u = null) => {
@@ -128,7 +137,7 @@ export default function Users() {
       email: '',
       phone: '',
       password: '',
-      role: 'viewer',
+      role: roles[0]?.key || 'viewer',
       isActive: true,
       permissions: [],
     })
@@ -452,7 +461,7 @@ export default function Users() {
                   </div>
 
                   <div className="mt-4 space-y-3">
-                    {MODULES.map((m) => {
+                    {enabledModules.map((m) => {
                       const set = permMap.get(m.key) || new Set()
                       const allOn = ACTIONS.every((a) => set.has(a))
                       const label = language === 'ar' ? m.labelAr : m.labelEn

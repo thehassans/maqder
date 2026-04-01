@@ -21,15 +21,36 @@ import Money from '../../components/ui/Money'
 import ExportMenu from '../../components/ui/ExportMenu'
 import toast from 'react-hot-toast'
 import { downloadInvoicePdf } from '../../lib/invoicePdf'
+import { getTenantBusinessTypes } from '../../lib/businessTypes'
+
+const getInvoiceContextLabel = (invoice, language = 'en') => {
+  const context = String(invoice?.businessContext || '').trim()
+  const labels = {
+    trading: language === 'ar' ? 'فاتورة تجارة' : 'Trading Invoice',
+    construction: language === 'ar' ? 'فاتورة مقاولات' : 'Construction Invoice',
+    travel_agency: language === 'ar' ? 'فاتورة وكالة سفر' : 'Travel Agency Invoice',
+    restaurant: language === 'ar' ? 'فاتورة مطعم' : 'Restaurant Invoice',
+  }
+
+  if (labels[context]) return labels[context]
+  return language === 'ar' ? 'فاتورة ضريبية' : 'Tax Invoice'
+}
+
+const getTransactionTypeLabel = (transactionType, language = 'en', t) => {
+  if (transactionType === 'B2B') return t('b2bInvoice')
+  if (transactionType === 'B2C') return t('b2cInvoice')
+  return transactionType || (language === 'ar' ? 'غير محدد' : 'Unknown')
+}
 
 export default function Invoices() {
   const { language } = useSelector((state) => state.ui)
   const { tenant } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
   const [search, setSearch] = useState('')
-  const [filters, setFilters] = useState({ status: '', transactionType: '' })
+  const [filters, setFilters] = useState({ status: '', businessContext: '' })
   const [page, setPage] = useState(1)
   const [pdfLoadingId, setPdfLoadingId] = useState(null)
+  const tenantBusinessTypes = getTenantBusinessTypes(tenant)
 
   const { data, isLoading } = useQuery({
     queryKey: ['invoices', page, search, filters],
@@ -55,17 +76,11 @@ export default function Invoices() {
     {
       key: 'buyerName',
       label: t('customer'),
-      value: (r) => r?.buyer?.name || ''
+      value: (r) => language === 'ar' ? (r?.buyer?.nameAr || r?.buyer?.name || '') : (r?.buyer?.name || r?.buyer?.nameAr || '')
     },
     {
-      key: 'flow',
-      label: language === 'ar' ? 'العملية' : 'Flow',
-      value: (r) => r?.flow || 'sell'
-    },
-    {
-      key: 'transactionType',
       label: language === 'ar' ? 'النوع' : 'Type',
-      value: (r) => r?.transactionType || ''
+      value: (r) => getInvoiceContextLabel(r, language)
     },
     {
       key: 'issueDate',
@@ -143,22 +158,32 @@ export default function Invoices() {
               type="text"
               placeholder={`${t('search')}...`}
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setPage(1)
+              }}
               className="input ps-10"
             />
           </div>
           <select
-            value={filters.transactionType}
-            onChange={(e) => setFilters({ ...filters, transactionType: e.target.value })}
-            className="select w-full sm:w-40"
+            value={filters.businessContext}
+            onChange={(e) => {
+              setFilters({ ...filters, businessContext: e.target.value })
+              setPage(1)
+            }}
+            className="select w-full sm:w-52"
           >
             <option value="">{language === 'ar' ? 'كل الأنواع' : 'All Types'}</option>
-            <option value="B2B">{t('b2bInvoice')}</option>
-            <option value="B2C">{t('b2cInvoice')}</option>
+            {tenantBusinessTypes.map((businessType) => (
+              <option key={businessType} value={businessType}>{getInvoiceContextLabel({ businessContext: businessType }, language)}</option>
+            ))}
           </select>
           <select
             value={filters.status}
-            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+            onChange={(e) => {
+              setFilters({ ...filters, status: e.target.value })
+              setPage(1)
+            }}
             className="select w-full sm:w-40"
           >
             <option value="">{language === 'ar' ? 'كل الحالات' : 'All Status'}</option>
@@ -207,16 +232,19 @@ export default function Invoices() {
                       </td>
                       <td>
                         <p className="font-medium text-gray-900 dark:text-white">
-                          {invoice.buyer?.name || '-'}
+                          {language === 'ar' ? (invoice.buyer?.nameAr || invoice.buyer?.name || '-') : (invoice.buyer?.name || invoice.buyer?.nameAr || '-')}
                         </p>
                         {invoice.buyer?.vatNumber && (
                           <p className="text-xs text-gray-500">{invoice.buyer.vatNumber}</p>
                         )}
                       </td>
                       <td>
-                        <span className={`badge ${invoice.transactionType === 'B2B' ? 'badge-info' : 'badge-neutral'}`}>
-                          {invoice.transactionType}
-                        </span>
+                        <div>
+                          <span className={`badge ${invoice.businessContext === 'travel_agency' ? 'badge-info' : 'badge-neutral'}`}>
+                            {getInvoiceContextLabel(invoice, language)}
+                          </span>
+                          <p className="mt-1 text-xs text-gray-500">{getTransactionTypeLabel(invoice.transactionType, language, t)}</p>
+                        </div>
                       </td>
                       <td className="text-gray-600 dark:text-gray-400">
                         {new Date(invoice.issueDate).toLocaleDateString()}

@@ -2,6 +2,7 @@ import express from 'express';
 import User from '../models/User.js';
 import Tenant from '../models/Tenant.js';
 import { protect, tenantFilter, checkPermission } from '../middleware/auth.js';
+import { getTenantBusinessTypes } from '../utils/businessTypes.js';
 
 const router = express.Router();
 
@@ -13,6 +14,17 @@ const sanitizeUserForClient = (u) => {
   const obj = typeof u.toObject === 'function' ? u.toObject() : u;
   const { password, ...rest } = obj;
   return rest;
+};
+
+const sanitizePermissionsForTenant = (permissions = [], tenant) => {
+  const businessTypes = getTenantBusinessTypes(tenant);
+  const blockedModules = new Set();
+
+  if (!businessTypes.includes('travel_agency')) blockedModules.add('travel');
+  if (!businessTypes.includes('restaurant')) blockedModules.add('restaurant');
+
+  return (Array.isArray(permissions) ? permissions : [])
+    .filter((permission) => permission?.module && !blockedModules.has(String(permission.module)));
 };
 
 router.get('/', checkPermission('settings', 'read'), async (req, res) => {
@@ -89,7 +101,7 @@ router.post('/', checkPermission('settings', 'create'), async (req, res) => {
     const tenantId = req.user?.tenantId;
     if (!tenantId) return res.status(400).json({ error: 'No tenant associated with user' });
 
-    const tenant = await Tenant.findById(tenantId).select('subscription.maxUsers');
+    const tenant = await Tenant.findById(tenantId).select('subscription.maxUsers businessType businessTypes');
     if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
 
     const maxUsers = Number(tenant.subscription?.maxUsers ?? 0);
@@ -119,8 +131,11 @@ router.post('/', checkPermission('settings', 'create'), async (req, res) => {
     if (role === 'super_admin') {
       return res.status(400).json({ error: 'Invalid role' });
     }
+    if (role === 'kitchen_staff' && !getTenantBusinessTypes(tenant).includes('restaurant')) {
+      return res.status(400).json({ error: 'Kitchen staff is not available for this tenant' });
+    }
 
-    let permissions = Array.isArray(req.body?.permissions) ? req.body.permissions : [];
+    let permissions = sanitizePermissionsForTenant(req.body?.permissions, tenant);
     if (role === 'kitchen_staff' && permissions.length === 0) {
       permissions = [{ module: 'restaurant', actions: ['read', 'update'] }];
     }
@@ -178,11 +193,14 @@ router.put('/:id', checkPermission('settings', 'update'), async (req, res) => {
     if (typeof req.body?.role !== 'undefined') {
       const role = String(req.body.role || 'viewer');
       if (role === 'super_admin') return res.status(400).json({ error: 'Invalid role' });
+      if (role === 'kitchen_staff' && !getTenantBusinessTypes(req.tenant).includes('restaurant')) {
+        return res.status(400).json({ error: 'Kitchen staff is not available for this tenant' });
+      }
       existing.role = role;
     }
 
     if (typeof req.body?.permissions !== 'undefined') {
-      let permissions = Array.isArray(req.body.permissions) ? req.body.permissions : [];
+      let permissions = sanitizePermissionsForTenant(req.body.permissions, req.tenant);
       if (existing.role === 'kitchen_staff' && permissions.length === 0) {
         permissions = [{ module: 'restaurant', actions: ['read', 'update'] }];
       }
