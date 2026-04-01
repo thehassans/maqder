@@ -241,9 +241,9 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const pageW = doc.internal.pageSize.getWidth()
   const pageH = doc.internal.pageSize.getHeight()
   const margin = 40
-  const footerH = 64
-  const headerH = 132
-  const topMargin = headerH + 26
+  const footerH = 48
+  const headerH = 108
+  const topMargin = headerH + 14
 
   const isRtl = language === 'ar'
   const align = isRtl ? 'right' : 'left'
@@ -327,8 +327,8 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
         headerTitleRgb: { r: 15, g: 23, b: 42 },
         headerMutedRgb: { r: 100, g: 116, b: 139 },
         metaFillRgb: { r: 255, g: 255, b: 255 },
-        tableHeadFillRgb: { r: 241, g: 245, b: 249 },
-        tableHeadTextRgb: { r: 15, g: 23, b: 42 },
+        tableHeadFillRgb: primaryRgb,
+        tableHeadTextRgb: { r: 255, g: 255, b: 255 },
         boxStrokeRgb: { r: 203, g: 213, b: 225 },
         altRowFillRgb: { r: 248, g: 250, b: 252 },
       }
@@ -340,8 +340,8 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
         metaFillRgb: { r: 255, g: 255, b: 255 },
         metaStrokeRgb: { r: 203, g: 213, b: 225 },
         boxStrokeRgb: { r: 148, g: 163, b: 184 },
-        tableHeadFillRgb: { r: 226, g: 232, b: 240 },
-        tableHeadTextRgb: { r: 15, g: 23, b: 42 },
+        tableHeadFillRgb: primaryRgb,
+        tableHeadTextRgb: { r: 255, g: 255, b: 255 },
         altRowFillRgb: { r: 255, g: 255, b: 255 },
         drawFrame: () => {
           doc.setFillColor(primaryRgb.r, primaryRgb.g, primaryRgb.b)
@@ -407,15 +407,15 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const drawHeader = ({ pageNumber }) => {
     theme.drawFrame({ pageNumber })
 
-    const y = 26
+    const y = 20
     const logoW = 56
     const logoH = 56
-    const rightPanelW = 122
+    const rightPanelW = 148
     const rightPanelX = isRtl ? contentLeft : contentRightEdge - rightPanelW
     const logoX = isRtl ? contentRightEdge - logoW : contentLeft
     const brandBlockX = isRtl ? logoX - 16 : contentLeft + logoW + 16
     const brandBlockW = Math.max(160, contentW - logoW - rightPanelW - 40)
-    const dividerY = y + 68
+    const dividerY = y + 60
 
     if (logo && logoFormat) {
       doc.addImage(logo, logoFormat, logoX, y + 2, logoW, logoH)
@@ -440,9 +440,9 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     }
 
     if (visionLogo && visionLogoFormat) {
-      const visionW = 62
-      const visionH = 34
-      const visionX = isRtl ? rightPanelX + rightPanelW - visionW : rightPanelX
+      const visionW = 86
+      const visionH = 36
+      const visionX = isRtl ? rightPanelX : rightPanelX + rightPanelW - visionW
       doc.addImage(visionLogo, visionLogoFormat, visionX, y + 2, visionW, visionH)
     }
 
@@ -455,7 +455,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
       doc.text(shape(`${isRtl ? 'الرقم الضريبي' : 'VAT'}: ${vatValue}`), rightTextX, y + 48, { align: oppositeAlign, maxWidth: rightPanelW })
     }
     if (crValue) {
-      doc.text(shape(`${isRtl ? 'السجل التجاري' : 'CR'}: ${crValue}`), rightTextX, y + 60, { align: oppositeAlign, maxWidth: rightPanelW })
+      doc.text(shape(`${isRtl ? 'السجل التجاري' : 'CR'}: ${crValue}`), rightTextX, y + 59, { align: oppositeAlign, maxWidth: rightPanelW })
     }
 
     doc.setDrawColor(226, 232, 240)
@@ -463,11 +463,11 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
 
     doc.setTextColor(theme.headerMutedRgb.r, theme.headerMutedRgb.g, theme.headerMutedRgb.b)
     doc.setFontSize(8)
-    doc.text(shape(invoiceEyebrow), pageW / 2, dividerY + 14, { align: 'center' })
+    doc.text(shape(invoiceEyebrow), pageW / 2, dividerY + 12, { align: 'center' })
 
     doc.setTextColor(theme.headerTitleRgb.r, theme.headerTitleRgb.g, theme.headerTitleRgb.b)
     doc.setFontSize(18)
-    doc.text(shape(title), pageW / 2, dividerY + 33, { align: 'center' })
+    doc.text(shape(title), pageW / 2, dividerY + 29, { align: 'center' })
   }
 
   drawHeader({ pageNumber: 1 })
@@ -480,14 +480,13 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     { k: isRtl ? 'رقم الفاتورة' : 'Invoice #', v: invoice.invoiceNumber },
     { k: isRtl ? 'التاريخ' : 'Date', v: formatDateTime(invoice.issueDate, language) },
     { k: isRtl ? 'المستند' : 'Document', v: invoiceEyebrow },
-    { k: isRtl ? 'النوع' : 'Type', v: invoice.transactionType },
-    { k: isRtl ? 'التدفق' : 'Flow', v: invoice.flow || 'sell' },
+    { k: isRtl ? 'النوع / التدفق' : 'Type / Flow', v: `${invoice.transactionType || '—'} / ${invoice.flow || 'sell'}` },
   ].filter(Boolean)
 
   const metaPairs = Math.ceil(metaRows.length / 2)
-  const metaRowH = 32
-  const metaYStart = 22
-  const metaBottomPad = 14
+  const metaRowH = 26
+  const metaYStart = 18
+  const metaBottomPad = 10
   const metaH = metaYStart + metaPairs * metaRowH + metaBottomPad
 
   doc.setFillColor(theme.metaFillRgb.r, theme.metaFillRgb.g, theme.metaFillRgb.b)
@@ -497,7 +496,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const leftColX = isRtl ? cardX + cardW - 14 : cardX + 14
   const rightColX = isRtl ? cardX + 14 : cardX + cardW - 14
 
-  doc.setFontSize(9)
+  doc.setFontSize(8)
   let metaY = cardY + metaYStart
 
   for (let i = 0; i < metaRows.length; i += 2) {
@@ -507,25 +506,25 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     doc.setTextColor(100)
     doc.text(shape(`${txt(a.k)}:`), leftColX, metaY, { align })
     doc.setTextColor(15, 23, 42)
-    doc.text(shape(txt(a.v)), leftColX, metaY + 14, { align })
+    doc.text(shape(txt(a.v)), leftColX, metaY + 12, { align })
 
     if (b) {
       doc.setTextColor(100)
       doc.text(shape(`${txt(b.k)}:`), rightColX, metaY, { align: isRtl ? 'left' : 'right' })
       doc.setTextColor(15, 23, 42)
-      doc.text(shape(txt(b.v)), rightColX, metaY + 14, { align: isRtl ? 'left' : 'right' })
+      doc.text(shape(txt(b.v)), rightColX, metaY + 12, { align: isRtl ? 'left' : 'right' })
     }
 
     metaY += metaRowH
   }
 
-  const boxGap = 12
-  const boxY = cardY + metaH + 12
+  const boxGap = 10
+  const boxY = cardY + metaH + 10
   const boxW = (cardW - boxGap) / 2
-  const partyLineHeight = 13
-  const detailStartOffset = 56
+  const partyLineHeight = 11
+  const detailStartOffset = 46
   const partyDetailsCount = Math.max(sellerDetailLines.length, buyerDetailLines.length, 1)
-  const boxH = Math.max(92, detailStartOffset + partyDetailsCount * partyLineHeight + 16)
+  const boxH = Math.max(74, detailStartOffset + partyDetailsCount * partyLineHeight + 10)
 
   const drawPartyBox = ({ x, y, label, name, detailLines }) => {
     doc.setFillColor(theme.boxFillRgb.r, theme.boxFillRgb.g, theme.boxFillRgb.b)
@@ -535,15 +534,15 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     const pad = 12
     const tx = isRtl ? x + boxW - pad : x + pad
 
-    doc.setFontSize(9)
+    doc.setFontSize(8)
     doc.setTextColor(100)
-    doc.text(shape(label), tx, y + 22, { align })
+    doc.text(shape(label), tx, y + 18, { align })
 
-    doc.setFontSize(11)
+    doc.setFontSize(10)
     doc.setTextColor(15, 23, 42)
-    doc.text(shape(name || ''), tx, y + 38, { align, maxWidth: boxW - pad * 2 })
+    doc.text(shape(name || ''), tx, y + 31, { align, maxWidth: boxW - pad * 2 })
 
-    doc.setFontSize(9)
+    doc.setFontSize(8)
     doc.setTextColor(51, 65, 85)
     let ty = y + detailStartOffset
 
@@ -575,7 +574,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     detailLines: buyerDetailLines,
   })
 
-  let y = boxY + boxH + 24
+  let y = boxY + boxH + 14
 
   if (invoice?.invoiceSubtype === 'travel_ticket') {
     const travelRows = [
@@ -588,7 +587,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
       [isRtl ? 'تاريخ العودة' : 'Return Date', travelDetails.hasReturnDate ? formatDateTime(travelDetails.returnDate, language) : ''],
       [isRtl ? 'التوقف / الإقامة' : 'Layover / Stay', travelDetails.layoverStayDisplay || ''],
       [isRtl ? 'مسافرون إضافيون' : 'Additional Passengers', travelDetails.additionalPassengersText === '—' ? '' : travelDetails.additionalPassengersText],
-    ]
+    ].filter(([, value]) => String(value || '').trim())
 
     autoTable(doc, {
       startY: y,
@@ -597,16 +596,16 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
       tableWidth: contentW,
       body: travelRows,
       styles: {
-        fontSize: 9,
-        cellPadding: 5,
+        fontSize: 8,
+        cellPadding: 3.5,
         ...(arabicFontReady ? { font: 'Tajawal' } : {}),
         textColor: [15, 23, 42],
         lineColor: [203, 213, 225],
-        lineWidth: 0.4,
+        lineWidth: 0.35,
       },
       columnStyles: {
-        0: { cellWidth: 120, fontStyle: 'bold', halign: align },
-        1: { cellWidth: contentW - 120, halign: align },
+        0: { cellWidth: 112, fontStyle: 'bold', halign: align },
+        1: { cellWidth: contentW - 112, halign: align },
       },
       didDrawPage: () => {
         const pageNumber = doc.getCurrentPageInfo().pageNumber
@@ -614,13 +613,13 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
       },
     })
 
-    y = doc.lastAutoTable.finalY + 18
+    y = doc.lastAutoTable.finalY + 10
   }
 
-  doc.setFontSize(12)
+  doc.setFontSize(11)
   doc.setTextColor(15, 23, 42)
   doc.text(shape(isRtl ? 'البنود' : 'Items'), isRtl ? contentRightEdge : contentLeft, y, { align })
-  y += 10
+  y += 8
 
   const lineItems = totals.lines
 
@@ -685,12 +684,12 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     ]],
     body: bodyRows,
     styles: {
-      fontSize: 9,
-      cellPadding: 6,
+      fontSize: 8,
+      cellPadding: 4,
       ...(arabicFontReady ? { font: 'Tajawal' } : {}),
       textColor: [15, 23, 42],
       lineColor: [226, 232, 240],
-      lineWidth: 0.5,
+      lineWidth: 0.4,
     },
     headStyles: {
       fillColor: rgbArr(theme.tableHeadFillRgb),
@@ -724,37 +723,34 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     [isRtl ? 'الإجمالي' : 'Total', money(grandTotal)],
   ]
 
-  const totalsW = 220
+  const totalsW = 228
+  const totalsH = 88
   const totalsLeft = isRtl ? contentLeft : contentRightEdge - totalsW
+  const totalsTop = doc.lastAutoTable.finalY + 10
 
-  autoTable(doc, {
-    startY: doc.lastAutoTable.finalY + 16,
-    margin: { left: totalsLeft, right: contentRight, top: topMargin, bottom: footerH },
-    tableWidth: totalsW,
-    theme: 'plain',
-    body: totalsRows,
-    styles: {
-      fontSize: 10,
-      cellPadding: { top: 2, right: 2, bottom: 2, left: 2 },
-      ...(arabicFontReady ? { font: 'Tajawal' } : {}),
-      textColor: [15, 23, 42],
-    },
-    columnStyles: {
-      0: { cellWidth: 120, halign: align, textColor: [100, 116, 139] },
-      1: { cellWidth: 100, halign: oppositeAlign },
-    },
-    didParseCell: (data) => {
-      if (data.row.index !== totalsRows.length - 1) return
-      data.cell.styles.fontStyle = 'bold'
-      if (data.column.index === 1) {
-        data.cell.styles.textColor = [primaryRgb.r, primaryRgb.g, primaryRgb.b]
-      }
-    },
-    didDrawPage: () => {
-      const pageNumber = doc.getCurrentPageInfo().pageNumber
-      drawHeader({ pageNumber })
-    },
-  })
+  doc.setFillColor(lightRgb.r, lightRgb.g, lightRgb.b)
+  doc.setDrawColor(theme.boxStrokeRgb.r, theme.boxStrokeRgb.g, theme.boxStrokeRgb.b)
+  doc.roundedRect(totalsLeft, totalsTop, totalsW, totalsH, 12, 12, 'FD')
+
+  let totalsY = totalsTop + 18
+  for (let i = 0; i < totalsRows.length; i += 1) {
+    const [label, value] = totalsRows[i]
+    const isGrandTotal = i === totalsRows.length - 1
+
+    doc.setFontSize(isGrandTotal ? 10 : 8)
+    doc.setTextColor(isGrandTotal ? theme.headerTitleRgb.r : theme.headerMutedRgb.r, isGrandTotal ? theme.headerTitleRgb.g : theme.headerMutedRgb.g, isGrandTotal ? theme.headerTitleRgb.b : theme.headerMutedRgb.b)
+    doc.text(shape(label), isRtl ? totalsLeft + totalsW - 12 : totalsLeft + 12, totalsY, { align, maxWidth: 126 })
+
+    doc.setTextColor(theme.headerTitleRgb.r, theme.headerTitleRgb.g, theme.headerTitleRgb.b)
+    doc.text(shape(value), isRtl ? totalsLeft + 12 : totalsLeft + totalsW - 12, totalsY, { align: oppositeAlign, maxWidth: 90 })
+
+    if (isGrandTotal) {
+      doc.setDrawColor(203, 213, 225)
+      doc.line(totalsLeft + 12, totalsY - 10, totalsLeft + totalsW - 12, totalsY - 10)
+    }
+
+    totalsY += isGrandTotal ? 16 : 13
+  }
 
   const pageCount = doc.getNumberOfPages()
   const generatedAt = `${isRtl ? 'تاريخ الإنشاء' : 'Generated'}: ${formatDateTime(new Date(), language)}`

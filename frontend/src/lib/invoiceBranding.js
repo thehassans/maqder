@@ -36,8 +36,8 @@ export const getInvoiceBranding = (tenant, language = 'en') => {
     vision2030LogoSrc: invoiceBranding?.vision2030Logo || DEFAULT_VISION_2030_LOGO,
     vatNumber: business?.vatNumber || '',
     crNumber: business?.crNumber || '',
-    primaryColor: tenant?.branding?.primaryColor || '#1E3A5F',
-    secondaryColor: tenant?.branding?.secondaryColor || '#CBD5E1',
+    primaryColor: '#0F172A',
+    secondaryColor: '#334155',
   }
 }
 

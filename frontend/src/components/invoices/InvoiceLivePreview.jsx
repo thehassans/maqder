@@ -69,21 +69,21 @@ const getTemplateClasses = (templateId) => {
         shell: 'bg-white border-slate-300 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)]',
         badge: 'bg-slate-100 text-slate-800 border-slate-300',
         block: 'border border-slate-300 bg-white',
-        tableHead: 'bg-slate-100 text-slate-800',
+        tableHead: 'bg-slate-900 text-white',
       }
     case 6:
       return {
         shell: 'bg-white border-slate-300 shadow-[0_24px_70px_-36px_rgba(15,23,42,0.4)]',
         badge: 'bg-slate-100 text-slate-800 border-slate-300',
         block: 'border-2 border-slate-300 bg-white',
-        tableHead: 'bg-slate-200 text-slate-800',
+        tableHead: 'bg-slate-900 text-white',
       }
     default:
       return {
         shell: 'bg-white border-slate-200 shadow-[0_24px_70px_-38px_rgba(15,23,42,0.32)]',
         badge: 'bg-slate-50 text-slate-700 border-slate-200',
         block: 'border border-slate-200 bg-white',
-        tableHead: 'bg-slate-50 text-slate-700',
+        tableHead: 'bg-slate-900 text-white',
       }
   }
 }
@@ -128,11 +128,11 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
   const headerLines = splitBrandingText(invoiceBranding.headerText)
   const footerLines = splitBrandingText(invoiceBranding.footerText)
   const accentBarStyle = {
-    background: `linear-gradient(90deg, ${invoiceBranding.primaryColor} 0%, ${invoiceBranding.secondaryColor} 100%)`,
+    background: invoiceBranding.primaryColor,
   }
   const metaCardStyle = {
-    borderColor: `${invoiceBranding.primaryColor}22`,
-    backgroundColor: `${invoiceBranding.primaryColor}08`,
+    borderColor: '#CBD5E1',
+    backgroundColor: '#F8FAFC',
   }
   const mutedText = 'text-slate-500'
   const titleText = 'text-slate-900'
@@ -162,13 +162,13 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
                 )}
               </div>
             </div>
-            <div className="flex flex-col items-start gap-3 lg:items-end">
+            <div className="flex min-w-[148px] flex-col items-end gap-3 self-start text-end">
               {invoiceBranding.showVision2030 && invoiceBranding.vision2030LogoSrc ? (
-                <div className="flex h-16 w-24 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white px-3 py-2">
+                <div className="flex h-16 w-28 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white px-3 py-2">
                   <img src={invoiceBranding.vision2030LogoSrc} alt="" className="h-full w-full object-contain" />
                 </div>
               ) : null}
-              <div className="space-y-1 text-sm text-slate-600 lg:text-end">
+              <div className="space-y-1 text-sm text-slate-600 text-end">
                 {(invoice?.seller?.vatNumber || invoiceBranding.vatNumber) && (
                   <p><span className="font-medium text-slate-900">{language === 'ar' ? 'الرقم الضريبي' : 'VAT'}:</span> {invoice?.seller?.vatNumber || invoiceBranding.vatNumber}</p>
                 )}
