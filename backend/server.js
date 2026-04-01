@@ -67,6 +67,7 @@ const databaseReadyState = () => mongoose.connection.readyState;
 const isDatabaseReady = () => databaseReadyState() === 1;
 let reconnectTimer = null;
 let jobsStarted = false;
+let databaseConnectionPromise = null;
 
 const seedSuperAdmin = async () => {
   try {
@@ -121,25 +122,47 @@ const scheduleReconnect = () => {
 
 const connectToDatabase = async () => {
   if (databaseReadyState() === 1 || databaseReadyState() === 2) {
-    return;
+    return databaseConnectionPromise;
+  }
+
+  if (databaseConnectionPromise) {
+    return databaseConnectionPromise;
+  }
+
+  databaseConnectionPromise = mongoose.connect(mongoUri, {
+    serverSelectionTimeoutMS: mongoServerSelectionTimeoutMs,
+    socketTimeoutMS: mongoSocketTimeoutMs,
+  })
+    .then(async () => {
+      logger.info('MongoDB connected successfully');
+      await seedSuperAdmin();
+      startJobs();
+    })
+    .catch((err) => {
+      logger.error('MongoDB connection error:', err);
+      scheduleReconnect();
+      throw err;
+    })
+    .finally(() => {
+      databaseConnectionPromise = null;
+    });
+
+  return databaseConnectionPromise;
+};
+
+const ensureDatabaseReady = async (req, res, next) => {
+  if (isDatabaseReady()) {
+    return next();
   }
 
   try {
-    await mongoose.connect(mongoUri, {
-      serverSelectionTimeoutMS: mongoServerSelectionTimeoutMs,
-      socketTimeoutMS: mongoSocketTimeoutMs,
-    });
-
-    logger.info('MongoDB connected successfully');
-    await seedSuperAdmin();
-    startJobs();
-  } catch (err) {
-    logger.error('MongoDB connection error:', err);
-    scheduleReconnect();
+    await Promise.race([
+      connectToDatabase(),
+      new Promise((resolve) => setTimeout(resolve, 2000))
+    ]);
+  } catch {
   }
-};
 
-const ensureDatabaseReady = (req, res, next) => {
   if (isDatabaseReady()) {
     return next();
   }
