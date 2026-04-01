@@ -14,6 +14,26 @@ const pickLocalizedText = (englishValue, arabicValue, language = 'en') => {
 
 const pickFirstText = (...values) => values.find((value) => String(value || '').trim()) || ''
 
+const buildDefaultHeaderText = (context, language = 'en') => {
+  if (context === 'travel_agency') {
+    return language === 'ar'
+      ? 'خدمات سفر وحجوزات احترافية مصممة لرحلات الأعمال والرحلات الدولية بثقة عالية.'
+      : 'Professional travel management and reservation services tailored for corporate and international journeys.'
+  }
+
+  return ''
+}
+
+const buildDefaultContextFooterText = (context, language = 'en') => {
+  if (context === 'travel_agency') {
+    return language === 'ar'
+      ? 'تذاكر طيران • حجوزات فنادق • برامج سفر • دعم احترافي متواصل'
+      : 'Air Ticketing • Hotel Reservations • Travel Programs • Professional Support'
+  }
+
+  return ''
+}
+
 const normalizeInvoiceContext = (businessContext = 'trading') => {
   if (INVOICE_BRANDING_CONTEXTS.includes(businessContext)) return businessContext
   return 'trading'
@@ -69,13 +89,13 @@ export const getInvoiceBranding = (tenant, language = 'en', businessContext = 't
     companyName: pickLocalizedText(business?.legalNameEn, business?.legalNameAr, language),
     logoSrc: contextProfile.logo || invoiceBranding?.logo || tenant?.branding?.logo || '/maqder-logo.png',
     headerText: pickLocalizedText(
-      pickFirstText(contextProfile.headerTextEn, invoiceBranding?.headerTextEn),
-      pickFirstText(contextProfile.headerTextAr, invoiceBranding?.headerTextAr),
+      pickFirstText(contextProfile.headerTextEn, invoiceBranding?.headerTextEn) || buildDefaultHeaderText(context, 'en'),
+      pickFirstText(contextProfile.headerTextAr, invoiceBranding?.headerTextAr) || buildDefaultHeaderText(context, 'ar'),
       language,
     ),
     footerText: pickLocalizedText(
-      pickFirstText(contextProfile.footerTextEn, invoiceBranding?.footerTextEn),
-      pickFirstText(contextProfile.footerTextAr, invoiceBranding?.footerTextAr),
+      pickFirstText(contextProfile.footerTextEn, invoiceBranding?.footerTextEn) || buildDefaultContextFooterText(context, 'en'),
+      pickFirstText(contextProfile.footerTextAr, invoiceBranding?.footerTextAr) || buildDefaultContextFooterText(context, 'ar'),
       language,
     ) || buildDefaultFooterText(tenant, language),
     showVision2030: invoiceBranding?.showVision2030 !== false,

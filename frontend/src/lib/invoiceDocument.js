@@ -38,17 +38,27 @@ export const formatPassengerList = (passengers = [], language = 'en') => {
     .join(', ')
 }
 
+const formatRouteLeg = (from, to) => {
+  const fromCode = String(from || '').trim()
+  const toCode = String(to || '').trim()
+  if (fromCode && toCode) return `${fromCode} - ${toCode}`
+  return fromCode || toCode || '—'
+}
+
 export const getRouteText = (travelDetails = {}, language = 'en') => {
   const segments = sanitizeTravelSegments(travelDetails?.segments)
   if (segments.length > 0) {
     return segments
-      .map((segment) => [language === 'ar' ? (segment.fromAr || segment.from || 'غير محدد') : (segment.from || segment.fromAr || 'Unknown'), language === 'ar' ? (segment.toAr || segment.to || 'غير محدد') : (segment.to || segment.toAr || 'Unknown')].join(' -> '))
-      .join('  |  ')
+      .map((segment) => formatRouteLeg(
+        language === 'ar' ? (segment.fromAr || segment.from || 'غير محدد') : (segment.from || segment.fromAr || 'Unknown'),
+        language === 'ar' ? (segment.toAr || segment.to || 'غير محدد') : (segment.to || segment.toAr || 'Unknown'),
+      ))
+      .join(' | ')
   }
 
   const routeFrom = String(language === 'ar' ? (travelDetails?.routeFromAr || travelDetails?.routeFrom || '') : (travelDetails?.routeFrom || travelDetails?.routeFromAr || '')).trim()
   const routeTo = String(language === 'ar' ? (travelDetails?.routeToAr || travelDetails?.routeTo || '') : (travelDetails?.routeTo || travelDetails?.routeToAr || '')).trim()
-  if (routeFrom && routeTo) return `${routeFrom} -> ${routeTo}`
+  if (routeFrom && routeTo) return formatRouteLeg(routeFrom, routeTo)
   return routeFrom || routeTo || '—'
 }
 

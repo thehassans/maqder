@@ -211,7 +211,7 @@ const getPartyDetailLines = (party = {}, language = 'en') => {
 
 const getInvoiceEyebrow = (invoice, language = 'en') => {
   if (invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency') {
-    return language === 'ar' ? 'فاتورة وكالة سفر' : 'Travel Agency Invoice'
+    return language === 'ar' ? 'فاتورة خدمات السفر' : 'Travel Services Invoice'
   }
 
   if (invoice?.businessContext === 'construction') {
@@ -223,6 +223,14 @@ const getInvoiceEyebrow = (invoice, language = 'en') => {
   }
 
   return language === 'ar' ? 'فاتورة تجارة' : 'Trading Invoice'
+}
+
+const getInvoiceTitle = (invoice, language = 'en') => {
+  if (invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency') {
+    return language === 'ar' ? 'فاتورة ضريبية لخدمات السفر' : 'Travel Services Tax Invoice'
+  }
+
+  return language === 'ar' ? 'فاتورة ضريبية' : 'Tax Invoice'
 }
 
 export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) => {
@@ -399,7 +407,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const footerLines = splitBrandingText(invoiceBranding.footerText)
   const invoiceEyebrow = getInvoiceEyebrow(invoice, language)
 
-  const title = isRtl ? 'فاتورة ضريبية' : 'Tax Invoice'
+  const title = getInvoiceTitle(invoice, language)
   const customerLabel = invoice.flow === 'purchase'
     ? (isRtl ? 'المشتري' : 'Buyer')
     : (isRtl ? 'العميل' : 'Customer')
@@ -408,8 +416,8 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     theme.drawFrame({ pageNumber })
 
     const y = 20
-    const logoW = 68
-    const logoH = 68
+    const logoW = 64
+    const logoH = 64
     const rightPanelW = 148
     const rightPanelX = isRtl ? contentLeft : contentRightEdge - rightPanelW
     const logoX = isRtl ? contentRightEdge - logoW : contentLeft
@@ -418,7 +426,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     const dividerY = y + 68
 
     if (logo && logoFormat) {
-      doc.addImage(logo, logoFormat, logoX, y + 2, logoW, logoH)
+      doc.addImage(logo, logoFormat, logoX, y + 4, logoW, logoH)
     }
 
     doc.setTextColor(theme.headerMutedRgb.r, theme.headerMutedRgb.g, theme.headerMutedRgb.b)
@@ -426,7 +434,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     doc.text(shape(invoiceEyebrow), brandBlockX, y + 14, { align, maxWidth: brandBlockW })
 
     doc.setTextColor(theme.headerTitleRgb.r, theme.headerTitleRgb.g, theme.headerTitleRgb.b)
-    doc.setFontSize(16)
+    doc.setFontSize(17)
     doc.text(shape(companyName), brandBlockX, y + 32, { align, maxWidth: brandBlockW })
 
     if (headerLines.length > 0) {
@@ -578,12 +586,12 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
 
   if (invoice?.invoiceSubtype === 'travel_ticket') {
     const travelRows = [
-      [isRtl ? 'اسم العميل / الراكب' : 'Customer / Traveler Name', travelDetails.travelerDisplayName || buyerName || ''],
+      [isRtl ? 'اسم المسافر الرئيسي' : 'Lead Traveler', travelDetails.travelerDisplayName || buyerName || ''],
       [isRtl ? 'رقم الجواز' : 'Passport', travelDetails.passportNumber || ''],
-      [isRtl ? 'التذكرة / PNR' : 'Ticket / PNR', [travelDetails.ticketNumber, travelDetails.pnr].filter(Boolean).join(' / ')],
-      [isRtl ? 'المسار' : 'Route', travelDetails.routeText || ''],
-      [isRtl ? 'شركة الطيران' : 'Airline', travelDetails.airlineDisplayName || ''],
-      [isRtl ? 'تاريخ السفر' : 'Travel Date', formatDateTime(travelDetails.departureDate, language)],
+      [isRtl ? 'مرجع التذكرة / PNR' : 'Ticket Reference / PNR', [travelDetails.ticketNumber, travelDetails.pnr].filter(Boolean).join(' / ')],
+      [isRtl ? 'مسار الرحلة' : 'Travel Route', travelDetails.routeText || ''],
+      [isRtl ? 'الناقل / مزود الخدمة' : 'Carrier / Service Provider', travelDetails.airlineDisplayName || ''],
+      [isRtl ? 'تاريخ المغادرة' : 'Departure Date', formatDateTime(travelDetails.departureDate, language)],
       [isRtl ? 'تاريخ العودة' : 'Return Date', travelDetails.hasReturnDate ? formatDateTime(travelDetails.returnDate, language) : ''],
       [isRtl ? 'التوقف / الإقامة' : 'Layover / Stay', travelDetails.layoverStayDisplay || ''],
       [isRtl ? 'مسافرون إضافيون' : 'Additional Passengers', travelDetails.additionalPassengersText === '—' ? '' : travelDetails.additionalPassengersText],

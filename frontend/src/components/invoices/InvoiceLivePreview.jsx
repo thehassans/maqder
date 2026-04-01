@@ -90,7 +90,7 @@ const getTemplateClasses = (templateId) => {
 
 const getInvoiceEyebrow = (invoice, language = 'en') => {
   if (invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency') {
-    return language === 'ar' ? 'فاتورة وكالة سفر' : 'Travel Agency Invoice'
+    return language === 'ar' ? 'فاتورة خدمات السفر' : 'Travel Services Invoice'
   }
 
   if (invoice?.businessContext === 'construction') {
@@ -102,6 +102,14 @@ const getInvoiceEyebrow = (invoice, language = 'en') => {
   }
 
   return language === 'ar' ? 'فاتورة تجارة' : 'Trading Invoice'
+}
+
+const getInvoiceTitle = (invoice, language = 'en') => {
+  if (invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency') {
+    return language === 'ar' ? 'فاتورة ضريبية لخدمات السفر' : 'Travel Services Tax Invoice'
+  }
+
+  return language === 'ar' ? 'فاتورة ضريبية' : 'Tax Invoice'
 }
 
 export default function InvoiceLivePreview({ invoice, tenant, language = 'en', templateId = 1 }) {
@@ -147,12 +155,12 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
         <div className="border-b border-slate-200 pb-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex min-w-0 items-start gap-4">
-              <div className="flex h-24 w-28 shrink-0 items-center justify-center overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white p-2">
-                <img src={logoSrc} alt="" className="h-full w-full object-contain scale-110" />
+              <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-[1.75rem] border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-3 shadow-sm">
+                <img src={logoSrc} alt="" className="h-full w-full object-contain" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className={`text-[11px] uppercase tracking-[0.24em] ${mutedText}`}>{getInvoiceEyebrow(invoice, language)}</p>
-                <h3 className={`mt-2 text-2xl font-semibold ${titleText}`}>{companyName || '—'}</h3>
+                <h3 className={`mt-2 text-[1.75rem] font-semibold leading-tight ${titleText}`}>{companyName || '—'}</h3>
                 {headerLines.length > 0 && (
                   <div className="mt-2 space-y-1">
                     {headerLines.map((line, index) => (
@@ -184,7 +192,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
           <div className="space-y-4">
             <div className="text-center lg:text-start">
               <p className={`text-[11px] uppercase tracking-[0.26em] ${mutedText}`}>{getInvoiceEyebrow(invoice, language)}</p>
-              <h2 className={`mt-2 text-3xl font-semibold ${titleText}`}>{language === 'ar' ? 'فاتورة ضريبية' : 'Tax Invoice'}</h2>
+              <h2 className={`mt-2 text-3xl font-semibold ${titleText}`}>{getInvoiceTitle(invoice, language)}</h2>
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -242,7 +250,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
         <div className="px-6 pt-6">
           <div className={`grid grid-cols-1 gap-4 rounded-2xl p-4 md:grid-cols-3 ${styles.block}`}>
             <div>
-              <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'اسم العميل / الراكب' : 'Customer / Traveler Name'}</p>
+              <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'اسم المسافر الرئيسي' : 'Lead Traveler'}</p>
               <p className={`mt-1 text-sm font-semibold ${titleText}`}>{travelDetails?.travelerDisplayName || '—'}</p>
             </div>
             <div>
@@ -250,19 +258,19 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
               <p className={`mt-1 text-sm font-semibold ${titleText}`}>{travelDetails?.passportNumber || '—'}</p>
             </div>
             <div>
-              <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'رقم التذكرة / PNR' : 'Ticket / PNR'}</p>
+              <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'مرجع التذكرة / PNR' : 'Ticket Reference / PNR'}</p>
               <p className={`mt-1 text-sm font-semibold ${titleText}`}>{travelDetails?.ticketNumber || travelDetails?.pnr || '—'}</p>
             </div>
             <div>
-              <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'المسار' : 'Route'}</p>
+              <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'مسار الرحلة' : 'Travel Route'}</p>
               <p className={`mt-1 text-sm font-semibold ${titleText}`}>{travelDetails?.routeText || '—'}</p>
             </div>
             <div>
-              <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'شركة الطيران / المورد' : 'Airline / Vendor'}</p>
+              <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'الناقل / مزود الخدمة' : 'Carrier / Service Provider'}</p>
               <p className={`mt-1 text-sm font-semibold ${titleText}`}>{travelDetails?.airlineDisplayName || invoice?.seller?.name || '—'}</p>
             </div>
             <div>
-              <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'تاريخ الرحلة' : 'Travel Date'}</p>
+              <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'تاريخ المغادرة' : 'Departure Date'}</p>
               <p className={`mt-1 text-sm font-semibold ${titleText}`}>{formatDate(travelDetails?.departureDate, language)}</p>
             </div>
             <div>
