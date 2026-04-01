@@ -45,7 +45,7 @@ export default function InvoicePurchaseComposer() {
       supplierId: '',
       seller: {},
       buyer: {},
-      travelDetails: { passengerTitle: 'mr', layoverStay: '', passengers: [] },
+      travelDetails: { passengerTitle: 'mr', layoverStay: '', hasReturnDate: false, segments: [{ from: '', to: '' }], passengers: [] },
       notes: '',
       lineItems: [emptyLine],
     }

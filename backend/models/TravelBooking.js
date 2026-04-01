@@ -1,5 +1,10 @@
 import mongoose from 'mongoose';
 
+const travelSegmentSchema = new mongoose.Schema({
+  from: { type: String },
+  to: { type: String },
+}, { _id: false });
+
 const travelBookingSchema = new mongoose.Schema({
   tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
 
@@ -21,6 +26,7 @@ const travelBookingSchema = new mongoose.Schema({
   airlineName: { type: String },
   routeFrom: { type: String },
   routeTo: { type: String },
+  segments: [travelSegmentSchema],
 
   serviceType: {
     type: String,
@@ -30,7 +36,9 @@ const travelBookingSchema = new mongoose.Schema({
   },
 
   departureDate: { type: Date },
+  hasReturnDate: { type: Boolean, default: false },
   returnDate: { type: Date },
+  layoverStay: { type: String },
 
   currency: { type: String, default: 'SAR' },
   subtotal: { type: Number, default: 0 },

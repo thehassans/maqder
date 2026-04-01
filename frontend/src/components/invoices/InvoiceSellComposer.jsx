@@ -10,16 +10,13 @@ import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import Money from '../ui/Money'
 import { getPrimaryBusinessType, getTenantBusinessTypes } from '../../lib/businessTypes'
+import { calculateInvoiceSummary, toNumber } from '../../lib/invoiceDocument'
 import InvoiceLivePreview from './InvoiceLivePreview'
 import InvoiceTemplateSelector from './InvoiceTemplateSelector'
 import TravelInvoiceFields from './TravelInvoiceFields'
 
 const emptyLine = { productId: '', productName: '', productNameAr: '', unitCode: 'PCE', quantity: 1, unitPrice: 0, taxRate: 15 }
 const selectableContexts = ['trading', 'construction', 'travel_agency', 'restaurant']
-const toNumber = (value, fallback = 0) => {
-  const numericValue = typeof value === 'number' ? value : Number(value)
-  return Number.isFinite(numericValue) ? numericValue : fallback
-}
 
 const sanitizeTravelDetails = (travelDetails = {}) => ({
   passengerTitle: ['mr', 'mrs', 'ms'].includes(travelDetails?.passengerTitle) ? travelDetails.passengerTitle : 'mr',
@@ -30,8 +27,15 @@ const sanitizeTravelDetails = (travelDetails = {}) => ({
   airlineName: String(travelDetails?.airlineName || '').trim(),
   routeFrom: String(travelDetails?.routeFrom || '').trim(),
   routeTo: String(travelDetails?.routeTo || '').trim(),
+  segments: (Array.isArray(travelDetails?.segments) ? travelDetails.segments : [])
+    .map((segment) => ({
+      from: String(segment?.from || '').trim(),
+      to: String(segment?.to || '').trim(),
+    }))
+    .filter((segment) => segment.from || segment.to),
   departureDate: travelDetails?.departureDate || '',
-  returnDate: travelDetails?.returnDate || '',
+  hasReturnDate: Boolean(travelDetails?.hasReturnDate && travelDetails?.returnDate),
+  returnDate: travelDetails?.hasReturnDate && travelDetails?.returnDate ? travelDetails.returnDate : '',
   layoverStay: String(travelDetails?.layoverStay || '').trim(),
   passengers: (Array.isArray(travelDetails?.passengers) ? travelDetails.passengers : [])
     .map((passenger) => ({
@@ -68,8 +72,9 @@ export default function InvoiceSellComposer() {
       travelBookingId: '',
       contractNumber: '',
       notes: '',
+      invoiceDiscount: 0,
       buyer: {},
-      travelDetails: { passengerTitle: 'mr', layoverStay: '', passengers: [] },
+      travelDetails: { passengerTitle: 'mr', layoverStay: '', hasReturnDate: false, segments: [{ from: '', to: '' }], passengers: [] },
       lineItems: [emptyLine],
     }
   })
@@ -197,8 +202,10 @@ export default function InvoiceSellComposer() {
       setValue('travelDetails.airlineName', data?.airlineName || '')
       setValue('travelDetails.routeFrom', data?.routeFrom || '')
       setValue('travelDetails.routeTo', data?.routeTo || '')
+      setValue('travelDetails.segments', Array.isArray(data?.segments) && data.segments.length > 0 ? data.segments : [{ from: data?.routeFrom || '', to: data?.routeTo || '' }])
       setValue('travelDetails.departureDate', data?.departureDate ? String(data.departureDate).slice(0, 10) : '')
-      setValue('travelDetails.returnDate', data?.returnDate ? String(data.returnDate).slice(0, 10) : '')
+      setValue('travelDetails.hasReturnDate', Boolean(data?.hasReturnDate && data?.returnDate))
+      setValue('travelDetails.returnDate', data?.hasReturnDate && data?.returnDate ? String(data.returnDate).slice(0, 10) : '')
       setValue('travelDetails.layoverStay', data?.layoverStay || '')
       setValue('travelDetails.passengerTitle', 'mr')
       setValue('travelDetails.passengers', Array.isArray(data?.passengers) ? data.passengers : [])
@@ -246,20 +253,13 @@ export default function InvoiceSellComposer() {
   }
 
   const calculateLineTotal = (index) => {
-    const line = lineItems[index]
+    const summary = calculateInvoiceSummary({ lineItems, invoiceDiscount: values?.invoiceDiscount })
+    const line = summary.lines[index]
     if (!line) return { subtotal: 0, tax: 0, total: 0 }
-    const subtotal = toNumber(line.quantity) * toNumber(line.unitPrice)
-    const tax = subtotal * (toNumber(line.taxRate, 0) / 100)
-    return { subtotal, tax, total: subtotal + tax }
+    return { subtotal: line.lineTotal, tax: line.taxAmount, total: line.lineTotalWithTax }
   }
 
-  const totals = lineItems.reduce((acc, _, index) => {
-    const calc = calculateLineTotal(index)
-    acc.subtotal += calc.subtotal
-    acc.totalTax += calc.tax
-    acc.grandTotal += calc.total
-    return acc
-  }, { subtotal: 0, totalTax: 0, grandTotal: 0 })
+  const totals = calculateInvoiceSummary({ lineItems, invoiceDiscount: values?.invoiceDiscount })
 
   const onSubmit = (data) => {
     const transactionType = isTravelContext ? 'B2C' : invoiceType
@@ -272,6 +272,7 @@ export default function InvoiceSellComposer() {
       pdfTemplateId: selectedTemplateId,
       transactionType,
       invoiceTypeCode,
+      invoiceDiscount: Math.max(0, toNumber(data?.invoiceDiscount, 0)),
       issueDate: new Date(),
       lineItems: (data.lineItems || []).map((line, index) => ({
         ...line,
@@ -304,9 +305,19 @@ export default function InvoiceSellComposer() {
     transactionType: isTravelContext ? 'B2C' : invoiceType,
     invoiceSubtype: isTravelContext ? 'travel_ticket' : invoiceSubtype,
     pdfTemplateId: selectedTemplateId,
+    invoiceDiscount: Math.max(0, toNumber(values?.invoiceDiscount, 0)),
     subtotal: totals.subtotal,
+    totalDiscount: totals.totalDiscount,
+    taxableAmount: totals.taxableAmount,
     totalTax: totals.totalTax,
     grandTotal: totals.grandTotal,
+    lineItems: totals.lines.map((line, index) => ({
+      ...line.raw,
+      lineNumber: index + 1,
+      lineTotal: line.lineTotal,
+      taxAmount: line.taxAmount,
+      lineTotalWithTax: line.lineTotalWithTax,
+    })),
     seller: {
       name: tenant?.business?.legalNameEn,
       nameAr: tenant?.business?.legalNameAr,
@@ -549,8 +560,14 @@ export default function InvoiceSellComposer() {
               <textarea {...register('notes')} className="input" rows={3} />
             </div>
             <div className="mt-6 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-              <div className="space-y-2 md:w-64">
+              <div className="space-y-3 md:w-80">
+                <div>
+                  <label className="label">{language === 'ar' ? 'خصم الفاتورة' : 'Invoice Discount'}</label>
+                  <input type="number" min="0" step="0.01" {...register('invoiceDiscount', { valueAsNumber: true, min: 0 })} className="input" />
+                </div>
                 <div className="flex justify-between text-sm"><span className="text-gray-500">{t('subtotal')}</span><span><Money value={totals.subtotal} /></span></div>
+                <div className="flex justify-between text-sm"><span className="text-gray-500">{t('discount')}</span><span><Money value={totals.totalDiscount} /></span></div>
+                <div className="flex justify-between text-sm"><span className="text-gray-500">{language === 'ar' ? 'المبلغ الخاضع للضريبة' : 'Taxable Amount'}</span><span><Money value={totals.taxableAmount} /></span></div>
                 <div className="flex justify-between text-sm"><span className="text-gray-500">{t('tax')}</span><span><Money value={totals.totalTax} /></span></div>
                 <div className="flex justify-between border-t border-gray-200 pt-2 text-lg font-bold dark:border-dark-600"><span>{t('total')}</span><span className="text-primary-600"><Money value={totals.grandTotal} /></span></div>
               </div>

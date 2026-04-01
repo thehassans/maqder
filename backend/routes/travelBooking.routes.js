@@ -53,6 +53,32 @@ function normalizeTotals(payload) {
   };
 }
 
+function sanitizeSegments(segments = []) {
+  return (Array.isArray(segments) ? segments : [])
+    .map((segment) => ({
+      from: String(segment?.from || '').trim(),
+      to: String(segment?.to || '').trim(),
+    }))
+    .filter((segment) => segment.from || segment.to);
+}
+
+function sanitizeBookingPayload(payload = {}) {
+  const segments = sanitizeSegments(payload?.segments);
+  const firstSegment = segments[0];
+  const lastSegment = segments[segments.length - 1];
+  const hasReturnDate = Boolean(payload?.hasReturnDate && payload?.returnDate);
+
+  return {
+    ...payload,
+    routeFrom: String(payload?.routeFrom || firstSegment?.from || '').trim(),
+    routeTo: String(payload?.routeTo || lastSegment?.to || '').trim(),
+    segments,
+    hasReturnDate,
+    returnDate: hasReturnDate ? payload?.returnDate : undefined,
+    layoverStay: String(payload?.layoverStay || '').trim(),
+  };
+}
+
 router.get('/', checkPermission('travel', 'read'), async (req, res) => {
   try {
     const { page = 1, limit = 25, search, status, serviceType } = req.query;
@@ -201,8 +227,11 @@ router.post('/:id/create-invoice', checkPermission('travel', 'update'), checkPer
         airlineName: booking.airlineName,
         routeFrom: booking.routeFrom,
         routeTo: booking.routeTo,
+        segments: booking.segments || [],
         departureDate: booking.departureDate,
-        returnDate: booking.returnDate,
+        hasReturnDate: Boolean(booking.hasReturnDate && booking.returnDate),
+        returnDate: booking.hasReturnDate ? booking.returnDate : undefined,
+        layoverStay: booking.layoverStay,
       },
       lineItems: [
         {
@@ -253,9 +282,10 @@ router.post('/', checkPermission('travel', 'create'), async (req, res) => {
 
     const bookingNumber = req.body.bookingNumber || (await generateBookingNumber(req.tenantFilter));
     const totals = normalizeTotals(req.body);
+    const payload = sanitizeBookingPayload(req.body);
 
     const booking = await TravelBooking.create({
-      ...req.body,
+      ...payload,
       ...totals,
       bookingNumber,
       tenantId: req.user.tenantId,
@@ -277,10 +307,11 @@ router.put('/:id', checkPermission('travel', 'update'), async (req, res) => {
     if (!existing) return res.status(404).json({ error: 'Booking not found' });
 
     const totals = normalizeTotals(req.body);
+    const payload = sanitizeBookingPayload(req.body);
 
     const updated = await TravelBooking.findOneAndUpdate(
       { _id: req.params.id, ...req.tenantFilter },
-      { ...req.body, ...totals },
+      { ...payload, ...totals },
       { new: true, runValidators: true }
     );
 

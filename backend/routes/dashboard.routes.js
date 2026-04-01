@@ -35,7 +35,7 @@ router.get('/', async (req, res) => {
           $facet: {
             total: [
               { $match: { status: { $nin: ['draft', 'cancelled', 'credited'] } } },
-              { $group: { _id: null, count: { $sum: 1 }, revenue: { $sum: '$grandTotal' }, tax: { $sum: '$totalTax' } } }
+              { $group: { _id: null, count: { $sum: 1 }, revenue: { $sum: '$grandTotal' }, tax: { $sum: '$totalTax' }, discount: { $sum: { $ifNull: ['$totalDiscount', 0] } } } }
             ],
             thisMonth: [
               {
@@ -44,7 +44,7 @@ router.get('/', async (req, res) => {
                   status: { $nin: ['draft', 'cancelled', 'credited'] }
                 }
               },
-              { $group: { _id: null, count: { $sum: 1 }, revenue: { $sum: '$grandTotal' } } }
+              { $group: { _id: null, count: { $sum: 1 }, revenue: { $sum: '$grandTotal' }, discount: { $sum: { $ifNull: ['$totalDiscount', 0] } } } }
             ],
             byStatus: [{ $group: { _id: '$status', count: { $sum: 1 } } }],
             zatcaStatus: [{ $group: { _id: '$zatca.submissionStatus', count: { $sum: 1 } } }]
@@ -237,8 +237,8 @@ router.get('/', async (req, res) => {
     
     res.json({
       invoices: {
-        total: invoiceStats[0]?.total[0] || { count: 0, revenue: 0, tax: 0 },
-        thisMonth: invoiceStats[0]?.thisMonth[0] || { count: 0, revenue: 0 },
+        total: invoiceStats[0]?.total[0] || { count: 0, revenue: 0, tax: 0, discount: 0 },
+        thisMonth: invoiceStats[0]?.thisMonth[0] || { count: 0, revenue: 0, discount: 0 },
         byStatus: invoiceStats[0]?.byStatus || [],
         zatcaStatus: invoiceStats[0]?.zatcaStatus || []
       },

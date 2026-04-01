@@ -31,6 +31,16 @@ function resolvePdfTemplateId(requestedTemplateId, tenant) {
 
 function sanitizeTravelDetails(travelDetails = {}, fallbackTravelerName = '') {
   const passengers = Array.isArray(travelDetails?.passengers) ? travelDetails.passengers : [];
+  const segments = Array.isArray(travelDetails?.segments) ? travelDetails.segments : [];
+  const sanitizedSegments = segments
+    .map((segment) => ({
+      from: String(segment?.from || '').trim(),
+      to: String(segment?.to || '').trim(),
+    }))
+    .filter((segment) => segment.from || segment.to);
+  const firstSegment = sanitizedSegments[0];
+  const lastSegment = sanitizedSegments[sanitizedSegments.length - 1];
+  const hasReturnDate = Boolean(travelDetails?.hasReturnDate && travelDetails?.returnDate);
 
   return {
     passengerTitle: ['mr', 'mrs', 'ms'].includes(travelDetails?.passengerTitle) ? travelDetails.passengerTitle : 'mr',
@@ -39,10 +49,12 @@ function sanitizeTravelDetails(travelDetails = {}, fallbackTravelerName = '') {
     ticketNumber: String(travelDetails?.ticketNumber || '').trim(),
     pnr: String(travelDetails?.pnr || '').trim(),
     airlineName: String(travelDetails?.airlineName || '').trim(),
-    routeFrom: String(travelDetails?.routeFrom || '').trim(),
-    routeTo: String(travelDetails?.routeTo || '').trim(),
+    routeFrom: String(travelDetails?.routeFrom || firstSegment?.from || '').trim(),
+    routeTo: String(travelDetails?.routeTo || lastSegment?.to || '').trim(),
+    segments: sanitizedSegments,
     departureDate: travelDetails?.departureDate || undefined,
-    returnDate: travelDetails?.returnDate || undefined,
+    hasReturnDate,
+    returnDate: hasReturnDate ? travelDetails?.returnDate : undefined,
     layoverStay: String(travelDetails?.layoverStay || '').trim(),
     passengers: passengers
       .map((passenger) => ({
@@ -483,6 +495,7 @@ router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) =>
       lineNumber: line.lineNumber || i + 1,
       taxCategory: line.taxCategory || 'S'
     }));
+    const invoiceDiscount = Math.max(0, toNumber(req.body?.invoiceDiscount, 0));
 
     const productIds = lineItems
       .map((li) => li.productId)
@@ -519,6 +532,7 @@ router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) =>
         contactEmail: tenant.business.contactEmail,
       },
       createdBy: req.user._id,
+      invoiceDiscount,
       lineItems,
     };
 

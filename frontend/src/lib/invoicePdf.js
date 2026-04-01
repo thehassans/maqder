@@ -1,4 +1,5 @@
 import { formatCurrency } from './currency'
+import { calculateInvoiceSummary, normalizeTravelDetails } from './invoiceDocument'
 
 const sanitizeFileName = (value) => {
   return String(value || 'invoice')
@@ -146,30 +147,6 @@ const formatDateTime = (value, language) => {
   return d.toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US')
 }
 
-const passengerTitleLabel = (value, language = 'en') => {
-  const labels = {
-    mr: language === 'ar' ? 'السيد' : 'Mr.',
-    mrs: language === 'ar' ? 'السيدة' : 'Mrs.',
-    ms: language === 'ar' ? 'الآنسة' : 'Ms.',
-  }
-  return labels[value] || ''
-}
-
-const formatPassengerList = (passengers = [], language = 'en') => {
-  const safePassengers = Array.isArray(passengers) ? passengers : []
-  return safePassengers
-    .map((passenger) => {
-      const title = passengerTitleLabel(passenger?.title, language)
-      const name = safeText(passenger?.name)
-      const passportNumber = safeText(passenger?.passportNumber)
-      const label = [title, name].filter(Boolean).join(' ')
-      if (label && passportNumber) return `${label} (${passportNumber})`
-      return label || passportNumber
-    })
-    .filter(Boolean)
-    .join(', ')
-}
-
 export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) => {
   if (!invoice) return
 
@@ -311,7 +288,6 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
 
   const seller = invoice.seller || {}
   const buyer = invoice.buyer || {}
-  const travelDetails = invoice.travelDetails || {}
 
   const currency = invoice.currency || tenant?.settings?.currency || 'SAR'
   const currencyOpts = { language, currency, currencyDisplay: 'code', minimumFractionDigits: 2, maximumFractionDigits: 2 }
@@ -334,8 +310,10 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
 
   const sellerName = isRtl ? (seller.nameAr || seller.name) : (seller.name || seller.nameAr)
   const buyerName = isRtl ? (buyer.nameAr || buyer.name) : (buyer.name || buyer.nameAr)
+  const totals = calculateInvoiceSummary(invoice)
+  const travelDetails = normalizeTravelDetails(invoice.travelDetails || {}, buyerName, language)
 
-  const title = isRtl ? 'فاتورة' : 'Invoice'
+  const title = isRtl ? 'فاتورة ضريبية' : 'Tax Invoice'
   const customerLabel = invoice.flow === 'purchase'
     ? (isRtl ? 'المشتري' : 'Buyer')
     : (isRtl ? 'العميل' : 'Customer')
@@ -502,17 +480,16 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   let y = boxY + boxH + 24
 
   if (invoice?.invoiceSubtype === 'travel_ticket') {
-    const travelerName = [passengerTitleLabel(travelDetails.passengerTitle, language), travelDetails.travelerName || buyerName].filter(Boolean).join(' ')
-    const additionalPassengers = formatPassengerList(travelDetails.passengers, language)
     const travelRows = [
-      [isRtl ? 'اسم العميل / الراكب' : 'Customer / Traveler Name', travelerName || buyerName || ''],
+      [isRtl ? 'اسم العميل / الراكب' : 'Customer / Traveler Name', travelDetails.travelerDisplayName || buyerName || ''],
       [isRtl ? 'رقم الجواز' : 'Passport', travelDetails.passportNumber || ''],
       [isRtl ? 'التذكرة / PNR' : 'Ticket / PNR', [travelDetails.ticketNumber, travelDetails.pnr].filter(Boolean).join(' / ')],
-      [isRtl ? 'المسار' : 'Route', [travelDetails.routeFrom, travelDetails.routeTo].filter(Boolean).join(' → ')],
+      [isRtl ? 'المسار' : 'Route', travelDetails.routeText || ''],
       [isRtl ? 'شركة الطيران' : 'Airline', travelDetails.airlineName || ''],
       [isRtl ? 'تاريخ السفر' : 'Travel Date', formatDateTime(travelDetails.departureDate, language)],
+      [isRtl ? 'تاريخ العودة' : 'Return Date', travelDetails.hasReturnDate ? formatDateTime(travelDetails.returnDate, language) : ''],
       [isRtl ? 'التوقف / الإقامة' : 'Layover / Stay', travelDetails.layoverStay || ''],
-      [isRtl ? 'مسافرون إضافيون' : 'Additional Passengers', additionalPassengers || ''],
+      [isRtl ? 'مسافرون إضافيون' : 'Additional Passengers', travelDetails.additionalPassengersText === '—' ? '' : travelDetails.additionalPassengersText],
     ]
 
     autoTable(doc, {
@@ -547,7 +524,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   doc.text(shape(isRtl ? 'البنود' : 'Items'), isRtl ? contentRightEdge : contentLeft, y, { align })
   y += 10
 
-  const lineItems = Array.isArray(invoice.lineItems) ? invoice.lineItems : []
+  const lineItems = totals.lines
 
   const itemsBaseWidths = {
     idx: 28,
@@ -568,7 +545,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const descW = Math.max(110, Math.floor(contentW - fixedW))
 
   const bodyRows = (lineItems.length ? lineItems : [{}]).map((l, idx) => {
-    if (!l || !l.productName) {
+    if (!l || !(l.raw?.productName || l.productName)) {
       return [
         '',
         shape(isRtl ? 'لا توجد بنود' : 'No line items'),
@@ -581,11 +558,9 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
 
     const qty = toNumber(l.quantity)
     const unitPrice = toNumber(l.unitPrice)
-    const taxRate = toNumber(l.taxRate)
-    const lineSubtotal = l.lineTotal === 0 || l.lineTotal ? toNumber(l.lineTotal) : qty * unitPrice
-    const taxAmount = l.taxAmount === 0 || l.taxAmount ? toNumber(l.taxAmount) : (lineSubtotal * taxRate / 100)
-    const lineTotalWithTax = l.lineTotalWithTax === 0 || l.lineTotalWithTax ? toNumber(l.lineTotalWithTax) : (lineSubtotal + taxAmount)
-    const desc = isRtl ? (l.productNameAr || l.productName || l.description) : (l.productName || l.productNameAr || l.description)
+    const taxAmount = toNumber(l.taxAmount)
+    const lineTotalWithTax = toNumber(l.lineTotalWithTax)
+    const desc = isRtl ? (l.raw?.productNameAr || l.raw?.productName || l.raw?.description || l.productNameAr || l.productName || l.description) : (l.raw?.productName || l.raw?.productNameAr || l.raw?.description || l.productName || l.productNameAr || l.description)
 
     return [
       String(idx + 1),
@@ -637,12 +612,14 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     },
   })
 
-  const taxable = Number(invoice.taxableAmount ?? invoice.subtotal ?? 0)
-  const totalTax = Number(invoice.totalTax ?? 0)
-  const grandTotal = Number(invoice.grandTotal ?? 0)
+  const taxable = Number(totals.taxableAmount ?? 0)
+  const totalTax = Number(totals.totalTax ?? 0)
+  const grandTotal = Number(totals.grandTotal ?? 0)
 
   const totalsRows = [
-    [isRtl ? 'الإجمالي قبل الضريبة' : 'Subtotal', money(taxable)],
+    [isRtl ? 'الإجمالي الفرعي' : 'Subtotal', money(totals.subtotal)],
+    [isRtl ? 'الخصم' : 'Discount', money(totals.totalDiscount)],
+    [isRtl ? 'الإجمالي قبل الضريبة' : 'Taxable Amount', money(taxable)],
     [isRtl ? 'الضريبة' : 'Tax', money(totalTax)],
     [isRtl ? 'الإجمالي' : 'Total', money(grandTotal)],
   ]
@@ -667,7 +644,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
       1: { cellWidth: 100, halign: oppositeAlign },
     },
     didParseCell: (data) => {
-      if (data.row.index !== 2) return
+      if (data.row.index !== totalsRows.length - 1) return
       data.cell.styles.fontStyle = 'bold'
       if (data.column.index === 1) {
         data.cell.styles.textColor = [primaryRgb.r, primaryRgb.g, primaryRgb.b]

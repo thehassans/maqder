@@ -29,7 +29,8 @@ import {
   Mail,
   Building2,
   DollarSign,
-  Boxes
+  Boxes,
+  Percent
 } from 'lucide-react'
 import { 
   BarChart,
@@ -152,6 +153,15 @@ export default function Dashboard() {
       icon: TrendingUp,
       color: 'from-primary-500 to-primary-600',
       change: '+12.5%',
+      positive: true
+    },
+    {
+      label: language === 'ar' ? 'إجمالي الخصومات' : 'Invoice Discounts',
+      value: dashboard?.invoices?.total?.discount || 0,
+      format: 'currency',
+      icon: Percent,
+      color: 'from-amber-500 to-amber-600',
+      change: language === 'ar' ? 'على جميع الفواتير' : 'Across all invoices',
       positive: true
     },
     {

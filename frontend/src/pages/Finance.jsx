@@ -202,7 +202,7 @@ export default function Finance() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
         <div className="card p-4 flex items-center gap-4">
           <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl">
             <TrendingUp className="w-5 h-5 text-emerald-600" />
@@ -242,6 +242,22 @@ export default function Finance() {
         <div className="card p-4 flex items-center gap-4">
           <div className="p-3 bg-amber-100 dark:bg-amber-900/30 rounded-xl">
             <Percent className="w-5 h-5 text-amber-600" />
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">{language === 'ar' ? 'خصومات (الشهر)' : 'Discounts (month)'}</p>
+            <p className="text-2xl font-bold text-amber-600">
+              {vatLoading ? (
+                '—'
+              ) : (
+                <Money value={vatTotals?.totalDiscount || 0} minimumFractionDigits={2} maximumFractionDigits={2} />
+              )}
+            </p>
+          </div>
+        </div>
+
+        <div className="card p-4 flex items-center gap-4">
+          <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-xl">
+            <Percent className="w-5 h-5 text-yellow-600" />
           </div>
           <div>
             <p className="text-sm text-gray-500">{language === 'ar' ? 'ضريبة القيمة (الشهر)' : 'VAT (month)'}</p>
@@ -313,6 +329,10 @@ export default function Finance() {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-500">{language === 'ar' ? 'خاضع للضريبة' : 'Taxable'}</span>
                 <span className="font-semibold"><Money value={vatTotals?.taxableAmount || 0} minimumFractionDigits={2} maximumFractionDigits={2} /></span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-500">{language === 'ar' ? 'الخصومات' : 'Discounts'}</span>
+                <span className="font-semibold text-amber-600"><Money value={vatTotals?.totalDiscount || 0} minimumFractionDigits={2} maximumFractionDigits={2} /></span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-500">{language === 'ar' ? 'ضريبة القيمة' : 'VAT'}</span>

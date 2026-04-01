@@ -1,6 +1,11 @@
 import mongoose from 'mongoose';
 import momentHijri from 'moment-hijri';
 
+const travelSegmentSchema = new mongoose.Schema({
+  from: { type: String },
+  to: { type: String },
+}, { _id: false });
+
 const travelPassengerSchema = new mongoose.Schema({
   title: { type: String, enum: ['mr', 'mrs', 'ms'], default: 'mr' },
   name: { type: String },
@@ -16,7 +21,9 @@ const travelDetailsSchema = new mongoose.Schema({
   airlineName: { type: String },
   routeFrom: { type: String },
   routeTo: { type: String },
+  segments: [travelSegmentSchema],
   departureDate: { type: Date },
+  hasReturnDate: { type: Boolean, default: false },
   returnDate: { type: Date },
   layoverStay: { type: String },
   passengers: [travelPassengerSchema],
@@ -127,6 +134,7 @@ const invoiceSchema = new mongoose.Schema({
   
   // Totals
   subtotal: { type: Number, required: true },
+  invoiceDiscount: { type: Number, default: 0, min: 0 },
   totalDiscount: { type: Number, default: 0 },
   taxableAmount: { type: Number },
   totalTax: { type: Number, required: true },
@@ -198,30 +206,54 @@ invoiceSchema.pre('validate', function(next) {
   }
   
   const lines = Array.isArray(this.lineItems) ? this.lineItems : [];
+  const invoiceDiscount = Math.max(0, Number(this.invoiceDiscount) || 0);
 
   // Calculate line totals
-  lines.forEach(line => {
-    const lineSubtotal = line.quantity * line.unitPrice;
-    let discountAmount = 0;
-    if (line.discountType === 'percentage') {
-      discountAmount = lineSubtotal * (line.discount / 100);
-    } else {
-      discountAmount = line.discount;
-    }
-    line.lineTotal = lineSubtotal - discountAmount;
-    line.taxAmount = line.lineTotal * (line.taxRate / 100);
-    line.lineTotalWithTax = line.lineTotal + line.taxAmount;
+  const normalizedLines = lines.map(line => {
+    const lineSubtotal = Math.max(0, (Number(line.quantity) || 0) * (Number(line.unitPrice) || 0));
+    const rawDiscount = Math.max(0, Number(line.discount) || 0);
+    const lineDiscount = line.discountType === 'percentage'
+      ? Math.min(lineSubtotal, lineSubtotal * (rawDiscount / 100))
+      : Math.min(lineSubtotal, rawDiscount);
+    const netBeforeInvoiceDiscount = Math.max(0, lineSubtotal - lineDiscount);
+
+    return {
+      line,
+      lineSubtotal,
+      lineDiscount,
+      netBeforeInvoiceDiscount,
+      taxRate: Math.max(0, Number(line.taxRate) || 0),
+    };
+  });
+
+  const subtotalBeforeInvoiceDiscount = normalizedLines.reduce((sum, item) => sum + item.netBeforeInvoiceDiscount, 0);
+  const appliedInvoiceDiscount = Math.min(invoiceDiscount, subtotalBeforeInvoiceDiscount);
+  let remainingInvoiceDiscount = appliedInvoiceDiscount;
+
+  normalizedLines.forEach((item, index) => {
+    const isLast = index === normalizedLines.length - 1;
+    const proportionalDiscount = subtotalBeforeInvoiceDiscount > 0
+      ? appliedInvoiceDiscount * (item.netBeforeInvoiceDiscount / subtotalBeforeInvoiceDiscount)
+      : 0;
+    const invoiceDiscountShare = isLast
+      ? remainingInvoiceDiscount
+      : Math.min(remainingInvoiceDiscount, proportionalDiscount);
+    const lineTotal = Math.max(0, item.netBeforeInvoiceDiscount - invoiceDiscountShare);
+    const taxAmount = lineTotal * (item.taxRate / 100);
+
+    item.line.lineTotal = lineTotal;
+    item.line.taxAmount = taxAmount;
+    item.line.lineTotalWithTax = lineTotal + taxAmount;
+
+    remainingInvoiceDiscount = Math.max(0, remainingInvoiceDiscount - invoiceDiscountShare);
   });
   
   // Calculate invoice totals
-  this.subtotal = lines.reduce((sum, line) => sum + (line.quantity * line.unitPrice), 0);
-  this.totalDiscount = lines.reduce((sum, line) => {
-    if (line.discountType === 'percentage') {
-      return sum + (line.quantity * line.unitPrice * line.discount / 100);
-    }
-    return sum + line.discount;
-  }, 0);
-  this.taxableAmount = this.subtotal - this.totalDiscount;
+  this.invoiceDiscount = appliedInvoiceDiscount;
+  this.subtotal = normalizedLines.reduce((sum, item) => sum + item.lineSubtotal, 0);
+  const lineDiscountTotal = normalizedLines.reduce((sum, item) => sum + item.lineDiscount, 0);
+  this.totalDiscount = lineDiscountTotal + appliedInvoiceDiscount;
+  this.taxableAmount = normalizedLines.reduce((sum, item) => sum + (item.line.lineTotal || 0), 0);
   this.totalTax = lines.reduce((sum, line) => sum + (line.taxAmount || 0), 0);
   this.grandTotal = this.taxableAmount + this.totalTax;
   

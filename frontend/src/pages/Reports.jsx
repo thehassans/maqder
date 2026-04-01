@@ -175,6 +175,7 @@ export default function Reports() {
                         : (data?.breakdown?.salesByTransactionType || []).map((row) => ({
                           type: row._id,
                           invoiceCount: row.invoiceCount || 0,
+                          discount: row.discount || 0,
                           revenue: row.revenue || 0,
                           tax: row.tax || 0,
                         }))
@@ -182,6 +183,7 @@ export default function Reports() {
                       ? (data?.breakdown?.byTransactionType || []).map((row) => ({
                         type: row._id,
                         invoiceCount: row.invoiceCount || 0,
+                        totalDiscount: row.totalDiscount || 0,
                         totalTax: row.totalTax || 0,
                       }))
                       : exportTable === 'byTaxCategory'
@@ -214,6 +216,7 @@ export default function Reports() {
                         : [
                           { key: 'type', label: language === 'ar' ? 'النوع' : 'Type', value: (r) => r.type },
                           { key: 'invoiceCount', label: language === 'ar' ? 'عدد الفواتير' : 'Invoices', value: (r) => r.invoiceCount },
+                          { key: 'discount', label: language === 'ar' ? 'الخصم' : 'Discount', value: (r) => r.discount },
                           { key: 'revenue', label: language === 'ar' ? 'الإيراد' : 'Revenue', value: (r) => r.revenue },
                           { key: 'tax', label: language === 'ar' ? 'الضريبة' : 'Tax', value: (r) => r.tax },
                         ]
@@ -221,6 +224,7 @@ export default function Reports() {
                       ? [
                         { key: 'type', label: language === 'ar' ? 'النوع' : 'Type', value: (r) => r.type },
                         { key: 'invoiceCount', label: language === 'ar' ? 'عدد الفواتير' : 'Invoices', value: (r) => r.invoiceCount },
+                        { key: 'totalDiscount', label: language === 'ar' ? 'الخصم' : 'Discount', value: (r) => r.totalDiscount },
                         { key: 'totalTax', label: language === 'ar' ? 'الضريبة' : 'VAT', value: (r) => r.totalTax },
                       ]
                       : exportTable === 'byTaxCategory'
@@ -269,7 +273,7 @@ export default function Reports() {
 
           {reportType === 'business' ? (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div className="card p-4">
                   <p className="text-sm text-gray-500">{language === 'ar' ? 'المبيعات' : 'Sales'}</p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">{money(totals?.sales?.grandTotal || 0)}</p>
@@ -281,6 +285,10 @@ export default function Reports() {
                 <div className="card p-4">
                   <p className="text-sm text-gray-500">{language === 'ar' ? 'المصاريف' : 'Expenses'}</p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">{money(totals?.expenses?.totalAmount || 0)}</p>
+                </div>
+                <div className="card p-4">
+                  <p className="text-sm text-gray-500">{language === 'ar' ? 'خصومات المبيعات' : 'Sales Discounts'}</p>
+                  <p className="text-2xl font-bold text-amber-600">{money(totals?.sales?.totalDiscount || 0)}</p>
                 </div>
                 <div className="card p-4">
                   <p className="text-sm text-gray-500">{language === 'ar' ? 'صافي الربح' : 'Net Profit'}</p>
@@ -299,6 +307,7 @@ export default function Reports() {
                         <tr>
                           <th>{language === 'ar' ? 'النوع' : 'Type'}</th>
                           <th>{language === 'ar' ? 'عدد الفواتير' : 'Invoices'}</th>
+                          <th>{language === 'ar' ? 'الخصم' : 'Discount'}</th>
                           <th>{language === 'ar' ? 'الإيراد' : 'Revenue'}</th>
                         </tr>
                       </thead>
@@ -307,12 +316,13 @@ export default function Reports() {
                           <tr key={row._id}>
                             <td className="font-medium">{row._id}</td>
                             <td>{(row.invoiceCount || 0).toLocaleString()}</td>
+                            <td>{money(row.discount || 0)}</td>
                             <td>{money(row.revenue || 0)}</td>
                           </tr>
                         ))}
                         {(data?.breakdown?.salesByTransactionType || []).length === 0 && (
                           <tr>
-                            <td colSpan={3} className="text-center text-gray-500">{t('noData')}</td>
+                            <td colSpan={4} className="text-center text-gray-500">{t('noData')}</td>
                           </tr>
                         )}
                       </tbody>
@@ -385,10 +395,14 @@ export default function Reports() {
             </>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <div className="card p-4">
                   <p className="text-sm text-gray-500">{language === 'ar' ? 'عدد الفواتير' : 'Invoices'}</p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">{(totals?.invoiceCount || 0).toLocaleString()}</p>
+                </div>
+                <div className="card p-4">
+                  <p className="text-sm text-gray-500">{language === 'ar' ? 'الخصومات' : 'Discounts'}</p>
+                  <p className="text-2xl font-bold text-amber-600">{money(totals?.totalDiscount || 0)}</p>
                 </div>
                 <div className="card p-4">
                   <p className="text-sm text-gray-500">{language === 'ar' ? 'المبلغ الخاضع للضريبة' : 'Taxable Amount'}</p>
@@ -441,6 +455,7 @@ export default function Reports() {
                         <tr>
                           <th>{language === 'ar' ? 'النوع' : 'Type'}</th>
                           <th>{language === 'ar' ? 'عدد الفواتير' : 'Invoices'}</th>
+                          <th>{language === 'ar' ? 'الخصم' : 'Discount'}</th>
                           <th>{language === 'ar' ? 'الضريبة' : 'VAT'}</th>
                         </tr>
                       </thead>
@@ -449,12 +464,13 @@ export default function Reports() {
                           <tr key={row._id}>
                             <td className="font-medium">{row._id}</td>
                             <td>{(row.invoiceCount || 0).toLocaleString()}</td>
+                            <td>{money(row.totalDiscount || 0)}</td>
                             <td>{money(row.totalTax || 0)}</td>
                           </tr>
                         ))}
                         {(data?.breakdown?.byTransactionType || []).length === 0 && (
                           <tr>
-                            <td colSpan={3} className="text-center text-gray-500">{t('noData')}</td>
+                            <td colSpan={4} className="text-center text-gray-500">{t('noData')}</td>
                           </tr>
                         )}
                       </tbody>

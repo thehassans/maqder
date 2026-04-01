@@ -2,9 +2,9 @@ import { useEffect, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
-import { useForm } from 'react-hook-form'
+import { useFieldArray, useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Save, Plane, FileText } from 'lucide-react'
+import { ArrowLeft, Save, Plane, FileText, Plus, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
@@ -19,7 +19,7 @@ export default function TravelBookingForm() {
   const { language } = useSelector((state) => state.ui)
   const { t } = useTranslation(language)
 
-  const { register, handleSubmit, reset, watch, setValue } = useForm({
+  const { register, control, handleSubmit, reset, watch, setValue } = useForm({
     defaultValues: {
       status: 'confirmed',
       serviceType: 'flight',
@@ -27,8 +27,13 @@ export default function TravelBookingForm() {
       subtotal: 0,
       totalTax: 0,
       grandTotal: 0,
+      hasReturnDate: false,
+      segments: [{ from: '', to: '' }],
     },
   })
+  const { fields: segmentFields, append: appendSegment, remove: removeSegment } = useFieldArray({ control, name: 'segments' })
+  const hasReturnDate = Boolean(watch('hasReturnDate'))
+  const routeSegments = watch('segments') || []
 
   const createInvoiceMutation = useMutation({
     mutationFn: () => api.post(`/travel-bookings/${id}/create-invoice`).then((res) => res.data),
@@ -56,6 +61,20 @@ export default function TravelBookingForm() {
     setValue('grandTotal', gt)
   }, [subtotal, totalTax, setValue])
 
+  useEffect(() => {
+    const safeSegments = Array.isArray(routeSegments) ? routeSegments : []
+    const firstSegment = safeSegments[0]
+    const lastSegment = safeSegments[safeSegments.length - 1]
+    setValue('routeFrom', firstSegment?.from || '')
+    setValue('routeTo', lastSegment?.to || '')
+  }, [routeSegments, setValue])
+
+  useEffect(() => {
+    if (!hasReturnDate) {
+      setValue('returnDate', '')
+    }
+  }, [hasReturnDate, setValue])
+
   const { isLoading } = useQuery({
     queryKey: ['travel-booking', id],
     queryFn: () => api.get(`/travel-bookings/${id}`).then((res) => res.data),
@@ -64,7 +83,9 @@ export default function TravelBookingForm() {
       reset({
         ...data,
         departureDate: data?.departureDate ? String(data.departureDate).slice(0, 10) : '',
-        returnDate: data?.returnDate ? String(data.returnDate).slice(0, 10) : '',
+        hasReturnDate: Boolean(data?.hasReturnDate && data?.returnDate),
+        returnDate: data?.hasReturnDate && data?.returnDate ? String(data.returnDate).slice(0, 10) : '',
+        segments: Array.isArray(data?.segments) && data.segments.length > 0 ? data.segments : [{ from: data?.routeFrom || '', to: data?.routeTo || '' }],
       })
     },
   })
@@ -74,7 +95,8 @@ export default function TravelBookingForm() {
       const payload = { ...data }
       if (payload.departureDate) payload.departureDate = new Date(payload.departureDate)
       else delete payload.departureDate
-      if (payload.returnDate) payload.returnDate = new Date(payload.returnDate)
+      payload.hasReturnDate = Boolean(payload.hasReturnDate && payload.returnDate)
+      if (payload.hasReturnDate && payload.returnDate) payload.returnDate = new Date(payload.returnDate)
       else delete payload.returnDate
 
       payload.subtotal = Number(payload.subtotal) || 0
@@ -194,23 +216,26 @@ export default function TravelBookingForm() {
             </div>
 
             <div>
-              <label className="label">{language === 'ar' ? 'من' : 'From'}</label>
-              <input {...register('routeFrom')} className="input" />
-            </div>
-
-            <div>
-              <label className="label">{language === 'ar' ? 'إلى' : 'To'}</label>
-              <input {...register('routeTo')} className="input" />
-            </div>
-
-            <div>
               <label className="label">{language === 'ar' ? 'تاريخ المغادرة' : 'Departure Date'}</label>
               <input type="date" {...register('departureDate')} className="input" />
             </div>
 
             <div>
+              <label className="label">{language === 'ar' ? 'خيار العودة' : 'Return Trip'}</label>
+              <label className="flex h-11 items-center gap-3 rounded-xl border border-gray-200 px-4 text-sm font-medium text-gray-700 dark:border-dark-600 dark:text-gray-200">
+                <input type="checkbox" {...register('hasReturnDate')} className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
+                <span>{language === 'ar' ? 'تضمين تاريخ العودة' : 'Include return date'}</span>
+              </label>
+            </div>
+
+            <div className={hasReturnDate ? '' : 'opacity-60'}>
               <label className="label">{language === 'ar' ? 'تاريخ العودة' : 'Return Date'}</label>
-              <input type="date" {...register('returnDate')} className="input" />
+              <input type="date" {...register('returnDate')} className="input" disabled={!hasReturnDate} />
+            </div>
+
+            <div>
+              <label className="label">{language === 'ar' ? 'التوقف / الإقامة' : 'Layover / Stay'}</label>
+              <input {...register('layoverStay')} className="input" />
             </div>
 
             <div>
@@ -244,10 +269,45 @@ export default function TravelBookingForm() {
             </div>
 
             <div className="md:col-span-2 lg:col-span-3">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <label className="label mb-0">{language === 'ar' ? 'مسار الرحلة' : 'Route Segments'}</label>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{language === 'ar' ? 'أضف أكثر من مقطع مثل الدمام → دبي ثم دبي → لاهور' : 'Add multiple legs like Dammam → Dubai then Dubai → Lahore'}</p>
+                </div>
+                <button type="button" onClick={() => appendSegment({ from: '', to: '' })} className="btn btn-secondary">
+                  <Plus className="w-4 h-4" />
+                  {language === 'ar' ? 'إضافة مقطع' : 'Add Segment'}
+                </button>
+              </div>
+              <div className="space-y-3">
+                {segmentFields.map((field, index) => (
+                  <div key={field.id} className="grid grid-cols-1 gap-3 rounded-xl border border-gray-200 p-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] dark:border-dark-600">
+                    <div>
+                      <label className="label">{language === 'ar' ? 'من' : 'From'}</label>
+                      <input {...register(`segments.${index}.from`)} className="input" />
+                    </div>
+                    <div>
+                      <label className="label">{language === 'ar' ? 'إلى' : 'To'}</label>
+                      <input {...register(`segments.${index}.to`)} className="input" />
+                    </div>
+                    <div className="flex items-end">
+                      <button type="button" onClick={() => removeSegment(index)} disabled={segmentFields.length === 1} className="rounded-lg p-2 text-red-500 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-red-900/20">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="md:col-span-2 lg:col-span-3">
               <label className="label">{language === 'ar' ? 'ملاحظات' : 'Notes'}</label>
               <textarea {...register('notes')} className="input" rows={3} />
             </div>
           </div>
+
+          <input type="hidden" {...register('routeFrom')} />
+          <input type="hidden" {...register('routeTo')} />
         </motion.div>
 
         <div className="flex justify-end gap-3">

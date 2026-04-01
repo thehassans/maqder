@@ -10,30 +10,7 @@ import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import Money from '../../components/ui/Money'
 import { downloadInvoicePdf } from '../../lib/invoicePdf'
-
-const passengerTitleLabel = (value, language = 'en') => {
-  const labels = {
-    mr: language === 'ar' ? 'السيد' : 'Mr.',
-    mrs: language === 'ar' ? 'السيدة' : 'Mrs.',
-    ms: language === 'ar' ? 'الآنسة' : 'Ms.',
-  }
-  return labels[value] || ''
-}
-
-const formatPassengerList = (passengers = [], language = 'en') => {
-  const safePassengers = Array.isArray(passengers) ? passengers : []
-  return safePassengers
-    .map((passenger) => {
-      const title = passengerTitleLabel(passenger?.title, language)
-      const name = String(passenger?.name || '').trim()
-      const passportNumber = String(passenger?.passportNumber || '').trim()
-      const label = [title, name].filter(Boolean).join(' ')
-      if (label && passportNumber) return `${label} (${passportNumber})`
-      return label || passportNumber
-    })
-    .filter(Boolean)
-    .join(', ')
-}
+import { calculateInvoiceSummary, normalizeTravelDetails } from '../../lib/invoiceDocument'
 
 export default function InvoiceView() {
   const { id } = useParams()
@@ -49,9 +26,8 @@ export default function InvoiceView() {
     queryFn: () => api.get(`/invoices/${id}`).then(res => res.data)
   })
 
-  const travelDetails = invoice?.travelDetails || {}
-  const travelerDisplayName = [passengerTitleLabel(travelDetails?.passengerTitle, language), travelDetails?.travelerName || invoice?.buyer?.name || ''].filter(Boolean).join(' ')
-  const additionalPassengers = formatPassengerList(travelDetails?.passengers, language)
+  const totals = calculateInvoiceSummary(invoice)
+  const travelDetails = normalizeTravelDetails(invoice?.travelDetails || {}, invoice?.buyer?.name || '', language)
 
   const signMutation = useMutation({
     mutationFn: () => api.post(`/invoices/${id}/sign`),
@@ -233,7 +209,7 @@ export default function InvoiceView() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-gray-500">{language === 'ar' ? 'اسم العميل / الراكب' : 'Customer / Traveler Name'}</p>
-                    <p className="font-medium text-gray-900 dark:text-white">{travelerDisplayName || '—'}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{travelDetails?.travelerDisplayName || '—'}</p>
                   </div>
                   <div>
                     <p className="text-gray-500">{language === 'ar' ? 'رقم الجواز' : 'Passport Number'}</p>
@@ -249,11 +225,15 @@ export default function InvoiceView() {
                   </div>
                   <div>
                     <p className="text-gray-500">{language === 'ar' ? 'المسار' : 'Route'}</p>
-                    <p className="font-medium text-gray-900 dark:text-white">{[travelDetails?.routeFrom, travelDetails?.routeTo].filter(Boolean).join(' → ') || '—'}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{travelDetails?.routeText || '—'}</p>
                   </div>
                   <div>
                     <p className="text-gray-500">{language === 'ar' ? 'تاريخ الرحلة' : 'Travel Date'}</p>
                     <p className="font-medium text-gray-900 dark:text-white">{travelDetails?.departureDate ? new Date(travelDetails.departureDate).toLocaleDateString() : '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">{language === 'ar' ? 'تاريخ العودة' : 'Return Date'}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{travelDetails?.hasReturnDate && travelDetails?.returnDate ? new Date(travelDetails.returnDate).toLocaleDateString() : '—'}</p>
                   </div>
                   <div>
                     <p className="text-gray-500">{language === 'ar' ? 'التوقف / الإقامة' : 'Layover / Stay'}</p>
@@ -261,7 +241,7 @@ export default function InvoiceView() {
                   </div>
                   <div className="md:col-span-2">
                     <p className="text-gray-500">{language === 'ar' ? 'مسافرون إضافيون' : 'Additional Passengers'}</p>
-                    <p className="font-medium text-gray-900 dark:text-white">{additionalPassengers || '—'}</p>
+                    <p className="font-medium text-gray-900 dark:text-white">{travelDetails?.additionalPassengersText || '—'}</p>
                   </div>
                 </div>
               </div>
@@ -302,15 +282,23 @@ export default function InvoiceView() {
                 <div className="w-64 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">{t('subtotal')}</span>
-                    <span><Money value={invoice?.taxableAmount} /></span>
+                    <span><Money value={totals?.subtotal} /></span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">{t('tax')} (15%)</span>
-                    <span><Money value={invoice?.totalTax} /></span>
+                    <span className="text-gray-500">{t('discount')}</span>
+                    <span><Money value={totals?.totalDiscount} /></span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">{language === 'ar' ? 'المبلغ الخاضع للضريبة' : 'Taxable Amount'}</span>
+                    <span><Money value={totals?.taxableAmount} /></span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">{t('tax')}</span>
+                    <span><Money value={totals?.totalTax} /></span>
                   </div>
                   <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-200 dark:border-dark-600">
                     <span>{t('total')}</span>
-                    <span className="text-primary-600"><Money value={invoice?.grandTotal} /></span>
+                    <span className="text-primary-600"><Money value={totals?.grandTotal} /></span>
                   </div>
                 </div>
               </div>

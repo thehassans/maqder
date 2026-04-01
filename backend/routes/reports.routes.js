@@ -58,6 +58,7 @@ router.get('/vat-return', async (req, res) => {
               $group: {
                 _id: null,
                 invoiceCount: { $sum: 1 },
+                totalDiscount: { $sum: { $ifNull: ['$totalDiscount', 0] } },
                 taxableAmount: { $sum: '$taxableAmount' },
                 totalTax: { $sum: '$totalTax' },
                 grandTotal: { $sum: '$grandTotal' }
@@ -84,6 +85,7 @@ router.get('/vat-return', async (req, res) => {
               $group: {
                 _id: '$transactionType',
                 invoiceCount: { $sum: 1 },
+                totalDiscount: { $sum: { $ifNull: ['$totalDiscount', 0] } },
                 taxableAmount: { $sum: '$taxableAmount' },
                 totalTax: { $sum: '$totalTax' },
                 grandTotal: { $sum: '$grandTotal' }
@@ -95,7 +97,7 @@ router.get('/vat-return', async (req, res) => {
       }
     ]);
 
-    const invoices = result?.invoices?.[0] || { invoiceCount: 0, taxableAmount: 0, totalTax: 0, grandTotal: 0 };
+    const invoices = result?.invoices?.[0] || { invoiceCount: 0, totalDiscount: 0, taxableAmount: 0, totalTax: 0, grandTotal: 0 };
     const byTaxCategory = result?.byTaxCategory || [];
     const byTransactionType = result?.byTransactionType || [];
 
@@ -134,6 +136,7 @@ router.get('/vat-return', async (req, res) => {
       currency: 'SAR',
       totals: {
         invoiceCount: invoices.invoiceCount || 0,
+        totalDiscount: invoices.totalDiscount || 0,
         taxableAmount: invoices.taxableAmount || 0,
         totalTax: invoices.totalTax || 0,
         grandTotal: invoices.grandTotal || 0,
@@ -176,6 +179,7 @@ router.get('/business-summary', async (req, res) => {
                 $group: {
                   _id: '$flow',
                   invoiceCount: { $sum: 1 },
+                  totalDiscount: { $sum: { $ifNull: ['$totalDiscount', 0] } },
                   taxableAmount: { $sum: { $ifNull: ['$taxableAmount', 0] } },
                   totalTax: { $sum: { $ifNull: ['$totalTax', 0] } },
                   grandTotal: { $sum: { $ifNull: ['$grandTotal', 0] } },
@@ -190,6 +194,7 @@ router.get('/business-summary', async (req, res) => {
                 $group: {
                   _id: '$transactionType',
                   invoiceCount: { $sum: 1 },
+                  discount: { $sum: { $ifNull: ['$totalDiscount', 0] } },
                   revenue: { $sum: { $ifNull: ['$grandTotal', 0] } },
                   tax: { $sum: { $ifNull: ['$totalTax', 0] } },
                 }
@@ -248,8 +253,8 @@ router.get('/business-summary', async (req, res) => {
 
     const totalsByFlow = Array.isArray(invoiceResult.totals) ? invoiceResult.totals : [];
 
-    const sell = totalsByFlow.find((r) => r._id === 'sell') || { invoiceCount: 0, taxableAmount: 0, totalTax: 0, grandTotal: 0 };
-    const purchase = totalsByFlow.find((r) => r._id === 'purchase') || { invoiceCount: 0, taxableAmount: 0, totalTax: 0, grandTotal: 0 };
+    const sell = totalsByFlow.find((r) => r._id === 'sell') || { invoiceCount: 0, totalDiscount: 0, taxableAmount: 0, totalTax: 0, grandTotal: 0 };
+    const purchase = totalsByFlow.find((r) => r._id === 'purchase') || { invoiceCount: 0, totalDiscount: 0, taxableAmount: 0, totalTax: 0, grandTotal: 0 };
 
     const expenseTotals = expenseResult?.totals?.[0] || { expenseCount: 0, totalAmount: 0, taxAmount: 0 };
 
@@ -261,12 +266,14 @@ router.get('/business-summary', async (req, res) => {
       totals: {
         sales: {
           invoiceCount: sell.invoiceCount || 0,
+          totalDiscount: sell.totalDiscount || 0,
           taxableAmount: sell.taxableAmount || 0,
           totalTax: sell.totalTax || 0,
           grandTotal: sell.grandTotal || 0,
         },
         purchases: {
           invoiceCount: purchase.invoiceCount || 0,
+          totalDiscount: purchase.totalDiscount || 0,
           taxableAmount: purchase.taxableAmount || 0,
           totalTax: purchase.totalTax || 0,
           grandTotal: purchase.grandTotal || 0,
