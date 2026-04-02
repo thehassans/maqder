@@ -240,11 +240,11 @@ const getPartyDetailLines = (party = {}, language = 'en', role = 'party') => {
     ? (language === 'ar' ? 'الرقم الضريبي للشركة' : 'Company VAT')
     : (language === 'ar' ? 'الرقم الضريبي' : 'VAT')
 
-  if (party?.vatNumber) {
+  if (role !== 'seller' && party?.vatNumber) {
     lines.push({ label: vatLabel, value: party.vatNumber })
   }
 
-  if (party?.crNumber) {
+  if (role !== 'seller' && party?.crNumber) {
     lines.push({ label: language === 'ar' ? 'السجل التجاري' : 'CR', value: party.crNumber })
   }
 
@@ -723,7 +723,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   setHeadingFont(Math.max(bodyFontSize + 1, 11), 'bold')
   doc.setTextColor(15, 23, 42)
   doc.text(shape(isRtl ? 'البنود' : 'Items'), isRtl ? contentRightEdge : contentLeft, y, { align })
-  y += 8
+  y += 12
 
   const lineItems = totals.lines
 
@@ -832,9 +832,9 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const amountWordsW = Math.max(180, contentW - totalsW - summaryGap)
   const amountWordsLeft = isRtl ? contentRightEdge - amountWordsW : contentLeft
   const totalsLeft = isRtl ? contentLeft : contentRightEdge - totalsW
-  const totalsTop = doc.lastAutoTable.finalY + 10
+  const totalsTop = doc.lastAutoTable.finalY + 12
   const amountWordsH = Math.max(74, invoice?.notes ? 110 : 84)
-  const totalsH = 118
+  const totalsH = 132
 
   doc.setFillColor(255, 255, 255)
   doc.setDrawColor(theme.boxStrokeRgb.r, theme.boxStrokeRgb.g, theme.boxStrokeRgb.b)
@@ -866,22 +866,29 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     const isGrandTotal = i === totalsRows.length - 1
 
     if (isGrandTotal) {
-      setHeadingFont(Math.max(bodyFontSize + 4, 12), 'bold')
+      doc.setDrawColor(203, 213, 225)
+      doc.line(totalsLeft + 14, totalsY - 10, totalsLeft + totalsW - 14, totalsY - 10)
+
+      setHeadingFont(Math.max(bodyFontSize + 2, 11), 'bold')
+      doc.setTextColor(theme.headerTitleRgb.r, theme.headerTitleRgb.g, theme.headerTitleRgb.b)
+      doc.text(shape(label), isRtl ? totalsLeft + totalsW - 14 : totalsLeft + 14, totalsY, { align, maxWidth: 132 })
+
+      totalsY += 16
+
+      setHeadingFont(Math.max(bodyFontSize + 6, 15), 'bold')
+      doc.text(shape(value), isRtl ? totalsLeft + 14 : totalsLeft + totalsW - 14, totalsY, { align: oppositeAlign, maxWidth: totalsW - 28 })
+
+      totalsY += 18
     } else {
       setBodyFont(Math.max(bodyFontSize - 1, 8), 'bold')
+      doc.setTextColor(theme.headerMutedRgb.r, theme.headerMutedRgb.g, theme.headerMutedRgb.b)
+      doc.text(shape(label), isRtl ? totalsLeft + totalsW - 14 : totalsLeft + 14, totalsY, { align, maxWidth: 132 })
+
+      doc.setTextColor(theme.headerTitleRgb.r, theme.headerTitleRgb.g, theme.headerTitleRgb.b)
+      doc.text(shape(value), isRtl ? totalsLeft + 14 : totalsLeft + totalsW - 14, totalsY, { align: oppositeAlign, maxWidth: 110 })
+
+      totalsY += 16
     }
-    doc.setTextColor(isGrandTotal ? theme.headerTitleRgb.r : theme.headerMutedRgb.r, isGrandTotal ? theme.headerTitleRgb.g : theme.headerMutedRgb.g, isGrandTotal ? theme.headerTitleRgb.b : theme.headerMutedRgb.b)
-    doc.text(shape(label), isRtl ? totalsLeft + totalsW - 14 : totalsLeft + 14, totalsY, { align, maxWidth: 132 })
-
-    doc.setTextColor(theme.headerTitleRgb.r, theme.headerTitleRgb.g, theme.headerTitleRgb.b)
-    doc.text(shape(value), isRtl ? totalsLeft + 14 : totalsLeft + totalsW - 14, totalsY, { align: oppositeAlign, maxWidth: 110 })
-
-    if (isGrandTotal) {
-      doc.setDrawColor(203, 213, 225)
-      doc.line(totalsLeft + 14, totalsY - 12, totalsLeft + totalsW - 14, totalsY - 12)
-    }
-
-    totalsY += isGrandTotal ? 20 : 16
   }
 
   const pageCount = doc.getNumberOfPages()
@@ -906,9 +913,15 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
 
     if (footerTextLines.length > 0) {
       setBodyFont(8, 'normal')
-      let footerY = pageH - footerH + 22
-      for (const line of footerTextLines.slice(0, 3)) {
-        doc.text(shape(line), pageW / 2, footerY, { align: 'center', maxWidth: contentW - (visionLogo && visionLogoFormat ? 160 : 120) })
+      const footerReservedLeft = visionLogo && visionLogoFormat ? footerVisionW + 18 : 0
+      const footerReservedRight = 52
+      const footerTextAreaX = contentLeft + footerReservedLeft
+      const footerTextAreaW = Math.max(120, contentW - footerReservedLeft - footerReservedRight)
+      const footerTextCenterX = footerTextAreaX + footerTextAreaW / 2
+      const footerVisibleLines = footerTextLines.slice(0, 3)
+      let footerY = footerVisionY + (footerVisionH / 2) - ((footerVisibleLines.length - 1) * 10) / 2 + 3
+      for (const line of footerVisibleLines) {
+        doc.text(shape(line), footerTextCenterX, footerY, { align: 'center', maxWidth: footerTextAreaW })
         footerY += 10
       }
       setBodyFont(9, 'normal')
