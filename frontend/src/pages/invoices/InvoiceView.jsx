@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
@@ -21,6 +21,7 @@ export default function InvoiceView() {
   const { tenant } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
   const [downloadingPdf, setDownloadingPdf] = useState(false)
+  const invoicePreviewRef = useRef(null)
 
   const { data: invoice, isLoading } = useQuery({
     queryKey: ['invoice', id],
@@ -82,7 +83,7 @@ export default function InvoiceView() {
             onClick={async () => {
               try {
                 setDownloadingPdf(true)
-                await downloadInvoicePdf({ invoice, language, tenant })
+                await downloadInvoicePdf({ invoice, language, tenant, sourceElement: invoicePreviewRef.current })
               } catch (e) {
                 toast.error(language === 'ar' ? 'فشل تحميل PDF' : 'Failed to download PDF')
               } finally {
@@ -160,12 +161,14 @@ export default function InvoiceView() {
               </span>
             </div>
 
-            <InvoiceLivePreview
-              invoice={invoice}
-              tenant={tenant}
-              language={language}
-              templateId={templateId}
-            />
+            <div ref={invoicePreviewRef}>
+              <InvoiceLivePreview
+                invoice={invoice}
+                tenant={tenant}
+                language={language}
+                templateId={templateId}
+              />
+            </div>
           </motion.div>
 
           {(invoice?.restaurantOrderId || invoice?.travelBookingId || invoice?.contractNumber) && (

@@ -1,6 +1,7 @@
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { QRCodeSVG } from 'qrcode.react'
+import InvoiceLivePreview from '../components/invoices/InvoiceLivePreview'
 import { formatCurrency } from './currency'
 import { calculateInvoiceSummary, normalizeTravelDetails } from './invoiceDocument'
 import { getInvoiceBranding, getInvoiceTemplateId, splitBrandingText } from './invoiceBranding'
@@ -129,6 +130,145 @@ const renderQrToDataUrl = async (value, size = 112) => {
   } catch {
     return null
   }
+}
+
+const saveElementSnapshotPdf = async ({ doc, sourceElement, fileName }) => {
+  if (!doc || !sourceElement || typeof window === 'undefined') return false
+
+  const html2canvasModule = await import('html2canvas')
+  const html2canvas = html2canvasModule?.default || html2canvasModule
+  const canvas = await html2canvas(sourceElement, {
+    backgroundColor: '#ffffff',
+    scale: Math.max(2, window.devicePixelRatio || 1),
+    useCORS: true,
+    logging: false,
+  })
+
+  const pageW = doc.internal.pageSize.getWidth()
+  const pageH = doc.internal.pageSize.getHeight()
+  const margin = 18
+  const usableW = pageW - margin * 2
+  const usableH = pageH - margin * 2
+  const scale = usableW / canvas.width
+  const pageCanvasHeight = Math.max(1, Math.floor(usableH / scale))
+
+  let offsetY = 0
+  let pageIndex = 0
+
+  while (offsetY < canvas.height) {
+    const sliceHeight = Math.min(pageCanvasHeight, canvas.height - offsetY)
+    const pageCanvas = document.createElement('canvas')
+    pageCanvas.width = canvas.width
+    pageCanvas.height = sliceHeight
+    const pageCtx = pageCanvas.getContext('2d')
+    if (!pageCtx) return false
+
+    pageCtx.fillStyle = '#FFFFFF'
+    pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height)
+    pageCtx.drawImage(
+      canvas,
+      0,
+      offsetY,
+      canvas.width,
+      sliceHeight,
+      0,
+      0,
+      canvas.width,
+      sliceHeight,
+    )
+
+    if (pageIndex > 0) {
+      doc.addPage()
+    }
+
+    doc.addImage(
+      pageCanvas.toDataURL('image/png'),
+      'PNG',
+      margin,
+      margin,
+      usableW,
+      sliceHeight * scale,
+      undefined,
+      'FAST'
+    )
+
+    offsetY += sliceHeight
+    pageIndex += 1
+  }
+
+  doc.save(`${fileName}.pdf`)
+  return true
+}
+
+const waitForElementImages = async (element) => {
+  if (!element) return
+  const images = Array.from(element.querySelectorAll('img'))
+  const pending = images
+    .filter((img) => !img.complete)
+    .map((img) => new Promise((resolve) => {
+      const done = () => resolve()
+      img.addEventListener('load', done, { once: true })
+      img.addEventListener('error', done, { once: true })
+    }))
+
+  if (pending.length > 0) {
+    await Promise.allSettled(pending)
+  }
+
+  if (document?.fonts?.load) {
+    await Promise.allSettled([
+      document.fonts.load('400 16px "InvoiceTajawal"'),
+      document.fonts.load('700 16px "InvoiceTajawal"'),
+    ])
+  }
+}
+
+const buildSnapshotElement = async ({ invoice, tenant, language }) => {
+  if (typeof document === 'undefined') return null
+
+  const host = document.createElement('div')
+  host.style.position = 'fixed'
+  host.style.left = '-20000px'
+  host.style.top = '0'
+  host.style.width = '1120px'
+  host.style.padding = '24px'
+  host.style.background = '#ffffff'
+  host.style.zIndex = '-1'
+  host.style.pointerEvents = 'none'
+
+  const templateId = getInvoiceTemplateId(tenant, invoice?.businessContext, invoice?.pdfTemplateId)
+  const snapshotMarkup = renderToStaticMarkup(
+    createElement('div', { style: { background: '#ffffff' } }, createElement(InvoiceLivePreview, {
+      invoice,
+      tenant,
+      language,
+      templateId,
+      bilingual: invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency',
+    }))
+  )
+  host.innerHTML = `
+    <style>
+      @font-face {
+        font-family: "InvoiceTajawal";
+        src: url("/fonts/Tajawal-Regular.ttf") format("truetype");
+        font-weight: 400;
+        font-style: normal;
+      }
+
+      @font-face {
+        font-family: "InvoiceTajawal";
+        src: url("/fonts/Tajawal-Bold.ttf") format("truetype");
+        font-weight: 700;
+        font-style: normal;
+      }
+    </style>
+    ${snapshotMarkup}
+  `
+
+  document.body.appendChild(host)
+  await waitForElementImages(host)
+  await new Promise((resolve) => window.requestAnimationFrame(() => resolve()))
+  return host
 }
 
 let tajawalRegularBase64
@@ -345,7 +485,7 @@ const getInvoiceTitle = (invoice, language = 'en') => {
   return language === 'ar' ? 'فاتورة ضريبية' : 'Tax Invoice'
 }
 
-export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) => {
+export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant, sourceElement = null }) => {
   if (!invoice) return
 
   const jspdfModule = await import('jspdf')
@@ -357,6 +497,28 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const pdfOrientation = tenant?.settings?.invoicePdfOrientation || 'portrait'
   const pdfPageSize = tenant?.settings?.invoicePdfPageSize || 'a4'
   const doc = new jsPDF({ orientation: pdfOrientation, unit: 'pt', format: pdfPageSize })
+  const name = sanitizeFileName(invoice.invoiceNumber || 'invoice')
+  const shouldUseSnapshotRenderer = invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency'
+
+  let snapshotElement = shouldUseSnapshotRenderer ? null : sourceElement
+  let generatedSnapshotHost = null
+
+  if (shouldUseSnapshotRenderer) {
+    generatedSnapshotHost = await buildSnapshotElement({ invoice, tenant, language })
+    snapshotElement = generatedSnapshotHost
+  }
+
+  if (snapshotElement) {
+    const saved = await saveElementSnapshotPdf({ doc, sourceElement: snapshotElement, fileName: name })
+    if (generatedSnapshotHost?.parentNode) {
+      generatedSnapshotHost.parentNode.removeChild(generatedSnapshotHost)
+    }
+    if (saved) return
+  }
+
+  if (generatedSnapshotHost?.parentNode) {
+    generatedSnapshotHost.parentNode.removeChild(generatedSnapshotHost)
+  }
 
   const pageW = doc.internal.pageSize.getWidth()
   const pageH = doc.internal.pageSize.getHeight()
@@ -1025,6 +1187,5 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     )
   }
 
-  const name = sanitizeFileName(invoice.invoiceNumber || 'invoice')
   doc.save(`${name}.pdf`)
 }

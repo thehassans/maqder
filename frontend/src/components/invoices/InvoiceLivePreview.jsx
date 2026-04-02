@@ -5,6 +5,34 @@ import { getInvoiceBranding, getInvoiceCssFontFamily, splitBrandingText } from '
 import { getZatcaStatusMeta } from '../../lib/zatcaStatus'
 import { getAmountInWords } from '../../lib/amountInWords'
 
+const hasArabicText = (value = '') => /[\u0600-\u06FF]/.test(String(value || ''))
+
+const uniqueLines = (...values) => {
+  const seen = new Set()
+  const result = []
+
+  for (const value of values) {
+    const lines = String(value || '')
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+
+    for (const line of lines) {
+      const key = line.toLowerCase()
+      if (seen.has(key)) continue
+      seen.add(key)
+      result.push(line)
+    }
+  }
+
+  return result
+}
+
+const toBilingualText = (englishValue, arabicValue, fallback = '—') => {
+  const lines = uniqueLines(englishValue, arabicValue)
+  return lines.length > 0 ? lines.join('\n') : fallback
+}
+
 const formatAddress = (address = {}) => {
   return [address?.street, address?.district, address?.city, address?.postalCode, address?.country]
     .filter(Boolean)
@@ -36,6 +64,25 @@ const getPartyDetailLines = (party = {}, language = 'en', role = 'party') => {
   const addressText = formatAddress(party?.address)
   if (addressText) {
     lines.push({ label: language === 'ar' ? 'العنوان' : 'Address', value: addressText })
+  }
+
+  return lines.length > 0 ? lines : [{ label: '', value: '—' }]
+}
+
+const getPartyDetailLinesBilingual = (party = {}, role = 'party') => {
+  const lines = []
+
+  if (role !== 'seller' && party?.contactPhone) {
+    lines.push({ label: toBilingualText('Phone', 'الهاتف'), value: party.contactPhone })
+  }
+
+  if (party?.contactEmail) {
+    lines.push({ label: toBilingualText('Email', 'البريد الإلكتروني'), value: party.contactEmail })
+  }
+
+  const addressText = formatAddress(party?.address)
+  if (addressText) {
+    lines.push({ label: toBilingualText('Address', 'العنوان'), value: addressText })
   }
 
   return lines.length > 0 ? lines : [{ label: '', value: '—' }]
@@ -117,33 +164,91 @@ const getInvoiceTitle = (invoice, language = 'en') => {
   return language === 'ar' ? 'فاتورة ضريبية' : 'Tax Invoice'
 }
 
-export default function InvoiceLivePreview({ invoice, tenant, language = 'en', templateId = 1 }) {
+export default function InvoiceLivePreview({ invoice, tenant, language = 'en', templateId = 1, bilingual = false }) {
   const currency = invoice?.currency || tenant?.settings?.currency || 'SAR'
   const invoiceBranding = getInvoiceBranding(tenant, language, invoice?.businessContext)
   const styles = getTemplateClasses(Number(templateId || invoiceBranding.templateId || 1))
-  const sellerName = language === 'ar' ? (invoice?.seller?.nameAr || invoice?.seller?.name || tenant?.business?.legalNameAr || tenant?.business?.legalNameEn) : (invoice?.seller?.name || invoice?.seller?.nameAr || tenant?.business?.legalNameEn || tenant?.business?.legalNameAr)
-  const buyerName = language === 'ar' ? (invoice?.buyer?.nameAr || invoice?.buyer?.name || 'Cash Customer') : (invoice?.buyer?.name || invoice?.buyer?.nameAr || 'Cash Customer')
-  const customerLabel = invoice?.flow === 'purchase' ? (language === 'ar' ? 'المشتري' : 'Buyer') : (language === 'ar' ? 'العميل' : 'Customer')
+  const sellerNameEn = invoice?.seller?.name || invoice?.seller?.nameAr || tenant?.business?.legalNameEn || tenant?.business?.legalNameAr || ''
+  const sellerNameAr = invoice?.seller?.nameAr || (hasArabicText(invoice?.seller?.name) ? invoice?.seller?.name : '') || tenant?.business?.legalNameAr || ''
+  const buyerNameEn = invoice?.buyer?.name || invoice?.buyer?.nameAr || 'Cash Customer'
+  const buyerNameAr = invoice?.buyer?.nameAr || (hasArabicText(invoice?.buyer?.name) ? invoice?.buyer?.name : '')
+  const sellerName = bilingual ? toBilingualText(sellerNameEn, sellerNameAr) : (language === 'ar' ? (sellerNameAr || sellerNameEn) : (sellerNameEn || sellerNameAr))
+  const buyerName = bilingual ? toBilingualText(buyerNameEn, buyerNameAr) : (language === 'ar' ? (buyerNameAr || buyerNameEn) : (buyerNameEn || buyerNameAr))
+  const customerLabel = bilingual
+    ? (invoice?.flow === 'purchase' ? toBilingualText('Buyer', 'المشتري') : toBilingualText('Customer', 'العميل'))
+    : (invoice?.flow === 'purchase' ? (language === 'ar' ? 'المشتري' : 'Buyer') : (language === 'ar' ? 'العميل' : 'Customer'))
   const logoSrc = invoiceBranding.logoSrc
   const qrValue = invoice?.zatca?.qrCodeData || generateZatcaQrValue({
-    sellerName,
+    sellerName: sellerNameEn || sellerNameAr,
     vatNumber: invoice?.seller?.vatNumber || tenant?.business?.vatNumber,
     timestamp: invoice?.issueDate || new Date().toISOString(),
     totalWithVat: toNumber(invoice?.grandTotal),
     vatTotal: toNumber(invoice?.totalTax),
   })
   const totals = calculateInvoiceSummary(invoice)
-  const travelDetails = normalizeTravelDetails(invoice?.travelDetails || {}, buyerName, language)
+  const travelDetails = normalizeTravelDetails(invoice?.travelDetails || {}, buyerNameEn || buyerNameAr, language)
+  const travelDetailsEn = normalizeTravelDetails(invoice?.travelDetails || {}, buyerNameEn || buyerNameAr, 'en')
+  const travelDetailsAr = normalizeTravelDetails(invoice?.travelDetails || {}, buyerNameAr || buyerNameEn, 'ar')
   const lineItems = totals.lines.length > 0 ? totals.lines : [{ raw: { productName: language === 'ar' ? 'خدمة' : 'Service' }, quantity: 1, unitPrice: 0, taxAmount: 0, lineTotalWithTax: 0 }]
-  const sellerDetails = getPartyDetailLines(invoice?.seller || tenant?.business || {}, language, 'seller')
-  const buyerDetails = getPartyDetailLines(invoice?.buyer || {}, language, 'buyer')
-  const companyName = invoiceBranding.companyName || sellerName || '—'
+  const sellerDetails = bilingual ? getPartyDetailLinesBilingual(invoice?.seller || tenant?.business || {}, 'seller') : getPartyDetailLines(invoice?.seller || tenant?.business || {}, language, 'seller')
+  const buyerDetails = bilingual ? getPartyDetailLinesBilingual(invoice?.buyer || {}, 'buyer') : getPartyDetailLines(invoice?.buyer || {}, language, 'buyer')
+  const companyName = invoiceBranding.companyName || sellerNameEn || sellerNameAr || '—'
   const headerLines = splitBrandingText(invoiceBranding.headerText)
   const footerLines = splitBrandingText(invoiceBranding.footerText)
   const showVisionLogo = invoiceBranding.showVision2030 && invoiceBranding.vision2030LogoSrc
   const typography = invoiceBranding.typography || {}
   const zatcaStatusMeta = getZatcaStatusMeta(invoice, language)
   const amountInWords = getAmountInWords(totals.grandTotal, currency, language)
+  const showInvoiceTitle = !(invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency')
+  const travelRows = invoice?.invoiceSubtype === 'travel_ticket'
+    ? [
+        {
+          label: bilingual ? toBilingualText('Lead Traveler', 'اسم المسافر الرئيسي') : (language === 'ar' ? 'اسم المسافر الرئيسي' : 'Lead Traveler'),
+          value: bilingual ? toBilingualText(travelDetailsEn?.travelerDisplayName, travelDetailsAr?.travelerDisplayName) : (travelDetails?.travelerDisplayName || '—'),
+        },
+        {
+          label: bilingual ? toBilingualText('Passport', 'رقم الجواز') : (language === 'ar' ? 'رقم الجواز' : 'Passport Number'),
+          value: travelDetails?.passportNumber || '—',
+        },
+        {
+          label: bilingual ? toBilingualText('Ticket Reference', 'مرجع التذكرة') : (language === 'ar' ? 'مرجع التذكرة' : 'Ticket Reference'),
+          value: travelDetails?.ticketNumber || '—',
+        },
+        {
+          label: bilingual ? toBilingualText('PNR', 'رمز الحجز') : 'PNR',
+          value: travelDetails?.pnr || '—',
+        },
+        {
+          label: bilingual ? toBilingualText('Travel Route', 'مسار الرحلة') : (language === 'ar' ? 'مسار الرحلة' : 'Travel Route'),
+          value: bilingual ? toBilingualText(travelDetailsEn?.routeText, travelDetailsAr?.routeText) : (travelDetails?.routeText || '—'),
+        },
+        {
+          label: bilingual ? toBilingualText('Carrier / Service Provider', 'الناقل / مزود الخدمة') : (language === 'ar' ? 'الناقل / مزود الخدمة' : 'Carrier / Service Provider'),
+          value: bilingual ? toBilingualText(travelDetailsEn?.airlineDisplayName || invoice?.seller?.name, travelDetailsAr?.airlineDisplayName) : (travelDetails?.airlineDisplayName || invoice?.seller?.name || '—'),
+        },
+        {
+          label: bilingual ? toBilingualText('Departure Date', 'تاريخ المغادرة') : (language === 'ar' ? 'تاريخ المغادرة' : 'Departure Date'),
+          value: bilingual ? toBilingualText(formatDate(travelDetailsEn?.departureDate, 'en'), formatDate(travelDetailsAr?.departureDate, 'ar')) : formatDate(travelDetails?.departureDate, language),
+        },
+        travelDetails?.hasReturnDate || (bilingual && travelDetailsEn?.hasReturnDate)
+          ? {
+              label: bilingual ? toBilingualText('Return Date', 'تاريخ العودة') : (language === 'ar' ? 'تاريخ العودة' : 'Return Date'),
+              value: bilingual ? toBilingualText(formatDate(travelDetailsEn?.returnDate, 'en'), formatDate(travelDetailsAr?.returnDate, 'ar')) : formatDate(travelDetails?.returnDate, language),
+            }
+          : null,
+        {
+          label: bilingual ? toBilingualText('Layover / Stay', 'التوقف / الإقامة') : (language === 'ar' ? 'التوقف / الإقامة' : 'Layover / Stay'),
+          value: bilingual ? toBilingualText(travelDetailsEn?.layoverStayDisplay, travelDetailsAr?.layoverStayDisplay) : (travelDetails?.layoverStayDisplay || '—'),
+        },
+        {
+          label: bilingual ? toBilingualText('Additional Passengers', 'مسافرون إضافيون') : (language === 'ar' ? 'مسافرون إضافيون' : 'Additional Passengers'),
+          value: bilingual
+            ? toBilingualText(travelDetailsEn?.additionalPassengersText === '—' ? '' : travelDetailsEn?.additionalPassengersText, travelDetailsAr?.additionalPassengersText === '—' ? '' : travelDetailsAr?.additionalPassengersText)
+            : (travelDetails?.additionalPassengersText || '—'),
+          spanFull: true,
+        },
+      ].filter(Boolean)
+    : []
   const accentBarStyle = {
     background: invoiceBranding.primaryColor,
   }
@@ -154,11 +259,11 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
   const mutedText = 'text-slate-500'
   const titleText = 'text-slate-900'
   const shellStyle = {
-    fontFamily: getInvoiceCssFontFamily(typography.bodyFontFamily),
+    fontFamily: bilingual ? '"InvoiceTajawal", Arial, Helvetica, sans-serif' : getInvoiceCssFontFamily(typography.bodyFontFamily),
     fontSize: `${typography.bodyFontSize || 12}px`,
   }
   const headingStyle = {
-    fontFamily: getInvoiceCssFontFamily(typography.headingFontFamily),
+    fontFamily: bilingual ? '"InvoiceTajawal", Arial, Helvetica, sans-serif' : getInvoiceCssFontFamily(typography.headingFontFamily),
   }
   const companyHeadingStyle = {
     ...headingStyle,
@@ -213,28 +318,28 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
         <div className="grid grid-cols-1 gap-4 pt-6 lg:grid-cols-[minmax(0,1fr)_188px]">
           <div className="space-y-4">
             <div className="text-center lg:text-start">
-              <h2 className={`mt-2 text-3xl font-semibold ${titleText}`} style={invoiceTitleStyle}>{getInvoiceTitle(invoice, language)}</h2>
+              {showInvoiceTitle ? <h2 className={`mt-2 text-3xl font-semibold ${titleText}`} style={invoiceTitleStyle}>{getInvoiceTitle(invoice, language)}</h2> : null}
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className={`rounded-[1.5rem] p-5 ${styles.block}`} style={metaCardStyle}>
-                <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${mutedText}`}>{language === 'ar' ? 'البائع' : 'Seller'}</p>
-                <p className={`mt-3 text-[1.05rem] font-bold leading-7 ${titleText}`}>{sellerName || '—'}</p>
+                <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${mutedText} whitespace-pre-line`}>{bilingual ? toBilingualText('Seller', 'البائع') : (language === 'ar' ? 'البائع' : 'Seller')}</p>
+                <p className={`mt-3 text-[1.05rem] font-bold leading-7 ${titleText} whitespace-pre-line`}>{sellerName || '—'}</p>
                 <div className="mt-3 space-y-2">
                   {sellerDetails.map((detail, index) => (
-                    <p key={`${detail.label}-${index}`} className="text-sm font-semibold leading-6 text-slate-800 break-words">
-                      {detail.label ? <span className="font-bold text-slate-900">{detail.label}:</span> : null} {detail.value}
+                    <p key={`${detail.label}-${index}`} className="text-sm font-semibold leading-6 text-slate-800 break-words whitespace-pre-line">
+                      {detail.label ? <span className="font-bold text-slate-900 whitespace-pre-line">{detail.label}:</span> : null} {detail.value}
                     </p>
                   ))}
                 </div>
               </div>
               <div className={`rounded-[1.5rem] p-5 ${styles.block}`} style={metaCardStyle}>
-                <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${mutedText}`}>{customerLabel}</p>
-                <p className={`mt-3 text-[1.05rem] font-bold leading-7 ${titleText}`}>{buyerName || '—'}</p>
+                <p className={`text-xs font-semibold tracking-[0.2em] ${mutedText} whitespace-pre-line`}>{customerLabel}</p>
+                <p className={`mt-3 text-[1.05rem] font-bold leading-7 ${titleText} whitespace-pre-line`}>{buyerName || '—'}</p>
                 <div className="mt-3 space-y-2">
                   {buyerDetails.map((detail, index) => (
-                    <p key={`${detail.label}-${index}`} className="text-sm font-semibold leading-6 text-slate-800 break-words">
-                      {detail.label ? <span className="font-bold text-slate-900">{detail.label}:</span> : null} {detail.value}
+                    <p key={`${detail.label}-${index}`} className="text-sm font-semibold leading-6 text-slate-800 break-words whitespace-pre-line">
+                      {detail.label ? <span className="font-bold text-slate-900 whitespace-pre-line">{detail.label}:</span> : null} {detail.value}
                     </p>
                   ))}
                 </div>
@@ -274,42 +379,12 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
       {invoice?.invoiceSubtype === 'travel_ticket' && (
         <div className="px-6 pt-6">
           <div className={`grid grid-cols-1 gap-4 rounded-2xl p-4 md:grid-cols-3 ${styles.block}`}>
-            <div>
-              <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'اسم المسافر الرئيسي' : 'Lead Traveler'}</p>
-              <p className={`mt-1 text-sm font-semibold ${titleText}`}>{travelDetails?.travelerDisplayName || '—'}</p>
-            </div>
-            <div>
-              <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'رقم الجواز' : 'Passport Number'}</p>
-              <p className={`mt-1 text-sm font-semibold ${titleText}`}>{travelDetails?.passportNumber || '—'}</p>
-            </div>
-            <div>
-              <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'مرجع التذكرة / PNR' : 'Ticket Reference / PNR'}</p>
-              <p className={`mt-1 text-sm font-semibold ${titleText}`}>{travelDetails?.ticketNumber || travelDetails?.pnr || '—'}</p>
-            </div>
-            <div>
-              <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'مسار الرحلة' : 'Travel Route'}</p>
-              <p className={`mt-1 text-sm font-semibold ${titleText}`}>{travelDetails?.routeText || '—'}</p>
-            </div>
-            <div>
-              <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'الناقل / مزود الخدمة' : 'Carrier / Service Provider'}</p>
-              <p className={`mt-1 text-sm font-semibold ${titleText}`}>{travelDetails?.airlineDisplayName || invoice?.seller?.name || '—'}</p>
-            </div>
-            <div>
-              <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'تاريخ المغادرة' : 'Departure Date'}</p>
-              <p className={`mt-1 text-sm font-semibold ${titleText}`}>{formatDate(travelDetails?.departureDate, language)}</p>
-            </div>
-            <div>
-              <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'تاريخ العودة' : 'Return Date'}</p>
-              <p className={`mt-1 text-sm font-semibold ${titleText}`}>{travelDetails?.hasReturnDate ? formatDate(travelDetails?.returnDate, language) : '—'}</p>
-            </div>
-            <div>
-              <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'التوقف / الإقامة' : 'Layover / Stay'}</p>
-              <p className={`mt-1 text-sm font-semibold ${titleText}`}>{travelDetails?.layoverStayDisplay || '—'}</p>
-            </div>
-            <div className="md:col-span-3">
-              <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'مسافرون إضافيون' : 'Additional Passengers'}</p>
-              <p className={`mt-1 text-sm font-semibold ${titleText}`}>{travelDetails?.additionalPassengersText || '—'}</p>
-            </div>
+            {travelRows.map((row, index) => (
+              <div key={`${row.label}-${index}`} className={row.spanFull ? 'md:col-span-3' : ''}>
+                <p className={`text-xs ${mutedText} whitespace-pre-line`}>{row.label}</p>
+                <p className={`mt-1 text-sm font-semibold ${titleText} whitespace-pre-line`}>{row.value}</p>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -320,11 +395,11 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
             <thead className={styles.tableHead}>
               <tr>
                 <th className="px-4 py-3 text-start font-medium">#</th>
-                <th className="px-4 py-3 text-start font-medium">{language === 'ar' ? 'الوصف' : 'Description'}</th>
-                <th className="px-4 py-3 text-center font-medium">{language === 'ar' ? 'الكمية' : 'Qty'}</th>
-                <th className="px-4 py-3 text-end font-medium">{language === 'ar' ? 'السعر' : 'Price'}</th>
-                <th className="px-4 py-3 text-end font-medium">{language === 'ar' ? 'الضريبة' : 'Tax'}</th>
-                <th className="px-4 py-3 text-end font-medium">{language === 'ar' ? 'الإجمالي' : 'Total'}</th>
+                <th className="px-4 py-3 text-start font-medium whitespace-pre-line">{bilingual ? toBilingualText('Description', 'الوصف') : (language === 'ar' ? 'الوصف' : 'Description')}</th>
+                <th className="px-4 py-3 text-center font-medium whitespace-pre-line">{bilingual ? toBilingualText('Qty', 'الكمية') : (language === 'ar' ? 'الكمية' : 'Qty')}</th>
+                <th className="px-4 py-3 text-end font-medium whitespace-pre-line">{bilingual ? toBilingualText('Unit Price', 'سعر الوحدة') : (language === 'ar' ? 'السعر' : 'Price')}</th>
+                <th className="px-4 py-3 text-end font-medium whitespace-pre-line">{bilingual ? toBilingualText('Tax', 'الضريبة') : (language === 'ar' ? 'الضريبة' : 'Tax')}</th>
+                <th className="px-4 py-3 text-end font-medium whitespace-pre-line">{bilingual ? toBilingualText('Total', 'الإجمالي') : (language === 'ar' ? 'الإجمالي' : 'Total')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 text-slate-700">
@@ -333,12 +408,16 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
                 const unitPrice = toNumber(line?.unitPrice)
                 const tax = toNumber(line?.taxAmount)
                 const total = toNumber(line?.lineTotalWithTax)
+                const productNameEn = line?.raw?.productName || line?.productName || line?.raw?.productNameAr || line?.productNameAr || '—'
+                const productNameAr = line?.raw?.productNameAr || line?.productNameAr || (hasArabicText(productNameEn) ? productNameEn : '')
+                const descriptionEn = line?.raw?.description || line?.description || line?.raw?.descriptionAr || line?.descriptionAr || ''
+                const descriptionAr = line?.raw?.descriptionAr || line?.descriptionAr || (hasArabicText(descriptionEn) ? descriptionEn : '')
                 return (
                   <tr key={`${line?.raw?.productName || line?.productName || 'line'}-${index}`}>
                     <td className="px-4 py-3">{index + 1}</td>
                     <td className="px-4 py-3">
-                      <div className="font-medium">{language === 'ar' ? (line?.raw?.productNameAr || line?.raw?.productName || line?.productNameAr || line?.productName || '—') : (line?.raw?.productName || line?.raw?.productNameAr || line?.productName || line?.productNameAr || '—')}</div>
-                      {(line?.raw?.description || line?.raw?.descriptionAr || line?.description || line?.descriptionAr) && <div className={`mt-1 text-xs ${mutedText}`}>{language === 'ar' ? (line?.raw?.descriptionAr || line?.raw?.description || line?.descriptionAr || line?.description) : (line?.raw?.description || line?.raw?.descriptionAr || line?.description || line?.descriptionAr)}</div>}
+                      <div className="font-medium whitespace-pre-line">{bilingual ? toBilingualText(productNameEn, productNameAr) : (language === 'ar' ? (line?.raw?.productNameAr || line?.raw?.productName || line?.productNameAr || line?.productName || '—') : (line?.raw?.productName || line?.raw?.productNameAr || line?.productName || line?.productNameAr || '—'))}</div>
+                      {(line?.raw?.description || line?.raw?.descriptionAr || line?.description || line?.descriptionAr) && <div className={`mt-1 text-xs ${mutedText} whitespace-pre-line`}>{bilingual ? toBilingualText(descriptionEn, descriptionAr) : (language === 'ar' ? (line?.raw?.descriptionAr || line?.raw?.description || line?.descriptionAr || line?.description) : (line?.raw?.description || line?.raw?.descriptionAr || line?.description || line?.descriptionAr))}</div>}
                     </td>
                     <td className="px-4 py-3 text-center">{quantity || '—'}</td>
                     <td className="px-4 py-3 text-end">{formatMoney(unitPrice, currency, language)}</td>
@@ -352,29 +431,29 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
         </div>
         <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
           <div className={`rounded-2xl p-4 ${styles.block}`}>
-            <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${mutedText}`}>{language === 'ar' ? 'المبلغ كتابةً' : 'Amount in Words'}</p>
+            <p className={`text-xs font-semibold tracking-[0.2em] ${mutedText} whitespace-pre-line`}>{bilingual ? toBilingualText('Amount in Words', 'المبلغ كتابةً') : (language === 'ar' ? 'المبلغ كتابةً' : 'Amount in Words')}</p>
             <p className={`mt-3 text-base font-bold leading-8 ${titleText}`}>{amountInWords}</p>
             {invoice?.notes ? <p className={`mt-4 text-sm font-semibold leading-7 text-slate-700`}>{invoice.notes}</p> : null}
           </div>
           <div className={`rounded-2xl p-4 ${styles.block}`}>
             <div className="flex items-center justify-between text-sm font-bold text-slate-800">
-              <span>{language === 'ar' ? 'الإجمالي الفرعي' : 'Subtotal'}</span>
+              <span className="whitespace-pre-line">{bilingual ? toBilingualText('Subtotal', 'الإجمالي الفرعي') : (language === 'ar' ? 'الإجمالي الفرعي' : 'Subtotal')}</span>
               <span>{formatMoney(totals.subtotal, currency, language)}</span>
             </div>
             <div className="mt-2 flex items-center justify-between text-sm font-bold text-slate-800">
-              <span>{language === 'ar' ? 'الخصم' : 'Discount'}</span>
+              <span className="whitespace-pre-line">{bilingual ? toBilingualText('Discount', 'الخصم') : (language === 'ar' ? 'الخصم' : 'Discount')}</span>
               <span>{formatMoney(totals.totalDiscount, currency, language)}</span>
             </div>
             <div className="mt-2 flex items-center justify-between text-sm font-bold text-slate-800">
-              <span>{language === 'ar' ? 'المبلغ الخاضع للضريبة' : 'Taxable Amount'}</span>
+              <span className="whitespace-pre-line">{bilingual ? toBilingualText('Taxable Amount', 'المبلغ الخاضع للضريبة') : (language === 'ar' ? 'المبلغ الخاضع للضريبة' : 'Taxable Amount')}</span>
               <span>{formatMoney(totals.taxableAmount, currency, language)}</span>
             </div>
             <div className="mt-2 flex items-center justify-between text-sm font-bold text-slate-800">
-              <span>{language === 'ar' ? 'الضريبة' : 'VAT'}</span>
+              <span className="whitespace-pre-line">{bilingual ? toBilingualText('Tax', 'الضريبة') : (language === 'ar' ? 'الضريبة' : 'VAT')}</span>
               <span>{formatMoney(totals.totalTax, currency, language)}</span>
             </div>
             <div className={`mt-4 flex items-center justify-between border-t border-slate-200 pt-4 ${titleText}`}>
-              <span className="text-base font-bold">{language === 'ar' ? 'الإجمالي النهائي' : 'Grand Total'}</span>
+              <span className="text-base font-bold whitespace-pre-line">{bilingual ? toBilingualText('Total', 'الإجمالي') : (language === 'ar' ? 'الإجمالي النهائي' : 'Grand Total')}</span>
               <span className="text-2xl font-bold">{formatMoney(totals.grandTotal, currency, language)}</span>
             </div>
           </div>
