@@ -52,6 +52,12 @@ const getUntranslatedRouteText = (travelDetails = {}) => {
   return routeFrom || routeTo || '—'
 }
 
+const getRawDisplayValue = (value, fallback = '—') => {
+  if (value === null || value === undefined) return fallback
+  const text = String(value).trim()
+  return text || fallback
+}
+
 const formatAddress = (address = {}) => {
   return [address?.street, address?.district, address?.city, address?.postalCode, address?.country]
     .filter(Boolean)
@@ -96,7 +102,7 @@ const getPartyDetailLinesBilingual = (party = {}, role = 'party') => {
   }
 
   if (party?.contactEmail) {
-    lines.push({ label: toBilingualText('Email', 'البريد الإلكتروني'), value: party.contactEmail, dir: 'ltr' })
+    lines.push({ label: 'Email', value: party.contactEmail, dir: 'ltr' })
   }
 
   const addressText = formatAddress(party?.address)
@@ -217,9 +223,15 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
   const showVisionLogo = invoiceBranding.showVision2030 && invoiceBranding.vision2030LogoSrc
   const typography = invoiceBranding.typography || {}
   const zatcaStatusMeta = getZatcaStatusMeta(invoice, language)
-  const amountInWords = getAmountInWords(totals.grandTotal, currency, bilingual ? 'ar' : language)
+  const amountInWords = bilingual
+    ? toBilingualText(
+        getAmountInWords(totals.grandTotal, currency, 'en'),
+        getAmountInWords(totals.grandTotal, currency, 'ar'),
+      )
+    : getAmountInWords(totals.grandTotal, currency, language)
   const showInvoiceTitle = !(invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency')
   const rawRouteText = getUntranslatedRouteText(invoice?.travelDetails || {})
+  const rawDepartureDate = getRawDisplayValue(invoice?.travelDetails?.departureDate)
   const renderStackedLabel = (english, arabic, uppercaseEnglish = false) => {
     if (!bilingual) return language === 'ar' ? arabic : english
 
@@ -261,12 +273,14 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
         {
           key: 'carrier',
           label: bilingual ? toBilingualText('Carrier / Service Provider', 'الناقل / مزود الخدمة') : (language === 'ar' ? 'الناقل / مزود الخدمة' : 'Carrier / Service Provider'),
-          value: bilingual ? toBilingualText(travelDetailsEn?.airlineDisplayName || invoice?.seller?.name, travelDetailsAr?.airlineDisplayName) : (travelDetails?.airlineDisplayName || invoice?.seller?.name || '—'),
+          value: getRawDisplayValue(invoice?.travelDetails?.airlineName || travelDetailsEn?.airlineDisplayName || invoice?.seller?.name),
+          dir: 'ltr',
         },
         {
           key: 'departure-date',
           label: bilingual ? toBilingualText('Departure Date', 'تاريخ المغادرة') : (language === 'ar' ? 'تاريخ المغادرة' : 'Departure Date'),
-          value: bilingual ? toBilingualText(formatDate(travelDetailsEn?.departureDate, 'en'), formatDate(travelDetailsAr?.departureDate, 'ar')) : formatDate(travelDetails?.departureDate, language),
+          value: rawDepartureDate,
+          dir: 'ltr',
         },
         travelDetails?.hasReturnDate || (bilingual && travelDetailsEn?.hasReturnDate)
           ? {
@@ -486,10 +500,6 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
             <div className="mt-2 flex items-center justify-between text-sm font-bold text-slate-800">
               <span className="whitespace-pre-line">{bilingual ? toBilingualText('Discount', 'الخصم') : (language === 'ar' ? 'الخصم' : 'Discount')}</span>
               <span>{formatMoney(totals.totalDiscount, currency, language)}</span>
-            </div>
-            <div className="mt-2 flex items-center justify-between text-sm font-bold text-slate-800">
-              <span className="whitespace-pre-line">{bilingual ? toBilingualText('Taxable Amount', 'المبلغ الخاضع للضريبة') : (language === 'ar' ? 'المبلغ الخاضع للضريبة' : 'Taxable Amount')}</span>
-              <span>{formatMoney(totals.taxableAmount, currency, language)}</span>
             </div>
             <div className="mt-2 flex items-center justify-between text-sm font-bold text-slate-800">
               <span className="whitespace-pre-line">{bilingual ? toBilingualText('Tax', 'الضريبة') : (language === 'ar' ? 'الضريبة' : 'VAT')}</span>
