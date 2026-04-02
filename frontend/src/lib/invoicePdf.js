@@ -134,7 +134,19 @@ const renderQrToDataUrl = async (value, size = 112) => {
 let tajawalRegularBase64
 let tajawalBoldBase64
 let tajawalLoadPromise
-const customArabicFontEnabled = false
+const customArabicFontEnabled = true
+const tajawalFontCandidates = {
+  regular: [
+    '/fonts/Tajawal-Regular.ttf',
+    'https://raw.githubusercontent.com/google/fonts/main/ofl/tajawal/Tajawal-Regular.ttf',
+    'https://raw.githubusercontent.com/googlefonts/tajawal/main/fonts/ttf/Tajawal-Regular.ttf',
+  ],
+  bold: [
+    '/fonts/Tajawal-Bold.ttf',
+    'https://raw.githubusercontent.com/google/fonts/main/ofl/tajawal/Tajawal-Bold.ttf',
+    'https://raw.githubusercontent.com/googlefonts/tajawal/main/fonts/ttf/Tajawal-Bold.ttf',
+  ],
+}
 
 const bufferToBase64 = (buffer) => {
   const bytes = new Uint8Array(buffer)
@@ -171,14 +183,26 @@ const tryFetchFontBase64 = async (url) => {
   return bufferToBase64(buf)
 }
 
+const tryFetchFirstFontBase64 = async (urls = []) => {
+  for (const url of urls) {
+    try {
+      const fontBase64 = await tryFetchFontBase64(url)
+      if (fontBase64) return fontBase64
+    } catch {
+      // ignore and try next URL
+    }
+  }
+  return null
+}
+
 const ensureTajawalFont = async (doc) => {
   if (!customArabicFontEnabled) return false
   if (!doc || typeof doc.addFileToVFS !== 'function' || typeof doc.addFont !== 'function') return false
 
   if (!tajawalLoadPromise) {
     tajawalLoadPromise = (async () => {
-      tajawalRegularBase64 = await tryFetchFontBase64('/fonts/Tajawal-Regular.ttf')
-      tajawalBoldBase64 = await tryFetchFontBase64('/fonts/Tajawal-Bold.ttf')
+      tajawalRegularBase64 = await tryFetchFirstFontBase64(tajawalFontCandidates.regular)
+      tajawalBoldBase64 = await tryFetchFirstFontBase64(tajawalFontCandidates.bold)
     })()
   }
 
@@ -236,6 +260,11 @@ const uniqueTextLines = (...values) => {
   }
 
   return result
+}
+
+const toBilingualBlock = (englishValue, arabicValue, fallback = '—') => {
+  const lines = uniqueTextLines(englishValue, arabicValue)
+  return lines.length > 0 ? lines.join('\n') : fallback
 }
 
 const toBilingualText = (englishValue, arabicValue, fallback = '—') => {
@@ -466,14 +495,18 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const shape = (value) => {
     const raw = safeText(value)
     if (!raw) return ''
-    if (typeof doc.processArabic === 'function' && hasArabicText(raw)) {
+
+    const lines = raw.split(/\r?\n/)
+    const shapedLines = lines.map((line) => {
+      if (!line || !hasArabicText(line) || typeof doc.processArabic !== 'function') return line
       try {
-        return doc.processArabic(raw)
+        return doc.processArabic(line)
       } catch {
-        return raw
+        return line
       }
-    }
-    return raw
+    })
+
+    return shapedLines.join('\n')
   }
 
   const sellerNameEn = seller.name || seller.nameAr || ''
@@ -508,8 +541,8 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     ? ''
     : getInvoiceTitle(invoice, language)
   const customerLabel = invoice.flow === 'purchase'
-    ? 'Buyer / المشتري'
-    : 'Customer / العميل'
+    ? toBilingualBlock('Buyer', 'المشتري')
+    : toBilingualBlock('Customer', 'العميل')
   const amountInWords = getAmountInWords(totals.grandTotal, currency, language)
   const typography = invoiceBranding.typography || {}
   const bodyFontName = arabicFontReady ? 'Tajawal' : (typography.bodyFontFamily || 'helvetica')
@@ -707,7 +740,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   drawPartyBox({
     x: firstBoxX,
     y: boxY,
-    label: 'Seller / البائع',
+    label: toBilingualBlock('Seller', 'البائع'),
     nameLines: sellerNameLines,
     detailLines: sellerDetailTextLines,
   })
@@ -726,7 +759,8 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     const travelRows = [
       [toBilingualText('Lead Traveler', 'اسم المسافر الرئيسي'), toBilingualText(travelDetailsEn.travelerDisplayName || buyerNameEn || buyerNameAr, travelDetailsAr.travelerDisplayName || buyerNameAr || buyerNameEn, '')],
       [toBilingualText('Passport', 'رقم الجواز'), travelDetailsEn.passportNumber || travelDetailsAr.passportNumber || ''],
-      [toBilingualText('Ticket Reference / PNR', 'مرجع التذكرة / PNR'), [travelDetailsEn.ticketNumber || travelDetailsAr.ticketNumber, travelDetailsEn.pnr || travelDetailsAr.pnr].filter(Boolean).join(' / ')],
+      [toBilingualText('Ticket Reference', 'مرجع التذكرة'), travelDetailsEn.ticketNumber || travelDetailsAr.ticketNumber || ''],
+      [toBilingualText('PNR', 'رمز الحجز'), travelDetailsEn.pnr || travelDetailsAr.pnr || ''],
       [toBilingualText('Travel Route', 'مسار الرحلة'), toBilingualText(travelDetailsEn.routeText, travelDetailsAr.routeText, '')],
       [toBilingualText('Carrier / Service Provider', 'الناقل / مزود الخدمة'), toBilingualText(travelDetailsEn.airlineDisplayName, travelDetailsAr.airlineDisplayName, '')],
       [toBilingualText('Departure Date', 'تاريخ المغادرة'), toBilingualText(formatDateTime(travelDetailsEn.departureDate, 'en'), formatDateTime(travelDetailsAr.departureDate, 'ar'), '')],
@@ -764,7 +798,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
 
   setHeadingFont(Math.max(bodyFontSize + 1, 11), 'bold')
   doc.setTextColor(15, 23, 42)
-  doc.text(shape('Items / البنود'), isRtl ? contentRightEdge : contentLeft, y, { align })
+  doc.text(shape(toBilingualBlock('Items', 'البنود')), isRtl ? contentRightEdge : contentLeft, y, { align })
   y += 14
 
   const lineItems = totals.lines
@@ -890,7 +924,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
 
   setBodyFont(8, 'normal')
   doc.setTextColor(theme.headerMutedRgb.r, theme.headerMutedRgb.g, theme.headerMutedRgb.b)
-  doc.text(shape('Amount in Words / المبلغ كتابةً'), isRtl ? amountWordsLeft + amountWordsW - 12 : amountWordsLeft + 12, totalsTop + 18, { align, maxWidth: amountWordsW - 24 })
+  doc.text(shape(toBilingualBlock('Amount in Words', 'المبلغ كتابةً')), isRtl ? amountWordsLeft + amountWordsW - 12 : amountWordsLeft + 12, totalsTop + 18, { align, maxWidth: amountWordsW - 24 })
 
   setHeadingFont(Math.max(bodyFontSize + 1, 10), 'bold')
   doc.setTextColor(theme.headerTitleRgb.r, theme.headerTitleRgb.g, theme.headerTitleRgb.b)
