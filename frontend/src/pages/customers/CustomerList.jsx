@@ -149,7 +149,7 @@ export default function CustomerList() {
           />
           <Link
             to="/customers/new"
-            className="btn btn-primary flex items-center gap-2"
+            className="btn btn-action-dark"
           >
             <Plus className="w-4 h-4" />
             {language === 'ar' ? 'عميل جديد' : 'New Customer'}

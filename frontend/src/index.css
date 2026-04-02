@@ -66,6 +66,10 @@
   .btn-primary {
     @apply bg-gradient-to-r from-primary-600 to-primary-500 text-white hover:from-primary-700 hover:to-primary-600 focus:ring-primary-500 shadow-lg shadow-primary-500/25 hover:shadow-xl hover:shadow-primary-500/30;
   }
+
+  .btn-action-dark {
+    @apply bg-gradient-to-r from-[#1a3d28] to-[#2d5a3f] text-white shadow-sm hover:from-[#163421] hover:to-[#244b34] focus:ring-[#2d5a3f]/40;
+  }
   
   .btn-secondary {
     @apply bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-primary-500 dark:bg-dark-800 dark:text-gray-200 dark:border-dark-600 dark:hover:bg-dark-700;

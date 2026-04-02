@@ -365,14 +365,14 @@ export default function Dashboard() {
         <div className="flex flex-col sm:flex-row sm:items-center gap-2">
           <Link
             to="/app/dashboard/invoices/new"
-            className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#1a3d28] to-[#2d5a3f] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:from-[#163421] hover:to-[#244b34] focus:outline-none focus:ring-2 focus:ring-[#2d5a3f]/40"
+            className="btn btn-action-dark"
           >
             <Plus className="w-4 h-4" />
             {language === 'ar' ? 'فاتورة جديدة' : 'New Invoice'}
           </Link>
           <Link
             to="/app/dashboard/customers/new"
-            className="btn btn-secondary flex items-center gap-2 justify-center"
+            className="btn btn-action-dark"
           >
             <UserPlus className="w-4 h-4" />
             {language === 'ar' ? 'عميل جديد' : 'New Customer'}

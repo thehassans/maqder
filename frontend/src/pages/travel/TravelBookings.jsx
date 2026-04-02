@@ -38,7 +38,7 @@ export default function TravelBookings() {
             {language === 'ar' ? 'إدارة حجوزات وكالة السفر' : 'Manage travel agency bookings'}
           </p>
         </div>
-        <Link to="/app/dashboard/travel-bookings/new" className="btn btn-primary">
+        <Link to="/app/dashboard/travel-bookings/new" className="btn btn-action-dark">
           <Plus className="w-4 h-4" />
           {language === 'ar' ? 'حجز جديد' : 'New Booking'}
         </Link>

@@ -111,7 +111,7 @@ export default function Products() {
             title={language === 'ar' ? 'المنتجات' : 'Products'}
             disabled={isLoading || (data?.products || []).length === 0}
           />
-          <Link to="/products/new" className="btn btn-primary">
+          <Link to="/products/new" className="btn btn-action-dark">
             <Plus className="w-4 h-4" />
             {language === 'ar' ? 'إضافة منتج' : 'Add Product'}
           </Link>

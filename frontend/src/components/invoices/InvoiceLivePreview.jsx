@@ -223,12 +223,12 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
   const showVisionLogo = invoiceBranding.showVision2030 && invoiceBranding.vision2030LogoSrc
   const typography = invoiceBranding.typography || {}
   const zatcaStatusMeta = getZatcaStatusMeta(invoice, language)
-  const amountInWords = bilingual
-    ? toBilingualText(
+  const amountInWordsLines = bilingual
+    ? uniqueLines(
         getAmountInWords(totals.grandTotal, currency, 'en'),
         getAmountInWords(totals.grandTotal, currency, 'ar'),
       )
-    : getAmountInWords(totals.grandTotal, currency, language)
+    : [getAmountInWords(totals.grandTotal, currency, language)]
   const showInvoiceTitle = !(invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency')
   const rawRouteText = getUntranslatedRouteText(invoice?.travelDetails || {})
   const rawDepartureDate = getRawDisplayValue(invoice?.travelDetails?.departureDate)
@@ -405,8 +405,10 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
           </div>
 
           <div className={`flex flex-col items-center justify-center rounded-[1.75rem] p-5 ${styles.block}`}>
-            <div className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${styles.badge}`}>
-              {invoice?.transactionType || 'B2C'}
+            <div className="flex w-full justify-center">
+              <div className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${styles.badge}`}>
+                {invoice?.transactionType || 'B2C'}
+              </div>
             </div>
             <p className={`mt-4 text-center text-base font-semibold ${titleText}`}>{invoice?.invoiceNumber || 'DRAFT-PREVIEW'}</p>
             <p className={`mt-1 text-center text-xs ${mutedText}`}>{formatDate(invoice?.issueDate || new Date(), language)}</p>
@@ -489,7 +491,11 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
         <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
           <div className={`rounded-2xl p-4 ${styles.block}`}>
             <p className={`text-xs font-semibold ${mutedText}`}>{renderStackedLabel('Amount in Words', 'المبلغ كتابةً')}</p>
-            <p dir={bilingual ? 'rtl' : undefined} className={`mt-3 text-base font-bold leading-8 ${titleText}`}>{amountInWords}</p>
+            <div className={`mt-3 space-y-1 text-base font-bold leading-8 ${titleText}`}>
+              {amountInWordsLines.map((line, index) => (
+                <p key={`${line}-${index}`} dir="auto" className="whitespace-pre-line">{line}</p>
+              ))}
+            </div>
             {invoice?.notes ? <p className={`mt-4 text-sm font-semibold leading-7 text-slate-700`}>{invoice.notes}</p> : null}
           </div>
           <div className={`rounded-2xl p-4 ${styles.block}`}>

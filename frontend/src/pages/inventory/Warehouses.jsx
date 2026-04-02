@@ -68,7 +68,7 @@ export default function Warehouses() {
             title={language === 'ar' ? 'المستودعات' : 'Warehouses'}
             disabled={isLoading || !(warehouses || []).length}
           />
-          <Link to="/warehouses/new" className="btn btn-primary">
+          <Link to="/warehouses/new" className="btn btn-action-dark">
             <Plus className="w-4 h-4" />
             {language === 'ar' ? 'إضافة مستودع' : 'Add Warehouse'}
           </Link>

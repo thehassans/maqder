@@ -468,7 +468,7 @@ export default function InvoiceSellComposer() {
                   <button type="button" className="btn btn-secondary" onClick={() => setValue('warehouseId', '')} disabled={!selectedWarehouseId}>
                     {language === 'ar' ? 'إلغاء التحديد' : 'Clear'}
                   </button>
-                  <button type="button" className="btn btn-secondary" onClick={() => navigate(`/app/dashboard/warehouses/new?returnTo=${encodeURIComponent('/app/dashboard/invoices/new/sell')}`)}>
+                  <button type="button" className="btn btn-action-dark" onClick={() => navigate(`/app/dashboard/warehouses/new?returnTo=${encodeURIComponent('/app/dashboard/invoices/new/sell')}`)}>
                     {language === 'ar' ? 'إضافة مستودع' : 'Add Warehouse'}
                   </button>
                 </div>

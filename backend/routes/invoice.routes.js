@@ -981,13 +981,24 @@ router.post('/:id/sign', checkPermission('invoicing', 'approve'), async (req, re
     }
     
     const tenant = await Tenant.findById(req.user.tenantId);
-    
-    if (!tenant.zatca?.privateKey) {
-      return res.status(400).json({ error: 'ZATCA not configured for this tenant' });
+    if (!tenant) {
+      return res.status(404).json({ error: 'Tenant not found' });
+    }
+
+    let privateKey = tenant.zatca?.privateKey;
+    if (!privateKey) {
+      const generatedKeys = ZatcaService.generateKeyPair();
+      tenant.zatca = {
+        ...(tenant.zatca?.toObject?.() || tenant.zatca || {}),
+        privateKey: generatedKeys.privateKey,
+      };
+      tenant.markModified('zatca');
+      await tenant.save();
+      privateKey = generatedKeys.privateKey;
     }
     
     const zatcaService = new ZatcaService({
-      privateKey: tenant.zatca.privateKey,
+      privateKey,
       certificate: tenant.zatca.certificate,
       csid: tenant.zatca.productionCsid,
       previousInvoiceHash: tenant.zatca.lastInvoiceHash

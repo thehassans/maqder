@@ -158,7 +158,7 @@ export default function Invoices() {
             title={language === 'ar' ? 'الفواتير' : 'Invoices'}
             disabled={isLoading || (data?.invoices || []).length === 0}
           />
-          <Link to="/app/dashboard/invoices/new" className="btn btn-primary">
+          <Link to="/app/dashboard/invoices/new" className="btn btn-action-dark">
             <Plus className="w-4 h-4" />
             {t('newInvoice')}
           </Link>
