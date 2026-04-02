@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux'
 import { useTranslation } from '../lib/translations'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Popover, Transition } from '@headlessui/react'
+import { usePublicWebsiteSettings } from '../lib/website'
 import {
   MessageCircle, Search, Send, Paperclip, Smile, MoreVertical,
   Phone, Video, Star, Archive, Trash2, Users, Settings, Plus,
@@ -16,6 +17,7 @@ export default function WhatsApp() {
   const { language } = useSelector((state) => state.ui)
   const { t } = useTranslation(language)
   const queryClient = useQueryClient()
+  const { data: websiteSettings } = usePublicWebsiteSettings()
   
   const [activeTab, setActiveTab] = useState('chats')
   const [selectedContact, setSelectedContact] = useState(null)
@@ -144,6 +146,15 @@ export default function WhatsApp() {
     { id: 'quick-replies', label: language === 'ar' ? 'الردود السريعة' : 'Quick Replies', icon: Zap },
     { id: 'broadcasts', label: language === 'ar' ? 'البث' : 'Broadcasts', icon: Radio }
   ]
+
+  const hasAutoInvoicingAddon = Boolean(
+    config?.autoInvoiceEnabled ||
+    config?.features?.autoInvoicing ||
+    config?.addons?.autoInvoicing
+  )
+  const salesPhone = websiteSettings?.contactPhone || '+966595930045'
+  const salesEmail = websiteSettings?.contactEmail || 'info@maqder.com'
+  const contactSalesSubject = encodeURIComponent('WhatsApp Auto Invoicing Add-on')
 
   return (
     <div className="h-[calc(100vh-8rem)] flex bg-gray-100 dark:bg-dark-900 rounded-2xl overflow-hidden">
@@ -309,6 +320,42 @@ export default function WhatsApp() {
               <div className="text-xs text-gray-500">{language === 'ar' ? 'غير مقروء' : 'Unread'}</div>
             </div>
           </div>
+
+          {!hasAutoInvoicingAddon && (
+            <div className="rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-white p-3 shadow-sm dark:border-emerald-900/40 dark:from-emerald-950/40 dark:to-dark-800">
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-600 text-white">
+                  <FileText className="w-4 h-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">
+                    {language === 'ar' ? 'الفوترة التلقائية عبر واتساب إضافة من مقيدر' : 'WhatsApp auto invoicing is a Maqder add-on'}
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-emerald-800/90 dark:text-emerald-100/80">
+                    {language === 'ar'
+                      ? 'فعّل إرسال الفواتير تلقائياً عبر واتساب وربطها بسير العمل بعد التواصل مع فريق المبيعات.'
+                      : 'Enable automatic invoice delivery over WhatsApp and connect it to your workflow after contacting sales.'}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <a
+                      href={`mailto:${salesEmail}?subject=${contactSalesSubject}`}
+                      className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-800"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      {language === 'ar' ? 'تواصل مع المبيعات' : 'Contact Sales'}
+                    </a>
+                    <a
+                      href={`tel:${salesPhone.replace(/\s+/g, '')}`}
+                      className="inline-flex items-center gap-2 rounded-lg border border-emerald-300 px-3 py-2 text-xs font-semibold text-emerald-900 transition hover:bg-emerald-100 dark:border-emerald-800 dark:text-emerald-100 dark:hover:bg-emerald-900/40"
+                    >
+                      <Phone className="w-3.5 h-3.5" />
+                      {salesPhone}
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Search */}
           <div className="relative">

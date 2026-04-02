@@ -1,6 +1,7 @@
 import express from 'express';
 import TravelBooking from '../models/TravelBooking.js';
 import Invoice from '../models/Invoice.js';
+import Customer from '../models/Customer.js';
 import Tenant from '../models/Tenant.js';
 import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
 import { enrichInvoiceArabicFields } from '../utils/invoiceArabic.js';
@@ -40,6 +41,92 @@ async function generateBookingNumber(tenantFilterValue) {
 function toNumber(value, fallback = 0) {
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
+}
+
+function normalizeText(value) {
+  return String(value || '').trim();
+}
+
+function buildCustomerPayloadFromBooking(booking = {}) {
+  const name = normalizeText(booking?.customerName);
+  if (!name || name.toLowerCase() === 'cash customer') return null;
+
+  const email = normalizeText(booking?.customerEmail).toLowerCase();
+  const phone = normalizeText(booking?.customerPhone);
+
+  return {
+    type: 'individual',
+    name,
+    email: email || undefined,
+    phone: phone || undefined,
+    mobile: phone || undefined,
+    address: { country: 'SA' },
+  };
+}
+
+async function ensureCustomerRecord(tenantId, booking = {}) {
+  const payload = buildCustomerPayloadFromBooking(booking);
+  if (!payload) return null;
+
+  const lookupCandidates = [
+    payload.email ? { email: payload.email } : null,
+    payload.phone ? { phone: payload.phone } : null,
+    payload.name ? { name: payload.name } : null,
+  ].filter(Boolean);
+
+  let customer = null;
+  for (const candidate of lookupCandidates) {
+    customer = await Customer.findOne({ tenantId, isActive: true, ...candidate });
+    if (customer) break;
+  }
+
+  if (customer) {
+    customer.name = payload.name || customer.name;
+    customer.email = payload.email || customer.email;
+    customer.phone = payload.phone || customer.phone;
+    customer.mobile = payload.mobile || customer.mobile;
+    await customer.save();
+    return customer;
+  }
+
+  return await Customer.create({ tenantId, ...payload });
+}
+
+async function syncCustomerStats(tenantId, customerId) {
+  try {
+    if (!tenantId || !customerId) return;
+    const stats = await Invoice.aggregate([
+      {
+        $match: {
+          tenantId,
+          customerId,
+          status: { $nin: ['draft', 'cancelled', 'credited'] },
+        },
+      },
+      {
+        $group: {
+          _id: '$customerId',
+          totalInvoices: { $sum: 1 },
+          totalRevenue: { $sum: '$grandTotal' },
+          lastInvoiceDate: { $max: '$issueDate' },
+        },
+      },
+    ]);
+
+    const doc = stats[0];
+    await Customer.updateOne(
+      { _id: customerId, tenantId },
+      doc
+        ? {
+            totalInvoices: doc.totalInvoices,
+            totalRevenue: doc.totalRevenue,
+            lastInvoiceDate: doc.lastInvoiceDate,
+          }
+        : { totalInvoices: 0, totalRevenue: 0, lastInvoiceDate: null }
+    );
+  } catch (error) {
+    console.error('Failed to sync customer stats', error);
+  }
 }
 
 function normalizeTotals(payload) {
@@ -193,6 +280,7 @@ router.post('/:id/create-invoice', checkPermission('travel', 'update'), checkPer
     }
 
     const taxRate = taxableAmount > 0 ? Math.round((bookingTotalTax / taxableAmount) * 10000) / 100 : 0;
+    const customer = await ensureCustomerRecord(req.user.tenantId, booking);
 
     const invoiceData = {
       tenantId: req.user.tenantId,
@@ -207,6 +295,8 @@ router.post('/:id/create-invoice', checkPermission('travel', 'update'), checkPer
       currency: booking.currency || 'SAR',
       contractNumber: booking.bookingNumber,
       travelBookingId: booking._id,
+      customerId: customer?._id,
+      status: 'pending',
       seller: {
         name: tenant.business.legalNameEn,
         nameAr: tenant.business.legalNameAr,
@@ -215,10 +305,10 @@ router.post('/:id/create-invoice', checkPermission('travel', 'update'), checkPer
         address: tenant.business.address,
       },
       buyer: {
-        name: booking.customerName || 'Cash Customer',
+        name: booking.customerName || customer?.name || 'Cash Customer',
         nameAr: booking.customerName ? undefined : 'عميل نقدي',
-        contactEmail: booking.customerEmail,
-        contactPhone: booking.customerPhone,
+        contactEmail: booking.customerEmail || customer?.email,
+        contactPhone: booking.customerPhone || customer?.phone || customer?.mobile,
       },
       travelDetails: {
         travelerName: booking.travelerName || booking.customerName,
@@ -268,9 +358,13 @@ router.post('/:id/create-invoice', checkPermission('travel', 'update'), checkPer
 
     const updatedBooking = await TravelBooking.findOneAndUpdate(
       { _id: booking._id, ...req.tenantFilter },
-      { invoiceId: invoice._id, invoiceNumber: invoice.invoiceNumber, invoicedAt: new Date() },
+      { invoiceId: invoice._id, invoiceNumber: invoice.invoiceNumber, invoicedAt: new Date(), status: booking.status === 'completed' ? 'completed' : 'ticketed' },
       { new: true }
     );
+
+    if (customer?._id) {
+      await syncCustomerStats(req.user.tenantId, customer._id);
+    }
 
     res.status(201).json({ invoice, booking: updatedBooking });
   } catch (error) {

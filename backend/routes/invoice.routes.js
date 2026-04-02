@@ -77,6 +77,161 @@ function sanitizeTravelDetails(travelDetails = {}, fallbackTravelerName = '') {
   };
 }
 
+function normalizeText(value) {
+  return String(value || '').trim();
+}
+
+function buildCustomerPayloadFromBuyer(buyer = {}) {
+  const name = normalizeText(buyer?.name);
+  if (!name || name.toLowerCase() === 'cash customer') return null;
+
+  const email = normalizeText(buyer?.contactEmail).toLowerCase();
+  const phone = normalizeText(buyer?.contactPhone);
+  const vatNumber = normalizeText(buyer?.vatNumber);
+  const crNumber = normalizeText(buyer?.crNumber);
+
+  return {
+    type: vatNumber || crNumber ? 'business' : 'individual',
+    name,
+    nameAr: normalizeText(buyer?.nameAr),
+    email: email || undefined,
+    phone: phone || undefined,
+    mobile: phone || undefined,
+    vatNumber: vatNumber || undefined,
+    crNumber: crNumber || undefined,
+    address: {
+      ...(buyer?.address || {}),
+      country: normalizeText(buyer?.address?.country) || 'SA',
+    },
+  };
+}
+
+async function ensureCustomerRecord(tenantId, buyer = {}, existingCustomer = null) {
+  const payload = buildCustomerPayloadFromBuyer(buyer);
+  if (!payload) return existingCustomer || null;
+
+  let customer = existingCustomer;
+
+  if (!customer) {
+    const lookupCandidates = [
+      payload.vatNumber ? { vatNumber: payload.vatNumber } : null,
+      payload.email ? { email: payload.email } : null,
+      payload.phone ? { phone: payload.phone } : null,
+      payload.name ? { name: payload.name } : null,
+    ].filter(Boolean);
+
+    for (const candidate of lookupCandidates) {
+      customer = await Customer.findOne({ tenantId, isActive: true, ...candidate });
+      if (customer) break;
+    }
+  }
+
+  if (customer) {
+    customer.type = payload.type || customer.type;
+    customer.name = payload.name || customer.name;
+    customer.nameAr = payload.nameAr || customer.nameAr;
+    customer.email = payload.email || customer.email;
+    customer.phone = payload.phone || customer.phone;
+    customer.mobile = payload.mobile || customer.mobile;
+    customer.vatNumber = payload.vatNumber || customer.vatNumber;
+    customer.crNumber = payload.crNumber || customer.crNumber;
+    customer.address = {
+      ...(customer.address?.toObject?.() || customer.address || {}),
+      ...(payload.address || {}),
+    };
+    await customer.save();
+    return customer;
+  }
+
+  return await Customer.create({
+    tenantId,
+    ...payload,
+  });
+}
+
+async function generateTravelBookingNumber(tenantFilterValue) {
+  const today = new Date();
+  const y = today.getFullYear();
+  const m = String(today.getMonth() + 1).padStart(2, '0');
+  const d = String(today.getDate()).padStart(2, '0');
+  const prefix = `TB-${y}${m}${d}`;
+
+  const last = await TravelBooking.findOne({
+    ...tenantFilterValue,
+    bookingNumber: { $regex: `^${prefix}-` },
+    isActive: true,
+  })
+    .sort({ createdAt: -1 })
+    .select('bookingNumber');
+
+  let seq = 1;
+  if (last?.bookingNumber) {
+    const parts = last.bookingNumber.split('-');
+    const lastSeq = Number(parts[parts.length - 1]);
+    if (Number.isFinite(lastSeq)) seq = lastSeq + 1;
+  }
+
+  return `${prefix}-${String(seq).padStart(3, '0')}`;
+}
+
+async function syncTravelBookingFromInvoice({ invoice, tenantFilterValue, userId, existingBooking = null }) {
+  if (invoice?.businessContext !== 'travel_agency') return existingBooking;
+
+  const travelDetails = invoice?.travelDetails || {};
+  const nextStatus = ['completed', 'cancelled'].includes(existingBooking?.status)
+    ? existingBooking.status
+    : 'ticketed';
+
+  const bookingPayload = {
+    customerName: normalizeText(invoice?.buyer?.name) || normalizeText(travelDetails?.travelerName) || 'Cash Customer',
+    customerEmail: normalizeText(invoice?.buyer?.contactEmail) || undefined,
+    customerPhone: normalizeText(invoice?.buyer?.contactPhone) || undefined,
+    passportNumber: normalizeText(travelDetails?.passportNumber) || undefined,
+    travelerName: normalizeText(travelDetails?.travelerName) || normalizeText(invoice?.buyer?.name) || undefined,
+    ticketNumber: normalizeText(travelDetails?.ticketNumber) || undefined,
+    pnr: normalizeText(travelDetails?.pnr) || undefined,
+    airlineName: normalizeText(travelDetails?.airlineName) || undefined,
+    routeFrom: normalizeText(travelDetails?.routeFrom) || undefined,
+    routeTo: normalizeText(travelDetails?.routeTo) || undefined,
+    segments: Array.isArray(travelDetails?.segments) ? travelDetails.segments : [],
+    serviceType: 'flight',
+    departureDate: travelDetails?.departureDate || undefined,
+    hasReturnDate: Boolean(travelDetails?.hasReturnDate && travelDetails?.returnDate),
+    returnDate: travelDetails?.hasReturnDate ? travelDetails?.returnDate : undefined,
+    layoverStay: normalizeText(travelDetails?.layoverStay) || undefined,
+    currency: invoice?.currency || 'SAR',
+    subtotal: toNumber(invoice?.subtotal, 0),
+    totalTax: toNumber(invoice?.totalTax, 0),
+    grandTotal: toNumber(invoice?.grandTotal, 0),
+    notes: invoice?.notes,
+    invoiceId: invoice?._id,
+    invoiceNumber: invoice?.invoiceNumber,
+    invoicedAt: new Date(),
+    status: nextStatus,
+    isActive: true,
+  };
+
+  if (existingBooking?._id) {
+    return await TravelBooking.findOneAndUpdate(
+      { _id: existingBooking._id, ...tenantFilterValue },
+      bookingPayload,
+      { new: true, runValidators: true }
+    );
+  }
+
+  const bookingNumber = await generateTravelBookingNumber(tenantFilterValue);
+  return await TravelBooking.create({
+    tenantId: invoice.tenantId,
+    bookingNumber,
+    createdBy: userId,
+    ...bookingPayload,
+  });
+}
+
+function resolveInitialSellInvoiceStatus(requestedStatus) {
+  return normalizeText(requestedStatus).toLowerCase() === 'draft' ? 'draft' : 'pending';
+}
+
 async function attachDraftQr(invoice, seller) {
   const qr = await buildDraftInvoiceQr({
     seller,
@@ -359,6 +514,7 @@ router.post('/', checkPermission('invoicing', 'create'), async (req, res) => {
       issueDate,
       buyer,
       customerId: customer?._id,
+      status: resolveInitialSellInvoiceStatus(req.body?.status),
       seller: {
         name: tenant.business.legalNameEn,
         nameAr: tenant.business.legalNameAr,
@@ -371,20 +527,6 @@ router.post('/', checkPermission('invoicing', 'create'), async (req, res) => {
 
     const enrichedInvoiceData = await enrichInvoiceArabicFields(invoiceData);
     const invoice = await Invoice.create(enrichedInvoiceData);
-
-    if (restaurantOrder) {
-      await RestaurantOrder.updateOne(
-        { _id: restaurantOrder._id, ...req.tenantFilter },
-        { invoiceId: invoice._id, invoiceNumber: invoice.invoiceNumber, invoicedAt: new Date() }
-      );
-    }
-
-    if (travelBooking) {
-      await TravelBooking.updateOne(
-        { _id: travelBooking._id, ...req.tenantFilter },
-        { invoiceId: invoice._id, invoiceNumber: invoice.invoiceNumber, invoicedAt: new Date() }
-      );
-    }
 
     if (invoice.customerId) {
       await syncCustomerStats(invoice.tenantId, invoice.customerId);
@@ -483,6 +625,19 @@ router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) =>
       buyer.nameAr = buyer.nameAr || 'عميل نقدي';
     }
 
+    if (!customer && businessContext === 'travel_agency') {
+      customer = await ensureCustomerRecord(req.user.tenantId, buyer);
+      if (customer) {
+        buyer.name = buyer.name || customer.name;
+        buyer.nameAr = buyer.nameAr || customer.nameAr;
+        buyer.vatNumber = buyer.vatNumber || customer.vatNumber;
+        buyer.crNumber = buyer.crNumber || customer.crNumber;
+        buyer.contactEmail = buyer.contactEmail || customer.email;
+        buyer.contactPhone = buyer.contactPhone || customer.phone || customer.mobile;
+        buyer.address = { ...(customer.address || {}), ...(buyer.address || {}) };
+      }
+    }
+
     const lastInvoice = await Invoice.findOne({ tenantId: req.user.tenantId })
       .sort({ createdAt: -1 })
       .select('invoiceNumber');
@@ -535,6 +690,7 @@ router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) =>
       issueDate,
       buyer,
       customerId: customer?._id,
+      status: resolveInitialSellInvoiceStatus(req.body?.status),
       seller: {
         name: tenant.business.legalNameEn,
         nameAr: tenant.business.legalNameAr,
@@ -584,10 +740,26 @@ router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) =>
     }
 
     if (travelBooking) {
-      await TravelBooking.updateOne(
-        { _id: travelBooking._id, ...req.tenantFilter },
-        { invoiceId: invoice._id, invoiceNumber: invoice.invoiceNumber, invoicedAt: new Date() }
-      );
+      await syncTravelBookingFromInvoice({
+        invoice,
+        tenantFilterValue: req.tenantFilter,
+        userId: req.user._id,
+        existingBooking: travelBooking,
+      });
+    } else if (businessContext === 'travel_agency') {
+      const syncedBooking = await syncTravelBookingFromInvoice({
+        invoice,
+        tenantFilterValue: req.tenantFilter,
+        userId: req.user._id,
+      });
+
+      if (syncedBooking?._id) {
+        invoice.travelBookingId = syncedBooking._id;
+        if (!invoice.contractNumber) {
+          invoice.contractNumber = syncedBooking.bookingNumber;
+        }
+        await invoice.save();
+      }
     }
 
     if (invoice.customerId) {
@@ -771,8 +943,8 @@ router.put('/:id', checkPermission('invoicing', 'update'), async (req, res) => {
       return res.status(404).json({ error: 'Invoice not found' });
     }
     
-    if (!['draft'].includes(invoice.status)) {
-      return res.status(400).json({ error: 'Only draft invoices can be modified' });
+    if (!['draft', 'pending'].includes(invoice.status) || invoice.zatca?.signedXml) {
+      return res.status(400).json({ error: 'Only unsigned draft or pending invoices can be modified' });
     }
     
     Object.assign(invoice, req.body);

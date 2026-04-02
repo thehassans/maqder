@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
@@ -49,6 +49,7 @@ const sanitizeTravelDetails = (travelDetails = {}) => ({
 
 export default function InvoiceSellComposer() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { language } = useSelector((state) => state.ui)
   const { tenant } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
@@ -220,6 +221,13 @@ export default function InvoiceSellComposer() {
     mutationFn: (data) => api.post('/invoices/sell', data),
     onSuccess: (res) => {
       toast.success(language === 'ar' ? 'تم إنشاء فاتورة البيع بنجاح' : 'Sell invoice created successfully')
+      queryClient.invalidateQueries(['invoices'])
+      queryClient.invalidateQueries(['dashboard'])
+      queryClient.invalidateQueries(['dashboard-revenue'])
+      queryClient.invalidateQueries(['travel-bookings'])
+      queryClient.invalidateQueries(['travel-bookings-lookup'])
+      queryClient.invalidateQueries(['customers'])
+      queryClient.invalidateQueries(['customers-lookup'])
       navigate(`/app/dashboard/invoices/${res.data._id}`)
     },
     onError: (error) => toast.error(error.response?.data?.error || 'Failed to create invoice'),

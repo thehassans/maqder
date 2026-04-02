@@ -36,6 +36,11 @@ export default function InvoiceView() {
     onSuccess: () => {
       toast.success(language === 'ar' ? 'تم توقيع الفاتورة بنجاح' : 'Invoice signed successfully')
       queryClient.invalidateQueries(['invoice', id])
+      queryClient.invalidateQueries(['invoices'])
+      queryClient.invalidateQueries(['dashboard'])
+      queryClient.invalidateQueries(['dashboard-revenue'])
+      queryClient.invalidateQueries(['travel-bookings'])
+      queryClient.invalidateQueries(['customers'])
     },
     onError: (error) => {
       toast.error(error.response?.data?.error || 'Failed to sign invoice')
@@ -94,7 +99,7 @@ export default function InvoiceView() {
             )}
             {language === 'ar' ? 'PDF' : 'PDF'}
           </button>
-          {invoice?.status === 'draft' && invoice?.flow !== 'purchase' && (
+          {['draft', 'pending'].includes(invoice?.status) && !invoice?.zatca?.signedXml && invoice?.flow !== 'purchase' && (
             <button
               onClick={() => signMutation.mutate()}
               disabled={signMutation.isPending}
