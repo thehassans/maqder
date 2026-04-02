@@ -9,10 +9,14 @@ const getGeminiSettings = async () => {
   return settings?.gemini || null
 }
 
-const translateToArabic = async ({ client, model, text }) => {
+const translateText = async ({ client, model, text, targetLanguage }) => {
+  const prompt = targetLanguage === 'en'
+    ? `Translate the following text to natural English. If it is a proper name, transliterate it naturally in English. Return only the English text with no quotes and no extra explanation.\n\nText:\n"""${text}"""`
+    : `Translate the following text to Arabic. If it is a proper name, transliterate it naturally in Arabic. Return only the Arabic text with no quotes and no extra explanation.\n\nText:\n"""${text}"""`
+
   const response = await client.models.generateContent({
     model,
-    contents: `Translate the following text to Arabic. If it is a proper name, transliterate it naturally in Arabic. Return only the Arabic text with no quotes and no extra explanation.\n\nText:\n"""${text}"""`,
+    contents: prompt,
     config: {
       temperature: 0.1,
       maxOutputTokens: 256,
@@ -35,64 +39,107 @@ export const enrichInvoiceArabicFields = async (invoiceData = {}) => {
   const translationCache = new Map()
   const tasks = []
 
-  const assignArabicValue = (holder, key, sourceValue) => {
-    if (!holder || holder[key]) return
-
+  const queueTranslation = ({ sourceValue, targetLanguage, onResolved }) => {
     const source = String(sourceValue || '').trim()
     if (!source || !hasTranslatableText(source)) return
 
-    if (hasArabicText(source)) {
-      holder[key] = source
-      return
-    }
-
-    const cached = translationCache.get(source)
+    const cacheKey = `${targetLanguage}:${source}`
+    const cached = translationCache.get(cacheKey)
     if (cached) {
       tasks.push(
         cached.then((translated) => {
-          if (translated && !holder[key]) holder[key] = translated
+          if (translated) onResolved(translated)
         })
       )
       return
     }
 
-    const pending = translateToArabic({ client, model, text: source })
+    const pending = translateText({ client, model, text: source, targetLanguage })
       .then((translated) => {
         const value = String(translated || '').trim()
         return value || ''
       })
       .catch(() => '')
 
-    translationCache.set(source, pending)
+    translationCache.set(cacheKey, pending)
     tasks.push(
       pending.then((translated) => {
-        if (translated && !holder[key]) holder[key] = translated
+        if (translated) onResolved(translated)
       })
     )
   }
 
-  assignArabicValue(next?.buyer, 'nameAr', next?.buyer?.name)
-  assignArabicValue(next?.seller, 'nameAr', next?.seller?.name)
+  const assignBilingualValue = (holder, primaryKey, arabicKey) => {
+    if (!holder) return
+
+    const primaryValue = String(holder[primaryKey] || '').trim()
+    const arabicValue = String(holder[arabicKey] || '').trim()
+
+    if (primaryValue && hasArabicText(primaryValue)) {
+      if (!arabicValue) {
+        holder[arabicKey] = primaryValue
+      }
+
+      queueTranslation({
+        sourceValue: primaryValue,
+        targetLanguage: 'en',
+        onResolved: (translated) => {
+          if (translated && (!holder[primaryKey] || hasArabicText(holder[primaryKey]))) {
+            holder[primaryKey] = translated
+          }
+        },
+      })
+      return
+    }
+
+    if (primaryValue && !arabicValue) {
+      queueTranslation({
+        sourceValue: primaryValue,
+        targetLanguage: 'ar',
+        onResolved: (translated) => {
+          if (translated && !holder[arabicKey]) {
+            holder[arabicKey] = translated
+          }
+        },
+      })
+      return
+    }
+
+    if (!primaryValue && arabicValue) {
+      queueTranslation({
+        sourceValue: arabicValue,
+        targetLanguage: 'en',
+        onResolved: (translated) => {
+          if (translated && !holder[primaryKey]) {
+            holder[primaryKey] = translated
+          }
+        },
+      })
+    }
+  }
+
+  assignBilingualValue(next?.buyer, 'name', 'nameAr')
+  assignBilingualValue(next?.seller, 'name', 'nameAr')
 
   for (const lineItem of Array.isArray(next?.lineItems) ? next.lineItems : []) {
-    assignArabicValue(lineItem, 'productNameAr', lineItem?.productName)
-    assignArabicValue(lineItem, 'descriptionAr', lineItem?.description)
+    assignBilingualValue(lineItem, 'productName', 'productNameAr')
+    assignBilingualValue(lineItem, 'description', 'descriptionAr')
   }
 
   if (next?.travelDetails) {
-    assignArabicValue(next.travelDetails, 'travelerNameAr', next.travelDetails?.travelerName)
-    assignArabicValue(next.travelDetails, 'airlineNameAr', next.travelDetails?.airlineName)
-    assignArabicValue(next.travelDetails, 'routeFromAr', next.travelDetails?.routeFrom)
-    assignArabicValue(next.travelDetails, 'routeToAr', next.travelDetails?.routeTo)
-    assignArabicValue(next.travelDetails, 'layoverStayAr', next.travelDetails?.layoverStay)
+    assignBilingualValue(next.travelDetails, 'travelerName', 'travelerNameAr')
+    assignBilingualValue(next.travelDetails, 'airlineName', 'airlineNameAr')
+    assignBilingualValue(next.travelDetails, 'routeFrom', 'routeFromAr')
+    assignBilingualValue(next.travelDetails, 'routeTo', 'routeToAr')
+    assignBilingualValue(next.travelDetails, 'layoverStay', 'layoverStayAr')
 
     for (const segment of Array.isArray(next.travelDetails?.segments) ? next.travelDetails.segments : []) {
-      assignArabicValue(segment, 'fromAr', segment?.from)
-      assignArabicValue(segment, 'toAr', segment?.to)
+      assignBilingualValue(segment, 'from', 'fromAr')
+      assignBilingualValue(segment, 'to', 'toAr')
     }
 
-    for (const passenger of Array.isArray(next.travelDetails?.passengers) ? next.travelDetails.passengers : []) {
-      assignArabicValue(passenger, 'nameAr', passenger?.name)
+    for (const passenger of Array.isArray(next.travelDetails?.passengers) ? next.travelDetails?.passengers : []) {
+      assignBilingualValue(passenger, 'name', 'nameAr')
     }
   }
 

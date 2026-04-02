@@ -215,6 +215,34 @@ const safeText = (value) => {
   return String(value)
 }
 
+const hasArabicText = (value = '') => /[\u0600-\u06FF]/.test(String(value || ''))
+
+const uniqueTextLines = (...values) => {
+  const seen = new Set()
+  const result = []
+
+  for (const value of values) {
+    const lines = String(value || '')
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+
+    for (const line of lines) {
+      const key = line.toLowerCase()
+      if (seen.has(key)) continue
+      seen.add(key)
+      result.push(line)
+    }
+  }
+
+  return result
+}
+
+const toBilingualText = (englishValue, arabicValue, fallback = '—') => {
+  const lines = uniqueTextLines(englishValue, arabicValue)
+  return lines.length > 0 ? lines.join('\n') : fallback
+}
+
 const formatDateTime = (value, language) => {
   if (!value) return ''
   const d = new Date(value)
@@ -313,7 +341,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const oppositeAlign = isRtl ? 'left' : 'right'
   const invoiceBranding = getInvoiceBranding(tenant, language, invoice?.businessContext)
 
-  const arabicFontReady = isRtl ? await ensureTajawalFont(doc) : false
+  const arabicFontReady = await ensureTajawalFont(doc)
 
   if (isRtl && typeof doc.setR2L === 'function') {
     try {
@@ -438,7 +466,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const shape = (value) => {
     const raw = safeText(value)
     if (!raw) return ''
-    if (isRtl && arabicFontReady && typeof doc.processArabic === 'function') {
+    if (typeof doc.processArabic === 'function' && hasArabicText(raw)) {
       try {
         return doc.processArabic(raw)
       } catch {
@@ -448,12 +476,19 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     return raw
   }
 
-  const sellerName = isRtl ? (seller.nameAr || seller.name) : (seller.name || seller.nameAr)
-  const buyerName = isRtl ? (buyer.nameAr || buyer.name) : (buyer.name || buyer.nameAr)
+  const sellerNameEn = seller.name || seller.nameAr || ''
+  const sellerNameAr = seller.nameAr || (hasArabicText(seller.name) ? seller.name : '')
+  const buyerNameEn = buyer.name || buyer.nameAr || ''
+  const buyerNameAr = buyer.nameAr || (hasArabicText(buyer.name) ? buyer.name : '')
+  const sellerName = sellerNameEn || sellerNameAr
+  const buyerName = buyerNameEn || buyerNameAr
+  const sellerDisplayName = toBilingualText(sellerNameEn, sellerNameAr)
+  const buyerDisplayName = toBilingualText(buyerNameEn, buyerNameAr)
   const sellerDetailLines = getPartyDetailLines(seller, language, 'seller')
   const buyerDetailLines = getPartyDetailLines(buyer, language, 'buyer')
   const totals = calculateInvoiceSummary(invoice)
-  const travelDetails = normalizeTravelDetails(invoice.travelDetails || {}, buyerName, language)
+  const travelDetailsEn = normalizeTravelDetails(invoice.travelDetails || {}, buyerNameEn || buyerNameAr, 'en')
+  const travelDetailsAr = normalizeTravelDetails(invoice.travelDetails || {}, buyerNameAr || buyerNameEn, 'ar')
   const qrValue = invoice?.zatca?.qrCodeData || generateZatcaQrValue({
     sellerName,
     vatNumber: seller?.vatNumber || tenant?.business?.vatNumber,
@@ -464,15 +499,17 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const fallbackQrImage = invoice?.zatca?.qrCodeImage ? null : await renderQrToDataUrl(qrValue, 120)
   const qr = await resolveImageSource(invoice?.zatca?.qrCodeImage || fallbackQrImage || null)
   const qrFormat = detectImageFormat(qr)
-  const companyName = invoiceBranding.companyName || sellerName || ''
+  const companyName = invoiceBranding.companyName || sellerNameEn || sellerNameAr || ''
   const headerLines = splitBrandingText(invoiceBranding.headerText)
   const footerLines = splitBrandingText(invoiceBranding.footerText)
   const invoiceEyebrow = getInvoiceEyebrow(invoice, language)
 
-  const title = getInvoiceTitle(invoice, language)
+  const title = invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency'
+    ? ''
+    : getInvoiceTitle(invoice, language)
   const customerLabel = invoice.flow === 'purchase'
-    ? (isRtl ? 'المشتري' : 'Buyer')
-    : (isRtl ? 'العميل' : 'Customer')
+    ? 'Buyer / المشتري'
+    : 'Customer / العميل'
   const amountInWords = getAmountInWords(totals.grandTotal, currency, language)
   const typography = invoiceBranding.typography || {}
   const bodyFontName = arabicFontReady ? 'Tajawal' : (typography.bodyFontFamily || 'helvetica')
@@ -559,8 +596,10 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     doc.line(contentLeft, dividerY, contentRightEdge, dividerY)
 
     doc.setTextColor(theme.headerTitleRgb.r, theme.headerTitleRgb.g, theme.headerTitleRgb.b)
-    setHeadingFont(Math.max(headingFontSize, 18), 'bold')
-    doc.text(shape(title), pageW / 2, dividerY + 23, { align: 'center' })
+    if (title) {
+      setHeadingFont(Math.max(headingFontSize, 18), 'bold')
+      doc.text(shape(title), pageW / 2, dividerY + 23, { align: 'center' })
+    }
   }
 
   drawHeader({ pageNumber: 1 })
@@ -618,16 +657,19 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const partyPad = 12
   const measureTextLines = (value, width, setter) => {
     setter()
-    const lines = doc.splitTextToSize(shape(value || '—'), width)
+    const lines = uniqueTextLines(value || '—').flatMap((line) => {
+      const measured = doc.splitTextToSize(shape(line || '—'), width)
+      return Array.isArray(measured) && measured.length > 0 ? measured : ['—']
+    })
     return Array.isArray(lines) && lines.length > 0 ? lines : ['—']
   }
-  const sellerNameLines = measureTextLines(sellerName || '—', boxW - partyPad * 2, () => setHeadingFont(Math.max(bodyFontSize + 1, 10), 'bold'))
-  const buyerNameLines = measureTextLines(buyerName || '—', boxW - partyPad * 2, () => setHeadingFont(Math.max(bodyFontSize + 1, 10), 'bold'))
+  const sellerNameLines = measureTextLines(sellerDisplayName, boxW - partyPad * 2, () => setHeadingFont(Math.max(bodyFontSize + 1, 10), 'bold'))
+  const buyerNameLines = measureTextLines(buyerDisplayName, boxW - partyPad * 2, () => setHeadingFont(Math.max(bodyFontSize + 1, 10), 'bold'))
   const sellerDetailTextLines = sellerDetailLines.flatMap((detail) => measureTextLines(detail.label ? `${detail.label}: ${detail.value}` : detail.value, boxW - partyPad * 2, () => setBodyFont(Math.max(bodyFontSize - 1, 8), 'bold')))
   const buyerDetailTextLines = buyerDetailLines.flatMap((detail) => measureTextLines(detail.label ? `${detail.label}: ${detail.value}` : detail.value, boxW - partyPad * 2, () => setBodyFont(Math.max(bodyFontSize - 1, 8), 'bold')))
   const sellerNameHeight = sellerNameLines.length * 13
   const buyerNameHeight = buyerNameLines.length * 13
-  const detailStartOffset = 33 + Math.max(sellerNameHeight, buyerNameHeight)
+  const detailStartOffset = 38 + Math.max(sellerNameHeight, buyerNameHeight)
   const partyDetailsCount = Math.max(sellerDetailTextLines.length, buyerDetailTextLines.length, 1)
   const boxH = Math.max(94, detailStartOffset + partyDetailsCount * partyLineHeight + 14)
 
@@ -644,7 +686,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
 
     setHeadingFont(Math.max(bodyFontSize + 1, 10), 'bold')
     doc.setTextColor(15, 23, 42)
-    doc.text(nameLines, tx, y + 31, { align, maxWidth: boxW - partyPad * 2 })
+    doc.text(nameLines, tx, y + 36, { align, maxWidth: boxW - partyPad * 2 })
 
     setBodyFont(Math.max(bodyFontSize - 1, 8), 'bold')
     doc.setTextColor(31, 41, 55)
@@ -665,7 +707,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   drawPartyBox({
     x: firstBoxX,
     y: boxY,
-    label: isRtl ? 'البائع' : 'Seller',
+    label: 'Seller / البائع',
     nameLines: sellerNameLines,
     detailLines: sellerDetailTextLines,
   })
@@ -682,15 +724,15 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
 
   if (invoice?.invoiceSubtype === 'travel_ticket') {
     const travelRows = [
-      [isRtl ? 'اسم المسافر الرئيسي' : 'Lead Traveler', travelDetails.travelerDisplayName || buyerName || ''],
-      [isRtl ? 'رقم الجواز' : 'Passport', travelDetails.passportNumber || ''],
-      [isRtl ? 'مرجع التذكرة / PNR' : 'Ticket Reference / PNR', [travelDetails.ticketNumber, travelDetails.pnr].filter(Boolean).join(' / ')],
-      [isRtl ? 'مسار الرحلة' : 'Travel Route', travelDetails.routeText || ''],
-      [isRtl ? 'الناقل / مزود الخدمة' : 'Carrier / Service Provider', travelDetails.airlineDisplayName || ''],
-      [isRtl ? 'تاريخ المغادرة' : 'Departure Date', formatDateTime(travelDetails.departureDate, language)],
-      [isRtl ? 'تاريخ العودة' : 'Return Date', travelDetails.hasReturnDate ? formatDateTime(travelDetails.returnDate, language) : ''],
-      [isRtl ? 'التوقف / الإقامة' : 'Layover / Stay', travelDetails.layoverStayDisplay || ''],
-      [isRtl ? 'مسافرون إضافيون' : 'Additional Passengers', travelDetails.additionalPassengersText === '—' ? '' : travelDetails.additionalPassengersText],
+      [toBilingualText('Lead Traveler', 'اسم المسافر الرئيسي'), toBilingualText(travelDetailsEn.travelerDisplayName || buyerNameEn || buyerNameAr, travelDetailsAr.travelerDisplayName || buyerNameAr || buyerNameEn, '')],
+      [toBilingualText('Passport', 'رقم الجواز'), travelDetailsEn.passportNumber || travelDetailsAr.passportNumber || ''],
+      [toBilingualText('Ticket Reference / PNR', 'مرجع التذكرة / PNR'), [travelDetailsEn.ticketNumber || travelDetailsAr.ticketNumber, travelDetailsEn.pnr || travelDetailsAr.pnr].filter(Boolean).join(' / ')],
+      [toBilingualText('Travel Route', 'مسار الرحلة'), toBilingualText(travelDetailsEn.routeText, travelDetailsAr.routeText, '')],
+      [toBilingualText('Carrier / Service Provider', 'الناقل / مزود الخدمة'), toBilingualText(travelDetailsEn.airlineDisplayName, travelDetailsAr.airlineDisplayName, '')],
+      [toBilingualText('Departure Date', 'تاريخ المغادرة'), toBilingualText(formatDateTime(travelDetailsEn.departureDate, 'en'), formatDateTime(travelDetailsAr.departureDate, 'ar'), '')],
+      [toBilingualText('Return Date', 'تاريخ العودة'), travelDetailsEn.hasReturnDate ? toBilingualText(formatDateTime(travelDetailsEn.returnDate, 'en'), formatDateTime(travelDetailsAr.returnDate, 'ar'), '') : ''],
+      [toBilingualText('Layover / Stay', 'التوقف / الإقامة'), toBilingualText(travelDetailsEn.layoverStayDisplay, travelDetailsAr.layoverStayDisplay, '')],
+      [toBilingualText('Additional Passengers', 'مسافرون إضافيون'), toBilingualText(travelDetailsEn.additionalPassengersText === '—' ? '' : travelDetailsEn.additionalPassengersText, travelDetailsAr.additionalPassengersText === '—' ? '' : travelDetailsAr.additionalPassengersText, '')],
     ].filter(([, value]) => String(value || '').trim())
 
     autoTable(doc, {
@@ -701,15 +743,15 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
       body: travelRows,
       styles: {
         fontSize: Math.max(8, Math.min(14, bodyFontSize - 1)),
-        cellPadding: 3.5,
+        cellPadding: 4,
         font: bodyFontName,
         textColor: [15, 23, 42],
         lineColor: [203, 213, 225],
         lineWidth: 0.35,
       },
       columnStyles: {
-        0: { cellWidth: 112, fontStyle: 'bold', halign: align },
-        1: { cellWidth: contentW - 112, halign: align },
+        0: { cellWidth: 150, fontStyle: 'bold', halign: align },
+        1: { cellWidth: contentW - 150, halign: align },
       },
       didDrawPage: () => {
         const pageNumber = doc.getCurrentPageInfo().pageNumber
@@ -717,13 +759,13 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
       },
     })
 
-    y = doc.lastAutoTable.finalY + 10
+    y = doc.lastAutoTable.finalY + 16
   }
 
   setHeadingFont(Math.max(bodyFontSize + 1, 11), 'bold')
   doc.setTextColor(15, 23, 42)
-  doc.text(shape(isRtl ? 'البنود' : 'Items'), isRtl ? contentRightEdge : contentLeft, y, { align })
-  y += 12
+  doc.text(shape('Items / البنود'), isRtl ? contentRightEdge : contentLeft, y, { align })
+  y += 14
 
   const lineItems = totals.lines
 
@@ -761,9 +803,14 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     const unitPrice = toNumber(l.unitPrice)
     const taxAmount = toNumber(l.taxAmount)
     const lineTotalWithTax = toNumber(l.lineTotalWithTax)
-    const productName = isRtl ? (l.raw?.productNameAr || l.raw?.productName || l.productNameAr || l.productName) : (l.raw?.productName || l.raw?.productNameAr || l.productName || l.productNameAr)
-    const description = isRtl ? (l.raw?.descriptionAr || l.raw?.description || l.descriptionAr || l.description) : (l.raw?.description || l.raw?.descriptionAr || l.description || l.descriptionAr)
-    const desc = [productName, description].filter((value, index, list) => value && list.indexOf(value) === index).join('\n')
+    const productNameEn = l.raw?.productName || l.productName || l.raw?.productNameAr || l.productNameAr || ''
+    const productNameAr = l.raw?.productNameAr || l.productNameAr || (hasArabicText(productNameEn) ? productNameEn : '')
+    const descriptionEn = l.raw?.description || l.description || l.raw?.descriptionAr || l.descriptionAr || ''
+    const descriptionAr = l.raw?.descriptionAr || l.descriptionAr || (hasArabicText(descriptionEn) ? descriptionEn : '')
+    const desc = uniqueTextLines(
+      toBilingualText(productNameEn, productNameAr, ''),
+      toBilingualText(descriptionEn, descriptionAr, '')
+    ).join('\n')
 
     return [
       String(idx + 1),
@@ -780,11 +827,11 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
     margin: { left: contentLeft, right: contentRight, top: topMargin, bottom: footerH },
     head: [[
       '#',
-      isRtl ? 'الوصف' : 'Description',
-      isRtl ? 'الكمية' : 'Qty',
-      isRtl ? 'سعر الوحدة' : 'Unit Price',
-      isRtl ? 'الضريبة' : 'Tax',
-      isRtl ? 'الإجمالي' : 'Total',
+      'Description\nالوصف',
+      'Qty\nالكمية',
+      'Unit Price\nسعر الوحدة',
+      'Tax\nالضريبة',
+      'Total\nالإجمالي',
     ]],
     body: bodyRows,
     styles: {
@@ -794,6 +841,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
       textColor: [15, 23, 42],
       lineColor: [226, 232, 240],
       lineWidth: 0.4,
+      valign: 'middle',
     },
     headStyles: {
       fillColor: rgbArr(theme.tableHeadFillRgb),
@@ -820,11 +868,11 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const grandTotal = Number(totals.grandTotal ?? 0)
 
   const totalsRows = [
-    [isRtl ? 'الإجمالي الفرعي' : 'Subtotal', money(totals.subtotal)],
-    [isRtl ? 'الخصم' : 'Discount', money(totals.totalDiscount)],
-    [isRtl ? 'الإجمالي قبل الضريبة' : 'Taxable Amount', money(taxable)],
-    [isRtl ? 'الضريبة' : 'Tax', money(totalTax)],
-    [isRtl ? 'الإجمالي' : 'Total', money(grandTotal)],
+    ['Subtotal', 'الإجمالي الفرعي', money(totals.subtotal)],
+    ['Discount', 'الخصم', money(totals.totalDiscount)],
+    ['Taxable Amount', 'الإجمالي قبل الضريبة', money(taxable)],
+    ['Tax', 'الضريبة', money(totalTax)],
+    ['Total', 'الإجمالي', money(grandTotal)],
   ]
 
   const summaryGap = 12
@@ -834,7 +882,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
   const totalsLeft = isRtl ? contentLeft : contentRightEdge - totalsW
   const totalsTop = doc.lastAutoTable.finalY + 12
   const amountWordsH = Math.max(74, invoice?.notes ? 110 : 84)
-  const totalsH = 132
+  const totalsH = 164
 
   doc.setFillColor(255, 255, 255)
   doc.setDrawColor(theme.boxStrokeRgb.r, theme.boxStrokeRgb.g, theme.boxStrokeRgb.b)
@@ -842,7 +890,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
 
   setBodyFont(8, 'normal')
   doc.setTextColor(theme.headerMutedRgb.r, theme.headerMutedRgb.g, theme.headerMutedRgb.b)
-  doc.text(shape(isRtl ? 'المبلغ كتابةً' : 'Amount in Words'), isRtl ? amountWordsLeft + amountWordsW - 12 : amountWordsLeft + 12, totalsTop + 18, { align, maxWidth: amountWordsW - 24 })
+  doc.text(shape('Amount in Words / المبلغ كتابةً'), isRtl ? amountWordsLeft + amountWordsW - 12 : amountWordsLeft + 12, totalsTop + 18, { align, maxWidth: amountWordsW - 24 })
 
   setHeadingFont(Math.max(bodyFontSize + 1, 10), 'bold')
   doc.setTextColor(theme.headerTitleRgb.r, theme.headerTitleRgb.g, theme.headerTitleRgb.b)
@@ -862,8 +910,9 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
 
   let totalsY = totalsTop + 18
   for (let i = 0; i < totalsRows.length; i += 1) {
-    const [label, value] = totalsRows[i]
+    const [labelEn, labelAr, value] = totalsRows[i]
     const isGrandTotal = i === totalsRows.length - 1
+    const label = toBilingualText(labelEn, labelAr)
 
     if (isGrandTotal) {
       doc.setDrawColor(203, 213, 225)
@@ -873,7 +922,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
       doc.setTextColor(theme.headerTitleRgb.r, theme.headerTitleRgb.g, theme.headerTitleRgb.b)
       doc.text(shape(label), isRtl ? totalsLeft + totalsW - 14 : totalsLeft + 14, totalsY, { align, maxWidth: 132 })
 
-      totalsY += 16
+      totalsY += 22
 
       setHeadingFont(Math.max(bodyFontSize + 6, 15), 'bold')
       doc.text(shape(value), isRtl ? totalsLeft + 14 : totalsLeft + totalsW - 14, totalsY, { align: oppositeAlign, maxWidth: totalsW - 28 })
@@ -887,7 +936,7 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant }) =
       doc.setTextColor(theme.headerTitleRgb.r, theme.headerTitleRgb.g, theme.headerTitleRgb.b)
       doc.text(shape(value), isRtl ? totalsLeft + 14 : totalsLeft + totalsW - 14, totalsY, { align: oppositeAlign, maxWidth: 110 })
 
-      totalsY += 16
+      totalsY += 20
     }
   }
 
