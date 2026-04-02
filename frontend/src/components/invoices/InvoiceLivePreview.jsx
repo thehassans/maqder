@@ -217,7 +217,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
   const showVisionLogo = invoiceBranding.showVision2030 && invoiceBranding.vision2030LogoSrc
   const typography = invoiceBranding.typography || {}
   const zatcaStatusMeta = getZatcaStatusMeta(invoice, language)
-  const amountInWords = getAmountInWords(totals.grandTotal, currency, language)
+  const amountInWords = getAmountInWords(totals.grandTotal, currency, bilingual ? 'ar' : language)
   const showInvoiceTitle = !(invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency')
   const rawRouteText = getUntranslatedRouteText(invoice?.travelDetails || {})
   const renderStackedLabel = (english, arabic, uppercaseEnglish = false) => {
@@ -368,9 +368,10 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
                 <p className={`mt-3 text-[1.05rem] font-bold leading-7 ${titleText} whitespace-pre-line`}>{sellerName || '—'}</p>
                 <div className="mt-3 space-y-2">
                   {sellerDetails.map((detail, index) => (
-                    <p key={`${detail.label}-${index}`} className="text-sm font-semibold leading-6 text-slate-800 break-words whitespace-pre-line">
-                      {detail.label ? <span className="font-bold text-slate-900 whitespace-pre-line">{detail.label}:</span> : null} {detail.dir ? <span dir={detail.dir} className="inline-block"> {detail.value}</span> : ` ${detail.value}`}
-                    </p>
+                    <div key={`${detail.label}-${index}`} className="text-sm font-semibold leading-6 text-slate-800 break-words whitespace-pre-line">
+                      {detail.label ? <p className="font-bold text-slate-900 whitespace-pre-line">{detail.label}</p> : null}
+                      <p dir={detail.dir || undefined} className={detail.dir ? 'block whitespace-pre-line' : 'whitespace-pre-line'}>{detail.value}</p>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -379,9 +380,10 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
                 <p className={`mt-3 text-[1.05rem] font-bold leading-7 ${titleText} whitespace-pre-line`}>{buyerName || '—'}</p>
                 <div className="mt-3 space-y-2">
                   {buyerDetails.map((detail, index) => (
-                    <p key={`${detail.label}-${index}`} className="text-sm font-semibold leading-6 text-slate-800 break-words whitespace-pre-line">
-                      {detail.label ? <span className="font-bold text-slate-900 whitespace-pre-line">{detail.label}:</span> : null} {detail.dir ? <span dir={detail.dir} className="inline-block"> {detail.value}</span> : ` ${detail.value}`}
-                    </p>
+                    <div key={`${detail.label}-${index}`} className="text-sm font-semibold leading-6 text-slate-800 break-words whitespace-pre-line">
+                      {detail.label ? <p className="font-bold text-slate-900 whitespace-pre-line">{detail.label}</p> : null}
+                      <p dir={detail.dir || undefined} className={detail.dir ? 'block whitespace-pre-line' : 'whitespace-pre-line'}>{detail.value}</p>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -473,7 +475,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
         <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
           <div className={`rounded-2xl p-4 ${styles.block}`}>
             <p className={`text-xs font-semibold ${mutedText}`}>{renderStackedLabel('Amount in Words', 'المبلغ كتابةً')}</p>
-            <p className={`mt-3 text-base font-bold leading-8 ${titleText}`}>{amountInWords}</p>
+            <p dir={bilingual ? 'rtl' : undefined} className={`mt-3 text-base font-bold leading-8 ${titleText}`}>{amountInWords}</p>
             {invoice?.notes ? <p className={`mt-4 text-sm font-semibold leading-7 text-slate-700`}>{invoice.notes}</p> : null}
           </div>
           <div className={`rounded-2xl p-4 ${styles.block}`}>
