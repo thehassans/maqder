@@ -33,6 +33,25 @@ const toBilingualText = (englishValue, arabicValue, fallback = '—') => {
   return lines.length > 0 ? lines.join('\n') : fallback
 }
 
+const getUntranslatedRouteText = (travelDetails = {}) => {
+  const segments = Array.isArray(travelDetails?.segments) ? travelDetails.segments : []
+  if (segments.length > 0) {
+    return segments
+      .map((segment) => {
+        const from = String(segment?.from || segment?.fromAr || '').trim()
+        const to = String(segment?.to || segment?.toAr || '').trim()
+        if (from && to) return `${from} - ${to}`
+        return from || to || '—'
+      })
+      .join(' | ')
+  }
+
+  const routeFrom = String(travelDetails?.routeFrom || travelDetails?.routeFromAr || '').trim()
+  const routeTo = String(travelDetails?.routeTo || travelDetails?.routeToAr || '').trim()
+  if (routeFrom && routeTo) return `${routeFrom} - ${routeTo}`
+  return routeFrom || routeTo || '—'
+}
+
 const formatAddress = (address = {}) => {
   return [address?.street, address?.district, address?.city, address?.postalCode, address?.country]
     .filter(Boolean)
@@ -77,7 +96,7 @@ const getPartyDetailLinesBilingual = (party = {}, role = 'party') => {
   }
 
   if (party?.contactEmail) {
-    lines.push({ label: toBilingualText('Email', 'البريد الإلكتروني'), value: party.contactEmail })
+    lines.push({ label: toBilingualText('Email', 'البريد الإلكتروني'), value: party.contactEmail, dir: 'ltr' })
   }
 
   const addressText = formatAddress(party?.address)
@@ -200,47 +219,69 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
   const zatcaStatusMeta = getZatcaStatusMeta(invoice, language)
   const amountInWords = getAmountInWords(totals.grandTotal, currency, language)
   const showInvoiceTitle = !(invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency')
+  const rawRouteText = getUntranslatedRouteText(invoice?.travelDetails || {})
+  const renderStackedLabel = (english, arabic, uppercaseEnglish = false) => {
+    if (!bilingual) return language === 'ar' ? arabic : english
+
+    return (
+      <span className="flex flex-col gap-1 leading-tight">
+        <span className={uppercaseEnglish ? 'uppercase tracking-[0.2em]' : ''}>{english}</span>
+        <span dir="rtl" className="tracking-normal normal-case">{arabic}</span>
+      </span>
+    )
+  }
   const travelRows = invoice?.invoiceSubtype === 'travel_ticket'
     ? [
         {
+          key: 'lead-traveler',
           label: bilingual ? toBilingualText('Lead Traveler', 'اسم المسافر الرئيسي') : (language === 'ar' ? 'اسم المسافر الرئيسي' : 'Lead Traveler'),
           value: bilingual ? toBilingualText(travelDetailsEn?.travelerDisplayName, travelDetailsAr?.travelerDisplayName) : (travelDetails?.travelerDisplayName || '—'),
         },
         {
+          key: 'passport',
           label: bilingual ? toBilingualText('Passport', 'رقم الجواز') : (language === 'ar' ? 'رقم الجواز' : 'Passport Number'),
           value: travelDetails?.passportNumber || '—',
         },
         {
+          key: 'ticket-reference',
           label: bilingual ? toBilingualText('Ticket Reference', 'مرجع التذكرة') : (language === 'ar' ? 'مرجع التذكرة' : 'Ticket Reference'),
           value: travelDetails?.ticketNumber || '—',
         },
         {
+          key: 'pnr',
           label: bilingual ? toBilingualText('PNR', 'رمز الحجز') : 'PNR',
           value: travelDetails?.pnr || '—',
         },
         {
+          key: 'travel-route',
           label: bilingual ? toBilingualText('Travel Route', 'مسار الرحلة') : (language === 'ar' ? 'مسار الرحلة' : 'Travel Route'),
-          value: bilingual ? toBilingualText(travelDetailsEn?.routeText, travelDetailsAr?.routeText) : (travelDetails?.routeText || '—'),
+          value: rawRouteText,
+          dir: hasArabicText(rawRouteText) ? 'rtl' : 'ltr',
         },
         {
+          key: 'carrier',
           label: bilingual ? toBilingualText('Carrier / Service Provider', 'الناقل / مزود الخدمة') : (language === 'ar' ? 'الناقل / مزود الخدمة' : 'Carrier / Service Provider'),
           value: bilingual ? toBilingualText(travelDetailsEn?.airlineDisplayName || invoice?.seller?.name, travelDetailsAr?.airlineDisplayName) : (travelDetails?.airlineDisplayName || invoice?.seller?.name || '—'),
         },
         {
+          key: 'departure-date',
           label: bilingual ? toBilingualText('Departure Date', 'تاريخ المغادرة') : (language === 'ar' ? 'تاريخ المغادرة' : 'Departure Date'),
           value: bilingual ? toBilingualText(formatDate(travelDetailsEn?.departureDate, 'en'), formatDate(travelDetailsAr?.departureDate, 'ar')) : formatDate(travelDetails?.departureDate, language),
         },
         travelDetails?.hasReturnDate || (bilingual && travelDetailsEn?.hasReturnDate)
           ? {
+              key: 'return-date',
               label: bilingual ? toBilingualText('Return Date', 'تاريخ العودة') : (language === 'ar' ? 'تاريخ العودة' : 'Return Date'),
               value: bilingual ? toBilingualText(formatDate(travelDetailsEn?.returnDate, 'en'), formatDate(travelDetailsAr?.returnDate, 'ar')) : formatDate(travelDetails?.returnDate, language),
             }
           : null,
         {
+          key: 'layover-stay',
           label: bilingual ? toBilingualText('Layover / Stay', 'التوقف / الإقامة') : (language === 'ar' ? 'التوقف / الإقامة' : 'Layover / Stay'),
           value: bilingual ? toBilingualText(travelDetailsEn?.layoverStayDisplay, travelDetailsAr?.layoverStayDisplay) : (travelDetails?.layoverStayDisplay || '—'),
         },
         {
+          key: 'additional-passengers',
           label: bilingual ? toBilingualText('Additional Passengers', 'مسافرون إضافيون') : (language === 'ar' ? 'مسافرون إضافيون' : 'Additional Passengers'),
           value: bilingual
             ? toBilingualText(travelDetailsEn?.additionalPassengersText === '—' ? '' : travelDetailsEn?.additionalPassengersText, travelDetailsAr?.additionalPassengersText === '—' ? '' : travelDetailsAr?.additionalPassengersText)
@@ -323,23 +364,23 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className={`rounded-[1.5rem] p-5 ${styles.block}`} style={metaCardStyle}>
-                <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${mutedText} whitespace-pre-line`}>{bilingual ? toBilingualText('Seller', 'البائع') : (language === 'ar' ? 'البائع' : 'Seller')}</p>
+                <p className={`text-xs font-semibold ${mutedText}`}>{renderStackedLabel('Seller', 'البائع', true)}</p>
                 <p className={`mt-3 text-[1.05rem] font-bold leading-7 ${titleText} whitespace-pre-line`}>{sellerName || '—'}</p>
                 <div className="mt-3 space-y-2">
                   {sellerDetails.map((detail, index) => (
                     <p key={`${detail.label}-${index}`} className="text-sm font-semibold leading-6 text-slate-800 break-words whitespace-pre-line">
-                      {detail.label ? <span className="font-bold text-slate-900 whitespace-pre-line">{detail.label}:</span> : null} {detail.value}
+                      {detail.label ? <span className="font-bold text-slate-900 whitespace-pre-line">{detail.label}:</span> : null} {detail.dir ? <span dir={detail.dir} className="inline-block"> {detail.value}</span> : ` ${detail.value}`}
                     </p>
                   ))}
                 </div>
               </div>
               <div className={`rounded-[1.5rem] p-5 ${styles.block}`} style={metaCardStyle}>
-                <p className={`text-xs font-semibold tracking-[0.2em] ${mutedText} whitespace-pre-line`}>{customerLabel}</p>
+                <p className={`text-xs font-semibold ${mutedText}`}>{invoice?.flow === 'purchase' ? renderStackedLabel('Buyer', 'المشتري', true) : renderStackedLabel('Customer', 'العميل', true)}</p>
                 <p className={`mt-3 text-[1.05rem] font-bold leading-7 ${titleText} whitespace-pre-line`}>{buyerName || '—'}</p>
                 <div className="mt-3 space-y-2">
                   {buyerDetails.map((detail, index) => (
                     <p key={`${detail.label}-${index}`} className="text-sm font-semibold leading-6 text-slate-800 break-words whitespace-pre-line">
-                      {detail.label ? <span className="font-bold text-slate-900 whitespace-pre-line">{detail.label}:</span> : null} {detail.value}
+                      {detail.label ? <span className="font-bold text-slate-900 whitespace-pre-line">{detail.label}:</span> : null} {detail.dir ? <span dir={detail.dir} className="inline-block"> {detail.value}</span> : ` ${detail.value}`}
                     </p>
                   ))}
                 </div>
@@ -380,9 +421,9 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
         <div className="px-6 pt-6">
           <div className={`grid grid-cols-1 gap-4 rounded-2xl p-4 md:grid-cols-3 ${styles.block}`}>
             {travelRows.map((row, index) => (
-              <div key={`${row.label}-${index}`} className={row.spanFull ? 'md:col-span-3' : ''}>
+              <div key={row.key || `${index}`} className={row.spanFull ? 'md:col-span-3' : ''}>
                 <p className={`text-xs ${mutedText} whitespace-pre-line`}>{row.label}</p>
-                <p className={`mt-1 text-sm font-semibold ${titleText} whitespace-pre-line`}>{row.value}</p>
+                <p dir={row.dir || undefined} className={`mt-1 text-sm font-semibold ${titleText} whitespace-pre-line`}>{row.value}</p>
               </div>
             ))}
           </div>
@@ -431,7 +472,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
         </div>
         <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
           <div className={`rounded-2xl p-4 ${styles.block}`}>
-            <p className={`text-xs font-semibold tracking-[0.2em] ${mutedText} whitespace-pre-line`}>{bilingual ? toBilingualText('Amount in Words', 'المبلغ كتابةً') : (language === 'ar' ? 'المبلغ كتابةً' : 'Amount in Words')}</p>
+            <p className={`text-xs font-semibold ${mutedText}`}>{renderStackedLabel('Amount in Words', 'المبلغ كتابةً')}</p>
             <p className={`mt-3 text-base font-bold leading-8 ${titleText}`}>{amountInWords}</p>
             {invoice?.notes ? <p className={`mt-4 text-sm font-semibold leading-7 text-slate-700`}>{invoice.notes}</p> : null}
           </div>
