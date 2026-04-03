@@ -4,6 +4,8 @@ import { calculateInvoiceSummary, normalizeTravelDetails, toNumber } from '../..
 import { getInvoiceBranding, getInvoiceCssFontFamily, splitBrandingText } from '../../lib/invoiceBranding'
 import { getZatcaStatusMeta } from '../../lib/zatcaStatus'
 import { getAmountInWords } from '../../lib/amountInWords'
+import { formatCurrency, formatCurrencyAmount, isSarCurrency } from '../../lib/currency'
+import SarIcon from '../ui/SarIcon'
 
 const hasArabicText = (value = '') => /[\u0600-\u06FF]/.test(String(value || ''))
 
@@ -111,19 +113,6 @@ const getPartyDetailLinesBilingual = (party = {}, role = 'party') => {
   }
 
   return lines.length > 0 ? lines : [{ label: '', value: '—' }]
-}
-
-const formatMoney = (value, currency = 'SAR', language = 'en') => {
-  try {
-    return new Intl.NumberFormat(language === 'ar' ? 'ar-SA' : 'en-US', {
-      style: 'currency',
-      currency,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(toNumber(value))
-  } catch {
-    return `${toNumber(value).toFixed(2)} ${currency}`
-  }
 }
 
 const formatDate = (value, language = 'en') => {
@@ -339,6 +328,35 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
     ...headingStyle,
     fontSize: `${Math.max((typography.headingFontSize || 18) + 6, 24)}px`,
   }
+  const renderMoney = (value, options = {}) => {
+    const isSar = isSarCurrency(currency)
+    const formatted = isSar
+      ? formatCurrencyAmount(value, {
+          language,
+          currency,
+          currencyDisplay: 'code',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })
+      : formatCurrency(value, {
+          language,
+          currency,
+          currencyDisplay: 'code',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })
+
+    if (!isSar) {
+      return formatted
+    }
+
+    return (
+      <span className={`inline-flex items-center gap-1 ${options.className || ''}`.trim()}>
+        <SarIcon className={options.iconClassName || 'h-[0.95em] w-[0.95em]'} title="Saudi Riyal" />
+        <span>{formatted}</span>
+      </span>
+    )
+  }
 
   return (
     <div className={`relative overflow-hidden rounded-[2rem] border shadow-[0_30px_80px_-40px_rgba(15,23,42,0.30)] ${styles.shell}`} style={shellStyle}>
@@ -490,9 +508,9 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
                       {(line?.raw?.description || line?.raw?.descriptionAr || line?.description || line?.descriptionAr) && <div className={`mt-1 text-xs ${mutedText} whitespace-pre-line`}>{bilingual ? toBilingualText(descriptionEn, descriptionAr) : (language === 'ar' ? (line?.raw?.descriptionAr || line?.raw?.description || line?.descriptionAr || line?.description) : (line?.raw?.description || line?.raw?.descriptionAr || line?.description || line?.descriptionAr))}</div>}
                     </td>
                     <td className="px-4 py-3 text-center">{quantity || '—'}</td>
-                    <td className="px-4 py-3 text-end">{formatMoney(unitPrice, currency, language)}</td>
-                    <td className="px-4 py-3 text-end">{formatMoney(tax, currency, language)}</td>
-                    <td className="px-4 py-3 text-end font-semibold">{formatMoney(total, currency, language)}</td>
+                    <td className="px-4 py-3 text-end">{renderMoney(unitPrice)}</td>
+                    <td className="px-4 py-3 text-end">{renderMoney(tax)}</td>
+                    <td className="px-4 py-3 text-end font-semibold">{renderMoney(total)}</td>
                   </tr>
                 )
               })}
@@ -512,19 +530,19 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
           <div className={`rounded-2xl p-4 ${styles.block}`}>
             <div className="flex items-center justify-between text-sm font-bold text-slate-800">
               <span className="whitespace-pre-line">{bilingual ? toBilingualText('Subtotal', 'الإجمالي الفرعي') : (language === 'ar' ? 'الإجمالي الفرعي' : 'Subtotal')}</span>
-              <span>{formatMoney(totals.subtotal, currency, language)}</span>
+              <span>{renderMoney(totals.subtotal)}</span>
             </div>
             <div className="mt-2 flex items-center justify-between text-sm font-bold text-slate-800">
               <span className="whitespace-pre-line">{bilingual ? toBilingualText('Discount', 'الخصم') : (language === 'ar' ? 'الخصم' : 'Discount')}</span>
-              <span>{formatMoney(totals.totalDiscount, currency, language)}</span>
+              <span>{renderMoney(totals.totalDiscount)}</span>
             </div>
             <div className="mt-2 flex items-center justify-between text-sm font-bold text-slate-800">
               <span className="whitespace-pre-line">{bilingual ? toBilingualText('Tax', 'الضريبة') : (language === 'ar' ? 'الضريبة' : 'VAT')}</span>
-              <span>{formatMoney(totals.totalTax, currency, language)}</span>
+              <span>{renderMoney(totals.totalTax)}</span>
             </div>
             <div className={`mt-4 flex items-center justify-between border-t border-slate-200 pt-4 ${titleText}`}>
               <span className="text-base font-bold whitespace-pre-line">{bilingual ? toBilingualText('Total', 'الإجمالي') : (language === 'ar' ? 'الإجمالي النهائي' : 'Grand Total')}</span>
-              <span className="text-2xl font-bold">{formatMoney(totals.grandTotal, currency, language)}</span>
+              <span className="text-2xl font-bold">{renderMoney(totals.grandTotal, { iconClassName: 'h-[0.9em] w-[0.9em]' })}</span>
             </div>
           </div>
         </div>
