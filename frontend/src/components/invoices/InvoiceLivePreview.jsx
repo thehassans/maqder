@@ -11,7 +11,7 @@ const joinClasses = (...classes) => classes.filter(Boolean).join(' ')
 
 const renderSarMoney = ({ formatted, className = '', iconClassName = '' }) => (
   <span dir="ltr" className={joinClasses('inline-flex items-center justify-end whitespace-nowrap align-middle tabular-nums', className)}>
-    <span className={joinClasses('me-[0.18em] inline-flex h-[0.9em] w-[0.78em] shrink-0 items-center justify-center align-middle', iconClassName)}>
+    <span className={joinClasses('relative top-[0.08em] me-[0.18em] inline-flex h-[0.82em] w-[0.72em] shrink-0 items-center justify-center align-middle', iconClassName)}>
       <SarIcon className="block h-full w-full" title="Saudi Riyal" />
     </span>
     <span className="inline-block leading-none align-middle">{formatted}</span>
