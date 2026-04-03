@@ -7,6 +7,8 @@ import { getAmountInWords } from '../../lib/amountInWords'
 import { formatCurrency, formatCurrencyAmount, isSarCurrency } from '../../lib/currency'
 import SarIcon from '../ui/SarIcon'
 
+const joinClasses = (...classes) => classes.filter(Boolean).join(' ')
+
 const hasArabicText = (value = '') => /[\u0600-\u06FF]/.test(String(value || ''))
 
 const uniqueLines = (...values) => {
@@ -351,9 +353,9 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
     }
 
     return (
-      <span className={`inline-flex items-center gap-1 ${options.className || ''}`.trim()}>
-        <SarIcon className={options.iconClassName || 'h-[0.95em] w-[0.95em]'} title="Saudi Riyal" />
-        <span>{formatted}</span>
+      <span className={joinClasses('inline-flex items-baseline whitespace-nowrap align-baseline tabular-nums leading-none', options.className || '')}>
+        <SarIcon className={joinClasses('me-[0.22em] shrink-0 self-baseline translate-y-[0.08em]', options.iconClassName || 'h-[0.82em] w-[0.82em]')} title="Saudi Riyal" />
+        <span className="leading-none">{formatted}</span>
       </span>
     )
   }
