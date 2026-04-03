@@ -2,7 +2,7 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { QRCodeSVG } from 'qrcode.react'
 import InvoiceLivePreview from '../components/invoices/InvoiceLivePreview'
-import { formatCurrency } from './currency'
+import { formatCurrency, isSarCurrency } from './currency'
 import { calculateInvoiceSummary, normalizeTravelDetails } from './invoiceDocument'
 import { getInvoiceBranding, getInvoiceTemplateId, splitBrandingText } from './invoiceBranding'
 import { getAmountInWords } from './amountInWords'
@@ -215,7 +215,10 @@ const saveElementSnapshotPdf = async ({ doc, sourceElement, fileName }) => {
 export const printInvoiceSnapshot = async ({ invoice, language = 'en', tenant, sourceElement = null }) => {
   if (!invoice || typeof document === 'undefined' || typeof window === 'undefined') return false
 
-  let snapshotElement = sourceElement
+  const currency = invoice.currency || tenant?.settings?.currency || 'SAR'
+  const shouldPreferGeneratedSnapshot = isSarCurrency(currency)
+
+  let snapshotElement = shouldPreferGeneratedSnapshot ? null : sourceElement
   let generatedSnapshotHost = null
 
   if (!snapshotElement) {
@@ -345,6 +348,7 @@ const buildSnapshotElement = async ({ invoice, tenant, language }) => {
       language,
       templateId,
       bilingual: shouldRenderBilingualInvoice(invoice),
+      currencyRenderMode: 'symbol',
     }))
   )
   host.innerHTML = `
@@ -607,9 +611,10 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant, sou
   const pdfPageSize = tenant?.settings?.invoicePdfPageSize || 'a4'
   const doc = new jsPDF({ orientation: pdfOrientation, unit: 'pt', format: pdfPageSize })
   const name = sanitizeFileName(invoice.invoiceNumber || 'invoice')
-  const shouldUseSnapshotRenderer = shouldRenderBilingualInvoice(invoice)
+  const snapshotCurrency = invoice.currency || tenant?.settings?.currency || 'SAR'
+  const shouldUseSnapshotRenderer = shouldRenderBilingualInvoice(invoice) || isSarCurrency(snapshotCurrency)
 
-  let snapshotElement = sourceElement || null
+  let snapshotElement = shouldUseSnapshotRenderer ? null : (sourceElement || null)
   let generatedSnapshotHost = null
 
   if (shouldUseSnapshotRenderer && !snapshotElement) {

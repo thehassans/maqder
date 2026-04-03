@@ -195,7 +195,7 @@ const getInvoiceTitle = (invoice, language = 'en') => {
   return language === 'ar' ? 'فاتورة ضريبية' : 'Tax Invoice'
 }
 
-export default function InvoiceLivePreview({ invoice, tenant, language = 'en', templateId = 1, bilingual = false }) {
+export default function InvoiceLivePreview({ invoice, tenant, language = 'en', templateId = 1, bilingual = false, currencyRenderMode = 'icon' }) {
   const currency = invoice?.currency || tenant?.settings?.currency || 'SAR'
   const invoiceBranding = getInvoiceBranding(tenant, language, invoice?.businessContext)
   const styles = getTemplateClasses(Number(templateId || invoiceBranding.templateId || 1))
@@ -357,6 +357,16 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
 
     if (!isSar) {
       return formatted
+    }
+
+    if (currencyRenderMode === 'symbol') {
+      return formatCurrency(value, {
+        language,
+        currency,
+        currencyDisplay: 'code',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
     }
 
     return renderSarMoney({
