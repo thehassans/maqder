@@ -29,6 +29,7 @@ export default function IoTDeviceForm() {
     reset,
     setValue,
     watch,
+    control,
     formState: { errors },
   } = useForm({
     defaultValues: {
@@ -49,6 +50,7 @@ export default function IoTDeviceForm() {
   })
 
   useLiveTranslation({
+    control,
     watch,
     setValue,
     sourceField: 'nameEn',
@@ -58,6 +60,7 @@ export default function IoTDeviceForm() {
   })
 
   useLiveTranslation({
+    control,
     watch,
     setValue,
     sourceField: 'nameAr',

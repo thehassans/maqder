@@ -18,7 +18,7 @@ export default function SupplierForm() {
   const { language } = useSelector((state) => state.ui)
   const { t } = useTranslation(language)
 
-  const { register, handleSubmit, reset, setValue, watch } = useForm({
+  const { register, handleSubmit, reset, setValue, watch, control } = useForm({
     defaultValues: {
       type: 'company',
       paymentTerms: { term: 'net_30' },
@@ -27,6 +27,7 @@ export default function SupplierForm() {
   })
 
   useLiveTranslation({
+    control,
     watch,
     setValue,
     sourceField: 'nameEn',
@@ -36,6 +37,7 @@ export default function SupplierForm() {
   })
 
   useLiveTranslation({
+    control,
     watch,
     setValue,
     sourceField: 'nameAr',

@@ -8,6 +8,7 @@ import Employee from '../models/Employee.js';
 import SystemSettings from '../models/SystemSettings.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { getPrimaryBusinessType, normalizeBusinessTypes } from '../utils/businessTypes.js';
+import { sendTenantWelcomeEmail } from '../utils/emailService.js';
 
 const router = express.Router();
 
@@ -93,6 +94,35 @@ const mergeWebsiteDefaults = (website) => {
     }
   };
 };
+
+const mergeEmailDefaults = (email) => {
+  const defaultsDoc = new SystemSettings({ key: 'global', website: {}, email: {} });
+  const defaults = defaultsDoc.email?.toObject?.() || defaultsDoc.email || {};
+  const current = email?.toObject?.() || email || {};
+  return {
+    ...defaults,
+    ...current,
+    templates: {
+      ...(defaults.templates || {}),
+      ...(current.templates || {}),
+      tenantCreated: {
+        ...(defaults.templates?.tenantCreated || {}),
+        ...(current.templates?.tenantCreated || {})
+      },
+      invoice: {
+        ...(defaults.templates?.invoice || {}),
+        ...(current.templates?.invoice || {})
+      }
+    }
+  };
+};
+
+const serializeEmailSettings = (email) => ({
+  ...email,
+  smtpPass: '',
+  hasSmtpPass: !!email?.smtpPass,
+  smtpPassMasked: maskSecret(email?.smtpPass)
+});
 
 // @route   GET /api/super-admin/dashboard
 router.get('/dashboard', async (req, res) => {
@@ -208,6 +238,54 @@ router.put('/settings/website', async (req, res) => {
         }
       }
     });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/settings/email', async (req, res) => {
+  try {
+    const settings = await getGlobalSettings();
+    const email = mergeEmailDefaults(settings.email);
+    res.json({ email: serializeEmailSettings(email) });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.put('/settings/email', async (req, res) => {
+  try {
+    const payload = req.body?.email || req.body || {};
+    const settings = await getGlobalSettings();
+    const currentEmail = mergeEmailDefaults(settings.email);
+
+    const nextEmail = {
+      ...currentEmail,
+      ...payload,
+      templates: {
+        ...(currentEmail.templates || {}),
+        ...(payload.templates || {}),
+        tenantCreated: {
+          ...(currentEmail.templates?.tenantCreated || {}),
+          ...(payload.templates?.tenantCreated || {})
+        },
+        invoice: {
+          ...(currentEmail.templates?.invoice || {}),
+          ...(payload.templates?.invoice || {})
+        }
+      }
+    };
+
+    if (payload.smtpPass !== undefined) {
+      const trimmedPassword = String(payload.smtpPass || '').trim();
+      nextEmail.smtpPass = trimmedPassword || currentEmail.smtpPass || '';
+    }
+
+    settings.email = nextEmail;
+    settings.markModified('email');
+    await settings.save();
+
+    res.json({ email: serializeEmailSettings(mergeEmailDefaults(settings.email)) });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -383,13 +461,20 @@ router.post('/tenants', async (req, res) => {
       createdBy: req.user._id
     });
     
+    let createdAdminUser = null;
+
     // Create admin user for tenant
     if (adminUser) {
-      await User.create({
+      createdAdminUser = await User.create({
         ...adminUser,
         tenantId: tenant._id,
         role: 'admin'
       });
+    }
+
+    try {
+      await sendTenantWelcomeEmail({ tenant, adminUser: createdAdminUser });
+    } catch {
     }
     
     res.status(201).json(tenant);

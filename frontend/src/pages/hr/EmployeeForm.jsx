@@ -18,9 +18,10 @@ export default function EmployeeForm() {
   const { t } = useTranslation(language)
   const isEdit = Boolean(id)
 
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm()
+  const { register, handleSubmit, reset, setValue, watch, control, formState: { errors } } = useForm()
 
   useLiveTranslation({
+    control,
     watch,
     setValue,
     sourceField: 'firstNameEn',
@@ -30,6 +31,7 @@ export default function EmployeeForm() {
   })
 
   useLiveTranslation({
+    control,
     watch,
     setValue,
     sourceField: 'firstNameAr',
@@ -39,6 +41,7 @@ export default function EmployeeForm() {
   })
 
   useLiveTranslation({
+    control,
     watch,
     setValue,
     sourceField: 'lastNameEn',
@@ -48,6 +51,7 @@ export default function EmployeeForm() {
   })
 
   useLiveTranslation({
+    control,
     watch,
     setValue,
     sourceField: 'lastNameAr',

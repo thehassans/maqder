@@ -19,7 +19,7 @@ export default function WarehouseForm() {
   const isEdit = Boolean(id)
   const returnTo = searchParams.get('returnTo')
 
-  const { register, handleSubmit, reset, setValue, watch } = useForm({
+  const { register, handleSubmit, reset, setValue, watch, control } = useForm({
     defaultValues: {
       type: 'main',
       isPrimary: false,
@@ -28,6 +28,7 @@ export default function WarehouseForm() {
   })
 
   useLiveTranslation({
+    control,
     watch,
     setValue,
     sourceField: 'nameEn',
@@ -37,6 +38,7 @@ export default function WarehouseForm() {
   })
 
   useLiveTranslation({
+    control,
     watch,
     setValue,
     sourceField: 'nameAr',

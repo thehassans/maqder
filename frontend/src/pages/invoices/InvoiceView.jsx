@@ -3,14 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { motion } from 'framer-motion'
-import { ArrowLeft, FileText, Download, Send, CheckCircle, Clock, QrCode, Printer } from 'lucide-react'
+import { ArrowLeft, FileText, Download, Send, CheckCircle, Clock, QrCode, Printer, Mail } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import InvoiceLivePreview from '../../components/invoices/InvoiceLivePreview'
 import { getInvoiceTemplateId } from '../../lib/invoiceBranding'
-import { downloadInvoicePdf } from '../../lib/invoicePdf'
+import { downloadInvoicePdf, printInvoiceSnapshot } from '../../lib/invoicePdf'
 import { getZatcaStatusMeta } from '../../lib/zatcaStatus'
 
 export default function InvoiceView() {
@@ -31,11 +31,16 @@ export default function InvoiceView() {
   const templateId = getInvoiceTemplateId(tenant, invoice?.businessContext, invoice?.pdfTemplateId)
   const invoiceTypeLabel = invoice?.transactionType === 'B2B' ? t('b2bInvoice') : t('b2cInvoice')
   const zatcaStatusMeta = getZatcaStatusMeta(invoice, language)
+  const isBilingualInvoice = invoice?.invoiceSubtype === 'travel_ticket' || ['travel_agency', 'trading', 'construction'].includes(invoice?.businessContext)
+  const hasEmailAddon = Array.isArray(tenant?.subscription?.features) && tenant.subscription.features.includes('email_automation')
 
   const signMutation = useMutation({
     mutationFn: () => api.post(`/invoices/${id}/sign`),
-    onSuccess: () => {
+    onSuccess: (response) => {
       toast.success(language === 'ar' ? 'تم توقيع الفاتورة بنجاح' : 'Invoice signed successfully')
+      if (response?.data?.emailDelivery?.sent) {
+        toast.success(language === 'ar' ? 'تم إرسال الفاتورة إلى البريد الإلكتروني' : 'Invoice emailed successfully')
+      }
       queryClient.invalidateQueries(['invoice', id])
       queryClient.invalidateQueries(['invoices'])
       queryClient.invalidateQueries(['dashboard'])
@@ -45,6 +50,16 @@ export default function InvoiceView() {
     },
     onError: (error) => {
       toast.error(error.response?.data?.error || 'Failed to sign invoice')
+    }
+  })
+
+  const sendEmailMutation = useMutation({
+    mutationFn: () => api.post(`/invoices/${id}/send-email`, { language }),
+    onSuccess: () => {
+      toast.success(language === 'ar' ? 'تم إرسال الفاتورة عبر البريد' : 'Invoice email sent successfully')
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.error || 'Failed to send invoice email')
     }
   })
 
@@ -72,12 +87,23 @@ export default function InvoiceView() {
           </div>
         </div>
         <div className="flex gap-3">
-          {invoice?.invoiceSubtype === 'travel_ticket' && (
-            <button type="button" onClick={() => window.print()} className="btn btn-secondary">
-              <Printer className="w-4 h-4" />
-              {language === 'ar' ? 'طباعة' : 'Print'}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const printed = await printInvoiceSnapshot({ invoice, language, tenant, sourceElement: invoicePreviewRef.current })
+                if (!printed) {
+                  toast.error(language === 'ar' ? 'تعذر تجهيز الطباعة' : 'Unable to prepare print view')
+                }
+              } catch {
+                toast.error(language === 'ar' ? 'تعذر تجهيز الطباعة' : 'Unable to prepare print view')
+              }
+            }}
+            className="btn btn-secondary"
+          >
+            <Printer className="w-4 h-4" />
+            {language === 'ar' ? 'طباعة' : 'Print'}
+          </button>
           <button
             type="button"
             onClick={async () => {
@@ -100,6 +126,21 @@ export default function InvoiceView() {
             )}
             {language === 'ar' ? 'PDF' : 'PDF'}
           </button>
+          {invoice?.flow !== 'purchase' && hasEmailAddon && (
+            <button
+              type="button"
+              onClick={() => sendEmailMutation.mutate()}
+              disabled={sendEmailMutation.isPending}
+              className="btn btn-secondary"
+            >
+              {sendEmailMutation.isPending ? (
+                <div className="w-5 h-5 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Mail className="w-4 h-4" />
+              )}
+              {language === 'ar' ? 'إرسال بالبريد' : 'Send Email'}
+            </button>
+          )}
           {['draft', 'pending'].includes(invoice?.status) && !invoice?.zatca?.signedXml && invoice?.flow !== 'purchase' && (
             <button
               onClick={() => signMutation.mutate()}
@@ -167,6 +208,7 @@ export default function InvoiceView() {
                 tenant={tenant}
                 language={language}
                 templateId={templateId}
+                bilingual={isBilingualInvoice}
               />
             </div>
           </motion.div>

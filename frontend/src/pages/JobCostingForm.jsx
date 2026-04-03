@@ -53,6 +53,7 @@ export default function JobCostingForm() {
     reset,
     watch,
     setValue,
+    control,
     formState: { errors },
   } = useForm({
     defaultValues: {
@@ -90,6 +91,7 @@ export default function JobCostingForm() {
   })
 
   useLiveTranslation({
+    control,
     watch,
     setValue,
     sourceField: 'nameEn',
@@ -99,6 +101,7 @@ export default function JobCostingForm() {
   })
 
   useLiveTranslation({
+    control,
     watch,
     setValue,
     sourceField: 'nameAr',

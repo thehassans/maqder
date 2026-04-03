@@ -186,6 +186,14 @@ const getInvoiceTitle = (invoice, language = 'en') => {
     return language === 'ar' ? 'فاتورة ضريبية لخدمات السفر' : 'Travel Services Tax Invoice'
   }
 
+  if (invoice?.businessContext === 'construction') {
+    return language === 'ar' ? 'فاتورة ضريبية للمقاولات' : 'Construction Tax Invoice'
+  }
+
+  if (invoice?.businessContext === 'trading') {
+    return language === 'ar' ? 'فاتورة ضريبية للتجارة' : 'Trading Tax Invoice'
+  }
+
   return language === 'ar' ? 'فاتورة ضريبية' : 'Tax Invoice'
 }
 
@@ -230,6 +238,9 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
       )
     : [getAmountInWords(totals.grandTotal, currency, language)]
   const showInvoiceTitle = !(invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency')
+  const invoiceTitle = bilingual
+    ? toBilingualText(getInvoiceTitle(invoice, 'en'), getInvoiceTitle(invoice, 'ar'))
+    : getInvoiceTitle(invoice, language)
   const rawRouteText = getUntranslatedRouteText(invoice?.travelDetails || {})
   const rawDepartureDate = getRawDisplayValue(invoice?.travelDetails?.departureDate)
   const renderStackedLabel = (english, arabic, uppercaseEnglish = false) => {
@@ -373,7 +384,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
         <div className="grid grid-cols-1 gap-4 pt-6 lg:grid-cols-[minmax(0,1fr)_188px]">
           <div className="space-y-4">
             <div className="text-center lg:text-start">
-              {showInvoiceTitle ? <h2 className={`mt-2 text-3xl font-semibold ${titleText}`} style={invoiceTitleStyle}>{getInvoiceTitle(invoice, language)}</h2> : null}
+              {showInvoiceTitle ? <h2 className={`mt-2 text-3xl font-semibold whitespace-pre-line ${titleText}`} style={invoiceTitleStyle}>{invoiceTitle}</h2> : null}
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

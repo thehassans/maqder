@@ -1,5 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useWatch } from 'react-hook-form'
 import api from './api'
+
+const translationCache = new Map()
 
 const normalizeLang = (lang) => {
   const l = String(lang || '').toLowerCase()
@@ -9,6 +12,7 @@ const normalizeLang = (lang) => {
 }
 
 export const useLiveTranslation = ({
+  control,
   watch,
   setValue,
   sourceField,
@@ -16,22 +20,27 @@ export const useLiveTranslation = ({
   sourceLang,
   targetLang,
   enabled = true,
-  debounceMs = 700,
-  minLength = 2,
+  debounceMs = 900,
+  minLength = 3,
 }) => {
   const [isTranslating, setIsTranslating] = useState(false)
   const timerRef = useRef(null)
   const lastAutoSourceRef = useRef('')
   const lastAutoResultRef = useRef('')
+  const requestSequenceRef = useRef(0)
 
-  const source = watch(sourceField)
-  const target = watch(targetField)
+  const watchedSource = useWatch({ control, name: sourceField })
+  const watchedTarget = useWatch({ control, name: targetField })
+  const source = control ? watchedSource : watch(sourceField)
+  const target = control ? watchedTarget : watch(targetField)
+  const cacheKey = useMemo(() => `${sourceLang}:${targetLang}:${String(source || '').trim()}`, [source, sourceLang, targetLang])
 
   useEffect(() => {
     if (!enabled) return
 
     const s = String(source || '').trim()
     const t = String(target || '').trim()
+    const cachedTranslation = translationCache.get(cacheKey)
 
     if (timerRef.current) {
       clearTimeout(timerRef.current)
@@ -48,7 +57,19 @@ export const useLiveTranslation = ({
       return
     }
 
+    if (cachedTranslation) {
+      lastAutoSourceRef.current = s
+      lastAutoResultRef.current = cachedTranslation
+      if (t !== cachedTranslation) {
+        setValue(targetField, cachedTranslation, { shouldDirty: true, shouldValidate: false, shouldTouch: false })
+      }
+      return
+    }
+
     timerRef.current = setTimeout(async () => {
+      const nextRequest = requestSequenceRef.current + 1
+      requestSequenceRef.current = nextRequest
+
       try {
         setIsTranslating(true)
         const { data } = await api.post('/ai/translate', {
@@ -59,13 +80,17 @@ export const useLiveTranslation = ({
 
         const translated = String(data?.translatedText || '').trim()
         if (!translated) return
+        if (requestSequenceRef.current !== nextRequest) return
 
         lastAutoSourceRef.current = s
         lastAutoResultRef.current = translated
-        setValue(targetField, translated, { shouldDirty: true })
+        translationCache.set(cacheKey, translated)
+        setValue(targetField, translated, { shouldDirty: true, shouldValidate: false, shouldTouch: false })
       } catch (_) {
       } finally {
-        setIsTranslating(false)
+        if (requestSequenceRef.current === nextRequest) {
+          setIsTranslating(false)
+        }
       }
     }, debounceMs)
 
@@ -75,7 +100,7 @@ export const useLiveTranslation = ({
         timerRef.current = null
       }
     }
-  }, [enabled, debounceMs, minLength, source, target, setValue, sourceField, targetField, sourceLang, targetLang, watch])
+  }, [cacheKey, debounceMs, enabled, minLength, setValue, source, sourceField, target, targetField])
 
   return { isTranslating }
 }

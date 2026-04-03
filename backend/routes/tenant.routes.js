@@ -61,7 +61,23 @@ router.put('/current', authorize('admin'), async (req, res) => {
     }
     
     if (settings) {
-      tenant.settings = { ...tenant.settings?.toObject?.() || tenant.settings || {}, ...settings };
+      const currentSettings = tenant.settings?.toObject?.() || tenant.settings || {};
+      tenant.settings = {
+        ...currentSettings,
+        ...settings,
+        communication: {
+          ...(currentSettings.communication || {}),
+          ...(settings.communication || {}),
+          email: {
+            ...(currentSettings.communication?.email || {}),
+            ...(settings.communication?.email || {}),
+          },
+        },
+        invoiceBranding: {
+          ...(currentSettings.invoiceBranding || {}),
+          ...(settings.invoiceBranding || {}),
+        },
+      };
     }
     
     if (branding) {

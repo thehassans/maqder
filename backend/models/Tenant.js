@@ -18,7 +18,7 @@ const subscriptionSchema = new mongoose.Schema({
   maxInvoices: { type: Number, default: 100 },
   features: [{
     type: String,
-    enum: ['hr', 'payroll', 'invoicing', 'inventory', 'ai', 'api_access', 'multi_warehouse', 'advanced_reports']
+    enum: ['hr', 'payroll', 'invoicing', 'inventory', 'ai', 'api_access', 'multi_warehouse', 'advanced_reports', 'email_automation']
   }],
   billingCycle: {
     type: String,
@@ -110,6 +110,18 @@ const tenantSchema = new mongoose.Schema({
         trading: { type: invoiceBrandingProfileSchema, default: () => ({ templateId: 5 }) },
         construction: { type: invoiceBrandingProfileSchema, default: () => ({ templateId: 6 }) },
         travel_agency: { type: invoiceBrandingProfileSchema, default: () => ({ templateId: 4 }) },
+      }
+    },
+    communication: {
+      email: {
+        enabled: { type: Boolean, default: false },
+        autoSendInvoices: { type: Boolean, default: false },
+        senderName: { type: String, default: '' },
+        replyTo: { type: String, default: '' },
+        subjectEn: { type: String, default: '' },
+        subjectAr: { type: String, default: '' },
+        bodyEn: { type: String, default: '' },
+        bodyAr: { type: String, default: '' }
       }
     }
   },

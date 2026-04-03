@@ -2,13 +2,41 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import api from '../../lib/api'
 
 const token = localStorage.getItem('token')
+const cachedUser = (() => {
+  try {
+    return JSON.parse(localStorage.getItem('auth_user') || 'null')
+  } catch {
+    return null
+  }
+})()
+const cachedTenant = (() => {
+  try {
+    return JSON.parse(localStorage.getItem('auth_tenant') || 'null')
+  } catch {
+    return null
+  }
+})()
+
+const persistAuthSnapshot = (payload = {}) => {
+  if (payload.user) {
+    localStorage.setItem('auth_user', JSON.stringify(payload.user))
+  }
+  if (payload.tenant) {
+    localStorage.setItem('auth_tenant', JSON.stringify(payload.tenant))
+  }
+}
+
+const clearAuthSnapshot = () => {
+  localStorage.removeItem('auth_user')
+  localStorage.removeItem('auth_tenant')
+}
 
 const initialState = {
-  user: null,
-  tenant: null,
+  user: cachedUser,
+  tenant: cachedTenant,
   token,
-  isAuthenticated: false,
-  isLoading: !!token, // Only loading if we have a token to verify
+  isAuthenticated: !!token && !!cachedUser,
+  isLoading: !!token && !cachedUser,
   error: null,
 }
 
@@ -18,6 +46,7 @@ export const login = createAsyncThunk(
     try {
       const { data } = await api.post('/auth/login', { email, password, tenantSlug })
       localStorage.setItem('token', data.token)
+      persistAuthSnapshot(data)
       return data
     } catch (error) {
       return rejectWithValue(error.userMessage || error.response?.data?.error || 'Login failed')
@@ -29,6 +58,7 @@ export const demoLogin = createAsyncThunk('auth/demoLogin', async (_, { rejectWi
   try {
     const { data } = await api.post('/public/demo-login')
     localStorage.setItem('token', data.token)
+    persistAuthSnapshot(data)
     return data
   } catch (error) {
     return rejectWithValue(error.userMessage || error.response?.data?.error || 'Demo login failed')
@@ -40,9 +70,11 @@ export const getMe = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const { data } = await api.get('/auth/me')
+      persistAuthSnapshot(data)
       return data
     } catch (error) {
       localStorage.removeItem('token')
+      clearAuthSnapshot()
       return rejectWithValue(error.userMessage || error.response?.data?.error || 'Session expired')
     }
   }
@@ -50,6 +82,7 @@ export const getMe = createAsyncThunk(
 
 export const logout = createAsyncThunk('auth/logout', async () => {
   localStorage.removeItem('token')
+  clearAuthSnapshot()
   return null
 })
 
@@ -62,9 +95,11 @@ const authSlice = createSlice({
     },
     updateUser: (state, action) => {
       state.user = { ...state.user, ...action.payload }
+      persistAuthSnapshot({ user: state.user, tenant: state.tenant })
     },
     updateTenant: (state, action) => {
       state.tenant = action.payload
+      persistAuthSnapshot({ user: state.user, tenant: state.tenant })
     },
   },
   extraReducers: (builder) => {

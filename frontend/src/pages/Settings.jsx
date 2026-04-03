@@ -106,7 +106,7 @@ export default function Settings() {
     queryFn: () => api.get('/tenants/zatca/status').then(res => res.data)
   })
 
-  const { register, handleSubmit, reset, watch, setValue } = useForm()
+  const { register, handleSubmit, reset, watch, setValue, control } = useForm()
 
   useEffect(() => {
     if (!tenant) return
@@ -125,6 +125,7 @@ export default function Settings() {
   }, [tenant, reset])
 
   useLiveTranslation({
+    control,
     watch,
     setValue,
     sourceField: 'legalNameEn',
@@ -134,6 +135,7 @@ export default function Settings() {
   })
 
   useLiveTranslation({
+    control,
     watch,
     setValue,
     sourceField: 'legalNameAr',

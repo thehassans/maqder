@@ -20,6 +20,7 @@ import {
   ShoppingCart,
   Building,
   MessageCircle,
+  Mail,
   Cpu,
   Landmark,
   Briefcase,
@@ -117,6 +118,7 @@ export default function Sidebar() {
       title: language === 'ar' ? 'التواصل' : 'Communication',
       items: [
         { path: '/app/dashboard/whatsapp', icon: MessageCircle, label: 'WhatsApp', perm: { module: 'settings', action: 'read' } },
+        { path: '/app/dashboard/email', icon: Mail, label: language === 'ar' ? 'البريد' : 'Email', perm: { module: 'settings', action: 'read' } },
       ]
     },
     {
@@ -131,6 +133,7 @@ export default function Sidebar() {
       items: [
         { path: '/app/dashboard/finance', icon: Landmark, label: language === 'ar' ? 'المالية' : 'Finance', perm: { module: 'finance', action: 'read' } },
         { path: '/app/dashboard/expenses', icon: Receipt, label: language === 'ar' ? 'المصروفات' : 'Expenses', perm: { module: 'finance', action: 'read' } },
+        { path: '/app/dashboard/vat-returns', icon: Calculator, label: language === 'ar' ? 'إقرارات القيمة المضافة' : 'VAT Returns', perm: { module: 'finance', action: 'read' } },
       ]
     },
     {

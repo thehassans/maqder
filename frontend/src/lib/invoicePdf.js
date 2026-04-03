@@ -132,17 +132,29 @@ const renderQrToDataUrl = async (value, size = 112) => {
   }
 }
 
-const saveElementSnapshotPdf = async ({ doc, sourceElement, fileName }) => {
-  if (!doc || !sourceElement || typeof window === 'undefined') return false
+const shouldRenderBilingualInvoice = (invoice) => invoice?.invoiceSubtype === 'travel_ticket'
+  || ['travel_agency', 'trading', 'construction'].includes(invoice?.businessContext)
+
+const captureElementSnapshotCanvas = async (sourceElement) => {
+  if (!sourceElement || typeof window === 'undefined') return null
+
+  await waitForElementImages(sourceElement)
 
   const html2canvasModule = await import('html2canvas')
   const html2canvas = html2canvasModule?.default || html2canvasModule
-  const canvas = await html2canvas(sourceElement, {
+  return await html2canvas(sourceElement, {
     backgroundColor: '#ffffff',
     scale: Math.max(2, window.devicePixelRatio || 1),
     useCORS: true,
     logging: false,
   })
+}
+
+const saveElementSnapshotPdf = async ({ doc, sourceElement, fileName }) => {
+  if (!doc || !sourceElement || typeof window === 'undefined') return false
+
+  const canvas = await captureElementSnapshotCanvas(sourceElement)
+  if (!canvas) return false
 
   const pageW = doc.internal.pageSize.getWidth()
   const pageH = doc.internal.pageSize.getHeight()
@@ -200,6 +212,95 @@ const saveElementSnapshotPdf = async ({ doc, sourceElement, fileName }) => {
   return true
 }
 
+export const printInvoiceSnapshot = async ({ invoice, language = 'en', tenant, sourceElement = null }) => {
+  if (!invoice || typeof document === 'undefined' || typeof window === 'undefined') return false
+
+  let snapshotElement = sourceElement
+  let generatedSnapshotHost = null
+
+  if (!snapshotElement) {
+    generatedSnapshotHost = await buildSnapshotElement({ invoice, tenant, language })
+    snapshotElement = generatedSnapshotHost
+  }
+
+  const canvas = await captureElementSnapshotCanvas(snapshotElement)
+
+  if (generatedSnapshotHost?.parentNode) {
+    generatedSnapshotHost.parentNode.removeChild(generatedSnapshotHost)
+  }
+
+  if (!canvas) return false
+
+  const imageData = canvas.toDataURL('image/png')
+  const title = sanitizeFileName(invoice?.invoiceNumber || 'invoice')
+  const frame = document.createElement('iframe')
+  frame.style.position = 'fixed'
+  frame.style.right = '0'
+  frame.style.bottom = '0'
+  frame.style.width = '0'
+  frame.style.height = '0'
+  frame.style.border = '0'
+  document.body.appendChild(frame)
+
+  const cleanup = () => {
+    window.setTimeout(() => {
+      if (frame.parentNode) {
+        frame.parentNode.removeChild(frame)
+      }
+    }, 400)
+  }
+
+  const printWindow = frame.contentWindow
+  if (!printWindow) {
+    cleanup()
+    return false
+  }
+
+  printWindow.document.open()
+  printWindow.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>${title}</title>
+  <style>
+    @page { size: A4 portrait; margin: 8mm; }
+    html, body { margin: 0; padding: 0; background: #ffffff; }
+    body { font-family: Arial, sans-serif; }
+    .page {
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 0;
+      box-sizing: border-box;
+      background: #ffffff;
+    }
+    img {
+      display: block;
+      width: 100%;
+      max-width: 194mm;
+      height: auto;
+      object-fit: contain;
+    }
+  </style>
+</head>
+<body>
+  <div class="page"><img src="${imageData}" alt="${title}" /></div>
+</body>
+</html>`)
+  printWindow.document.close()
+
+  await new Promise((resolve) => {
+    frame.onload = () => resolve()
+    window.setTimeout(resolve, 250)
+  })
+
+  printWindow.focus()
+  printWindow.print()
+  cleanup()
+  return true
+}
+
 const waitForElementImages = async (element) => {
   if (!element) return
   const images = Array.from(element.querySelectorAll('img'))
@@ -243,7 +344,7 @@ const buildSnapshotElement = async ({ invoice, tenant, language }) => {
       tenant,
       language,
       templateId,
-      bilingual: invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency',
+      bilingual: shouldRenderBilingualInvoice(invoice),
     }))
   )
   host.innerHTML = `
@@ -482,6 +583,14 @@ const getInvoiceTitle = (invoice, language = 'en') => {
     return language === 'ar' ? 'فاتورة ضريبية لخدمات السفر' : 'Travel Services Tax Invoice'
   }
 
+  if (invoice?.businessContext === 'construction') {
+    return language === 'ar' ? 'فاتورة ضريبية للمقاولات' : 'Construction Tax Invoice'
+  }
+
+  if (invoice?.businessContext === 'trading') {
+    return language === 'ar' ? 'فاتورة ضريبية للتجارة' : 'Trading Tax Invoice'
+  }
+
   return language === 'ar' ? 'فاتورة ضريبية' : 'Tax Invoice'
 }
 
@@ -498,12 +607,12 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant, sou
   const pdfPageSize = tenant?.settings?.invoicePdfPageSize || 'a4'
   const doc = new jsPDF({ orientation: pdfOrientation, unit: 'pt', format: pdfPageSize })
   const name = sanitizeFileName(invoice.invoiceNumber || 'invoice')
-  const shouldUseSnapshotRenderer = invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency'
+  const shouldUseSnapshotRenderer = shouldRenderBilingualInvoice(invoice)
 
-  let snapshotElement = shouldUseSnapshotRenderer ? null : sourceElement
+  let snapshotElement = sourceElement || null
   let generatedSnapshotHost = null
 
-  if (shouldUseSnapshotRenderer) {
+  if (shouldUseSnapshotRenderer && !snapshotElement) {
     generatedSnapshotHost = await buildSnapshotElement({ invoice, tenant, language })
     snapshotElement = generatedSnapshotHost
   }

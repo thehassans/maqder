@@ -34,6 +34,7 @@ import Warehouses from './pages/inventory/Warehouses'
 import WarehouseForm from './pages/inventory/WarehouseForm'
 import Settings from './pages/Settings'
 import Reports from './pages/Reports'
+import VatReturns from './pages/VatReturns'
 import Suppliers from './pages/Suppliers'
 import SupplierForm from './pages/SupplierForm'
 import PurchaseOrders from './pages/PurchaseOrders'
@@ -69,7 +70,9 @@ import TenantManagement from './pages/super-admin/TenantManagement'
 import TenantForm from './pages/super-admin/TenantForm'
 import UserManagement from './pages/super-admin/UserManagement'
 import GeminiSettings from './pages/super-admin/GeminiSettings'
+import EmailSettings from './pages/super-admin/EmailSettings'
 import WebsiteSettings from './pages/super-admin/WebsiteSettings'
+import EmailCommunication from './pages/EmailCommunication'
 
 import LoadingScreen from './components/ui/LoadingScreen'
 
@@ -92,7 +95,7 @@ function ProtectedRoute({ children, allowedRoles, redirectSuperAdmin }) {
   if (!token) return <Navigate to="/login" replace />
   
   // Has token but still verifying - show brief loading only if not yet authenticated
-  if (isLoading && !isAuthenticated) return null
+  if (isLoading && !isAuthenticated) return <LoadingScreen />
   
   if (!isAuthenticated) return <Navigate to="/login" replace />
   
@@ -196,6 +199,7 @@ function App() {
         <Route path="tenants/:id" element={<TenantForm />} />
         <Route path="users" element={<UserManagement />} />
         <Route path="website" element={<WebsiteSettings />} />
+        <Route path="email" element={<EmailSettings />} />
         <Route path="gemini" element={<GeminiSettings />} />
       </Route>
 
@@ -268,6 +272,8 @@ function App() {
         <Route path="mrp" element={<BusinessTypeRoute allowedTypes={['trading']}><MRP /></BusinessTypeRoute>} />
         <Route path="whatsapp" element={<WhatsApp />} />
         <Route path="reports" element={<Reports />} />
+        <Route path="vat-returns" element={<VatReturns />} />
+        <Route path="email" element={<EmailCommunication />} />
         <Route path="users" element={<Users />} />
         <Route path="settings" element={<Settings />} />
       </Route>

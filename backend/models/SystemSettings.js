@@ -67,6 +67,31 @@ const systemSettingsSchema = new mongoose.Schema({
         }
       ]
     }
+  },
+  email: {
+    enabled: { type: Boolean, default: false },
+    smtpHost: { type: String, default: '' },
+    smtpPort: { type: Number, default: 587 },
+    smtpSecure: { type: Boolean, default: false },
+    smtpUser: { type: String, default: '' },
+    smtpPass: { type: String, default: '' },
+    fromName: { type: String, default: 'Maqder ERP' },
+    fromEmail: { type: String, default: '' },
+    replyTo: { type: String, default: '' },
+    templates: {
+      tenantCreated: {
+        subjectEn: { type: String, default: 'Your {{brandName}} panel is ready for {{companyName}}' },
+        subjectAr: { type: String, default: 'لوحة {{brandName}} أصبحت جاهزة لشركة {{companyName}}' },
+        bodyEn: { type: String, default: 'Hello {{contactName}},\n\nYour panel for {{companyName}} has been created successfully.\n\nLogin email: {{loginEmail}}\nTenant slug: {{tenantSlug}}\n\nYou can now sign in and start using {{brandName}}.' },
+        bodyAr: { type: String, default: 'مرحباً {{contactName}}،\n\nتم إنشاء لوحة {{brandName}} الخاصة بشركة {{companyName}} بنجاح.\n\nالبريد للدخول: {{loginEmail}}\nرمز الشركة: {{tenantSlug}}\n\nيمكنك الآن تسجيل الدخول والبدء باستخدام {{brandName}}.' }
+      },
+      invoice: {
+        subjectEn: { type: String, default: 'Invoice {{invoiceNumber}} from {{companyName}}' },
+        subjectAr: { type: String, default: 'الفاتورة {{invoiceNumber}} من {{companyName}}' },
+        bodyEn: { type: String, default: 'Hello {{customerName}},\n\nPlease find your invoice {{invoiceNumber}} dated {{invoiceDate}} with a total of {{invoiceTotal}}.\n\nThank you for your business.\n{{companyName}}' },
+        bodyAr: { type: String, default: 'مرحباً {{customerName}}،\n\nنرفق لكم الفاتورة رقم {{invoiceNumber}} بتاريخ {{invoiceDate}} بإجمالي {{invoiceTotal}}.\n\nشكراً لتعاملكم معنا.\n{{companyName}}' }
+      }
+    }
   }
 }, {
   timestamps: true

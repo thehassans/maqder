@@ -60,6 +60,7 @@ export default function ExpenseForm() {
     reset,
     watch,
     setValue,
+    control,
     getValues,
     formState: { errors },
   } = useForm({
@@ -87,6 +88,7 @@ export default function ExpenseForm() {
   })
 
   useLiveTranslation({
+    control,
     watch,
     setValue,
     sourceField: 'description',
@@ -96,6 +98,7 @@ export default function ExpenseForm() {
   })
 
   useLiveTranslation({
+    control,
     watch,
     setValue,
     sourceField: 'descriptionAr',

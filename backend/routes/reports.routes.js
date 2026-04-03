@@ -1,7 +1,8 @@
 import express from 'express';
 import Invoice from '../models/Invoice.js';
 import Expense from '../models/Expense.js';
-import { protect, tenantFilter } from '../middleware/auth.js';
+import VatReturn from '../models/VatReturn.js';
+import { protect, tenantFilter, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -37,6 +38,183 @@ function resolvePeriod(req) {
   }
 
   return { startDate, endDate };
+}
+
+function toNumber(value, fallback = 0) {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : fallback;
+}
+
+function resolvePeriodKey(startDate) {
+  return `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function normalizeManualLine(value = {}) {
+  return {
+    amount: toNumber(value.amount),
+    adjustment: toNumber(value.adjustment),
+    vatAmount: toNumber(value.vatAmount),
+  };
+}
+
+function getDefaultManualLines() {
+  return {
+    salesStandardRated: normalizeManualLine(),
+    salesSpecialCitizen: normalizeManualLine(),
+    salesZeroRatedDomestic: normalizeManualLine(),
+    salesExports: normalizeManualLine(),
+    salesExempt: normalizeManualLine(),
+    purchasesStandardRatedDomestic: normalizeManualLine(),
+    purchasesImportsCustoms: normalizeManualLine(),
+    purchasesImportsReverseCharge: normalizeManualLine(),
+    purchasesZeroRated: normalizeManualLine(),
+    purchasesExempt: normalizeManualLine(),
+  };
+}
+
+function mergeManualLines(current = {}) {
+  const defaults = getDefaultManualLines();
+  return Object.keys(defaults).reduce((accumulator, key) => {
+    accumulator[key] = normalizeManualLine(current?.[key] || defaults[key]);
+    return accumulator;
+  }, {});
+}
+
+function combineVatLine(computed = {}, manual = {}) {
+  const amount = toNumber(computed.amount) + toNumber(manual.amount);
+  const adjustment = toNumber(manual.adjustment);
+  const vatAmount = toNumber(computed.vatAmount) + toNumber(manual.vatAmount);
+  return { amount, adjustment, vatAmount };
+}
+
+function buildVatStatement({ manualLines, lineBuckets, expenseTotals, savedReturn }) {
+  const salesStandardRated = combineVatLine(lineBuckets.sell.S, manualLines.salesStandardRated);
+  const salesSpecialCitizen = combineVatLine({}, manualLines.salesSpecialCitizen);
+  const salesZeroRatedDomestic = combineVatLine(lineBuckets.sell.Z, manualLines.salesZeroRatedDomestic);
+  const salesExports = combineVatLine({}, manualLines.salesExports);
+  const salesExempt = combineVatLine(lineBuckets.sell.E, manualLines.salesExempt);
+  const totalSales = {
+    amount: salesStandardRated.amount + salesSpecialCitizen.amount + salesZeroRatedDomestic.amount + salesExports.amount + salesExempt.amount,
+    adjustment: salesStandardRated.adjustment + salesSpecialCitizen.adjustment + salesZeroRatedDomestic.adjustment + salesExports.adjustment + salesExempt.adjustment,
+    vatAmount: salesStandardRated.vatAmount + salesSpecialCitizen.vatAmount + salesZeroRatedDomestic.vatAmount + salesExports.vatAmount + salesExempt.vatAmount,
+  };
+
+  const purchasesStandardRatedDomestic = combineVatLine({
+    amount: toNumber(lineBuckets.purchase.S.amount) + toNumber(expenseTotals.amount),
+    vatAmount: toNumber(lineBuckets.purchase.S.vatAmount) + toNumber(expenseTotals.taxAmount),
+  }, manualLines.purchasesStandardRatedDomestic);
+  const purchasesImportsCustoms = combineVatLine({}, manualLines.purchasesImportsCustoms);
+  const purchasesImportsReverseCharge = combineVatLine({}, manualLines.purchasesImportsReverseCharge);
+  const purchasesZeroRated = combineVatLine(lineBuckets.purchase.Z, manualLines.purchasesZeroRated);
+  const purchasesExempt = combineVatLine(lineBuckets.purchase.E, manualLines.purchasesExempt);
+  const totalPurchases = {
+    amount: purchasesStandardRatedDomestic.amount + purchasesImportsCustoms.amount + purchasesImportsReverseCharge.amount + purchasesZeroRated.amount + purchasesExempt.amount,
+    adjustment: purchasesStandardRatedDomestic.adjustment + purchasesImportsCustoms.adjustment + purchasesImportsReverseCharge.adjustment + purchasesZeroRated.adjustment + purchasesExempt.adjustment,
+    vatAmount: purchasesStandardRatedDomestic.vatAmount + purchasesImportsCustoms.vatAmount + purchasesImportsReverseCharge.vatAmount + purchasesZeroRated.vatAmount + purchasesExempt.vatAmount,
+  };
+
+  const totalVatDueCurrentPeriod = totalSales.vatAmount - totalPurchases.vatAmount;
+  const correctionsPreviousPeriod = toNumber(savedReturn?.correctionsPreviousPeriod);
+  const vatCreditCarriedForward = toNumber(savedReturn?.vatCreditCarriedForward);
+  const netVatDue = totalVatDueCurrentPeriod + correctionsPreviousPeriod - vatCreditCarriedForward;
+
+  return {
+    salesStandardRated,
+    salesSpecialCitizen,
+    salesZeroRatedDomestic,
+    salesExports,
+    salesExempt,
+    totalSales,
+    purchasesStandardRatedDomestic,
+    purchasesImportsCustoms,
+    purchasesImportsReverseCharge,
+    purchasesZeroRated,
+    purchasesExempt,
+    totalPurchases,
+    totalVatDueCurrentPeriod: { amount: 0, adjustment: 0, vatAmount: totalVatDueCurrentPeriod },
+    correctionsPreviousPeriod: { amount: 0, adjustment: 0, vatAmount: correctionsPreviousPeriod },
+    vatCreditCarriedForward: { amount: 0, adjustment: 0, vatAmount: vatCreditCarriedForward },
+    netVatDue: { amount: 0, adjustment: 0, vatAmount: netVatDue },
+  };
+}
+
+async function buildVatReturnPayload({ tenantId, tenantFilterValue, startDate, endDate }) {
+  const invoiceMatch = {
+    ...tenantFilterValue,
+    issueDate: { $gte: startDate, $lte: endDate },
+    status: { $nin: ['draft', 'cancelled', 'credited'] }
+  };
+  const expenseMatch = {
+    ...tenantFilterValue,
+    expenseDate: { $gte: startDate, $lte: endDate },
+    status: 'paid',
+    isActive: true,
+  };
+  const periodKey = resolvePeriodKey(startDate);
+
+  const [savedReturn, invoiceLines, expenseAggregation] = await Promise.all([
+    VatReturn.findOne({ tenantId, periodKey }),
+    Invoice.aggregate([
+      { $match: invoiceMatch },
+      { $unwind: '$lineItems' },
+      {
+        $group: {
+          _id: {
+            flow: '$flow',
+            taxCategory: '$lineItems.taxCategory',
+          },
+          amount: { $sum: { $ifNull: ['$lineItems.lineTotal', 0] } },
+          vatAmount: { $sum: { $ifNull: ['$lineItems.taxAmount', 0] } },
+        }
+      }
+    ]),
+    Expense.aggregate([
+      { $match: expenseMatch },
+      {
+        $group: {
+          _id: null,
+          amount: { $sum: { $ifNull: ['$amount', 0] } },
+          taxAmount: { $sum: { $ifNull: ['$taxAmount', 0] } },
+          totalAmount: { $sum: { $ifNull: ['$totalAmount', 0] } },
+        }
+      }
+    ])
+  ]);
+
+  const lineBuckets = {
+    sell: { S: { amount: 0, vatAmount: 0 }, Z: { amount: 0, vatAmount: 0 }, E: { amount: 0, vatAmount: 0 } },
+    purchase: { S: { amount: 0, vatAmount: 0 }, Z: { amount: 0, vatAmount: 0 }, E: { amount: 0, vatAmount: 0 } },
+  };
+
+  for (const row of invoiceLines || []) {
+    const flow = row?._id?.flow === 'purchase' ? 'purchase' : 'sell';
+    const category = ['S', 'Z', 'E'].includes(row?._id?.taxCategory) ? row._id.taxCategory : null;
+    if (!category) continue;
+    lineBuckets[flow][category].amount += toNumber(row.amount);
+    lineBuckets[flow][category].vatAmount += toNumber(row.vatAmount);
+  }
+
+  const expenseTotals = expenseAggregation?.[0] || { amount: 0, taxAmount: 0, totalAmount: 0 };
+  const manualLines = mergeManualLines(savedReturn?.manual);
+  const statement = buildVatStatement({ manualLines, lineBuckets, expenseTotals, savedReturn });
+
+  return {
+    savedReturn,
+    manualLines,
+    expenseTotals,
+    statement,
+    meta: {
+      periodKey,
+      month: startDate.getMonth() + 1,
+      year: startDate.getFullYear(),
+      businessLocation: savedReturn?.businessLocation || 'all',
+      notes: savedReturn?.notes || '',
+      correctionsPreviousPeriod: toNumber(savedReturn?.correctionsPreviousPeriod),
+      vatCreditCarriedForward: toNumber(savedReturn?.vatCreditCarriedForward),
+      status: savedReturn?.status || 'draft',
+      lastImportedAt: savedReturn?.lastImportedAt || null,
+    }
+  };
 }
 
 router.get('/vat-return', async (req, res) => {
@@ -128,6 +306,13 @@ router.get('/vat-return', async (req, res) => {
       }
     }
 
+    const vatReturn = await buildVatReturnPayload({
+      tenantId: req.user.tenantId,
+      tenantFilterValue: req.tenantFilter,
+      startDate,
+      endDate,
+    });
+
     res.json({
       period: {
         startDate,
@@ -140,12 +325,80 @@ router.get('/vat-return', async (req, res) => {
         taxableAmount: invoices.taxableAmount || 0,
         totalTax: invoices.totalTax || 0,
         grandTotal: invoices.grandTotal || 0,
-        byCategory: totalsByCategory
+        byCategory: totalsByCategory,
+        purchasesTaxAmount: vatReturn.expenseTotals?.taxAmount || 0,
       },
       breakdown: {
         byTaxCategory,
         byTransactionType
-      }
+      },
+      vatReturn: {
+        ...vatReturn.meta,
+        manual: vatReturn.manualLines,
+        statement: vatReturn.statement,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.put('/vat-return', authorize('admin'), async (req, res) => {
+  try {
+    const { month, year, startDate, endDate, businessLocation, manual, correctionsPreviousPeriod, vatCreditCarriedForward, notes, status } = req.body || {};
+    const periodStart = startDate ? new Date(startDate) : new Date(Number(year), Number(month) - 1, 1);
+    const periodEnd = endDate ? new Date(endDate) : new Date(Number(year), Number(month), 0, 23, 59, 59, 999);
+
+    if (Number.isNaN(periodStart.getTime()) || Number.isNaN(periodEnd.getTime())) {
+      return res.status(400).json({ error: 'Invalid VAT return period' });
+    }
+
+    const correctionsValue = toNumber(correctionsPreviousPeriod);
+    if (Math.abs(correctionsValue) > 5000) {
+      return res.status(400).json({ error: 'Corrections from previous period must be between SAR -5000 and 5000' });
+    }
+
+    const periodKey = resolvePeriodKey(periodStart);
+    const manualLines = mergeManualLines(manual);
+
+    await VatReturn.findOneAndUpdate(
+      { tenantId: req.user.tenantId, periodKey },
+      {
+        $set: {
+          tenantId: req.user.tenantId,
+          periodKey,
+          month: periodStart.getMonth() + 1,
+          year: periodStart.getFullYear(),
+          periodStart,
+          periodEnd,
+          businessLocation: String(businessLocation || 'all'),
+          manual: manualLines,
+          correctionsPreviousPeriod: correctionsValue,
+          vatCreditCarriedForward: toNumber(vatCreditCarriedForward),
+          notes: String(notes || ''),
+          status: status === 'submitted' ? 'submitted' : 'draft',
+          lastImportedAt: new Date(),
+          updatedBy: req.user._id,
+        },
+        $setOnInsert: { createdBy: req.user._id },
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    const payload = await buildVatReturnPayload({
+      tenantId: req.user.tenantId,
+      tenantFilterValue: req.tenantFilter,
+      startDate: periodStart,
+      endDate: periodEnd,
+    });
+
+    res.json({
+      period: { startDate: periodStart, endDate: periodEnd },
+      vatReturn: {
+        ...payload.meta,
+        manual: payload.manualLines,
+        statement: payload.statement,
+      },
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

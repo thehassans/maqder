@@ -40,7 +40,14 @@ export default function ProjectForm() {
     return local.toISOString().slice(0, 10)
   }
 
-  const { register, handleSubmit, reset, watch, setValue } = useForm({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    setValue,
+    control,
+  } = useForm({
     defaultValues: {
       code: '',
       status: 'planned',
@@ -58,6 +65,7 @@ export default function ProjectForm() {
   })
 
   useLiveTranslation({
+    control,
     watch,
     setValue,
     sourceField: 'nameEn',
@@ -67,6 +75,7 @@ export default function ProjectForm() {
   })
 
   useLiveTranslation({
+    control,
     watch,
     setValue,
     sourceField: 'nameAr',

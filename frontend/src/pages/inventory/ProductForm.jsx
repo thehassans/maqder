@@ -19,7 +19,7 @@ export default function ProductForm() {
   const { t } = useTranslation(language)
   const isEdit = Boolean(id)
 
-  const { register, handleSubmit, reset, setValue, watch } = useForm()
+  const { register, handleSubmit, reset, setValue, watch, control } = useForm()
   const [product, setProduct] = useState(null)
   const [stockWarehouseId, setStockWarehouseId] = useState('')
   const [stockQuantity, setStockQuantity] = useState(0)
@@ -73,6 +73,7 @@ export default function ProductForm() {
   }
 
   useLiveTranslation({
+    control,
     watch,
     setValue,
     sourceField: 'nameEn',
@@ -82,6 +83,7 @@ export default function ProductForm() {
   })
 
   useLiveTranslation({
+    control,
     watch,
     setValue,
     sourceField: 'nameAr',

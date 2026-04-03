@@ -5,6 +5,7 @@ import {
   Building2, 
   Users, 
   Settings, 
+  Mail,
   LogOut,
   Moon,
   Sun,
@@ -23,6 +24,7 @@ export default function SuperAdminLayout() {
     { path: '/super-admin', icon: LayoutDashboard, label: t('dashboard'), end: true },
     { path: '/super-admin/tenants', icon: Building2, label: t('tenants') },
     { path: '/super-admin/website', icon: Globe, label: t('websiteSettings') },
+    { path: '/super-admin/email', icon: Mail, label: language === 'ar' ? 'البريد' : 'Email' },
     { path: '/super-admin/gemini', icon: Settings, label: t('geminiSettings') },
   ]
 

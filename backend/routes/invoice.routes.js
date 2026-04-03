@@ -13,6 +13,7 @@ import { getPrimaryBusinessType, getTenantBusinessTypes } from '../utils/busines
 import { enrichInvoiceArabicFields } from '../utils/invoiceArabic.js';
 import { buildDraftInvoiceQr } from '../utils/zatca/draftInvoiceQr.js';
 import ZatcaService from '../utils/zatca/ZatcaService.js';
+import { hasEmailAutomationAddon, sendInvoiceEmail } from '../utils/emailService.js';
 
 const router = express.Router();
 
@@ -247,6 +248,42 @@ async function attachDraftQr(invoice, seller) {
 
   await invoice.save();
   return invoice;
+}
+
+function resolveInvoiceRecipient(customer, invoice, fallbackRecipient = '') {
+  const directRecipient = normalizeText(fallbackRecipient).toLowerCase();
+  if (directRecipient) return directRecipient;
+
+  const customerEmail = normalizeText(customer?.email).toLowerCase();
+  if (customerEmail) return customerEmail;
+
+  const customerContactEmail = normalizeText(customer?.contactPerson?.email).toLowerCase();
+  if (customerContactEmail) return customerContactEmail;
+
+  const buyerEmail = normalizeText(invoice?.buyer?.contactEmail).toLowerCase();
+  if (buyerEmail) return buyerEmail;
+
+  return '';
+}
+
+async function autoEmailInvoiceIfEnabled({ tenant, invoice, customer = null, fallbackRecipient = '', language }) {
+  const emailSettings = tenant?.settings?.communication?.email || {};
+  if (!hasEmailAutomationAddon(tenant) || !emailSettings.enabled || !emailSettings.autoSendInvoices || invoice?.flow === 'purchase') {
+    return { sent: false, reason: 'disabled' };
+  }
+
+  const recipient = resolveInvoiceRecipient(customer, invoice, fallbackRecipient);
+  if (!recipient) {
+    return { sent: false, reason: 'missing_recipient' };
+  }
+
+  return await sendInvoiceEmail({
+    tenant,
+    invoice,
+    recipient,
+    customerName: customer?.name || customer?.nameAr || invoice?.buyer?.name || invoice?.buyer?.nameAr,
+    language,
+  });
 }
 
 async function postInventoryForInvoice(invoice, tenantFilterValue) {
@@ -1069,8 +1106,66 @@ router.post('/:id/sign', checkPermission('invoicing', 'approve'), async (req, re
     if (invoice.customerId) {
       await syncCustomerStats(invoice.tenantId, invoice.customerId);
     }
+
+    const customer = invoice.customerId
+      ? await Customer.findOne({ _id: invoice.customerId, tenantId: invoice.tenantId }).select('name nameAr email contactPerson')
+      : null;
+
+    let emailDelivery = { sent: false, reason: 'disabled' };
+    try {
+      emailDelivery = await autoEmailInvoiceIfEnabled({
+        tenant,
+        invoice,
+        customer,
+        language: tenant?.settings?.language,
+      });
+    } catch (emailError) {
+      emailDelivery = { sent: false, reason: emailError.message };
+    }
     
-    res.json(invoice);
+    res.json({ ...invoice.toObject(), emailDelivery });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/:id/send-email', checkPermission('invoicing', 'update'), async (req, res) => {
+  try {
+    const invoice = await Invoice.findOne({ _id: req.params.id, ...req.tenantFilter });
+    if (!invoice) {
+      return res.status(404).json({ error: 'Invoice not found' });
+    }
+
+    if (invoice.flow === 'purchase') {
+      return res.status(400).json({ error: 'Purchase invoices cannot be emailed to customers' });
+    }
+
+    const tenant = await Tenant.findById(req.user.tenantId);
+    if (!tenant) {
+      return res.status(404).json({ error: 'Tenant not found' });
+    }
+
+    if (!hasEmailAutomationAddon(tenant)) {
+      return res.status(403).json({ error: 'Email automation add-on is not enabled for this tenant' });
+    }
+
+    const customer = invoice.customerId
+      ? await Customer.findOne({ _id: invoice.customerId, tenantId: invoice.tenantId }).select('name nameAr email contactPerson')
+      : null;
+    const recipient = resolveInvoiceRecipient(customer, invoice, req.body?.to);
+    if (!recipient) {
+      return res.status(400).json({ error: 'Customer email is missing' });
+    }
+
+    const delivery = await sendInvoiceEmail({
+      tenant,
+      invoice,
+      recipient,
+      customerName: customer?.name || customer?.nameAr || invoice?.buyer?.name || invoice?.buyer?.nameAr,
+      language: req.body?.language || tenant?.settings?.language,
+    });
+
+    res.json({ success: true, delivery });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

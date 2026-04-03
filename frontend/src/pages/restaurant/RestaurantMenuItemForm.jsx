@@ -19,7 +19,7 @@ export default function RestaurantMenuItemForm() {
   const { language } = useSelector((state) => state.ui)
   const { t } = useTranslation(language)
 
-  const { register, handleSubmit, reset, setValue, watch } = useForm({
+  const { register, handleSubmit, reset, setValue, watch, control } = useForm({
     defaultValues: {
       sellingPrice: 0,
       taxRate: 15,
@@ -28,6 +28,7 @@ export default function RestaurantMenuItemForm() {
   })
 
   useLiveTranslation({
+    control,
     watch,
     setValue,
     sourceField: 'nameEn',
@@ -37,6 +38,7 @@ export default function RestaurantMenuItemForm() {
   })
 
   useLiveTranslation({
+    control,
     watch,
     setValue,
     sourceField: 'nameAr',
