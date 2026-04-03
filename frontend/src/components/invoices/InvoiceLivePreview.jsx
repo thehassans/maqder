@@ -9,6 +9,15 @@ import SarIcon from '../ui/SarIcon'
 
 const joinClasses = (...classes) => classes.filter(Boolean).join(' ')
 
+const renderSarMoney = ({ formatted, className = '', iconClassName = '' }) => (
+  <span dir="ltr" className={joinClasses('inline-flex items-center justify-end whitespace-nowrap align-middle tabular-nums', className)}>
+    <span className={joinClasses('me-[0.18em] inline-flex h-[0.9em] w-[0.78em] shrink-0 items-center justify-center align-middle', iconClassName)}>
+      <SarIcon className="block h-full w-full" title="Saudi Riyal" />
+    </span>
+    <span className="inline-block leading-none align-middle">{formatted}</span>
+  </span>
+)
+
 const hasArabicText = (value = '') => /[\u0600-\u06FF]/.test(String(value || ''))
 
 const uniqueLines = (...values) => {
@@ -352,12 +361,11 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
       return formatted
     }
 
-    return (
-      <span className={joinClasses('inline-flex items-baseline whitespace-nowrap align-baseline tabular-nums leading-none', options.className || '')}>
-        <SarIcon className={joinClasses('me-[0.22em] shrink-0 self-baseline translate-y-[0.08em]', options.iconClassName || 'h-[0.82em] w-[0.82em]')} title="Saudi Riyal" />
-        <span className="leading-none">{formatted}</span>
-      </span>
-    )
+    return renderSarMoney({
+      formatted,
+      className: options.className || '',
+      iconClassName: options.iconClassName || '',
+    })
   }
 
   return (
