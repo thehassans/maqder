@@ -1,3 +1,5 @@
+const joinClasses = (...classes) => classes.filter(Boolean).join(' ')
+
 export default function SarIcon({ className = 'w-4 h-4', title = 'SAR', ...props }) {
   return (
     <svg
@@ -5,7 +7,8 @@ export default function SarIcon({ className = 'w-4 h-4', title = 'SAR', ...props
       xmlns="http://www.w3.org/2000/svg"
       aria-label={title}
       role="img"
-      className={className}
+      preserveAspectRatio="xMidYMid meet"
+      className={joinClasses('inline-block shrink-0 align-[-0.12em]', className)}
       {...props}
     >
       <path

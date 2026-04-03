@@ -5,11 +5,9 @@ import SarIcon from './SarIcon'
 const joinClasses = (...classes) => classes.filter(Boolean).join(' ')
 
 const renderSarMoney = ({ formatted, className = '', amountClassName = '', iconClassName = '' }) => (
-  <span dir="ltr" className={joinClasses('inline-flex items-center justify-end whitespace-nowrap align-middle tabular-nums', className)}>
-    <span className={joinClasses('relative top-[0.08em] me-[0.18em] inline-flex h-[0.82em] w-[0.72em] shrink-0 items-center justify-center align-middle', iconClassName)}>
-      <SarIcon className="block h-full w-full" title="Saudi Riyal" />
-    </span>
-    <span className={joinClasses('inline-block leading-none align-middle', amountClassName)}>{formatted}</span>
+  <span dir="ltr" className={joinClasses('whitespace-nowrap tabular-nums', className)}>
+    <SarIcon className={joinClasses('me-[0.18em] h-[0.82em] w-[0.72em]', iconClassName)} title="Saudi Riyal" />
+    <span className={joinClasses('inline leading-none', amountClassName)}>{formatted}</span>
   </span>
 )
 
@@ -45,7 +43,7 @@ export default function Money({
       })
 
   if (!isSar) {
-    return <span dir="ltr" className={joinClasses('inline-flex items-center whitespace-nowrap tabular-nums', className)}>{formatted}</span>
+    return <span dir="ltr" className={joinClasses('whitespace-nowrap tabular-nums', className)}>{formatted}</span>
   }
 
   return renderSarMoney({ formatted, className, amountClassName, iconClassName })
