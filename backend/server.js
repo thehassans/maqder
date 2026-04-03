@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import cron from 'node-cron';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -65,6 +66,7 @@ const configuredOrigins = String(process.env.FRONTEND_URL || 'http://localhost:5
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
+const allowCloudflareInsights = process.env.NODE_ENV === 'production';
 const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/zatca-erp';
 const databaseReadyState = () => mongoose.connection.readyState;
 const isDatabaseReady = () => databaseReadyState() === 1;
@@ -183,7 +185,31 @@ const ensureDatabaseReady = async (req, res, next) => {
 
 // Security middleware
 app.set('trust proxy', trustProxyHops);
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    useDefaults: true,
+    directives: {
+      'script-src': [
+        "'self'",
+        ...(allowCloudflareInsights ? ['https://static.cloudflareinsights.com'] : []),
+      ],
+      'script-src-elem': [
+        "'self'",
+        ...(allowCloudflareInsights ? ['https://static.cloudflareinsights.com'] : []),
+      ],
+      'connect-src': [
+        "'self'",
+        ...(allowCloudflareInsights
+          ? [
+            'https://cloudflareinsights.com',
+            'https://*.cloudflareinsights.com',
+            'https://static.cloudflareinsights.com',
+          ]
+          : []),
+      ],
+    },
+  },
+}));
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || configuredOrigins.length === 0 || configuredOrigins.includes(origin)) {
@@ -282,16 +308,72 @@ app.use('/api/restaurant/orders', ensureDatabaseReady, restaurantOrderRoutes);
 // Serve static frontend files in production
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const resolveFrontendBuild = () => {
+  const candidates = [
+    {
+      rootDir: path.join(__dirname, '../frontend/dist'),
+      indexFile: path.join(__dirname, '../frontend/dist/index.html'),
+      assetsDir: path.join(__dirname, '../frontend/dist/assets'),
+    },
+    {
+      rootDir: path.join(__dirname, '..'),
+      indexFile: path.join(__dirname, '../index.html'),
+      assetsDir: path.join(__dirname, '../assets'),
+    },
+  ];
+
+  return candidates.find((candidate) => fs.existsSync(candidate.indexFile) && fs.existsSync(candidate.assetsDir))
+    || candidates.find((candidate) => fs.existsSync(candidate.indexFile))
+    || null;
+};
+
+const isStaticAssetRequest = (requestPath = '') => requestPath.startsWith('/assets/') || path.extname(requestPath) !== '';
 
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../frontend/dist')));
-  
-  app.get('*', (req, res, next) => {
-    if (req.originalUrl.startsWith('/api')) {
-      return next();
-    }
-    res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
-  });
+  const frontendBuild = resolveFrontendBuild();
+
+  if (frontendBuild?.assetsDir && fs.existsSync(frontendBuild.assetsDir)) {
+    app.use('/assets', express.static(frontendBuild.assetsDir, {
+      index: false,
+      fallthrough: false,
+      immutable: true,
+      maxAge: '1y',
+      setHeaders: (res) => {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      },
+    }));
+  }
+
+  if (frontendBuild?.rootDir && frontendBuild?.indexFile) {
+    app.use(express.static(frontendBuild.rootDir, {
+      index: false,
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.html')) {
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          return;
+        }
+
+        if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        }
+      },
+    }));
+
+    app.get('*', (req, res, next) => {
+      if (req.originalUrl.startsWith('/api')) {
+        return next();
+      }
+
+      if (isStaticAssetRequest(req.path)) {
+        return res.status(404).end();
+      }
+
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      return res.sendFile(frontendBuild.indexFile);
+    });
+  } else {
+    logger.warn('Production frontend build not found. Expected either frontend/dist or a parent directory deployment with index.html and assets/.');
+  }
 }
 
 // Error handling
