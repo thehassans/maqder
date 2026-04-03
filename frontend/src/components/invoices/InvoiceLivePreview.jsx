@@ -5,11 +5,9 @@ import { getInvoiceBranding, getInvoiceCssFontFamily, splitBrandingText } from '
 import { getZatcaStatusMeta } from '../../lib/zatcaStatus'
 import { getAmountInWords } from '../../lib/amountInWords'
 import { formatCurrency, formatCurrencyAmount, isSarCurrency } from '../../lib/currency'
-import SarIcon, { getSarIconDataUri } from '../ui/SarIcon'
+import SarIcon from '../ui/SarIcon'
 
 const joinClasses = (...classes) => classes.filter(Boolean).join(' ')
-
-const SNAPSHOT_SAR_ICON_SRC = getSarIconDataUri('#0f172a')
 
 const renderSarMoney = ({ formatted, className = '', iconClassName = '' }) => (
   <span dir="ltr" className={joinClasses('whitespace-nowrap tabular-nums', className)}>
@@ -18,9 +16,19 @@ const renderSarMoney = ({ formatted, className = '', iconClassName = '' }) => (
   </span>
 )
 
-const renderSarMoneyImage = ({ formatted, className = '', iconClassName = '' }) => (
+const renderSarMoneySnapshotIcon = ({ formatted, className = '' }) => (
   <span dir="ltr" className={joinClasses('whitespace-nowrap tabular-nums', className)}>
-    <img src={SNAPSHOT_SAR_ICON_SRC} alt="Saudi Riyal" className={joinClasses('me-[0.18em] inline-block h-[0.82em] w-[0.72em] align-[-0.12em]', iconClassName)} />
+    <SarIcon
+      title="Saudi Riyal"
+      style={{
+        width: '0.72em',
+        height: '0.82em',
+        marginInlineEnd: '0.18em',
+        verticalAlign: '-0.12em',
+        position: 'relative',
+        top: '0.02em',
+      }}
+    />
     <span className="inline leading-none">{formatted}</span>
   </span>
 )
@@ -378,8 +386,8 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
       })
     }
 
-    if (currencyRenderMode === 'image') {
-      return renderSarMoneyImage({
+    if (currencyRenderMode === 'snapshot-icon') {
+      return renderSarMoneySnapshotIcon({
         formatted,
         className: options.className || '',
       })
