@@ -80,14 +80,14 @@ export default function MarketingPricing() {
                 <div className="mt-4">
                   <div className="text-4xl font-extrabold text-slate-950">
                     {monthly > 0
-                      ? <Money value={monthly} currency={currency} language={language} minimumFractionDigits={0} maximumFractionDigits={0} className="text-4xl font-extrabold text-slate-950" iconClassName="h-[0.9em] w-[0.9em]" />
+                      ? <Money value={monthly} currency={currency} language={language} minimumFractionDigits={0} maximumFractionDigits={0} className="text-4xl font-extrabold text-slate-950" />
                       : (isArabic ? 'مخصص' : 'Custom')}
                   </div>
                   <div className="text-sm text-slate-500">{monthly > 0 ? (isArabic ? 'شهرياً' : 'per month') : (isArabic ? 'تواصل معنا' : 'Contact us')}</div>
                   {yearly > 0 && (
                     <div className="mt-2 flex items-center gap-1 text-xs text-slate-500">
                       <span>{isArabic ? 'سنويًا:' : 'Yearly:'}</span>
-                      <Money value={yearly} currency={currency} language={language} minimumFractionDigits={0} maximumFractionDigits={0} iconClassName="h-[0.85em] w-[0.85em]" />
+                      <Money value={yearly} currency={currency} language={language} minimumFractionDigits={0} maximumFractionDigits={0} />
                     </div>
                   )}
                 </div>

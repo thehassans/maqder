@@ -208,25 +208,25 @@ export default function VatReturns() {
   const summaryCards = [
     {
       title: isArabic ? 'إجمالي المبيعات' : 'Total Sales',
-      value: renderMoney(statement.totalSales?.amount, { className: 'text-2xl font-bold', iconClassName: 'h-[0.95em] w-[0.95em]' }),
+      value: renderMoney(statement.totalSales?.amount, { className: 'text-2xl font-bold' }),
       icon: TrendingUp,
       tone: 'from-emerald-500 to-teal-600',
     },
     {
       title: isArabic ? 'إجمالي المشتريات' : 'Total Purchases',
-      value: renderMoney(statement.totalPurchases?.amount, { className: 'text-2xl font-bold', iconClassName: 'h-[0.95em] w-[0.95em]' }),
+      value: renderMoney(statement.totalPurchases?.amount, { className: 'text-2xl font-bold' }),
       icon: Wallet,
       tone: 'from-amber-500 to-orange-600',
     },
     {
       title: isArabic ? 'الضريبة المستحقة للفترة' : 'VAT Due This Period',
-      value: renderMoney(statement.totalVatDueCurrentPeriod?.vatAmount, { className: 'text-2xl font-bold', iconClassName: 'h-[0.95em] w-[0.95em]' }),
+      value: renderMoney(statement.totalVatDueCurrentPeriod?.vatAmount, { className: 'text-2xl font-bold' }),
       icon: Receipt,
       tone: 'from-sky-500 to-indigo-600',
     },
     {
       title: isArabic ? 'الصافي النهائي' : 'Net VAT Position',
-      value: renderMoney(statement.netVatDue?.vatAmount, { className: 'text-2xl font-bold', iconClassName: 'h-[0.95em] w-[0.95em]' }),
+      value: renderMoney(statement.netVatDue?.vatAmount, { className: 'text-2xl font-bold' }),
       icon: TrendingDown,
       tone: 'from-[#163b27] to-[#245138]',
     },
@@ -361,31 +361,31 @@ export default function VatReturns() {
                       <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{isArabic ? row.labelEn : row.labelAr}</p>
                       {row.manualKey ? (
                         <div className="mt-2 inline-flex rounded-full bg-white/80 px-3 py-1 text-[11px] font-medium text-gray-600 shadow-sm ring-1 ring-gray-200 dark:bg-dark-700 dark:text-gray-200 dark:ring-dark-600">
-                          {isArabic ? 'محسوب من النظام' : 'System Calculated'}: {renderMoney(baseAmount, { iconClassName: 'h-[0.8em] w-[0.8em]' })} / {renderMoney(baseVat, { iconClassName: 'h-[0.8em] w-[0.8em]' })}
+                          {isArabic ? 'محسوب من النظام' : 'System Calculated'}: {renderMoney(baseAmount)} / {renderMoney(baseVat)}
                         </div>
                       ) : null}
                     </div>
                     <div className="px-2">
                       {row.vatOnly || row.readOnly ? (
-                        <div className="flex h-full items-center rounded-2xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-800 dark:border-dark-600 dark:bg-dark-700 dark:text-white">{row.vatOnly ? '—' : renderMoney(line.amount, { iconClassName: 'h-[0.85em] w-[0.85em]' })}</div>
+                        <div className="flex h-full items-center rounded-2xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-800 dark:border-dark-600 dark:bg-dark-700 dark:text-white">{row.vatOnly ? '—' : renderMoney(line.amount)}</div>
                       ) : (
                         <input type="number" step="0.01" {...register(`${editablePrefix}.amount`, { valueAsNumber: true })} className="input h-12" />
                       )}
                     </div>
                     <div className="px-2">
                       {row.vatOnly || row.readOnly ? (
-                        <div className="flex h-full items-center rounded-2xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-800 dark:border-dark-600 dark:bg-dark-700 dark:text-white">{row.vatOnly ? '—' : renderMoney(line.adjustment, { iconClassName: 'h-[0.85em] w-[0.85em]' })}</div>
+                        <div className="flex h-full items-center rounded-2xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-800 dark:border-dark-600 dark:bg-dark-700 dark:text-white">{row.vatOnly ? '—' : renderMoney(line.adjustment)}</div>
                       ) : (
                         <input type="number" step="0.01" {...register(`${editablePrefix}.adjustment`, { valueAsNumber: true })} className="input h-12" />
                       )}
                     </div>
                     <div className="px-2">
                       {row.readOnly ? (
-                        <div className="flex h-full items-center rounded-2xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-800 dark:border-dark-600 dark:bg-dark-700 dark:text-white">{renderMoney(line.vatAmount, { iconClassName: 'h-[0.85em] w-[0.85em]' })}</div>
+                        <div className="flex h-full items-center rounded-2xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-800 dark:border-dark-600 dark:bg-dark-700 dark:text-white">{renderMoney(line.vatAmount)}</div>
                       ) : row.topLevelField ? (
                         <input type="number" step="0.01" {...register(row.topLevelField, { valueAsNumber: true })} className="input h-12" />
                       ) : row.vatOnly ? (
-                        <div className="flex h-full items-center rounded-2xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-800 dark:border-dark-600 dark:bg-dark-700 dark:text-white">{renderMoney(line.vatAmount, { iconClassName: 'h-[0.85em] w-[0.85em]' })}</div>
+                        <div className="flex h-full items-center rounded-2xl border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-800 dark:border-dark-600 dark:bg-dark-700 dark:text-white">{renderMoney(line.vatAmount)}</div>
                       ) : (
                         <input type="number" step="0.01" {...register(`${editablePrefix}.vatAmount`, { valueAsNumber: true })} className="input h-12" />
                       )}
@@ -406,7 +406,7 @@ export default function VatReturns() {
           <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="card p-6">
             <div className="rounded-[1.5rem] bg-gradient-to-br from-slate-900 to-slate-700 p-5 text-white">
               <p className="text-sm text-white/70">{isArabic ? 'صافي الإقرار' : 'Net Filing Position'}</p>
-              <div className="mt-3">{renderMoney(statement.netVatDue?.vatAmount, { className: 'text-3xl font-bold', iconClassName: 'h-[0.9em] w-[0.9em]' })}</div>
+              <div className="mt-3">{renderMoney(statement.netVatDue?.vatAmount, { className: 'text-3xl font-bold' })}</div>
               <p className="mt-3 text-sm text-white/75">{statement.netVatDue?.vatAmount >= 0
                 ? (isArabic ? 'ضريبة مستحقة للدفع' : 'VAT due to be paid')
                 : (isArabic ? 'رصيد قابل للاسترداد' : 'Recoverable VAT credit')}

@@ -362,7 +362,6 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
     return renderSarMoney({
       formatted,
       className: options.className || '',
-      iconClassName: options.iconClassName || '',
     })
   }
 
@@ -550,7 +549,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
             </div>
             <div className={`mt-4 flex items-center justify-between border-t border-slate-200 pt-4 ${titleText}`}>
               <span className="text-base font-bold whitespace-pre-line">{bilingual ? toBilingualText('Total', 'الإجمالي') : (language === 'ar' ? 'الإجمالي النهائي' : 'Grand Total')}</span>
-              <span className="text-2xl font-bold">{renderMoney(totals.grandTotal, { iconClassName: 'h-[0.9em] w-[0.9em]' })}</span>
+              <span className="text-2xl font-bold">{renderMoney(totals.grandTotal)}</span>
             </div>
           </div>
         </div>
