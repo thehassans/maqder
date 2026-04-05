@@ -26,7 +26,7 @@ const renderSarMoneySnapshotIcon = ({ formatted, className = '' }) => (
         marginInlineEnd: '0.18em',
         verticalAlign: '-0.12em',
         position: 'relative',
-        top: '0.08em',
+        top: '0.11em',
       }}
     />
     <span className="inline leading-none">{formatted}</span>
