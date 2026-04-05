@@ -18,17 +18,29 @@ const renderSarMoney = ({ formatted, className = '', iconClassName = '' }) => (
 
 const renderSarMoneySnapshotIcon = ({ formatted, className = '' }) => (
   <span dir="ltr" className={joinClasses('whitespace-nowrap tabular-nums', className)}>
-    <SarIcon
-      title="Saudi Riyal"
+    <span
       style={{
+        display: 'inline-block',
         width: '0.72em',
-        height: '0.82em',
+        height: '0.96em',
         marginInlineEnd: '0.18em',
         verticalAlign: '-0.12em',
         position: 'relative',
         top: '0.19em',
+        overflow: 'visible',
+        lineHeight: '1',
       }}
-    />
+    >
+      <SarIcon
+        title="Saudi Riyal"
+        style={{
+          display: 'block',
+          width: '100%',
+          height: '100%',
+          overflow: 'visible',
+        }}
+      />
+    </span>
     <span className="inline leading-none">{formatted}</span>
   </span>
 )
