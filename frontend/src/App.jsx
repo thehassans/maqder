@@ -124,14 +124,14 @@ function BusinessTypeRoute({ children, allowedTypes }) {
 
 function App() {
   const dispatch = useDispatch()
-  const { token, tenant } = useSelector((state) => state.auth)
+  const { token, tenant, user } = useSelector((state) => state.auth)
   const { language, theme } = useSelector((state) => state.ui)
 
   useEffect(() => {
-    if (token) {
+    if (token && !user) {
       dispatch(getMe())
     }
-  }, [dispatch, token])
+  }, [dispatch, token, user])
 
   useEffect(() => {
     dispatch(setLanguage(language))

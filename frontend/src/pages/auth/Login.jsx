@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
@@ -15,6 +15,7 @@ const complianceLogos = [
 
 export default function Login() {
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { isLoading, error } = useSelector((state) => state.auth)
   const { language } = useSelector((state) => state.ui)
@@ -28,12 +29,19 @@ export default function Login() {
     dispatch(clearError())
   }, [dispatch])
 
-  const onSubmit = (data) => {
+  const onSubmit = async (data) => {
     dispatch(clearError())
-    dispatch(login({
-      ...data,
-      tenantSlug: initialTenantSlug || undefined,
-    }))
+
+    try {
+      const result = await dispatch(login({
+        ...data,
+        tenantSlug: initialTenantSlug || undefined,
+      })).unwrap()
+
+      navigate(result.user?.role === 'super_admin' ? '/super-admin' : '/app/dashboard', { replace: true })
+    } catch {
+      // handled by auth slice state
+    }
   }
 
   return (

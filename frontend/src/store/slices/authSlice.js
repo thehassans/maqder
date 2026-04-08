@@ -18,11 +18,20 @@ const cachedTenant = (() => {
 })()
 
 const persistAuthSnapshot = (payload = {}) => {
-  if (payload.user) {
-    localStorage.setItem('auth_user', JSON.stringify(payload.user))
+  if (Object.prototype.hasOwnProperty.call(payload, 'user')) {
+    if (payload.user) {
+      localStorage.setItem('auth_user', JSON.stringify(payload.user))
+    } else {
+      localStorage.removeItem('auth_user')
+    }
   }
-  if (payload.tenant) {
-    localStorage.setItem('auth_tenant', JSON.stringify(payload.tenant))
+
+  if (Object.prototype.hasOwnProperty.call(payload, 'tenant')) {
+    if (payload.tenant) {
+      localStorage.setItem('auth_tenant', JSON.stringify(payload.tenant))
+    } else {
+      localStorage.removeItem('auth_tenant')
+    }
   }
 }
 

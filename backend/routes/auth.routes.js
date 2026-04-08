@@ -37,6 +37,26 @@ const generateToken = (id) => {
   });
 };
 
+const authTenantSelect = 'name slug businessType businessTypes business settings branding subscription isActive';
+
+const serializeAuthTenant = (tenant) => {
+  if (!tenant) return null;
+
+  const source = typeof tenant.toObject === 'function' ? tenant.toObject() : tenant;
+
+  return {
+    _id: source._id,
+    name: source.name,
+    slug: source.slug,
+    businessType: source.businessType,
+    businessTypes: source.businessTypes,
+    business: source.business,
+    settings: source.settings,
+    branding: source.branding,
+    subscription: source.subscription,
+  };
+};
+
 // @route   POST /api/auth/register
 router.post('/register', async (req, res) => {
   try {
@@ -97,10 +117,11 @@ router.post('/login', async (req, res) => {
     
     let query = { email: normalizedEmail };
     let user = null;
+    let tenant = null;
     
     if (normalizedTenantSlug) {
       // Login with specific tenant
-      const tenant = await withQueryTimeout(Tenant.findOne({ slug: normalizedTenantSlug }));
+      tenant = await withQueryTimeout(Tenant.findOne({ slug: normalizedTenantSlug }).select(authTenantSelect));
       if (!tenant) {
         return res.status(401).json({ error: 'Invalid tenant code' });
       }
@@ -109,18 +130,20 @@ router.post('/login', async (req, res) => {
       }
       query.tenantId = tenant._id;
     } else {
-      // No tenant slug - first try super_admin, then find user by email
-      const superAdmin = await withQueryTimeout(User.findOne({ email: normalizedEmail, role: 'super_admin' }).select('+password'));
+      const matchingUsers = await withQueryTimeout(
+        User.find({ email: normalizedEmail })
+          .select('+password')
+          .populate('tenantId', authTenantSelect)
+      );
+
+      const superAdmin = matchingUsers.find((candidate) => candidate.role === 'super_admin');
       if (superAdmin) {
         user = superAdmin;
       } else {
-        // First, try a global (non-tenant) user for this email
-        const globalUser = await withQueryTimeout(User.findOne({ email: normalizedEmail, tenantId: null }).select('+password'));
+        const globalUser = matchingUsers.find((candidate) => !candidate.tenantId);
         if (globalUser) {
           user = globalUser;
         } else {
-          // Tenant users: email can exist in multiple tenants, so require tenantSlug if ambiguous
-          const matchingUsers = await withQueryTimeout(User.find({ email: normalizedEmail }).select('+password').populate('tenantId'));
           if (matchingUsers.length > 1) {
             return res.status(401).json({ error: 'Multiple accounts found. Please enter tenant code' });
           }
@@ -129,6 +152,8 @@ router.post('/login', async (req, res) => {
           if (user && user.tenantId && !user.tenantId.isActive) {
             return res.status(401).json({ error: 'Tenant account is inactive' });
           }
+
+          tenant = user?.tenantId || null;
         }
       }
     }
@@ -147,39 +172,49 @@ router.post('/login', async (req, res) => {
     }
 
     // If a previous lock has expired, clear it so the user isn't immediately re-locked
-    if (user.lockUntil && user.lockUntil <= Date.now()) {
+    const now = Date.now();
+    const hadExpiredLock = Boolean(user.lockUntil && user.lockUntil <= now);
+
+    if (hadExpiredLock) {
       user.loginAttempts = 0;
       user.lockUntil = undefined;
     }
     
-    if (user.lockUntil && user.lockUntil > Date.now()) {
+    if (user.lockUntil && user.lockUntil > now) {
       return res.status(401).json({ error: 'Account is temporarily locked' });
     }
     
     const isMatch = await user.comparePassword(password);
     
     if (!isMatch) {
-      user.loginAttempts = (user.loginAttempts || 0) + 1;
-      if (user.loginAttempts >= 5) {
-        user.lockUntil = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+      const failedLoginAttempts = (user.loginAttempts || 0) + 1;
+      const failedUpdate = {
+        $set: {
+          loginAttempts: failedLoginAttempts,
+        },
+      };
+
+      if (failedLoginAttempts >= 5) {
+        failedUpdate.$set.lockUntil = new Date(Date.now() + 30 * 60 * 1000);
+      } else if (hadExpiredLock) {
+        failedUpdate.$unset = { lockUntil: 1 };
       }
-      await user.save();
+
+      await withQueryTimeout(User.updateOne({ _id: user._id }, failedUpdate));
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     
     // Reset login attempts on successful login
-    user.loginAttempts = 0;
-    user.lockUntil = undefined;
-    user.lastLogin = new Date();
-    await user.save();
+    await withQueryTimeout(User.updateOne(
+      { _id: user._id },
+      {
+        $set: { loginAttempts: 0, lastLogin: new Date() },
+        $unset: { lockUntil: 1 },
+      }
+    ));
     
     const token = generateToken(user._id);
-    
-    // Get tenant info
-    let tenant = null;
-    if (user.tenantId) {
-      tenant = await withQueryTimeout(Tenant.findById(user.tenantId).select('name slug businessType businessTypes business settings branding subscription'));
-    }
+    const responseTenant = normalizedTenantSlug ? tenant : serializeAuthTenant(tenant || user.tenantId);
     
     res.json({
       token,
@@ -195,7 +230,7 @@ router.post('/login', async (req, res) => {
         preferences: user.preferences,
         avatar: user.avatar
       },
-      tenant
+      tenant: responseTenant
     });
   } catch (error) {
     sendRouteError(res, error);
