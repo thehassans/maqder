@@ -118,6 +118,7 @@ router.post('/login', async (req, res) => {
     let query = { email: normalizedEmail };
     let user = null;
     let tenant = null;
+    let passwordAlreadyVerified = false;
     
     if (normalizedTenantSlug) {
       // Login with specific tenant
@@ -130,30 +131,40 @@ router.post('/login', async (req, res) => {
       }
       query.tenantId = tenant._id;
     } else {
-      const matchingUsers = await withQueryTimeout(
-        User.find({ email: normalizedEmail })
-          .select('+password')
-          .populate('tenantId', authTenantSelect)
-      );
+      const matchingUsers = await withQueryTimeout(User.find({ email: normalizedEmail }).select('+password'));
 
-      const superAdmin = matchingUsers.find((candidate) => candidate.role === 'super_admin');
-      if (superAdmin) {
-        user = superAdmin;
-      } else {
-        const globalUser = matchingUsers.find((candidate) => !candidate.tenantId);
-        if (globalUser) {
-          user = globalUser;
+      if (matchingUsers.length === 1) {
+        user = matchingUsers[0];
+      } else if (matchingUsers.length > 1) {
+        const passwordMatches = (
+          await Promise.all(
+            matchingUsers.map(async (candidate) => ({
+              candidate,
+              isMatch: await candidate.comparePassword(password),
+            }))
+          )
+        )
+          .filter(({ isMatch }) => isMatch)
+          .map(({ candidate }) => candidate);
+
+        if (passwordMatches.length === 1) {
+          user = passwordMatches[0];
+          passwordAlreadyVerified = true;
+        } else if (passwordMatches.length > 1) {
+          const preferredMatch = passwordMatches.find((candidate) => candidate.role === 'super_admin')
+            || passwordMatches.find((candidate) => !candidate.tenantId);
+
+          if (!preferredMatch) {
+            return res.status(401).json({ error: 'Unable to determine the correct account for this email' });
+          }
+
+          user = preferredMatch;
+          passwordAlreadyVerified = true;
         } else {
-          if (matchingUsers.length > 1) {
-            return res.status(401).json({ error: 'Multiple accounts found. Please enter tenant code' });
-          }
+          const superAdmin = matchingUsers.find((candidate) => candidate.role === 'super_admin');
+          const globalUser = matchingUsers.find((candidate) => !candidate.tenantId);
 
-          user = matchingUsers[0] || null;
-          if (user && user.tenantId && !user.tenantId.isActive) {
-            return res.status(401).json({ error: 'Tenant account is inactive' });
-          }
-
-          tenant = user?.tenantId || null;
+          user = superAdmin || globalUser || null;
         }
       }
     }
@@ -171,6 +182,13 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Account is deactivated' });
     }
 
+    if (user.tenantId) {
+      tenant = tenant || await withQueryTimeout(Tenant.findById(user.tenantId).select(authTenantSelect));
+      if (!tenant || !tenant.isActive) {
+        return res.status(401).json({ error: 'Tenant account is inactive' });
+      }
+    }
+
     // If a previous lock has expired, clear it so the user isn't immediately re-locked
     const now = Date.now();
     const hadExpiredLock = Boolean(user.lockUntil && user.lockUntil <= now);
@@ -184,7 +202,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Account is temporarily locked' });
     }
     
-    const isMatch = await user.comparePassword(password);
+    const isMatch = passwordAlreadyVerified ? true : await user.comparePassword(password);
     
     if (!isMatch) {
       const failedLoginAttempts = (user.loginAttempts || 0) + 1;
@@ -214,7 +232,7 @@ router.post('/login', async (req, res) => {
     ));
     
     const token = generateToken(user._id);
-    const responseTenant = normalizedTenantSlug ? tenant : serializeAuthTenant(tenant || user.tenantId);
+    const responseTenant = serializeAuthTenant(tenant);
     
     res.json({
       token,
