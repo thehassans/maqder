@@ -3,6 +3,13 @@ import User from '../models/User.js';
 import Tenant from '../models/Tenant.js';
 import { getTenantBusinessTypes } from '../utils/businessTypes.js';
 
+export const tenantHasEmailAddon = (tenant) => {
+  if (!tenant) return false;
+  if (tenant.subscription?.hasEmailAddon === true) return true;
+  const features = Array.isArray(tenant.subscription?.features) ? tenant.subscription.features : [];
+  return features.includes('email_automation');
+};
+
 export const protect = async (req, res, next) => {
   try {
     let token;
@@ -62,6 +69,18 @@ export const authorize = (...roles) => {
   };
 };
 
+export const checkEmailAddon = (req, res, next) => {
+  if (req.user.role === 'super_admin') {
+    return next();
+  }
+
+  if (!tenantHasEmailAddon(req.tenant)) {
+    return res.status(403).json({ error: 'Email add-on is not enabled for this tenant' });
+  }
+
+  next();
+};
+
 export const requireBusinessType = (...allowedTypes) => {
   return (req, res, next) => {
     if (req.user.role === 'super_admin') {
@@ -101,4 +120,4 @@ export const tenantFilter = (req, res, next) => {
   next();
 };
 
-export default { protect, authorize, checkPermission, tenantFilter, requireBusinessType };
+export default { protect, authorize, checkPermission, tenantFilter, requireBusinessType, checkEmailAddon, tenantHasEmailAddon };

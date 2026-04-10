@@ -37,6 +37,8 @@ import publicRoutes from './routes/public.routes.js';
 import travelBookingRoutes from './routes/travelBooking.routes.js';
 import restaurantMenuItemRoutes from './routes/restaurantMenuItem.routes.js';
 import restaurantOrderRoutes from './routes/restaurantOrder.routes.js';
+import emailRoutes from './routes/email.routes.js';
+import webhookRoutes from './routes/webhook.routes.js';
 
 import { checkIqamaExpiry } from './jobs/iqamaChecker.js';
 import { syncZatcaInvoices } from './jobs/zatcaSync.js';
@@ -277,8 +279,10 @@ app.get('/api/health/ready', (req, res) => {
 
 // API Routes
 app.use('/api/public', publicRoutes);
+app.use('/api/webhooks', ensureDatabaseReady, webhookRoutes);
 app.use('/api/auth', ensureDatabaseReady, authRoutes);
 app.use('/api/tenants', ensureDatabaseReady, tenantRoutes);
+app.use('/api/email', ensureDatabaseReady, emailRoutes);
 app.use('/api/employees', ensureDatabaseReady, employeeRoutes);
 app.use('/api/payroll', ensureDatabaseReady, payrollRoutes);
 app.use('/api/invoices', ensureDatabaseReady, invoiceRoutes);

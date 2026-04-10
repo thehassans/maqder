@@ -502,11 +502,25 @@ router.put('/tenants/:id', async (req, res) => {
           ? req.body.businessType
           : getPrimaryBusinessType({ businessTypes: nextBusinessTypes, businessType: req.body?.businessType }))
       : getPrimaryBusinessType(existingTenant);
+    const nextSubscription = req.body?.subscription
+      ? {
+          ...(existingTenant.subscription?.toObject?.() || existingTenant.subscription || {}),
+          ...(req.body.subscription || {}),
+        }
+      : undefined;
+
+    if (nextSubscription) {
+      const nextFeatures = Array.isArray(nextSubscription.features) ? nextSubscription.features.filter(Boolean) : [];
+      nextSubscription.features = nextSubscription.hasEmailAddon === true
+        ? [...new Set([...nextFeatures, 'email_automation'])]
+        : nextFeatures.filter((feature) => feature !== 'email_automation');
+    }
 
     const tenant = await Tenant.findByIdAndUpdate(
       req.params.id,
       {
         ...req.body,
+        ...(nextSubscription ? { subscription: nextSubscription } : {}),
         businessType: primaryBusinessType,
         businessTypes: nextBusinessTypes,
       },
@@ -526,15 +540,28 @@ router.put('/tenants/:id', async (req, res) => {
 // @route   PUT /api/super-admin/tenants/:id/subscription
 router.put('/tenants/:id/subscription', async (req, res) => {
   try {
-    const { plan, status, maxUsers, maxInvoices, features, billingCycle, price } = req.body;
+    const { plan, status, maxUsers, maxInvoices, features, billingCycle, price, hasEmailAddon } = req.body;
     
     const updateData = { 'subscription.plan': plan };
     if (status) updateData['subscription.status'] = status;
     if (maxUsers) updateData['subscription.maxUsers'] = maxUsers;
     if (maxInvoices) updateData['subscription.maxInvoices'] = maxInvoices;
-    if (features) updateData['subscription.features'] = features;
+    if (features) {
+      const featureList = Array.isArray(features) ? features.filter(Boolean) : [];
+      updateData['subscription.features'] = hasEmailAddon === true
+        ? [...new Set([...featureList, 'email_automation'])]
+        : featureList.filter((feature) => feature !== 'email_automation');
+    }
     if (billingCycle) updateData['subscription.billingCycle'] = billingCycle;
     if (price !== undefined) updateData['subscription.price'] = price;
+    if (hasEmailAddon !== undefined) updateData['subscription.hasEmailAddon'] = hasEmailAddon === true;
+    if (!features && hasEmailAddon !== undefined) {
+      const existingTenant = await Tenant.findById(req.params.id).select('subscription.features');
+      const existingFeatures = Array.isArray(existingTenant?.subscription?.features) ? existingTenant.subscription.features.filter(Boolean) : [];
+      updateData['subscription.features'] = hasEmailAddon === true
+        ? [...new Set([...existingFeatures, 'email_automation'])]
+        : existingFeatures.filter((feature) => feature !== 'email_automation');
+    }
     
     // Extend end date
     if (status === 'active') {

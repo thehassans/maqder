@@ -271,6 +271,7 @@ const formatInvoiceDate = (invoice, language) => {
 };
 
 export const hasEmailAutomationAddon = (tenant) => {
+  if (tenant?.subscription?.hasEmailAddon === true) return true;
   const features = Array.isArray(tenant?.subscription?.features) ? tenant.subscription.features : [];
   return features.includes('email_automation');
 };

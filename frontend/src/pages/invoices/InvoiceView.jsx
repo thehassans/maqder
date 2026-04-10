@@ -32,7 +32,7 @@ export default function InvoiceView() {
   const invoiceTypeLabel = invoice?.transactionType === 'B2B' ? t('b2bInvoice') : t('b2cInvoice')
   const zatcaStatusMeta = getZatcaStatusMeta(invoice, language)
   const isBilingualInvoice = invoice?.invoiceSubtype === 'travel_ticket' || ['travel_agency', 'trading', 'construction'].includes(invoice?.businessContext)
-  const hasEmailAddon = Array.isArray(tenant?.subscription?.features) && tenant.subscription.features.includes('email_automation')
+  const hasEmailAddon = tenant?.subscription?.hasEmailAddon === true || (Array.isArray(tenant?.subscription?.features) && tenant.subscription.features.includes('email_automation'))
 
   const signMutation = useMutation({
     mutationFn: () => api.post(`/invoices/${id}/sign`),

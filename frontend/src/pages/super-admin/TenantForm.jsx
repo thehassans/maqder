@@ -498,6 +498,13 @@ export default function TenantForm() {
               </label>
               <input type="number" {...register('subscription.price', { valueAsNumber: true })} className="input" />
             </div>
+            <label className="md:col-span-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20 flex items-center justify-between gap-4">
+              <div>
+                <p className="font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'إضافة البريد الإلكتروني' : 'Email Add-on'}</p>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{language === 'ar' ? 'يمنح المستأجر صندوق البريد، الإرسال التلقائي للفواتير، وربط هوية SMTP خاصة.' : 'Grants the tenant inbox access, automated invoice delivery, and custom SMTP identity support.'}</p>
+              </div>
+              <input type="checkbox" {...register('subscription.hasEmailAddon')} className="h-4 w-4" />
+            </label>
           </div>
         </motion.div>
 

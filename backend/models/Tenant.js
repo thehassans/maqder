@@ -16,6 +16,7 @@ const subscriptionSchema = new mongoose.Schema({
   endDate: { type: Date },
   maxUsers: { type: Number, default: 5 },
   maxInvoices: { type: Number, default: 100 },
+  hasEmailAddon: { type: Boolean, default: false },
   features: [{
     type: String,
     enum: ['hr', 'payroll', 'invoicing', 'inventory', 'ai', 'api_access', 'multi_warehouse', 'advanced_reports', 'email_automation']
@@ -116,12 +117,25 @@ const tenantSchema = new mongoose.Schema({
       email: {
         enabled: { type: Boolean, default: false },
         autoSendInvoices: { type: Boolean, default: false },
+        identityType: { type: String, enum: ['platform', 'custom_smtp'], default: 'platform' },
+        identityStatus: { type: String, enum: ['not_requested', 'requested', 'configured', 'verified'], default: 'not_requested' },
+        requestedSenderName: { type: String, default: '' },
+        requestedSenderEmail: { type: String, default: '' },
         senderName: { type: String, default: '' },
+        fromEmail: { type: String, default: '' },
         replyTo: { type: String, default: '' },
+        inboundAddress: { type: String, default: '' },
+        smtpHost: { type: String, default: '' },
+        smtpPort: { type: Number, default: 587 },
+        smtpSecure: { type: Boolean, default: false },
+        smtpUser: { type: String, default: '' },
+        smtpPass: { type: String, default: '' },
         subjectEn: { type: String, default: '' },
         subjectAr: { type: String, default: '' },
         bodyEn: { type: String, default: '' },
-        bodyAr: { type: String, default: '' }
+        bodyAr: { type: String, default: '' },
+        signatureEn: { type: String, default: '' },
+        signatureAr: { type: String, default: '' }
       }
     }
   },
@@ -142,9 +156,20 @@ tenantSchema.pre('validate', function(next) {
   const values = Array.isArray(this.businessTypes) && this.businessTypes.length > 0
     ? this.businessTypes
     : [this.businessType || 'trading'];
+  const currentSubscription = this.subscription?.toObject?.() || this.subscription || {};
+  const features = Array.isArray(currentSubscription.features) ? currentSubscription.features.filter(Boolean) : [];
+  const hasEmailAddon = currentSubscription.hasEmailAddon === true;
 
   const normalized = [...new Set(values.filter((value) => BUSINESS_TYPES.includes(value)))];
   this.businessTypes = normalized.length ? normalized : ['trading'];
+
+  this.subscription = {
+    ...currentSubscription,
+    hasEmailAddon,
+    features: hasEmailAddon
+      ? [...new Set([...features, 'email_automation'])]
+      : features.filter((feature) => feature !== 'email_automation'),
+  };
 
   if (!this.businessType || !this.businessTypes.includes(this.businessType)) {
     this.businessType = this.businessTypes[0] || 'trading';

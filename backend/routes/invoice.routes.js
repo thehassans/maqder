@@ -13,7 +13,7 @@ import { getPrimaryBusinessType, getTenantBusinessTypes } from '../utils/busines
 import { enrichInvoiceArabicFields } from '../utils/invoiceArabic.js';
 import { buildDraftInvoiceQr } from '../utils/zatca/draftInvoiceQr.js';
 import ZatcaService from '../utils/zatca/ZatcaService.js';
-import { hasEmailAutomationAddon, sendInvoiceEmail } from '../utils/emailService.js';
+import { autoSendInvoice, sendInvoiceToRecipient } from '../utils/tenantEmailService.js';
 
 const router = express.Router();
 
@@ -268,7 +268,9 @@ function resolveInvoiceRecipient(customer, invoice, fallbackRecipient = '') {
 
 async function autoEmailInvoiceIfEnabled({ tenant, invoice, customer = null, fallbackRecipient = '', language }) {
   const emailSettings = tenant?.settings?.communication?.email || {};
-  if (!hasEmailAutomationAddon(tenant) || !emailSettings.enabled || !emailSettings.autoSendInvoices || invoice?.flow === 'purchase') {
+  const hasEmailAddon = tenant?.subscription?.hasEmailAddon === true
+    || (Array.isArray(tenant?.subscription?.features) && tenant.subscription.features.includes('email_automation'));
+  if (!hasEmailAddon || !emailSettings.enabled || !emailSettings.autoSendInvoices || invoice?.flow === 'purchase') {
     return { sent: false, reason: 'disabled' };
   }
 
@@ -277,11 +279,8 @@ async function autoEmailInvoiceIfEnabled({ tenant, invoice, customer = null, fal
     return { sent: false, reason: 'missing_recipient' };
   }
 
-  return await sendInvoiceEmail({
-    tenant,
-    invoice,
+  return await autoSendInvoice(invoice._id, tenant._id, {
     recipient,
-    customerName: customer?.name || customer?.nameAr || invoice?.buyer?.name || invoice?.buyer?.nameAr,
     language,
   });
 }
@@ -986,6 +985,15 @@ router.put('/:id', checkPermission('invoicing', 'update'), async (req, res) => {
     
     Object.assign(invoice, req.body);
     await invoice.save();
+
+    if (invoice.flow === 'sell' && (invoice.status === 'approved' || invoice.zatca?.signedXml)) {
+      try {
+        await autoSendInvoice(invoice._id, invoice.tenantId, {
+          language: req.tenant?.settings?.language,
+        });
+      } catch {
+      }
+    }
     
     res.json(invoice);
   } catch (error) {
@@ -1145,7 +1153,9 @@ router.post('/:id/send-email', checkPermission('invoicing', 'update'), async (re
       return res.status(404).json({ error: 'Tenant not found' });
     }
 
-    if (!hasEmailAutomationAddon(tenant)) {
+    const hasEmailAddon = tenant?.subscription?.hasEmailAddon === true
+      || (Array.isArray(tenant?.subscription?.features) && tenant.subscription.features.includes('email_automation'));
+    if (!hasEmailAddon) {
       return res.status(403).json({ error: 'Email automation add-on is not enabled for this tenant' });
     }
 
@@ -1157,12 +1167,13 @@ router.post('/:id/send-email', checkPermission('invoicing', 'update'), async (re
       return res.status(400).json({ error: 'Customer email is missing' });
     }
 
-    const delivery = await sendInvoiceEmail({
+    const delivery = await sendInvoiceToRecipient({
       tenant,
       invoice,
       recipient,
       customerName: customer?.name || customer?.nameAr || invoice?.buyer?.name || invoice?.buyer?.nameAr,
       language: req.body?.language || tenant?.settings?.language,
+      purpose: 'manual_invoice',
     });
 
     res.json({ success: true, delivery });
