@@ -25,47 +25,7 @@ router.get('/settings', async (req, res) => {
 });
 
 router.put('/settings', authorize('admin'), async (req, res) => {
-  try {
-    const tenant = await Tenant.findById(req.user.tenantId);
-    if (!tenant) {
-      return res.status(404).json({ error: 'Tenant not found' });
-    }
-
-    const payload = req.body?.email || req.body || {};
-    const currentSettings = tenant.settings?.toObject?.() || tenant.settings || {};
-    const currentCommunication = currentSettings.communication || {};
-    const currentEmail = currentCommunication.email || {};
-    const nextEmail = {
-      ...currentEmail,
-      ...payload,
-      enabled: payload.enabled !== undefined ? payload.enabled === true : currentEmail.enabled,
-      autoSendInvoices: payload.autoSendInvoices !== undefined ? payload.autoSendInvoices === true : currentEmail.autoSendInvoices,
-      smtpSecure: payload.smtpSecure !== undefined ? payload.smtpSecure === true : currentEmail.smtpSecure,
-      smtpPort: payload.smtpPort !== undefined ? Number(payload.smtpPort || 587) : currentEmail.smtpPort,
-    };
-
-    if (payload.smtpPass !== undefined) {
-      const trimmedPassword = String(payload.smtpPass || '').trim();
-      nextEmail.smtpPass = trimmedPassword || currentEmail.smtpPass || '';
-    }
-
-    nextEmail.inboundAddress = String(nextEmail.inboundAddress || `${tenant.slug}@inbound.maqder.local`).trim().toLowerCase();
-
-    tenant.settings = {
-      ...currentSettings,
-      communication: {
-        ...currentCommunication,
-        email: nextEmail,
-      },
-    };
-
-    tenant.markModified('settings');
-    await tenant.save();
-
-    res.json({ email: serializeTenantEmailSettings(tenant) });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+  return res.status(403).json({ error: 'Tenant email settings can only be updated from the super admin panel' });
 });
 
 router.get('/messages', async (req, res) => {

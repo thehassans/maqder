@@ -9,6 +9,7 @@ import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import SarIcon from '../../components/ui/SarIcon'
+import EmailAdminSettingsSection from '../../components/email/EmailAdminSettingsSection'
 import { getBusinessTypeOptions, getPrimaryBusinessType, getTenantBusinessTypes, normalizeBusinessTypes } from '../../lib/businessTypes'
 import { getInvoiceBrandingProfile, getInvoiceTemplateId } from '../../lib/invoiceBranding'
 import { invoiceTemplateOptions } from '../../lib/invoiceTemplates'
@@ -448,6 +449,18 @@ export default function TenantForm() {
               })}
             </div>
           </div>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
+          <EmailAdminSettingsSection
+            register={register}
+            watch={watch}
+            language={language}
+            tenantName={watch('business.legalNameEn') || watch('business.legalNameAr') || watch('name') || ''}
+            tenantSlug={watch('slug') || ''}
+            contactEmail={watch('business.contactEmail') || ''}
+            initialEmailSettings={tenant?.tenant?.settings?.communication?.email || {}}
+          />
         </motion.div>
 
         {/* Subscription */}

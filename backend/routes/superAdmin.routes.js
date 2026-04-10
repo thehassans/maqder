@@ -124,6 +124,74 @@ const serializeEmailSettings = (email) => ({
   smtpPassMasked: maskSecret(email?.smtpPass)
 });
 
+const serializeTenantForSuperAdmin = (tenant) => {
+  const serializedTenant = tenant?.toObject?.() || tenant;
+  const currentSettings = serializedTenant?.settings || {};
+  const currentCommunication = currentSettings.communication || {};
+  const currentEmail = currentCommunication.email || {};
+
+  return {
+    ...serializedTenant,
+    settings: {
+      ...currentSettings,
+      communication: {
+        ...currentCommunication,
+        email: serializeEmailSettings(currentEmail)
+      }
+    }
+  };
+};
+
+const mergeTenantEmailSettings = ({ existingTenant, incomingSettings }) => {
+  const currentSettings = existingTenant?.settings?.toObject?.() || existingTenant?.settings || {};
+  if (!incomingSettings) {
+    return currentSettings;
+  }
+
+  const currentCommunication = currentSettings.communication || {};
+  const currentEmail = currentCommunication.email || {};
+  const incomingCommunication = incomingSettings.communication || {};
+  const hasIncomingEmail = Object.prototype.hasOwnProperty.call(incomingCommunication, 'email');
+  const incomingEmail = hasIncomingEmail ? (incomingCommunication.email || {}) : null;
+
+  let nextEmail = currentEmail;
+  if (hasIncomingEmail) {
+    nextEmail = {
+      ...currentEmail,
+      ...incomingEmail,
+      enabled: incomingEmail?.enabled !== undefined ? incomingEmail.enabled === true : currentEmail.enabled,
+      autoSendInvoices: incomingEmail?.autoSendInvoices !== undefined ? incomingEmail.autoSendInvoices === true : currentEmail.autoSendInvoices,
+      smtpSecure: incomingEmail?.smtpSecure !== undefined ? incomingEmail.smtpSecure === true : currentEmail.smtpSecure,
+      smtpPort: incomingEmail?.smtpPort !== undefined ? Number(incomingEmail.smtpPort || 587) : currentEmail.smtpPort,
+    };
+
+    if (incomingEmail && Object.prototype.hasOwnProperty.call(incomingEmail, 'smtpPass')) {
+      const trimmedPassword = String(incomingEmail.smtpPass || '').trim();
+      nextEmail.smtpPass = trimmedPassword || currentEmail.smtpPass || '';
+    }
+
+    delete nextEmail.hasSmtpPass;
+    delete nextEmail.smtpPassMasked;
+    nextEmail.inboundAddress = String(nextEmail.inboundAddress || `${existingTenant.slug}@inbound.maqder.local`).trim().toLowerCase();
+  }
+
+  const nextCommunication = {
+    ...currentCommunication,
+    ...incomingCommunication,
+    ...(hasIncomingEmail ? { email: nextEmail } : {}),
+  };
+
+  return {
+    ...currentSettings,
+    ...incomingSettings,
+    communication: nextCommunication,
+    invoiceBranding: {
+      ...(currentSettings.invoiceBranding || {}),
+      ...(incomingSettings.invoiceBranding || {})
+    }
+  };
+};
+
 // @route   GET /api/super-admin/dashboard
 router.get('/dashboard', async (req, res) => {
   try {
@@ -424,7 +492,7 @@ router.get('/tenants/:id', async (req, res) => {
     const employeeCount = await Employee.countDocuments({ tenantId: tenant._id, isActive: true });
     
     res.json({
-      tenant,
+      tenant: serializeTenantForSuperAdmin(tenant),
       users,
       invoiceStats,
       employeeCount
@@ -451,7 +519,7 @@ router.post('/tenants', async (req, res) => {
       businessType: primaryBusinessType,
       businessTypes: nextBusinessTypes,
       business,
-      ...(settings ? { settings } : {}),
+      ...(settings ? { settings: mergeTenantEmailSettings({ existingTenant: { settings: {}, slug }, incomingSettings: settings }) } : {}),
       ...(branding ? { branding } : {}),
       subscription: {
         ...subscription,
@@ -478,7 +546,7 @@ router.post('/tenants', async (req, res) => {
       preferredLanguage: createdAdminUser?.preferences?.language || tenant?.settings?.language,
     });
     
-    res.status(201).json(tenant);
+    res.status(201).json(serializeTenantForSuperAdmin(tenant));
 
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -516,10 +584,15 @@ router.put('/tenants/:id', async (req, res) => {
         : nextFeatures.filter((feature) => feature !== 'email_automation');
     }
 
+    const nextSettings = req.body?.settings
+      ? mergeTenantEmailSettings({ existingTenant, incomingSettings: req.body.settings })
+      : undefined;
+
     const tenant = await Tenant.findByIdAndUpdate(
       req.params.id,
       {
         ...req.body,
+        ...(nextSettings ? { settings: nextSettings } : {}),
         ...(nextSubscription ? { subscription: nextSubscription } : {}),
         businessType: primaryBusinessType,
         businessTypes: nextBusinessTypes,
@@ -531,7 +604,7 @@ router.put('/tenants/:id', async (req, res) => {
       return res.status(404).json({ error: 'Tenant not found' });
     }
     
-    res.json(tenant);
+    res.json(serializeTenantForSuperAdmin(tenant));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

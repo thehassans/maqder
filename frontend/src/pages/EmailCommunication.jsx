@@ -1,5 +1,5 @@
-import EmailWorkspace from '../components/email/EmailWorkspace'
+import PremiumEmailWorkspace from '../components/email/PremiumEmailWorkspace'
 
 export default function EmailCommunication() {
-  return <EmailWorkspace />
+  return <PremiumEmailWorkspace />
 }
