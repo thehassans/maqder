@@ -472,10 +472,11 @@ router.post('/tenants', async (req, res) => {
       });
     }
 
-    try {
-      await sendTenantWelcomeEmail({ tenant, adminUser: createdAdminUser });
-    } catch {
-    }
+    await sendTenantWelcomeEmail({
+      tenant,
+      adminUser: createdAdminUser,
+      preferredLanguage: createdAdminUser?.preferences?.language || tenant?.settings?.language,
+    });
     
     res.status(201).json(tenant);
 
