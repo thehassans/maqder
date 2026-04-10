@@ -68,6 +68,7 @@ export default function InvoiceSellComposer() {
       pdfTemplateId: getInvoiceTemplateId(tenant, defaultBusinessContext),
       transactionType: 'B2C',
       invoiceTypeCode: '0200000',
+      paymentMethod: 'cash',
       customerId: '',
       warehouseId: '',
       restaurantOrderId: '',
@@ -181,6 +182,7 @@ export default function InvoiceSellComposer() {
         setValue('restaurantOrderId', data?._id || '')
         setValue('travelBookingId', '')
         setValue('contractNumber', data?.orderNumber || '')
+        setValue('paymentMethod', data?.paymentMethod === 'transfer' ? 'bank_transfer' : data?.paymentMethod === 'card' ? 'card' : 'cash')
         toast.success(language === 'ar' ? 'تم استيراد الطلب' : 'Order imported')
         return
       }
@@ -595,6 +597,14 @@ export default function InvoiceSellComposer() {
             <div className="mt-6 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
               <div className="space-y-3 md:w-80">
                 <div>
+                  <label className="label">{language === 'ar' ? 'طريقة الدفع' : 'Payment Method'}</label>
+                  <select {...register('paymentMethod')} className="select">
+                    <option value="cash">{language === 'ar' ? 'نقداً' : 'Cash'}</option>
+                    <option value="card">{language === 'ar' ? 'بطاقة' : 'Card'}</option>
+                    <option value="bank_transfer">{language === 'ar' ? 'تحويل بنكي' : 'Bank Transfer'}</option>
+                  </select>
+                </div>
+                <div>
                   <label className="label">{language === 'ar' ? 'خصم الفاتورة' : 'Invoice Discount'}</label>
                   <input type="number" min="0" step="0.01" {...register('invoiceDiscount', { valueAsNumber: true, min: 0 })} className="input" />
                 </div>
@@ -606,7 +616,7 @@ export default function InvoiceSellComposer() {
               </div>
               <div className="flex gap-3">
                 <button type="button" onClick={() => navigate('/app/dashboard/invoices/new')} className="btn btn-secondary">{t('cancel')}</button>
-                <button type="submit" disabled={createMutation.isPending} className="btn btn-primary">{createMutation.isPending ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" /> : <><Save className="w-4 h-4" />{t('save')}</>}</button>
+                <button type="submit" disabled={createMutation.isPending} className="btn btn-action-dark">{createMutation.isPending ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" /> : <><Save className="w-4 h-4" />{t('save')}</>}</button>
               </div>
             </div>
           </div>
