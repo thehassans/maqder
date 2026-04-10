@@ -1,6 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import { GoogleGenAI } from '@google/genai';
+import nodemailer from 'nodemailer';
 import Tenant from '../models/Tenant.js';
 import User from '../models/User.js';
 import Invoice from '../models/Invoice.js';
@@ -123,6 +124,66 @@ const serializeEmailSettings = (email) => ({
   hasSmtpPass: !!email?.smtpPass,
   smtpPassMasked: maskSecret(email?.smtpPass)
 });
+
+const mergeGlobalEmailPayload = ({ settings, payload = {} }) => {
+  const currentEmail = mergeEmailDefaults(settings?.email);
+
+  const nextEmail = {
+    ...currentEmail,
+    ...payload,
+    templates: {
+      ...(currentEmail.templates || {}),
+      ...(payload.templates || {}),
+      tenantCreated: {
+        ...(currentEmail.templates?.tenantCreated || {}),
+        ...(payload.templates?.tenantCreated || {})
+      },
+      invoice: {
+        ...(currentEmail.templates?.invoice || {}),
+        ...(payload.templates?.invoice || {})
+      }
+    }
+  };
+
+  if (payload.smtpPass !== undefined) {
+    const trimmedPassword = String(payload.smtpPass || '').trim();
+    nextEmail.smtpPass = trimmedPassword || currentEmail.smtpPass || '';
+  }
+
+  return nextEmail;
+};
+
+const resolveGlobalEmailTransportConfig = ({ settings, payload = {} }) => {
+  const nextEmail = mergeGlobalEmailPayload({ settings, payload });
+  const website = settings?.website?.toObject?.() || settings?.website || {};
+  const smtpPort = Number(nextEmail.smtpPort || 587);
+
+  return {
+    email: nextEmail,
+    config: {
+      enabled: nextEmail.enabled === true,
+      host: String(nextEmail.smtpHost || '').trim(),
+      port: Number.isFinite(smtpPort) ? smtpPort : 587,
+      secure: nextEmail.smtpSecure === true,
+      user: String(nextEmail.smtpUser || '').trim(),
+      pass: String(nextEmail.smtpPass || '').trim(),
+      fromName: String(nextEmail.fromName || website.brandName || 'Maqder ERP').trim(),
+      fromEmail: String(nextEmail.fromEmail || nextEmail.smtpUser || '').trim(),
+      replyTo: String(nextEmail.replyTo || website.contactEmail || '').trim(),
+      brandName: String(website.brandName || 'Maqder ERP').trim(),
+    }
+  };
+};
+
+const ensureGlobalEmailConfigReady = (config, { requireEnabled = false } = {}) => {
+  if (requireEnabled && !config?.enabled) {
+    throw new Error('Email delivery is disabled');
+  }
+
+  if (!config?.host || !config?.user || !config?.pass || !config?.fromEmail) {
+    throw new Error('Email SMTP settings are incomplete');
+  }
+};
 
 const serializeTenantForSuperAdmin = (tenant) => {
   const serializedTenant = tenant?.toObject?.() || tenant;
@@ -325,29 +386,7 @@ router.put('/settings/email', async (req, res) => {
   try {
     const payload = req.body?.email || req.body || {};
     const settings = await getGlobalSettings();
-    const currentEmail = mergeEmailDefaults(settings.email);
-
-    const nextEmail = {
-      ...currentEmail,
-      ...payload,
-      templates: {
-        ...(currentEmail.templates || {}),
-        ...(payload.templates || {}),
-        tenantCreated: {
-          ...(currentEmail.templates?.tenantCreated || {}),
-          ...(payload.templates?.tenantCreated || {})
-        },
-        invoice: {
-          ...(currentEmail.templates?.invoice || {}),
-          ...(payload.templates?.invoice || {})
-        }
-      }
-    };
-
-    if (payload.smtpPass !== undefined) {
-      const trimmedPassword = String(payload.smtpPass || '').trim();
-      nextEmail.smtpPass = trimmedPassword || currentEmail.smtpPass || '';
-    }
+    const { email: nextEmail } = resolveGlobalEmailTransportConfig({ settings, payload });
 
     settings.email = nextEmail;
     settings.markModified('email');
@@ -356,6 +395,40 @@ router.put('/settings/email', async (req, res) => {
     res.json({ email: serializeEmailSettings(mergeEmailDefaults(settings.email)) });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/settings/email/test-connection', async (req, res) => {
+  try {
+    const payload = req.body?.email || req.body || {};
+    const settings = await getGlobalSettings();
+    const { config } = resolveGlobalEmailTransportConfig({ settings, payload });
+
+    ensureGlobalEmailConfigReady(config);
+
+    const transporter = nodemailer.createTransport({
+      host: config.host,
+      port: config.port,
+      secure: config.secure,
+      auth: {
+        user: config.user,
+        pass: config.pass,
+      },
+    });
+
+    await transporter.verify();
+
+    res.json({
+      connected: true,
+      message: 'SMTP connection verified successfully',
+      host: config.host,
+      port: config.port,
+      secure: config.secure,
+      fromEmail: config.fromEmail,
+      fromName: config.fromName,
+    });
+  } catch (error) {
+    res.status(400).json({ error: error.message || 'Failed to verify SMTP connection' });
   }
 });
 
@@ -540,13 +613,16 @@ router.post('/tenants', async (req, res) => {
       });
     }
 
-    await sendTenantWelcomeEmail({
+    const welcomeEmail = await sendTenantWelcomeEmail({
       tenant,
       adminUser: createdAdminUser,
       preferredLanguage: createdAdminUser?.preferences?.language || tenant?.settings?.language,
     });
     
-    res.status(201).json(serializeTenantForSuperAdmin(tenant));
+    res.status(201).json({
+      ...serializeTenantForSuperAdmin(tenant),
+      welcomeEmail,
+    });
 
   } catch (error) {
     res.status(500).json({ error: error.message });

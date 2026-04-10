@@ -91,7 +91,7 @@ export default function TenantForm() {
       return acc
     }, {})
 
-    mutation.mutate({
+    const nextPayload = {
       ...data,
       business: {
         ...(data?.business || {}),
@@ -100,27 +100,40 @@ export default function TenantForm() {
           country: data?.business?.address?.country || 'SA',
         },
       },
-      settings: {
-        ...nextSettings,
-        invoicePdfTemplate: Number(nextSettings?.invoicePdfTemplate || 1),
-        invoicePdfPageSize: nextSettings?.invoicePdfPageSize || 'a4',
-        invoicePdfOrientation: nextSettings?.invoicePdfOrientation || 'portrait',
-        invoiceBranding: {
-          ...nextInvoiceBranding,
-          showVision2030: nextInvoiceBranding?.showVision2030 !== false,
-          vision2030Logo: nextInvoiceBranding?.vision2030Logo || '/saudi-vision-2030-logo.png',
-          contextProfiles: nextContextProfiles,
-        },
-      },
+      settings: isEdit
+        ? {
+            ...nextSettings,
+            invoicePdfTemplate: Number(nextSettings?.invoicePdfTemplate || 1),
+            invoicePdfPageSize: nextSettings?.invoicePdfPageSize || 'a4',
+            invoicePdfOrientation: nextSettings?.invoicePdfOrientation || 'portrait',
+            invoiceBranding: {
+              ...nextInvoiceBranding,
+              showVision2030: nextInvoiceBranding?.showVision2030 !== false,
+              vision2030Logo: nextInvoiceBranding?.vision2030Logo || '/saudi-vision-2030-logo.png',
+              contextProfiles: nextContextProfiles,
+            },
+          }
+        : {
+            ...nextSettings,
+          },
       businessTypes: watchedBusinessTypes,
       businessType: watchedBusinessTypes.includes(watchedPrimaryBusinessType) ? watchedPrimaryBusinessType : watchedBusinessTypes[0],
-    })
+    }
+
+    mutation.mutate(nextPayload)
   }
 
   const mutation = useMutation({
-    mutationFn: (data) => isEdit ? api.put(`/super-admin/tenants/${id}`, data) : api.post('/super-admin/tenants', data),
-    onSuccess: () => {
+    mutationFn: (data) => (isEdit ? api.put(`/super-admin/tenants/${id}`, data) : api.post('/super-admin/tenants', data)).then((res) => res.data),
+    onSuccess: (response) => {
       toast.success(isEdit ? (language === 'ar' ? 'تم تحديث المستأجر' : 'Tenant updated') : (language === 'ar' ? 'تم إنشاء المستأجر' : 'Tenant created'))
+      if (!isEdit) {
+        if (response?.welcomeEmail?.sent) {
+          toast.success(language === 'ar' ? 'تم إرسال بريد إنشاء اللوحة إلى بريد النشاط التجاري' : 'Panel creation email sent to the business email')
+        } else {
+          toast.error((language === 'ar' ? 'تم إنشاء المستأجر لكن تعذر إرسال البريد:' : 'Tenant created, but welcome email was not sent: ') + (response?.welcomeEmail?.error || response?.welcomeEmail?.reason || 'unknown_error'))
+        }
+      }
       queryClient.invalidateQueries(['tenants'])
       navigate('/super-admin/tenants')
     },
@@ -316,6 +329,7 @@ export default function TenantForm() {
           </div>
         </motion.div>
 
+        {isEdit ? (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="card p-6">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2 bg-slate-100 dark:bg-slate-900/30 rounded-lg"><FileText className="w-5 h-5 text-slate-600" /></div>
@@ -450,6 +464,7 @@ export default function TenantForm() {
             </div>
           </div>
         </motion.div>
+        ) : null}
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
           <EmailAdminSettingsSection

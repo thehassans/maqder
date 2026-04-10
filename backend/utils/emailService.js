@@ -309,7 +309,7 @@ export const sendTenantWelcomeEmail = async ({ tenant, adminUser, preferredLangu
 
     ensureEmailConfigured(config);
 
-    const recipients = dedupeRecipients(adminUser?.email, tenant?.business?.contactEmail);
+    const recipients = dedupeRecipients(tenant?.business?.contactEmail || '', adminUser?.email || '');
     if (recipients.length === 0) {
       return { sent: false, reason: 'missing_recipient' };
     }
