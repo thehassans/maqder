@@ -3,10 +3,11 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
-import { Eye, EyeOff, Loader2, Mail, Lock, ArrowRight, Shield, Zap, Globe } from 'lucide-react'
+import { Eye, EyeOff, Loader2, Mail, Lock, ArrowRight, Shield, Zap, Globe, Phone, MessageCircle, ChevronDown } from 'lucide-react'
 import { login, clearError } from '../../store/slices/authSlice'
 import { setLanguage } from '../../store/slices/uiSlice'
 import { useTranslation } from '../../lib/translations'
+import { usePublicWebsiteSettings } from '../../lib/website'
 
 const complianceLogos = [
   { src: '/ZATCA_Logo.svg', alt: 'ZATCA', cardClassName: 'w-48', imageClassName: 'scale-[1.35]' },
@@ -21,7 +22,13 @@ export default function Login() {
   const { language } = useSelector((state) => state.ui)
   const { t } = useTranslation(language)
   const [showPassword, setShowPassword] = useState(false)
+  const [showContactOptions, setShowContactOptions] = useState(false)
+  const { data: websiteSettings } = usePublicWebsiteSettings()
   const initialTenantSlug = String(searchParams.get('tenant') || searchParams.get('tenantSlug') || '').trim().toLowerCase()
+  const salesPhone = String(websiteSettings?.contactPhone || '+966595930045').trim()
+  const salesEmail = String(websiteSettings?.contactEmail || 'info@maqder.com').trim()
+  const whatsappNumber = salesPhone.replace(/\D/g, '')
+  const contactSalesSubject = encodeURIComponent('Maqder ERP Sales Inquiry')
 
   const { register, handleSubmit, formState: { errors } } = useForm()
 
@@ -240,10 +247,31 @@ export default function Login() {
           <div className="mt-10 text-center">
             <p className="text-gray-500">
               {language === 'ar' ? 'ليس لديك حساب؟' : "Don't have an account?"}{' '}
-              <a href="#" className="text-[#244D33] hover:text-[#1e3f2a] font-semibold transition-colors">
+              <button
+                type="button"
+                onClick={() => setShowContactOptions((current) => !current)}
+                className="inline-flex items-center gap-1 text-[#244D33] hover:text-[#1e3f2a] font-semibold transition-colors"
+              >
                 {language === 'ar' ? 'تواصل معنا' : 'Contact Sales'}
-              </a>
+                <ChevronDown className={`w-4 h-4 transition-transform ${showContactOptions ? 'rotate-180' : ''}`} />
+              </button>
             </p>
+            {showContactOptions ? (
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <a href={`tel:${salesPhone}`} className="flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 shadow-sm transition-all hover:border-[#244D33] hover:text-[#244D33] hover:shadow-md">
+                  <Phone className="w-4 h-4" />
+                  {language === 'ar' ? 'اتصال' : 'Call'}
+                </a>
+                <a href={`https://wa.me/${whatsappNumber}?text=${contactSalesSubject}`} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 shadow-sm transition-all hover:border-[#244D33] hover:text-[#244D33] hover:shadow-md">
+                  <MessageCircle className="w-4 h-4" />
+                  WhatsApp
+                </a>
+                <a href={`mailto:${salesEmail}?subject=${contactSalesSubject}`} className="flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 shadow-sm transition-all hover:border-[#244D33] hover:text-[#244D33] hover:shadow-md">
+                  <Mail className="w-4 h-4" />
+                  {language === 'ar' ? 'بريد' : 'Email'}
+                </a>
+              </div>
+            ) : null}
           </div>
 
           {/* Trust Badges */}

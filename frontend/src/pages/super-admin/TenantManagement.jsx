@@ -1,26 +1,27 @@
 import { useState } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { useSelector, useDispatch } from 'react-redux'
-import { Link, useNavigate } from 'react-router-dom'
+import { useSelector } from 'react-redux'
+import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Search, Building2, Eye, Edit, Users, LogIn } from 'lucide-react'
+import { Plus, Search, Building2, Edit, Users, LogIn, AlertCircle, RefreshCw } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 
 export default function TenantManagement() {
-  const dispatch = useDispatch()
-  const navigate = useNavigate()
   const { language } = useSelector((state) => state.ui)
   const { t } = useTranslation(language)
   const [search, setSearch] = useState('')
   const [filters, setFilters] = useState({ status: '', plan: '' })
   const [page, setPage] = useState(1)
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['tenants', page, search, filters],
     queryFn: () => api.get('/super-admin/tenants', { params: { page, search, ...filters } }).then(res => res.data)
   })
+
+  const tenants = Array.isArray(data?.tenants) ? data.tenants : []
+  const hasTenants = tenants.length > 0
 
   const loginAsMutation = useMutation({
     mutationFn: (tenantId) => api.post(`/super-admin/tenants/${tenantId}/login-as`),
@@ -71,6 +72,34 @@ export default function TenantManagement() {
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card">
         {isLoading ? (
           <div className="p-8 text-center"><div className="inline-block w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" /></div>
+        ) : isError ? (
+          <div className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-300">
+              <AlertCircle className="h-7 w-7" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'تعذر تحميل المستأجرين' : 'Unable to load tenants'}</h3>
+              <p className="max-w-md text-sm text-gray-500 dark:text-gray-400">{error?.userMessage || error?.response?.data?.error || error?.message || (language === 'ar' ? 'حدث خطأ أثناء تحميل بيانات المستأجرين.' : 'An error occurred while loading tenants.')}</p>
+            </div>
+            <button onClick={() => refetch()} className="btn btn-secondary">
+              <RefreshCw className="w-4 h-4" />
+              {language === 'ar' ? 'إعادة المحاولة' : 'Retry'}
+            </button>
+          </div>
+        ) : !hasTenants ? (
+          <div className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-300">
+              <Building2 className="h-7 w-7" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'لا يوجد مستأجرون حتى الآن' : 'No tenants yet'}</h3>
+              <p className="max-w-md text-sm text-gray-500 dark:text-gray-400">{language === 'ar' ? 'ابدأ بإضافة أول مستأجر ليظهر هنا في قائمة الإدارة.' : 'Create your first tenant and it will appear here in the management list.'}</p>
+            </div>
+            <Link to="/super-admin/tenants/new" className="btn btn-primary">
+              <Plus className="w-4 h-4" />
+              {language === 'ar' ? 'إضافة مستأجر' : 'Add Tenant'}
+            </Link>
+          </div>
         ) : (
           <>
             <div className="table-container">
@@ -87,7 +116,7 @@ export default function TenantManagement() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data?.tenants?.map((tenant) => (
+                  {tenants.map((tenant) => (
                     <tr key={tenant._id}>
                       <td>
                         <div className="flex items-center gap-3">
@@ -147,7 +176,7 @@ export default function TenantManagement() {
             {data?.pagination && (
               <div className="p-4 border-t border-gray-100 dark:border-dark-700 flex items-center justify-between">
                 <p className="text-sm text-gray-500">
-                  {language === 'ar' ? `عرض ${data.tenants.length} من ${data.pagination.total}` : `Showing ${data.tenants.length} of ${data.pagination.total}`}
+                  {language === 'ar' ? `عرض ${tenants.length} من ${data.pagination.total}` : `Showing ${tenants.length} of ${data.pagination.total}`}
                 </p>
                 <div className="flex gap-2">
                   <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="btn btn-secondary">
