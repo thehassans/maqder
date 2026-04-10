@@ -112,15 +112,24 @@ const ensureConfigReady = (config) => {
   }
 };
 
-const buildTransporter = (config) => nodemailer.createTransport({
-  host: config.host,
-  port: config.port,
-  secure: config.secure,
-  auth: {
-    user: config.user,
-    pass: config.pass,
-  },
-});
+const resolveTransportOptions = (config) => {
+  const port = Number(config?.port || 587);
+  const normalizedPort = Number.isFinite(port) ? port : 587;
+  const useImplicitSsl = normalizedPort === 465;
+
+  return {
+    host: config.host,
+    port: normalizedPort,
+    secure: useImplicitSsl,
+    requireTLS: !useImplicitSsl && (config?.secure === true || normalizedPort === 587),
+    auth: {
+      user: config.user,
+      pass: config.pass,
+    },
+  };
+};
+
+const buildTransporter = (config) => nodemailer.createTransport(resolveTransportOptions(config));
 
 const buildEmailShell = ({ brandName, title, body, secondaryLines = [], dir = 'ltr' }) => {
   const secondaryHtml = secondaryLines

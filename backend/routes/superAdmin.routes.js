@@ -185,6 +185,23 @@ const ensureGlobalEmailConfigReady = (config, { requireEnabled = false } = {}) =
   }
 };
 
+const resolveSmtpTransportOptions = (config) => {
+  const port = Number(config?.port || 587);
+  const normalizedPort = Number.isFinite(port) ? port : 587;
+  const useImplicitSsl = normalizedPort === 465;
+
+  return {
+    host: config.host,
+    port: normalizedPort,
+    secure: useImplicitSsl,
+    requireTLS: !useImplicitSsl && (config?.secure === true || normalizedPort === 587),
+    auth: {
+      user: config.user,
+      pass: config.pass,
+    },
+  };
+};
+
 const serializeTenantForSuperAdmin = (tenant) => {
   const serializedTenant = tenant?.toObject?.() || tenant;
   const currentSettings = serializedTenant?.settings || {};
@@ -406,15 +423,7 @@ router.post('/settings/email/test-connection', async (req, res) => {
 
     ensureGlobalEmailConfigReady(config);
 
-    const transporter = nodemailer.createTransport({
-      host: config.host,
-      port: config.port,
-      secure: config.secure,
-      auth: {
-        user: config.user,
-        pass: config.pass,
-      },
-    });
+    const transporter = nodemailer.createTransport(resolveSmtpTransportOptions(config));
 
     await transporter.verify();
 
