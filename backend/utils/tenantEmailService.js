@@ -1,4 +1,3 @@
-import nodemailer from 'nodemailer';
 import Tenant from '../models/Tenant.js';
 import Invoice from '../models/Invoice.js';
 import Customer from '../models/Customer.js';
@@ -6,6 +5,7 @@ import EmailMessage from '../models/EmailMessage.js';
 import SystemSettings from '../models/SystemSettings.js';
 import logger from './logger.js';
 import { buildInvoicePdfAttachment } from './invoicePdfService.js';
+import { ensureEmailDeliveryConfig, sendEmailWithConfig } from './emailProviderService.js';
 
 const normalizeLanguage = (language) => {
   if (language === 'ar') return 'ar';
@@ -61,11 +61,13 @@ const resolveGlobalEmailConfig = (settings) => {
 
   return {
     enabled: email.enabled === true,
+    provider: String(email.provider || 'smtp').trim().toLowerCase() === 'brevo' ? 'brevo' : 'smtp',
     host: String(email.smtpHost || '').trim(),
     port: Number.isFinite(smtpPort) ? smtpPort : 587,
     secure: email.smtpSecure === true,
     user: String(email.smtpUser || '').trim(),
     pass: String(email.smtpPass || '').trim(),
+    brevoApiKey: String(email.brevoApiKey || '').trim(),
     fromName: String(email.fromName || website.brandName || 'Maqder ERP').trim(),
     fromEmail: String(email.fromEmail || email.smtpUser || '').trim(),
     replyTo: String(email.replyTo || website.contactEmail || '').trim(),
@@ -89,47 +91,25 @@ const resolveTenantEmailConfig = ({ tenant, settings }) => {
 
   return {
     enabled: tenantEmail.enabled === true,
+    provider: useCustomSmtp ? 'custom_smtp' : globalConfig.provider,
     host: String(useCustomSmtp ? tenantEmail.smtpHost : globalConfig.host).trim(),
     port: Number.isFinite(rawPort) ? rawPort : 587,
     secure: useCustomSmtp ? tenantEmail.smtpSecure === true : globalConfig.secure === true,
     user: String(useCustomSmtp ? tenantEmail.smtpUser : globalConfig.user).trim(),
     pass: String(useCustomSmtp ? tenantEmail.smtpPass : globalConfig.pass).trim(),
+    brevoApiKey: String(useCustomSmtp ? '' : globalConfig.brevoApiKey).trim(),
     fromName,
     fromEmail,
     replyTo,
     brandName: globalConfig.brandName,
-    provider: useCustomSmtp ? 'custom_smtp' : 'platform',
+    platformProvider: String(useCustomSmtp ? '' : (tenantEmail.platformProvider || globalConfig.provider || 'platform')).trim(),
     templates: globalConfig.templates || {},
   };
 };
 
 const ensureConfigReady = (config) => {
-  if (!config?.enabled) {
-    throw new Error('Email delivery is disabled for this tenant');
-  }
-  if (!config.host || !config.user || !config.pass || !config.fromEmail) {
-    throw new Error('Tenant email configuration is incomplete');
-  }
+  ensureEmailDeliveryConfig(config, { context: 'Tenant email delivery' });
 };
-
-const resolveTransportOptions = (config) => {
-  const port = Number(config?.port || 587);
-  const normalizedPort = Number.isFinite(port) ? port : 587;
-  const useImplicitSsl = normalizedPort === 465;
-
-  return {
-    host: config.host,
-    port: normalizedPort,
-    secure: useImplicitSsl,
-    requireTLS: !useImplicitSsl && (config?.secure === true || normalizedPort === 587),
-    auth: {
-      user: config.user,
-      pass: config.pass,
-    },
-  };
-};
-
-const buildTransporter = (config) => nodemailer.createTransport(resolveTransportOptions(config));
 
 const buildEmailShell = ({ brandName, title, body, secondaryLines = [], dir = 'ltr' }) => {
   const secondaryHtml = secondaryLines
@@ -393,25 +373,28 @@ export const sendTenantEmail = async ({ tenant, to, cc, bcc, subject, html, text
     throw new Error('Email recipient is required');
   }
 
-  const transporter = buildTransporter(config);
   const mailOptions = {
-    from: `"${config.fromName}" <${config.fromEmail}>`,
-    to: recipients.join(', '),
-    cc: dedupeValues(cc).join(', ') || undefined,
-    bcc: dedupeValues(bcc).join(', ') || undefined,
-    replyTo: config.replyTo || undefined,
     subject: String(subject || '').trim(),
     html: String(html || '').trim(),
     text: String(text || stripHtml(html || '')).trim() || undefined,
-    attachments: mapAttachmentsForTransport(attachments),
   };
 
   try {
-    const result = await transporter.sendMail(mailOptions);
+    const result = await sendEmailWithConfig({
+      config,
+      to: recipients,
+      cc: dedupeValues(cc),
+      bcc: dedupeValues(bcc),
+      replyTo: config.replyTo || undefined,
+      subject: mailOptions.subject,
+      html: mailOptions.html,
+      text: mailOptions.text,
+      attachments: mapAttachmentsForTransport(attachments),
+    });
     const stored = await EmailMessage.create({
       tenantId: tenant._id,
       relatedInvoiceId,
-      messageId: String(result?.messageId || '').trim(),
+      messageId: String(result?.providerMessageId || '').trim(),
       to: recipients,
       cc: dedupeValues(cc),
       bcc: dedupeValues(bcc),
@@ -425,13 +408,13 @@ export const sendTenantEmail = async ({ tenant, to, cc, bcc, subject, html, text
       attachments: mapAttachmentsForStorage(attachments),
       delivery: {
         provider: config.provider,
-        providerMessageId: String(result?.messageId || '').trim(),
+        providerMessageId: String(result?.providerMessageId || '').trim(),
         sentAt: new Date(),
       },
       metadata,
     });
 
-    return { sent: true, message: stored, providerMessageId: result?.messageId || '' };
+    return { sent: true, message: stored, providerMessageId: result?.providerMessageId || '' };
   } catch (error) {
     await EmailMessage.create({
       tenantId: tenant._id,

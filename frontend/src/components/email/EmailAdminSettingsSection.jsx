@@ -5,6 +5,7 @@ const templateVariables = ['{{invoiceNumber}}', '{{companyName}}', '{{customerNa
 export default function EmailAdminSettingsSection({ register, watch, language, tenantName, tenantSlug, contactEmail, initialEmailSettings }) {
   const isArabic = language === 'ar'
   const identityType = watch('settings.communication.email.identityType') || 'platform'
+  const platformProvider = watch('settings.communication.email.platformProvider') || 'platform'
   const currentSlug = watch('slug') || tenantSlug || 'tenant'
   const currentSenderName = watch('settings.communication.email.senderName') || tenantName || ''
   const currentFromEmail = watch('settings.communication.email.fromEmail') || watch('settings.communication.email.requestedSenderEmail') || contactEmail || ''
@@ -74,6 +75,25 @@ export default function EmailAdminSettingsSection({ register, watch, language, t
                   <option value="verified">{isArabic ? 'تم التحقق' : 'Verified'}</option>
                 </select>
               </div>
+              {identityType === 'platform' ? (
+                <>
+                  <div>
+                    <label className="label">{isArabic ? 'مزود المنصة' : 'Platform Provider'}</label>
+                    <select {...register('settings.communication.email.platformProvider')} className="select">
+                      <option value="platform">{isArabic ? 'منصة داخلية' : 'Internal Platform'}</option>
+                      <option value="brevo">Brevo</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label">{isArabic ? 'معرف المرسل لدى المزود' : 'Provider Sender ID'}</label>
+                    <input {...register('settings.communication.email.providerSenderId')} className="input" placeholder={platformProvider === 'brevo' ? 'brevo-sender-id' : 'platform-sender-id'} />
+                  </div>
+                  <div>
+                    <label className="label">{isArabic ? 'حالة المرسل لدى المزود' : 'Provider Sender Status'}</label>
+                    <input {...register('settings.communication.email.providerSenderStatus')} className="input" placeholder={platformProvider === 'brevo' ? 'pending / active / rejected' : 'configured'} />
+                  </div>
+                </>
+              ) : null}
               <div>
                 <label className="label">{isArabic ? 'اسم المرسل المطلوب' : 'Requested Sender Name'}</label>
                 <input {...register('settings.communication.email.requestedSenderName')} className="input" placeholder={tenantName || 'Finance Team'} />

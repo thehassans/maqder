@@ -1,7 +1,6 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import { GoogleGenAI } from '@google/genai';
-import nodemailer from 'nodemailer';
 import Tenant from '../models/Tenant.js';
 import User from '../models/User.js';
 import Invoice from '../models/Invoice.js';
@@ -10,6 +9,7 @@ import SystemSettings from '../models/SystemSettings.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { getPrimaryBusinessType, normalizeBusinessTypes } from '../utils/businessTypes.js';
 import { sendTenantWelcomeEmail } from '../utils/emailService.js';
+import { verifyEmailDeliveryConnection } from '../utils/emailProviderService.js';
 
 const router = express.Router();
 const parsedDatabaseQueryTimeoutMs = Number(process.env.MONGODB_QUERY_TIMEOUT_MS || 10000);
@@ -147,7 +147,10 @@ const serializeEmailSettings = (email) => ({
   ...email,
   smtpPass: '',
   hasSmtpPass: !!email?.smtpPass,
-  smtpPassMasked: maskSecret(email?.smtpPass)
+  smtpPassMasked: maskSecret(email?.smtpPass),
+  brevoApiKey: '',
+  hasBrevoApiKey: !!email?.brevoApiKey,
+  brevoApiKeyMasked: maskSecret(email?.brevoApiKey)
 });
 
 const mergeGlobalEmailPayload = ({ settings, payload = {} }) => {
@@ -175,6 +178,11 @@ const mergeGlobalEmailPayload = ({ settings, payload = {} }) => {
     nextEmail.smtpPass = trimmedPassword || currentEmail.smtpPass || '';
   }
 
+  if (payload.brevoApiKey !== undefined) {
+    const trimmedApiKey = String(payload.brevoApiKey || '').trim();
+    nextEmail.brevoApiKey = trimmedApiKey || currentEmail.brevoApiKey || '';
+  }
+
   return nextEmail;
 };
 
@@ -187,43 +195,18 @@ const resolveGlobalEmailTransportConfig = ({ settings, payload = {} }) => {
     email: nextEmail,
     config: {
       enabled: nextEmail.enabled === true,
+      provider: String(nextEmail.provider || 'smtp').trim() || 'smtp',
       host: String(nextEmail.smtpHost || '').trim(),
       port: Number.isFinite(smtpPort) ? smtpPort : 587,
       secure: nextEmail.smtpSecure === true,
       user: String(nextEmail.smtpUser || '').trim(),
       pass: String(nextEmail.smtpPass || '').trim(),
+      brevoApiKey: String(nextEmail.brevoApiKey || '').trim(),
       fromName: String(nextEmail.fromName || website.brandName || 'Maqder ERP').trim(),
       fromEmail: String(nextEmail.fromEmail || nextEmail.smtpUser || '').trim(),
       replyTo: String(nextEmail.replyTo || website.contactEmail || '').trim(),
       brandName: String(website.brandName || 'Maqder ERP').trim(),
     }
-  };
-};
-
-const ensureGlobalEmailConfigReady = (config, { requireEnabled = false } = {}) => {
-  if (requireEnabled && !config?.enabled) {
-    throw new Error('Email delivery is disabled');
-  }
-
-  if (!config?.host || !config?.user || !config?.pass || !config?.fromEmail) {
-    throw new Error('Email SMTP settings are incomplete');
-  }
-};
-
-const resolveSmtpTransportOptions = (config) => {
-  const port = Number(config?.port || 587);
-  const normalizedPort = Number.isFinite(port) ? port : 587;
-  const useImplicitSsl = normalizedPort === 465;
-
-  return {
-    host: config.host,
-    port: normalizedPort,
-    secure: useImplicitSsl,
-    requireTLS: !useImplicitSsl && (config?.secure === true || normalizedPort === 587),
-    auth: {
-      user: config.user,
-      pass: config.pass,
-    },
   };
 };
 
@@ -445,24 +428,21 @@ router.post('/settings/email/test-connection', async (req, res) => {
     const payload = req.body?.email || req.body || {};
     const settings = await getGlobalSettings();
     const { config } = resolveGlobalEmailTransportConfig({ settings, payload });
-
-    ensureGlobalEmailConfigReady(config);
-
-    const transporter = nodemailer.createTransport(resolveSmtpTransportOptions(config));
-
-    await transporter.verify();
+    const result = await verifyEmailDeliveryConnection(config);
 
     res.json({
       connected: true,
-      message: 'SMTP connection verified successfully',
-      host: config.host,
-      port: config.port,
-      secure: config.secure,
-      fromEmail: config.fromEmail,
-      fromName: config.fromName,
+      message: `${String(result.provider || config.provider || 'smtp').toUpperCase()} connection verified successfully`,
+      provider: result.provider || config.provider,
+      host: result.host || config.host,
+      port: result.port || config.port,
+      secure: result.secure ?? config.secure,
+      accountEmail: result.accountEmail || '',
+      fromEmail: result.fromEmail || config.fromEmail,
+      fromName: result.fromName || config.fromName,
     });
   } catch (error) {
-    res.status(400).json({ error: error.message || 'Failed to verify SMTP connection' });
+    res.status(400).json({ error: error.message || 'Failed to verify mail connection' });
   }
 });
 

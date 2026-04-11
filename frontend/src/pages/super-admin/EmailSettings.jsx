@@ -13,14 +13,16 @@ export default function EmailSettings() {
   const isArabic = language === 'ar'
   const templateVariables = '{{invoiceNumber}}, {{invoiceDate}}, {{invoiceTotal}}, {{companyName}}, {{customerName}}, {{brandName}}, {{loginEmail}}, {{tenantSlug}}'
 
-  const { register, handleSubmit, reset, getValues } = useForm({
+  const { register, handleSubmit, reset, getValues, watch } = useForm({
     defaultValues: {
       enabled: false,
+      provider: 'smtp',
       smtpHost: '',
       smtpPort: 587,
       smtpSecure: false,
       smtpUser: '',
       smtpPass: '',
+      brevoApiKey: '',
       fromName: 'Maqder ERP',
       fromEmail: '',
       replyTo: '',
@@ -39,17 +41,21 @@ export default function EmailSettings() {
     queryKey: ['super-admin-email-settings'],
     queryFn: () => api.get('/super-admin/settings/email').then((res) => res.data),
   })
+  const provider = watch('provider') || 'smtp'
+  const isBrevoProvider = provider === 'brevo'
 
   useEffect(() => {
     const email = data?.email
     if (!email) return
     reset({
       enabled: !!email.enabled,
+      provider: email.provider || 'smtp',
       smtpHost: email.smtpHost || '',
       smtpPort: email.smtpPort || 587,
       smtpSecure: !!email.smtpSecure,
       smtpUser: email.smtpUser || '',
       smtpPass: '',
+      brevoApiKey: '',
       fromName: email.fromName || 'Maqder ERP',
       fromEmail: email.fromEmail || '',
       replyTo: email.replyTo || '',
@@ -67,11 +73,13 @@ export default function EmailSettings() {
   const buildEmailPayload = (formData) => ({
     email: {
       enabled: !!formData.enabled,
+      provider: String(formData.provider || 'smtp').trim(),
       smtpHost: String(formData.smtpHost || '').trim(),
       smtpPort: Number(formData.smtpPort || 587),
       smtpSecure: !!formData.smtpSecure,
       smtpUser: String(formData.smtpUser || '').trim(),
       smtpPass: String(formData.smtpPass || '').trim(),
+      brevoApiKey: String(formData.brevoApiKey || '').trim(),
       fromName: String(formData.fromName || '').trim(),
       fromEmail: String(formData.fromEmail || '').trim(),
       replyTo: String(formData.replyTo || '').trim(),
@@ -101,7 +109,9 @@ export default function EmailSettings() {
       const email = response?.email
       reset({
         smtpPass: '',
+        brevoApiKey: '',
         enabled: !!email?.enabled,
+        provider: email?.provider || 'smtp',
         smtpHost: email?.smtpHost || '',
         smtpPort: email?.smtpPort || 587,
         smtpSecure: !!email?.smtpSecure,
@@ -125,10 +135,10 @@ export default function EmailSettings() {
   const testConnectionMutation = useMutation({
     mutationFn: (payload) => api.post('/super-admin/settings/email/test-connection', payload).then((res) => res.data),
     onSuccess: () => {
-      toast.success(isArabic ? 'تم التحقق من اتصال SMTP بنجاح' : 'SMTP connection verified successfully')
+      toast.success(isArabic ? 'تم التحقق من اتصال مزود البريد بنجاح' : 'Mail provider connection verified successfully')
     },
     onError: (error) => {
-      toast.error(error.response?.data?.error || 'Failed to verify SMTP connection')
+      toast.error(error.response?.data?.error || 'Failed to verify mail provider connection')
     },
   })
 
@@ -158,7 +168,7 @@ export default function EmailSettings() {
         : 'Connection verified successfully. The integration is working and can be used for tenant creation emails.')
     : testConnectionMutation.isError
       ? (testConnectionMutation.error?.response?.data?.error || testConnectionMutation.error?.message || (isArabic ? 'فشل التحقق من الاتصال.' : 'Connection verification failed.'))
-      : (isArabic ? 'اختبر اتصال SMTP الحالي أو القيم التي أدخلتها قبل الحفظ.' : 'Test the current SMTP integration or the values you entered before saving.')
+      : (isArabic ? 'اختبر مزود البريد الحالي أو القيم التي أدخلتها قبل الحفظ.' : 'Test the current mail provider or the values you entered before saving.')
 
   if (isLoading) {
     return <div className="flex justify-center p-12"><div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" /></div>
@@ -168,7 +178,7 @@ export default function EmailSettings() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{isArabic ? 'إعدادات البريد' : 'Email Settings'}</h1>
-        <p className="mt-1 text-gray-500">{isArabic ? 'إدارة SMTP والقوالب العامة لإنشاء اللوحات وإرسال الفواتير.' : 'Manage SMTP and global templates for panel creation and invoice delivery.'}</p>
+        <p className="mt-1 text-gray-500">{isArabic ? 'إدارة مزود البريد والقوالب العامة لإنشاء اللوحات وإرسال الفواتير.' : 'Manage the mail provider and global templates for panel creation and invoice delivery.'}</p>
       </div>
 
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="card p-6">
@@ -181,7 +191,7 @@ export default function EmailSettings() {
           <section className="space-y-4">
             <div className="flex items-center gap-2">
               <Mail className="w-5 h-5 text-primary-600" />
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{isArabic ? 'إعدادات SMTP' : 'SMTP Settings'}</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{isArabic ? 'إعدادات مزود البريد' : 'Mail Provider Settings'}</h2>
             </div>
 
             <div className={`rounded-2xl border p-4 text-sm ${connectionPanelClass}`}>
@@ -193,6 +203,8 @@ export default function EmailSettings() {
                   <div>
                     <p className="font-semibold">{isArabic ? 'فحص تكامل البريد' : 'Mail Integration Check'}</p>
                     <p className="mt-1 leading-6">{connectionMessage}</p>
+                    {testConnectionMutation.data?.provider ? <p className="mt-2 text-xs opacity-80">{`${isArabic ? 'المزود' : 'Provider'}: ${String(testConnectionMutation.data.provider).toUpperCase()}`}</p> : null}
+                    {testConnectionMutation.data?.accountEmail ? <p className="mt-2 text-xs opacity-80">{`${isArabic ? 'حساب المزود' : 'Provider account'}: ${testConnectionMutation.data.accountEmail}`}</p> : null}
                     {testConnectionMutation.data?.fromEmail ? <p className="mt-2 text-xs opacity-80">{`${testConnectionMutation.data.fromName} <${testConnectionMutation.data.fromEmail}>`}</p> : null}
                   </div>
                 </div>
@@ -208,25 +220,42 @@ export default function EmailSettings() {
                 <input type="checkbox" {...register('enabled')} className="h-4 w-4" />
               </label>
               <div>
-                <label className="label">{isArabic ? 'SMTP Host' : 'SMTP Host'}</label>
-                <input {...register('smtpHost')} className="input" placeholder="smtp.gmail.com" />
+                <label className="label">{isArabic ? 'مزود البريد' : 'Mail Provider'}</label>
+                <select {...register('provider')} className="select">
+                  <option value="smtp">SMTP</option>
+                  <option value="brevo">Brevo</option>
+                </select>
               </div>
-              <div>
-                <label className="label">{isArabic ? 'SMTP Port' : 'SMTP Port'}</label>
-                <input type="number" {...register('smtpPort')} className="input" />
-              </div>
-              <label className="card-glass p-4 flex items-center justify-between md:col-span-2 xl:col-span-1">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{isArabic ? 'اتصال آمن' : 'Secure connection'}</span>
-                <input type="checkbox" {...register('smtpSecure')} className="h-4 w-4" />
-              </label>
-              <div>
-                <label className="label">{isArabic ? 'SMTP User' : 'SMTP User'}</label>
-                <input {...register('smtpUser')} className="input" placeholder="mailer@maqder.com" />
-              </div>
-              <div>
-                <label className="label">{isArabic ? 'SMTP Password' : 'SMTP Password'}</label>
-                <input type="password" {...register('smtpPass')} className="input" placeholder={data?.email?.hasSmtpPass ? (isArabic ? `محفوظ: ${data.email.smtpPassMasked}` : `Saved: ${data.email.smtpPassMasked}`) : '••••••••'} />
-              </div>
+              {isBrevoProvider ? (
+                <div>
+                  <label className="label">{isArabic ? 'Brevo API Key' : 'Brevo API Key'}</label>
+                  <input type="password" {...register('brevoApiKey')} className="input" placeholder={data?.email?.hasBrevoApiKey ? (isArabic ? `محفوظ: ${data.email.brevoApiKeyMasked}` : `Saved: ${data.email.brevoApiKeyMasked}`) : 'xkeysib-...'} />
+                </div>
+              ) : null}
+              {!isBrevoProvider ? (
+                <>
+                  <div>
+                    <label className="label">{isArabic ? 'SMTP Host' : 'SMTP Host'}</label>
+                    <input {...register('smtpHost')} className="input" placeholder="smtp.gmail.com" />
+                  </div>
+                  <div>
+                    <label className="label">{isArabic ? 'SMTP Port' : 'SMTP Port'}</label>
+                    <input type="number" {...register('smtpPort')} className="input" />
+                  </div>
+                  <label className="card-glass p-4 flex items-center justify-between md:col-span-2 xl:col-span-1">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{isArabic ? 'اتصال آمن' : 'Secure connection'}</span>
+                    <input type="checkbox" {...register('smtpSecure')} className="h-4 w-4" />
+                  </label>
+                  <div>
+                    <label className="label">{isArabic ? 'SMTP User' : 'SMTP User'}</label>
+                    <input {...register('smtpUser')} className="input" placeholder="mailer@maqder.com" />
+                  </div>
+                  <div>
+                    <label className="label">{isArabic ? 'SMTP Password' : 'SMTP Password'}</label>
+                    <input type="password" {...register('smtpPass')} className="input" placeholder={data?.email?.hasSmtpPass ? (isArabic ? `محفوظ: ${data.email.smtpPassMasked}` : `Saved: ${data.email.smtpPassMasked}`) : '••••••••'} />
+                  </div>
+                </>
+              ) : null}
               <div>
                 <label className="label">{isArabic ? 'اسم المرسل' : 'From name'}</label>
                 <input {...register('fromName')} className="input" placeholder="Maqder ERP" />

@@ -1,6 +1,6 @@
-import nodemailer from 'nodemailer';
 import SystemSettings from '../models/SystemSettings.js';
 import logger from './logger.js';
+import { ensureEmailDeliveryConfig, sendEmailWithConfig } from './emailProviderService.js';
 
 const normalizeLanguage = (language) => {
   if (language === 'ar') return 'ar';
@@ -48,14 +48,25 @@ const resolveEmailConfig = (settings, options = {}) => {
   const email = settings?.email?.toObject?.() || settings?.email || {};
   const website = settings?.website?.toObject?.() || settings?.website || {};
   const smtpPort = Number(email.smtpPort || (allowEnvFallback ? process.env.SMTP_PORT : '') || 587);
+  const provider = String(email.provider || (allowEnvFallback ? process.env.EMAIL_PROVIDER : '') || 'smtp').trim().toLowerCase() === 'brevo' ? 'brevo' : 'smtp';
+  const brevoApiKey = String(email.brevoApiKey || (allowEnvFallback ? process.env.BREVO_API_KEY : '') || '').trim();
+  const hasProviderCredentials = provider === 'brevo'
+    ? Boolean(brevoApiKey)
+    : Boolean(
+        String(email.smtpHost || (allowEnvFallback ? process.env.SMTP_HOST : '') || '').trim()
+        && String(email.smtpUser || (allowEnvFallback ? process.env.SMTP_USER : '') || '').trim()
+        && String(email.smtpPass || (allowEnvFallback ? process.env.SMTP_PASS : '') || '').trim()
+      );
 
   return {
-    enabled: email.enabled === true || (allowEnvFallback && Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS)),
+    enabled: email.enabled === true || (allowEnvFallback && hasProviderCredentials),
+    provider,
     host: String(email.smtpHost || (allowEnvFallback ? process.env.SMTP_HOST : '') || '').trim(),
     port: Number.isFinite(smtpPort) ? smtpPort : 587,
     secure: email.smtpSecure === true,
     user: String(email.smtpUser || (allowEnvFallback ? process.env.SMTP_USER : '') || '').trim(),
     pass: String(email.smtpPass || (allowEnvFallback ? process.env.SMTP_PASS : '') || '').trim(),
+    brevoApiKey,
     fromName: String(email.fromName || website.brandName || 'Maqder ERP').trim(),
     fromEmail: String(email.fromEmail || email.smtpUser || (allowEnvFallback ? process.env.SMTP_USER : '') || '').trim(),
     replyTo: String(email.replyTo || website.contactEmail || '').trim(),
@@ -66,33 +77,8 @@ const resolveEmailConfig = (settings, options = {}) => {
 };
 
 const ensureEmailConfigured = (config) => {
-  if (!config?.enabled) {
-    throw new Error('Email delivery is disabled');
-  }
-
-  if (!config.host || !config.user || !config.pass || !config.fromEmail) {
-    throw new Error('Email SMTP settings are incomplete');
-  }
+  ensureEmailDeliveryConfig(config, { context: 'Email delivery' });
 };
-
-const resolveTransportOptions = (config) => {
-  const port = Number(config?.port || 587);
-  const normalizedPort = Number.isFinite(port) ? port : 587;
-  const useImplicitSsl = normalizedPort === 465;
-
-  return {
-    host: config.host,
-    port: normalizedPort,
-    secure: useImplicitSsl,
-    requireTLS: !useImplicitSsl && (config?.secure === true || normalizedPort === 587),
-    auth: {
-      user: config.user,
-      pass: config.pass,
-    },
-  };
-};
-
-const buildTransporter = (config) => nodemailer.createTransport(resolveTransportOptions(config));
 
 const buildSecondaryLinesHtml = (secondaryLines = []) => secondaryLines
   .filter(Boolean)
@@ -295,16 +281,15 @@ export const sendEmailMessage = async ({ to, subject, html, replyTo, config: pro
     throw new Error('Email recipient is required');
   }
 
-  const transporter = buildTransporter(config);
-  await transporter.sendMail({
-    from: `"${config.fromName}" <${config.fromEmail}>`,
-    to: recipients.join(', '),
-    replyTo: String(replyTo || config.replyTo || '').trim() || undefined,
-    subject: String(subject || '').trim(),
+  const delivery = await sendEmailWithConfig({
+    config,
+    to: recipients,
+    subject,
     html,
+    replyTo: String(replyTo || config.replyTo || '').trim() || undefined,
   });
 
-  return { to: recipients, from: config.fromEmail };
+  return { to: recipients, from: config.fromEmail, provider: delivery.provider, providerMessageId: delivery.providerMessageId };
 };
 
 export const sendTenantWelcomeEmail = async ({ tenant, adminUser, preferredLanguage } = {}) => {
@@ -377,6 +362,7 @@ export const sendInvoiceEmail = async ({ tenant, invoice, recipient, customerNam
   const subject = interpolateTemplate(subjectTemplate, variables);
   const body = interpolateTemplate(bodyTemplate, variables);
   const senderName = String(tenantEmailSettings.senderName || config.fromName || '').trim() || config.brandName;
+  const senderEmail = String(tenantEmailSettings.fromEmail || config.fromEmail || '').trim() || config.fromEmail;
   const html = buildEmailShell({
     brandName: senderName,
     title: subject,
@@ -394,6 +380,11 @@ export const sendInvoiceEmail = async ({ tenant, invoice, recipient, customerNam
     subject,
     html,
     replyTo: String(tenantEmailSettings.replyTo || config.replyTo || '').trim() || undefined,
+    config: {
+      ...config,
+      fromName: senderName,
+      fromEmail: senderEmail,
+    },
   });
 
   return { sent: true, to: recipients, language: preferredLanguage };

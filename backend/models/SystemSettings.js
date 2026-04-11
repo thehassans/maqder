@@ -70,11 +70,13 @@ const systemSettingsSchema = new mongoose.Schema({
   },
   email: {
     enabled: { type: Boolean, default: false },
+    provider: { type: String, enum: ['smtp', 'brevo'], default: 'smtp' },
     smtpHost: { type: String, default: '' },
     smtpPort: { type: Number, default: 587 },
     smtpSecure: { type: Boolean, default: false },
     smtpUser: { type: String, default: '' },
     smtpPass: { type: String, default: '' },
+    brevoApiKey: { type: String, default: '' },
     fromName: { type: String, default: 'Maqder ERP' },
     fromEmail: { type: String, default: '' },
     replyTo: { type: String, default: '' },
