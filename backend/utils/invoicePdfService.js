@@ -170,7 +170,11 @@ const loadPdfRuntime = async () => {
     ])
       .then(([jspdfModule, autoTableModule]) => ({
         jsPDF: jspdfModule?.jsPDF || jspdfModule?.default || jspdfModule,
-        autoTable: autoTableModule?.default || autoTableModule,
+        autoTable: autoTableModule?.default?.default
+          || autoTableModule?.default?.autoTable
+          || autoTableModule?.autoTable
+          || autoTableModule?.default
+          || autoTableModule,
       }))
       .catch(() => null);
   }
