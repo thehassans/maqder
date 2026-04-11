@@ -1,7 +1,5 @@
 import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -19,6 +17,13 @@ const toMoney = (value, currency = 'SAR') => {
   const amount = Number(value || 0);
   return `${Number.isFinite(amount) ? amount.toFixed(2) : '0.00'} ${String(currency || 'SAR').trim() || 'SAR'}`;
 };
+
+const escapePdfText = (value) => String(value || '')
+  .replace(/\\/g, '\\\\')
+  .replace(/\(/g, '\\(')
+  .replace(/\)/g, '\\)')
+  .replace(/[\r\n]+/g, ' ')
+  .replace(/[^\x20-\x7E]/g, '?');
 
 const formatDate = (value, language = 'en') => {
   const date = value ? new Date(value) : null;
@@ -70,6 +75,109 @@ const buildTravelRows = (invoice = {}) => {
   ].filter(([, value]) => String(value || '').trim());
 };
 
+const buildFallbackInvoiceLines = ({ invoice, tenant, customerName }) => {
+  const sellerName = normalizeText(tenant?.business?.legalNameEn || tenant?.business?.legalNameAr || tenant?.name || 'Maqder ERP');
+  const buyerName = normalizeText(customerName || invoice?.buyer?.name || invoice?.buyer?.nameAr || 'Customer');
+  const lines = [
+    sellerName,
+    `Invoice ${normalizeText(invoice?.invoiceNumber)}`,
+    `Issue Date: ${formatDate(invoice?.issueDate, 'en')}`,
+    `Customer: ${buyerName}`,
+    `Transaction: ${normalizeText(invoice?.transactionType)}`,
+    `Payment Method: ${normalizeText(invoice?.paymentMethod)}`,
+    `Subtotal: ${toMoney(invoice?.subtotal, invoice?.currency)}`,
+    `Tax: ${toMoney(invoice?.totalTax, invoice?.currency)}`,
+    `Total: ${toMoney(invoice?.grandTotal, invoice?.currency)}`,
+    '',
+    'Line Items',
+  ];
+
+  const invoiceLines = Array.isArray(invoice?.lineItems) ? invoice.lineItems : [];
+  invoiceLines.slice(0, 18).forEach((line, index) => {
+    const name = normalizeText(line?.productName || line?.productNameAr || `Item ${index + 1}`);
+    const qty = Number(line?.quantity || 0);
+    const price = toMoney(line?.unitPrice, invoice?.currency);
+    const total = toMoney(line?.lineTotalWithTax || line?.lineTotal, invoice?.currency);
+    lines.push(`${index + 1}. ${name} | Qty: ${Number.isFinite(qty) ? qty : 0} | Price: ${price} | Total: ${total}`);
+  });
+
+  const travelRows = buildTravelRows(invoice);
+  if (travelRows.length) {
+    lines.push('');
+    lines.push('Travel Details');
+    travelRows.forEach(([label, value]) => {
+      lines.push(`${String(label || '').replace(/\n/g, ' / ')}: ${value}`);
+    });
+  }
+
+  if (invoice?.notes) {
+    lines.push('');
+    lines.push(`Notes: ${normalizeText(invoice.notes)}`);
+  }
+
+  return lines.filter(Boolean);
+};
+
+const buildFallbackPdfBufferFromLines = (lines) => {
+  const safeLines = Array.isArray(lines) ? lines.slice(0, 40) : [];
+  const operations = ['BT', '/F1 11 Tf', '50 800 Td'];
+
+  safeLines.forEach((line, index) => {
+    const escapedLine = escapePdfText(line);
+    if (index > 0) {
+      operations.push('0 -18 Td');
+    }
+    operations.push(`(${escapedLine}) Tj`);
+  });
+
+  operations.push('ET');
+  const content = `${operations.join('\n')}\n`;
+
+  const objects = [
+    '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n',
+    '2 0 obj\n<< /Type /Pages /Count 1 /Kids [3 0 R] >>\nendobj\n',
+    '3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>\nendobj\n',
+    `4 0 obj\n<< /Length ${Buffer.byteLength(content, 'utf8')} >>\nstream\n${content}endstream\nendobj\n`,
+    '5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n',
+  ];
+
+  let output = '%PDF-1.4\n';
+  const offsets = [0];
+
+  objects.forEach((object) => {
+    offsets.push(Buffer.byteLength(output, 'utf8'));
+    output += object;
+  });
+
+  const xrefOffset = Buffer.byteLength(output, 'utf8');
+  output += `xref\n0 ${objects.length + 1}\n`;
+  output += '0000000000 65535 f \n';
+  for (let index = 1; index <= objects.length; index += 1) {
+    output += `${String(offsets[index]).padStart(10, '0')} 00000 n \n`;
+  }
+  output += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+
+  return Buffer.from(output, 'utf8');
+};
+
+let pdfRuntimePromise;
+
+const loadPdfRuntime = async () => {
+  if (!pdfRuntimePromise) {
+    pdfRuntimePromise = Promise.all([
+      import('jspdf'),
+      import('jspdf-autotable'),
+    ])
+      .then(([jspdfModule, autoTableModule]) => ({
+        jsPDF: jspdfModule?.jsPDF || jspdfModule?.default || jspdfModule,
+        autoTable: autoTableModule?.default || autoTableModule,
+      }))
+      .catch(() => null);
+  }
+
+  return pdfRuntimePromise;
+};
+
 let tajawalRegularBase64 = '';
 let tajawalBoldBase64 = '';
 let fontLoadPromise;
@@ -119,6 +227,12 @@ const setDocFont = (doc, fontFamily, fontStyle = 'normal', fontSize = 11) => {
 };
 
 export const buildInvoicePdfBuffer = async ({ invoice, tenant, customerName, language = 'bilingual' }) => {
+  const pdfRuntime = await loadPdfRuntime();
+  if (!pdfRuntime?.jsPDF || !pdfRuntime?.autoTable) {
+    return buildFallbackPdfBufferFromLines(buildFallbackInvoiceLines({ invoice, tenant, customerName }));
+  }
+
+  const { jsPDF, autoTable } = pdfRuntime;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 40;
