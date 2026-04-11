@@ -2,6 +2,7 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { QRCodeSVG } from 'qrcode.react'
 import InvoiceLivePreview from '../components/invoices/InvoiceLivePreview'
+import api from './api'
 import { formatCurrency, isSarCurrency } from './currency'
 import { calculateInvoiceSummary, normalizeTravelDetails } from './invoiceDocument'
 import { getInvoiceBranding, getInvoiceTemplateId, splitBrandingText } from './invoiceBranding'
@@ -13,6 +14,68 @@ const sanitizeFileName = (value) => {
     .replace(/[\\/:*?"<>|]+/g, '-')
     .replace(/\s+/g, ' ')
     .trim()
+}
+
+const fetchInvoicePdfBlob = async (invoiceId) => {
+  if (!invoiceId) return null
+  const response = await api.get(`/invoices/${invoiceId}/pdf`, {
+    responseType: 'blob',
+    timeout: 120000,
+  })
+  return response?.data instanceof Blob ? response.data : new Blob([response?.data], { type: 'application/pdf' })
+}
+
+const downloadPdfBlob = (blob, fileName) => {
+  if (!blob || typeof window === 'undefined' || typeof document === 'undefined') return false
+  const objectUrl = window.URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = objectUrl
+  link.download = `${sanitizeFileName(fileName)}.pdf`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 1000)
+  return true
+}
+
+const printPdfBlob = async (blob, title) => {
+  if (!blob || typeof window === 'undefined' || typeof document === 'undefined') return false
+  const objectUrl = window.URL.createObjectURL(blob)
+  const frame = document.createElement('iframe')
+  frame.style.position = 'fixed'
+  frame.style.right = '0'
+  frame.style.bottom = '0'
+  frame.style.width = '0'
+  frame.style.height = '0'
+  frame.style.border = '0'
+  frame.title = title
+  document.body.appendChild(frame)
+
+  await new Promise((resolve) => {
+    frame.onload = () => resolve()
+    frame.src = objectUrl
+  })
+
+  const printWindow = frame.contentWindow
+  if (!printWindow) {
+    if (frame.parentNode) {
+      frame.parentNode.removeChild(frame)
+    }
+    window.URL.revokeObjectURL(objectUrl)
+    return false
+  }
+
+  printWindow.focus()
+  printWindow.print()
+
+  window.setTimeout(() => {
+    if (frame.parentNode) {
+      frame.parentNode.removeChild(frame)
+    }
+    window.URL.revokeObjectURL(objectUrl)
+  }, 1500)
+
+  return true
 }
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value))
@@ -214,6 +277,16 @@ const saveElementSnapshotPdf = async ({ doc, sourceElement, fileName }) => {
 
 export const printInvoiceSnapshot = async ({ invoice, language = 'en', tenant, sourceElement = null }) => {
   if (!invoice || typeof document === 'undefined' || typeof window === 'undefined') return false
+
+  if (invoice?._id) {
+    try {
+      const pdfBlob = await fetchInvoicePdfBlob(invoice._id)
+      if (pdfBlob) {
+        return await printPdfBlob(pdfBlob, sanitizeFileName(invoice?.invoiceNumber || 'invoice'))
+      }
+    } catch {
+    }
+  }
 
   const currency = invoice.currency || tenant?.settings?.currency || 'SAR'
   const shouldPreferGeneratedSnapshot = isSarCurrency(currency)
@@ -600,6 +673,16 @@ const getInvoiceTitle = (invoice, language = 'en') => {
 
 export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant, sourceElement = null }) => {
   if (!invoice) return
+
+  if (invoice?._id) {
+    try {
+      const pdfBlob = await fetchInvoicePdfBlob(invoice._id)
+      if (pdfBlob && downloadPdfBlob(pdfBlob, invoice.invoiceNumber || 'invoice')) {
+        return
+      }
+    } catch {
+    }
+  }
 
   const jspdfModule = await import('jspdf')
   const jsPDF = jspdfModule?.jsPDF || jspdfModule?.default || jspdfModule

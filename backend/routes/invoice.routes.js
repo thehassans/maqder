@@ -14,6 +14,7 @@ import { enrichInvoiceArabicFields } from '../utils/invoiceArabic.js';
 import { buildDraftInvoiceQr } from '../utils/zatca/draftInvoiceQr.js';
 import ZatcaService from '../utils/zatca/ZatcaService.js';
 import { autoSendInvoice, sendInvoiceToRecipient } from '../utils/tenantEmailService.js';
+import { buildInvoicePdfAttachment } from '../utils/invoicePdfService.js';
 
 const router = express.Router();
 
@@ -471,6 +472,38 @@ router.get('/stats', checkPermission('invoicing', 'read'), async (req, res) => {
     res.json(stats[0]);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/:id/pdf', checkPermission('invoicing', 'read'), async (req, res) => {
+  try {
+    const invoice = await Invoice.findOne({ _id: req.params.id, ...req.tenantFilter });
+    if (!invoice) {
+      return res.status(404).json({ error: 'Invoice not found' });
+    }
+
+    const tenant = await Tenant.findById(req.user.tenantId);
+    if (!tenant) {
+      return res.status(404).json({ error: 'Tenant not found' });
+    }
+
+    const customer = invoice.customerId
+      ? await Customer.findOne({ _id: invoice.customerId, tenantId: invoice.tenantId }).select('name nameAr')
+      : null;
+
+    const attachment = await buildInvoicePdfAttachment({
+      invoice,
+      tenant,
+      customerName: customer?.name || customer?.nameAr || invoice?.buyer?.name || invoice?.buyer?.nameAr,
+      language: 'bilingual',
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${String(attachment.filename || 'invoice.pdf').replace(/"/g, '')}"`);
+    res.setHeader('Cache-Control', 'no-store');
+    return res.send(attachment.content);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
   }
 });
 

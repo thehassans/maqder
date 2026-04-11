@@ -35,7 +35,7 @@ export default function InvoiceView() {
   const hasEmailAddon = tenant?.subscription?.hasEmailAddon === true || (Array.isArray(tenant?.subscription?.features) && tenant.subscription.features.includes('email_automation'))
 
   const signMutation = useMutation({
-    mutationFn: () => api.post(`/invoices/${id}/sign`),
+    mutationFn: () => api.post(`/invoices/${id}/sign`, undefined, { timeout: 120000 }),
     onSuccess: (response) => {
       toast.success(language === 'ar' ? 'تم توقيع الفاتورة بنجاح' : 'Invoice signed successfully')
       if (response?.data?.emailDelivery?.sent) {
@@ -54,7 +54,7 @@ export default function InvoiceView() {
   })
 
   const sendEmailMutation = useMutation({
-    mutationFn: () => api.post(`/invoices/${id}/send-email`, { language }),
+    mutationFn: () => api.post(`/invoices/${id}/send-email`, { language }, { timeout: 120000 }),
     onSuccess: () => {
       toast.success(language === 'ar' ? 'تم إرسال الفاتورة عبر البريد' : 'Invoice email sent successfully')
     },

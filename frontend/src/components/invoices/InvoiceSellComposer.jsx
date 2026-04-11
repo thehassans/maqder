@@ -220,7 +220,7 @@ export default function InvoiceSellComposer() {
   })
 
   const createMutation = useMutation({
-    mutationFn: (data) => api.post('/invoices/sell', data),
+    mutationFn: (data) => api.post('/invoices/sell', data, { timeout: 120000 }),
     onSuccess: (res) => {
       toast.success(language === 'ar' ? 'تم إنشاء فاتورة البيع بنجاح' : 'Sell invoice created successfully')
       queryClient.invalidateQueries(['invoices'])

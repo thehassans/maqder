@@ -148,13 +148,13 @@ export default function InvoiceCreateSell() {
   })
 
   const createMutation = useMutation({
-    mutationFn: (data) => api.post('/invoices/sell', data),
+    mutationFn: (data) => api.post('/invoices/sell', data, { timeout: 120000 }),
     onSuccess: (res) => {
       toast.success(language === 'ar' ? 'تم إنشاء فاتورة البيع بنجاح' : 'Sell invoice created successfully')
       navigate(`/app/dashboard/invoices/${res.data._id}`)
     },
     onError: (error) => {
-      toast.error(error.response?.data?.error || 'Failed to create invoice')
+      toast.error(error?.response?.data?.error || error?.userMessage || error?.message || 'Failed to create invoice')
     }
   })
 
