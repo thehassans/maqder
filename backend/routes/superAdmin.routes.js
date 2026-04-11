@@ -12,6 +12,31 @@ import { getPrimaryBusinessType, normalizeBusinessTypes } from '../utils/busines
 import { sendTenantWelcomeEmail } from '../utils/emailService.js';
 
 const router = express.Router();
+const parsedDatabaseQueryTimeoutMs = Number(process.env.MONGODB_QUERY_TIMEOUT_MS || 10000);
+const databaseQueryTimeoutMs = Number.isFinite(parsedDatabaseQueryTimeoutMs) && parsedDatabaseQueryTimeoutMs > 0 ? parsedDatabaseQueryTimeoutMs : 10000;
+
+const withQueryTimeout = (query) => query.maxTimeMS(databaseQueryTimeoutMs);
+
+const isDatabaseAvailabilityError = (error) => {
+  const message = String(error?.message || '').toLowerCase();
+
+  return message.includes('buffering timed out')
+    || message.includes('timed out after')
+    || message.includes('server selection')
+    || message.includes('ecconnrefused')
+    || message.includes('not connected')
+    || message.includes('initial connection')
+    || message.includes('topology is closed')
+    || message.includes('client must be connected');
+};
+
+const sendRouteError = (res, error) => {
+  if (isDatabaseAvailabilityError(error)) {
+    return res.status(503).json({ error: 'Service temporarily unavailable. Please try again in a moment.' });
+  }
+
+  return res.status(500).json({ error: error.message });
+};
 
 router.use(protect);
 router.use(authorize('super_admin'));
@@ -518,43 +543,60 @@ router.post('/settings/gemini/test', async (req, res) => {
 router.get('/tenants', async (req, res) => {
   try {
     const { page = 1, limit = 20, status, plan, search } = req.query;
+    const parsedPage = Number.parseInt(page, 10);
+    const parsedLimit = Number.parseInt(limit, 10);
+    const safePage = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+    const safeLimit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? Math.min(parsedLimit, 100) : 20;
+    const normalizedSearch = String(search || '').trim();
     
     const query = {};
     if (status === 'active') query.isActive = true;
     if (status === 'inactive') query.isActive = false;
     if (plan) query['subscription.plan'] = plan;
-    if (search) {
+    if (normalizedSearch) {
       query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { 'business.legalNameEn': { $regex: search, $options: 'i' } },
-        { 'business.vatNumber': { $regex: search, $options: 'i' } }
+        { name: { $regex: normalizedSearch, $options: 'i' } },
+        { 'business.legalNameEn': { $regex: normalizedSearch, $options: 'i' } },
+        { 'business.vatNumber': { $regex: normalizedSearch, $options: 'i' } }
       ];
     }
     
-    const tenants = await Tenant.find(query)
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit));
+    const tenants = await withQueryTimeout(
+      Tenant.find(query)
+        .select('name slug business subscription isActive createdAt settings.communication.email')
+        .sort({ createdAt: -1 })
+        .skip((safePage - 1) * safeLimit)
+        .limit(safeLimit)
+        .lean()
+    );
     
-    const total = await Tenant.countDocuments(query);
+    const total = await withQueryTimeout(Tenant.countDocuments(query));
+
+    if (tenants.length === 0) {
+      return res.json({
+        tenants: [],
+        pagination: { page: safePage, limit: safeLimit, total, pages: Math.ceil(total / safeLimit) }
+      });
+    }
     
-    // Get user counts per tenant
+    const tenantIds = tenants.map((tenant) => tenant._id);
     const userCounts = await User.aggregate([
-      { $match: { tenantId: { $in: tenants.map(t => t._id) } } },
+      { $match: { tenantId: { $in: tenantIds } } },
       { $group: { _id: '$tenantId', count: { $sum: 1 } } }
-    ]);
+    ]).option({ maxTimeMS: databaseQueryTimeoutMs });
+    const userCountMap = new Map(userCounts.map((item) => [String(item._id), item.count || 0]));
     
     const tenantsWithCounts = tenants.map(t => ({
-      ...t.toObject(),
-      userCount: userCounts.find(uc => uc._id.toString() === t._id.toString())?.count || 0
+      ...serializeTenantForSuperAdmin(t),
+      userCount: userCountMap.get(String(t._id)) || 0
     }));
     
     res.json({
       tenants: tenantsWithCounts,
-      pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / limit) }
+      pagination: { page: safePage, limit: safeLimit, total, pages: Math.ceil(total / safeLimit) }
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendRouteError(res, error);
   }
 });
 
