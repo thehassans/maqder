@@ -7,6 +7,48 @@ import { listEmailMessages, createDraftMessage, sendTenantEmail, serializeTenant
 
 const router = express.Router();
 
+const normalizeTenantEmailSettings = (tenant, incomingEmail = {}) => {
+  const currentEmail = tenant?.settings?.communication?.email?.toObject?.() || tenant?.settings?.communication?.email || {};
+  const nextEmail = {
+    ...currentEmail,
+    ...incomingEmail,
+    enabled: incomingEmail?.enabled === true,
+    autoSendInvoices: incomingEmail?.autoSendInvoices === true,
+    smtpSecure: incomingEmail?.smtpSecure === true,
+    smtpPort: Number(incomingEmail?.smtpPort || currentEmail?.smtpPort || 587),
+    inboundAddress: String(incomingEmail?.inboundAddress || currentEmail?.inboundAddress || `${tenant?.slug || 'tenant'}@inbound.maqder.local`).trim().toLowerCase(),
+    requestedSenderName: String(incomingEmail?.requestedSenderName || currentEmail?.requestedSenderName || '').trim(),
+    requestedSenderEmail: String(incomingEmail?.requestedSenderEmail || currentEmail?.requestedSenderEmail || '').trim(),
+    senderName: String(incomingEmail?.senderName || currentEmail?.senderName || '').trim(),
+    fromEmail: String(incomingEmail?.fromEmail || currentEmail?.fromEmail || '').trim(),
+    replyTo: String(incomingEmail?.replyTo || currentEmail?.replyTo || '').trim(),
+    smtpHost: String(incomingEmail?.smtpHost || currentEmail?.smtpHost || '').trim(),
+    smtpUser: String(incomingEmail?.smtpUser || currentEmail?.smtpUser || '').trim(),
+    subjectEn: String(incomingEmail?.subjectEn || currentEmail?.subjectEn || '').trim(),
+    subjectAr: String(incomingEmail?.subjectAr || currentEmail?.subjectAr || '').trim(),
+    bodyEn: String(incomingEmail?.bodyEn || currentEmail?.bodyEn || '').trim(),
+    bodyAr: String(incomingEmail?.bodyAr || currentEmail?.bodyAr || '').trim(),
+    signatureEn: String(incomingEmail?.signatureEn || currentEmail?.signatureEn || '').trim(),
+    signatureAr: String(incomingEmail?.signatureAr || currentEmail?.signatureAr || '').trim(),
+    identityType: incomingEmail?.identityType === 'custom_smtp' ? 'custom_smtp' : 'platform',
+    identityStatus: ['not_requested', 'requested', 'configured', 'verified'].includes(String(incomingEmail?.identityStatus || currentEmail?.identityStatus || 'not_requested'))
+      ? String(incomingEmail?.identityStatus || currentEmail?.identityStatus || 'not_requested')
+      : 'not_requested',
+    platformProvider: String(incomingEmail?.platformProvider || currentEmail?.platformProvider || 'platform').trim() === 'brevo' ? 'brevo' : 'platform',
+    providerSenderId: String(incomingEmail?.providerSenderId || currentEmail?.providerSenderId || '').trim(),
+    providerSenderStatus: String(incomingEmail?.providerSenderStatus || currentEmail?.providerSenderStatus || '').trim(),
+  };
+
+  if (Object.prototype.hasOwnProperty.call(incomingEmail || {}, 'smtpPass')) {
+    const nextPassword = String(incomingEmail?.smtpPass || '').trim();
+    nextEmail.smtpPass = nextPassword || currentEmail?.smtpPass || '';
+  }
+
+  delete nextEmail.hasSmtpPass;
+  delete nextEmail.smtpPassMasked;
+  return nextEmail;
+};
+
 router.use(protect);
 router.use(tenantFilter);
 router.use(checkEmailAddon);
@@ -25,7 +67,31 @@ router.get('/settings', async (req, res) => {
 });
 
 router.put('/settings', authorize('admin'), async (req, res) => {
-  return res.status(403).json({ error: 'Tenant email settings can only be updated from the super admin panel' });
+  try {
+    const tenant = await Tenant.findById(req.user.tenantId);
+    if (!tenant) {
+      return res.status(404).json({ error: 'Tenant not found' });
+    }
+
+    const payload = req.body?.email || req.body || {};
+    const currentSettings = tenant.settings?.toObject?.() || tenant.settings || {};
+    const currentCommunication = currentSettings.communication || {};
+    const nextEmail = normalizeTenantEmailSettings(tenant, payload);
+
+    tenant.settings = {
+      ...currentSettings,
+      communication: {
+        ...currentCommunication,
+        email: nextEmail,
+      },
+    };
+    tenant.markModified('settings');
+    await tenant.save();
+
+    return res.json({ email: serializeTenantEmailSettings(tenant) });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
 });
 
 router.get('/messages', async (req, res) => {

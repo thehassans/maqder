@@ -1,10 +1,13 @@
 import { existsSync } from 'fs';
 import { readFile } from 'fs/promises';
+import { createRequire } from 'module';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import logger from './logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const require = createRequire(import.meta.url);
 
 const sanitizeFileName = (value) => String(value || 'invoice')
   .replace(/[\\/:*?"<>|]+/g, '-')
@@ -162,24 +165,56 @@ const buildFallbackPdfBufferFromLines = (lines) => {
 
 let pdfRuntimePromise;
 
+const resolvePdfRuntimeModules = (jspdfModule, autoTableModule) => ({
+  jsPDF: jspdfModule?.jsPDF || jspdfModule?.default || jspdfModule,
+  autoTable: autoTableModule?.default?.default
+    || autoTableModule?.default?.autoTable
+    || autoTableModule?.autoTable
+    || autoTableModule?.default
+    || autoTableModule,
+});
+
+const isValidPdfRuntime = (runtime) => Boolean(
+  runtime
+  && typeof runtime.jsPDF === 'function'
+  && typeof runtime.autoTable === 'function'
+);
+
 const loadPdfRuntime = async () => {
   if (!pdfRuntimePromise) {
-    pdfRuntimePromise = Promise.all([
-      import('jspdf'),
-      import('jspdf-autotable'),
-    ])
-      .then(([jspdfModule, autoTableModule]) => ({
-        jsPDF: jspdfModule?.jsPDF || jspdfModule?.default || jspdfModule,
-        autoTable: autoTableModule?.default?.default
-          || autoTableModule?.default?.autoTable
-          || autoTableModule?.autoTable
-          || autoTableModule?.default
-          || autoTableModule,
-      }))
-      .catch(() => null);
+    pdfRuntimePromise = (async () => {
+      try {
+        const runtime = resolvePdfRuntimeModules(require('jspdf'), require('jspdf-autotable'));
+        if (isValidPdfRuntime(runtime)) {
+          return runtime;
+        }
+        throw new Error('Require-loaded PDF runtime was invalid');
+      } catch (requireError) {
+        try {
+          const [jspdfModule, autoTableModule] = await Promise.all([
+            import('jspdf'),
+            import('jspdf-autotable'),
+          ]);
+          const runtime = resolvePdfRuntimeModules(jspdfModule, autoTableModule);
+          if (isValidPdfRuntime(runtime)) {
+            return runtime;
+          }
+          throw new Error('Import-loaded PDF runtime was invalid');
+        } catch (importError) {
+          logger.error(`Invoice PDF runtime failed to load: require error: ${requireError?.message || requireError}; import error: ${importError?.message || importError}`);
+          return null;
+        }
+      }
+    })();
   }
 
-  return pdfRuntimePromise;
+  const runtime = await pdfRuntimePromise;
+  if (!isValidPdfRuntime(runtime)) {
+    pdfRuntimePromise = undefined;
+    return null;
+  }
+
+  return runtime;
 };
 
 let tajawalRegularBase64 = '';
@@ -233,6 +268,7 @@ const setDocFont = (doc, fontFamily, fontStyle = 'normal', fontSize = 11) => {
 export const buildInvoicePdfBuffer = async ({ invoice, tenant, customerName, language = 'bilingual' }) => {
   const pdfRuntime = await loadPdfRuntime();
   if (!pdfRuntime?.jsPDF || !pdfRuntime?.autoTable) {
+    logger.warn(`Invoice PDF fallback renderer used for invoice ${sanitizeFileName(invoice?.invoiceNumber || 'unknown')}`);
     return buildFallbackPdfBufferFromLines(buildFallbackInvoiceLines({ invoice, tenant, customerName }));
   }
 

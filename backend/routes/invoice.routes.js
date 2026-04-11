@@ -835,7 +835,25 @@ router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) =>
       await syncCustomerStats(invoice.tenantId, invoice.customerId);
     }
 
-    res.status(201).json(invoice);
+    const invoiceCustomer = invoice.customerId
+      ? await Customer.findOne({ _id: invoice.customerId, tenantId: invoice.tenantId }).select('name nameAr email contactPerson')
+      : customer;
+
+    let emailDelivery = { sent: false, reason: 'disabled' };
+    if (invoice.status === 'approved' || invoice.zatca?.signedXml) {
+      try {
+        emailDelivery = await autoEmailInvoiceIfEnabled({
+          tenant,
+          invoice,
+          customer: invoiceCustomer,
+          language: tenant?.settings?.language,
+        });
+      } catch (emailError) {
+        emailDelivery = { sent: false, reason: emailError.message };
+      }
+    }
+
+    res.status(201).json({ ...invoice.toObject(), emailDelivery });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
