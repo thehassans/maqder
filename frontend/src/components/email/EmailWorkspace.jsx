@@ -47,6 +47,7 @@ const readFileAsBase64 = (file) => new Promise((resolve, reject) => {
 })
 
 const folderOptions = (language) => ([
+  { key: 'all', label: language === 'ar' ? 'الكل' : 'All', icon: Mail },
   { key: 'inbox', label: language === 'ar' ? 'الوارد' : 'Inbox', icon: Inbox },
   { key: 'sent', label: language === 'ar' ? 'المرسل' : 'Sent', icon: Send },
   { key: 'draft', label: language === 'ar' ? 'المسودات' : 'Drafts', icon: Save },
@@ -76,7 +77,7 @@ export default function EmailWorkspace() {
   const { data: websiteSettings } = usePublicWebsiteSettings()
   const hasEmailAddon = tenant?.subscription?.hasEmailAddon === true || (Array.isArray(tenant?.subscription?.features) && tenant.subscription.features.includes('email_automation'))
 
-  const [activeFolder, setActiveFolder] = useState('inbox')
+  const [activeFolder, setActiveFolder] = useState('all')
   const [search, setSearch] = useState('')
   const [selectedMessageId, setSelectedMessageId] = useState('')
   const [showSettings, setShowSettings] = useState(false)
@@ -105,7 +106,7 @@ export default function EmailWorkspace() {
   })
 
   const messages = messagesQuery.data?.messages || []
-  const counts = messagesQuery.data?.counts || { inbox: { count: 0, unread: 0 }, sent: { count: 0, unread: 0 }, draft: { count: 0, unread: 0 } }
+  const counts = messagesQuery.data?.counts || { all: { count: 0, unread: 0 }, inbox: { count: 0, unread: 0 }, sent: { count: 0, unread: 0 }, draft: { count: 0, unread: 0 } }
   const selectedMessage = selectedMessageQuery.data || messages.find((message) => message._id === selectedMessageId) || null
 
   useEffect(() => {
@@ -314,13 +315,13 @@ export default function EmailWorkspace() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{isArabic ? 'التواصل عبر البريد' : 'Email Communication'}</h1>
-          <p className="mt-1 text-gray-500 dark:text-gray-400">{isArabic ? 'إدارة صندوق البريد للشركة، القوالب الثنائية، والهويات البريدية.' : 'Manage the tenant mailbox, bilingual templates, and sender identities.'}</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{isArabic ? 'صندوق البريد' : 'Mailbox'}</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{isArabic ? 'واجهة بريد مبسطة لقراءة الرسائل وإرسالها بشكل احترافي.' : 'A streamlined mailbox for reading and sending business email.'}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-200">
+          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-200">
             <ShieldCheck className="w-4 h-4" />
             {isArabic ? 'الإضافة مفعلة' : 'Add-on Active'}
           </div>
@@ -339,16 +340,16 @@ export default function EmailWorkspace() {
         </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[240px_340px_minmax(0,1fr)]">
+      <div className="grid gap-4 xl:grid-cols-[220px_320px_minmax(0,1fr)]">
         <div className="card p-4">
-          <div className="mb-4 rounded-3xl bg-gradient-to-br from-[#163b27] to-[#245138] p-5 text-white shadow-xl">
+          <div className="mb-4 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4 dark:border-dark-700 dark:bg-dark-800/70">
             <div className="flex items-center gap-3">
-              <div className="rounded-2xl bg-white/10 p-3">
-                <Mail className="h-6 w-6" />
+              <div className="rounded-2xl bg-white p-3 shadow-sm dark:bg-dark-700">
+                <Mail className="h-5 w-5 text-primary-600" />
               </div>
-              <div>
-                <h2 className="text-lg font-semibold">{currentEmailSettings?.senderName || tenant?.business?.legalNameEn || tenant?.name}</h2>
-                <p className="mt-1 text-sm text-white/75">{currentEmailSettings?.fromEmail || currentEmailSettings?.requestedSenderEmail || tenant?.business?.contactEmail || (isArabic ? 'قم بإعداد الهوية البريدية' : 'Configure your sender identity')}</p>
+              <div className="min-w-0">
+                <h2 className="truncate text-sm font-semibold text-gray-900 dark:text-white">{currentEmailSettings?.senderName || tenant?.business?.legalNameEn || tenant?.name}</h2>
+                <p className="mt-1 truncate text-xs text-gray-500 dark:text-gray-400">{currentEmailSettings?.fromEmail || currentEmailSettings?.requestedSenderEmail || tenant?.business?.contactEmail || (isArabic ? 'قم بإعداد الهوية البريدية' : 'Configure your sender identity')}</p>
               </div>
             </div>
           </div>
@@ -365,7 +366,7 @@ export default function EmailWorkspace() {
                     setActiveFolder(folder.key)
                     setComposeState(null)
                   }}
-                  className={`flex w-full items-center justify-between rounded-2xl px-4 py-3 text-start transition-all ${isActive ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-200' : 'hover:bg-gray-50 dark:hover:bg-dark-800 text-gray-700 dark:text-gray-200'}`}
+                  className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-start transition-all ${isActive ? 'border-primary-200 bg-primary-50 text-primary-700 dark:border-primary-900/40 dark:bg-primary-900/20 dark:text-primary-200' : 'border-transparent text-gray-700 hover:border-gray-200 hover:bg-gray-50 dark:text-gray-200 dark:hover:border-dark-700 dark:hover:bg-dark-800'}`}
                 >
                   <span className="flex items-center gap-3 font-medium">
                     <Icon className="h-4 w-4" />
@@ -395,13 +396,14 @@ export default function EmailWorkspace() {
                 key={message._id}
                 type="button"
                 onClick={() => handleOpenMessage(message)}
-                className={`w-full border-b border-gray-100 px-4 py-4 text-start transition-colors last:border-b-0 dark:border-dark-800 ${selectedMessageId === message._id && !composeState ? 'bg-primary-50/70 dark:bg-primary-900/15' : 'hover:bg-gray-50 dark:hover:bg-dark-800/70'}`}
+                className={`w-full border-b border-gray-100 px-4 py-4 text-start transition-colors last:border-b-0 dark:border-dark-800 ${selectedMessageId === message._id && !composeState ? 'bg-primary-50/50 dark:bg-primary-900/15' : 'hover:bg-gray-50 dark:hover:bg-dark-800/70'}`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       {message.isRead ? <MailOpen className="h-4 w-4 text-gray-400" /> : <Mail className="h-4 w-4 text-primary-600" />}
                       <p className={`truncate text-sm ${message.isRead ? 'font-medium text-gray-700 dark:text-gray-200' : 'font-semibold text-gray-900 dark:text-white'}`}>{message.subject || (isArabic ? 'بدون موضوع' : 'No subject')}</p>
+                      {activeFolder === 'all' ? <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:bg-dark-700 dark:text-gray-300">{message.type}</span> : null}
                     </div>
                     <p className="mt-1 truncate text-sm text-gray-500 dark:text-gray-400">{message.type === 'sent' ? (Array.isArray(message.to) ? message.to.join(', ') : '') : message.from}</p>
                     <p className="mt-2 max-h-10 overflow-hidden text-sm text-gray-500 dark:text-gray-400">{message.previewText || message.bodyText || ''}</p>

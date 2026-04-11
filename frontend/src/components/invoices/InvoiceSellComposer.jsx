@@ -232,7 +232,7 @@ export default function InvoiceSellComposer() {
       queryClient.invalidateQueries(['customers-lookup'])
       navigate(`/app/dashboard/invoices/${res.data._id}`)
     },
-    onError: (error) => toast.error(error.response?.data?.error || 'Failed to create invoice'),
+    onError: (error) => toast.error(error?.response?.data?.error || error?.userMessage || error?.message || 'Failed to create invoice'),
   })
 
   const onSelectProduct = (index, productId) => {

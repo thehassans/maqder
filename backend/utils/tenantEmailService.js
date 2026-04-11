@@ -209,7 +209,7 @@ const buildInvoiceMessage = ({ tenant, invoice, customerName, language, globalSe
     const bodyTemplate = (targetLanguage === 'ar'
       ? String(tenantEmail.bodyAr || '').trim()
       : String(tenantEmail.bodyEn || '').trim()) || String(templates?.invoice?.[targetLanguage === 'ar' ? 'bodyAr' : 'bodyEn'] || '').trim() || 'Please find your invoice.';
-    const signature = targetLanguage === 'ar' ? String(tenantEmail.signatureAr || '').trim() : String(tenantEmail.signatureEn || '').trim();
+    const signature = interpolateTemplate(targetLanguage === 'ar' ? String(tenantEmail.signatureAr || '').trim() : String(tenantEmail.signatureEn || '').trim(), variables);
     const body = [interpolateTemplate(bodyTemplate, variables), signature].filter(Boolean).join('\n\n');
     const subject = interpolateTemplate(subjectTemplate, variables);
     return {
@@ -307,7 +307,13 @@ export const serializeTenantEmailSettings = (tenant) => {
 export const listEmailMessages = async ({ tenantId, folder = 'inbox', search = '', page = 1, limit = 20 }) => {
   const pageNumber = Math.max(1, Number(page) || 1);
   const limitNumber = Math.min(100, Math.max(1, Number(limit) || 20));
-  const query = { tenantId, type: ['inbox', 'sent', 'draft'].includes(folder) ? folder : 'inbox' };
+  const normalizedFolder = ['all', 'inbox', 'sent', 'draft'].includes(String(folder || '').trim().toLowerCase())
+    ? String(folder || '').trim().toLowerCase()
+    : 'inbox';
+  const query = {
+    tenantId,
+    ...(normalizedFolder === 'all' ? {} : { type: normalizedFolder }),
+  };
 
   if (search) {
     query.$or = [
@@ -340,8 +346,10 @@ export const listEmailMessages = async ({ tenantId, folder = 'inbox', search = '
     },
     counts: counts.reduce((acc, item) => {
       acc[item._id] = { count: item.count, unread: item.unread };
+      acc.all.count += item.count || 0;
+      acc.all.unread += item.unread || 0;
       return acc;
-    }, { inbox: { count: 0, unread: 0 }, sent: { count: 0, unread: 0 }, draft: { count: 0, unread: 0 } }),
+    }, { all: { count: 0, unread: 0 }, inbox: { count: 0, unread: 0 }, sent: { count: 0, unread: 0 }, draft: { count: 0, unread: 0 } }),
   };
 };
 
@@ -452,8 +460,8 @@ const resolveInvoiceRecipient = (customer, invoice, fallbackRecipient = '') => {
 
 export const sendInvoiceToRecipient = async ({ tenant, invoice, recipient, customerName, language, purpose = 'manual_invoice' }) => {
   const settings = await getGlobalSettings();
-  const message = buildInvoiceMessage({ tenant, invoice, customerName, language, globalSettings: settings });
-  const attachment = buildInvoicePdfAttachment({ invoice, tenant, customerName });
+  const message = buildInvoiceMessage({ tenant, invoice, customerName, language: 'bilingual', globalSettings: settings });
+  const attachment = await buildInvoicePdfAttachment({ invoice, tenant, customerName, language: 'bilingual' });
 
   return await sendTenantEmail({
     tenant,

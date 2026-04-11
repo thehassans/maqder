@@ -3,6 +3,13 @@ import SystemSettings from '../models/SystemSettings.js'
 
 const hasArabicText = (value = '') => /[\u0600-\u06FF]/.test(String(value || ''))
 const hasTranslatableText = (value = '') => /[A-Za-z\u0600-\u06FF]/.test(String(value || '').trim())
+const translationTimeoutMs = 2500
+const enrichmentTimeoutMs = 4000
+
+const resolveWithin = (promise, timeoutMs, fallbackValue = '') => Promise.race([
+  promise,
+  new Promise((resolve) => setTimeout(() => resolve(fallbackValue), timeoutMs)),
+])
 
 const getGeminiSettings = async () => {
   const settings = await SystemSettings.findOne({ key: 'global' }).select('gemini').lean()
@@ -54,7 +61,11 @@ export const enrichInvoiceArabicFields = async (invoiceData = {}) => {
       return
     }
 
-    const pending = translateText({ client, model, text: source, targetLanguage })
+    const pending = resolveWithin(
+      translateText({ client, model, text: source, targetLanguage }),
+      translationTimeoutMs,
+      ''
+    )
       .then((translated) => {
         const value = String(translated || '').trim()
         return value || ''
@@ -143,6 +154,6 @@ export const enrichInvoiceArabicFields = async (invoiceData = {}) => {
     }
   }
 
-  await Promise.allSettled(tasks)
+  await resolveWithin(Promise.allSettled(tasks), enrichmentTimeoutMs, [])
   return next
 }

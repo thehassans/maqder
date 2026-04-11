@@ -1,8 +1,10 @@
 import { useSelector, useDispatch } from 'react-redux'
-import { Menu, Search, Bell, Moon, Sun, Globe, LogOut, X, FileText, Users, Package } from 'lucide-react'
-import { Fragment, useState, useEffect, useRef } from 'react'
+import { Menu, Search, Bell, Moon, Sun, Globe, LogOut, X, Mail } from 'lucide-react'
+import { Fragment, useState, useEffect, useRef, useMemo } from 'react'
 import { Transition, Popover } from '@headlessui/react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useLocation } from 'react-router-dom'
+import api from '../../lib/api'
 import { logout } from '../../store/slices/authSlice'
 import { setTheme, setLanguage, setMobileMenuOpen } from '../../store/slices/uiSlice'
 import { useTranslation } from '../../lib/translations'
@@ -11,33 +13,64 @@ export default function Header() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const location = useLocation()
+  const queryClient = useQueryClient()
   const { tenant } = useSelector((state) => state.auth)
   const { theme, language } = useSelector((state) => state.ui)
   const { t } = useTranslation(language)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
-  const [notifications, setNotifications] = useState([
-    { id: 1, type: 'invoice', title: language === 'ar' ? 'فاتورة جديدة' : 'New Invoice Created', time: '5m ago', read: false },
-    { id: 2, type: 'user', title: language === 'ar' ? 'مستخدم جديد' : 'New User Registered', time: '1h ago', read: false },
-    { id: 3, type: 'inventory', title: language === 'ar' ? 'مخزون منخفض' : 'Low Stock Alert', time: '2h ago', read: true },
-  ])
   const searchRef = useRef(null)
+  const hasEmailAddon = tenant?.subscription?.hasEmailAddon === true || (Array.isArray(tenant?.subscription?.features) && tenant.subscription.features.includes('email_automation'))
 
-  const unreadCount = notifications.filter(n => !n.read).length
+  const notificationsQuery = useQuery({
+    queryKey: ['header-email-notifications'],
+    queryFn: () => api.get('/email/messages', { params: { folder: 'all', limit: 8 } }).then((res) => res.data),
+    enabled: hasEmailAddon,
+    refetchInterval: hasEmailAddon ? 60000 : false,
+  })
 
-  const markAsRead = (id) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
+  const notifications = useMemo(() => {
+    const messages = notificationsQuery.data?.messages || []
+    return messages
+      .filter((message) => message.type === 'inbox' && !message.isRead)
+      .slice(0, 6)
+      .map((message) => ({
+        id: message._id,
+        type: 'email',
+        title: message.subject || (language === 'ar' ? 'رسالة جديدة' : 'New email'),
+        subtitle: message.from || '',
+        time: new Date(message.createdAt).toLocaleString(language === 'ar' ? 'ar-SA' : 'en-GB', {
+          day: '2-digit',
+          month: 'short',
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+        read: false,
+      }))
+  }, [language, notificationsQuery.data])
+
+  const unreadCount = notifications.length
+
+  const markAsRead = async (id) => {
+    if (!id) return
+    try {
+      await api.patch(`/email/messages/${id}/read`, { isRead: true })
+    } catch {
+    }
+    queryClient.invalidateQueries({ queryKey: ['header-email-notifications'] })
+    queryClient.invalidateQueries({ queryKey: ['tenant-email-messages'] })
+    navigate('/app/dashboard/email')
   }
 
-  const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+  const markAllAsRead = async () => {
+    await Promise.all(notifications.map((notification) => api.patch(`/email/messages/${notification.id}/read`, { isRead: true }).catch(() => null)))
+    queryClient.invalidateQueries({ queryKey: ['header-email-notifications'] })
+    queryClient.invalidateQueries({ queryKey: ['tenant-email-messages'] })
   }
 
   const getNotificationIcon = (type) => {
     switch(type) {
-      case 'invoice': return FileText
-      case 'user': return Users
-      case 'inventory': return Package
+      case 'email': return Mail
       default: return Bell
     }
   }
@@ -187,9 +220,7 @@ export default function Header() {
                           }`}
                         >
                           <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                            notification.type === 'invoice' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' :
-                            notification.type === 'user' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' :
-                            'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
+                            'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
                           }`}>
                             <Icon className="w-4 h-4" />
                           </div>
@@ -197,6 +228,9 @@ export default function Header() {
                             <p className={`text-sm ${!notification.read ? 'font-medium text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-300'}`}>
                               {notification.title}
                             </p>
+                            {notification.subtitle ? (
+                              <p className="truncate text-xs text-gray-500 dark:text-gray-400 mt-0.5">{notification.subtitle}</p>
+                            ) : null}
                             <p className="text-xs text-gray-400 mt-0.5">{notification.time}</p>
                           </div>
                           {!notification.read && (
@@ -209,7 +243,7 @@ export default function Header() {
                 </div>
 
                 <div className="p-2 border-t border-gray-100 dark:border-dark-700">
-                  <button className="w-full p-2 text-sm text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg font-medium transition-colors">
+                  <button onClick={() => navigate('/app/dashboard/email')} className="w-full p-2 text-sm text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg font-medium transition-colors">
                     {language === 'ar' ? 'عرض كل الإشعارات' : 'View all notifications'}
                   </button>
                 </div>
