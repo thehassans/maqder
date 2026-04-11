@@ -153,6 +153,15 @@ const serializeEmailSettings = (email) => ({
   brevoApiKeyMasked: maskSecret(email?.brevoApiKey)
 });
 
+const normalizeTenantPlatformProvider = (value) => {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (normalized === 'brevo') return 'brevo';
+  if (normalized === 'smtp' || normalized === 'platform' || normalized === 'internal_platform' || normalized === 'internal') {
+    return 'platform';
+  }
+  return 'platform';
+};
+
 const mergeGlobalEmailPayload = ({ settings, payload = {} }) => {
   const currentEmail = mergeEmailDefaults(settings?.email);
 
@@ -215,6 +224,10 @@ const serializeTenantForSuperAdmin = (tenant) => {
   const currentSettings = serializedTenant?.settings || {};
   const currentCommunication = currentSettings.communication || {};
   const currentEmail = currentCommunication.email || {};
+  const serializedEmail = {
+    ...currentEmail,
+    platformProvider: normalizeTenantPlatformProvider(currentEmail?.platformProvider),
+  };
 
   return {
     ...serializedTenant,
@@ -222,7 +235,7 @@ const serializeTenantForSuperAdmin = (tenant) => {
       ...currentSettings,
       communication: {
         ...currentCommunication,
-        email: serializeEmailSettings(currentEmail)
+        email: serializeEmailSettings(serializedEmail)
       }
     }
   };
@@ -249,6 +262,7 @@ const mergeTenantEmailSettings = ({ existingTenant, incomingSettings }) => {
       autoSendInvoices: incomingEmail?.autoSendInvoices !== undefined ? incomingEmail.autoSendInvoices === true : currentEmail.autoSendInvoices,
       smtpSecure: incomingEmail?.smtpSecure !== undefined ? incomingEmail.smtpSecure === true : currentEmail.smtpSecure,
       smtpPort: incomingEmail?.smtpPort !== undefined ? Number(incomingEmail.smtpPort || 587) : currentEmail.smtpPort,
+      platformProvider: normalizeTenantPlatformProvider(incomingEmail?.platformProvider ?? currentEmail?.platformProvider),
     };
 
     if (incomingEmail && Object.prototype.hasOwnProperty.call(incomingEmail, 'smtpPass')) {
