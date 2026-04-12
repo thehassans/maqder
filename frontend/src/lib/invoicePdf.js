@@ -674,15 +674,8 @@ const getInvoiceTitle = (invoice, language = 'en') => {
 export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant, sourceElement = null }) => {
   if (!invoice) return
 
-  if (invoice?._id) {
-    try {
-      const pdfBlob = await fetchInvoicePdfBlob(invoice._id)
-      if (pdfBlob && downloadPdfBlob(pdfBlob, invoice.invoiceNumber || 'invoice')) {
-        return
-      }
-    } catch {
-    }
-  }
+  const snapshotCurrency = invoice.currency || tenant?.settings?.currency || 'SAR'
+  const shouldUseSnapshotRenderer = Boolean(sourceElement) || shouldRenderBilingualInvoice(invoice) || isSarCurrency(snapshotCurrency)
 
   const jspdfModule = await import('jspdf')
   const jsPDF = jspdfModule?.jsPDF || jspdfModule?.default || jspdfModule
@@ -694,8 +687,6 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant, sou
   const pdfPageSize = tenant?.settings?.invoicePdfPageSize || 'a4'
   const doc = new jsPDF({ orientation: pdfOrientation, unit: 'pt', format: pdfPageSize })
   const name = sanitizeFileName(invoice.invoiceNumber || 'invoice')
-  const snapshotCurrency = invoice.currency || tenant?.settings?.currency || 'SAR'
-  const shouldUseSnapshotRenderer = shouldRenderBilingualInvoice(invoice) || isSarCurrency(snapshotCurrency)
 
   let snapshotElement = shouldUseSnapshotRenderer ? null : (sourceElement || null)
   let generatedSnapshotHost = null
@@ -715,6 +706,16 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant, sou
 
   if (generatedSnapshotHost?.parentNode) {
     generatedSnapshotHost.parentNode.removeChild(generatedSnapshotHost)
+  }
+
+  if (invoice?._id) {
+    try {
+      const pdfBlob = await fetchInvoicePdfBlob(invoice._id)
+      if (pdfBlob && downloadPdfBlob(pdfBlob, invoice.invoiceNumber || 'invoice')) {
+        return
+      }
+    } catch {
+    }
   }
 
   const pageW = doc.internal.pageSize.getWidth()
