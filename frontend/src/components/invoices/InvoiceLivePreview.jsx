@@ -10,39 +10,26 @@ import SarIcon from '../ui/SarIcon'
 const joinClasses = (...classes) => classes.filter(Boolean).join(' ')
 
 const renderSarMoney = ({ formatted, className = '', iconClassName = '' }) => (
-  <span dir="ltr" className={joinClasses('inline-flex items-center whitespace-nowrap tabular-nums leading-none', className)}>
-    <span className="relative -top-[0.08em] inline-block leading-none">{formatted}</span>
-    <SarIcon className={joinClasses('ms-[0.16em] h-[0.88em] w-[0.78em] shrink-0 translate-y-[0.06em]', iconClassName)} title="Saudi Riyal" />
+  <span dir="ltr" className={joinClasses('inline-flex items-baseline whitespace-nowrap tabular-nums leading-none', className)}>
+    <span className="inline-block leading-none">{formatted}</span>
+    <SarIcon className={joinClasses('ms-[0.16em] shrink-0', iconClassName)} style={{ width: '0.82em', height: '0.82em', verticalAlign: '-0.18em' }} title="Saudi Riyal" />
   </span>
 )
 
 const renderSarMoneySnapshotIcon = ({ formatted, className = '' }) => (
-  <span dir="ltr" className={joinClasses('inline-flex items-center whitespace-nowrap tabular-nums leading-none', className)}>
-    <span className="relative -top-[0.08em] inline-block leading-none">{formatted}</span>
-    <span
+  <span dir="ltr" style={{ display: 'inline-flex', alignItems: 'baseline', whiteSpace: 'nowrap' }}>
+    <span style={{ display: 'inline-block', lineHeight: 1 }}>{formatted}</span>
+    <SarIcon
+      title="Saudi Riyal"
       style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '0.78em',
-        height: '0.88em',
+        display: 'inline-block',
+        width: '0.82em',
+        height: '0.82em',
         marginInlineStart: '0.16em',
         flexShrink: 0,
-        transform: 'translateY(0.06em)',
-        overflow: 'visible',
-        lineHeight: '1',
+        verticalAlign: '-0.18em',
       }}
-    >
-      <SarIcon
-        title="Saudi Riyal"
-        style={{
-          display: 'block',
-          width: '100%',
-          height: '100%',
-          overflow: 'visible',
-        }}
-      />
-    </span>
+    />
   </span>
 )
 
