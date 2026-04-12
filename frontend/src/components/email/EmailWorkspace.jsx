@@ -101,6 +101,8 @@ export default function EmailWorkspace() {
     enabled: hasEmailAddon,
     staleTime: 60 * 1000,
     refetchOnWindowFocus: false,
+    retry: 1,
+    retryDelay: 1500,
   })
 
   const selectedMessageQuery = useQuery({
@@ -410,6 +412,14 @@ export default function EmailWorkspace() {
                     </div>
                   </div>
                 ))}
+              </div>
+            ) : messagesQuery.isError ? (
+              <div className="flex flex-col items-center gap-3 p-8 text-center">
+                <p className="text-sm text-red-500">{isArabic ? 'تعذر تحميل الرسائل' : 'Failed to load messages'}</p>
+                <button type="button" onClick={() => messagesQuery.refetch()} className="btn btn-secondary text-xs">
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  {isArabic ? 'إعادة المحاولة' : 'Retry'}
+                </button>
               </div>
             ) : messages.length === 0 ? (
               <div className="p-8 text-center text-sm text-gray-500 dark:text-gray-400">{isArabic ? 'لا توجد رسائل في هذا المجلد حالياً.' : 'No messages in this folder yet.'}</div>

@@ -95,6 +95,13 @@ router.put('/settings', authorize('admin'), async (req, res) => {
 });
 
 router.get('/messages', async (req, res) => {
+  const timeoutMs = 10000;
+  let timedOut = false;
+  const timeoutId = setTimeout(() => {
+    timedOut = true;
+    if (!res.headersSent) res.status(504).json({ error: 'Request timed out loading messages' });
+  }, timeoutMs);
+
   try {
     const result = await listEmailMessages({
       tenantId: new mongoose.Types.ObjectId(req.user.tenantId),
@@ -104,9 +111,11 @@ router.get('/messages', async (req, res) => {
       limit: req.query.limit,
     });
 
-    res.json(result);
+    clearTimeout(timeoutId);
+    if (!timedOut) res.json(result);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    clearTimeout(timeoutId);
+    if (!timedOut) res.status(500).json({ error: error.message });
   }
 });
 
