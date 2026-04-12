@@ -12,7 +12,7 @@ const joinClasses = (...classes) => classes.filter(Boolean).join(' ')
 const renderSarMoney = ({ formatted, className = '', iconClassName = '' }) => (
   <span dir="ltr" className={joinClasses('inline-flex items-baseline whitespace-nowrap tabular-nums', className)}>
     <SarIcon className={joinClasses('me-[0.18em] h-[0.82em] w-[0.72em] translate-y-[0.04em] self-baseline', iconClassName)} title="Saudi Riyal" />
-    <span className="inline-block leading-none">{formatted}</span>
+    <span className="relative -top-[0.05em] inline-block leading-none">{formatted}</span>
   </span>
 )
 
@@ -40,7 +40,7 @@ const renderSarMoneySnapshotIcon = ({ formatted, className = '' }) => (
         }}
       />
     </span>
-    <span className="inline-block leading-none">{formatted}</span>
+    <span className="relative -top-[0.05em] inline-block leading-none">{formatted}</span>
   </span>
 )
 
