@@ -10,24 +10,27 @@ import SarIcon from '../ui/SarIcon'
 const joinClasses = (...classes) => classes.filter(Boolean).join(' ')
 
 const renderSarMoney = ({ formatted, className = '', iconClassName = '' }) => (
-  <span dir="ltr" className={joinClasses('inline-flex items-baseline whitespace-nowrap tabular-nums leading-none', className)}>
-    <span className="inline-block leading-none">{formatted}</span>
-    <SarIcon className={joinClasses('ms-[0.16em] shrink-0', iconClassName)} style={{ width: '0.82em', height: '0.82em', verticalAlign: '-0.18em' }} title="Saudi Riyal" />
+  <span dir="ltr" className={joinClasses('inline whitespace-nowrap tabular-nums', className)}>
+    <span className="inline">{formatted}</span>
+    <SarIcon
+      className={joinClasses('ms-[0.15em] shrink-0', iconClassName)}
+      style={{ display: 'inline', width: '0.78em', height: '0.78em', verticalAlign: 'text-bottom' }}
+      title="Saudi Riyal"
+    />
   </span>
 )
 
 const renderSarMoneySnapshotIcon = ({ formatted, className = '' }) => (
-  <span dir="ltr" style={{ display: 'inline-flex', alignItems: 'baseline', whiteSpace: 'nowrap' }}>
-    <span style={{ display: 'inline-block', lineHeight: 1 }}>{formatted}</span>
+  <span dir="ltr" style={{ display: 'inline', whiteSpace: 'nowrap' }}>
+    <span style={{ display: 'inline' }}>{formatted}</span>
     <SarIcon
       title="Saudi Riyal"
       style={{
-        display: 'inline-block',
-        width: '0.82em',
-        height: '0.82em',
-        marginInlineStart: '0.16em',
-        flexShrink: 0,
-        verticalAlign: '-0.18em',
+        display: 'inline',
+        width: '0.78em',
+        height: '0.78em',
+        marginInlineStart: '0.15em',
+        verticalAlign: 'text-bottom',
       }}
     />
   </span>
