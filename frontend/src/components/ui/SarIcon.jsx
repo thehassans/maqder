@@ -1,6 +1,6 @@
 const joinClasses = (...classes) => classes.filter(Boolean).join(' ')
 
-export const SAR_ICON_VIEW_BOX = '0 0 1124.14 1256.39'
+export const SAR_ICON_VIEW_BOX = '-28 -24 1180.14 1304.39'
 
 const SAR_ICON_PATHS = [
   'M699.62 1113.02h0c-20.06 44.48-33.32 92.75-38.4 143.37l424.51-90.24c20.06-44.47 33.31-92.75 38.4-143.37l-424.51 90.24Z',
@@ -8,11 +8,11 @@ const SAR_ICON_PATHS = [
 ]
 
 export const getSarIconDataUri = (fill = '#0f172a') => {
-  const markup = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${SAR_ICON_VIEW_BOX}" preserveAspectRatio="xMidYMid meet">${SAR_ICON_PATHS.map((path) => `<path fill="${fill}" d="${path}"/>`).join('')}</svg>`
+  const markup = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${SAR_ICON_VIEW_BOX}" preserveAspectRatio="xMidYMid meet" overflow="visible">${SAR_ICON_PATHS.map((path) => `<path fill="${fill}" d="${path}"/>`).join('')}</svg>`
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(markup)}`
 }
 
-export default function SarIcon({ className = 'w-4 h-4', title = 'SAR', ...props }) {
+export default function SarIcon({ className = 'w-4 h-4', title = 'SAR', style, ...props }) {
   return (
     <svg
       viewBox={SAR_ICON_VIEW_BOX}
@@ -21,6 +21,7 @@ export default function SarIcon({ className = 'w-4 h-4', title = 'SAR', ...props
       role="img"
       preserveAspectRatio="xMidYMid meet"
       className={joinClasses('inline-block shrink-0', className)}
+      style={{ overflow: 'visible', ...(style || {}) }}
       {...props}
     >
       {SAR_ICON_PATHS.map((path) => (

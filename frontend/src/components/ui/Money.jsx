@@ -5,13 +5,15 @@ import SarIcon from './SarIcon'
 const joinClasses = (...classes) => classes.filter(Boolean).join(' ')
 
 const renderSarMoney = ({ formatted, className = '', amountClassName = '', iconClassName = '' }) => (
-  <span dir="ltr" className={joinClasses('inline whitespace-nowrap tabular-nums', className)}>
-    <span className={joinClasses('inline', amountClassName)}>{formatted}</span>
-    <SarIcon
-      className={joinClasses('ms-[0.15em] shrink-0', iconClassName)}
-      style={{ display: 'inline', width: '0.75em', height: '0.75em', verticalAlign: '-0.32em' }}
-      title="Saudi Riyal"
-    />
+  <span dir="ltr" className={joinClasses('inline whitespace-nowrap tabular-nums leading-none', className)}>
+    <span className={joinClasses('relative -top-[0.02em] inline-block leading-none', amountClassName)}>{formatted}</span>
+    <span className="ms-[0.14em] inline-block h-[0.82em] w-[0.82em] overflow-visible align-[-0.2em]">
+      <SarIcon
+        className={joinClasses('block h-full w-full shrink-0 overflow-visible', iconClassName)}
+        style={{ overflow: 'visible' }}
+        title="Saudi Riyal"
+      />
+    </span>
   </span>
 )
 
