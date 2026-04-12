@@ -213,7 +213,7 @@ const captureElementSnapshotCanvas = async (sourceElement) => {
   })
 }
 
-const saveElementSnapshotPdf = async ({ doc, sourceElement, fileName }) => {
+const renderElementSnapshotPdf = async ({ doc, sourceElement }) => {
   if (!doc || !sourceElement || typeof window === 'undefined') return false
 
   const canvas = await captureElementSnapshotCanvas(sourceElement)
@@ -270,6 +270,30 @@ const saveElementSnapshotPdf = async ({ doc, sourceElement, fileName }) => {
     offsetY += sliceHeight
     pageIndex += 1
   }
+
+  return true
+}
+
+const pdfDocumentToBlob = (doc) => {
+  if (!doc) return null
+
+  try {
+    const blob = doc.output('blob')
+    if (blob instanceof Blob) return blob
+  } catch {
+  }
+
+  try {
+    const arrayBuffer = doc.output('arraybuffer')
+    return new Blob([arrayBuffer], { type: 'application/pdf' })
+  } catch {
+    return null
+  }
+}
+
+const saveElementSnapshotPdf = async ({ doc, sourceElement, fileName }) => {
+  const rendered = await renderElementSnapshotPdf({ doc, sourceElement })
+  if (!rendered) return false
 
   doc.save(`${fileName}.pdf`)
   return true
@@ -661,7 +685,7 @@ const getInvoiceTitle = (invoice, language = 'en') => {
   return language === 'ar' ? 'فاتورة ضريبية' : 'Tax Invoice'
 }
 
-export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant, sourceElement = null }) => {
+const generateInvoicePdf = async ({ invoice, language = 'en', tenant, sourceElement = null, output = 'save' }) => {
   if (!invoice) return
 
   const snapshotCurrency = invoice.currency || tenant?.settings?.currency || 'SAR'
@@ -687,11 +711,15 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant, sou
   }
 
   if (snapshotElement) {
-    const saved = await saveElementSnapshotPdf({ doc, sourceElement: snapshotElement, fileName: name })
+    const saved = output === 'blob'
+      ? await renderElementSnapshotPdf({ doc, sourceElement: snapshotElement })
+      : await saveElementSnapshotPdf({ doc, sourceElement: snapshotElement, fileName: name })
     if (generatedSnapshotHost?.parentNode) {
       generatedSnapshotHost.parentNode.removeChild(generatedSnapshotHost)
     }
-    if (saved) return
+    if (saved) {
+      return output === 'blob' ? pdfDocumentToBlob(doc) : true
+    }
   }
 
   if (generatedSnapshotHost?.parentNode) {
@@ -1365,5 +1393,18 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant, sou
     )
   }
 
+  if (output === 'blob') {
+    return pdfDocumentToBlob(doc)
+  }
+
   doc.save(`${name}.pdf`)
+  return true
+}
+
+export const buildInvoicePdfBlob = async ({ invoice, language = 'en', tenant, sourceElement = null }) => {
+  return await generateInvoicePdf({ invoice, language, tenant, sourceElement, output: 'blob' })
+}
+
+export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant, sourceElement = null }) => {
+  return await generateInvoicePdf({ invoice, language, tenant, sourceElement, output: 'save' })
 }

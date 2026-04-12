@@ -458,10 +458,19 @@ const resolveInvoiceRecipient = (customer, invoice, fallbackRecipient = '') => {
   return String(invoice?.buyer?.contactEmail || '').trim().toLowerCase();
 };
 
-export const sendInvoiceToRecipient = async ({ tenant, invoice, recipient, customerName, language, purpose = 'manual_invoice' }) => {
+export const sendInvoiceToRecipient = async ({ tenant, invoice, recipient, customerName, language, purpose = 'manual_invoice', attachment = null }) => {
   const settings = await getGlobalSettings();
   const message = buildInvoiceMessage({ tenant, invoice, customerName, language: 'bilingual', globalSettings: settings });
-  const attachment = await buildInvoicePdfAttachment({ invoice, tenant, customerName, language: 'bilingual' });
+  const invoiceAttachment = attachment && (attachment.content || attachment.contentBase64 || attachment.base64 || attachment.url)
+    ? {
+        filename: String(attachment.filename || `${String(invoice?.invoiceNumber || 'invoice').trim() || 'invoice'}.pdf`).trim(),
+        content: attachment.content,
+        contentBase64: String(attachment.contentBase64 || attachment.base64 || '').trim(),
+        contentType: String(attachment.contentType || attachment.type || 'application/pdf').trim() || 'application/pdf',
+        size: Number(attachment.size || 0),
+        url: String(attachment.url || '').trim(),
+      }
+    : await buildInvoicePdfAttachment({ invoice, tenant, customerName, language: 'bilingual' });
 
   return await sendTenantEmail({
     tenant,
@@ -469,7 +478,7 @@ export const sendInvoiceToRecipient = async ({ tenant, invoice, recipient, custo
     subject: message.subject,
     html: message.html,
     text: message.text,
-    attachments: [attachment],
+    attachments: [invoiceAttachment],
     relatedInvoiceId: invoice._id,
     metadata: { purpose, invoiceNumber: invoice.invoiceNumber, language: message.language },
   });

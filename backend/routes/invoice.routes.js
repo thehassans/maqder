@@ -1218,6 +1218,15 @@ router.post('/:id/send-email', checkPermission('invoicing', 'update'), async (re
       return res.status(400).json({ error: 'Customer email is missing' });
     }
 
+    const attachment = req.body?.attachment && typeof req.body.attachment === 'object'
+      ? {
+          filename: String(req.body.attachment.filename || `${invoice.invoiceNumber || 'invoice'}.pdf`).trim(),
+          contentBase64: String(req.body.attachment.contentBase64 || '').trim(),
+          contentType: String(req.body.attachment.contentType || 'application/pdf').trim() || 'application/pdf',
+          size: Number(req.body.attachment.size || 0),
+        }
+      : null;
+
     const delivery = await sendInvoiceToRecipient({
       tenant,
       invoice,
@@ -1225,6 +1234,7 @@ router.post('/:id/send-email', checkPermission('invoicing', 'update'), async (re
       customerName: customer?.name || customer?.nameAr || invoice?.buyer?.name || invoice?.buyer?.nameAr,
       language: req.body?.language || tenant?.settings?.language,
       purpose: 'manual_invoice',
+      attachment,
     });
 
     res.json({ success: true, delivery });

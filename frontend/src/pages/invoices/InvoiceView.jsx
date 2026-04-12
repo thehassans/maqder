@@ -10,8 +10,27 @@ import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import InvoiceLivePreview from '../../components/invoices/InvoiceLivePreview'
 import { getInvoiceTemplateId } from '../../lib/invoiceBranding'
-import { downloadInvoicePdf, printInvoiceSnapshot } from '../../lib/invoicePdf'
+import { buildInvoicePdfBlob, downloadInvoicePdf, printInvoiceSnapshot } from '../../lib/invoicePdf'
 import { getZatcaStatusMeta } from '../../lib/zatcaStatus'
+
+const blobToBase64 = (blob) => new Promise((resolve, reject) => {
+  const reader = new FileReader()
+  reader.onload = () => {
+    const result = String(reader.result || '')
+    const parts = result.split(',', 2)
+    resolve(parts[1] || '')
+  }
+  reader.onerror = () => reject(reader.error || new Error('Failed to read PDF attachment'))
+  reader.readAsDataURL(blob)
+})
+
+const sanitizeAttachmentFileName = (value) => {
+  const normalized = String(value || 'invoice')
+    .replace(/[\\/:*?"<>|]+/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim()
+  return normalized || 'invoice'
+}
 
 export default function InvoiceView() {
   const { id } = useParams()
@@ -54,7 +73,33 @@ export default function InvoiceView() {
   })
 
   const sendEmailMutation = useMutation({
-    mutationFn: () => api.post(`/invoices/${id}/send-email`, { language }, { timeout: 120000 }),
+    mutationFn: async () => {
+      if (!invoice) {
+        throw new Error(language === 'ar' ? 'الفاتورة غير متاحة' : 'Invoice is unavailable')
+      }
+
+      const attachmentBlob = await buildInvoicePdfBlob({
+        invoice,
+        language,
+        tenant,
+        sourceElement: invoicePreviewRef.current,
+      })
+
+      if (!(attachmentBlob instanceof Blob)) {
+        throw new Error(language === 'ar' ? 'تعذر تجهيز ملف PDF' : 'Unable to prepare PDF attachment')
+      }
+
+      const contentBase64 = await blobToBase64(attachmentBlob)
+      return await api.post(`/invoices/${id}/send-email`, {
+        language,
+        attachment: {
+          filename: `${sanitizeAttachmentFileName(invoice?.invoiceNumber)}.pdf`,
+          contentBase64,
+          contentType: 'application/pdf',
+          size: attachmentBlob.size,
+        },
+      }, { timeout: 120000 })
+    },
     onSuccess: () => {
       toast.success(language === 'ar' ? 'تم إرسال الفاتورة عبر البريد' : 'Invoice email sent successfully')
     },
