@@ -14,7 +14,7 @@ const renderSarMoney = ({ formatted, className = '', iconClassName = '' }) => (
     <span className="inline">{formatted}</span>
     <SarIcon
       className={joinClasses('ms-[0.15em] shrink-0', iconClassName)}
-      style={{ display: 'inline', width: '0.82em', height: '0.82em', verticalAlign: '-0.22em' }}
+      style={{ display: 'inline', width: '0.75em', height: '0.75em', verticalAlign: '-0.32em' }}
       title="Saudi Riyal"
     />
   </span>
@@ -27,10 +27,10 @@ const renderSarMoneySnapshotIcon = ({ formatted, className = '' }) => (
       title="Saudi Riyal"
       style={{
         display: 'inline',
-        width: '0.82em',
-        height: '0.82em',
+        width: '0.75em',
+        height: '0.75em',
         marginInlineStart: '0.15em',
-        verticalAlign: '-0.22em',
+        verticalAlign: '-0.32em',
       }}
     />
   </span>
