@@ -165,37 +165,28 @@ const buildFallbackPdfBufferFromLines = (lines) => {
 
 let pdfRuntimePromise;
 
-const resolvePdfRuntimeModules = (jspdfModule, autoTableModule) => ({
-  jsPDF: jspdfModule?.jsPDF || jspdfModule?.default || jspdfModule,
-  autoTable: autoTableModule?.default?.default
-    || autoTableModule?.default?.autoTable
-    || autoTableModule?.autoTable
-    || autoTableModule?.default
-    || autoTableModule,
+const resolvePdfRuntimeModules = (jspdfModule) => ({
+  jsPDF: jspdfModule?.jsPDF || jspdfModule?.default?.jsPDF || jspdfModule?.default || jspdfModule,
 });
 
 const isValidPdfRuntime = (runtime) => Boolean(
   runtime
   && typeof runtime.jsPDF === 'function'
-  && typeof runtime.autoTable === 'function'
 );
 
 const loadPdfRuntime = async () => {
   if (!pdfRuntimePromise) {
     pdfRuntimePromise = (async () => {
       try {
-        const runtime = resolvePdfRuntimeModules(require('jspdf'), require('jspdf-autotable'));
+        const runtime = resolvePdfRuntimeModules(require('jspdf'));
         if (isValidPdfRuntime(runtime)) {
           return runtime;
         }
         throw new Error('Require-loaded PDF runtime was invalid');
       } catch (requireError) {
         try {
-          const [jspdfModule, autoTableModule] = await Promise.all([
-            import('jspdf'),
-            import('jspdf-autotable'),
-          ]);
-          const runtime = resolvePdfRuntimeModules(jspdfModule, autoTableModule);
+          const jspdfModule = await import('jspdf');
+          const runtime = resolvePdfRuntimeModules(jspdfModule);
           if (isValidPdfRuntime(runtime)) {
             return runtime;
           }
@@ -265,16 +256,108 @@ const setDocFont = (doc, fontFamily, fontStyle = 'normal', fontSize = 11) => {
   doc.setFontSize(fontSize);
 };
 
+const hasArabicText = (value = '') => /[\u0600-\u06FF]/.test(String(value || ''));
+
+const mergeUniqueLines = (...values) => {
+  const seen = new Set();
+  const output = [];
+
+  values.flat(Infinity).forEach((value) => {
+    String(value || '')
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .forEach((line) => {
+        const key = line.toLowerCase();
+        if (seen.has(key)) return;
+        seen.add(key);
+        output.push(line);
+      });
+  });
+
+  return output;
+};
+
+const splitLineForWidth = (doc, line, width) => {
+  const value = normalizeText(line);
+  if (!value) return [];
+  const result = doc.splitTextToSize(value, width);
+  return Array.isArray(result) ? result : [String(result)];
+};
+
+const measureWrappedLinesHeight = (doc, lines, width, englishFont, arabicFont, fontSize = 10.5, lineHeight = fontSize + 4) => {
+  let totalHeight = 0;
+  lines.forEach((line) => {
+    const fontFamily = hasArabicText(line) ? arabicFont : englishFont;
+    setDocFont(doc, fontFamily, 'normal', fontSize);
+    const parts = splitLineForWidth(doc, line, width);
+    totalHeight += Math.max(lineHeight, parts.length * lineHeight);
+  });
+  return totalHeight;
+};
+
+const drawWrappedLines = (doc, lines, x, y, width, { englishFont, arabicFont, fontSize = 10.5, lineHeight = fontSize + 4, align = 'left' } = {}) => {
+  let cursorY = y;
+
+  lines.forEach((line) => {
+    const fontFamily = hasArabicText(line) ? arabicFont : englishFont;
+    setDocFont(doc, fontFamily, 'normal', fontSize);
+    const parts = splitLineForWidth(doc, line, width);
+
+    parts.forEach((part) => {
+      if (align === 'right' && hasArabicText(part) && typeof doc.setR2L === 'function') {
+        doc.setR2L(true);
+      }
+      doc.text(part, x, cursorY, { maxWidth: width, align });
+      if (align === 'right' && typeof doc.setR2L === 'function') {
+        doc.setR2L(false);
+      }
+      cursorY += lineHeight;
+    });
+  });
+
+  return cursorY;
+};
+
+const ensurePageSpace = (doc, currentY, requiredHeight, margin = 40, resetY = 46) => {
+  const pageHeight = doc.internal.pageSize.getHeight();
+  if (currentY + requiredHeight <= pageHeight - margin) {
+    return currentY;
+  }
+  doc.addPage();
+  return resetY;
+};
+
+const drawCard = (doc, x, y, width, height, fillColor = [255, 255, 255], strokeColor = [226, 232, 240]) => {
+  doc.setFillColor(...fillColor);
+  doc.setDrawColor(...strokeColor);
+  doc.roundedRect(x, y, width, height, 14, 14, 'FD');
+};
+
+const buildBilingualPartyLines = (party = {}, fallbackName = '') => {
+  const normalizedParty = {
+    ...party,
+    name: normalizeText(party?.name || fallbackName),
+    nameAr: normalizeText(party?.nameAr || ''),
+  };
+
+  return mergeUniqueLines(
+    buildPartyLines(normalizedParty, 'en'),
+    buildPartyLines(normalizedParty, 'ar')
+  );
+};
+
 export const buildInvoicePdfBuffer = async ({ invoice, tenant, customerName, language = 'bilingual' }) => {
   const pdfRuntime = await loadPdfRuntime();
-  if (!pdfRuntime?.jsPDF || !pdfRuntime?.autoTable) {
+  if (!pdfRuntime?.jsPDF) {
     logger.warn(`Invoice PDF fallback renderer used for invoice ${sanitizeFileName(invoice?.invoiceNumber || 'unknown')}`);
     return buildFallbackPdfBufferFromLines(buildFallbackInvoiceLines({ invoice, tenant, customerName }));
   }
 
-  const { jsPDF, autoTable } = pdfRuntime;
+  const { jsPDF } = pdfRuntime;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 40;
   const arabicFontReady = await ensureTajawalFont(doc);
   const englishFont = 'helvetica';
@@ -282,11 +365,29 @@ export const buildInvoicePdfBuffer = async ({ invoice, tenant, customerName, lan
   const sellerNameEn = normalizeText(tenant?.business?.legalNameEn || tenant?.name || 'Maqder ERP');
   const sellerNameAr = normalizeText(tenant?.business?.legalNameAr);
   const buyerName = normalizeText(customerName || invoice?.buyer?.name || invoice?.buyer?.nameAr || 'Customer');
-  const invoiceTitle = `Invoice ${normalizeText(invoice?.invoiceNumber)}`;
-  const invoiceTitleAr = `الفاتورة ${normalizeText(invoice?.invoiceNumber)}`;
+  const invoiceTitle = invoice?.businessContext === 'travel_agency' || invoice?.invoiceSubtype === 'travel_ticket'
+    ? `Travel Services Invoice ${normalizeText(invoice?.invoiceNumber)}`
+    : `Invoice ${normalizeText(invoice?.invoiceNumber)}`;
+  const invoiceTitleAr = invoice?.businessContext === 'travel_agency' || invoice?.invoiceSubtype === 'travel_ticket'
+    ? `فاتورة خدمات السفر ${normalizeText(invoice?.invoiceNumber)}`
+    : `الفاتورة ${normalizeText(invoice?.invoiceNumber)}`;
+  const flowValue = normalizeText(invoice?.flow || 'sell');
+  const infoCards = [
+    { label: 'Invoice # / رقم الفاتورة', value: normalizeText(invoice?.invoiceNumber) || '—' },
+    { label: 'Issue Date / تاريخ الإصدار', value: formatDate(invoice?.issueDate, 'en') || '—' },
+    { label: 'Flow / التدفق', value: flowValue || '—' },
+    { label: 'Status / الحالة', value: normalizeText(invoice?.status) || '—' },
+  ];
+  const partyLinesSeller = buildBilingualPartyLines(invoice?.seller || tenant?.business || {}, sellerNameEn);
+  const partyLinesBuyer = buildBilingualPartyLines(invoice?.buyer || {}, buyerName);
+  const travelRows = buildTravelRows(invoice);
+  const lineItems = Array.isArray(invoice?.lineItems) ? invoice.lineItems : [];
 
   doc.setFillColor(22, 59, 39);
   doc.rect(0, 0, pageWidth, 120, 'F');
+  setDocFont(doc, englishFont, 'normal', 8);
+  doc.setTextColor(214, 211, 209);
+  doc.text(invoice?.businessContext === 'travel_agency' || invoice?.invoiceSubtype === 'travel_ticket' ? 'TRAVEL SERVICES INVOICE' : 'TAX INVOICE', margin, 24);
   setDocFont(doc, englishFont, 'bold', 22);
   doc.setTextColor(255, 255, 255);
   doc.text(sellerNameEn, margin, 42);
@@ -303,120 +404,163 @@ export const buildInvoicePdfBuffer = async ({ invoice, tenant, customerName, lan
   doc.text(invoiceTitleAr, pageWidth - margin, 78, { align: 'right' });
   if (typeof doc.setR2L === 'function') doc.setR2L(false);
 
-  const infoRows = [
-    ['Issue Date', 'تاريخ الإصدار', formatDate(invoice?.issueDate, 'en')],
-    ['Transaction', 'نوع المعاملة', normalizeText(invoice?.transactionType)],
-    ['Payment Method', 'طريقة الدفع', normalizeText(invoice?.paymentMethod)],
-    ['Status', 'الحالة', normalizeText(invoice?.status)],
-  ];
-
-  autoTable(doc, {
-    startY: 140,
-    margin: { left: margin, right: margin },
-    theme: 'grid',
-    head: [['English', 'العربية', 'Value']],
-    body: infoRows,
-    styles: { font: englishFont, fontSize: 10, cellPadding: 8, textColor: [31, 41, 55] },
-    headStyles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: 'bold' },
-    alternateRowStyles: { fillColor: [248, 250, 252] },
-    columnStyles: {
-      1: { font: arabicFont, halign: 'right' },
-      2: { halign: 'left' },
-    },
+  const infoY = 138;
+  const infoGap = 12;
+  const infoWidth = (pageWidth - margin * 2 - infoGap * 3) / 4;
+  infoCards.forEach((card, index) => {
+    const x = margin + (infoWidth + infoGap) * index;
+    drawCard(doc, x, infoY, infoWidth, 58, [248, 250, 252]);
+    setDocFont(doc, englishFont, 'normal', 8.5);
+    doc.setTextColor(100, 116, 139);
+    doc.text(card.label, x + 12, infoY + 16, { maxWidth: infoWidth - 24 });
+    setDocFont(doc, hasArabicText(card.value) ? arabicFont : englishFont, 'bold', 10.5);
+    doc.setTextColor(15, 23, 42);
+    doc.text(card.value, x + 12, infoY + 37, { maxWidth: infoWidth - 24 });
   });
 
-  const partiesStartY = (doc.lastAutoTable?.finalY || 140) + 18;
-  const sectionWidth = (pageWidth - margin * 2 - 14) / 2;
-  doc.setDrawColor(226, 232, 240);
-  doc.setFillColor(248, 250, 252);
-  doc.roundedRect(margin, partiesStartY, sectionWidth, 122, 14, 14, 'FD');
-  doc.roundedRect(margin + sectionWidth + 14, partiesStartY, sectionWidth, 122, 14, 14, 'FD');
-  setDocFont(doc, englishFont, 'bold', 13);
-  doc.setTextColor(15, 23, 42);
-  doc.text('Seller / البائع', margin + 14, partiesStartY + 20);
-  doc.text('Customer / العميل', margin + sectionWidth + 28, partiesStartY + 20);
+  const partiesStartY = infoY + 76;
+  const sectionWidth = (pageWidth - margin * 2 - 16) / 2;
+  const partyTextWidth = sectionWidth - 24;
+  const sellerHeight = measureWrappedLinesHeight(doc, partyLinesSeller, partyTextWidth, englishFont, arabicFont, 10, 13);
+  const buyerHeight = measureWrappedLinesHeight(doc, partyLinesBuyer, partyTextWidth, englishFont, arabicFont, 10, 13);
+  const partyHeight = Math.max(124, 32 + Math.max(sellerHeight, buyerHeight) + 18);
 
-  const writeMultiline = (lines, startX, startY, fontFamily, align = 'left') => {
-    let cursorY = startY;
-    lines.forEach((line) => {
-      if (!line) return;
-      setDocFont(doc, fontFamily, 'normal', 10.5);
-      if (align === 'right' && typeof doc.setR2L === 'function') doc.setR2L(true);
-      doc.text(line, startX, cursorY, { maxWidth: sectionWidth - 28, align });
-      if (align === 'right' && typeof doc.setR2L === 'function') doc.setR2L(false);
-      cursorY += 14;
+  drawCard(doc, margin, partiesStartY, sectionWidth, partyHeight, [248, 250, 252]);
+  drawCard(doc, margin + sectionWidth + 16, partiesStartY, sectionWidth, partyHeight, [248, 250, 252]);
+  setDocFont(doc, englishFont, 'bold', 12);
+  doc.setTextColor(15, 23, 42);
+  doc.text('Seller / البائع', margin + 12, partiesStartY + 18);
+  doc.text('Customer / العميل', margin + sectionWidth + 28, partiesStartY + 18);
+  drawWrappedLines(doc, partyLinesSeller, margin + 12, partiesStartY + 36, partyTextWidth, { englishFont, arabicFont, fontSize: 10, lineHeight: 13 });
+  drawWrappedLines(doc, partyLinesBuyer, margin + sectionWidth + 28, partiesStartY + 36, partyTextWidth, { englishFont, arabicFont, fontSize: 10, lineHeight: 13 });
+
+  let cursorY = partiesStartY + partyHeight + 18;
+
+  if (travelRows.length) {
+    const travelLabelWidth = 170;
+    const travelValueWidth = pageWidth - margin * 2 - 32 - travelLabelWidth;
+    const travelHeight = travelRows.reduce((total, [label, value]) => {
+      const labelHeight = measureWrappedLinesHeight(doc, [label], travelLabelWidth, englishFont, arabicFont, 9.5, 12);
+      const valueHeight = measureWrappedLinesHeight(doc, [value], travelValueWidth, englishFont, arabicFont, 9.5, 12);
+      return total + Math.max(labelHeight, valueHeight, 20) + 10;
+    }, 32);
+
+    cursorY = ensurePageSpace(doc, cursorY, travelHeight + 12, margin, 46);
+    drawCard(doc, margin, cursorY, pageWidth - margin * 2, travelHeight, [250, 250, 250]);
+    setDocFont(doc, englishFont, 'bold', 12);
+    doc.setTextColor(15, 23, 42);
+    doc.text('Travel Details / تفاصيل السفر', margin + 12, cursorY + 18);
+
+    let rowY = cursorY + 34;
+    travelRows.forEach(([label, value], rowIndex) => {
+      const rowHeight = Math.max(
+        measureWrappedLinesHeight(doc, [label], travelLabelWidth, englishFont, arabicFont, 9.5, 12),
+        measureWrappedLinesHeight(doc, [value], travelValueWidth, englishFont, arabicFont, 9.5, 12),
+        20
+      ) + 6;
+
+      if (rowIndex > 0) {
+        doc.setDrawColor(226, 232, 240);
+        doc.line(margin + 12, rowY - 6, pageWidth - margin - 12, rowY - 6);
+      }
+
+      drawWrappedLines(doc, [label], margin + 12, rowY + 2, travelLabelWidth, { englishFont, arabicFont, fontSize: 9.5, lineHeight: 12 });
+      drawWrappedLines(doc, [value], margin + 22 + travelLabelWidth, rowY + 2, travelValueWidth, { englishFont, arabicFont, fontSize: 9.5, lineHeight: 12 });
+      rowY += rowHeight;
+    });
+
+    cursorY += travelHeight + 18;
+  }
+
+  const tableX = margin;
+  const tableWidth = pageWidth - margin * 2;
+  const colWidths = [24, 196, 44, 88, 56, tableWidth - (24 + 196 + 44 + 88 + 56)];
+  const drawItemsHeader = (y) => {
+    doc.setFillColor(15, 23, 42);
+    doc.setDrawColor(15, 23, 42);
+    doc.rect(tableX, y, tableWidth, 28, 'FD');
+    const headers = ['#', 'Description / الوصف', 'Qty / الكمية', 'Unit Price / سعر الوحدة', 'Tax / الضريبة', 'Total / الإجمالي'];
+    let currentX = tableX;
+    headers.forEach((header, index) => {
+      setDocFont(doc, hasArabicText(header) ? arabicFont : englishFont, 'bold', 8.5);
+      doc.setTextColor(255, 255, 255);
+      doc.text(header, currentX + 6, y + 17, { maxWidth: colWidths[index] - 12 });
+      currentX += colWidths[index];
     });
   };
 
-  writeMultiline(buildPartyLines(invoice?.seller || tenant?.business || {}, 'en'), margin + 14, partiesStartY + 40, englishFont);
-  writeMultiline(buildPartyLines({ ...(invoice?.buyer || {}), name: buyerName }, 'en'), margin + sectionWidth + 28, partiesStartY + 40, englishFont);
+  cursorY = ensurePageSpace(doc, cursorY, 60, margin, 46);
+  drawItemsHeader(cursorY);
+  let rowY = cursorY + 28;
 
-  const travelRows = buildTravelRows(invoice);
-  if (travelRows.length) {
-    autoTable(doc, {
-      startY: partiesStartY + 140,
-      margin: { left: margin, right: margin },
-      theme: 'grid',
-      head: [['Travel Details / تفاصيل السفر', 'Value / القيمة']],
-      body: travelRows,
-      styles: { font: englishFont, fontSize: 10, cellPadding: 8, textColor: [31, 41, 55] },
-      headStyles: { fillColor: [236, 253, 245], textColor: [6, 78, 59], fontStyle: 'bold' },
-      alternateRowStyles: { fillColor: [248, 250, 252] },
-    });
-  }
-
-  const itemsStartY = (doc.lastAutoTable?.finalY || (partiesStartY + 140)) + 18;
-  const lineItems = Array.isArray(invoice?.lineItems) ? invoice.lineItems : [];
-  autoTable(doc, {
-    startY: itemsStartY,
-    margin: { left: margin, right: margin },
-    theme: 'grid',
-    head: [[
-      '#',
-      'Description\nالوصف',
-      'Qty\nالكمية',
-      'Unit Price\nسعر الوحدة',
-      'Tax\nالضريبة',
-      'Total\nالإجمالي',
-    ]],
-    body: lineItems.map((line, index) => ([
+  lineItems.forEach((line, index) => {
+    const rowValues = [
       String(index + 1),
-      [normalizeText(line?.productName), normalizeText(line?.productNameAr)].filter(Boolean).join('\n'),
+      mergeUniqueLines(normalizeText(line?.productName), normalizeText(line?.productNameAr)).join('\n') || `Item ${index + 1}`,
       String(Number(line?.quantity || 0)),
       toMoney(line?.unitPrice, invoice?.currency),
       `${Number(line?.taxRate || 0).toFixed(2)}%`,
       toMoney(line?.lineTotalWithTax || line?.lineTotal, invoice?.currency),
-    ])),
-    styles: { font: englishFont, fontSize: 9.5, cellPadding: 7, textColor: [31, 41, 55], valign: 'middle' },
-    headStyles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: 'bold' },
-    alternateRowStyles: { fillColor: [248, 250, 252] },
-    columnStyles: {
-      1: { cellWidth: 180 },
-    },
+    ];
+    const rowHeight = Math.max(
+      24,
+      ...rowValues.map((value, cellIndex) => measureWrappedLinesHeight(doc, [value], colWidths[cellIndex] - 10, englishFont, arabicFont, 9.5, 12))
+    ) + 8;
+
+    if (rowY + rowHeight > pageHeight - margin - 120) {
+      doc.addPage();
+      rowY = 46;
+      drawItemsHeader(rowY);
+      rowY += 28;
+    }
+
+    const fill = index % 2 === 0 ? [255, 255, 255] : [248, 250, 252];
+    doc.setFillColor(...fill);
+    doc.setDrawColor(226, 232, 240);
+    doc.rect(tableX, rowY, tableWidth, rowHeight, 'FD');
+
+    let currentX = tableX;
+    rowValues.forEach((value, cellIndex) => {
+      doc.setDrawColor(226, 232, 240);
+      doc.line(currentX, rowY, currentX, rowY + rowHeight);
+      const align = cellIndex === 0 || cellIndex >= 2 ? 'center' : 'left';
+      drawWrappedLines(doc, [value], currentX + (align === 'left' ? 6 : colWidths[cellIndex] / 2), rowY + 15, colWidths[cellIndex] - 10, {
+        englishFont,
+        arabicFont,
+        fontSize: 9.5,
+        lineHeight: 12,
+        align,
+      });
+      currentX += colWidths[cellIndex];
+    });
+    doc.line(tableX + tableWidth, rowY, tableX + tableWidth, rowY + rowHeight);
+    rowY += rowHeight;
   });
 
-  let footerY = (doc.lastAutoTable?.finalY || itemsStartY) + 18;
-  if (footerY > 720) {
-    doc.addPage();
-    footerY = 56;
-  }
+  let footerY = rowY + 18;
+  footerY = ensurePageSpace(doc, footerY, 120, margin, 46);
 
-  doc.setFillColor(248, 250, 252);
-  doc.roundedRect(pageWidth - margin - 190, footerY, 190, 92, 14, 14, 'FD');
-  setDocFont(doc, englishFont, 'normal', 10.5);
-  doc.text(`Subtotal / الإجمالي الفرعي`, pageWidth - margin - 176, footerY + 22);
-  doc.text(toMoney(invoice?.subtotal, invoice?.currency), pageWidth - margin - 12, footerY + 22, { align: 'right' });
-  doc.text(`Tax / الضريبة`, pageWidth - margin - 176, footerY + 44);
-  doc.text(toMoney(invoice?.totalTax, invoice?.currency), pageWidth - margin - 12, footerY + 44, { align: 'right' });
-  setDocFont(doc, englishFont, 'bold', 12.5);
-  doc.text(`Grand Total / الإجمالي`, pageWidth - margin - 176, footerY + 70);
-  doc.text(toMoney(invoice?.grandTotal, invoice?.currency), pageWidth - margin - 12, footerY + 70, { align: 'right' });
+  const summaryWidth = 206;
+  drawCard(doc, pageWidth - margin - summaryWidth, footerY, summaryWidth, 92, [248, 250, 252]);
+  const summaryRows = [
+    ['Subtotal / الإجمالي الفرعي', toMoney(invoice?.subtotal, invoice?.currency)],
+    ['Tax / الضريبة', toMoney(invoice?.totalTax, invoice?.currency)],
+    ['Grand Total / الإجمالي', toMoney(invoice?.grandTotal, invoice?.currency)],
+  ];
+  summaryRows.forEach(([label, value], index) => {
+    const rowOffset = footerY + 22 + index * 24;
+    setDocFont(doc, englishFont, index === 2 ? 'bold' : 'normal', index === 2 ? 11.5 : 10);
+    doc.setTextColor(15, 23, 42);
+    doc.text(label, pageWidth - margin - summaryWidth + 12, rowOffset);
+    doc.text(value, pageWidth - margin - 12, rowOffset, { align: 'right' });
+  });
 
   if (invoice?.notes) {
+    const notesWidth = pageWidth - margin * 2 - summaryWidth - 18;
+    drawCard(doc, margin, footerY, notesWidth, 92, [255, 255, 255]);
     setDocFont(doc, englishFont, 'bold', 11);
-    doc.text('Notes / ملاحظات', margin, footerY + 18);
-    setDocFont(doc, englishFont, 'normal', 10);
-    doc.text(normalizeText(invoice.notes), margin, footerY + 38, { maxWidth: pageWidth - margin * 2 - 210 });
+    doc.text('Notes / ملاحظات', margin + 12, footerY + 18);
+    drawWrappedLines(doc, [normalizeText(invoice.notes)], margin + 12, footerY + 38, notesWidth - 24, { englishFont, arabicFont, fontSize: 10, lineHeight: 13 });
   }
 
   const arrayBuffer = doc.output('arraybuffer');
