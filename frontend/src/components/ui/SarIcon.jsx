@@ -20,7 +20,7 @@ export default function SarIcon({ className = 'w-4 h-4', title = 'SAR', ...props
       aria-label={title}
       role="img"
       preserveAspectRatio="xMidYMid meet"
-      className={joinClasses('inline-block shrink-0 align-[-0.12em]', className)}
+      className={joinClasses('inline-block shrink-0', className)}
       {...props}
     >
       {SAR_ICON_PATHS.map((path) => (

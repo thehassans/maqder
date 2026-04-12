@@ -10,23 +10,22 @@ import SarIcon from '../ui/SarIcon'
 const joinClasses = (...classes) => classes.filter(Boolean).join(' ')
 
 const renderSarMoney = ({ formatted, className = '', iconClassName = '' }) => (
-  <span dir="ltr" className={joinClasses('whitespace-nowrap tabular-nums', className)}>
-    <SarIcon className={joinClasses('relative top-[0.08em] me-[0.18em] h-[0.82em] w-[0.72em]', iconClassName)} title="Saudi Riyal" />
-    <span className="inline leading-none">{formatted}</span>
+  <span dir="ltr" className={joinClasses('inline-flex items-baseline whitespace-nowrap tabular-nums', className)}>
+    <SarIcon className={joinClasses('me-[0.18em] h-[0.82em] w-[0.72em] translate-y-[0.04em] self-baseline', iconClassName)} title="Saudi Riyal" />
+    <span className="inline-block leading-none">{formatted}</span>
   </span>
 )
 
 const renderSarMoneySnapshotIcon = ({ formatted, className = '' }) => (
-  <span dir="ltr" className={joinClasses('whitespace-nowrap tabular-nums', className)}>
+  <span dir="ltr" className={joinClasses('inline-flex items-baseline whitespace-nowrap tabular-nums', className)}>
     <span
       style={{
         display: 'inline-block',
         width: '0.72em',
-        height: '0.96em',
+        height: '0.82em',
         marginInlineEnd: '0.18em',
-        verticalAlign: '-0.12em',
         position: 'relative',
-        top: '0.25em',
+        top: '0.04em',
         overflow: 'visible',
         lineHeight: '1',
       }}
@@ -41,7 +40,7 @@ const renderSarMoneySnapshotIcon = ({ formatted, className = '' }) => (
         }}
       />
     </span>
-    <span className="inline leading-none">{formatted}</span>
+    <span className="inline-block leading-none">{formatted}</span>
   </span>
 )
 
