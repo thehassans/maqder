@@ -254,6 +254,7 @@ export default function InvoiceView() {
                 language={language}
                 templateId={templateId}
                 bilingual={isBilingualInvoice}
+                currencyRenderMode="symbol"
               />
             </div>
           </motion.div>

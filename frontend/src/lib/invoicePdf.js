@@ -435,7 +435,7 @@ const buildSnapshotElement = async ({ invoice, tenant, language }) => {
       language,
       templateId,
       bilingual: shouldRenderBilingualInvoice(invoice),
-      currencyRenderMode: 'snapshot-icon',
+      currencyRenderMode: 'symbol',
     }))
   )
   host.innerHTML = `
