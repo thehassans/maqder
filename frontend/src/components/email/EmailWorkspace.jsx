@@ -91,18 +91,24 @@ export default function EmailWorkspace() {
     queryKey: ['tenant-email-settings'],
     queryFn: () => api.get('/email/settings').then((res) => res.data),
     enabled: hasEmailAddon,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   })
 
   const messagesQuery = useQuery({
     queryKey: ['tenant-email-messages', activeFolder, search],
     queryFn: () => api.get('/email/messages', { params: { folder: activeFolder, search } }).then((res) => res.data),
     enabled: hasEmailAddon,
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: false,
   })
 
   const selectedMessageQuery = useQuery({
     queryKey: ['tenant-email-message', selectedMessageId],
     queryFn: () => api.get(`/email/messages/${selectedMessageId}`).then((res) => res.data),
     enabled: hasEmailAddon && !!selectedMessageId && !composeState,
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: false,
   })
 
   const messages = messagesQuery.data?.messages || []
@@ -388,7 +394,23 @@ export default function EmailWorkspace() {
           </div>
           <div className="max-h-[680px] overflow-y-auto">
             {messagesQuery.isLoading ? (
-              <div className="flex justify-center p-10"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary-500 border-t-transparent" /></div>
+              <div className="divide-y divide-gray-100 dark:divide-dark-800">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="px-4 py-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="h-4 w-4 rounded-full bg-gray-200 dark:bg-dark-600 animate-pulse" />
+                          <div className="h-3.5 w-2/3 rounded-lg bg-gray-200 dark:bg-dark-600 animate-pulse" />
+                        </div>
+                        <div className="h-3 w-1/2 rounded-lg bg-gray-100 dark:bg-dark-700 animate-pulse" />
+                        <div className="h-3 w-4/5 rounded-lg bg-gray-100 dark:bg-dark-700 animate-pulse" />
+                      </div>
+                      <div className="h-3 w-12 shrink-0 rounded-lg bg-gray-100 dark:bg-dark-700 animate-pulse" />
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : messages.length === 0 ? (
               <div className="p-8 text-center text-sm text-gray-500 dark:text-gray-400">{isArabic ? 'لا توجد رسائل في هذا المجلد حالياً.' : 'No messages in this folder yet.'}</div>
             ) : messages.map((message) => (
