@@ -10,21 +10,23 @@ import SarIcon from '../ui/SarIcon'
 const joinClasses = (...classes) => classes.filter(Boolean).join(' ')
 
 const renderSarMoney = ({ formatted, className = '', iconClassName = '' }) => (
-  <span dir="ltr" className={joinClasses('inline-flex items-end whitespace-nowrap tabular-nums leading-none', className)}>
-    <SarIcon className={joinClasses('me-[0.18em] h-[0.82em] w-[0.72em] shrink-0 self-end', iconClassName)} title="Saudi Riyal" />
+  <span dir="ltr" className={joinClasses('inline-flex items-center whitespace-nowrap tabular-nums leading-none', className)}>
     <span className="inline-block leading-none">{formatted}</span>
+    <SarIcon className={joinClasses('ms-[0.16em] h-[0.88em] w-[0.78em] shrink-0', iconClassName)} title="Saudi Riyal" />
   </span>
 )
 
 const renderSarMoneySnapshotIcon = ({ formatted, className = '' }) => (
-  <span dir="ltr" className={joinClasses('inline-flex items-end whitespace-nowrap tabular-nums leading-none', className)}>
+  <span dir="ltr" className={joinClasses('inline-flex items-center whitespace-nowrap tabular-nums leading-none', className)}>
+    <span className="inline-block leading-none">{formatted}</span>
     <span
       style={{
         display: 'inline-flex',
-        alignItems: 'flex-end',
-        width: '0.72em',
-        height: '0.82em',
-        marginInlineEnd: '0.18em',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '0.78em',
+        height: '0.88em',
+        marginInlineStart: '0.16em',
         flexShrink: 0,
         overflow: 'visible',
         lineHeight: '1',
@@ -40,7 +42,6 @@ const renderSarMoneySnapshotIcon = ({ formatted, className = '' }) => (
         }}
       />
     </span>
-    <span className="inline-block leading-none">{formatted}</span>
   </span>
 )
 
@@ -223,7 +224,7 @@ const getInvoiceTitle = (invoice, language = 'en') => {
   return language === 'ar' ? 'فاتورة ضريبية' : 'Tax Invoice'
 }
 
-export default function InvoiceLivePreview({ invoice, tenant, language = 'en', templateId = 1, bilingual = false, currencyRenderMode = 'symbol' }) {
+export default function InvoiceLivePreview({ invoice, tenant, language = 'en', templateId = 1, bilingual = false, currencyRenderMode = 'icon' }) {
   const currency = invoice?.currency || tenant?.settings?.currency || 'SAR'
   const invoiceBranding = getInvoiceBranding(tenant, language, invoice?.businessContext)
   const styles = getTemplateClasses(Number(templateId || invoiceBranding.templateId || 1))
