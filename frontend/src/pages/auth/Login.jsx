@@ -12,6 +12,7 @@ import { usePublicWebsiteSettings } from '../../lib/website'
 const complianceLogos = [
   { src: '/ZATCA_Logo.svg', alt: 'ZATCA', cardClassName: 'w-48', imageClassName: 'scale-[1.35]' },
   { src: '/saudi-vision-2030-logo.png', alt: 'Saudi Vision 2030', cardClassName: 'w-36', imageClassName: 'scale-100' },
+  { src: '/saudi-tech.svg', alt: 'Saudi Tech', cardClassName: 'w-36', imageClassName: 'scale-100' },
 ]
 
 export default function Login() {
