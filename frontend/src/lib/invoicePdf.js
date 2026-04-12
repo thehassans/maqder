@@ -278,16 +278,6 @@ const saveElementSnapshotPdf = async ({ doc, sourceElement, fileName }) => {
 export const printInvoiceSnapshot = async ({ invoice, language = 'en', tenant, sourceElement = null }) => {
   if (!invoice || typeof document === 'undefined' || typeof window === 'undefined') return false
 
-  if (invoice?._id) {
-    try {
-      const pdfBlob = await fetchInvoicePdfBlob(invoice._id)
-      if (pdfBlob) {
-        return await printPdfBlob(pdfBlob, sanitizeFileName(invoice?.invoiceNumber || 'invoice'))
-      }
-    } catch {
-    }
-  }
-
   const currency = invoice.currency || tenant?.settings?.currency || 'SAR'
   const shouldPreferGeneratedSnapshot = isSarCurrency(currency)
 
@@ -706,16 +696,6 @@ export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant, sou
 
   if (generatedSnapshotHost?.parentNode) {
     generatedSnapshotHost.parentNode.removeChild(generatedSnapshotHost)
-  }
-
-  if (invoice?._id) {
-    try {
-      const pdfBlob = await fetchInvoicePdfBlob(invoice._id)
-      if (pdfBlob && downloadPdfBlob(pdfBlob, invoice.invoiceNumber || 'invoice')) {
-        return
-      }
-    } catch {
-    }
   }
 
   const pageW = doc.internal.pageSize.getWidth()
