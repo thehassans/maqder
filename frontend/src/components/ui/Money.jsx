@@ -6,8 +6,8 @@ const joinClasses = (...classes) => classes.filter(Boolean).join(' ')
 
 const renderSarMoney = ({ formatted, className = '', amountClassName = '', iconClassName = '' }) => (
   <span dir="ltr" className={joinClasses('inline whitespace-nowrap tabular-nums leading-none', className)}>
-    <span className={joinClasses('relative -top-[0.02em] inline-block leading-none', amountClassName)}>{formatted}</span>
-    <span className="ms-[0.14em] inline-block h-[0.82em] w-[0.82em] overflow-visible align-[-0.2em]">
+    <span className={joinClasses('inline-block leading-none', amountClassName)}>{formatted}</span>
+    <span className="ms-[0.14em] inline-block h-[0.78em] w-[0.78em] overflow-visible align-[-0.1em]">
       <SarIcon
         className={joinClasses('block h-full w-full shrink-0 overflow-visible', iconClassName)}
         style={{ overflow: 'visible' }}
