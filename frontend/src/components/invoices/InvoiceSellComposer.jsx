@@ -122,6 +122,18 @@ export default function InvoiceSellComposer() {
     setValue('pdfTemplateId', getInvoiceTemplateId(tenant, businessContext))
   }, [businessContext, setValue])
 
+  useEffect(() => {
+    if (!isTravelContext) return
+    lineItems.forEach((line, index) => {
+      if (toNumber(line?.taxRate, 15) !== 15) {
+        setValue(`lineItems.${index}.taxRate`, 15)
+      }
+      if (!line?.isTravelMargin) {
+        setValue(`lineItems.${index}.isTravelMargin`, true)
+      }
+    })
+  }, [isTravelContext, lineItems, setValue])
+
   const { data: products } = useQuery({
     queryKey: ['products-list'],
     queryFn: () => api.get('/products', { params: { limit: 200 } }).then((res) => res.data.products),
@@ -189,10 +201,8 @@ export default function InvoiceSellComposer() {
 
       const subtotal = Number(data?.subtotal) || 0
       const totalTax = Number(data?.totalTax) || 0
-      const grandTotal = Number(data?.grandTotal) || subtotal + totalTax
-      const taxableAmount = subtotal > 0 ? subtotal : Math.max(0, grandTotal - totalTax)
-      const taxRate = taxableAmount > 0 ? Math.round((totalTax / taxableAmount) * 10000) / 100 : 0
-      replace([{ ...emptyLine, productName: `Travel Booking ${data?.bookingNumber || ''}`.trim(), quantity: 1, unitPrice: taxableAmount, taxRate }])
+      const taxableAmount = subtotal > 0 ? subtotal : Math.max(0, (Number(data?.grandTotal) || 0) - totalTax)
+      replace([{ ...emptyLine, productName: `Travel Booking ${data?.bookingNumber || ''}`.trim(), quantity: 1, unitPrice: taxableAmount, taxRate: 15, agencyPrice: 0, isTravelMargin: true }])
       setValue('invoiceSubtype', 'travel_ticket')
       setValue('buyer.name', data?.customerName || 'Cash Customer')
       setValue('buyer.contactEmail', data?.customerEmail || '')
@@ -292,12 +302,13 @@ export default function InvoiceSellComposer() {
       lineItems: (data.lineItems || []).map((line, index) => {
         const summaryLine = totals.lines[index] || {}
         const agencyPrice = Math.max(0, toNumber(line.agencyPrice, 0))
-        const isTravelMargin = isTravelContext && Boolean(line.isTravelMargin) && agencyPrice > 0 && agencyPrice <= toNumber(line.unitPrice, 0)
+        const isTravelMargin = isTravelContext ? true : Boolean(line.isTravelMargin)
         return {
           ...line,
           lineNumber: index + 1,
           taxCategory: 'S',
           productId: isTradingContext ? line.productId || undefined : undefined,
+          taxRate: isTravelContext ? 15 : toNumber(line.taxRate, 15),
           agencyPrice: isTravelContext ? agencyPrice : 0,
           isTravelMargin,
           marginTaxable: isTravelMargin ? Math.max(0, toNumber(summaryLine.marginTaxable, 0)) : 0,
@@ -568,6 +579,8 @@ export default function InvoiceSellComposer() {
                 <motion.div key={field.id} initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl bg-gray-50 p-4 dark:bg-dark-700">
                   <input type="hidden" {...register(`lineItems.${index}.productNameAr`)} />
                   <input type="hidden" {...register(`lineItems.${index}.unitCode`)} />
+                  <input type="hidden" {...register(`lineItems.${index}.taxRate`, { valueAsNumber: true })} />
+                  <input type="hidden" {...register(`lineItems.${index}.isTravelMargin`)} />
                   <div className="grid grid-cols-1 items-end gap-4 md:grid-cols-12">
                     <div className="md:col-span-4">
                       <label className="label">{t('productName')} *</label>
@@ -591,10 +604,24 @@ export default function InvoiceSellComposer() {
                       <label className="label">{t('unitPrice')}</label>
                       <input type="number" step="0.01" {...register(`lineItems.${index}.unitPrice`, { valueAsNumber: true, required: true, min: 0 })} className="input" />
                     </div>
-                    <div className="md:col-span-2">
-                      <label className="label">{t('tax')} %</label>
-                      <select {...register(`lineItems.${index}.taxRate`, { valueAsNumber: true })} className="select"><option value={15}>15%</option><option value={0}>0%</option></select>
-                    </div>
+                    {isTravelContext ? (
+                      <div className="md:col-span-2">
+                        <label className="label">{language === 'ar' ? 'سعر الوكالة' : 'Agency Price'}</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          {...register(`lineItems.${index}.agencyPrice`, { valueAsNumber: true, min: 0 })}
+                          className="input"
+                          placeholder="0.00"
+                        />
+                      </div>
+                    ) : (
+                      <div className="md:col-span-2">
+                        <label className="label">{t('tax')} %</label>
+                        <select {...register(`lineItems.${index}.taxRate`, { valueAsNumber: true })} className="select"><option value={15}>15%</option><option value={0}>0%</option></select>
+                      </div>
+                    )}
                     <div className="md:col-span-2 flex items-center gap-2">
                       <div className="flex-1 text-end"><p className="mb-1 text-xs text-gray-500">{t('total')}</p><p className="font-semibold"><Money value={calculateLineTotal(index).total} /></p></div>
                       {fields.length > 1 && <button type="button" onClick={() => remove(index)} className="rounded-lg p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"><Trash2 className="w-4 h-4" /></button>}
@@ -607,41 +634,22 @@ export default function InvoiceSellComposer() {
                     const qtyNum = Math.max(0, toNumber(line.quantity, 0))
                     const profitPerUnit = Math.max(0, unitPriceNum - agencyPriceNum)
                     const lineProfit = profitPerUnit * qtyNum
-                    const lineMarginVat = Boolean(line.isTravelMargin) && agencyPriceNum > 0 && agencyPriceNum <= unitPriceNum
-                      ? lineProfit * (toNumber(line.taxRate, 0) / 100)
-                      : 0
+                    const lineMarginVat = lineProfit * 0.15
                     return (
                       <div className="mt-3 rounded-lg border border-dashed border-primary-200 bg-primary-50/40 p-3 dark:border-primary-900/40 dark:bg-primary-900/10">
                         <div className="grid grid-cols-1 items-end gap-4 md:grid-cols-12">
-                          <div className="md:col-span-4 flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              id={`margin-${index}`}
-                              {...register(`lineItems.${index}.isTravelMargin`)}
-                              className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                            />
-                            <label htmlFor={`margin-${index}`} className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                              {language === 'ar' ? 'ضريبة على هامش الربح فقط' : 'VAT on profit margin only'}
-                            </label>
-                          </div>
-                          <div className="md:col-span-3">
-                            <label className="label">{language === 'ar' ? 'سعر الوكالة (تكلفة)' : 'Agency Price (cost)'}</label>
-                            <input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              {...register(`lineItems.${index}.agencyPrice`, { valueAsNumber: true, min: 0 })}
-                              className="input"
-                              placeholder="0.00"
-                            />
-                            <p className="mt-1 text-[11px] text-gray-500">{language === 'ar' ? 'مخفي في الفاتورة المطبوعة' : 'Hidden on printed invoice'}</p>
+                          <div className="md:col-span-6">
+                            <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                              {language === 'ar' ? 'ضريبة القيمة المضافة تُحسب تلقائياً بنسبة 15% على هامش الربح' : 'VAT is calculated automatically at 15% on the profit margin'}
+                            </p>
+                            <p className="mt-1 text-[11px] text-gray-500">{language === 'ar' ? 'سعر الوكالة مخفي في الفاتورة المطبوعة' : 'Agency price is hidden on the printed invoice'}</p>
                           </div>
                           <div className="md:col-span-3 text-end">
                             <p className="mb-1 text-xs text-gray-500">{language === 'ar' ? 'إجمالي الربح' : 'Total Profit'}</p>
                             <p className="font-semibold text-emerald-600"><Money value={lineProfit} /></p>
                           </div>
                           <div className="md:col-span-2 text-end">
-                            <p className="mb-1 text-xs text-gray-500">{language === 'ar' ? 'ضريبة على الربح' : 'VAT on Profit'}</p>
+                            <p className="mb-1 text-xs text-gray-500">{language === 'ar' ? 'ضريبة 15% على الربح' : '15% VAT on Profit'}</p>
                             <p className="font-semibold"><Money value={lineMarginVat} /></p>
                           </div>
                         </div>

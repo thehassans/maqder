@@ -267,6 +267,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
         getAmountInWords(totals.grandTotal, currency, 'ar'),
       )
     : [getAmountInWords(totals.grandTotal, currency, language)]
+  const hideTaxOnInvoice = invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency'
   const showInvoiceTitle = !(invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency')
   const invoiceTitle = bilingual
     ? toBilingualText(getInvoiceTitle(invoice, 'en'), getInvoiceTitle(invoice, 'ar'))
@@ -542,7 +543,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
                 <th className="px-4 py-3 text-start font-medium whitespace-pre-line">{bilingual ? toBilingualText('Description', 'الوصف') : (language === 'ar' ? 'الوصف' : 'Description')}</th>
                 <th className="px-4 py-3 text-center font-medium whitespace-pre-line">{bilingual ? toBilingualText('Qty', 'الكمية') : (language === 'ar' ? 'الكمية' : 'Qty')}</th>
                 <th className="px-4 py-3 text-end font-medium whitespace-pre-line">{bilingual ? toBilingualText('Unit Price', 'سعر الوحدة') : (language === 'ar' ? 'السعر' : 'Price')}</th>
-                <th className="px-4 py-3 text-end font-medium whitespace-pre-line">{bilingual ? toBilingualText('Tax', 'الضريبة') : (language === 'ar' ? 'الضريبة' : 'Tax')}</th>
+                {!hideTaxOnInvoice && <th className="px-4 py-3 text-end font-medium whitespace-pre-line">{bilingual ? toBilingualText('Tax', 'الضريبة') : (language === 'ar' ? 'الضريبة' : 'Tax')}</th>}
                 <th className="px-4 py-3 text-end font-medium whitespace-pre-line">{bilingual ? toBilingualText('Total', 'الإجمالي') : (language === 'ar' ? 'الإجمالي' : 'Total')}</th>
               </tr>
             </thead>
@@ -565,7 +566,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
                     </td>
                     <td className="px-4 py-3 text-center">{quantity || '—'}</td>
                     <td className="px-4 py-3 text-end">{renderMoney(unitPrice)}</td>
-                    <td className="px-4 py-3 text-end">{renderMoney(tax)}</td>
+                    {!hideTaxOnInvoice && <td className="px-4 py-3 text-end">{renderMoney(tax)}</td>}
                     <td className="px-4 py-3 text-end font-semibold">{renderMoney(total)}</td>
                   </tr>
                 )
@@ -592,10 +593,12 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
               <span className="whitespace-pre-line">{bilingual ? toBilingualText('Discount', 'الخصم') : (language === 'ar' ? 'الخصم' : 'Discount')}</span>
               <span>{renderMoney(totals.totalDiscount)}</span>
             </div>
-            <div className="mt-2 flex items-center justify-between text-sm font-bold text-slate-800">
-              <span className="whitespace-pre-line">{bilingual ? toBilingualText('Tax', 'الضريبة') : (language === 'ar' ? 'الضريبة' : 'VAT')}</span>
-              <span>{renderMoney(totals.totalTax)}</span>
-            </div>
+            {!hideTaxOnInvoice && (
+              <div className="mt-2 flex items-center justify-between text-sm font-bold text-slate-800">
+                <span className="whitespace-pre-line">{bilingual ? toBilingualText('Tax', 'الضريبة') : (language === 'ar' ? 'الضريبة' : 'VAT')}</span>
+                <span>{renderMoney(totals.totalTax)}</span>
+              </div>
+            )}
             <div className={`mt-4 flex items-center justify-between border-t border-slate-200 pt-4 ${titleText}`}>
               <span className="text-base font-bold whitespace-pre-line">{bilingual ? toBilingualText('Total', 'الإجمالي') : (language === 'ar' ? 'الإجمالي النهائي' : 'Grand Total')}</span>
               <span className="text-2xl font-bold">{renderMoney(totals.grandTotal)}</span>
