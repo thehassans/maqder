@@ -251,12 +251,41 @@ router.get('/vat-return', async (req, res) => {
                   taxCategory: '$lineItems.taxCategory',
                   taxRate: '$lineItems.taxRate'
                 },
-                taxableAmount: { $sum: '$lineItems.lineTotal' },
-                taxAmount: { $sum: '$lineItems.taxAmount' },
-                totalWithTax: { $sum: '$lineItems.lineTotalWithTax' }
+                taxableAmount: {
+                  $sum: {
+                    $cond: [
+                      { $eq: ['$lineItems.isTravelMargin', true] },
+                      { $ifNull: ['$lineItems.marginTaxable', 0] },
+                      { $ifNull: ['$lineItems.lineTotal', 0] }
+                    ]
+                  }
+                },
+                taxAmount: { $sum: { $ifNull: ['$lineItems.taxAmount', 0] } },
+                totalWithTax: { $sum: { $ifNull: ['$lineItems.lineTotalWithTax', 0] } }
               }
             },
             { $sort: { '_id.taxCategory': 1, '_id.taxRate': -1 } }
+          ],
+          travelMargin: [
+            { $unwind: '$lineItems' },
+            { $match: { 'lineItems.isTravelMargin': true } },
+            {
+              $group: {
+                _id: null,
+                lineCount: { $sum: 1 },
+                customerNet: { $sum: { $ifNull: ['$lineItems.lineTotal', 0] } },
+                agencyCost: {
+                  $sum: {
+                    $multiply: [
+                      { $ifNull: ['$lineItems.quantity', 0] },
+                      { $ifNull: ['$lineItems.agencyPrice', 0] }
+                    ]
+                  }
+                },
+                marginTaxable: { $sum: { $ifNull: ['$lineItems.marginTaxable', 0] } },
+                taxAmount: { $sum: { $ifNull: ['$lineItems.taxAmount', 0] } }
+              }
+            }
           ],
           byTransactionType: [
             {
@@ -278,6 +307,7 @@ router.get('/vat-return', async (req, res) => {
     const invoices = result?.invoices?.[0] || { invoiceCount: 0, totalDiscount: 0, taxableAmount: 0, totalTax: 0, grandTotal: 0 };
     const byTaxCategory = result?.byTaxCategory || [];
     const byTransactionType = result?.byTransactionType || [];
+    const travelMarginTotals = result?.travelMargin?.[0] || { lineCount: 0, customerNet: 0, agencyCost: 0, marginTaxable: 0, taxAmount: 0 };
 
     const totalsByCategory = {
       standardRated: { taxableAmount: 0, taxAmount: 0 },
@@ -327,6 +357,13 @@ router.get('/vat-return', async (req, res) => {
         grandTotal: invoices.grandTotal || 0,
         byCategory: totalsByCategory,
         purchasesTaxAmount: vatReturn.expenseTotals?.taxAmount || 0,
+        travelMargin: {
+          lineCount: travelMarginTotals.lineCount || 0,
+          customerNet: travelMarginTotals.customerNet || 0,
+          agencyCost: travelMarginTotals.agencyCost || 0,
+          marginTaxable: travelMarginTotals.marginTaxable || 0,
+          taxAmount: travelMarginTotals.taxAmount || 0,
+        },
       },
       breakdown: {
         byTaxCategory,

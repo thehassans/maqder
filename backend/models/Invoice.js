@@ -53,7 +53,10 @@ const invoiceLineSchema = new mongoose.Schema({
   taxRate: { type: Number, default: 15 },
   taxAmount: { type: Number },
   lineTotal: { type: Number },
-  lineTotalWithTax: { type: Number }
+  lineTotalWithTax: { type: Number },
+  agencyPrice: { type: Number, default: 0, min: 0 },
+  isTravelMargin: { type: Boolean, default: false },
+  marginTaxable: { type: Number, default: 0 }
 });
 
 const partySchema = new mongoose.Schema({

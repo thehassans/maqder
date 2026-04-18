@@ -479,6 +479,45 @@ export default function Reports() {
                 </div>
               </div>
 
+              {(totals?.travelMargin?.lineCount || 0) > 0 && (
+                <div className="card p-6 border border-primary-200 bg-primary-50/40 dark:border-primary-900/40 dark:bg-primary-900/10">
+                  <div className="flex items-start justify-between gap-4 mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                        {language === 'ar' ? 'وكالات السفر — نظام هامش الربح' : 'Travel Agency — Margin Scheme'}
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        {language === 'ar'
+                          ? 'ضريبة القيمة المضافة محسوبة على هامش الربح فقط (سعر البيع - سعر الوكالة)'
+                          : 'VAT is calculated on profit margin only (Unit Price - Agency Price)'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <div>
+                      <p className="text-xs text-gray-500">{language === 'ar' ? 'عدد البنود' : 'Margin Lines'}</p>
+                      <p className="text-xl font-bold text-gray-900 dark:text-white">{(totals.travelMargin.lineCount || 0).toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">{language === 'ar' ? 'صافي العميل' : 'Customer Net'}</p>
+                      <p className="text-xl font-bold text-gray-900 dark:text-white">{money(totals.travelMargin.customerNet || 0)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">{language === 'ar' ? 'تكلفة الوكالة' : 'Agency Cost'}</p>
+                      <p className="text-xl font-bold text-gray-900 dark:text-white">{money(totals.travelMargin.agencyCost || 0)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">{language === 'ar' ? 'هامش الربح (خاضع للضريبة)' : 'Profit Margin (Taxable)'}</p>
+                      <p className="text-xl font-bold text-emerald-600">{money(totals.travelMargin.marginTaxable || 0)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500">{language === 'ar' ? 'ضريبة على الربح 15%' : 'VAT on Profit (15%)'}</p>
+                      <p className="text-xl font-bold text-primary-600">{money(totals.travelMargin.taxAmount || 0)}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="card p-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                   {language === 'ar' ? 'تفاصيل حسب فئة الضريبة' : 'Details by Tax Category'}

@@ -97,21 +97,29 @@ export const calculateInvoiceSummary = (invoice = {}) => {
     const quantity = Math.max(0, toNumber(line?.quantity, 0))
     const unitPrice = Math.max(0, toNumber(line?.unitPrice, 0))
     const taxRate = Math.max(0, toNumber(line?.taxRate, 0))
+    const agencyPrice = Math.max(0, toNumber(line?.agencyPrice, 0))
+    const isTravelMargin = Boolean(line?.isTravelMargin) && agencyPrice > 0 && agencyPrice <= unitPrice
     const lineSubtotal = quantity * unitPrice
     const rawDiscount = Math.max(0, toNumber(line?.discount, 0))
     const lineDiscount = line?.discountType === 'percentage'
       ? Math.min(lineSubtotal, lineSubtotal * (rawDiscount / 100))
       : Math.min(lineSubtotal, rawDiscount)
     const netBeforeInvoiceDiscount = Math.max(0, lineSubtotal - lineDiscount)
+    const marginBeforeInvoiceDiscount = isTravelMargin
+      ? Math.max(0, quantity * (unitPrice - agencyPrice) - (lineDiscount * (unitPrice > 0 ? (unitPrice - agencyPrice) / unitPrice : 0)))
+      : 0
 
     return {
       raw: line,
       quantity,
       unitPrice,
       taxRate,
+      agencyPrice,
+      isTravelMargin,
       lineSubtotal,
       lineDiscount,
       netBeforeInvoiceDiscount,
+      marginBeforeInvoiceDiscount,
     }
   })
 
@@ -129,7 +137,14 @@ export const calculateInvoiceSummary = (invoice = {}) => {
       ? remainingInvoiceDiscount
       : Math.min(remainingInvoiceDiscount, proportionalDiscount)
     const taxableLineTotal = Math.max(0, line.netBeforeInvoiceDiscount - invoiceDiscountShare)
-    const taxAmount = taxableLineTotal * (line.taxRate / 100)
+    const marginShareFactor = line.netBeforeInvoiceDiscount > 0
+      ? Math.max(0, line.netBeforeInvoiceDiscount - invoiceDiscountShare) / line.netBeforeInvoiceDiscount
+      : 0
+    const marginTaxable = line.isTravelMargin
+      ? Math.max(0, line.marginBeforeInvoiceDiscount * marginShareFactor)
+      : 0
+    const vatBase = line.isTravelMargin ? marginTaxable : taxableLineTotal
+    const taxAmount = vatBase * (line.taxRate / 100)
     const lineTotalWithTax = taxableLineTotal + taxAmount
 
     remainingInvoiceDiscount = Math.max(0, remainingInvoiceDiscount - invoiceDiscountShare)
@@ -138,6 +153,7 @@ export const calculateInvoiceSummary = (invoice = {}) => {
       ...line,
       invoiceDiscountShare,
       lineTotal: taxableLineTotal,
+      marginTaxable,
       taxAmount,
       lineTotalWithTax,
     }
@@ -147,6 +163,8 @@ export const calculateInvoiceSummary = (invoice = {}) => {
   const taxableAmount = lineSummaries.reduce((sum, line) => sum + line.lineTotal, 0)
   const totalTax = lineSummaries.reduce((sum, line) => sum + line.taxAmount, 0)
   const grandTotal = taxableAmount + totalTax
+  const travelMarginTaxable = lineSummaries.reduce((sum, line) => sum + (line.isTravelMargin ? line.marginTaxable : 0), 0)
+  const travelAgencyCost = lineSummaries.reduce((sum, line) => sum + (line.isTravelMargin ? line.quantity * line.agencyPrice : 0), 0)
 
   return {
     subtotal,
@@ -155,6 +173,8 @@ export const calculateInvoiceSummary = (invoice = {}) => {
     taxableAmount,
     totalTax,
     grandTotal,
+    travelMarginTaxable,
+    travelAgencyCost,
     lines: lineSummaries,
   }
 }

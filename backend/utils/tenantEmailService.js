@@ -326,9 +326,11 @@ export const listEmailMessages = async ({ tenantId, folder = 'inbox', search = '
 
   const [messages, total, counts] = await Promise.all([
     EmailMessage.find(query)
+      .select('from to cc subject previewText isRead type direction status createdAt updatedAt delivery.sentAt delivery.receivedAt relatedInvoiceId attachments.name attachments.type attachments.size metadata')
       .sort({ createdAt: -1 })
       .skip((pageNumber - 1) * limitNumber)
-      .limit(limitNumber),
+      .limit(limitNumber)
+      .lean(),
     EmailMessage.countDocuments(query),
     EmailMessage.aggregate([
       { $match: { tenantId } },

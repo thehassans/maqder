@@ -79,9 +79,15 @@ export default function EmailWorkspace() {
 
   const [activeFolder, setActiveFolder] = useState('all')
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [selectedMessageId, setSelectedMessageId] = useState('')
   const [showSettings, setShowSettings] = useState(false)
   const [composeState, setComposeState] = useState(null)
+
+  useEffect(() => {
+    const handle = setTimeout(() => setDebouncedSearch(search), 350)
+    return () => clearTimeout(handle)
+  }, [search])
 
   const salesPhone = websiteSettings?.contactPhone || '+966595930045'
   const salesEmail = websiteSettings?.contactEmail || 'info@maqder.com'
@@ -96,21 +102,23 @@ export default function EmailWorkspace() {
   })
 
   const messagesQuery = useQuery({
-    queryKey: ['tenant-email-messages', activeFolder, search],
-    queryFn: () => api.get('/email/messages', { params: { folder: activeFolder, search } }).then((res) => res.data),
+    queryKey: ['tenant-email-messages', activeFolder, debouncedSearch],
+    queryFn: () => api.get('/email/messages', { params: { folder: activeFolder, search: debouncedSearch } }).then((res) => res.data),
     enabled: hasEmailAddon,
     staleTime: 60 * 1000,
     refetchOnWindowFocus: false,
     retry: 1,
     retryDelay: 1500,
+    placeholderData: (previous) => previous,
   })
 
   const selectedMessageQuery = useQuery({
     queryKey: ['tenant-email-message', selectedMessageId],
     queryFn: () => api.get(`/email/messages/${selectedMessageId}`).then((res) => res.data),
     enabled: hasEmailAddon && !!selectedMessageId && !composeState,
-    staleTime: 60 * 1000,
+    staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
+    placeholderData: (previous) => previous,
   })
 
   const messages = messagesQuery.data?.messages || []
