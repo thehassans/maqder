@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
@@ -47,39 +47,61 @@ const sanitizeTravelDetails = (travelDetails = {}) => ({
     .filter((passenger) => passenger.name || passenger.passportNumber),
 })
 
-export default function InvoiceSellComposer() {
+const buildSellInvoiceFormValues = ({ invoice, tenant, defaultBusinessContext, hasTravel }) => ({
+  businessContext: invoice?.businessContext || defaultBusinessContext,
+  invoiceSubtype: invoice?.invoiceSubtype || (hasTravel ? 'travel_ticket' : 'standard'),
+  pdfTemplateId: invoice?.pdfTemplateId || getInvoiceTemplateId(tenant, invoice?.businessContext || defaultBusinessContext),
+  transactionType: invoice?.transactionType || 'B2C',
+  invoiceTypeCode: invoice?.invoiceTypeCode || (invoice?.transactionType === 'B2B' ? '0100000' : '0200000'),
+  paymentMethod: invoice?.paymentMethod || 'cash',
+  customerId: invoice?.customerId || '',
+  warehouseId: invoice?.warehouseId || '',
+  restaurantOrderId: invoice?.restaurantOrderId || '',
+  travelBookingId: invoice?.travelBookingId || '',
+  contractNumber: invoice?.contractNumber || '',
+  notes: invoice?.notes || '',
+  invoiceDiscount: Math.max(0, toNumber(invoice?.invoiceDiscount, 0)),
+  buyer: invoice?.buyer || {},
+  travelDetails: sanitizeTravelDetails(invoice?.travelDetails || { passengerTitle: 'mr', layoverStay: '', hasReturnDate: false, segments: [{ from: '', to: '' }], passengers: [] }),
+  lineItems: Array.isArray(invoice?.lineItems) && invoice.lineItems.length > 0
+    ? invoice.lineItems.map((line) => ({
+        ...emptyLine,
+        ...line,
+        productId: line?.productId || '',
+        productName: line?.productName || '',
+        productNameAr: line?.productNameAr || '',
+        unitCode: line?.unitCode || 'PCE',
+        quantity: Math.max(1, toNumber(line?.quantity, 1)),
+        unitPrice: Math.max(0, toNumber(line?.unitPrice, 0)),
+        taxRate: Math.max(0, toNumber(line?.taxRate, 15)),
+        agencyPrice: Math.max(0, toNumber(line?.agencyPrice, 0)),
+        isTravelMargin: Boolean(line?.isTravelMargin),
+      }))
+    : [emptyLine],
+})
+
+export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = null }) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { language } = useSelector((state) => state.ui)
-  const { tenant } = useSelector((state) => state.auth)
+  const { tenant, user } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
   const [invoiceType, setInvoiceType] = useState('B2C')
   const tenantBusinessTypes = getTenantBusinessTypes(tenant)
+  const isEdit = Boolean(invoiceId)
   const defaultBusinessContext = useMemo(() => {
     const primary = getPrimaryBusinessType(tenant)
     if (selectableContexts.includes(primary)) return primary
     return tenantBusinessTypes.find((type) => selectableContexts.includes(type)) || 'trading'
   }, [tenant, tenantBusinessTypes])
 
-  const { register, control, handleSubmit, watch, setValue, getValues } = useForm({
-    defaultValues: {
-      businessContext: defaultBusinessContext,
-      invoiceSubtype: tenantBusinessTypes.includes('travel_agency') ? 'travel_ticket' : 'standard',
-      pdfTemplateId: getInvoiceTemplateId(tenant, defaultBusinessContext),
-      transactionType: 'B2C',
-      invoiceTypeCode: '0200000',
-      paymentMethod: 'cash',
-      customerId: '',
-      warehouseId: '',
-      restaurantOrderId: '',
-      travelBookingId: '',
-      contractNumber: '',
-      notes: '',
-      invoiceDiscount: 0,
-      buyer: {},
-      travelDetails: { passengerTitle: 'mr', layoverStay: '', hasReturnDate: false, segments: [{ from: '', to: '' }], passengers: [] },
-      lineItems: [emptyLine],
-    }
+  const { register, control, handleSubmit, watch, setValue, getValues, reset } = useForm({
+    defaultValues: buildSellInvoiceFormValues({
+      invoice: initialInvoice,
+      tenant,
+      defaultBusinessContext,
+      hasTravel: tenantBusinessTypes.includes('travel_agency'),
+    })
   })
 
   const { fields, append, remove, replace } = useFieldArray({ control, name: 'lineItems' })
@@ -93,10 +115,25 @@ export default function InvoiceSellComposer() {
   const isTravelContext = businessContext === 'travel_agency'
   const isRestaurantContext = businessContext === 'restaurant'
   const [sourceId, setSourceId] = useState('')
+  const skipBusinessContextResetRef = useRef(false)
 
   useEffect(() => {
+    if (isEdit && initialInvoice?._id) return
     setValue('businessContext', defaultBusinessContext)
-  }, [defaultBusinessContext, setValue])
+  }, [defaultBusinessContext, initialInvoice?._id, isEdit, setValue])
+
+  useEffect(() => {
+    if (!isEdit || !initialInvoice?._id) return
+    skipBusinessContextResetRef.current = true
+    setInvoiceType(initialInvoice?.transactionType === 'B2B' ? 'B2B' : 'B2C')
+    setSourceId('')
+    reset(buildSellInvoiceFormValues({
+      invoice: initialInvoice,
+      tenant,
+      defaultBusinessContext,
+      hasTravel: tenantBusinessTypes.includes('travel_agency'),
+    }))
+  }, [defaultBusinessContext, initialInvoice, isEdit, reset, tenant, tenantBusinessTypes])
 
   useEffect(() => {
     if (isTravelContext) {
@@ -115,6 +152,10 @@ export default function InvoiceSellComposer() {
   }, [invoiceSubtype, isTravelContext, setValue])
 
   useEffect(() => {
+    if (skipBusinessContextResetRef.current) {
+      skipBusinessContextResetRef.current = false
+      return
+    }
     setSourceId('')
     setValue('restaurantOrderId', '')
     setValue('travelBookingId', '')
@@ -229,20 +270,29 @@ export default function InvoiceSellComposer() {
     onError: (error) => toast.error(error?.response?.data?.error || error.message || 'Failed'),
   })
 
-  const createMutation = useMutation({
-    mutationFn: (data) => api.post('/invoices/sell', data, { timeout: 120000 }),
+  const saveMutation = useMutation({
+    mutationFn: (data) => isEdit
+      ? api.put(`/invoices/${invoiceId}`, data, { timeout: 120000 })
+      : api.post('/invoices/sell', data, { timeout: 120000 }),
     onSuccess: (res) => {
-      toast.success(language === 'ar' ? 'تم إنشاء فاتورة البيع بنجاح' : 'Sell invoice created successfully')
+      toast.success(
+        isEdit
+          ? (language === 'ar' ? 'تم تحديث فاتورة البيع بنجاح' : 'Sell invoice updated successfully')
+          : (language === 'ar' ? 'تم إنشاء فاتورة البيع بنجاح' : 'Sell invoice created successfully')
+      )
       queryClient.invalidateQueries(['invoices'])
+      if (isEdit) {
+        queryClient.invalidateQueries(['invoice', invoiceId])
+      }
       queryClient.invalidateQueries(['dashboard'])
       queryClient.invalidateQueries(['dashboard-revenue'])
       queryClient.invalidateQueries(['travel-bookings'])
       queryClient.invalidateQueries(['travel-bookings-lookup'])
       queryClient.invalidateQueries(['customers'])
       queryClient.invalidateQueries(['customers-lookup'])
-      navigate(`/app/dashboard/invoices/${res.data._id}`)
+      navigate(`/app/dashboard/invoices/${res.data?._id || invoiceId}`)
     },
-    onError: (error) => toast.error(error?.response?.data?.error || error?.userMessage || error?.message || 'Failed to create invoice'),
+    onError: (error) => toast.error(error?.response?.data?.error || error?.userMessage || error?.message || (isEdit ? 'Failed to update invoice' : 'Failed to create invoice')),
   })
 
   const onSelectProduct = (index, productId) => {
@@ -298,7 +348,7 @@ export default function InvoiceSellComposer() {
       transactionType,
       invoiceTypeCode,
       invoiceDiscount: Math.max(0, toNumber(data?.invoiceDiscount, 0)),
-      issueDate: new Date(),
+      issueDate: isEdit ? (initialInvoice?.issueDate || new Date()) : new Date(),
       lineItems: (data.lineItems || []).map((line, index) => {
         const summaryLine = totals.lines[index] || {}
         const agencyPrice = Math.max(0, toNumber(line.agencyPrice, 0))
@@ -336,13 +386,16 @@ export default function InvoiceSellComposer() {
     } else {
       delete payload.travelDetails
     }
-    createMutation.mutate(payload)
+    saveMutation.mutate(payload)
   }
 
   const previewInvoice = {
     ...values,
-    invoiceNumber: 'DRAFT-PREVIEW',
-    issueDate: new Date(),
+    invoiceNumber: initialInvoice?.invoiceNumber || 'DRAFT-PREVIEW',
+    issueDate: initialInvoice?.issueDate || new Date(),
+    createdByName: initialInvoice?.createdByName || [user?.firstName, user?.lastName].filter(Boolean).join(' '),
+    createdByNameAr: initialInvoice?.createdByNameAr || [user?.firstNameAr, user?.lastNameAr].filter(Boolean).join(' '),
+    createdBy: initialInvoice?.createdBy || user,
     flow: 'sell',
     transactionType: isTravelContext ? 'B2C' : invoiceType,
     invoiceSubtype: isTravelContext ? 'travel_ticket' : invoiceSubtype,
@@ -377,12 +430,12 @@ export default function InvoiceSellComposer() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <button onClick={() => navigate('/app/dashboard/invoices/new')} className="btn btn-ghost btn-icon">
+        <button onClick={() => navigate(isEdit ? `/app/dashboard/invoices/${invoiceId}` : '/app/dashboard/invoices/new')} className="btn btn-ghost btn-icon">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{language === 'ar' ? 'فاتورة بيع جديدة' : 'New Sell Invoice'}</h1>
-          <p className="mt-1 text-gray-500 dark:text-gray-400">{language === 'ar' ? 'اختر النشاط، القالب، وشاهد المعاينة المباشرة قبل الحفظ' : 'Choose the business flow, template, and see a live preview before saving'}</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{isEdit ? (language === 'ar' ? 'تعديل فاتورة البيع' : 'Edit Sell Invoice') : (language === 'ar' ? 'فاتورة بيع جديدة' : 'New Sell Invoice')}</h1>
+          <p className="mt-1 text-gray-500 dark:text-gray-400">{isEdit ? (language === 'ar' ? 'حدّث بيانات الفاتورة وشاهد المعاينة المباشرة قبل الحفظ' : 'Update the invoice details and review the live preview before saving') : (language === 'ar' ? 'اختر النشاط، القالب، وشاهد المعاينة المباشرة قبل الحفظ' : 'Choose the business flow, template, and see a live preview before saving')}</p>
         </div>
       </div>
 
@@ -640,7 +693,7 @@ export default function InvoiceSellComposer() {
                         <div className="grid grid-cols-1 items-end gap-4 md:grid-cols-12">
                           <div className="md:col-span-6">
                             <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                              {language === 'ar' ? 'ضريبة القيمة المضافة تُحسب تلقائياً بنسبة 15% على هامش الربح' : 'VAT is calculated automatically at 15% on the profit margin'}
+                              {language === 'ar' ? 'ضريبة القيمة المضافة على سعر الوحدة للعميل تساوي صفراً، وتُحسب تلقائياً بنسبة 15% على هامش الربح فقط' : 'VAT on the customer unit price is zero, and 15% VAT is calculated automatically on the profit margin only'}
                             </p>
                             <p className="mt-1 text-[11px] text-gray-500">{language === 'ar' ? 'سعر الوكالة مخفي في الفاتورة المطبوعة' : 'Agency price is hidden on the printed invoice'}</p>
                           </div>
@@ -687,8 +740,8 @@ export default function InvoiceSellComposer() {
                 <div className="flex justify-between border-t border-gray-200 pt-2 text-lg font-bold dark:border-dark-600"><span>{t('total')}</span><span className="text-primary-600"><Money value={totals.grandTotal} /></span></div>
               </div>
               <div className="flex gap-3">
-                <button type="button" onClick={() => navigate('/app/dashboard/invoices/new')} className="btn btn-secondary">{t('cancel')}</button>
-                <button type="submit" disabled={createMutation.isPending} className="btn btn-action-dark">{createMutation.isPending ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" /> : <><Save className="w-4 h-4" />{t('save')}</>}</button>
+                <button type="button" onClick={() => navigate(isEdit ? `/app/dashboard/invoices/${invoiceId}` : '/app/dashboard/invoices/new')} className="btn btn-secondary">{t('cancel')}</button>
+                <button type="submit" disabled={saveMutation.isPending} className="btn btn-action-dark">{saveMutation.isPending ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" /> : <><Save className="w-4 h-4" />{isEdit ? (language === 'ar' ? 'حفظ التعديلات' : 'Save Changes') : t('save')}</>}</button>
               </div>
             </div>
           </div>
@@ -704,4 +757,5 @@ export default function InvoiceSellComposer() {
       </div>
     </div>
   )
-}
+ }
+

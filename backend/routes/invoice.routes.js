@@ -83,6 +83,16 @@ function normalizeText(value) {
   return String(value || '').trim();
 }
 
+function getUserDisplayNames(user = {}) {
+  const createdByName = [normalizeText(user?.firstName), normalizeText(user?.lastName)].filter(Boolean).join(' ');
+  const createdByNameAr = [normalizeText(user?.firstNameAr), normalizeText(user?.lastNameAr)].filter(Boolean).join(' ');
+
+  return {
+    createdByName: createdByName || undefined,
+    createdByNameAr: createdByNameAr || undefined,
+  };
+}
+
 function buildCustomerPayloadFromBuyer(buyer = {}) {
   const name = normalizeText(buyer?.name);
   if (!name || name.toLowerCase() === 'cash customer') return null;
@@ -413,6 +423,7 @@ router.get('/', checkPermission('invoicing', 'read'), async (req, res) => {
     
     const invoices = await Invoice.find(query)
       .select('-zatca.signedXml -lineItems')
+      .populate('createdBy', 'firstName lastName firstNameAr lastNameAr email')
       .sort({ issueDate: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
@@ -510,7 +521,8 @@ router.get('/:id/pdf', checkPermission('invoicing', 'read'), async (req, res) =>
 // @route   GET /api/invoices/:id
 router.get('/:id', checkPermission('invoicing', 'read'), async (req, res) => {
   try {
-    const invoice = await Invoice.findOne({ _id: req.params.id, ...req.tenantFilter });
+    const invoice = await Invoice.findOne({ _id: req.params.id, ...req.tenantFilter })
+      .populate('createdBy', 'firstName lastName firstNameAr lastNameAr email');
     if (!invoice) {
       return res.status(404).json({ error: 'Invoice not found' });
     }
@@ -591,7 +603,8 @@ router.post('/', checkPermission('invoicing', 'create'), async (req, res) => {
         crNumber: tenant.business.crNumber,
         address: tenant.business.address
       },
-      createdBy: req.user._id
+      createdBy: req.user._id,
+      ...getUserDisplayNames(req.user)
     };
 
     const enrichedInvoiceData = await enrichInvoiceArabicFields(invoiceData);
@@ -770,6 +783,7 @@ router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) =>
         contactEmail: tenant.business.contactEmail,
       },
       createdBy: req.user._id,
+      ...getUserDisplayNames(req.user),
       invoiceDiscount,
       lineItems,
     };
@@ -968,6 +982,7 @@ router.post('/purchase', checkPermission('invoicing', 'create'), async (req, res
         contactEmail: tenant.business.contactEmail,
       },
       createdBy: req.user._id,
+      ...getUserDisplayNames(req.user),
       lineItems,
     };
 
@@ -1318,7 +1333,7 @@ router.post('/:id/credit-note', checkPermission('invoicing', 'create'), async (r
     
     const creditNoteNumber = `CN-${originalInvoice.invoiceNumber}`;
     
-    const creditNote = await Invoice.create({
+    const creditNoteData = {
       ...originalInvoice.toObject(),
       _id: undefined,
       invoiceNumber: creditNoteNumber,
@@ -1328,9 +1343,12 @@ router.post('/:id/credit-note', checkPermission('invoicing', 'create'), async (r
       status: 'draft',
       zatca: {},
       createdBy: req.user._id,
+      ...getUserDisplayNames(req.user),
       createdAt: undefined,
       updatedAt: undefined
-    });
+    };
+    
+    const creditNote = await Invoice.create(creditNoteData);
     
     originalInvoice.status = 'credited';
     await originalInvoice.save();

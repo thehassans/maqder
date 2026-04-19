@@ -98,7 +98,8 @@ export const calculateInvoiceSummary = (invoice = {}) => {
     const unitPrice = Math.max(0, toNumber(line?.unitPrice, 0))
     const taxRate = Math.max(0, toNumber(line?.taxRate, 0))
     const agencyPrice = Math.max(0, toNumber(line?.agencyPrice, 0))
-    const isTravelMargin = Boolean(line?.isTravelMargin) && agencyPrice > 0 && agencyPrice <= unitPrice
+    const isTravelMargin = Boolean(line?.isTravelMargin)
+    const marginPerUnit = isTravelMargin ? Math.max(0, unitPrice - agencyPrice) : 0
     const lineSubtotal = quantity * unitPrice
     const rawDiscount = Math.max(0, toNumber(line?.discount, 0))
     const lineDiscount = line?.discountType === 'percentage'
@@ -106,7 +107,7 @@ export const calculateInvoiceSummary = (invoice = {}) => {
       : Math.min(lineSubtotal, rawDiscount)
     const netBeforeInvoiceDiscount = Math.max(0, lineSubtotal - lineDiscount)
     const marginBeforeInvoiceDiscount = isTravelMargin
-      ? Math.max(0, quantity * (unitPrice - agencyPrice) - (lineDiscount * (unitPrice > 0 ? (unitPrice - agencyPrice) / unitPrice : 0)))
+      ? Math.max(0, quantity * marginPerUnit - (lineDiscount * (unitPrice > 0 ? marginPerUnit / unitPrice : 0)))
       : 0
 
     return {

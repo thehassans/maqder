@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
@@ -22,34 +22,55 @@ const toNumber = (value, fallback = 0) => {
   return Number.isFinite(numericValue) ? numericValue : fallback
 }
 
-export default function InvoicePurchaseComposer() {
+const buildPurchaseInvoiceFormValues = ({ invoice, tenant, defaultBusinessContext, hasTravel }) => ({
+  businessContext: invoice?.businessContext || defaultBusinessContext,
+  invoiceSubtype: invoice?.invoiceSubtype || (hasTravel ? 'travel_ticket' : 'standard'),
+  pdfTemplateId: invoice?.pdfTemplateId || getInvoiceTemplateId(tenant, invoice?.businessContext || defaultBusinessContext),
+  transactionType: invoice?.transactionType || 'B2B',
+  invoiceTypeCode: invoice?.invoiceTypeCode || (invoice?.transactionType === 'B2C' ? '0200000' : '0100000'),
+  warehouseId: invoice?.warehouseId || '',
+  supplierId: invoice?.supplierId || '',
+  seller: invoice?.seller || {},
+  buyer: invoice?.buyer || {},
+  travelDetails: invoice?.travelDetails || { passengerTitle: 'mr', layoverStay: '', hasReturnDate: false, segments: [{ from: '', to: '' }], passengers: [] },
+  notes: invoice?.notes || '',
+  lineItems: Array.isArray(invoice?.lineItems) && invoice.lineItems.length > 0
+    ? invoice.lineItems.map((line) => ({
+        ...emptyLine,
+        ...line,
+        productId: line?.productId || '',
+        productName: line?.productName || '',
+        productNameAr: line?.productNameAr || '',
+        unitCode: line?.unitCode || 'PCE',
+        quantity: Math.max(1, toNumber(line?.quantity, 1)),
+        unitPrice: Math.max(0, toNumber(line?.unitPrice, 0)),
+        taxRate: Math.max(0, toNumber(line?.taxRate, 15)),
+      }))
+    : [emptyLine],
+})
+
+export default function InvoicePurchaseComposer({ invoiceId = '', initialInvoice = null }) {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { language } = useSelector((state) => state.ui)
-  const { tenant } = useSelector((state) => state.auth)
+  const { tenant, user } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
   const [transactionType, setTransactionType] = useState('B2B')
   const tenantBusinessTypes = getTenantBusinessTypes(tenant)
+  const isEdit = Boolean(invoiceId)
   const defaultBusinessContext = useMemo(() => {
     const primary = getPrimaryBusinessType(tenant)
     if (purchaseContexts.includes(primary)) return primary
     return tenantBusinessTypes.find((type) => purchaseContexts.includes(type)) || 'trading'
   }, [tenant, tenantBusinessTypes])
 
-  const { register, control, handleSubmit, watch, setValue } = useForm({
-    defaultValues: {
-      businessContext: defaultBusinessContext,
-      invoiceSubtype: tenantBusinessTypes.includes('travel_agency') ? 'travel_ticket' : 'standard',
-      pdfTemplateId: getInvoiceTemplateId(tenant, defaultBusinessContext),
-      transactionType: 'B2B',
-      invoiceTypeCode: '0100000',
-      warehouseId: '',
-      supplierId: '',
-      seller: {},
-      buyer: {},
-      travelDetails: { passengerTitle: 'mr', layoverStay: '', hasReturnDate: false, segments: [{ from: '', to: '' }], passengers: [] },
-      notes: '',
-      lineItems: [emptyLine],
-    }
+  const { register, control, handleSubmit, watch, setValue, reset } = useForm({
+    defaultValues: buildPurchaseInvoiceFormValues({
+      invoice: initialInvoice,
+      tenant,
+      defaultBusinessContext,
+      hasTravel: tenantBusinessTypes.includes('travel_agency'),
+    })
   })
 
   const { fields, append, remove } = useFieldArray({ control, name: 'lineItems' })
@@ -61,10 +82,24 @@ export default function InvoicePurchaseComposer() {
   const selectedWarehouseId = values.warehouseId || ''
   const isTradingContext = businessContext === 'trading'
   const isTravelContext = businessContext === 'travel_agency'
+  const skipBusinessContextResetRef = useRef(false)
 
   useEffect(() => {
+    if (isEdit && initialInvoice?._id) return
     setValue('businessContext', defaultBusinessContext)
-  }, [defaultBusinessContext, setValue])
+  }, [defaultBusinessContext, initialInvoice?._id, isEdit, setValue])
+
+  useEffect(() => {
+    if (!isEdit || !initialInvoice?._id) return
+    skipBusinessContextResetRef.current = true
+    setTransactionType(initialInvoice?.transactionType === 'B2C' ? 'B2C' : 'B2B')
+    reset(buildPurchaseInvoiceFormValues({
+      invoice: initialInvoice,
+      tenant,
+      defaultBusinessContext,
+      hasTravel: tenantBusinessTypes.includes('travel_agency'),
+    }))
+  }, [defaultBusinessContext, initialInvoice, isEdit, reset, tenant, tenantBusinessTypes])
 
   useEffect(() => {
     if (!isTravelContext && invoiceSubtype === 'travel_ticket') {
@@ -73,6 +108,10 @@ export default function InvoicePurchaseComposer() {
   }, [invoiceSubtype, isTravelContext, setValue])
 
   useEffect(() => {
+    if (skipBusinessContextResetRef.current) {
+      skipBusinessContextResetRef.current = false
+      return
+    }
     setValue('pdfTemplateId', getInvoiceTemplateId(tenant, businessContext))
   }, [businessContext, setValue])
 
@@ -94,13 +133,17 @@ export default function InvoicePurchaseComposer() {
     enabled: isTradingContext,
   })
 
-  const createMutation = useMutation({
-    mutationFn: (payload) => api.post('/invoices/purchase', payload),
+  const saveMutation = useMutation({
+    mutationFn: (payload) => isEdit ? api.put(`/invoices/${invoiceId}`, payload) : api.post('/invoices/purchase', payload),
     onSuccess: (res) => {
-      toast.success(language === 'ar' ? 'تم إنشاء فاتورة الشراء بنجاح' : 'Purchase invoice created successfully')
-      navigate(`/app/dashboard/invoices/${res.data._id}`)
+      toast.success(isEdit ? (language === 'ar' ? 'تم تحديث فاتورة الشراء بنجاح' : 'Purchase invoice updated successfully') : (language === 'ar' ? 'تم إنشاء فاتورة الشراء بنجاح' : 'Purchase invoice created successfully'))
+      queryClient.invalidateQueries(['invoices'])
+      if (isEdit) {
+        queryClient.invalidateQueries(['invoice', invoiceId])
+      }
+      navigate(`/app/dashboard/invoices/${res.data?._id || invoiceId}`)
     },
-    onError: (error) => toast.error(error.response?.data?.error || 'Failed to create purchase invoice'),
+    onError: (error) => toast.error(error.response?.data?.error || (isEdit ? 'Failed to update purchase invoice' : 'Failed to create purchase invoice')),
   })
 
   const onSelectProduct = (index, productId) => {
@@ -160,7 +203,7 @@ export default function InvoicePurchaseComposer() {
       pdfTemplateId: selectedTemplateId,
       transactionType,
       invoiceTypeCode: transactionType === 'B2C' ? '0200000' : '0100000',
-      issueDate: new Date(),
+      issueDate: isEdit ? (initialInvoice?.issueDate || new Date()) : new Date(),
       lineItems: (data.lineItems || []).map((line, index) => ({
         ...line,
         lineNumber: index + 1,
@@ -174,13 +217,16 @@ export default function InvoicePurchaseComposer() {
       delete payload.supplierId
     }
     if (invoiceSubtype !== 'travel_ticket') delete payload.travelDetails
-    createMutation.mutate(payload)
+    saveMutation.mutate(payload)
   }
 
   const previewInvoice = {
     ...values,
-    invoiceNumber: 'DRAFT-PURCHASE',
-    issueDate: new Date(),
+    invoiceNumber: initialInvoice?.invoiceNumber || 'DRAFT-PURCHASE',
+    issueDate: initialInvoice?.issueDate || new Date(),
+    createdByName: initialInvoice?.createdByName || [user?.firstName, user?.lastName].filter(Boolean).join(' '),
+    createdByNameAr: initialInvoice?.createdByNameAr || [user?.firstNameAr, user?.lastNameAr].filter(Boolean).join(' '),
+    createdBy: initialInvoice?.createdBy || user,
     flow: 'purchase',
     transactionType,
     invoiceSubtype,
@@ -199,10 +245,10 @@ export default function InvoicePurchaseComposer() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <button onClick={() => navigate('/app/dashboard/invoices/new')} className="btn btn-ghost btn-icon"><ArrowLeft className="w-5 h-5" /></button>
+        <button onClick={() => navigate(isEdit ? `/app/dashboard/invoices/${invoiceId}` : '/app/dashboard/invoices/new')} className="btn btn-ghost btn-icon"><ArrowLeft className="w-5 h-5" /></button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{language === 'ar' ? 'فاتورة شراء جديدة' : 'New Purchase Invoice'}</h1>
-          <p className="mt-1 text-gray-500 dark:text-gray-400">{language === 'ar' ? 'تدعم الشراء التجاري والخدمي وفواتير السفر' : 'Supports trading, service, and travel purchase invoices'}</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{isEdit ? (language === 'ar' ? 'تعديل فاتورة الشراء' : 'Edit Purchase Invoice') : (language === 'ar' ? 'فاتورة شراء جديدة' : 'New Purchase Invoice')}</h1>
+          <p className="mt-1 text-gray-500 dark:text-gray-400">{isEdit ? (language === 'ar' ? 'حدّث بيانات الفاتورة قبل حفظ التعديلات' : 'Update the invoice details before saving your changes') : (language === 'ar' ? 'تدعم الشراء التجاري والخدمي وفواتير السفر' : 'Supports trading, service, and travel purchase invoices')}</p>
         </div>
       </div>
 
@@ -316,7 +362,7 @@ export default function InvoicePurchaseComposer() {
             <div><label className="label">{language === 'ar' ? 'ملاحظات' : 'Notes'}</label><textarea {...register('notes')} className="input" rows={3} /></div>
             <div className="mt-6 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
               <div className="space-y-2 md:w-64"><div className="flex justify-between text-sm"><span className="text-gray-500">{t('subtotal')}</span><span><Money value={totals.subtotal} /></span></div><div className="flex justify-between text-sm"><span className="text-gray-500">{t('tax')}</span><span><Money value={totals.totalTax} /></span></div><div className="flex justify-between border-t border-gray-200 pt-2 text-lg font-bold dark:border-dark-600"><span>{t('total')}</span><span className="text-primary-600"><Money value={totals.grandTotal} /></span></div></div>
-              <div className="flex gap-3"><button type="button" onClick={() => navigate('/app/dashboard/invoices/new')} className="btn btn-secondary">{t('cancel')}</button><button type="submit" disabled={createMutation.isPending} className="btn btn-action-dark">{createMutation.isPending ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" /> : <><Save className="w-4 h-4" />{t('save')}</>}</button></div>
+              <div className="flex gap-3"><button type="button" onClick={() => navigate(isEdit ? `/app/dashboard/invoices/${invoiceId}` : '/app/dashboard/invoices/new')} className="btn btn-secondary">{t('cancel')}</button><button type="submit" disabled={saveMutation.isPending} className="btn btn-action-dark">{saveMutation.isPending ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" /> : <><Save className="w-4 h-4" />{isEdit ? (language === 'ar' ? 'حفظ التعديلات' : 'Save Changes') : t('save')}</>}</button></div>
             </div>
           </div>
         </form>

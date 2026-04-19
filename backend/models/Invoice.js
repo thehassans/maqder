@@ -193,6 +193,8 @@ const invoiceSchema = new mongoose.Schema({
   }],
   
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  createdByName: { type: String },
+  createdByNameAr: { type: String },
   approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   approvedAt: { type: Date }
 }, {
@@ -228,13 +230,22 @@ invoiceSchema.pre('validate', function(next) {
       ? Math.min(lineSubtotal, lineSubtotal * (rawDiscount / 100))
       : Math.min(lineSubtotal, rawDiscount);
     const netBeforeInvoiceDiscount = Math.max(0, lineSubtotal - lineDiscount);
+    const taxRate = Math.max(0, Number(line.taxRate) || 0);
+    const agencyPrice = Math.max(0, Number(line.agencyPrice) || 0);
+    const isTravelMargin = Boolean(line.isTravelMargin);
+    const marginPerUnit = isTravelMargin ? Math.max(0, (Number(line.unitPrice) || 0) - agencyPrice) : 0;
+    const marginBeforeInvoiceDiscount = isTravelMargin
+      ? Math.max(0, ((Number(line.quantity) || 0) * marginPerUnit) - (lineDiscount * ((Number(line.unitPrice) || 0) > 0 ? marginPerUnit / (Number(line.unitPrice) || 0) : 0)))
+      : 0;
 
     return {
       line,
       lineSubtotal,
       lineDiscount,
       netBeforeInvoiceDiscount,
-      taxRate: Math.max(0, Number(line.taxRate) || 0),
+      taxRate,
+      isTravelMargin,
+      marginBeforeInvoiceDiscount,
     };
   });
 
@@ -250,12 +261,26 @@ invoiceSchema.pre('validate', function(next) {
     const invoiceDiscountShare = isLast
       ? remainingInvoiceDiscount
       : Math.min(remainingInvoiceDiscount, proportionalDiscount);
-    const lineTotal = Math.max(0, item.netBeforeInvoiceDiscount - invoiceDiscountShare);
-    const taxAmount = lineTotal * (item.taxRate / 100);
+    const customerLineTotal = Math.max(0, item.netBeforeInvoiceDiscount - invoiceDiscountShare);
+    const marginShareFactor = item.netBeforeInvoiceDiscount > 0
+      ? customerLineTotal / item.netBeforeInvoiceDiscount
+      : 0;
+    const marginTaxable = item.isTravelMargin
+      ? Math.max(0, item.marginBeforeInvoiceDiscount * marginShareFactor)
+      : 0;
+    const vatBase = item.isTravelMargin ? marginTaxable : customerLineTotal;
+    const taxAmount = vatBase * (item.taxRate / 100);
+    const lineTotal = item.isTravelMargin
+      ? Math.max(0, customerLineTotal - taxAmount)
+      : customerLineTotal;
+    const lineTotalWithTax = item.isTravelMargin
+      ? customerLineTotal
+      : lineTotal + taxAmount;
 
     item.line.lineTotal = lineTotal;
     item.line.taxAmount = taxAmount;
-    item.line.lineTotalWithTax = lineTotal + taxAmount;
+    item.line.lineTotalWithTax = lineTotalWithTax;
+    item.line.marginTaxable = marginTaxable;
 
     remainingInvoiceDiscount = Math.max(0, remainingInvoiceDiscount - invoiceDiscountShare);
   });

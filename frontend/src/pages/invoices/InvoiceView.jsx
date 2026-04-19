@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { motion } from 'framer-motion'
-import { ArrowLeft, FileText, Download, Send, CheckCircle, Clock, QrCode, Printer, Mail } from 'lucide-react'
+import { ArrowLeft, FileText, Download, Send, CheckCircle, Clock, QrCode, Printer, Mail, Edit } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
@@ -12,6 +12,7 @@ import InvoiceLivePreview from '../../components/invoices/InvoiceLivePreview'
 import { getInvoiceTemplateId } from '../../lib/invoiceBranding'
 import { buildInvoicePdfBlob, downloadInvoicePdf, printInvoiceSnapshot } from '../../lib/invoicePdf'
 import { getZatcaStatusMeta } from '../../lib/zatcaStatus'
+import { getTravelInvoiceLabelMeta, isTravelAgencyInvoice } from '../../lib/travelInvoiceStatus'
 
 const blobToBase64 = (blob) => new Promise((resolve, reject) => {
   const reader = new FileReader()
@@ -32,6 +33,21 @@ const sanitizeAttachmentFileName = (value) => {
   return normalized || 'invoice'
 }
 
+const getInvoiceContextLabel = (invoice, language = 'en') => {
+  const context = String(invoice?.businessContext || '').trim()
+  const labels = {
+    trading: language === 'ar' ? 'فاتورة تجارة' : 'Trading Invoice',
+    construction: language === 'ar' ? 'فاتورة مقاولات' : 'Construction Invoice',
+    travel_agency: language === 'ar' ? 'فاتورة وكالة سفر' : 'Travel Agency Invoice',
+    restaurant: language === 'ar' ? 'فاتورة مطعم' : 'Restaurant Invoice',
+  }
+
+  if (labels[context]) return labels[context]
+  return language === 'ar' ? 'فاتورة ضريبية' : 'Tax Invoice'
+}
+
+const isEditableInvoice = (invoice) => ['draft', 'pending'].includes(invoice?.status) && !invoice?.zatca?.signedXml
+
 export default function InvoiceView() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -50,6 +66,7 @@ export default function InvoiceView() {
   const templateId = getInvoiceTemplateId(tenant, invoice?.businessContext, invoice?.pdfTemplateId)
   const invoiceTypeLabel = invoice?.transactionType === 'B2B' ? t('b2bInvoice') : t('b2cInvoice')
   const zatcaStatusMeta = getZatcaStatusMeta(invoice, language)
+  const travelInvoiceLabelMeta = isTravelAgencyInvoice(invoice) ? getTravelInvoiceLabelMeta(invoice, language) : null
   const isBilingualInvoice = invoice?.invoiceSubtype === 'travel_ticket' || ['travel_agency', 'trading', 'construction'].includes(invoice?.businessContext)
   const hasEmailAddon = tenant?.subscription?.hasEmailAddon === true || (Array.isArray(tenant?.subscription?.features) && tenant.subscription.features.includes('email_automation'))
 
@@ -132,6 +149,16 @@ export default function InvoiceView() {
           </div>
         </div>
         <div className="flex gap-3">
+          {isEditableInvoice(invoice) && (
+            <button
+              type="button"
+              onClick={() => navigate(`/app/dashboard/invoices/${id}/edit`)}
+              className="btn btn-secondary"
+            >
+              <Edit className="w-4 h-4" />
+              {language === 'ar' ? 'تعديل' : 'Edit'}
+            </button>
+          )}
           <button
             type="button"
             onClick={async () => {
@@ -231,7 +258,17 @@ export default function InvoiceView() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">{language === 'ar' ? 'نوع الفاتورة' : 'Invoice Type'}</p>
-                  <p className="font-semibold text-gray-900 dark:text-white">{invoiceTypeLabel}</p>
+                  {isTravelAgencyInvoice(invoice) ? (
+                    <>
+                      <span className={`mt-1 inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${travelInvoiceLabelMeta?.className}`}>
+                        {getInvoiceContextLabel(invoice, language)}
+                      </span>
+                      <p className="mt-2 font-semibold text-gray-900 dark:text-white">{invoiceTypeLabel}</p>
+                      <p className={`mt-1 text-xs font-medium ${travelInvoiceLabelMeta?.textClassName}`}>{travelInvoiceLabelMeta?.description}</p>
+                    </>
+                  ) : (
+                    <p className="font-semibold text-gray-900 dark:text-white">{invoiceTypeLabel}</p>
+                  )}
                 </div>
               </div>
               <span className={`badge ${

@@ -23,6 +23,7 @@ import Invoices from './pages/invoices/Invoices'
 import InvoiceCreate from './pages/invoices/InvoiceCreate'
 import InvoiceCreateSell from './pages/invoices/InvoiceCreateSellPage'
 import InvoiceCreatePurchase from './pages/invoices/InvoiceCreatePurchasePage'
+import InvoiceEditPage from './pages/invoices/InvoiceEditPage'
 import InvoiceView from './pages/invoices/InvoiceView'
 import Employees from './pages/hr/Employees'
 import EmployeeForm from './pages/hr/EmployeeForm'
@@ -217,6 +218,7 @@ function App() {
         <Route path="invoices/new" element={<InvoiceCreate />} />
         <Route path="invoices/new/sell" element={<InvoiceCreateSell />} />
         <Route path="invoices/new/purchase" element={<BusinessTypeRoute allowedTypes={['trading', 'construction', 'travel_agency']}><InvoiceCreatePurchase /></BusinessTypeRoute>} />
+        <Route path="invoices/:id/edit" element={<InvoiceEditPage />} />
         <Route path="invoices/:id" element={<InvoiceView />} />
         <Route path="contacts" element={<Contacts />} />
         <Route path="customers" element={<CustomerList />} />

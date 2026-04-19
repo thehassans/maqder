@@ -5,6 +5,7 @@ import { getInvoiceBranding, getInvoiceCssFontFamily, splitBrandingText } from '
 import { getZatcaStatusMeta } from '../../lib/zatcaStatus'
 import { getAmountInWords } from '../../lib/amountInWords'
 import { formatCurrency, formatCurrencyAmount, isSarCurrency } from '../../lib/currency'
+import { getTravelInvoiceLabelMeta, isTravelAgencyInvoice } from '../../lib/travelInvoiceStatus'
 import SarIcon from '../ui/SarIcon'
 
 const joinClasses = (...classes) => classes.filter(Boolean).join(' ')
@@ -99,6 +100,17 @@ const getRawDisplayValue = (value, fallback = '—') => {
   if (value === null || value === undefined) return fallback
   const text = String(value).trim()
   return text || fallback
+}
+
+const getCreatorDisplayName = (invoice, language = 'en') => {
+  const createdByEn = [invoice?.createdBy?.firstName, invoice?.createdBy?.lastName].filter(Boolean).join(' ')
+  const createdByAr = [invoice?.createdBy?.firstNameAr, invoice?.createdBy?.lastNameAr].filter(Boolean).join(' ')
+
+  if (language === 'ar') {
+    return invoice?.createdByNameAr || createdByAr || invoice?.createdByName || createdByEn || ''
+  }
+
+  return invoice?.createdByName || createdByEn || invoice?.createdByNameAr || createdByAr || ''
 }
 
 const formatAddress = (address = {}) => {
@@ -261,6 +273,8 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
   const showVisionLogo = invoiceBranding.showVision2030 && invoiceBranding.vision2030LogoSrc
   const typography = invoiceBranding.typography || {}
   const zatcaStatusMeta = getZatcaStatusMeta(invoice, language)
+  const isTravelInvoice = isTravelAgencyInvoice(invoice)
+  const travelInvoiceLabelMeta = isTravelInvoice ? getTravelInvoiceLabelMeta(invoice, language) : null
   const amountInWordsLines = bilingual
     ? uniqueLines(
         getAmountInWords(totals.grandTotal, currency, 'en'),
@@ -272,6 +286,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
   const invoiceTitle = bilingual
     ? toBilingualText(getInvoiceTitle(invoice, 'en'), getInvoiceTitle(invoice, 'ar'))
     : getInvoiceTitle(invoice, language)
+  const createdByName = getCreatorDisplayName(invoice, language)
   const rawRouteText = getUntranslatedRouteText(invoice?.travelDetails || {})
   const rawDepartureDate = getRawDisplayValue(invoice?.travelDetails?.departureDate)
   const renderStackedLabel = (english, arabic, uppercaseEnglish = false) => {
@@ -429,7 +444,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
                 <img src={logoSrc} alt="" className="h-full w-full object-contain" />
               </div>
               <div className="min-w-0 max-w-[34rem] flex-1">
-                <p className={`text-[11px] uppercase tracking-[0.24em] ${mutedText}`}>{getInvoiceEyebrow(invoice, language)}</p>
+                <p className={joinClasses('text-[11px] uppercase tracking-[0.24em]', isTravelInvoice ? travelInvoiceLabelMeta?.textClassName : mutedText)}>{getInvoiceEyebrow(invoice, language)}</p>
                 <h3 className={`mt-2 text-[1.75rem] font-semibold leading-tight ${titleText}`} style={companyHeadingStyle}>{companyName || '—'}</h3>
                 {headerLines.length > 0 && (
                   <div className="mt-2 max-w-[30rem] space-y-1 overflow-hidden">
@@ -505,7 +520,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-1 gap-4 rounded-[1.5rem] border border-slate-200 bg-white p-5 md:grid-cols-3">
+        <div className="mt-4 grid grid-cols-1 gap-4 rounded-[1.5rem] border border-slate-200 bg-white p-5 md:grid-cols-2 xl:grid-cols-4">
           <div>
             <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'رقم الفاتورة' : 'Invoice #'}</p>
             <p className={`mt-1 text-sm font-semibold ${titleText}`}>{invoice?.invoiceNumber || 'DRAFT-PREVIEW'}</p>
@@ -517,6 +532,10 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
           <div>
             <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'التدفق' : 'Flow'}</p>
             <p className={`mt-1 text-sm font-semibold ${titleText}`}>{invoice?.flow || 'sell'}</p>
+          </div>
+          <div>
+            <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'تم الإنشاء بواسطة' : 'Created By'}</p>
+            <p className={`mt-1 text-sm font-semibold ${titleText}`}>{createdByName || '—'}</p>
           </div>
         </div>
       </div>

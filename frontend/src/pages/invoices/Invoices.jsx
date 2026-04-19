@@ -9,6 +9,7 @@ import {
   Filter, 
   Download, 
   Eye, 
+  Edit,
   FileText,
   CheckCircle,
   Clock,
@@ -23,6 +24,7 @@ import toast from 'react-hot-toast'
 import { downloadInvoicePdf } from '../../lib/invoicePdf'
 import { getTenantBusinessTypes } from '../../lib/businessTypes'
 import { getZatcaStatusMeta } from '../../lib/zatcaStatus'
+import { getTravelInvoiceLabelMeta, isTravelAgencyInvoice } from '../../lib/travelInvoiceStatus'
 
 const getInvoiceContextLabel = (invoice, language = 'en') => {
   const context = String(invoice?.businessContext || '').trim()
@@ -42,6 +44,8 @@ const getTransactionTypeLabel = (transactionType, language = 'en', t) => {
   if (transactionType === 'B2C') return t('b2cInvoice')
   return transactionType || (language === 'ar' ? 'غير محدد' : 'Unknown')
 }
+
+const isEditableInvoice = (invoice) => ['draft', 'pending'].includes(invoice?.status) && !invoice?.zatca?.signedXml
 
 export default function Invoices() {
   const { language } = useSelector((state) => state.ui)
@@ -256,10 +260,21 @@ export default function Invoices() {
                       </td>
                       <td>
                         <div>
-                          <span className={`badge ${invoice.businessContext === 'travel_agency' ? 'badge-info' : 'badge-neutral'}`}>
-                            {getInvoiceContextLabel(invoice, language)}
-                          </span>
+                          {isTravelAgencyInvoice(invoice) ? (
+                            <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${getTravelInvoiceLabelMeta(invoice, language).className}`}>
+                              {getInvoiceContextLabel(invoice, language)}
+                            </span>
+                          ) : (
+                            <span className="badge badge-neutral">
+                              {getInvoiceContextLabel(invoice, language)}
+                            </span>
+                          )}
                           <p className="mt-1 text-xs text-gray-500">{getTransactionTypeLabel(invoice.transactionType, language, t)}</p>
+                          {isTravelAgencyInvoice(invoice) && (
+                            <p className={`mt-1 text-[11px] font-medium ${getTravelInvoiceLabelMeta(invoice, language).textClassName}`}>
+                              {getTravelInvoiceLabelMeta(invoice, language).description}
+                            </p>
+                          )}
                         </div>
                       </td>
                       <td className="text-gray-600 dark:text-gray-400">
@@ -269,6 +284,15 @@ export default function Invoices() {
                       <td>{getStatusBadge(invoice)}</td>
                       <td>
                         <div className="flex items-center gap-2">
+                          {isEditableInvoice(invoice) && (
+                            <Link
+                              to={`/app/dashboard/invoices/${invoice._id}/edit`}
+                              className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors"
+                              title={language === 'ar' ? 'تعديل' : 'Edit'}
+                            >
+                              <Edit className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                            </Link>
+                          )}
                           <Link
                             to={`/app/dashboard/invoices/${invoice._id}`}
                             className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors"
