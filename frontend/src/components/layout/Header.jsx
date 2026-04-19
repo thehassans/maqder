@@ -27,6 +27,10 @@ export default function Header() {
     queryFn: () => api.get('/email/messages', { params: { folder: 'all', limit: 8 } }).then((res) => res.data),
     enabled: hasEmailAddon,
     refetchInterval: hasEmailAddon ? 60000 : false,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: false,
+    staleTime: 55000,
+    retry: false,
   })
 
   const notifications = useMemo(() => {

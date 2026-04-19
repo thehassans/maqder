@@ -258,12 +258,18 @@ router.post('/login', async (req, res) => {
 // @route   GET /api/auth/me
 router.get('/me', protect, async (req, res) => {
   try {
-    const user = await withQueryTimeout(User.findById(req.user._id));
-    let tenant = null;
-    
-    if (user.tenantId) {
-      tenant = await withQueryTimeout(Tenant.findById(user.tenantId).select('name slug businessType businessTypes business settings branding subscription'));
+    const [user, tenantDoc] = await Promise.all([
+      withQueryTimeout(User.findById(req.user._id).lean()),
+      req.user?.tenantId
+        ? withQueryTimeout(Tenant.findById(req.user.tenantId).select(authTenantSelect))
+        : Promise.resolve(null),
+    ]);
+
+    if (!user) {
+      return res.status(401).json({ error: 'Session expired' });
     }
+
+    const tenant = tenantDoc ? serializeAuthTenant(tenantDoc) : null;
     
     res.json({
       user: {

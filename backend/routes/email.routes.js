@@ -55,7 +55,8 @@ router.use(checkEmailAddon);
 
 router.get('/settings', async (req, res) => {
   try {
-    const tenant = await Tenant.findById(req.user.tenantId);
+    const tenant = await Tenant.findById(req.user.tenantId)
+      .select('slug business.contactEmail settings.communication.email subscription.hasEmailAddon subscription.features');
     if (!tenant) {
       return res.status(404).json({ error: 'Tenant not found' });
     }

@@ -26,6 +26,8 @@ router.get('/', async (req, res) => {
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
+    const topProductsSince = new Date();
+    topProductsSince.setMonth(topProductsSince.getMonth() - 6);
 
     const [invoiceStats, employeeStats, productStats, payrollStats, recentInvoices, expiringDocuments, recentCustomers, topProducts, todayStats, travelStats, restaurantStats] = await Promise.all([
       // Invoice stats
@@ -104,7 +106,8 @@ router.get('/', async (req, res) => {
       Invoice.find(req.tenantFilter)
         .sort({ createdAt: -1 })
         .limit(5)
-        .select('invoiceNumber buyer.name grandTotal status issueDate zatca.submissionStatus'),
+        .select('invoiceNumber buyer.name grandTotal status issueDate zatca.submissionStatus')
+        .lean(),
       
       // Expiring documents
       Employee.aggregate([
@@ -134,11 +137,12 @@ router.get('/', async (req, res) => {
       Customer.find(req.tenantFilter)
         .sort({ createdAt: -1 })
         .limit(5)
-        .select('name nameAr email phone type createdAt'),
+        .select('name nameAr email phone type createdAt')
+        .lean(),
 
-      // Top products by invoice count
+      // Top products by invoice count (last 6 months — avoids scanning all invoices)
       Invoice.aggregate([
-        { $match: { ...req.tenantFilter, status: { $nin: ['draft', 'cancelled', 'credited'] } } },
+        { $match: { ...req.tenantFilter, issueDate: { $gte: topProductsSince }, status: { $nin: ['draft', 'cancelled', 'credited'] } } },
         { $unwind: '$lineItems' },
         {
           $group: {

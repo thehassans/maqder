@@ -72,28 +72,32 @@ export default function Dashboard() {
     queryKey: ['dashboard'],
     queryFn: () => api.get('/dashboard').then(res => res.data),
     refetchInterval: DASHBOARD_REFRESH_MS,
-    refetchIntervalInBackground: true,
+    refetchIntervalInBackground: false,
+    staleTime: DASHBOARD_REFRESH_MS,
   })
 
   const { data: revenueData } = useQuery({
     queryKey: ['dashboard-revenue'],
     queryFn: () => api.get('/dashboard/charts/revenue').then(res => res.data),
     refetchInterval: DASHBOARD_CHART_REFRESH_MS,
-    refetchIntervalInBackground: true,
+    refetchIntervalInBackground: false,
+    staleTime: DASHBOARD_CHART_REFRESH_MS,
   })
 
   const { data: expensesData } = useQuery({
     queryKey: ['dashboard-expenses'],
     queryFn: () => api.get('/dashboard/charts/expenses').then(res => res.data),
     refetchInterval: DASHBOARD_CHART_REFRESH_MS,
-    refetchIntervalInBackground: true,
+    refetchIntervalInBackground: false,
+    staleTime: DASHBOARD_CHART_REFRESH_MS,
   })
 
   const { data: poStats } = useQuery({
     queryKey: ['dashboard-po-stats'],
     queryFn: () => api.get('/purchase-orders/stats').then(res => res.data),
     refetchInterval: DASHBOARD_REFRESH_MS,
-    refetchIntervalInBackground: true,
+    refetchIntervalInBackground: false,
+    staleTime: DASHBOARD_REFRESH_MS,
     retry: false,
     enabled: isTrading
   })
@@ -102,7 +106,8 @@ export default function Dashboard() {
     queryKey: ['dashboard-shipment-stats'],
     queryFn: () => api.get('/shipments/stats').then(res => res.data),
     refetchInterval: DASHBOARD_REFRESH_MS,
-    refetchIntervalInBackground: true,
+    refetchIntervalInBackground: false,
+    staleTime: DASHBOARD_REFRESH_MS,
     retry: false,
     enabled: isTrading
   })
@@ -111,7 +116,8 @@ export default function Dashboard() {
     queryKey: ['dashboard-task-stats'],
     queryFn: () => api.get('/tasks/stats').then(res => res.data),
     refetchInterval: DASHBOARD_REFRESH_MS,
-    refetchIntervalInBackground: true,
+    refetchIntervalInBackground: false,
+    staleTime: DASHBOARD_REFRESH_MS,
     retry: false,
     enabled: isTrading
   })
@@ -120,7 +126,8 @@ export default function Dashboard() {
     queryKey: ['dashboard-mrp-stats'],
     queryFn: () => api.get('/mrp/stats?multiplier=2').then(res => res.data),
     refetchInterval: DASHBOARD_CHART_REFRESH_MS,
-    refetchIntervalInBackground: true,
+    refetchIntervalInBackground: false,
+    staleTime: DASHBOARD_CHART_REFRESH_MS,
     retry: false,
     enabled: isTrading
   })
@@ -129,7 +136,8 @@ export default function Dashboard() {
     queryKey: ['dashboard-mrp-top'],
     queryFn: () => api.get('/mrp/suggestions?limit=5&page=1&multiplier=2').then(res => res.data),
     refetchInterval: DASHBOARD_CHART_REFRESH_MS,
-    refetchIntervalInBackground: true,
+    refetchIntervalInBackground: false,
+    staleTime: DASHBOARD_CHART_REFRESH_MS,
     retry: false,
     enabled: isTrading
   })
