@@ -4,6 +4,10 @@ import { GoogleGenAI } from '@google/genai';
 import Tenant from '../models/Tenant.js';
 import User from '../models/User.js';
 import Invoice from '../models/Invoice.js';
+import Customer from '../models/Customer.js';
+import TravelBooking from '../models/TravelBooking.js';
+import RestaurantOrder from '../models/RestaurantOrder.js';
+import EmailMessage from '../models/EmailMessage.js';
 import Employee from '../models/Employee.js';
 import SystemSettings from '../models/SystemSettings.js';
 import { protect, authorize } from '../middleware/auth.js';
@@ -793,6 +797,51 @@ router.put('/tenants/:id/toggle-status', async (req, res) => {
     res.json(tenant);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   DELETE /api/super-admin/tenants/:id/invoices
+// @desc    Purge every invoice for a tenant and reset derived stats (dashboard, reports, customer stats, travel/restaurant bookings)
+router.delete('/tenants/:id/invoices', async (req, res) => {
+  try {
+    const tenant = await Tenant.findById(req.params.id);
+    if (!tenant) {
+      return res.status(404).json({ error: 'Tenant not found' });
+    }
+
+    const tenantId = tenant._id;
+
+    const [invoiceDeletion, travelBookingReset, restaurantOrderReset, customerReset, emailReset] = await Promise.all([
+      Invoice.deleteMany({ tenantId }),
+      TravelBooking.updateMany(
+        { tenantId, invoiceId: { $ne: null } },
+        { $set: { invoiceId: null, invoiceNumber: '', invoicedAt: null } }
+      ),
+      RestaurantOrder.updateMany(
+        { tenantId, invoiceId: { $ne: null } },
+        { $set: { invoiceId: null, invoiceNumber: '', invoicedAt: null } }
+      ),
+      Customer.updateMany(
+        { tenantId },
+        { $set: { totalInvoices: 0, totalRevenue: 0, lastInvoiceDate: null } }
+      ),
+      EmailMessage.updateMany(
+        { tenantId, relatedInvoiceId: { $ne: null } },
+        { $set: { relatedInvoiceId: null } }
+      ),
+    ]);
+
+    res.json({
+      success: true,
+      tenantId: String(tenantId),
+      deletedInvoices: invoiceDeletion?.deletedCount || 0,
+      travelBookingsReset: travelBookingReset?.modifiedCount || 0,
+      restaurantOrdersReset: restaurantOrderReset?.modifiedCount || 0,
+      customersReset: customerReset?.modifiedCount || 0,
+      emailsDetached: emailReset?.modifiedCount || 0,
+    });
+  } catch (error) {
+    sendRouteError(res, error);
   }
 });
 

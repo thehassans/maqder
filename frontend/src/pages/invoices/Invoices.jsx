@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
@@ -52,16 +52,24 @@ export default function Invoices() {
   const { tenant } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [filters, setFilters] = useState({ status: '', businessContext: '' })
   const [page, setPage] = useState(1)
   const [pdfLoadingId, setPdfLoadingId] = useState(null)
   const tenantBusinessTypes = getTenantBusinessTypes(tenant)
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['invoices', page, search, filters],
-    queryFn: () => api.get('/invoices', { 
-      params: { page, search, ...filters } 
-    }).then(res => res.data)
+  useEffect(() => {
+    const handle = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => clearTimeout(handle)
+  }, [search])
+
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ['invoices', page, debouncedSearch, filters],
+    queryFn: () => api.get('/invoices', {
+      params: { page, search: debouncedSearch, ...filters }
+    }).then(res => res.data),
+    placeholderData: keepPreviousData,
+    staleTime: 60 * 1000,
   })
 
   const getStatusBadge = (invoice) => {

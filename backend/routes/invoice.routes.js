@@ -421,14 +421,16 @@ router.get('/', checkPermission('invoicing', 'read'), async (req, res) => {
       ];
     }
     
-    const invoices = await Invoice.find(query)
-      .select('-zatca.signedXml -lineItems')
-      .populate('createdBy', 'firstName lastName firstNameAr lastNameAr email')
-      .sort({ issueDate: -1 })
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit));
-    
-    const total = await Invoice.countDocuments(query);
+    const [invoices, total] = await Promise.all([
+      Invoice.find(query)
+        .select('-zatca.signedXml -zatca.qrCodeData -lineItems -travelDetails.passengers -travelDetails.segments')
+        .populate('createdBy', 'firstName lastName firstNameAr lastNameAr email')
+        .sort({ issueDate: -1 })
+        .skip((page - 1) * limit)
+        .limit(parseInt(limit))
+        .lean(),
+      Invoice.countDocuments(query)
+    ]);
     
     res.json({
       invoices,

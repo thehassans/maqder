@@ -1,6 +1,6 @@
 import { resolveZatcaStatus } from './zatcaStatus'
 
-const SUCCESS_STATUSES = new Set(['submitted', 'reported', 'cleared'])
+const SUCCESS_STATUSES = new Set(['submitted', 'reported', 'cleared', 'generated'])
 
 const toValidDate = (value) => {
   if (!value) return null

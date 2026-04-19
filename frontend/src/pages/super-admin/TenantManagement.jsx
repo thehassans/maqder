@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Search, Building2, Edit, Users, LogIn, AlertCircle, RefreshCw } from 'lucide-react'
+import { Plus, Search, Building2, Edit, Users, LogIn, AlertCircle, RefreshCw, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
@@ -11,13 +11,16 @@ import { useTranslation } from '../../lib/translations'
 export default function TenantManagement() {
   const { language } = useSelector((state) => state.ui)
   const { t } = useTranslation(language)
+  const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [filters, setFilters] = useState({ status: '', plan: '' })
   const [page, setPage] = useState(1)
 
-  const { data, isLoading, isError, error, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ['tenants', page, search, filters],
-    queryFn: () => api.get('/super-admin/tenants', { params: { page, search, ...filters } }).then(res => res.data)
+    queryFn: () => api.get('/super-admin/tenants', { params: { page, search, ...filters } }).then(res => res.data),
+    placeholderData: keepPreviousData,
+    staleTime: 60 * 1000,
   })
 
   const tenants = Array.isArray(data?.tenants) ? data.tenants : []
@@ -32,6 +35,34 @@ export default function TenantManagement() {
     },
     onError: (err) => toast.error(err.response?.data?.error || 'Login failed')
   })
+
+  const clearInvoicesMutation = useMutation({
+    mutationFn: (tenantId) => api.delete(`/super-admin/tenants/${tenantId}/invoices`).then(res => res.data),
+    onSuccess: (result) => {
+      toast.success(
+        language === 'ar'
+          ? `تم حذف ${result?.deletedInvoices || 0} فاتورة`
+          : `Cleared ${result?.deletedInvoices || 0} invoices`
+      )
+      queryClient.invalidateQueries({ queryKey: ['tenants'] })
+      queryClient.invalidateQueries({ queryKey: ['invoices'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-revenue'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard-expenses'] })
+      queryClient.invalidateQueries({ queryKey: ['customers'] })
+      queryClient.invalidateQueries({ queryKey: ['travel-bookings'] })
+    },
+    onError: (err) => toast.error(err.response?.data?.error || 'Failed to clear invoices')
+  })
+
+  const handleClearInvoices = (tenant) => {
+    const label = tenant?.name || tenant?.business?.legalNameEn || ''
+    const confirmMsg = language === 'ar'
+      ? `سيتم حذف جميع الفواتير للمستأجر "${label}" نهائياً وإعادة تعيين التقارير ولوحة التحكم. هل أنت متأكد؟`
+      : `This will permanently delete ALL invoices for "${label}" and reset dashboards and reports. Continue?`
+    if (!window.confirm(confirmMsg)) return
+    clearInvoicesMutation.mutate(tenant._id)
+  }
 
   return (
     <div className="space-y-6">
@@ -165,6 +196,15 @@ export default function TenantManagement() {
                           <Link to={`/super-admin/tenants/${tenant._id}`} className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg">
                             <Edit className="w-4 h-4 text-gray-600" />
                           </Link>
+                          <button
+                            type="button"
+                            onClick={() => handleClearInvoices(tenant)}
+                            disabled={clearInvoicesMutation.isPending}
+                            className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-red-600 disabled:opacity-50"
+                            title={language === 'ar' ? 'حذف جميع الفواتير' : 'Clear all invoices'}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>
