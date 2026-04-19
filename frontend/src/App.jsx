@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { getMe } from './store/slices/authSlice'
@@ -12,70 +12,71 @@ import SuperAdminLayout from './layouts/SuperAdminLayout'
 import MarketingLayout from './layouts/MarketingLayout'
 
 import Login from './pages/auth/Login'
-import MarketingHome from './pages/marketing/Home'
-import MarketingPricing from './pages/marketing/Pricing'
-import MarketingAbout from './pages/marketing/About'
-import MarketingContact from './pages/marketing/Contact'
-import MarketingPrivacy from './pages/marketing/Privacy'
-import MarketingTerms from './pages/marketing/Terms'
-import Dashboard from './pages/Dashboard'
-import Invoices from './pages/invoices/Invoices'
-import InvoiceCreate from './pages/invoices/InvoiceCreate'
-import InvoiceCreateSell from './pages/invoices/InvoiceCreateSellPage'
-import InvoiceCreatePurchase from './pages/invoices/InvoiceCreatePurchasePage'
-import InvoiceEditPage from './pages/invoices/InvoiceEditPage'
-import InvoiceView from './pages/invoices/InvoiceView'
-import Employees from './pages/hr/Employees'
-import EmployeeForm from './pages/hr/EmployeeForm'
-import Payroll from './pages/hr/Payroll'
-import PayrollCalculators from './pages/hr/PayrollCalculators'
-import Products from './pages/inventory/Products'
-import ProductForm from './pages/inventory/ProductForm'
-import Warehouses from './pages/inventory/Warehouses'
-import WarehouseForm from './pages/inventory/WarehouseForm'
-import Settings from './pages/Settings'
-import Reports from './pages/Reports'
-import VatReturns from './pages/VatReturns'
-import Suppliers from './pages/Suppliers'
-import SupplierForm from './pages/SupplierForm'
-import PurchaseOrders from './pages/PurchaseOrders'
-import PurchaseOrderForm from './pages/PurchaseOrderForm'
-import Shipments from './pages/Shipments'
-import ShipmentForm from './pages/ShipmentForm'
-import TravelBookings from './pages/travel/TravelBookings'
-import TravelBookingForm from './pages/travel/TravelBookingForm'
-import RestaurantMenuItems from './pages/restaurant/RestaurantMenuItems'
-import RestaurantMenuItemForm from './pages/restaurant/RestaurantMenuItemForm'
-import RestaurantOrders from './pages/restaurant/RestaurantOrders'
-import RestaurantOrderForm from './pages/restaurant/RestaurantOrderForm'
-import RestaurantKitchen from './pages/restaurant/RestaurantKitchen'
-import Projects from './pages/Projects'
-import ProjectForm from './pages/ProjectForm'
-import Tasks from './pages/Tasks'
-import TaskForm from './pages/TaskForm'
-import IoT from './pages/IoT'
-import IoTDeviceForm from './pages/IoTDeviceForm'
-import Finance from './pages/Finance'
-import JobCosting from './pages/JobCosting'
-import JobCostingForm from './pages/JobCostingForm'
-import MRP from './pages/MRP'
-import WhatsApp from './pages/WhatsApp'
-import Contacts from './pages/Contacts'
-import Expenses from './pages/Expenses'
-import ExpenseForm from './pages/ExpenseForm'
-import CustomerList from './pages/customers/CustomerList'
-import CustomerForm from './pages/customers/CustomerForm'
-import Users from './pages/Users'
-import SuperAdminDashboard from './pages/super-admin/SuperAdminDashboard'
-import TenantManagement from './pages/super-admin/TenantManagement'
-import TenantForm from './pages/super-admin/TenantForm'
-import UserManagement from './pages/super-admin/UserManagement'
-import GeminiSettings from './pages/super-admin/GeminiSettings'
-import EmailSettings from './pages/super-admin/EmailSettings'
-import WebsiteSettings from './pages/super-admin/WebsiteSettings'
-import EmailCommunication from './pages/EmailCommunication'
-
 import LoadingScreen from './components/ui/LoadingScreen'
+
+// Lazy-loaded pages (code-split so the initial tenant-login bundle stays tiny)
+const MarketingHome = lazy(() => import('./pages/marketing/Home'))
+const MarketingPricing = lazy(() => import('./pages/marketing/Pricing'))
+const MarketingAbout = lazy(() => import('./pages/marketing/About'))
+const MarketingContact = lazy(() => import('./pages/marketing/Contact'))
+const MarketingPrivacy = lazy(() => import('./pages/marketing/Privacy'))
+const MarketingTerms = lazy(() => import('./pages/marketing/Terms'))
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const Invoices = lazy(() => import('./pages/invoices/Invoices'))
+const InvoiceCreate = lazy(() => import('./pages/invoices/InvoiceCreate'))
+const InvoiceCreateSell = lazy(() => import('./pages/invoices/InvoiceCreateSellPage'))
+const InvoiceCreatePurchase = lazy(() => import('./pages/invoices/InvoiceCreatePurchasePage'))
+const InvoiceEditPage = lazy(() => import('./pages/invoices/InvoiceEditPage'))
+const InvoiceView = lazy(() => import('./pages/invoices/InvoiceView'))
+const Employees = lazy(() => import('./pages/hr/Employees'))
+const EmployeeForm = lazy(() => import('./pages/hr/EmployeeForm'))
+const Payroll = lazy(() => import('./pages/hr/Payroll'))
+const PayrollCalculators = lazy(() => import('./pages/hr/PayrollCalculators'))
+const Products = lazy(() => import('./pages/inventory/Products'))
+const ProductForm = lazy(() => import('./pages/inventory/ProductForm'))
+const Warehouses = lazy(() => import('./pages/inventory/Warehouses'))
+const WarehouseForm = lazy(() => import('./pages/inventory/WarehouseForm'))
+const Settings = lazy(() => import('./pages/Settings'))
+const Reports = lazy(() => import('./pages/Reports'))
+const VatReturns = lazy(() => import('./pages/VatReturns'))
+const Suppliers = lazy(() => import('./pages/Suppliers'))
+const SupplierForm = lazy(() => import('./pages/SupplierForm'))
+const PurchaseOrders = lazy(() => import('./pages/PurchaseOrders'))
+const PurchaseOrderForm = lazy(() => import('./pages/PurchaseOrderForm'))
+const Shipments = lazy(() => import('./pages/Shipments'))
+const ShipmentForm = lazy(() => import('./pages/ShipmentForm'))
+const TravelBookings = lazy(() => import('./pages/travel/TravelBookings'))
+const TravelBookingForm = lazy(() => import('./pages/travel/TravelBookingForm'))
+const RestaurantMenuItems = lazy(() => import('./pages/restaurant/RestaurantMenuItems'))
+const RestaurantMenuItemForm = lazy(() => import('./pages/restaurant/RestaurantMenuItemForm'))
+const RestaurantOrders = lazy(() => import('./pages/restaurant/RestaurantOrders'))
+const RestaurantOrderForm = lazy(() => import('./pages/restaurant/RestaurantOrderForm'))
+const RestaurantKitchen = lazy(() => import('./pages/restaurant/RestaurantKitchen'))
+const Projects = lazy(() => import('./pages/Projects'))
+const ProjectForm = lazy(() => import('./pages/ProjectForm'))
+const Tasks = lazy(() => import('./pages/Tasks'))
+const TaskForm = lazy(() => import('./pages/TaskForm'))
+const IoT = lazy(() => import('./pages/IoT'))
+const IoTDeviceForm = lazy(() => import('./pages/IoTDeviceForm'))
+const Finance = lazy(() => import('./pages/Finance'))
+const JobCosting = lazy(() => import('./pages/JobCosting'))
+const JobCostingForm = lazy(() => import('./pages/JobCostingForm'))
+const MRP = lazy(() => import('./pages/MRP'))
+const WhatsApp = lazy(() => import('./pages/WhatsApp'))
+const Contacts = lazy(() => import('./pages/Contacts'))
+const Expenses = lazy(() => import('./pages/Expenses'))
+const ExpenseForm = lazy(() => import('./pages/ExpenseForm'))
+const CustomerList = lazy(() => import('./pages/customers/CustomerList'))
+const CustomerForm = lazy(() => import('./pages/customers/CustomerForm'))
+const Users = lazy(() => import('./pages/Users'))
+const SuperAdminDashboard = lazy(() => import('./pages/super-admin/SuperAdminDashboard'))
+const TenantManagement = lazy(() => import('./pages/super-admin/TenantManagement'))
+const TenantForm = lazy(() => import('./pages/super-admin/TenantForm'))
+const UserManagement = lazy(() => import('./pages/super-admin/UserManagement'))
+const GeminiSettings = lazy(() => import('./pages/super-admin/GeminiSettings'))
+const EmailSettings = lazy(() => import('./pages/super-admin/EmailSettings'))
+const WebsiteSettings = lazy(() => import('./pages/super-admin/WebsiteSettings'))
+const EmailCommunication = lazy(() => import('./pages/EmailCommunication'))
 
 function LegacyDashboardRedirect() {
   const location = useLocation()
@@ -144,6 +145,7 @@ function App() {
   }, [tenant])
 
   return (
+    <Suspense fallback={<LoadingScreen />}>
     <Routes>
       {/* Public Marketing Website */}
       <Route path="/" element={<MarketingLayout />}>
@@ -283,6 +285,7 @@ function App() {
       {/* Catch all */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </Suspense>
   )
 }
 
