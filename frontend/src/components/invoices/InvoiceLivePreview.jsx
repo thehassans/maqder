@@ -11,41 +11,38 @@ import SarIcon from '../ui/SarIcon'
 const joinClasses = (...classes) => classes.filter(Boolean).join(' ')
 
 const renderSarMoney = ({ formatted, className = '', iconClassName = '' }) => (
-  <span dir="ltr" className={joinClasses('inline whitespace-nowrap tabular-nums leading-none', className)}>
-    <span className="relative -top-[0.02em] inline-block leading-none">{formatted}</span>
-    <span className="ms-[0.14em] inline-block h-[0.82em] w-[0.82em] overflow-visible align-[-0.2em]">
-      <SarIcon
-        className={joinClasses('block h-full w-full shrink-0 overflow-visible', iconClassName)}
-        style={{ overflow: 'visible' }}
-        title="Saudi Riyal"
-      />
-    </span>
+  <span dir="ltr" className={joinClasses('inline-flex items-center whitespace-nowrap tabular-nums leading-none', className)}>
+    <span className="leading-none">{formatted}</span>
+    <SarIcon
+      className={joinClasses('ms-[0.18em] inline-block h-[0.95em] w-[0.95em] shrink-0 overflow-visible', iconClassName)}
+      style={{ overflow: 'visible' }}
+      title="Saudi Riyal"
+    />
   </span>
 )
 
 const renderSarMoneySnapshotIcon = ({ formatted, className = '' }) => (
-  <span dir="ltr" style={{ display: 'inline', whiteSpace: 'nowrap', lineHeight: 1 }}>
-    <span style={{ position: 'relative', top: '-0.02em', display: 'inline-block', lineHeight: 1 }}>{formatted}</span>
-    <span
+  <span
+    dir="ltr"
+    style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      whiteSpace: 'nowrap',
+      lineHeight: 1,
+    }}
+  >
+    <span style={{ lineHeight: 1 }}>{formatted}</span>
+    <SarIcon
+      title="Saudi Riyal"
       style={{
         display: 'inline-block',
-        width: '0.82em',
-        height: '0.82em',
-        marginInlineStart: '0.14em',
-        verticalAlign: '-0.2em',
+        width: '0.95em',
+        height: '0.95em',
+        marginInlineStart: '0.18em',
         overflow: 'visible',
+        flexShrink: 0,
       }}
-    >
-      <SarIcon
-        title="Saudi Riyal"
-        style={{
-          display: 'block',
-          width: '100%',
-          height: '100%',
-          overflow: 'visible',
-        }}
-      />
-    </span>
+    />
   </span>
 )
 
@@ -560,7 +557,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
               <tr>
                 <th className="px-4 py-3 text-start font-medium">#</th>
                 <th className="px-4 py-3 text-start font-medium whitespace-pre-line">{bilingual ? toBilingualText('Description', 'الوصف') : (language === 'ar' ? 'الوصف' : 'Description')}</th>
-                <th className="px-4 py-3 text-center font-medium whitespace-pre-line">{bilingual ? toBilingualText('Qty', 'الكمية') : (language === 'ar' ? 'الكمية' : 'Qty')}</th>
+                {!isTravelInvoice && <th className="px-4 py-3 text-center font-medium whitespace-pre-line">{bilingual ? toBilingualText('Qty', 'الكمية') : (language === 'ar' ? 'الكمية' : 'Qty')}</th>}
                 <th className="px-4 py-3 text-end font-medium whitespace-pre-line">{bilingual ? toBilingualText('Unit Price', 'سعر الوحدة') : (language === 'ar' ? 'السعر' : 'Price')}</th>
                 {!hideTaxOnInvoice && <th className="px-4 py-3 text-end font-medium whitespace-pre-line">{bilingual ? toBilingualText('Tax', 'الضريبة') : (language === 'ar' ? 'الضريبة' : 'Tax')}</th>}
                 <th className="px-4 py-3 text-end font-medium whitespace-pre-line">{bilingual ? toBilingualText('Total', 'الإجمالي') : (language === 'ar' ? 'الإجمالي' : 'Total')}</th>
@@ -586,7 +583,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
                       <div className="font-medium whitespace-pre-line">{bilingual ? toBilingualText(productNameEn, productNameAr) : (language === 'ar' ? (line?.raw?.productNameAr || line?.raw?.productName || line?.productNameAr || line?.productName || '—') : (line?.raw?.productName || line?.raw?.productNameAr || line?.productName || line?.productNameAr || '—'))}</div>
                       {(line?.raw?.description || line?.raw?.descriptionAr || line?.description || line?.descriptionAr) && <div className={`mt-1 text-xs ${mutedText} whitespace-pre-line`}>{bilingual ? toBilingualText(descriptionEn, descriptionAr) : (language === 'ar' ? (line?.raw?.descriptionAr || line?.raw?.description || line?.descriptionAr || line?.description) : (line?.raw?.description || line?.raw?.descriptionAr || line?.description || line?.descriptionAr))}</div>}
                     </td>
-                    <td className="px-4 py-3 text-center">{quantity || '—'}</td>
+                    {!isTravelInvoice && <td className="px-4 py-3 text-center">{quantity || '—'}</td>}
                     <td className="px-4 py-3 text-end">{renderMoney(unitPriceDisplayed)}</td>
                     {!hideTaxOnInvoice && <td className="px-4 py-3 text-end">{renderMoney(tax)}</td>}
                     <td className="px-4 py-3 text-end font-semibold">{renderMoney(total)}</td>

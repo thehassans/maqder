@@ -485,14 +485,20 @@ export const buildInvoicePdfBuffer = async ({ invoice, tenant, customerName, lan
 
   const tableX = margin;
   const tableWidth = pageWidth - margin * 2;
-  const colWidths = [24, 196, 44, 88, 56, tableWidth - (24 + 196 + 44 + 88 + 56)];
+  const isTravelPdf = isTravelInvoiceDoc(invoice);
+  // Travel invoices hide Qty (always 1 per ticket) and Tax (margin VAT is internal).
+  const colWidths = isTravelPdf
+    ? [32, tableWidth - (32 + 140 + 140) - 8, 140, 140, 8]
+    : [24, 196, 44, 88, 56, tableWidth - (24 + 196 + 44 + 88 + 56)];
+  const headerLabels = isTravelPdf
+    ? ['#', 'Description / الوصف', 'Unit Price / سعر الوحدة', 'Total / الإجمالي', '']
+    : ['#', 'Description / الوصف', 'Qty / الكمية', 'Unit Price / سعر الوحدة', 'Tax / الضريبة', 'Total / الإجمالي'];
   const drawItemsHeader = (y) => {
     doc.setFillColor(15, 23, 42);
     doc.setDrawColor(15, 23, 42);
     doc.rect(tableX, y, tableWidth, 28, 'FD');
-    const headers = ['#', 'Description / الوصف', 'Qty / الكمية', 'Unit Price / سعر الوحدة', 'Tax / الضريبة', 'Total / الإجمالي'];
     let currentX = tableX;
-    headers.forEach((header, index) => {
+    headerLabels.forEach((header, index) => {
       setDocFont(doc, hasArabicText(header) ? arabicFont : englishFont, 'bold', 8.5);
       doc.setTextColor(255, 255, 255);
       doc.text(header, currentX + 6, y + 17, { maxWidth: colWidths[index] - 12 });
@@ -505,14 +511,22 @@ export const buildInvoicePdfBuffer = async ({ invoice, tenant, customerName, lan
   let rowY = cursorY + 28;
 
   lineItems.forEach((line, index) => {
-    const rowValues = [
-      String(index + 1),
-      mergeUniqueLines(normalizeText(line?.productName), normalizeText(line?.productNameAr)).join('\n') || `Item ${index + 1}`,
-      String(Number(line?.quantity || 0)),
-      toMoney(resolveLineDisplayPrice(invoice, line), invoice?.currency),
-      `${Number(line?.taxRate || 0).toFixed(2)}%`,
-      toMoney(line?.lineTotalWithTax || line?.lineTotal, invoice?.currency),
-    ];
+    const rowValues = isTravelPdf
+      ? [
+          String(index + 1),
+          mergeUniqueLines(normalizeText(line?.productName), normalizeText(line?.productNameAr)).join('\n') || `Item ${index + 1}`,
+          toMoney(resolveLineDisplayPrice(invoice, line), invoice?.currency),
+          toMoney(line?.lineTotalWithTax || line?.lineTotal, invoice?.currency),
+          '',
+        ]
+      : [
+          String(index + 1),
+          mergeUniqueLines(normalizeText(line?.productName), normalizeText(line?.productNameAr)).join('\n') || `Item ${index + 1}`,
+          String(Number(line?.quantity || 0)),
+          toMoney(resolveLineDisplayPrice(invoice, line), invoice?.currency),
+          `${Number(line?.taxRate || 0).toFixed(2)}%`,
+          toMoney(line?.lineTotalWithTax || line?.lineTotal, invoice?.currency),
+        ];
     const rowHeight = Math.max(
       24,
       ...rowValues.map((value, cellIndex) => measureWrappedLinesHeight(doc, [value], colWidths[cellIndex] - 10, englishFont, arabicFont, 9.5, 12))
