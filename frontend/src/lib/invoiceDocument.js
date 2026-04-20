@@ -99,21 +99,26 @@ export const calculateInvoiceSummary = (invoice = {}) => {
     const taxRate = Math.max(0, toNumber(line?.taxRate, 0))
     const agencyPrice = Math.max(0, toNumber(line?.agencyPrice, 0))
     const isTravelMargin = Boolean(line?.isTravelMargin)
+    const customerPriceInput = Math.max(0, toNumber(line?.customerPrice, 0))
+    // For travel margin lines: customerPrice drives the customer-facing subtotal.
+    // Non-travel lines ignore customerPrice (subtotal = qty × unitPrice).
+    const customerPriceEff = isTravelMargin && customerPriceInput > 0 ? customerPriceInput : unitPrice
     const marginPerUnit = isTravelMargin ? Math.max(0, unitPrice - agencyPrice) : 0
-    const lineSubtotal = quantity * unitPrice
+    const lineSubtotal = quantity * customerPriceEff
     const rawDiscount = Math.max(0, toNumber(line?.discount, 0))
     const lineDiscount = line?.discountType === 'percentage'
       ? Math.min(lineSubtotal, lineSubtotal * (rawDiscount / 100))
       : Math.min(lineSubtotal, rawDiscount)
     const netBeforeInvoiceDiscount = Math.max(0, lineSubtotal - lineDiscount)
     const marginBeforeInvoiceDiscount = isTravelMargin
-      ? Math.max(0, quantity * marginPerUnit - (lineDiscount * (unitPrice > 0 ? marginPerUnit / unitPrice : 0)))
+      ? Math.max(0, quantity * marginPerUnit - (lineDiscount * (customerPriceEff > 0 ? marginPerUnit / customerPriceEff : 0)))
       : 0
 
     return {
       raw: line,
       quantity,
       unitPrice,
+      customerPrice: customerPriceEff,
       taxRate,
       agencyPrice,
       isTravelMargin,

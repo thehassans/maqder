@@ -55,6 +55,7 @@ const invoiceLineSchema = new mongoose.Schema({
   lineTotal: { type: Number },
   lineTotalWithTax: { type: Number },
   agencyPrice: { type: Number, default: 0, min: 0 },
+  customerPrice: { type: Number, default: 0, min: 0 },
   isTravelMargin: { type: Boolean, default: false },
   marginTaxable: { type: Number, default: 0 }
 });
@@ -224,18 +225,27 @@ invoiceSchema.pre('validate', function(next) {
 
   // Calculate line totals
   const normalizedLines = lines.map(line => {
-    const lineSubtotal = Math.max(0, (Number(line.quantity) || 0) * (Number(line.unitPrice) || 0));
+    const quantity = Math.max(0, Number(line.quantity) || 0);
+    const unitPrice = Math.max(0, Number(line.unitPrice) || 0);
+    const agencyPrice = Math.max(0, Number(line.agencyPrice) || 0);
+    const isTravelMargin = Boolean(line.isTravelMargin);
+    // For travel lines, customerPrice drives the printed / customer-facing subtotal.
+    // When customerPrice is not set (legacy data) fall back to unitPrice.
+    const customerPriceInput = Math.max(0, Number(line.customerPrice) || 0);
+    const customerPriceEff = isTravelMargin && customerPriceInput > 0 ? customerPriceInput : unitPrice;
+    if (isTravelMargin) {
+      line.customerPrice = customerPriceEff;
+    }
+    const lineSubtotal = Math.max(0, quantity * customerPriceEff);
     const rawDiscount = Math.max(0, Number(line.discount) || 0);
     const lineDiscount = line.discountType === 'percentage'
       ? Math.min(lineSubtotal, lineSubtotal * (rawDiscount / 100))
       : Math.min(lineSubtotal, rawDiscount);
     const netBeforeInvoiceDiscount = Math.max(0, lineSubtotal - lineDiscount);
     const taxRate = Math.max(0, Number(line.taxRate) || 0);
-    const agencyPrice = Math.max(0, Number(line.agencyPrice) || 0);
-    const isTravelMargin = Boolean(line.isTravelMargin);
-    const marginPerUnit = isTravelMargin ? Math.max(0, (Number(line.unitPrice) || 0) - agencyPrice) : 0;
+    const marginPerUnit = isTravelMargin ? Math.max(0, unitPrice - agencyPrice) : 0;
     const marginBeforeInvoiceDiscount = isTravelMargin
-      ? Math.max(0, ((Number(line.quantity) || 0) * marginPerUnit) - (lineDiscount * ((Number(line.unitPrice) || 0) > 0 ? marginPerUnit / (Number(line.unitPrice) || 0) : 0)))
+      ? Math.max(0, (quantity * marginPerUnit) - (lineDiscount * (customerPriceEff > 0 ? marginPerUnit / customerPriceEff : 0)))
       : 0;
 
     return {

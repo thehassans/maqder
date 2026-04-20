@@ -16,7 +16,7 @@ import InvoiceLivePreview from './InvoiceLivePreview'
 import InvoiceTemplateSelector from './InvoiceTemplateSelector'
 import TravelInvoiceFields from './TravelInvoiceFields'
 
-const emptyLine = { productId: '', productName: '', productNameAr: '', unitCode: 'PCE', quantity: 1, unitPrice: 0, taxRate: 15, agencyPrice: 0, isTravelMargin: false }
+const emptyLine = { productId: '', productName: '', productNameAr: '', unitCode: 'PCE', quantity: 1, unitPrice: 0, customerPrice: 0, taxRate: 15, agencyPrice: 0, isTravelMargin: false }
 const selectableContexts = ['trading', 'construction', 'travel_agency', 'restaurant']
 
 const sanitizeTravelDetails = (travelDetails = {}) => ({
@@ -73,6 +73,7 @@ const buildSellInvoiceFormValues = ({ invoice, tenant, defaultBusinessContext, h
         unitCode: line?.unitCode || 'PCE',
         quantity: Math.max(1, toNumber(line?.quantity, 1)),
         unitPrice: Math.max(0, toNumber(line?.unitPrice, 0)),
+        customerPrice: Math.max(0, toNumber(line?.customerPrice, 0)),
         taxRate: Math.max(0, toNumber(line?.taxRate, 15)),
         agencyPrice: Math.max(0, toNumber(line?.agencyPrice, 0)),
         isTravelMargin: Boolean(line?.isTravelMargin),
@@ -353,6 +354,8 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
         const summaryLine = totals.lines[index] || {}
         const agencyPrice = Math.max(0, toNumber(line.agencyPrice, 0))
         const isTravelMargin = isTravelContext ? true : Boolean(line.isTravelMargin)
+        const customerPriceRaw = Math.max(0, toNumber(line.customerPrice, 0))
+        const unitPriceNum = Math.max(0, toNumber(line.unitPrice, 0))
         return {
           ...line,
           lineNumber: index + 1,
@@ -360,6 +363,7 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
           productId: isTradingContext ? line.productId || undefined : undefined,
           taxRate: isTravelContext ? 15 : toNumber(line.taxRate, 15),
           agencyPrice: isTravelContext ? agencyPrice : 0,
+          customerPrice: isTravelContext ? (customerPriceRaw > 0 ? customerPriceRaw : unitPriceNum) : 0,
           isTravelMargin,
           marginTaxable: isTravelMargin ? Math.max(0, toNumber(summaryLine.marginTaxable, 0)) : 0,
           taxAmount: toNumber(summaryLine.taxAmount, 0),
@@ -635,7 +639,7 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
                   <input type="hidden" {...register(`lineItems.${index}.taxRate`, { valueAsNumber: true })} />
                   <input type="hidden" {...register(`lineItems.${index}.isTravelMargin`)} />
                   <div className="grid grid-cols-1 items-end gap-4 md:grid-cols-12">
-                    <div className="md:col-span-4">
+                    <div className={isTravelContext ? 'md:col-span-3' : 'md:col-span-4'}>
                       <label className="label">{t('productName')} *</label>
                       {isTradingContext ? (
                         <>
@@ -649,26 +653,45 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
                         <input {...register(`lineItems.${index}.productName`, { required: true })} className="input" placeholder={language === 'ar' ? 'اسم الخدمة' : 'Service name'} />
                       )}
                     </div>
-                    <div className="md:col-span-2">
+                    <div className={isTravelContext ? 'md:col-span-1' : 'md:col-span-2'}>
                       <label className="label">{t('quantity')}</label>
                       <input type="number" min="1" {...register(`lineItems.${index}.quantity`, { valueAsNumber: true, required: true, min: 1 })} className="input" />
                     </div>
                     <div className="md:col-span-2">
-                      <label className="label">{t('unitPrice')}</label>
+                      <label className="label">
+                        {isTravelContext
+                          ? (language === 'ar' ? 'سعر التذكرة' : 'Unit Price')
+                          : t('unitPrice')}
+                      </label>
                       <input type="number" step="0.01" {...register(`lineItems.${index}.unitPrice`, { valueAsNumber: true, required: true, min: 0 })} className="input" />
                     </div>
                     {isTravelContext ? (
-                      <div className="md:col-span-2">
-                        <label className="label">{language === 'ar' ? 'سعر الوكالة' : 'Agency Price'}</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          {...register(`lineItems.${index}.agencyPrice`, { valueAsNumber: true, min: 0 })}
-                          className="input"
-                          placeholder="0.00"
-                        />
-                      </div>
+                      <>
+                        <div className="md:col-span-2">
+                          <label className="label">{language === 'ar' ? 'سعر الوكالة' : 'Agency Price'}</label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            {...register(`lineItems.${index}.agencyPrice`, { valueAsNumber: true, min: 0 })}
+                            className="input"
+                            placeholder="0.00"
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="label text-primary-700 dark:text-primary-300">
+                            {language === 'ar' ? 'سعر العميل' : 'Customer Price'}
+                          </label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            {...register(`lineItems.${index}.customerPrice`, { valueAsNumber: true, min: 0 })}
+                            className="input border-primary-300 focus:ring-primary-500"
+                            placeholder="0.00"
+                          />
+                        </div>
+                      </>
                     ) : (
                       <div className="md:col-span-2">
                         <label className="label">{t('tax')} %</label>
@@ -693,9 +716,15 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
                         <div className="grid grid-cols-1 items-end gap-4 md:grid-cols-12">
                           <div className="md:col-span-6">
                             <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                              {language === 'ar' ? 'ضريبة القيمة المضافة على سعر الوحدة للعميل تساوي صفراً، وتُحسب تلقائياً بنسبة 15% على هامش الربح فقط' : 'VAT on the customer unit price is zero, and 15% VAT is calculated automatically on the profit margin only'}
+                              {language === 'ar'
+                                ? 'تُحسب ضريبة القيمة المضافة 15% تلقائياً على هامش الربح (سعر التذكرة − سعر الوكالة) فقط'
+                                : '15% VAT is calculated automatically on the profit margin only (Unit Price − Agency Price)'}
                             </p>
-                            <p className="mt-1 text-[11px] text-gray-500">{language === 'ar' ? 'سعر الوكالة مخفي في الفاتورة المطبوعة' : 'Agency price is hidden on the printed invoice'}</p>
+                            <p className="mt-1 text-[11px] text-gray-500">
+                              {language === 'ar'
+                                ? 'سعر العميل هو المبلغ الظاهر للعميل على الفاتورة. سعر الوحدة وسعر الوكالة مخفيان في الفاتورة المطبوعة ورمز ZATCA'
+                                : 'Customer Price is what the buyer sees on the invoice. Unit Price and Agency Price are hidden on the printed invoice and ZATCA QR.'}
+                            </p>
                           </div>
                           <div className="md:col-span-3 text-end">
                             <p className="mb-1 text-xs text-gray-500">{language === 'ar' ? 'إجمالي الربح' : 'Total Profit'}</p>

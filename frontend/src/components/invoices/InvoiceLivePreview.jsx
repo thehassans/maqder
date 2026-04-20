@@ -569,7 +569,10 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
             <tbody className="divide-y divide-slate-200 text-slate-700">
               {lineItems.map((line, index) => {
                 const quantity = toNumber(line?.quantity)
-                const unitPrice = toNumber(line?.unitPrice)
+                const customerPriceRaw = toNumber(line?.customerPrice ?? line?.raw?.customerPrice)
+                const unitPriceDisplayed = isTravelInvoice && customerPriceRaw > 0
+                  ? customerPriceRaw
+                  : toNumber(line?.unitPrice)
                 const tax = toNumber(line?.taxAmount)
                 const total = toNumber(line?.lineTotalWithTax)
                 const productNameEn = line?.raw?.productName || line?.productName || line?.raw?.productNameAr || line?.productNameAr || '—'
@@ -584,7 +587,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
                       {(line?.raw?.description || line?.raw?.descriptionAr || line?.description || line?.descriptionAr) && <div className={`mt-1 text-xs ${mutedText} whitespace-pre-line`}>{bilingual ? toBilingualText(descriptionEn, descriptionAr) : (language === 'ar' ? (line?.raw?.descriptionAr || line?.raw?.description || line?.descriptionAr || line?.description) : (line?.raw?.description || line?.raw?.descriptionAr || line?.description || line?.descriptionAr))}</div>}
                     </td>
                     <td className="px-4 py-3 text-center">{quantity || '—'}</td>
-                    <td className="px-4 py-3 text-end">{renderMoney(unitPrice)}</td>
+                    <td className="px-4 py-3 text-end">{renderMoney(unitPriceDisplayed)}</td>
                     {!hideTaxOnInvoice && <td className="px-4 py-3 text-end">{renderMoney(tax)}</td>}
                     <td className="px-4 py-3 text-end font-semibold">{renderMoney(total)}</td>
                   </tr>

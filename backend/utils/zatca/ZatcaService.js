@@ -66,12 +66,12 @@ class ZatcaService {
       //
       // For travel-agency margin-scheme lines the customer's quoted unit price
       // already includes the tax on the agency margin, so the ZATCA line math
-      // (qty × priceAmount = lineExtensionAmount) has to be driven from the
-      // tax-exclusive line total rather than the customer-facing unit price.
-      // The customer-facing PDF reads `line.unitPrice` directly, so this has
-      // no effect on what the customer sees; it only keeps the ZATCA XML
-      // internally consistent (BR-CO-04) and the QR uses invoice.grandTotal
-      // and invoice.totalTax — never `agencyPrice`.
+      // (qty × priceAmount = lineExtensionAmount) must be driven from the
+      // tax-exclusive line total rather than any of the customer-facing /
+      // agency prices. The customer-facing PDF reads `customerPrice`, so this
+      // has no effect on what the customer sees; it only keeps the ZATCA XML
+      // internally consistent (BR-CO-04). The QR uses invoice.grandTotal and
+      // invoice.totalTax — agencyPrice and unitPrice never leak to the QR.
       lineItems: invoice.lineItems.map((line, index) => {
         const quantity = Number(line.quantity) || 0;
         const isMarginLine = Boolean(line.isTravelMargin);

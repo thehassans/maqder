@@ -21,6 +21,17 @@ const toMoney = (value, currency = 'SAR') => {
   return `${Number.isFinite(amount) ? amount.toFixed(2) : '0.00'} ${String(currency || 'SAR').trim() || 'SAR'}`;
 };
 
+// On travel invoices the printed/displayed price comes from customerPrice;
+// unitPrice & agencyPrice are internal ZATCA margin inputs and must never leak.
+const isTravelInvoiceDoc = (invoice = {}) => invoice?.businessContext === 'travel_agency' || invoice?.invoiceSubtype === 'travel_ticket';
+const resolveLineDisplayPrice = (invoice, line) => {
+  if (isTravelInvoiceDoc(invoice)) {
+    const customer = Number(line?.customerPrice || 0);
+    if (customer > 0) return customer;
+  }
+  return Number(line?.unitPrice || 0);
+};
+
 const escapePdfText = (value) => String(value || '')
   .replace(/\\/g, '\\\\')
   .replace(/\(/g, '\\(')
@@ -99,7 +110,7 @@ const buildFallbackInvoiceLines = ({ invoice, tenant, customerName }) => {
   invoiceLines.slice(0, 18).forEach((line, index) => {
     const name = normalizeText(line?.productName || line?.productNameAr || `Item ${index + 1}`);
     const qty = Number(line?.quantity || 0);
-    const price = toMoney(line?.unitPrice, invoice?.currency);
+    const price = toMoney(resolveLineDisplayPrice(invoice, line), invoice?.currency);
     const total = toMoney(line?.lineTotalWithTax || line?.lineTotal, invoice?.currency);
     lines.push(`${index + 1}. ${name} | Qty: ${Number.isFinite(qty) ? qty : 0} | Price: ${price} | Total: ${total}`);
   });
@@ -498,7 +509,7 @@ export const buildInvoicePdfBuffer = async ({ invoice, tenant, customerName, lan
       String(index + 1),
       mergeUniqueLines(normalizeText(line?.productName), normalizeText(line?.productNameAr)).join('\n') || `Item ${index + 1}`,
       String(Number(line?.quantity || 0)),
-      toMoney(line?.unitPrice, invoice?.currency),
+      toMoney(resolveLineDisplayPrice(invoice, line), invoice?.currency),
       `${Number(line?.taxRate || 0).toFixed(2)}%`,
       toMoney(line?.lineTotalWithTax || line?.lineTotal, invoice?.currency),
     ];
