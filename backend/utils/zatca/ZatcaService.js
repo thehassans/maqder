@@ -63,19 +63,36 @@ class ZatcaService {
       taxAmount: this.formatAmount(invoice.totalTax),
       
       // Lines
-      lineItems: invoice.lineItems.map((line, index) => ({
-        id: line.lineNumber || index + 1,
-        quantity: line.quantity,
-        unitCode: line.unitCode || 'PCE',
-        lineExtensionAmount: this.formatAmount(line.lineTotal),
-        itemName: line.productName,
-        itemNameAr: line.productNameAr || line.productName,
-        priceAmount: this.formatAmount(line.unitPrice),
-        taxAmount: this.formatAmount(line.taxAmount),
-        taxCategory: line.taxCategory || 'S',
-        taxPercent: line.taxRate || 15,
-        roundingAmount: this.formatAmount(line.lineTotalWithTax)
-      })),
+      //
+      // For travel-agency margin-scheme lines the customer's quoted unit price
+      // already includes the tax on the agency margin, so the ZATCA line math
+      // (qty × priceAmount = lineExtensionAmount) has to be driven from the
+      // tax-exclusive line total rather than the customer-facing unit price.
+      // The customer-facing PDF reads `line.unitPrice` directly, so this has
+      // no effect on what the customer sees; it only keeps the ZATCA XML
+      // internally consistent (BR-CO-04) and the QR uses invoice.grandTotal
+      // and invoice.totalTax — never `agencyPrice`.
+      lineItems: invoice.lineItems.map((line, index) => {
+        const quantity = Number(line.quantity) || 0;
+        const isMarginLine = Boolean(line.isTravelMargin);
+        const priceAmount = isMarginLine && quantity > 0
+          ? (Number(line.lineTotal) || 0) / quantity
+          : Number(line.unitPrice) || 0;
+
+        return {
+          id: line.lineNumber || index + 1,
+          quantity: line.quantity,
+          unitCode: line.unitCode || 'PCE',
+          lineExtensionAmount: this.formatAmount(line.lineTotal),
+          itemName: line.productName,
+          itemNameAr: line.productNameAr || line.productName,
+          priceAmount: this.formatAmount(priceAmount),
+          taxAmount: this.formatAmount(line.taxAmount),
+          taxCategory: line.taxCategory || 'S',
+          taxPercent: line.taxRate || 15,
+          roundingAmount: this.formatAmount(line.lineTotalWithTax)
+        };
+      }),
       
       // Tax Breakdown
       taxSubtotals: this.calculateTaxSubtotals(invoice.lineItems),
