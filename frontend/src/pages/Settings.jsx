@@ -55,6 +55,8 @@ export default function Settings() {
   const [invoicePdfTemplate, setInvoicePdfTemplate] = useState(1)
   const [invoicePdfPageSize, setInvoicePdfPageSize] = useState('a4')
   const [invoicePdfOrientation, setInvoicePdfOrientation] = useState('portrait')
+  const [invoiceCurrencyDisplay, setInvoiceCurrencyDisplay] = useState('text')
+  const [invoiceCurrencyPosition, setInvoiceCurrencyPosition] = useState('after')
   const [invoiceLogoDataUrl, setInvoiceLogoDataUrl] = useState(null)
   const [invoiceHeaderTextEn, setInvoiceHeaderTextEn] = useState('')
   const [invoiceHeaderTextAr, setInvoiceHeaderTextAr] = useState('')
@@ -86,6 +88,8 @@ export default function Settings() {
     setInvoicePdfTemplate(Number(tenant.settings?.invoicePdfTemplate || 1))
     setInvoicePdfPageSize(tenant.settings?.invoicePdfPageSize || 'a4')
     setInvoicePdfOrientation(tenant.settings?.invoicePdfOrientation || 'portrait')
+    setInvoiceCurrencyDisplay(tenant.settings?.invoiceCurrencyDisplay === 'icon' ? 'icon' : 'text')
+    setInvoiceCurrencyPosition(tenant.settings?.invoiceCurrencyPosition === 'before' ? 'before' : 'after')
     setInvoiceLogoDataUrl(tenant.settings?.invoiceBranding?.logo || tenant.branding?.logo || null)
     setInvoiceHeaderTextEn(tenant.settings?.invoiceBranding?.headerTextEn || '')
     setInvoiceHeaderTextAr(tenant.settings?.invoiceBranding?.headerTextAr || '')
@@ -715,6 +719,22 @@ export default function Settings() {
                         </select>
                       </div>
                     </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                      <div>
+                        <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'عرض العملة' : 'Currency Display'}</label>
+                        <select value={invoiceCurrencyDisplay} onChange={(e) => setInvoiceCurrencyDisplay(e.target.value === 'icon' ? 'icon' : 'text')} className="select mt-1">
+                          <option value="text">{language === 'ar' ? 'نص (SAR)' : 'Text (SAR)'}</option>
+                          <option value="icon">{language === 'ar' ? 'رمز الريال السعودي (﷼)' : 'Saudi Riyal Icon (﷼)'}</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'موضع رمز/نص العملة' : 'Currency Position'}</label>
+                        <select value={invoiceCurrencyPosition} onChange={(e) => setInvoiceCurrencyPosition(e.target.value === 'before' ? 'before' : 'after')} className="select mt-1">
+                          <option value="after">{language === 'ar' ? 'بعد المبلغ (200.00 SAR)' : 'After amount (200.00 SAR)'}</option>
+                          <option value="before">{language === 'ar' ? 'قبل المبلغ (SAR 200.00)' : 'Before amount (SAR 200.00)'}</option>
+                        </select>
+                      </div>
+                    </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                       {language === 'ar' ? 'يتم تطبيق هذا القالب عند تحميل PDF من شاشة الفواتير.' : 'This template is used when downloading invoice PDFs.'}
                     </p>
@@ -936,6 +956,8 @@ export default function Settings() {
                         invoicePdfTemplate,
                         invoicePdfPageSize,
                         invoicePdfOrientation,
+                        invoiceCurrencyDisplay,
+                        invoiceCurrencyPosition,
                         invoiceBranding: {
                           ...(tenant?.settings?.invoiceBranding || {}),
                           logo: invoiceLogoDataUrl || tenant?.settings?.invoiceBranding?.logo || tenant?.branding?.logo || null,

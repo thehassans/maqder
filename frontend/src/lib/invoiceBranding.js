@@ -67,6 +67,14 @@ const sanitizeLegacyTravelHeaderText = (value, context) => {
   return raw
 }
 
+export const getInvoiceCurrencyDisplay = (tenant) => {
+  const rawDisplay = String(tenant?.settings?.invoiceCurrencyDisplay || '').trim().toLowerCase()
+  const display = rawDisplay === 'icon' ? 'icon' : 'text'
+  const rawPosition = String(tenant?.settings?.invoiceCurrencyPosition || '').trim().toLowerCase()
+  const position = rawPosition === 'before' ? 'before' : 'after'
+  return { display, position }
+}
+
 export const getInvoiceTypography = (tenant) => {
   const typography = tenant?.settings?.invoiceBranding?.typography || {}
   return {

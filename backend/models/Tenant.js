@@ -98,6 +98,12 @@ const tenantSchema = new mongoose.Schema({
     invoicePdfTemplate: { type: Number, default: 1, min: 1, max: 6 },
     invoicePdfPageSize: { type: String, enum: ['a4', 'letter', 'a5'], default: 'a4' },
     invoicePdfOrientation: { type: String, enum: ['portrait', 'landscape'], default: 'portrait' },
+    // How SAR is rendered next to amounts on invoices and PDFs.
+    // - 'icon'  → Saudi Riyal symbol (﷼)
+    // - 'text'  → the letters "SAR"
+    invoiceCurrencyDisplay: { type: String, enum: ['icon', 'text'], default: 'text' },
+    // Where the currency marker sits relative to the amount.
+    invoiceCurrencyPosition: { type: String, enum: ['before', 'after'], default: 'after' },
     invoiceBranding: {
       logo: { type: String },
       headerTextEn: { type: String, default: '' },

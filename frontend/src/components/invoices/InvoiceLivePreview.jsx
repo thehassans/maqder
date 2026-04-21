@@ -1,7 +1,7 @@
 import { QRCodeSVG } from 'qrcode.react'
 import { generateZatcaQrValue } from '../../lib/zatcaQr'
 import { calculateInvoiceSummary, normalizeTravelDetails, toNumber } from '../../lib/invoiceDocument'
-import { getInvoiceBranding, getInvoiceCssFontFamily, splitBrandingText } from '../../lib/invoiceBranding'
+import { getInvoiceBranding, getInvoiceCssFontFamily, getInvoiceCurrencyDisplay, splitBrandingText } from '../../lib/invoiceBranding'
 import { getZatcaStatusMeta } from '../../lib/zatcaStatus'
 import { getAmountInWords } from '../../lib/amountInWords'
 import { formatCurrency, formatCurrencyAmount, isSarCurrency } from '../../lib/currency'
@@ -10,41 +10,58 @@ import SarIcon from '../ui/SarIcon'
 
 const joinClasses = (...classes) => classes.filter(Boolean).join(' ')
 
-const renderSarMoney = ({ formatted, className = '', iconClassName = '' }) => (
-  <span dir="ltr" className={joinClasses('inline-flex items-center whitespace-nowrap tabular-nums leading-none', className)}>
-    <span className="leading-none">{formatted}</span>
+const renderSarMoney = ({ formatted, className = '', iconClassName = '', position = 'after' }) => {
+  const icon = (
     <SarIcon
-      className={joinClasses('ms-[0.18em] inline-block h-[0.95em] w-[0.95em] shrink-0 overflow-visible', iconClassName)}
+      key="icon"
+      className={joinClasses(
+        'inline-block h-[0.95em] w-[0.95em] shrink-0 overflow-visible',
+        position === 'before' ? 'me-[0.18em]' : 'ms-[0.18em]',
+        iconClassName,
+      )}
       style={{ overflow: 'visible' }}
       title="Saudi Riyal"
     />
-  </span>
-)
+  )
+  const amount = <span key="amount" className="leading-none">{formatted}</span>
+  return (
+    <span dir="ltr" className={joinClasses('inline-flex items-center whitespace-nowrap tabular-nums leading-none', className)}>
+      {position === 'before' ? [icon, amount] : [amount, icon]}
+    </span>
+  )
+}
 
-const renderSarMoneySnapshotIcon = ({ formatted, className = '' }) => (
-  <span
-    dir="ltr"
-    style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      whiteSpace: 'nowrap',
-      lineHeight: 1,
-    }}
-  >
-    <span style={{ lineHeight: 1 }}>{formatted}</span>
-    <SarIcon
-      title="Saudi Riyal"
-      style={{
-        display: 'inline-block',
-        width: '0.95em',
-        height: '0.95em',
-        marginInlineStart: '0.18em',
-        overflow: 'visible',
-        flexShrink: 0,
-      }}
-    />
-  </span>
-)
+const renderSarMoneySnapshotIcon = ({ formatted, className = '', position = 'after' }) => {
+  const iconStyle = {
+    display: 'inline-block',
+    width: '0.95em',
+    height: '0.95em',
+    overflow: 'visible',
+    flexShrink: 0,
+    [position === 'before' ? 'marginInlineEnd' : 'marginInlineStart']: '0.18em',
+  }
+  const icon = <SarIcon key="icon" title="Saudi Riyal" style={iconStyle} />
+  const amount = <span key="amount" style={{ lineHeight: 1 }}>{formatted}</span>
+  return (
+    <span
+      dir="ltr"
+      className={className}
+      style={{ display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap', lineHeight: 1 }}
+    >
+      {position === 'before' ? [icon, amount] : [amount, icon]}
+    </span>
+  )
+}
+
+const renderSarText = ({ formatted, className = '', position = 'after' }) => {
+  const label = <span key="label" className="leading-none">SAR</span>
+  const amount = <span key="amount" className="leading-none">{formatted}</span>
+  return (
+    <span dir="ltr" className={joinClasses('inline-flex items-baseline gap-[0.28em] whitespace-nowrap tabular-nums leading-none', className)}>
+      {position === 'before' ? [label, amount] : [amount, label]}
+    </span>
+  )
+}
 
 const hasArabicText = (value = '') => /[\u0600-\u06FF]/.test(String(value || ''))
 
@@ -236,9 +253,12 @@ const getInvoiceTitle = (invoice, language = 'en') => {
   return language === 'ar' ? 'فاتورة ضريبية' : 'Tax Invoice'
 }
 
-export default function InvoiceLivePreview({ invoice, tenant, language = 'en', templateId = 1, bilingual = false, currencyRenderMode = 'icon' }) {
+export default function InvoiceLivePreview({ invoice, tenant, language = 'en', templateId = 1, bilingual = false, currencyRenderMode = 'icon', currencyDisplay, currencyPosition }) {
   const currency = invoice?.currency || tenant?.settings?.currency || 'SAR'
   const invoiceBranding = getInvoiceBranding(tenant, language, invoice?.businessContext)
+  const resolvedCurrency = getInvoiceCurrencyDisplay(tenant)
+  const effectiveCurrencyDisplay = currencyDisplay || resolvedCurrency.display
+  const effectiveCurrencyPosition = currencyPosition || resolvedCurrency.position
   const styles = getTemplateClasses(Number(templateId || invoiceBranding.templateId || 1))
   const sellerNameEn = invoice?.seller?.name || invoice?.seller?.nameAr || tenant?.business?.legalNameEn || tenant?.business?.legalNameAr || ''
   const sellerNameAr = invoice?.seller?.nameAr || (hasArabicText(invoice?.seller?.name) ? invoice?.seller?.name : '') || tenant?.business?.legalNameAr || ''
@@ -384,27 +404,15 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
   }
   const renderMoney = (value, options = {}) => {
     const isSar = isSarCurrency(currency)
-    const formatted = isSar
-      ? formatCurrencyAmount(value, {
-          language,
-          currency,
-          currencyDisplay: 'code',
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })
-      : formatCurrency(value, {
-          language,
-          currency,
-          currencyDisplay: 'code',
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })
+    const formatted = formatCurrencyAmount(value, {
+      language,
+      currency,
+      currencyDisplay: 'code',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
 
     if (!isSar) {
-      return formatted
-    }
-
-    if (currencyRenderMode === 'symbol') {
       return formatCurrency(value, {
         language,
         currency,
@@ -414,16 +422,28 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
       })
     }
 
+    // Tenant preference: render SAR as plain text (before/after the amount).
+    if (effectiveCurrencyDisplay === 'text') {
+      return renderSarText({
+        formatted,
+        className: options.className || '',
+        position: effectiveCurrencyPosition,
+      })
+    }
+
+    // Icon mode — use the snapshot-safe renderer for html2canvas output paths.
     if (currencyRenderMode === 'snapshot-icon') {
       return renderSarMoneySnapshotIcon({
         formatted,
         className: options.className || '',
+        position: effectiveCurrencyPosition,
       })
     }
 
     return renderSarMoney({
       formatted,
       className: options.className || '',
+      position: effectiveCurrencyPosition,
     })
   }
 

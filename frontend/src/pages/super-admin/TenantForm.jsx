@@ -106,6 +106,8 @@ export default function TenantForm() {
             invoicePdfTemplate: Number(nextSettings?.invoicePdfTemplate || 1),
             invoicePdfPageSize: nextSettings?.invoicePdfPageSize || 'a4',
             invoicePdfOrientation: nextSettings?.invoicePdfOrientation || 'portrait',
+            invoiceCurrencyDisplay: nextSettings?.invoiceCurrencyDisplay === 'icon' ? 'icon' : 'text',
+            invoiceCurrencyPosition: nextSettings?.invoiceCurrencyPosition === 'before' ? 'before' : 'after',
             invoiceBranding: {
               ...nextInvoiceBranding,
               showVision2030: nextInvoiceBranding?.showVision2030 !== false,
@@ -357,6 +359,20 @@ export default function TenantForm() {
                 <select {...register('settings.invoicePdfOrientation')} className="select">
                   <option value="portrait">{language === 'ar' ? 'طولي' : 'Portrait'}</option>
                   <option value="landscape">{language === 'ar' ? 'عرضي' : 'Landscape'}</option>
+                </select>
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'عرض العملة' : 'Currency Display'}</label>
+                <select {...register('settings.invoiceCurrencyDisplay')} className="select">
+                  <option value="text">{language === 'ar' ? 'نص (SAR)' : 'Text (SAR)'}</option>
+                  <option value="icon">{language === 'ar' ? 'رمز الريال السعودي (﷼)' : 'Saudi Riyal Icon (﷼)'}</option>
+                </select>
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'موضع العملة' : 'Currency Position'}</label>
+                <select {...register('settings.invoiceCurrencyPosition')} className="select">
+                  <option value="after">{language === 'ar' ? 'بعد المبلغ' : 'After amount'}</option>
+                  <option value="before">{language === 'ar' ? 'قبل المبلغ' : 'Before amount'}</option>
                 </select>
               </div>
             </div>

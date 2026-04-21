@@ -16,9 +16,17 @@ const sanitizeFileName = (value) => String(value || 'invoice')
 
 const normalizeText = (value) => String(value || '').trim();
 
-const toMoney = (value, currency = 'SAR') => {
+const toMoney = (value, currency = 'SAR', options = {}) => {
   const amount = Number(value || 0);
-  return `${Number.isFinite(amount) ? amount.toFixed(2) : '0.00'} ${String(currency || 'SAR').trim() || 'SAR'}`;
+  const formatted = Number.isFinite(amount) ? amount.toFixed(2) : '0.00';
+  const code = String(currency || 'SAR').trim() || 'SAR';
+  const position = options?.position === 'before' ? 'before' : 'after';
+  return position === 'before' ? `${code} ${formatted}` : `${formatted} ${code}`;
+};
+
+const resolveCurrencyPosition = (tenant) => {
+  const value = tenant?.settings?.invoiceCurrencyPosition;
+  return value === 'before' ? 'before' : 'after';
 };
 
 // On travel invoices the printed/displayed price comes from customerPrice;
