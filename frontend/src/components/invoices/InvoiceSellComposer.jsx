@@ -47,10 +47,24 @@ const sanitizeTravelDetails = (travelDetails = {}) => ({
     .filter((passenger) => passenger.name || passenger.passportNumber),
 })
 
+const toDatetimeLocalInput = (value) => {
+  if (!value) return ''
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  const pad = (n) => String(n).padStart(2, '0')
+  const yyyy = date.getFullYear()
+  const mm = pad(date.getMonth() + 1)
+  const dd = pad(date.getDate())
+  const hh = pad(date.getHours())
+  const mi = pad(date.getMinutes())
+  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`
+}
+
 const buildSellInvoiceFormValues = ({ invoice, tenant, defaultBusinessContext, hasTravel }) => ({
   businessContext: invoice?.businessContext || defaultBusinessContext,
   invoiceSubtype: invoice?.invoiceSubtype || (hasTravel ? 'travel_ticket' : 'standard'),
   pdfTemplateId: invoice?.pdfTemplateId || getInvoiceTemplateId(tenant, invoice?.businessContext || defaultBusinessContext),
+  issueDate: invoice?.issueDate ? toDatetimeLocalInput(invoice.issueDate) : '',
   transactionType: invoice?.transactionType || 'B2C',
   invoiceTypeCode: invoice?.invoiceTypeCode || (invoice?.transactionType === 'B2B' ? '0100000' : '0200000'),
   paymentMethod: invoice?.paymentMethod || 'cash',
@@ -353,7 +367,14 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
       transactionType,
       invoiceTypeCode,
       invoiceDiscount: Math.max(0, toNumber(data?.invoiceDiscount, 0)),
-      issueDate: isEdit ? (initialInvoice?.issueDate || new Date()) : new Date(),
+      issueDate: (() => {
+        const raw = typeof data?.issueDate === 'string' ? data.issueDate.trim() : ''
+        if (raw) {
+          const parsed = new Date(raw)
+          if (!Number.isNaN(parsed.getTime())) return parsed
+        }
+        return isEdit ? (initialInvoice?.issueDate || new Date()) : new Date()
+      })(),
       lineItems: (data.lineItems || []).map((line, index) => {
         const summaryLine = totals.lines[index] || {}
         const agencyPrice = Math.max(0, toNumber(line.agencyPrice, 0))
@@ -400,7 +421,14 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
   const previewInvoice = {
     ...values,
     invoiceNumber: initialInvoice?.invoiceNumber || 'DRAFT-PREVIEW',
-    issueDate: initialInvoice?.issueDate || new Date(),
+    issueDate: (() => {
+      const raw = typeof values?.issueDate === 'string' ? values.issueDate.trim() : ''
+      if (raw) {
+        const parsed = new Date(raw)
+        if (!Number.isNaN(parsed.getTime())) return parsed
+      }
+      return initialInvoice?.issueDate || new Date()
+    })(),
     createdByName: initialInvoice?.createdByName || [user?.firstName, user?.lastName].filter(Boolean).join(' '),
     createdByNameAr: initialInvoice?.createdByNameAr || [user?.firstNameAr, user?.lastNameAr].filter(Boolean).join(' '),
     createdBy: initialInvoice?.createdBy || user,
@@ -629,6 +657,31 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
               </div>
             )}
           </div>
+
+          {isTravelContext && (
+            <div className="card p-6">
+              <h3 className="mb-3 text-lg font-semibold text-gray-900 dark:text-white">
+                {language === 'ar' ? 'تاريخ ووقت الفاتورة' : 'Invoice Date & Time'}
+              </h3>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <label className="label">
+                    {language === 'ar' ? 'تاريخ ووقت الإصدار المخصص' : 'Custom Issue Date & Time'}
+                  </label>
+                  <input
+                    type="datetime-local"
+                    {...register('issueDate')}
+                    className="input"
+                  />
+                  <p className="mt-1 text-[11px] text-gray-500">
+                    {language === 'ar'
+                      ? 'اتركه فارغاً لاستخدام الوقت الحالي. مفيد لإصدار فواتير بتاريخ سابق.'
+                      : 'Leave blank to use the current time. Useful for back-dating invoices.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="card p-6">
             <div className="mb-4 flex items-center justify-between">
