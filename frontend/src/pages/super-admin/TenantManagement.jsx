@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tansta
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Search, Building2, Edit, Users, LogIn, AlertCircle, RefreshCw, Trash2 } from 'lucide-react'
+import { Plus, Search, Building2, Edit, Users, LogIn, AlertCircle, RefreshCw, Trash2, RotateCcw } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
@@ -62,6 +62,39 @@ export default function TenantManagement() {
       : `This will permanently delete ALL invoices for "${label}" and reset dashboards and reports. Continue?`
     if (!window.confirm(confirmMsg)) return
     clearInvoicesMutation.mutate(tenant._id)
+  }
+
+  const resetPanelMutation = useMutation({
+    mutationFn: (tenantId) => api.post(`/super-admin/tenants/${tenantId}/reset`).then(res => res.data),
+    onSuccess: (result) => {
+      const totals = Object.values(result?.deleted || {}).reduce((sum, v) => sum + (typeof v === 'number' ? v : 0), 0)
+      toast.success(
+        language === 'ar'
+          ? `تم تصفير اللوحة (${totals} سجلاً)`
+          : `Panel reset — ${totals} records removed`
+      )
+      queryClient.invalidateQueries()
+    },
+    onError: (err) => toast.error(err.response?.data?.error || 'Failed to reset panel')
+  })
+
+  const handleResetPanel = (tenant) => {
+    const label = tenant?.name || tenant?.business?.legalNameEn || ''
+    const firstConfirm = language === 'ar'
+      ? `تحذير: سيتم حذف جميع البيانات (الفواتير، العملاء، المنتجات، الحجوزات، الطلبات، المصروفات، المستودعات، المهام، المشاريع، ...) للمستأجر "${label}". سيبدأ المستأجر من الصفر. هل أنت متأكد؟`
+      : `WARNING: This will erase ALL business data (invoices, customers, products, bookings, orders, expenses, warehouses, tasks, projects, ...) for "${label}". The tenant will start from scratch. Continue?`
+    if (!window.confirm(firstConfirm)) return
+    const confirmText = label ? label.trim() : 'RESET'
+    const typed = window.prompt(
+      language === 'ar'
+        ? `للتأكيد، اكتب اسم المستأجر بالضبط: ${confirmText}`
+        : `To confirm, type the tenant name exactly: ${confirmText}`
+    )
+    if (typed !== confirmText) {
+      toast.error(language === 'ar' ? 'التأكيد غير صحيح' : 'Confirmation did not match')
+      return
+    }
+    resetPanelMutation.mutate(tenant._id)
   }
 
   return (
@@ -204,6 +237,15 @@ export default function TenantManagement() {
                             title={language === 'ar' ? 'حذف جميع الفواتير' : 'Clear all invoices'}
                           >
                             <Trash2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleResetPanel(tenant)}
+                            disabled={resetPanelMutation.isPending}
+                            className="p-2 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg text-amber-600 disabled:opacity-50"
+                            title={language === 'ar' ? 'تصفير لوحة المستأجر بالكامل' : 'Reset entire tenant panel'}
+                          >
+                            <RotateCcw className="w-4 h-4" />
                           </button>
                         </div>
                       </td>

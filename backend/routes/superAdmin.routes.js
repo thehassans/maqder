@@ -10,6 +10,22 @@ import RestaurantOrder from '../models/RestaurantOrder.js';
 import EmailMessage from '../models/EmailMessage.js';
 import Employee from '../models/Employee.js';
 import SystemSettings from '../models/SystemSettings.js';
+import Expense from '../models/Expense.js';
+import Product from '../models/Product.js';
+import PurchaseOrder from '../models/PurchaseOrder.js';
+import RestaurantMenuItem from '../models/RestaurantMenuItem.js';
+import Supplier from '../models/Supplier.js';
+import Warehouse from '../models/Warehouse.js';
+import Shipment from '../models/Shipment.js';
+import VatReturn from '../models/VatReturn.js';
+import Task from '../models/Task.js';
+import Project from '../models/Project.js';
+import Payroll from '../models/Payroll.js';
+import JobCostEntry from '../models/JobCostEntry.js';
+import JobCostingJob from '../models/JobCostingJob.js';
+import IoTDevice from '../models/IoTDevice.js';
+import IoTReading from '../models/IoTReading.js';
+import WhatsApp from '../models/WhatsApp.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { getPrimaryBusinessType, normalizeBusinessTypes } from '../utils/businessTypes.js';
 import { sendTenantWelcomeEmail } from '../utils/emailService.js';
@@ -839,6 +855,76 @@ router.delete('/tenants/:id/invoices', async (req, res) => {
       restaurantOrdersReset: restaurantOrderReset?.modifiedCount || 0,
       customersReset: customerReset?.modifiedCount || 0,
       emailsDetached: emailReset?.modifiedCount || 0,
+    });
+  } catch (error) {
+    sendRouteError(res, error);
+  }
+});
+
+// @route   POST /api/super-admin/tenants/:id/reset
+// @desc    Hard-reset the tenant's workspace: wipe all business data across every
+//          module so the panel starts fresh. The tenant record, its users/employees
+//          and tenant settings (branding, ZATCA config, invoice template, etc.) are
+//          preserved.
+router.post('/tenants/:id/reset', async (req, res) => {
+  try {
+    const tenant = await Tenant.findById(req.params.id);
+    if (!tenant) {
+      return res.status(404).json({ error: 'Tenant not found' });
+    }
+
+    const tenantId = tenant._id;
+    const filter = { tenantId };
+
+    const collections = [
+      ['invoices', Invoice],
+      ['customers', Customer],
+      ['travelBookings', TravelBooking],
+      ['restaurantOrders', RestaurantOrder],
+      ['restaurantMenuItems', RestaurantMenuItem],
+      ['emails', EmailMessage],
+      ['expenses', Expense],
+      ['products', Product],
+      ['purchaseOrders', PurchaseOrder],
+      ['suppliers', Supplier],
+      ['warehouses', Warehouse],
+      ['shipments', Shipment],
+      ['vatReturns', VatReturn],
+      ['tasks', Task],
+      ['projects', Project],
+      ['payroll', Payroll],
+      ['jobCostEntries', JobCostEntry],
+      ['jobCostingJobs', JobCostingJob],
+      ['iotDevices', IoTDevice],
+      ['iotReadings', IoTReading],
+      ['whatsapp', WhatsApp],
+    ];
+
+    const results = await Promise.all(
+      collections.map(async ([key, Model]) => {
+        try {
+          const result = await Model.deleteMany(filter);
+          return [key, result?.deletedCount || 0];
+        } catch (err) {
+          return [key, { error: err.message }];
+        }
+      })
+    );
+
+    // Reset the ZATCA invoice chain so the next invoice starts from scratch.
+    tenant.zatca = {
+      ...(tenant.zatca?.toObject?.() || tenant.zatca || {}),
+      invoiceCounter: 0,
+      lastInvoiceHash: '',
+    };
+    tenant.markModified('zatca');
+    await tenant.save();
+
+    const summary = Object.fromEntries(results);
+    res.json({
+      success: true,
+      tenantId: String(tenantId),
+      deleted: summary,
     });
   } catch (error) {
     sendRouteError(res, error);
