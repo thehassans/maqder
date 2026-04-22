@@ -890,6 +890,7 @@ const generateInvoicePdf = async ({ invoice, language = 'en', tenant, sourceElem
   const totals = calculateInvoiceSummary(invoice)
   const travelDetailsEn = normalizeTravelDetails(invoice.travelDetails || {}, buyerNameEn || buyerNameAr, 'en')
   const travelDetailsAr = normalizeTravelDetails(invoice.travelDetails || {}, buyerNameAr || buyerNameEn, 'ar')
+  const isTravelInvoicePdf = invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency'
   const qrValue = invoice?.zatca?.qrCodeData || generateZatcaQrValue({
     sellerName,
     vatNumber: seller?.vatNumber || tenant?.business?.vatNumber,
@@ -897,8 +898,9 @@ const generateInvoicePdf = async ({ invoice, language = 'en', tenant, sourceElem
     totalWithVat: totals.grandTotal,
     vatTotal: totals.totalTax,
   })
-  const fallbackQrImage = invoice?.zatca?.qrCodeImage ? null : await renderQrToDataUrl(qrValue, 120)
-  const qr = await resolveImageSource(invoice?.zatca?.qrCodeImage || fallbackQrImage || null)
+  // Travel agency invoices omit the ZATCA QR from the printed document.
+  const fallbackQrImage = isTravelInvoicePdf || invoice?.zatca?.qrCodeImage ? null : await renderQrToDataUrl(qrValue, 120)
+  const qr = isTravelInvoicePdf ? null : await resolveImageSource(invoice?.zatca?.qrCodeImage || fallbackQrImage || null)
   const qrFormat = detectImageFormat(qr)
   const companyName = invoiceBranding.companyName || sellerNameEn || sellerNameAr || ''
   const headerLines = splitBrandingText(invoiceBranding.headerText)

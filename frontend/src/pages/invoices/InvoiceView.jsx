@@ -335,8 +335,8 @@ export default function InvoiceView() {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* QR Code */}
-          {invoice?.zatca?.qrCodeData && (
+          {/* QR Code — hidden on travel agency invoices */}
+          {invoice?.zatca?.qrCodeData && invoice?.invoiceSubtype !== 'travel_ticket' && invoice?.businessContext !== 'travel_agency' && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

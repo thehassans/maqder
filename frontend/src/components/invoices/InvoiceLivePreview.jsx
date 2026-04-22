@@ -473,9 +473,11 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
               </div>
             </div>
             <div className="flex min-w-[148px] flex-col items-center gap-3 self-start text-center">
-              <div className="rounded-[1.5rem] border border-slate-200 bg-white p-2 shadow-sm">
-                <QRCodeSVG value={qrValue} size={88} bgColor="transparent" fgColor="#0F172A" />
-              </div>
+              {!isTravelInvoice && (
+                <div className="rounded-[1.5rem] border border-slate-200 bg-white p-2 shadow-sm">
+                  <QRCodeSVG value={qrValue} size={88} bgColor="transparent" fgColor="#0F172A" />
+                </div>
+              )}
               <div className="w-full max-w-[132px] space-y-1 text-[11px] leading-4 text-slate-600 text-center">
                 {(invoice?.seller?.vatNumber || invoiceBranding.vatNumber) && (
                   <p><span className="font-medium text-slate-900">{language === 'ar' ? 'الرقم الضريبي' : 'VAT'}:</span> {invoice?.seller?.vatNumber || invoiceBranding.vatNumber}</p>
