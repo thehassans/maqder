@@ -173,6 +173,10 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
       if (!line?.isTravelMargin) {
         setValue(`lineItems.${index}.isTravelMargin`, true)
       }
+      // Travel invoices do not expose quantity; each line represents a single ticket/service.
+      if (toNumber(line?.quantity, 1) !== 1) {
+        setValue(`lineItems.${index}.quantity`, 1)
+      }
     })
   }, [isTravelContext, lineItems, setValue])
 
@@ -639,7 +643,7 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
                   <input type="hidden" {...register(`lineItems.${index}.taxRate`, { valueAsNumber: true })} />
                   <input type="hidden" {...register(`lineItems.${index}.isTravelMargin`)} />
                   <div className="grid grid-cols-1 items-end gap-4 md:grid-cols-12">
-                    <div className={isTravelContext ? 'md:col-span-3' : 'md:col-span-4'}>
+                    <div className={isTravelContext ? 'md:col-span-4' : 'md:col-span-4'}>
                       <label className="label">{t('productName')} *</label>
                       {isTradingContext ? (
                         <>
@@ -653,10 +657,14 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
                         <input {...register(`lineItems.${index}.productName`, { required: true })} className="input" placeholder={language === 'ar' ? 'اسم الخدمة' : 'Service name'} />
                       )}
                     </div>
-                    <div className={isTravelContext ? 'md:col-span-1' : 'md:col-span-2'}>
-                      <label className="label">{t('quantity')}</label>
-                      <input type="number" min="1" {...register(`lineItems.${index}.quantity`, { valueAsNumber: true, required: true, min: 1 })} className="input" />
-                    </div>
+                    {isTravelContext ? (
+                      <input type="hidden" {...register(`lineItems.${index}.quantity`, { valueAsNumber: true, required: true, min: 1 })} />
+                    ) : (
+                      <div className="md:col-span-2">
+                        <label className="label">{t('quantity')}</label>
+                        <input type="number" min="1" {...register(`lineItems.${index}.quantity`, { valueAsNumber: true, required: true, min: 1 })} className="input" />
+                      </div>
+                    )}
                     <div className="md:col-span-2">
                       <label className="label">
                         {isTravelContext
