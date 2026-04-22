@@ -147,9 +147,9 @@ export default function Sidebar() {
     {
       title: language === 'ar' ? 'الإعدادات' : 'Settings',
       items: [
-        { path: '/app/dashboard/reports', icon: BarChart3, label: language === 'ar' ? 'التقارير' : 'Reports' },
+        { path: '/app/dashboard/reports', icon: BarChart3, label: language === 'ar' ? 'التقارير' : 'Reports', perm: { module: 'invoicing', action: 'read' } },
         { path: '/app/dashboard/users', icon: Users, label: t('users'), perm: { module: 'settings', action: 'read' } },
-        { path: '/app/dashboard/settings', icon: Settings, label: t('settings') },
+        { path: '/app/dashboard/settings', icon: Settings, label: t('settings'), perm: { module: 'settings', action: 'read' } },
       ]
     },
   ]

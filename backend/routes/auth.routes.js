@@ -222,15 +222,16 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     
-    // Reset login attempts on successful login
-    await withQueryTimeout(User.updateOne(
+    // Reset login attempts on successful login — fire-and-forget so the response
+    // is not blocked by an extra DB round-trip.
+    User.updateOne(
       { _id: user._id },
       {
         $set: { loginAttempts: 0, lastLogin: new Date() },
         $unset: { lockUntil: 1 },
       }
-    ));
-    
+    ).catch(() => {});
+
     const token = generateToken(user._id);
     const responseTenant = serializeAuthTenant(tenant);
     
@@ -258,19 +259,20 @@ router.post('/login', async (req, res) => {
 // @route   GET /api/auth/me
 router.get('/me', protect, async (req, res) => {
   try {
-    const [user, tenantDoc] = await Promise.all([
-      withQueryTimeout(User.findById(req.user._id).lean()),
-      req.user?.tenantId
-        ? withQueryTimeout(Tenant.findById(req.user.tenantId).select(authTenantSelect))
-        : Promise.resolve(null),
-    ]);
+    // `protect` has already loaded the user (and tenant for non-super-admins).
+    // Reuse those documents instead of issuing two more round-trips.
+    const user = req.user;
 
     if (!user) {
       return res.status(401).json({ error: 'Session expired' });
     }
 
-    const tenant = tenantDoc ? serializeAuthTenant(tenantDoc) : null;
-    
+    const tenant = req.tenant
+      ? serializeAuthTenant(req.tenant)
+      : (user.tenantId
+        ? serializeAuthTenant(await withQueryTimeout(Tenant.findById(user.tenantId).select(authTenantSelect).lean()))
+        : null);
+
     res.json({
       user: {
         id: user._id,

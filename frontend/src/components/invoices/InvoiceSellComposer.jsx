@@ -181,8 +181,9 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
   useEffect(() => {
     if (!isTravelContext) return
     lineItems.forEach((line, index) => {
-      if (toNumber(line?.taxRate, 15) !== 15) {
-        setValue(`lineItems.${index}.taxRate`, 15)
+      // Travel agency invoices are VAT-exempt (0%).
+      if (toNumber(line?.taxRate, 0) !== 0) {
+        setValue(`lineItems.${index}.taxRate`, 0)
       }
       if (!line?.isTravelMargin) {
         setValue(`lineItems.${index}.isTravelMargin`, true)
@@ -386,7 +387,7 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
           lineNumber: index + 1,
           taxCategory: 'S',
           productId: isTradingContext ? line.productId || undefined : undefined,
-          taxRate: isTravelContext ? 15 : toNumber(line.taxRate, 15),
+          taxRate: isTravelContext ? 0 : toNumber(line.taxRate, 15),
           agencyPrice: isTravelContext ? agencyPrice : 0,
           customerPrice: isTravelContext ? (customerPriceRaw > 0 ? customerPriceRaw : unitPriceNum) : 0,
           isTravelMargin,
@@ -771,29 +772,24 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
                     const qtyNum = Math.max(0, toNumber(line.quantity, 0))
                     const profitPerUnit = Math.max(0, unitPriceNum - agencyPriceNum)
                     const lineProfit = profitPerUnit * qtyNum
-                    const lineMarginVat = lineProfit * 0.15
                     return (
                       <div className="mt-3 rounded-lg border border-dashed border-primary-200 bg-primary-50/40 p-3 dark:border-primary-900/40 dark:bg-primary-900/10">
                         <div className="grid grid-cols-1 items-end gap-4 md:grid-cols-12">
-                          <div className="md:col-span-6">
+                          <div className="md:col-span-9">
                             <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
                               {language === 'ar'
-                                ? 'تُحسب ضريبة القيمة المضافة 15% تلقائياً على هامش الربح (سعر التذكرة − سعر الوكالة) فقط'
-                                : '15% VAT is calculated automatically on the profit margin only (Unit Price − Agency Price)'}
+                                ? 'فواتير وكالة السفر معفاة من ضريبة القيمة المضافة'
+                                : 'Travel agency invoices are VAT-exempt (0%).'}
                             </p>
                             <p className="mt-1 text-[11px] text-gray-500">
                               {language === 'ar'
-                                ? 'سعر العميل هو المبلغ الظاهر للعميل على الفاتورة. سعر الوحدة وسعر الوكالة مخفيان في الفاتورة المطبوعة ورمز ZATCA'
-                                : 'Customer Price is what the buyer sees on the invoice. Unit Price and Agency Price are hidden on the printed invoice and ZATCA QR.'}
+                                ? 'سعر العميل هو المبلغ الظاهر للعميل على الفاتورة. سعر الوحدة وسعر الوكالة مخفيان في الفاتورة المطبوعة.'
+                                : 'Customer Price is what the buyer sees on the invoice. Unit Price and Agency Price are hidden on the printed invoice.'}
                             </p>
                           </div>
                           <div className="md:col-span-3 text-end">
                             <p className="mb-1 text-xs text-gray-500">{language === 'ar' ? 'إجمالي الربح' : 'Total Profit'}</p>
                             <p className="font-semibold text-emerald-600"><Money value={lineProfit} /></p>
-                          </div>
-                          <div className="md:col-span-2 text-end">
-                            <p className="mb-1 text-xs text-gray-500">{language === 'ar' ? 'ضريبة 15% على الربح' : '15% VAT on Profit'}</p>
-                            <p className="font-semibold"><Money value={lineMarginVat} /></p>
                           </div>
                         </div>
                       </div>

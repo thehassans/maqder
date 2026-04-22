@@ -242,6 +242,7 @@ export default function Invoices() {
                     <th>{t('customer')}</th>
                     <th>{language === 'ar' ? 'النوع' : 'Type'}</th>
                     <th>{t('date')}</th>
+                    <th>{language === 'ar' ? 'تم الإنشاء بواسطة' : 'Created By'}</th>
                     <th>{t('total')}</th>
                     <th>{t('zatcaStatus')}</th>
                     <th>{t('actions')}</th>
@@ -287,6 +288,15 @@ export default function Invoices() {
                       </td>
                       <td className="text-gray-600 dark:text-gray-400">
                         {new Date(invoice.issueDate).toLocaleDateString()}
+                      </td>
+                      <td className="text-gray-600 dark:text-gray-400 text-sm">
+                        {(() => {
+                          const en = [invoice?.createdBy?.firstName, invoice?.createdBy?.lastName].filter(Boolean).join(' ')
+                          const ar = [invoice?.createdBy?.firstNameAr, invoice?.createdBy?.lastNameAr].filter(Boolean).join(' ')
+                          return (language === 'ar'
+                            ? (invoice.createdByNameAr || ar || invoice.createdByName || en)
+                            : (invoice.createdByName || en || invoice.createdByNameAr || ar)) || '—'
+                        })()}
                       </td>
                       <td className="font-semibold"><Money value={invoice.grandTotal} /></td>
                       <td>{getStatusBadge(invoice)}</td>

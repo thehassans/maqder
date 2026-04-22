@@ -146,6 +146,18 @@ export default function InvoiceView() {
             <p className="text-gray-500 dark:text-gray-400 mt-1">
               {new Date(invoice?.issueDate).toLocaleDateString()}
             </p>
+            {(() => {
+              const createdByEn = [invoice?.createdBy?.firstName, invoice?.createdBy?.lastName].filter(Boolean).join(' ')
+              const createdByAr = [invoice?.createdBy?.firstNameAr, invoice?.createdBy?.lastNameAr].filter(Boolean).join(' ')
+              const creator = language === 'ar'
+                ? (invoice?.createdByNameAr || createdByAr || invoice?.createdByName || createdByEn)
+                : (invoice?.createdByName || createdByEn || invoice?.createdByNameAr || createdByAr)
+              return creator ? (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {language === 'ar' ? 'تم الإنشاء بواسطة' : 'Created by'}: <span className="font-medium text-gray-700 dark:text-gray-300">{creator}</span>
+                </p>
+              ) : null
+            })()}
           </div>
         </div>
         <div className="flex gap-3">

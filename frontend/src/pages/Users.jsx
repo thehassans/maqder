@@ -27,6 +27,58 @@ const MODULES = [
 
 const ACTIONS = ['create', 'read', 'update', 'delete', 'approve', 'export']
 
+// One-click permission presets per role.
+// Customers can still fine-tune afterwards.
+const ROLE_PRESETS = {
+  admin: 'ALL',
+  manager: {
+    invoicing: ['create', 'read', 'update', 'approve', 'export'],
+    inventory: ['create', 'read', 'update', 'export'],
+    supply_chain: ['create', 'read', 'update', 'export'],
+    travel: ['create', 'read', 'update', 'export'],
+    restaurant: ['create', 'read', 'update', 'export'],
+    project_management: ['create', 'read', 'update', 'export'],
+    hr: ['read', 'update', 'export'],
+    payroll: ['read', 'update', 'approve', 'export'],
+    finance: ['create', 'read', 'update', 'approve', 'export'],
+    job_costing: ['create', 'read', 'update', 'export'],
+    mrp: ['read', 'update'],
+    iot: ['read'],
+    settings: ['read'],
+  },
+  accountant: {
+    invoicing: ['create', 'read', 'update', 'approve', 'export'],
+    finance: ['create', 'read', 'update', 'approve', 'export'],
+    payroll: ['read', 'export'],
+    settings: ['read'],
+  },
+  hr_manager: {
+    hr: ['create', 'read', 'update', 'delete', 'export'],
+    payroll: ['create', 'read', 'update', 'approve', 'export'],
+    settings: ['read'],
+  },
+  inventory_manager: {
+    inventory: ['create', 'read', 'update', 'delete', 'export'],
+    supply_chain: ['create', 'read', 'update', 'export'],
+    mrp: ['read', 'update'],
+    settings: ['read'],
+  },
+  sales: {
+    invoicing: ['create', 'read', 'update', 'export'],
+    inventory: ['read'],
+    travel: ['create', 'read', 'update'],
+  },
+  kitchen_staff: {
+    restaurant: ['read', 'update'],
+  },
+  viewer: {
+    invoicing: ['read'],
+    inventory: ['read'],
+    hr: ['read'],
+    finance: ['read'],
+  },
+}
+
 function ActionPill({ active, label, onClick }) {
   return (
     <button
@@ -439,9 +491,32 @@ export default function Users() {
                     </div>
                     <div>
                       <label className="label">{language === 'ar' ? 'الدور' : 'Role'}</label>
-                      <select {...register('role')} className="select">
+                      <select
+                        {...register('role', {
+                          onChange: (e) => {
+                            const nextRole = e.target.value
+                            const preset = ROLE_PRESETS[nextRole]
+                            if (!preset) return
+                            if (preset === 'ALL') {
+                              const all = enabledModules.map((m) => ({ module: m.key, actions: [...ACTIONS] }))
+                              setValue('permissions', all, { shouldDirty: true })
+                              return
+                            }
+                            const next = Object.entries(preset)
+                              .map(([module, actions]) => ({ module, actions: [...actions] }))
+                              .filter((p) => enabledModules.some((m) => m.key === p.module))
+                            setValue('permissions', next, { shouldDirty: true })
+                          },
+                        })}
+                        className="select"
+                      >
                         {roles.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
                       </select>
+                      <p className="mt-1 text-[11px] text-gray-500">
+                        {language === 'ar'
+                          ? 'يقوم تغيير الدور بتحديد صلاحيات افتراضية تلقائياً. يمكنك تعديلها أدناه.'
+                          : 'Changing the role auto-selects sensible permissions — you can still fine-tune below.'}
+                      </p>
                     </div>
                   </div>
                 </div>

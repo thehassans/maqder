@@ -210,6 +210,10 @@ invoiceSchema.index({ tenantId: 1, transactionType: 1 });
 invoiceSchema.index({ tenantId: 1, flow: 1, issueDate: -1 });
 invoiceSchema.index({ tenantId: 1, restaurantOrderId: 1 });
 invoiceSchema.index({ tenantId: 1, travelBookingId: 1 });
+// Used by invoice-number generation (findOne sort by createdAt desc).
+invoiceSchema.index({ tenantId: 1, createdAt: -1 });
+// Used by the Created By column / filter.
+invoiceSchema.index({ tenantId: 1, createdBy: 1, issueDate: -1 });
 
 // Pre-save hook for Hijri dates
 invoiceSchema.pre('validate', function(next) {
@@ -242,7 +246,9 @@ invoiceSchema.pre('validate', function(next) {
       ? Math.min(lineSubtotal, lineSubtotal * (rawDiscount / 100))
       : Math.min(lineSubtotal, rawDiscount);
     const netBeforeInvoiceDiscount = Math.max(0, lineSubtotal - lineDiscount);
-    const taxRate = Math.max(0, Number(line.taxRate) || 0);
+    // Travel agency invoices are VAT-exempt per tenant policy: force 0% on margin lines.
+    const taxRate = isTravelMargin ? 0 : Math.max(0, Number(line.taxRate) || 0);
+    if (isTravelMargin) line.taxRate = 0;
     const marginPerUnit = isTravelMargin ? Math.max(0, unitPrice - agencyPrice) : 0;
     const marginBeforeInvoiceDiscount = isTravelMargin
       ? Math.max(0, (quantity * marginPerUnit) - (lineDiscount * (customerPriceEff > 0 ? marginPerUnit / customerPriceEff : 0)))

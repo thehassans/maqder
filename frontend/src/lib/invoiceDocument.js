@@ -96,9 +96,10 @@ export const calculateInvoiceSummary = (invoice = {}) => {
   const normalizedLines = lines.map((line) => {
     const quantity = Math.max(0, toNumber(line?.quantity, 0))
     const unitPrice = Math.max(0, toNumber(line?.unitPrice, 0))
-    const taxRate = Math.max(0, toNumber(line?.taxRate, 0))
-    const agencyPrice = Math.max(0, toNumber(line?.agencyPrice, 0))
     const isTravelMargin = Boolean(line?.isTravelMargin)
+    // Travel agency invoices are fully VAT-exempt (per tenant requirement): force 0%.
+    const taxRate = isTravelMargin ? 0 : Math.max(0, toNumber(line?.taxRate, 0))
+    const agencyPrice = Math.max(0, toNumber(line?.agencyPrice, 0))
     const customerPriceInput = Math.max(0, toNumber(line?.customerPrice, 0))
     // For travel margin lines: customerPrice drives the customer-facing subtotal.
     // Non-travel lines ignore customerPrice (subtotal = qty × unitPrice).
