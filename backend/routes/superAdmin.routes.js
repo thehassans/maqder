@@ -25,7 +25,13 @@ import JobCostEntry from '../models/JobCostEntry.js';
 import JobCostingJob from '../models/JobCostingJob.js';
 import IoTDevice from '../models/IoTDevice.js';
 import IoTReading from '../models/IoTReading.js';
-import WhatsApp from '../models/WhatsApp.js';
+import {
+  WhatsAppContact,
+  WhatsAppMessage,
+  WhatsAppTemplate,
+  QuickReply,
+  Broadcast,
+} from '../models/WhatsApp.js';
 import { protect, authorize } from '../middleware/auth.js';
 import { getPrimaryBusinessType, normalizeBusinessTypes } from '../utils/businessTypes.js';
 import { sendTenantWelcomeEmail } from '../utils/emailService.js';
@@ -897,7 +903,11 @@ router.post('/tenants/:id/reset', async (req, res) => {
       ['jobCostingJobs', JobCostingJob],
       ['iotDevices', IoTDevice],
       ['iotReadings', IoTReading],
-      ['whatsapp', WhatsApp],
+      ['whatsappContacts', WhatsAppContact],
+      ['whatsappMessages', WhatsAppMessage],
+      ['whatsappTemplates', WhatsAppTemplate],
+      ['whatsappQuickReplies', QuickReply],
+      ['whatsappBroadcasts', Broadcast],
     ];
 
     const results = await Promise.all(
