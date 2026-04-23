@@ -73,6 +73,14 @@ router.put('/current', authorize('admin'), async (req, res) => {
             ...(settings.communication?.email || {}),
           },
         },
+        saudiIntegrations: {
+          ...(currentSettings.saudiIntegrations || {}),
+          ...(settings.saudiIntegrations || {}),
+          gosi: {
+            ...(currentSettings.saudiIntegrations?.gosi || {}),
+            ...(settings.saudiIntegrations?.gosi || {}),
+          },
+        },
         invoiceBranding: {
           ...(currentSettings.invoiceBranding || {}),
           ...(settings.invoiceBranding || {}),

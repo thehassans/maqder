@@ -71,6 +71,14 @@ export default function Settings() {
   const [invoiceBrandingProfiles, setInvoiceBrandingProfiles] = useState(() => buildInvoiceBrandingProfilesState(null))
   const [zatcaTestType, setZatcaTestType] = useState('phase1')
   const [zatcaTestResult, setZatcaTestResult] = useState(null)
+  const [saudiIntegrationEnabled, setSaudiIntegrationEnabled] = useState(true)
+  const [useSaudiIdValidation, setUseSaudiIdValidation] = useState(true)
+  const [autoTrackIqamaExpiry, setAutoTrackIqamaExpiry] = useState(true)
+  const [gosiEnabled, setGosiEnabled] = useState(false)
+  const [gosiEstablishmentId, setGosiEstablishmentId] = useState('')
+  const [gosiClientId, setGosiClientId] = useState('')
+  const [gosiClientSecret, setGosiClientSecret] = useState('')
+  const [gosiRedirectUri, setGosiRedirectUri] = useState('')
 
   const { data: tenant } = useQuery({
     queryKey: ['tenant-settings'],
@@ -103,6 +111,14 @@ export default function Settings() {
     setShowVision2030(tenant.settings?.invoiceBranding?.showVision2030 !== false)
     setVision2030LogoDataUrl(tenant.settings?.invoiceBranding?.vision2030Logo || '/saudi-vision-2030-logo.png')
     setInvoiceBrandingProfiles(buildInvoiceBrandingProfilesState(tenant))
+    setSaudiIntegrationEnabled(tenant.settings?.saudiIntegrations?.enabled !== false)
+    setUseSaudiIdValidation(tenant.settings?.saudiIntegrations?.useSaudiIdValidation !== false)
+    setAutoTrackIqamaExpiry(tenant.settings?.saudiIntegrations?.autoTrackIqamaExpiry !== false)
+    setGosiEnabled(tenant.settings?.saudiIntegrations?.gosi?.enabled === true)
+    setGosiEstablishmentId(tenant.settings?.saudiIntegrations?.gosi?.establishmentId || '')
+    setGosiClientId(tenant.settings?.saudiIntegrations?.gosi?.clientId || '')
+    setGosiClientSecret(tenant.settings?.saudiIntegrations?.gosi?.clientSecret || '')
+    setGosiRedirectUri(tenant.settings?.saudiIntegrations?.gosi?.redirectUri || '')
   }, [tenant])
 
   const { data: zatcaStatus } = useQuery({
@@ -213,6 +229,7 @@ export default function Settings() {
   const tabs = [
     { id: 'company', label: t('companySettings'), icon: Building2 },
     { id: 'zatca', label: t('zatcaSettings'), icon: Shield },
+    { id: 'saudi', label: language === 'ar' ? 'التكاملات السعودية' : 'Saudi Integrations', icon: Key },
     { id: 'preferences', label: language === 'ar' ? 'التفضيلات' : 'Preferences', icon: Palette },
     { id: 'backup', label: language === 'ar' ? 'النسخ الاحتياطي' : 'Backup', icon: Database },
   ]
@@ -643,6 +660,111 @@ export default function Settings() {
                     <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
                     <span>{language === 'ar' ? 'نظام فوترة متوافق مع المتطلبات' : 'Compliant invoicing system'}</span>
                   </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'saudi' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+              <div className="card p-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'التكاملات السعودية' : 'Saudi Integrations'}</h3>
+                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                      {language === 'ar'
+                        ? 'فعّل التحقق من الهوية السعودية، تتبع انتهاء الإقامة، وأضف بيانات GOSI الخاصة بمنشأتك إذا كنت ترغب في الربط لاحقاً.'
+                        : 'Enable Saudi ID validation, iqama expiry tracking, and store your establishment GOSI credentials for future connection.'}
+                    </p>
+                  </div>
+                  <span className={`rounded-full px-3 py-1 text-xs font-medium ${saudiIntegrationEnabled ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : 'bg-gray-100 text-gray-600 dark:bg-dark-700 dark:text-gray-300'}`}>
+                    {saudiIntegrationEnabled ? (language === 'ar' ? 'مفعّل' : 'Enabled') : (language === 'ar' ? 'معطّل' : 'Disabled')}
+                  </span>
+                </div>
+
+                <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+                  <button type="button" onClick={() => setSaudiIntegrationEnabled((v) => !v)} className={`rounded-2xl border p-4 text-start transition-all ${saudiIntegrationEnabled ? 'border-primary-400 bg-primary-50 dark:border-primary-700 dark:bg-primary-900/20' : 'border-gray-200 dark:border-dark-600'}`}>
+                    <p className="font-medium text-gray-900 dark:text-white">{language === 'ar' ? 'طبقة الامتثال السعودية' : 'Saudi Compliance Layer'}</p>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'مفاتيح التحقق والتنبيهات المحلية المجانية.' : 'Free local validation and reminder layer.'}</p>
+                  </button>
+                  <button type="button" onClick={() => setUseSaudiIdValidation((v) => !v)} className={`rounded-2xl border p-4 text-start transition-all ${useSaudiIdValidation ? 'border-emerald-400 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-900/20' : 'border-gray-200 dark:border-dark-600'}`}>
+                    <p className="font-medium text-gray-900 dark:text-white">{language === 'ar' ? 'التحقق من الهوية / الإقامة' : 'Saudi ID / Iqama Validation'}</p>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'التحقق من رقم الهوية السعودية أو الإقامة وخوارزمية التحقق.' : 'Validate National ID / Iqama checksum in employee forms.'}</p>
+                  </button>
+                  <button type="button" onClick={() => setAutoTrackIqamaExpiry((v) => !v)} className={`rounded-2xl border p-4 text-start transition-all ${autoTrackIqamaExpiry ? 'border-amber-400 bg-amber-50 dark:border-amber-700 dark:bg-amber-900/20' : 'border-gray-200 dark:border-dark-600'}`}>
+                    <p className="font-medium text-gray-900 dark:text-white">{language === 'ar' ? 'تنبيهات انتهاء الإقامة' : 'Iqama Expiry Alerts'}</p>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'إظهار انتهاء الإقامة في الإحصاءات ولوحة التحكم.' : 'Show iqama expiry in HR stats and dashboard alerts.'}</p>
+                  </button>
+                </div>
+              </div>
+
+              <div className="card p-6">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h4 className="font-semibold text-gray-900 dark:text-white">GOSI</h4>
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                      {language === 'ar'
+                        ? 'متاح مجاناً لبيانات منشأتك فقط. أدخل بيانات الربط إذا كنت تريد تجهيز النظام للتكامل.'
+                        : 'Free for your own establishment data only. Store your connection details if you want the system ready for integration.'}
+                    </p>
+                  </div>
+                  <button type="button" onClick={() => setGosiEnabled((v) => !v)} className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${gosiEnabled ? 'bg-primary-500 text-white' : 'bg-gray-100 text-gray-700 dark:bg-dark-700 dark:text-gray-300'}`}>
+                    {gosiEnabled ? (language === 'ar' ? 'مفعّل' : 'Enabled') : (language === 'ar' ? 'معطّل' : 'Disabled')}
+                  </button>
+                </div>
+
+                <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <label className="label">{language === 'ar' ? 'رقم المنشأة' : 'Establishment ID'}</label>
+                    <input value={gosiEstablishmentId} onChange={(e) => setGosiEstablishmentId(e.target.value)} className="input" placeholder={language === 'ar' ? 'رقم المنشأة في GOSI' : 'GOSI establishment number'} />
+                  </div>
+                  <div>
+                    <label className="label">Client ID</label>
+                    <input value={gosiClientId} onChange={(e) => setGosiClientId(e.target.value)} className="input" placeholder="client_id" />
+                  </div>
+                  <div>
+                    <label className="label">Client Secret</label>
+                    <input value={gosiClientSecret} onChange={(e) => setGosiClientSecret(e.target.value)} className="input" type="password" placeholder="client_secret" />
+                  </div>
+                  <div>
+                    <label className="label">Redirect URI</label>
+                    <input value={gosiRedirectUri} onChange={(e) => setGosiRedirectUri(e.target.value)} className="input" placeholder="https://.../oauth/callback" />
+                  </div>
+                </div>
+
+                <div className="mt-4 rounded-2xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-300">
+                  {language === 'ar'
+                    ? 'ملاحظة: هذه الإعدادات تحفظ بيانات الاعتماد وتفعّل التجهيز الداخلي. مزامنة GOSI الفعلية تحتاج بيانات اعتماد صحيحة وربط OAuth مفعّل.'
+                    : 'Note: these settings store your credentials and enable the internal readiness layer. Actual GOSI synchronization requires valid establishment credentials and OAuth activation.'}
+                </div>
+
+                <div className="mt-6 flex justify-end">
+                  <button
+                    type="button"
+                    disabled={updateMutation.isPending}
+                    onClick={() => updateMutation.mutate({
+                      settings: {
+                        ...(tenant?.settings || {}),
+                        saudiIntegrations: {
+                          ...(tenant?.settings?.saudiIntegrations || {}),
+                          enabled: saudiIntegrationEnabled,
+                          useSaudiIdValidation,
+                          autoTrackIqamaExpiry,
+                          gosi: {
+                            ...(tenant?.settings?.saudiIntegrations?.gosi || {}),
+                            enabled: gosiEnabled,
+                            establishmentId: gosiEstablishmentId,
+                            clientId: gosiClientId,
+                            clientSecret: gosiClientSecret,
+                            redirectUri: gosiRedirectUri,
+                          },
+                        },
+                      },
+                    })}
+                    className="btn btn-primary"
+                  >
+                    {updateMutation.isPending ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Save className="w-4 h-4" />{t('save')}</>}
+                  </button>
                 </div>
               </div>
             </motion.div>

@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import momentHijri from 'moment-hijri';
+import { normalizeSaudiId, getSaudiIdType, validateSaudiIdChecksum } from '../utils/saudiId.js';
 
 const documentSchema = new mongoose.Schema({
   type: {
@@ -75,6 +76,18 @@ const employeeSchema = new mongoose.Schema({
   religion: { type: String },
   photo: { type: String },
   idCardProof: { type: String },
+
+  // Saudi National ID (starts with 1) or Iqama (starts with 2).
+  // Validated server-side against the official MOI checksum. For Saudis the
+  // expiry is generally not tracked (national IDs don't "expire" for KSA
+  // nationals in the same way). For iqama holders the expiry drives the
+  // dashboard renewal alerts.
+  nationalId: { type: String, index: true, trim: true },
+  nationalIdType: { type: String, enum: ['national_id', 'iqama', null], default: null },
+  nationalIdExpiry: { type: Date },
+  nationalIdExpiryHijri: { type: String },
+  nationalIdIssueDate: { type: Date },
+  nationalIdIssueDateHijri: { type: String },
 
   // Address
   address: {
@@ -193,7 +206,40 @@ employeeSchema.pre('save', function(next) {
       doc.isExpired = new Date(doc.expiryDate) < new Date();
     }
   });
-  
+
+  // Saudi National ID / Iqama: normalize, validate, auto-detect type, convert Hijri.
+  if (this.isModified('nationalId')) {
+    const normalized = normalizeSaudiId(this.nationalId);
+    if (normalized) {
+      if (!validateSaudiIdChecksum(normalized)) {
+        return next(new Error('Invalid Saudi National ID / Iqama (checksum failed).'));
+      }
+      this.nationalId = normalized;
+      this.nationalIdType = getSaudiIdType(normalized);
+      if (this.nationalIdType !== 'iqama') {
+        this.nationalIdExpiry = undefined;
+        this.nationalIdExpiryHijri = undefined;
+      }
+    } else {
+      this.nationalId = undefined;
+      this.nationalIdType = null;
+      this.nationalIdExpiry = undefined;
+      this.nationalIdExpiryHijri = undefined;
+      this.nationalIdIssueDate = undefined;
+      this.nationalIdIssueDateHijri = undefined;
+    }
+  }
+  if (this.isModified('nationalIdExpiry') && this.nationalIdExpiry) {
+    this.nationalIdExpiryHijri = momentHijri(this.nationalIdExpiry).format('iYYYY/iMM/iDD');
+  } else if (this.isModified('nationalIdExpiry') && !this.nationalIdExpiry) {
+    this.nationalIdExpiryHijri = undefined;
+  }
+  if (this.isModified('nationalIdIssueDate') && this.nationalIdIssueDate) {
+    this.nationalIdIssueDateHijri = momentHijri(this.nationalIdIssueDate).format('iYYYY/iMM/iDD');
+  } else if (this.isModified('nationalIdIssueDate') && !this.nationalIdIssueDate) {
+    this.nationalIdIssueDateHijri = undefined;
+  }
+
   next();
 });
 

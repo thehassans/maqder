@@ -9,6 +9,8 @@ import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import SarIcon from '../../components/ui/SarIcon'
 import { useLiveTranslation } from '../../lib/liveTranslation'
+import { describeSaudiId, normalizeSaudiId } from '../../lib/saudiId'
+import momentHijri from 'moment-hijri'
 
 export default function EmployeeForm() {
   const { id } = useParams()
@@ -71,6 +73,21 @@ export default function EmployeeForm() {
   const guardianEnabled = watch('guardian.isEnabled')
   const idCardFrontValue = watch('idCardFront')
   const idCardBackValue = watch('idCardBack')
+  const nationalIdValue = watch('nationalId')
+  const nationalIdIssueDateValue = watch('nationalIdIssueDate')
+  const nationalIdExpiryValue = watch('nationalIdExpiry')
+  const saudiIdMeta = describeSaudiId(nationalIdValue)
+  const saudiIdTypeLabel = saudiIdMeta.type === 'national_id'
+    ? (language === 'ar' ? 'هوية وطنية' : 'Saudi National ID')
+    : saudiIdMeta.type === 'iqama'
+      ? (language === 'ar' ? 'إقامة' : 'Iqama')
+      : (language === 'ar' ? 'غير محدد' : 'Unknown')
+  const toHijri = (value) => {
+    if (!value) return ''
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return ''
+    return momentHijri(date).format('iYYYY/iMM/iDD')
+  }
 
   const { data: employee, isLoading } = useQuery({
     queryKey: ['employee', id],
@@ -79,7 +96,9 @@ export default function EmployeeForm() {
     onSuccess: (data) => reset({
       ...data,
       joinDate: formatDateForInput(data?.joinDate),
-      dateOfBirth: formatDateForInput(data?.dateOfBirth)
+      dateOfBirth: formatDateForInput(data?.dateOfBirth),
+      nationalIdIssueDate: formatDateForInput(data?.nationalIdIssueDate),
+      nationalIdExpiry: formatDateForInput(data?.nationalIdExpiry),
     })
   })
 
@@ -115,7 +134,10 @@ export default function EmployeeForm() {
     setValue(fieldName, null)
   }
 
-  const onSubmit = (data) => mutation.mutate(data)
+  const onSubmit = (data) => mutation.mutate({
+    ...data,
+    nationalId: normalizeSaudiId(data?.nationalId) || undefined,
+  })
 
   if (isEdit && isLoading) {
     return <div className="flex justify-center p-8"><div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" /></div>
@@ -237,6 +259,64 @@ export default function EmployeeForm() {
               <label className="label">{language === 'ar' ? 'رابط X' : 'X Link'}</label>
               <input type="url" {...register('socialLinks.x')} className="input" placeholder="https://x.com/..." />
             </div>
+          </div>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }} className="card p-6">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+              <Shield className="w-5 h-5 text-emerald-600" />
+            </div>
+            <div>
+              <h3 className="text-base font-medium text-gray-900 dark:text-white">{language === 'ar' ? 'الهوية السعودية / الإقامة' : 'Saudi ID / Iqama'}</h3>
+              <p className="text-sm text-gray-500">{language === 'ar' ? 'تحقق فوري من صيغة الهوية السعودية أو الإقامة مع تتبع تاريخ الانتهاء' : 'Instant checksum validation and expiry tracking for Saudi National ID / Iqama.'}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="lg:col-span-2">
+              <label className="label">{language === 'ar' ? 'رقم الهوية / الإقامة' : 'National ID / Iqama Number'}</label>
+              <input
+                {...register('nationalId')}
+                className={`input ${nationalIdValue && !saudiIdMeta.valid ? 'border-red-300 focus:border-red-500' : ''}`}
+                inputMode="numeric"
+                maxLength={10}
+                placeholder={language === 'ar' ? '10 أرقام تبدأ بـ 1 أو 2' : '10 digits starting with 1 or 2'}
+              />
+              {nationalIdValue ? (
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                  <span className={`inline-flex rounded-full px-2.5 py-1 font-medium ${saudiIdMeta.valid ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'}`}>
+                    {saudiIdMeta.valid
+                      ? (language === 'ar' ? 'صيغة صحيحة' : 'Valid format')
+                      : (language === 'ar' ? 'تحقق غير صالح' : 'Invalid checksum')}
+                  </span>
+                  <span className="inline-flex rounded-full bg-gray-100 px-2.5 py-1 font-medium text-gray-600 dark:bg-dark-700 dark:text-gray-300">
+                    {saudiIdTypeLabel}
+                  </span>
+                </div>
+              ) : null}
+            </div>
+
+            <div>
+              <label className="label">{language === 'ar' ? 'تاريخ الإصدار' : 'Issue Date'}</label>
+              <input type="date" {...register('nationalIdIssueDate', { setValueAs: (v) => (v === '' ? undefined : v) })} className="input" />
+              {nationalIdIssueDateValue ? <p className="mt-2 text-xs text-gray-500">{toHijri(nationalIdIssueDateValue)}</p> : null}
+            </div>
+
+            <div>
+              <label className="label">{language === 'ar' ? 'النوع المكتشف' : 'Detected Type'}</label>
+              <div className="input flex items-center bg-gray-50 text-sm text-gray-600 dark:bg-dark-800 dark:text-gray-300">
+                {nationalIdValue ? saudiIdTypeLabel : '—'}
+              </div>
+            </div>
+
+            {saudiIdMeta.isIqama && (
+              <div>
+                <label className="label">{language === 'ar' ? 'تاريخ انتهاء الإقامة' : 'Iqama Expiry Date'}</label>
+                <input type="date" {...register('nationalIdExpiry', { setValueAs: (v) => (v === '' ? undefined : v) })} className="input" />
+                {nationalIdExpiryValue ? <p className="mt-2 text-xs text-gray-500">{toHijri(nationalIdExpiryValue)}</p> : null}
+              </div>
+            )}
           </div>
         </motion.div>
 

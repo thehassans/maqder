@@ -119,6 +119,19 @@ const tenantSchema = new mongoose.Schema({
         travel_agency: { type: invoiceBrandingProfileSchema, default: () => ({ templateId: 4 }) },
       }
     },
+    saudiIntegrations: {
+      enabled: { type: Boolean, default: true },
+      useSaudiIdValidation: { type: Boolean, default: true },
+      autoTrackIqamaExpiry: { type: Boolean, default: true },
+      gosi: {
+        enabled: { type: Boolean, default: false },
+        establishmentId: { type: String, default: '' },
+        clientId: { type: String, default: '' },
+        clientSecret: { type: String, default: '' },
+        redirectUri: { type: String, default: '' },
+        lastSyncAt: { type: Date },
+      }
+    },
     communication: {
       email: {
         enabled: { type: Boolean, default: false },

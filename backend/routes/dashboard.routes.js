@@ -112,10 +112,44 @@ router.get('/', async (req, res) => {
       // Expiring documents
       Employee.aggregate([
         { $match: { ...req.tenantFilter, isActive: true } },
-        { $unwind: '$documents' },
+        {
+          $project: {
+            employeeId: 1,
+            firstNameEn: 1,
+            lastNameEn: 1,
+            expiryCandidates: {
+              $concatArrays: [
+                {
+                  $map: {
+                    input: { $ifNull: ['$documents', []] },
+                    as: 'doc',
+                    in: {
+                      documentType: '$$doc.type',
+                      documentNumber: '$$doc.number',
+                      expiryDate: '$$doc.expiryDate'
+                    }
+                  }
+                },
+                {
+                  $cond: [
+                    {
+                      $and: [
+                        { $eq: ['$nationalIdType', 'iqama'] },
+                        { $ne: ['$nationalIdExpiry', null] }
+                      ]
+                    },
+                    [{ documentType: 'iqama', documentNumber: '$nationalId', expiryDate: '$nationalIdExpiry' }],
+                    []
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        { $unwind: '$expiryCandidates' },
         {
           $match: {
-            'documents.expiryDate': {
+            'expiryCandidates.expiryDate': {
               $lte: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
               $gte: new Date()
             }
@@ -125,9 +159,9 @@ router.get('/', async (req, res) => {
           $project: {
             employeeId: 1,
             fullName: { $concat: ['$firstNameEn', ' ', '$lastNameEn'] },
-            documentType: '$documents.type',
-            documentNumber: '$documents.number',
-            expiryDate: '$documents.expiryDate'
+            documentType: '$expiryCandidates.documentType',
+            documentNumber: '$expiryCandidates.documentNumber',
+            expiryDate: '$expiryCandidates.expiryDate'
           }
         },
         { $limit: 10 }

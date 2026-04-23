@@ -65,10 +65,39 @@ router.get('/stats', checkPermission('hr', 'read'), async (req, res) => {
             { $group: { _id: '$department', count: { $sum: 1 } } }
           ],
           expiringDocuments: [
-            { $unwind: '$documents' },
+            {
+              $project: {
+                expiryCandidates: {
+                  $concatArrays: [
+                    {
+                      $map: {
+                        input: { $ifNull: ['$documents', []] },
+                        as: 'doc',
+                        in: {
+                          expiryDate: '$$doc.expiryDate',
+                        }
+                      }
+                    },
+                    {
+                      $cond: [
+                        {
+                          $and: [
+                            { $eq: ['$nationalIdType', 'iqama'] },
+                            { $ne: ['$nationalIdExpiry', null] },
+                          ]
+                        },
+                        [{ expiryDate: '$nationalIdExpiry' }],
+                        []
+                      ]
+                    }
+                  ]
+                }
+              }
+            },
+            { $unwind: '$expiryCandidates' },
             {
               $match: {
-                'documents.expiryDate': {
+                'expiryCandidates.expiryDate': {
                   $lte: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000)
                 }
               }
@@ -124,15 +153,17 @@ router.post('/', checkPermission('hr', 'create'), async (req, res) => {
 // @route   PUT /api/employees/:id
 router.put('/:id', checkPermission('hr', 'update'), async (req, res) => {
   try {
-    const employee = await Employee.findOneAndUpdate(
-      { _id: req.params.id, ...req.tenantFilter },
-      req.body,
-      { new: true, runValidators: true }
-    );
+    const employee = await Employee.findOne({
+      _id: req.params.id,
+      ...req.tenantFilter
+    });
     
     if (!employee) {
       return res.status(404).json({ error: 'Employee not found' });
     }
+
+    Object.assign(employee, req.body);
+    await employee.save();
     
     res.json(employee);
   } catch (error) {
