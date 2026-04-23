@@ -116,6 +116,11 @@ export default function Invoices() {
       value: (r) => (r?.issueDate ? new Date(r.issueDate).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US') : '')
     },
     {
+      key: 'customerPriceTotal',
+      label: language === 'ar' ? 'سعر العميل' : 'Customer Price',
+      value: (r) => isTravelAgencyInvoice(r) ? (r?.customerPriceTotal ?? '') : ''
+    },
+    {
       key: 'grandTotal',
       label: t('total'),
       value: (r) => r?.grandTotal ?? ''
@@ -243,6 +248,7 @@ export default function Invoices() {
                     <th>{language === 'ar' ? 'النوع' : 'Type'}</th>
                     <th>{t('date')}</th>
                     <th>{language === 'ar' ? 'تم الإنشاء بواسطة' : 'Created By'}</th>
+                    <th>{language === 'ar' ? 'سعر العميل' : 'Customer Price'}</th>
                     <th>{t('total')}</th>
                     <th>{t('zatcaStatus')}</th>
                     <th>{t('actions')}</th>
@@ -297,6 +303,11 @@ export default function Invoices() {
                             ? (invoice.createdByNameAr || ar || invoice.createdByName || en)
                             : (invoice.createdByName || en || invoice.createdByNameAr || ar)) || '—'
                         })()}
+                      </td>
+                      <td className="font-medium text-gray-700 dark:text-gray-300">
+                        {isTravelAgencyInvoice(invoice) && invoice.customerPriceTotal > 0
+                          ? <Money value={invoice.customerPriceTotal} />
+                          : '—'}
                       </td>
                       <td className="font-semibold"><Money value={invoice.grandTotal} /></td>
                       <td>{getStatusBadge(invoice)}</td>

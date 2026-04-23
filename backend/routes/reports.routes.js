@@ -49,6 +49,65 @@ function resolvePeriodKey(startDate) {
   return `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}`;
 }
 
+const TRAVEL_MARGIN_VAT_RATE = 15;
+
+function buildVatReportLineAmountExpression(linePath) {
+  return {
+    $cond: [
+      { $eq: [`${linePath}.isTravelMargin`, true] },
+      { $ifNull: [`${linePath}.marginTaxable`, 0] },
+      { $ifNull: [`${linePath}.lineTotal`, 0] },
+    ],
+  };
+}
+
+function buildVatReportLineVatExpression(linePath) {
+  return {
+    $cond: [
+      {
+        $and: [
+          { $eq: [`${linePath}.isTravelMargin`, true] },
+          { $eq: [`${linePath}.taxCategory`, 'S'] },
+        ],
+      },
+      {
+        $multiply: [
+          { $ifNull: [`${linePath}.marginTaxable`, 0] },
+          TRAVEL_MARGIN_VAT_RATE / 100,
+        ],
+      },
+      { $ifNull: [`${linePath}.taxAmount`, 0] },
+    ],
+  };
+}
+
+function buildVatReportLineTaxRateExpression(linePath) {
+  return {
+    $cond: [
+      {
+        $and: [
+          { $eq: [`${linePath}.isTravelMargin`, true] },
+          { $eq: [`${linePath}.taxCategory`, 'S'] },
+        ],
+      },
+      TRAVEL_MARGIN_VAT_RATE,
+      { $ifNull: [`${linePath}.taxRate`, 0] },
+    ],
+  };
+}
+
+function buildVatReportInvoiceLineSumExpression(builder) {
+  return {
+    $sum: {
+      $map: {
+        input: { $ifNull: ['$lineItems', []] },
+        as: 'line',
+        in: builder('$$line'),
+      },
+    },
+  };
+}
+
 function normalizeManualLine(value = {}) {
   return {
     amount: toNumber(value.amount),
@@ -163,8 +222,8 @@ async function buildVatReturnPayload({ tenantId, tenantFilterValue, startDate, e
             flow: '$flow',
             taxCategory: '$lineItems.taxCategory',
           },
-          amount: { $sum: { $ifNull: ['$lineItems.lineTotal', 0] } },
-          vatAmount: { $sum: { $ifNull: ['$lineItems.taxAmount', 0] } },
+          amount: { $sum: buildVatReportLineAmountExpression('$lineItems') },
+          vatAmount: { $sum: buildVatReportLineVatExpression('$lineItems') },
         }
       }
     ]),
@@ -220,6 +279,8 @@ async function buildVatReturnPayload({ tenantId, tenantFilterValue, startDate, e
 router.get('/vat-return', async (req, res) => {
   try {
     const { startDate, endDate } = resolvePeriod(req);
+    const invoiceTaxableAmountExpression = buildVatReportInvoiceLineSumExpression(buildVatReportLineAmountExpression);
+    const invoiceVatAmountExpression = buildVatReportInvoiceLineSumExpression(buildVatReportLineVatExpression);
 
     const match = {
       ...req.tenantFilter,
@@ -233,10 +294,22 @@ router.get('/vat-return', async (req, res) => {
         $facet: {
           invoices: [
             {
+              $project: {
+                totalDiscount: { $ifNull: ['$totalDiscount', 0] },
+                taxableAmount: invoiceTaxableAmountExpression,
+                totalTax: invoiceVatAmountExpression,
+              }
+            },
+            {
+              $addFields: {
+                grandTotal: { $add: ['$taxableAmount', '$totalTax'] }
+              }
+            },
+            {
               $group: {
                 _id: null,
                 invoiceCount: { $sum: 1 },
-                totalDiscount: { $sum: { $ifNull: ['$totalDiscount', 0] } },
+                totalDiscount: { $sum: '$totalDiscount' },
                 taxableAmount: { $sum: '$taxableAmount' },
                 totalTax: { $sum: '$totalTax' },
                 grandTotal: { $sum: '$grandTotal' }
@@ -249,18 +322,10 @@ router.get('/vat-return', async (req, res) => {
               $group: {
                 _id: {
                   taxCategory: '$lineItems.taxCategory',
-                  taxRate: '$lineItems.taxRate'
+                  taxRate: buildVatReportLineTaxRateExpression('$lineItems')
                 },
-                taxableAmount: {
-                  $sum: {
-                    $cond: [
-                      { $eq: ['$lineItems.isTravelMargin', true] },
-                      { $ifNull: ['$lineItems.marginTaxable', 0] },
-                      { $ifNull: ['$lineItems.lineTotal', 0] }
-                    ]
-                  }
-                },
-                taxAmount: { $sum: { $ifNull: ['$lineItems.taxAmount', 0] } },
+                taxableAmount: { $sum: buildVatReportLineAmountExpression('$lineItems') },
+                taxAmount: { $sum: buildVatReportLineVatExpression('$lineItems') },
                 totalWithTax: { $sum: { $ifNull: ['$lineItems.lineTotalWithTax', 0] } }
               }
             },
@@ -283,16 +348,29 @@ router.get('/vat-return', async (req, res) => {
                   }
                 },
                 marginTaxable: { $sum: { $ifNull: ['$lineItems.marginTaxable', 0] } },
-                taxAmount: { $sum: { $ifNull: ['$lineItems.taxAmount', 0] } }
+                taxAmount: { $sum: buildVatReportLineVatExpression('$lineItems') }
               }
             }
           ],
           byTransactionType: [
             {
+              $project: {
+                transactionType: 1,
+                totalDiscount: { $ifNull: ['$totalDiscount', 0] },
+                taxableAmount: invoiceTaxableAmountExpression,
+                totalTax: invoiceVatAmountExpression,
+              }
+            },
+            {
+              $addFields: {
+                grandTotal: { $add: ['$taxableAmount', '$totalTax'] }
+              }
+            },
+            {
               $group: {
                 _id: '$transactionType',
                 invoiceCount: { $sum: 1 },
-                totalDiscount: { $sum: { $ifNull: ['$totalDiscount', 0] } },
+                totalDiscount: { $sum: '$totalDiscount' },
                 taxableAmount: { $sum: '$taxableAmount' },
                 totalTax: { $sum: '$totalTax' },
                 grandTotal: { $sum: '$grandTotal' }

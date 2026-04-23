@@ -420,10 +420,10 @@ router.get('/', checkPermission('invoicing', 'read'), async (req, res) => {
         { 'buyer.vatNumber': { $regex: search, $options: 'i' } }
       ];
     }
-    
-    const [invoices, total] = await Promise.all([
+   
+   const [invoices, total] = await Promise.all([
       Invoice.find(query)
-        .select('-zatca.signedXml -zatca.qrCodeData -lineItems -travelDetails.passengers -travelDetails.segments')
+        .select('-zatca.signedXml -zatca.qrCodeData -travelDetails.passengers -travelDetails.segments')
         .populate('createdBy', 'firstName lastName firstNameAr lastNameAr email')
         .sort({ issueDate: -1 })
         .skip((page - 1) * limit)
@@ -431,9 +431,28 @@ router.get('/', checkPermission('invoicing', 'read'), async (req, res) => {
         .lean(),
       Invoice.countDocuments(query)
     ]);
+
+    const normalizedInvoices = (invoices || []).map((invoice) => {
+      const customerPriceTotal = Array.isArray(invoice?.lineItems)
+        ? invoice.lineItems.reduce((sum, line) => {
+            if (!line?.isTravelMargin) return sum;
+            const finalCustomerAmount = Math.max(0, Number(line.lineTotalWithTax) || 0);
+            if (finalCustomerAmount > 0) return sum + finalCustomerAmount;
+            const customerPrice = Math.max(0, Number(line.customerPrice) || 0);
+            const quantity = Math.max(0, Number(line.quantity) || 0);
+            return sum + (customerPrice * quantity);
+          }, 0)
+        : 0;
+
+      return {
+        ...invoice,
+        customerPriceTotal,
+        lineItems: undefined,
+      };
+    });
     
     res.json({
-      invoices,
+      invoices: normalizedInvoices,
       pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / limit) }
     });
   } catch (error) {
