@@ -25,6 +25,10 @@ import InvoiceCreateSell from './pages/invoices/InvoiceCreateSellPage'
 import InvoiceCreatePurchase from './pages/invoices/InvoiceCreatePurchasePage'
 import InvoiceEditPage from './pages/invoices/InvoiceEditPage'
 import InvoiceView from './pages/invoices/InvoiceView'
+import Quotations from './pages/quotations/Quotations'
+import QuotationCreatePage from './pages/quotations/QuotationCreatePage'
+import QuotationEditPage from './pages/quotations/QuotationEditPage'
+import QuotationView from './pages/quotations/QuotationView'
 import Employees from './pages/hr/Employees'
 import EmployeeForm from './pages/hr/EmployeeForm'
 import Payroll from './pages/hr/Payroll'
@@ -220,6 +224,10 @@ function App() {
         <Route path="invoices/new/purchase" element={<BusinessTypeRoute allowedTypes={['trading', 'construction', 'travel_agency']}><InvoiceCreatePurchase /></BusinessTypeRoute>} />
         <Route path="invoices/:id/edit" element={<InvoiceEditPage />} />
         <Route path="invoices/:id" element={<InvoiceView />} />
+        <Route path="quotations" element={<Quotations />} />
+        <Route path="quotations/new" element={<QuotationCreatePage />} />
+        <Route path="quotations/:id/edit" element={<QuotationEditPage />} />
+        <Route path="quotations/:id" element={<QuotationView />} />
         <Route path="contacts" element={<Contacts />} />
         <Route path="customers" element={<CustomerList />} />
         <Route path="customers/new" element={<CustomerForm />} />

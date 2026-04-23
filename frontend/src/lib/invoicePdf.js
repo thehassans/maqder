@@ -16,6 +16,13 @@ const sanitizeFileName = (value) => {
     .trim()
 }
 
+const resolveDocumentNumber = (invoice, documentType = 'invoice') => {
+  if (documentType === 'quotation') {
+    return invoice?.quotationNumber || invoice?.invoiceNumber || 'quotation'
+  }
+  return invoice?.invoiceNumber || invoice?.quotationNumber || 'invoice'
+}
+
 const fetchInvoicePdfBlob = async (invoiceId) => {
   if (!invoiceId) return null
   const response = await api.get(`/invoices/${invoiceId}/pdf`, {
@@ -299,7 +306,7 @@ const saveElementSnapshotPdf = async ({ doc, sourceElement, fileName }) => {
   return true
 }
 
-export const printInvoiceSnapshot = async ({ invoice, language = 'en', tenant, sourceElement = null }) => {
+export const printInvoiceSnapshot = async ({ invoice, language = 'en', tenant, sourceElement = null, documentType = 'invoice' }) => {
   if (!invoice || typeof document === 'undefined' || typeof window === 'undefined') return false
 
   const currency = invoice.currency || tenant?.settings?.currency || 'SAR'
@@ -309,7 +316,7 @@ export const printInvoiceSnapshot = async ({ invoice, language = 'en', tenant, s
   let generatedSnapshotHost = null
 
   if (!snapshotElement) {
-    generatedSnapshotHost = await buildSnapshotElement({ invoice, tenant, language })
+    generatedSnapshotHost = await buildSnapshotElement({ invoice, tenant, language, documentType })
     snapshotElement = generatedSnapshotHost
   }
 
@@ -322,7 +329,7 @@ export const printInvoiceSnapshot = async ({ invoice, language = 'en', tenant, s
   if (!canvas) return false
 
   const imageData = canvas.toDataURL('image/png')
-  const title = sanitizeFileName(invoice?.invoiceNumber || 'invoice')
+  const title = sanitizeFileName(resolveDocumentNumber(invoice, documentType))
   const frame = document.createElement('iframe')
   frame.style.position = 'fixed'
   frame.style.right = '0'
@@ -414,7 +421,7 @@ const waitForElementImages = async (element) => {
   }
 }
 
-const buildSnapshotElement = async ({ invoice, tenant, language }) => {
+const buildSnapshotElement = async ({ invoice, tenant, language, documentType = 'invoice' }) => {
   if (typeof document === 'undefined') return null
 
   const host = document.createElement('div')
@@ -436,6 +443,7 @@ const buildSnapshotElement = async ({ invoice, tenant, language }) => {
       templateId,
       bilingual: shouldRenderBilingualInvoice(invoice),
       currencyRenderMode: 'snapshot-icon',
+      documentType,
     }))
   )
   host.innerHTML = `
@@ -654,6 +662,19 @@ const getPartyDetailLines = (party = {}, language = 'en', role = 'party') => {
 }
 
 const getInvoiceEyebrow = (invoice, language = 'en') => {
+  if (invoice?.quotationNumber) {
+    if (invoice?.businessContext === 'construction') {
+      return language === 'ar' ? 'عرض سعر للمقاولات' : 'Construction Quotation'
+    }
+    if (invoice?.businessContext === 'travel_agency') {
+      return language === 'ar' ? 'عرض سعر خدمات السفر' : 'Travel Services Quotation'
+    }
+    if (invoice?.businessContext === 'restaurant') {
+      return language === 'ar' ? 'عرض سعر مطعم' : 'Restaurant Quotation'
+    }
+    return language === 'ar' ? 'عرض سعر' : 'Quotation'
+  }
+
   if (invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency') {
     return language === 'ar' ? 'فاتورة خدمات السفر' : 'Travel Services Invoice'
   }
@@ -670,6 +691,19 @@ const getInvoiceEyebrow = (invoice, language = 'en') => {
 }
 
 const getInvoiceTitle = (invoice, language = 'en') => {
+  if (invoice?.quotationNumber) {
+    if (invoice?.businessContext === 'construction') {
+      return language === 'ar' ? 'عرض سعر للمقاولات' : 'Construction Quotation'
+    }
+    if (invoice?.businessContext === 'travel_agency') {
+      return language === 'ar' ? 'عرض سعر لخدمات السفر' : 'Travel Services Quotation'
+    }
+    if (invoice?.businessContext === 'restaurant') {
+      return language === 'ar' ? 'عرض سعر للمطعم' : 'Restaurant Quotation'
+    }
+    return language === 'ar' ? 'عرض سعر' : 'Quotation'
+  }
+
   if (invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency') {
     return language === 'ar' ? 'فاتورة ضريبية لخدمات السفر' : 'Travel Services Tax Invoice'
   }
@@ -685,7 +719,7 @@ const getInvoiceTitle = (invoice, language = 'en') => {
   return language === 'ar' ? 'فاتورة ضريبية' : 'Tax Invoice'
 }
 
-const generateInvoicePdf = async ({ invoice, language = 'en', tenant, sourceElement = null, output = 'save' }) => {
+const generateInvoicePdf = async ({ invoice, language = 'en', tenant, sourceElement = null, output = 'save', documentType = 'invoice' }) => {
   if (!invoice) return
 
   const snapshotCurrency = invoice.currency || tenant?.settings?.currency || 'SAR'
@@ -700,13 +734,13 @@ const generateInvoicePdf = async ({ invoice, language = 'en', tenant, sourceElem
   const pdfOrientation = tenant?.settings?.invoicePdfOrientation || 'portrait'
   const pdfPageSize = tenant?.settings?.invoicePdfPageSize || 'a4'
   const doc = new jsPDF({ orientation: pdfOrientation, unit: 'pt', format: pdfPageSize })
-  const name = sanitizeFileName(invoice.invoiceNumber || 'invoice')
+  const name = sanitizeFileName(resolveDocumentNumber(invoice, documentType))
 
   let snapshotElement = shouldUseSnapshotRenderer ? null : (sourceElement || null)
   let generatedSnapshotHost = null
 
   if (shouldUseSnapshotRenderer && !snapshotElement) {
-    generatedSnapshotHost = await buildSnapshotElement({ invoice, tenant, language })
+    generatedSnapshotHost = await buildSnapshotElement({ invoice, tenant, language, documentType })
     snapshotElement = generatedSnapshotHost
   }
 
@@ -890,7 +924,8 @@ const generateInvoicePdf = async ({ invoice, language = 'en', tenant, sourceElem
   const totals = calculateInvoiceSummary(invoice)
   const travelDetailsEn = normalizeTravelDetails(invoice.travelDetails || {}, buyerNameEn || buyerNameAr, 'en')
   const travelDetailsAr = normalizeTravelDetails(invoice.travelDetails || {}, buyerNameAr || buyerNameEn, 'ar')
-  const isTravelInvoicePdf = invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency'
+  const isQuotationPdf = Boolean(invoice?.quotationNumber)
+  const isTravelInvoicePdf = !isQuotationPdf && (invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency')
   const qrValue = invoice?.zatca?.qrCodeData || generateZatcaQrValue({
     sellerName,
     vatNumber: seller?.vatNumber || tenant?.business?.vatNumber,
@@ -899,15 +934,17 @@ const generateInvoicePdf = async ({ invoice, language = 'en', tenant, sourceElem
     vatTotal: totals.totalTax,
   })
   // Travel agency invoices omit the ZATCA QR from the printed document.
-  const fallbackQrImage = isTravelInvoicePdf || invoice?.zatca?.qrCodeImage ? null : await renderQrToDataUrl(qrValue, 120)
-  const qr = isTravelInvoicePdf ? null : await resolveImageSource(invoice?.zatca?.qrCodeImage || fallbackQrImage || null)
+  const fallbackQrImage = isTravelInvoicePdf || isQuotationPdf || invoice?.zatca?.qrCodeImage ? null : await renderQrToDataUrl(qrValue, 120)
+  const qr = isTravelInvoicePdf || isQuotationPdf ? null : await resolveImageSource(invoice?.zatca?.qrCodeImage || fallbackQrImage || null)
   const qrFormat = detectImageFormat(qr)
   const companyName = invoiceBranding.companyName || sellerNameEn || sellerNameAr || ''
   const headerLines = splitBrandingText(invoiceBranding.headerText)
   const footerLines = splitBrandingText(invoiceBranding.footerText)
   const invoiceEyebrow = getInvoiceEyebrow(invoice, language)
 
-  const title = invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency'
+  const title = isQuotationPdf
+    ? getInvoiceTitle(invoice, language)
+    : invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency'
     ? ''
     : getInvoiceTitle(invoice, language)
   const customerLabel = invoice.flow === 'purchase'
@@ -1012,10 +1049,10 @@ const generateInvoicePdf = async ({ invoice, language = 'en', tenant, sourceElem
   const cardY = topMargin
 
   const metaRows = [
-    { k: isRtl ? 'رقم الفاتورة' : 'Invoice #', v: invoice.invoiceNumber },
+    { k: isQuotationPdf ? (isRtl ? 'رقم عرض السعر' : 'Quotation #') : (isRtl ? 'رقم الفاتورة' : 'Invoice #'), v: resolveDocumentNumber(invoice, documentType) },
     { k: isRtl ? 'التاريخ' : 'Date', v: formatDateTime(invoice.issueDate, language) },
     { k: isRtl ? 'المستند' : 'Document', v: invoiceEyebrow },
-    { k: isRtl ? 'النوع / التدفق' : 'Type / Flow', v: `${invoice.transactionType || '—'} / ${invoice.flow || 'sell'}` },
+    { k: isRtl ? 'النوع / التدفق' : 'Type / Flow', v: isQuotationPdf ? `${invoice.transactionType || '—'} / ${(isRtl ? 'عرض سعر' : 'Quotation')}` : `${invoice.transactionType || '—'} / ${invoice.flow || 'sell'}` },
   ].filter(Boolean)
 
   const metaPairs = Math.ceil(metaRows.length / 2)
@@ -1404,9 +1441,21 @@ const generateInvoicePdf = async ({ invoice, language = 'en', tenant, sourceElem
 }
 
 export const buildInvoicePdfBlob = async ({ invoice, language = 'en', tenant, sourceElement = null }) => {
-  return await generateInvoicePdf({ invoice, language, tenant, sourceElement, output: 'blob' })
+  return await generateInvoicePdf({ invoice, language, tenant, sourceElement, output: 'blob', documentType: 'invoice' })
 }
 
 export const downloadInvoicePdf = async ({ invoice, language = 'en', tenant, sourceElement = null }) => {
-  return await generateInvoicePdf({ invoice, language, tenant, sourceElement, output: 'save' })
+  return await generateInvoicePdf({ invoice, language, tenant, sourceElement, output: 'save', documentType: 'invoice' })
+}
+
+export const buildQuotationPdfBlob = async ({ quotation, language = 'en', tenant, sourceElement = null }) => {
+  return await generateInvoicePdf({ invoice: quotation, language, tenant, sourceElement, output: 'blob', documentType: 'quotation' })
+}
+
+export const downloadQuotationPdf = async ({ quotation, language = 'en', tenant, sourceElement = null }) => {
+  return await generateInvoicePdf({ invoice: quotation, language, tenant, sourceElement, output: 'save', documentType: 'quotation' })
+}
+
+export const printQuotationSnapshot = async ({ quotation, language = 'en', tenant, sourceElement = null }) => {
+  return await printInvoiceSnapshot({ invoice: quotation, language, tenant, sourceElement, documentType: 'quotation' })
 }

@@ -221,7 +221,37 @@ const getTemplateClasses = (templateId) => {
   }
 }
 
-const getInvoiceEyebrow = (invoice, language = 'en') => {
+const getDocumentStatusMeta = (invoice, language = 'en', documentType = 'invoice') => {
+  if (documentType === 'quotation') {
+    const status = String(invoice?.status || 'draft').trim().toLowerCase()
+    const labels = {
+      draft: language === 'ar' ? 'مسودة' : 'Draft',
+      sent: language === 'ar' ? 'مرسل' : 'Sent',
+      accepted: language === 'ar' ? 'مقبول' : 'Accepted',
+      rejected: language === 'ar' ? 'مرفوض' : 'Rejected',
+      expired: language === 'ar' ? 'منتهي' : 'Expired',
+      cancelled: language === 'ar' ? 'ملغي' : 'Cancelled',
+    }
+    return { label: labels[status] || (language === 'ar' ? 'مسودة' : 'Draft') }
+  }
+
+  return getZatcaStatusMeta(invoice, language)
+}
+
+const getInvoiceEyebrow = (invoice, language = 'en', documentType = 'invoice') => {
+  if (documentType === 'quotation') {
+    if (invoice?.businessContext === 'construction') {
+      return language === 'ar' ? 'عرض سعر للمقاولات' : 'Construction Quotation'
+    }
+    if (invoice?.businessContext === 'travel_agency') {
+      return language === 'ar' ? 'عرض سعر خدمات السفر' : 'Travel Services Quotation'
+    }
+    if (invoice?.businessContext === 'restaurant') {
+      return language === 'ar' ? 'عرض سعر مطعم' : 'Restaurant Quotation'
+    }
+    return language === 'ar' ? 'عرض سعر' : 'Quotation'
+  }
+
   if (invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency') {
     return language === 'ar' ? 'فاتورة خدمات السفر' : 'Travel Services Invoice'
   }
@@ -237,7 +267,20 @@ const getInvoiceEyebrow = (invoice, language = 'en') => {
   return language === 'ar' ? 'فاتورة تجارة' : 'Trading Invoice'
 }
 
-const getInvoiceTitle = (invoice, language = 'en') => {
+const getInvoiceTitle = (invoice, language = 'en', documentType = 'invoice') => {
+  if (documentType === 'quotation') {
+    if (invoice?.businessContext === 'construction') {
+      return language === 'ar' ? 'عرض سعر للمقاولات' : 'Construction Quotation'
+    }
+    if (invoice?.businessContext === 'travel_agency') {
+      return language === 'ar' ? 'عرض سعر لخدمات السفر' : 'Travel Services Quotation'
+    }
+    if (invoice?.businessContext === 'restaurant') {
+      return language === 'ar' ? 'عرض سعر للمطعم' : 'Restaurant Quotation'
+    }
+    return language === 'ar' ? 'عرض سعر' : 'Quotation'
+  }
+
   if (invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency') {
     return language === 'ar' ? 'فاتورة ضريبية لخدمات السفر' : 'Travel Services Tax Invoice'
   }
@@ -253,7 +296,7 @@ const getInvoiceTitle = (invoice, language = 'en') => {
   return language === 'ar' ? 'فاتورة ضريبية' : 'Tax Invoice'
 }
 
-export default function InvoiceLivePreview({ invoice, tenant, language = 'en', templateId = 1, bilingual = false, currencyRenderMode = 'icon', currencyDisplay, currencyPosition }) {
+export default function InvoiceLivePreview({ invoice, tenant, language = 'en', templateId = 1, bilingual = false, currencyRenderMode = 'icon', currencyDisplay, currencyPosition, documentType = 'invoice' }) {
   const currency = invoice?.currency || tenant?.settings?.currency || 'SAR'
   const invoiceBranding = getInvoiceBranding(tenant, language, invoice?.businessContext)
   const resolvedCurrency = getInvoiceCurrencyDisplay(tenant)
@@ -289,9 +332,11 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
   const footerLines = splitBrandingText(invoiceBranding.footerText)
   const showVisionLogo = invoiceBranding.showVision2030 && invoiceBranding.vision2030LogoSrc
   const typography = invoiceBranding.typography || {}
-  const zatcaStatusMeta = getZatcaStatusMeta(invoice, language)
+  const zatcaStatusMeta = getDocumentStatusMeta(invoice, language, documentType)
   const isTravelInvoice = isTravelAgencyInvoice(invoice)
   const travelInvoiceLabelMeta = isTravelInvoice ? getTravelInvoiceLabelMeta(invoice, language) : null
+  const isQuotation = documentType === 'quotation'
+  const documentNumber = invoice?.quotationNumber || invoice?.invoiceNumber || 'DRAFT-PREVIEW'
   const amountInWordsLines = bilingual
     ? uniqueLines(
         getAmountInWords(totals.grandTotal, currency, 'en'),
@@ -299,10 +344,10 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
       )
     : [getAmountInWords(totals.grandTotal, currency, language)]
   const hideTaxOnInvoice = invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency'
-  const showInvoiceTitle = !(invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency')
+  const showInvoiceTitle = isQuotation || !(invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency')
   const invoiceTitle = bilingual
-    ? toBilingualText(getInvoiceTitle(invoice, 'en'), getInvoiceTitle(invoice, 'ar'))
-    : getInvoiceTitle(invoice, language)
+    ? toBilingualText(getInvoiceTitle(invoice, 'en', documentType), getInvoiceTitle(invoice, 'ar', documentType))
+    : getInvoiceTitle(invoice, language, documentType)
   const createdByName = getCreatorDisplayName(invoice, language)
   const rawRouteText = getUntranslatedRouteText(invoice?.travelDetails || {})
   const rawDepartureDate = getRawDisplayValue(invoice?.travelDetails?.departureDate)
@@ -461,7 +506,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
                 <img src={logoSrc} alt="" className="h-full w-full object-contain" />
               </div>
               <div className="min-w-0 max-w-[34rem] flex-1">
-                <p className={joinClasses('text-[11px] uppercase tracking-[0.24em]', isTravelInvoice ? travelInvoiceLabelMeta?.textClassName : mutedText)}>{getInvoiceEyebrow(invoice, language)}</p>
+                <p className={joinClasses('text-[11px] uppercase tracking-[0.24em]', isQuotation ? mutedText : (isTravelInvoice ? travelInvoiceLabelMeta?.textClassName : mutedText))}>{getInvoiceEyebrow(invoice, language, documentType)}</p>
                 <h3 className={`mt-2 text-[1.75rem] font-semibold leading-tight ${titleText}`} style={companyHeadingStyle}>{companyName || '—'}</h3>
                 {headerLines.length > 0 && (
                   <div className="mt-2 max-w-[30rem] space-y-1 overflow-hidden">
@@ -473,7 +518,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
               </div>
             </div>
             <div className="flex min-w-[148px] flex-col items-center gap-3 self-start text-center">
-              {!isTravelInvoice && (
+              {!isTravelInvoice && !isQuotation && (
                 <div className="rounded-[1.5rem] border border-slate-200 bg-white p-2 shadow-sm">
                   <QRCodeSVG value={qrValue} size={88} bgColor="transparent" fgColor="#0F172A" />
                 </div>
@@ -530,7 +575,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
                 {invoice?.transactionType || 'B2C'}
               </div>
             </div>
-            <p className={`mt-4 text-center text-base font-semibold ${titleText}`}>{invoice?.invoiceNumber || 'DRAFT-PREVIEW'}</p>
+            <p className={`mt-4 text-center text-base font-semibold ${titleText}`}>{documentNumber}</p>
             <p className={`mt-1 text-center text-xs ${mutedText}`}>{formatDate(invoice?.issueDate || new Date(), language)}</p>
             <div className="mt-4 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center">
               <p className={`text-[11px] font-medium uppercase tracking-[0.2em] ${mutedText}`}>{language === 'ar' ? 'الحالة' : 'Status'}</p>
@@ -541,16 +586,16 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
 
         <div className="mt-4 grid grid-cols-1 gap-4 rounded-[1.5rem] border border-slate-200 bg-white p-5 md:grid-cols-2 xl:grid-cols-4">
           <div>
-            <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'رقم الفاتورة' : 'Invoice #'}</p>
-            <p className={`mt-1 text-sm font-semibold ${titleText}`}>{invoice?.invoiceNumber || 'DRAFT-PREVIEW'}</p>
+            <p className={`text-xs ${mutedText}`}>{isQuotation ? (language === 'ar' ? 'رقم عرض السعر' : 'Quotation #') : (language === 'ar' ? 'رقم الفاتورة' : 'Invoice #')}</p>
+            <p className={`mt-1 text-sm font-semibold ${titleText}`}>{documentNumber}</p>
           </div>
           <div>
-            <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'التاريخ' : 'Date'}</p>
-            <p className={`mt-1 text-sm font-semibold ${titleText}`}>{formatDate(invoice?.issueDate || new Date(), language)}</p>
+            <p className={`text-xs ${mutedText}`}>{isQuotation ? (language === 'ar' ? 'صالح حتى' : 'Valid Until') : (language === 'ar' ? 'التاريخ' : 'Date')}</p>
+            <p className={`mt-1 text-sm font-semibold ${titleText}`}>{formatDate((isQuotation ? invoice?.validUntil : invoice?.issueDate) || new Date(), language)}</p>
           </div>
           <div>
-            <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'التدفق' : 'Flow'}</p>
-            <p className={`mt-1 text-sm font-semibold ${titleText}`}>{invoice?.flow || 'sell'}</p>
+            <p className={`text-xs ${mutedText}`}>{isQuotation ? (language === 'ar' ? 'نوع المستند' : 'Document Type') : (language === 'ar' ? 'التدفق' : 'Flow')}</p>
+            <p className={`mt-1 text-sm font-semibold ${titleText}`}>{isQuotation ? (language === 'ar' ? 'عرض سعر' : 'Quotation') : (invoice?.flow || 'sell')}</p>
           </div>
           <div>
             <p className={`text-xs ${mutedText}`}>{language === 'ar' ? 'تم الإنشاء بواسطة' : 'Created By'}</p>
