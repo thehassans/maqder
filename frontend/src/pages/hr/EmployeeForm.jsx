@@ -10,7 +10,6 @@ import { useTranslation } from '../../lib/translations'
 import SarIcon from '../../components/ui/SarIcon'
 import { useLiveTranslation } from '../../lib/liveTranslation'
 import { describeSaudiId, normalizeSaudiId } from '../../lib/saudiId'
-import momentHijri from 'moment-hijri'
 
 export default function EmployeeForm() {
   const { id } = useParams()
@@ -86,7 +85,14 @@ export default function EmployeeForm() {
     if (!value) return ''
     const date = new Date(value)
     if (Number.isNaN(date.getTime())) return ''
-    return momentHijri(date).format('iYYYY/iMM/iDD')
+    const parts = new Intl.DateTimeFormat(
+      language === 'ar' ? 'ar-SA-u-ca-islamic-umalqura' : 'en-u-ca-islamic-umalqura',
+      { year: 'numeric', month: '2-digit', day: '2-digit' }
+    ).formatToParts(date)
+    const year = parts.find((part) => part.type === 'year')?.value || ''
+    const month = parts.find((part) => part.type === 'month')?.value || ''
+    const day = parts.find((part) => part.type === 'day')?.value || ''
+    return year && month && day ? `${year}/${month}/${day}` : ''
   }
 
   const { data: employee, isLoading } = useQuery({
