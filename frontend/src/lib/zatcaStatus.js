@@ -56,3 +56,22 @@ export const getZatcaStatusMeta = (invoice, language = 'en') => {
     tone: tones[status] || 'neutral',
   }
 }
+
+export const hasGeneratedEInvoice = (invoice) => {
+  const status = resolveZatcaStatus(invoice)
+  if (['generated', 'reported', 'submitted', 'cleared', 'warning', 'rejected'].includes(status)) {
+    return true
+  }
+
+  return Boolean(
+    invoice?.zatca?.signedXml
+    || invoice?.zatca?.invoiceHash
+    || invoice?.zatca?.uuid
+    || invoice?.zatca?.submittedAt
+  )
+}
+
+export const isEditableInvoice = (invoice) => {
+  const invoiceStatus = String(invoice?.status || '').trim().toLowerCase()
+  return ['draft', 'pending'].includes(invoiceStatus) && !hasGeneratedEInvoice(invoice)
+}

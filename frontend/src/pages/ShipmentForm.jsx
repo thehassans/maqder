@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { useForm, useFieldArray } from 'react-hook-form'
@@ -28,6 +28,7 @@ import { printElementHtml } from '../lib/shipmentPrint'
 export default function ShipmentForm() {
   const { id } = useParams()
   const isEdit = Boolean(id)
+  const [searchParams] = useSearchParams()
   const deliveryNoteRef = useRef(null)
   const shippingLabelRef = useRef(null)
 
@@ -96,6 +97,8 @@ export default function ShipmentForm() {
   const warehouseId = watch('warehouseId')
   const watchedLineItems = watch('lineItems') || []
   const deliveryRecipientValues = watch('deliveryRecipient') || {}
+  const requestedType = String(searchParams.get('type') || '').trim().toLowerCase()
+  const requestedDocument = String(searchParams.get('document') || '').trim().toLowerCase()
 
   const { data: suppliers } = useQuery({
     queryKey: ['suppliers-lookup'],
@@ -246,6 +249,13 @@ export default function ShipmentForm() {
       setValue('warehouseId', primary?._id || warehouses[0]._id)
     }
   }, [warehouseId, warehouses, setValue])
+
+  useEffect(() => {
+    if (isEdit) return
+    if (requestedType === 'outbound' || requestedDocument === 'delivery-note') {
+      setValue('type', 'outbound')
+    }
+  }, [isEdit, requestedDocument, requestedType, setValue])
 
   const documentShipment = useMemo(() => {
     const productMap = new Map((products || []).map((product) => [String(product._id), product]))

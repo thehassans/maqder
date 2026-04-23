@@ -6,7 +6,7 @@ import { ArrowLeft, Download, Mail, Printer, Edit, FileSpreadsheet } from 'lucid
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
-import InvoiceLivePreview from '../../components/invoices/InvoiceLivePreview'
+import QuotationDocumentPreview from '../../components/quotations/QuotationDocumentPreview'
 import { buildQuotationPdfBlob, downloadQuotationPdf, printQuotationSnapshot } from '../../lib/invoicePdf'
 import { exportToExcel } from '../../lib/export'
 
@@ -28,6 +28,8 @@ const sanitizeAttachmentFileName = (value) => {
     .trim()
   return normalized || 'quotation'
 }
+
+const isEditableQuotation = (quotation) => ['draft', 'sent'].includes(String(quotation?.status || '').toLowerCase())
 
 export default function QuotationView() {
   const { id } = useParams()
@@ -108,10 +110,12 @@ export default function QuotationView() {
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <button type="button" onClick={() => navigate(`/app/dashboard/quotations/${id}/edit`)} className="btn btn-secondary">
-            <Edit className="w-4 h-4" />
-            {language === 'ar' ? 'تعديل' : 'Edit'}
-          </button>
+          {isEditableQuotation(quotation) ? (
+            <button type="button" onClick={() => navigate(`/app/dashboard/quotations/${id}/edit`)} className="btn btn-secondary">
+              <Edit className="w-4 h-4" />
+              {language === 'ar' ? 'تعديل' : 'Edit'}
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={async () => {
@@ -194,13 +198,10 @@ export default function QuotationView() {
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.2fr)_300px]">
         <div ref={previewRef}>
-          <InvoiceLivePreview
-            invoice={quotation}
+          <QuotationDocumentPreview
+            quotation={quotation}
             tenant={tenant}
             language={language}
-            templateId={quotation?.pdfTemplateId}
-            bilingual={false}
-            documentType="quotation"
           />
         </div>
 

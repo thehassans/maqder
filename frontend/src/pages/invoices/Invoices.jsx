@@ -23,7 +23,7 @@ import ExportMenu from '../../components/ui/ExportMenu'
 import toast from 'react-hot-toast'
 import { downloadInvoicePdf } from '../../lib/invoicePdf'
 import { getTenantBusinessTypes } from '../../lib/businessTypes'
-import { getZatcaStatusMeta } from '../../lib/zatcaStatus'
+import { getZatcaStatusMeta, isEditableInvoice } from '../../lib/zatcaStatus'
 import { getTravelInvoiceLabelMeta, isTravelAgencyInvoice } from '../../lib/travelInvoiceStatus'
 
 const getInvoiceContextLabel = (invoice, language = 'en') => {
@@ -44,8 +44,6 @@ const getTransactionTypeLabel = (transactionType, language = 'en', t) => {
   if (transactionType === 'B2C') return t('b2cInvoice')
   return transactionType || (language === 'ar' ? 'غير محدد' : 'Unknown')
 }
-
-const isEditableInvoice = (invoice) => ['draft', 'pending'].includes(invoice?.status) && !invoice?.zatca?.signedXml
 
 export default function Invoices() {
   const { language } = useSelector((state) => state.ui)

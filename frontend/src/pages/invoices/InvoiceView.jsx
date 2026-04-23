@@ -11,7 +11,7 @@ import { useTranslation } from '../../lib/translations'
 import InvoiceLivePreview from '../../components/invoices/InvoiceLivePreview'
 import { getInvoiceTemplateId } from '../../lib/invoiceBranding'
 import { buildInvoicePdfBlob, downloadInvoicePdf, printInvoiceSnapshot } from '../../lib/invoicePdf'
-import { getZatcaStatusMeta } from '../../lib/zatcaStatus'
+import { getZatcaStatusMeta, isEditableInvoice } from '../../lib/zatcaStatus'
 import { getTravelInvoiceLabelMeta, isTravelAgencyInvoice } from '../../lib/travelInvoiceStatus'
 
 const blobToBase64 = (blob) => new Promise((resolve, reject) => {
@@ -45,8 +45,6 @@ const getInvoiceContextLabel = (invoice, language = 'en') => {
   if (labels[context]) return labels[context]
   return language === 'ar' ? 'فاتورة ضريبية' : 'Tax Invoice'
 }
-
-const isEditableInvoice = (invoice) => ['draft', 'pending'].includes(invoice?.status) && !invoice?.zatca?.signedXml
 
 export default function InvoiceView() {
   const { id } = useParams()

@@ -62,6 +62,7 @@ export default function Sidebar() {
         { path: '/app/dashboard', icon: LayoutDashboard, label: t('dashboard'), end: true },
         { path: '/app/dashboard/invoices', icon: FileText, label: t('invoices'), perm: { module: 'invoicing', action: 'read' } },
         { path: '/app/dashboard/quotations', icon: FileText, label: language === 'ar' ? 'عروض الأسعار' : 'Quotations', perm: { module: 'invoicing', action: 'read' } },
+        { path: '/app/dashboard/shipments/new?type=outbound&document=delivery-note', icon: FileText, label: language === 'ar' ? 'إذن تسليم' : 'Delivery Note', perm: { module: 'supply_chain', action: 'read' }, businessTypes: ['trading'] },
         { path: '/app/dashboard/contacts', icon: Users, label: language === 'ar' ? 'جهات الاتصال' : 'Contacts', perm: { module: 'invoicing', action: 'read' } },
         { path: '/app/dashboard/customers', icon: Building, label: language === 'ar' ? 'العملاء' : 'Customers', perm: { module: 'invoicing', action: 'read' } },
       ]
@@ -162,6 +163,9 @@ export default function Sidebar() {
       }
 
       const items = (Array.isArray(section.items) ? section.items : []).filter((item) => {
+        if (Array.isArray(item?.businessTypes) && !item.businessTypes.some((type) => businessTypes.includes(type))) {
+          return false
+        }
         if (!item?.perm) return true
         return hasAccess(item.perm.module, item.perm.action)
       })

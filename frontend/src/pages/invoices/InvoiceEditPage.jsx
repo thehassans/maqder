@@ -5,8 +5,7 @@ import { ArrowLeft } from 'lucide-react'
 import api from '../../lib/api'
 import InvoiceSellComposer from '../../components/invoices/InvoiceSellComposer'
 import InvoicePurchaseComposer from '../../components/invoices/InvoicePurchaseComposer'
-
-const isEditableInvoice = (invoice) => ['draft', 'pending'].includes(invoice?.status) && !invoice?.zatca?.signedXml
+import { isEditableInvoice } from '../../lib/zatcaStatus'
 
 export default function InvoiceEditPage() {
   const { id } = useParams()

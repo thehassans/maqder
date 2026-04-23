@@ -2,6 +2,7 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { QRCodeSVG } from 'qrcode.react'
 import InvoiceLivePreview from '../components/invoices/InvoiceLivePreview'
+import QuotationDocumentPreview from '../components/quotations/QuotationDocumentPreview'
 import api from './api'
 import { formatCurrency, isSarCurrency } from './currency'
 import { calculateInvoiceSummary, normalizeTravelDetails } from './invoiceDocument'
@@ -435,16 +436,23 @@ const buildSnapshotElement = async ({ invoice, tenant, language, documentType = 
   host.style.pointerEvents = 'none'
 
   const templateId = getInvoiceTemplateId(tenant, invoice?.businessContext, invoice?.pdfTemplateId)
+  const previewElement = documentType === 'quotation'
+    ? createElement(QuotationDocumentPreview, {
+        quotation: invoice,
+        tenant,
+        language,
+      })
+    : createElement(InvoiceLivePreview, {
+        invoice,
+        tenant,
+        language,
+        templateId,
+        bilingual: shouldRenderBilingualInvoice(invoice),
+        currencyRenderMode: 'snapshot-icon',
+        documentType,
+      })
   const snapshotMarkup = renderToStaticMarkup(
-    createElement('div', { style: { background: '#ffffff' } }, createElement(InvoiceLivePreview, {
-      invoice,
-      tenant,
-      language,
-      templateId,
-      bilingual: shouldRenderBilingualInvoice(invoice),
-      currencyRenderMode: 'snapshot-icon',
-      documentType,
-    }))
+    createElement('div', { style: { background: '#ffffff' } }, previewElement)
   )
   host.innerHTML = `
     <style>

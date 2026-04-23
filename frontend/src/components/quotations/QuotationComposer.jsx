@@ -10,8 +10,8 @@ import { useTranslation } from '../../lib/translations'
 import { getPrimaryBusinessType, getTenantBusinessTypes } from '../../lib/businessTypes'
 import { calculateInvoiceSummary, toNumber } from '../../lib/invoiceDocument'
 import { getInvoiceTemplateId } from '../../lib/invoiceBranding'
-import InvoiceLivePreview from '../invoices/InvoiceLivePreview'
 import InvoiceTemplateSelector from '../invoices/InvoiceTemplateSelector'
+import QuotationDocumentPreview from './QuotationDocumentPreview'
 
 const emptyLine = {
   productId: '',
@@ -500,18 +500,15 @@ export default function QuotationComposer({ quotationId = '', initialQuotation =
 
         <div className="space-y-4 xl:sticky xl:top-24 self-start">
           <div>
-            <h3 className="mb-3 text-lg font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'المعاينة المباشرة' : 'Live Preview'}</h3>
+            <h3 className="mb-3 text-lg font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'المعاينة الهادئة' : 'Minimal Preview'}</h3>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              {language === 'ar' ? 'سيُستخدم هذا التصميم أيضاً عند تحميل PDF وإرساله بالبريد.' : 'The same premium layout will be used for PDF download and email delivery.'}
+              {language === 'ar' ? 'سيُستخدم هذا التصميم البسيط أيضاً عند تحميل PDF والطباعة والإرسال بالبريد.' : 'This same minimal presentation will be used for PDF, print, and email delivery.'}
             </p>
           </div>
-          <InvoiceLivePreview
-            invoice={previewQuotation}
+          <QuotationDocumentPreview
+            quotation={previewQuotation}
             tenant={tenant}
             language={language}
-            templateId={selectedTemplateId}
-            bilingual={false}
-            documentType="quotation"
           />
         </div>
       </div>
