@@ -6,6 +6,25 @@ const shipmentLineItemSchema = new mongoose.Schema({
   quantity: { type: Number, required: true, min: 0 }
 }, { _id: false });
 
+const deliveryRecipientSchema = new mongoose.Schema({
+  name: { type: String },
+  nameAr: { type: String },
+  company: { type: String },
+  phone: { type: String },
+  email: { type: String },
+  referenceNumber: { type: String },
+  instructions: { type: String },
+  address: {
+    street: { type: String },
+    district: { type: String },
+    city: { type: String },
+    postalCode: { type: String },
+    country: { type: String, default: 'SA' },
+    buildingNumber: { type: String },
+    additionalNumber: { type: String },
+  },
+}, { _id: false });
+
 const shipmentSchema = new mongoose.Schema({
   tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
 
@@ -23,6 +42,7 @@ const shipmentSchema = new mongoose.Schema({
   shippedAt: { type: Date },
   expectedDelivery: { type: Date },
   deliveredAt: { type: Date },
+  deliveryRecipient: deliveryRecipientSchema,
 
   lineItems: { type: [shipmentLineItemSchema], default: [] },
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
@@ -11,6 +11,8 @@ import {
   Calendar,
   Plus,
   Trash2,
+  Printer,
+  FileText,
   CheckCircle2,
   XCircle,
   Building,
@@ -20,15 +22,20 @@ import {
 import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
+import ShipmentDocumentPreview from '../components/shipments/ShipmentDocumentPreview'
+import { printElementHtml } from '../lib/shipmentPrint'
 
 export default function ShipmentForm() {
   const { id } = useParams()
   const isEdit = Boolean(id)
+  const deliveryNoteRef = useRef(null)
+  const shippingLabelRef = useRef(null)
 
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
   const { language } = useSelector((state) => state.ui)
+  const { tenant } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
 
   const formatDateForInput = (value) => {
@@ -60,6 +67,24 @@ export default function ShipmentForm() {
       shippedAt: '',
       expectedDelivery: '',
       notes: '',
+      deliveryRecipient: {
+        name: '',
+        nameAr: '',
+        company: '',
+        phone: '',
+        email: '',
+        referenceNumber: '',
+        instructions: '',
+        address: {
+          street: '',
+          district: '',
+          city: '',
+          postalCode: '',
+          country: 'SA',
+          buildingNumber: '',
+          additionalNumber: '',
+        },
+      },
       lineItems: [{ productId: '', description: '', quantity: 1 }],
     },
   })
@@ -69,6 +94,8 @@ export default function ShipmentForm() {
   const shipmentType = watch('type')
   const shipmentStatus = watch('status')
   const warehouseId = watch('warehouseId')
+  const watchedLineItems = watch('lineItems') || []
+  const deliveryRecipientValues = watch('deliveryRecipient') || {}
 
   const { data: suppliers } = useQuery({
     queryKey: ['suppliers-lookup'],
@@ -107,6 +134,24 @@ export default function ShipmentForm() {
         shippedAt: formatDateForInput(data?.shippedAt),
         expectedDelivery: formatDateForInput(data?.expectedDelivery),
         notes: data?.notes || '',
+        deliveryRecipient: {
+          name: data?.deliveryRecipient?.name || '',
+          nameAr: data?.deliveryRecipient?.nameAr || '',
+          company: data?.deliveryRecipient?.company || '',
+          phone: data?.deliveryRecipient?.phone || '',
+          email: data?.deliveryRecipient?.email || '',
+          referenceNumber: data?.deliveryRecipient?.referenceNumber || '',
+          instructions: data?.deliveryRecipient?.instructions || '',
+          address: {
+            street: data?.deliveryRecipient?.address?.street || '',
+            district: data?.deliveryRecipient?.address?.district || '',
+            city: data?.deliveryRecipient?.address?.city || '',
+            postalCode: data?.deliveryRecipient?.address?.postalCode || '',
+            country: data?.deliveryRecipient?.address?.country || 'SA',
+            buildingNumber: data?.deliveryRecipient?.address?.buildingNumber || '',
+            additionalNumber: data?.deliveryRecipient?.address?.additionalNumber || '',
+          },
+        },
         lineItems: (data?.lineItems || []).map((li) => ({
           productId: li?.productId?._id || li?.productId || '',
           description: li?.description || '',
@@ -117,6 +162,7 @@ export default function ShipmentForm() {
   })
 
   const isLocked = isEdit && ['delivered', 'cancelled'].includes(shipment?.status)
+  const isOutbound = shipmentType === 'outbound'
 
   const statusBadge = useMemo(() => {
     const status = shipment?.status || shipmentStatus
@@ -201,7 +247,53 @@ export default function ShipmentForm() {
     }
   }, [warehouseId, warehouses, setValue])
 
+  const documentShipment = useMemo(() => {
+    const productMap = new Map((products || []).map((product) => [String(product._id), product]))
+    const selectedWarehouse = (warehouses || []).find((warehouse) => String(warehouse._id) === String(warehouseId))
+
+    return {
+      ...(shipment || {}),
+      shipmentNumber: watch('shipmentNumber') || shipment?.shipmentNumber || 'SHP-PREVIEW',
+      type: shipmentType,
+      status: shipment?.status || shipmentStatus || 'draft',
+      carrier: watch('carrier') || shipment?.carrier || '',
+      trackingNumber: watch('trackingNumber') || shipment?.trackingNumber || '',
+      shippedAt: watch('shippedAt') || shipment?.shippedAt || new Date(),
+      expectedDelivery: watch('expectedDelivery') || shipment?.expectedDelivery || undefined,
+      notes: watch('notes') || shipment?.notes || '',
+      deliveryRecipient: deliveryRecipientValues,
+      warehouseId: selectedWarehouse || shipment?.warehouseId,
+      lineItems: watchedLineItems.map((line) => ({
+        ...line,
+        productId: productMap.get(String(line?.productId || '')) || shipment?.lineItems?.find((item) => String(item?.productId?._id || item?.productId || '') === String(line?.productId || ''))?.productId,
+      })),
+    }
+  }, [deliveryRecipientValues, products, shipment, shipmentStatus, shipmentType, warehouses, warehouseId, watchedLineItems, watch])
+
+  const canPrintDeliveryDocuments = isOutbound && (documentShipment?.deliveryRecipient?.name || documentShipment?.deliveryRecipient?.company || documentShipment?.deliveryRecipient?.phone)
+
   const onSubmit = (data) => {
+    const deliveryRecipient = data.type === 'outbound'
+      ? {
+          name: data?.deliveryRecipient?.name || undefined,
+          nameAr: data?.deliveryRecipient?.nameAr || undefined,
+          company: data?.deliveryRecipient?.company || undefined,
+          phone: data?.deliveryRecipient?.phone || undefined,
+          email: data?.deliveryRecipient?.email || undefined,
+          referenceNumber: data?.deliveryRecipient?.referenceNumber || undefined,
+          instructions: data?.deliveryRecipient?.instructions || undefined,
+          address: {
+            street: data?.deliveryRecipient?.address?.street || undefined,
+            district: data?.deliveryRecipient?.address?.district || undefined,
+            city: data?.deliveryRecipient?.address?.city || undefined,
+            postalCode: data?.deliveryRecipient?.address?.postalCode || undefined,
+            country: data?.deliveryRecipient?.address?.country || 'SA',
+            buildingNumber: data?.deliveryRecipient?.address?.buildingNumber || undefined,
+            additionalNumber: data?.deliveryRecipient?.address?.additionalNumber || undefined,
+          },
+        }
+      : undefined
+
     const payload = {
       shipmentNumber: data.shipmentNumber || undefined,
       type: data.type,
@@ -214,6 +306,7 @@ export default function ShipmentForm() {
       shippedAt: data.shippedAt ? new Date(data.shippedAt) : undefined,
       expectedDelivery: data.expectedDelivery ? new Date(data.expectedDelivery) : undefined,
       notes: data.notes || undefined,
+      deliveryRecipient,
       lineItems: (data.lineItems || []).map((li) => ({
         productId: li.productId || undefined,
         description: li.description || undefined,
@@ -253,6 +346,40 @@ export default function ShipmentForm() {
 
         {isEdit && (
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={async () => {
+                const printed = await printElementHtml({
+                  element: deliveryNoteRef.current,
+                  title: documentShipment?.shipmentNumber || 'delivery-note',
+                })
+                if (!printed) {
+                  toast.error(language === 'ar' ? 'تعذر طباعة إذن التسليم' : 'Unable to print delivery note')
+                }
+              }}
+              disabled={!canPrintDeliveryDocuments}
+              className="btn btn-secondary"
+            >
+              <FileText className="w-4 h-4" />
+              {language === 'ar' ? 'إذن تسليم' : 'Delivery Note'}
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                const printed = await printElementHtml({
+                  element: shippingLabelRef.current,
+                  title: `${documentShipment?.shipmentNumber || 'shipping-label'}-label`,
+                })
+                if (!printed) {
+                  toast.error(language === 'ar' ? 'تعذر طباعة الملصق' : 'Unable to print label')
+                }
+              }}
+              disabled={!canPrintDeliveryDocuments}
+              className="btn btn-secondary"
+            >
+              <Printer className="w-4 h-4" />
+              {language === 'ar' ? 'طباعة الملصق' : 'Print Label'}
+            </button>
             <button
               type="button"
               onClick={() => inTransitMutation.mutate()}
@@ -414,6 +541,76 @@ export default function ShipmentForm() {
           </div>
         </motion.div>
 
+        {isOutbound && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.025 }} className="card p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                <FileText className="w-5 h-5 text-slate-700 dark:text-slate-200" />
+              </div>
+              <h3 className="text-lg font-semibold">{language === 'ar' ? 'بيانات التسليم' : 'Delivery Details'}</h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label className="label">{language === 'ar' ? 'اسم المستلم' : 'Recipient Name'}</label>
+                <input {...register('deliveryRecipient.name')} className="input" disabled={isLocked} />
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'اسم المستلم بالعربية' : 'Recipient Name Arabic'}</label>
+                <input {...register('deliveryRecipient.nameAr')} className="input" disabled={isLocked} />
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'الشركة' : 'Company'}</label>
+                <input {...register('deliveryRecipient.company')} className="input" disabled={isLocked} />
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'الهاتف' : 'Phone'}</label>
+                <input {...register('deliveryRecipient.phone')} className="input" disabled={isLocked} />
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'البريد الإلكتروني' : 'Email'}</label>
+                <input type="email" {...register('deliveryRecipient.email')} className="input" disabled={isLocked} />
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'رقم المرجع' : 'Reference Number'}</label>
+                <input {...register('deliveryRecipient.referenceNumber')} className="input" disabled={isLocked} />
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'رقم المبنى' : 'Building Number'}</label>
+                <input {...register('deliveryRecipient.address.buildingNumber')} className="input" disabled={isLocked} />
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'الرقم الإضافي' : 'Additional Number'}</label>
+                <input {...register('deliveryRecipient.address.additionalNumber')} className="input" disabled={isLocked} />
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'الشارع' : 'Street'}</label>
+                <input {...register('deliveryRecipient.address.street')} className="input" disabled={isLocked} />
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'الحي' : 'District'}</label>
+                <input {...register('deliveryRecipient.address.district')} className="input" disabled={isLocked} />
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'المدينة' : 'City'}</label>
+                <input {...register('deliveryRecipient.address.city')} className="input" disabled={isLocked} />
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'الرمز البريدي' : 'Postal Code'}</label>
+                <input {...register('deliveryRecipient.address.postalCode')} className="input" disabled={isLocked} />
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'الدولة' : 'Country'}</label>
+                <input {...register('deliveryRecipient.address.country')} className="input" disabled={isLocked} />
+              </div>
+              <div className="md:col-span-2 lg:col-span-3">
+                <label className="label">{language === 'ar' ? 'تعليمات التسليم' : 'Delivery Instructions'}</label>
+                <textarea {...register('deliveryRecipient.instructions')} className="input" rows={3} disabled={isLocked} />
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="card p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
             <div className="flex items-center gap-3">
@@ -496,6 +693,23 @@ export default function ShipmentForm() {
             )}
           </button>
         </div>
+
+        {isOutbound && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.075 }} className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'معاينة المستندات' : 'Document Preview'}</h3>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                {language === 'ar' ? 'تصميم تسليم احترافي وملصق شحن بسيط للطباعة المباشرة.' : 'Premium delivery note and minimal shipping label ready for direct printing.'}
+              </p>
+            </div>
+            <div ref={deliveryNoteRef}>
+              <ShipmentDocumentPreview shipment={documentShipment} tenant={tenant} language={language} documentType="delivery-note" />
+            </div>
+            <div ref={shippingLabelRef}>
+              <ShipmentDocumentPreview shipment={documentShipment} tenant={tenant} language={language} documentType="shipping-label" />
+            </div>
+          </motion.div>
+        )}
       </form>
 
       {isEdit && shipment && (
@@ -522,6 +736,15 @@ export default function ShipmentForm() {
                 {language === 'ar' ? (shipment.type === 'inbound' ? 'وارد' : 'صادر') : shipment.type}
               </span>
             </div>
+            {shipment.type === 'outbound' && (
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-gray-400" />
+                <span className="text-gray-500">{language === 'ar' ? 'المستلم:' : 'Recipient:'}</span>
+                <span className="font-medium text-gray-900 dark:text-white">
+                  {shipment.deliveryRecipient?.name || shipment.deliveryRecipient?.company || '-'}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       )}

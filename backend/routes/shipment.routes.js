@@ -17,6 +17,33 @@ function toNumber(value, fallback = 0) {
   return Number.isFinite(n) ? n : fallback;
 }
 
+function normalizeText(value) {
+  return String(value || '').trim();
+}
+
+function sanitizeDeliveryRecipient(value = {}) {
+  const address = value?.address || {};
+
+  return {
+    name: normalizeText(value?.name) || undefined,
+    nameAr: normalizeText(value?.nameAr) || undefined,
+    company: normalizeText(value?.company) || undefined,
+    phone: normalizeText(value?.phone) || undefined,
+    email: normalizeText(value?.email).toLowerCase() || undefined,
+    referenceNumber: normalizeText(value?.referenceNumber) || undefined,
+    instructions: normalizeText(value?.instructions) || undefined,
+    address: {
+      street: normalizeText(address?.street) || undefined,
+      district: normalizeText(address?.district) || undefined,
+      city: normalizeText(address?.city) || undefined,
+      postalCode: normalizeText(address?.postalCode) || undefined,
+      country: normalizeText(address?.country) || 'SA',
+      buildingNumber: normalizeText(address?.buildingNumber) || undefined,
+      additionalNumber: normalizeText(address?.additionalNumber) || undefined,
+    },
+  };
+}
+
 async function generateShipmentNumber(tenantFilterValue) {
   const today = new Date();
   const y = today.getFullYear();
@@ -66,7 +93,10 @@ router.get('/', checkPermission('supply_chain', 'read'), async (req, res) => {
       query.$or = [
         { shipmentNumber: { $regex: search, $options: 'i' } },
         { trackingNumber: { $regex: search, $options: 'i' } },
-        { carrier: { $regex: search, $options: 'i' } }
+        { carrier: { $regex: search, $options: 'i' } },
+        { 'deliveryRecipient.name': { $regex: search, $options: 'i' } },
+        { 'deliveryRecipient.company': { $regex: search, $options: 'i' } },
+        { 'deliveryRecipient.referenceNumber': { $regex: search, $options: 'i' } }
       ];
     }
 
@@ -178,12 +208,14 @@ router.post('/', checkPermission('supply_chain', 'create'), async (req, res) => 
     }
 
     const shipmentNumber = req.body.shipmentNumber || (await generateShipmentNumber(req.tenantFilter));
+    const deliveryRecipient = sanitizeDeliveryRecipient(req.body.deliveryRecipient || {});
 
     const data = {
       ...req.body,
       shipmentNumber,
       tenantId: req.user.tenantId,
       createdBy: req.user._id,
+      deliveryRecipient,
       lineItems: lineItems.map((li) => ({
         productId: li.productId,
         description: li.description,
@@ -234,6 +266,9 @@ router.put('/:id', checkPermission('supply_chain', 'update'), async (req, res) =
     }
 
     const updateData = { ...req.body };
+    if (Object.prototype.hasOwnProperty.call(req.body || {}, 'deliveryRecipient')) {
+      updateData.deliveryRecipient = sanitizeDeliveryRecipient(req.body.deliveryRecipient || {});
+    }
 
     if (Array.isArray(req.body.lineItems)) {
       updateData.lineItems = req.body.lineItems.map((li) => ({
