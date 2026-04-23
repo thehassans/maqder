@@ -10,6 +10,7 @@ import { useTranslation } from '../../lib/translations'
 import SarIcon from '../../components/ui/SarIcon'
 import { useLiveTranslation } from '../../lib/liveTranslation'
 import { describeSaudiId, normalizeSaudiId } from '../../lib/saudiId'
+import { useEffect } from 'react'
 
 export default function EmployeeForm() {
   const { id } = useParams()
@@ -69,10 +70,31 @@ export default function EmployeeForm() {
     return local.toISOString().slice(0, 10)
   }
 
+  const getSaudiIdentityDocument = (documents) => {
+    if (!Array.isArray(documents)) return null
+    return documents.find((doc) => doc?.type === 'national_id' || doc?.type === 'iqama') || null
+  }
+
+  const buildSaudiIdentityDefaults = (data) => {
+    const saudiDocument = getSaudiIdentityDocument(data?.documents)
+    const nationalId = normalizeSaudiId(data?.nationalId || saudiDocument?.number)
+    const saudiIdDetails = describeSaudiId(nationalId)
+
+    return {
+      nationalId: nationalId || undefined,
+      nationalIdIssueDate: formatDateForInput(data?.nationalIdIssueDate || saudiDocument?.issueDate),
+      nationalIdExpiry: saudiIdDetails.isIqama
+        ? formatDateForInput(data?.nationalIdExpiry || saudiDocument?.expiryDate)
+        : undefined,
+      nationality: data?.nationality || (saudiIdDetails.isSaudi ? 'Saudi' : data?.nationality),
+    }
+  }
+
   const guardianEnabled = watch('guardian.isEnabled')
   const idCardFrontValue = watch('idCardFront')
   const idCardBackValue = watch('idCardBack')
   const nationalIdValue = watch('nationalId')
+  const nationalityValue = watch('nationality')
   const nationalIdIssueDateValue = watch('nationalIdIssueDate')
   const nationalIdExpiryValue = watch('nationalIdExpiry')
   const saudiIdMeta = describeSaudiId(nationalIdValue)
@@ -95,18 +117,37 @@ export default function EmployeeForm() {
     return year && month && day ? `${year}/${month}/${day}` : ''
   }
 
+  useEffect(() => {
+    const normalized = normalizeSaudiId(nationalIdValue)
+
+    if ((nationalIdValue || '') !== normalized) {
+      setValue('nationalId', normalized, { shouldDirty: true, shouldValidate: true })
+      return
+    }
+
+    if (!normalized || !saudiIdMeta.valid) return
+
+    if (saudiIdMeta.isSaudi && !nationalityValue) {
+      setValue('nationality', 'Saudi', { shouldDirty: true, shouldValidate: true })
+    }
+
+    if (!saudiIdMeta.isIqama && nationalIdExpiryValue) {
+      setValue('nationalIdExpiry', undefined, { shouldDirty: true, shouldValidate: true })
+    }
+  }, [nationalIdValue, nationalIdExpiryValue, nationalityValue, saudiIdMeta.isIqama, saudiIdMeta.isSaudi, saudiIdMeta.valid, setValue])
+
   const { data: employee, isLoading } = useQuery({
     queryKey: ['employee', id],
     queryFn: () => api.get(`/employees/${id}`).then(res => res.data),
     enabled: isEdit,
     onSuccess: (data) => reset({
       ...data,
+      ...buildSaudiIdentityDefaults(data),
       joinDate: formatDateForInput(data?.joinDate),
       dateOfBirth: formatDateForInput(data?.dateOfBirth),
-      nationalIdIssueDate: formatDateForInput(data?.nationalIdIssueDate),
-      nationalIdExpiry: formatDateForInput(data?.nationalIdExpiry),
     })
   })
+  const linkedSaudiDocument = getSaudiIdentityDocument(employee?.documents)
 
   const mutation = useMutation({
     mutationFn: (data) => isEdit ? api.put(`/employees/${id}`, data) : api.post('/employees', data),
@@ -119,6 +160,32 @@ export default function EmployeeForm() {
     },
     onError: (err) => toast.error(err.response?.data?.error || 'Error saving employee')
   })
+
+  const buildSaudiIdentityDocuments = (data) => {
+    const existingDocuments = Array.isArray(employee?.documents)
+      ? employee.documents
+      : Array.isArray(data?.documents)
+        ? data.documents
+        : []
+    const saudiDocument = existingDocuments.find((doc) => doc?.type === 'national_id' || doc?.type === 'iqama')
+    const documents = existingDocuments.filter((doc) => doc?.type !== 'national_id' && doc?.type !== 'iqama')
+    const normalizedNationalId = normalizeSaudiId(data?.nationalId)
+    const saudiIdDetails = describeSaudiId(normalizedNationalId)
+
+    if (!normalizedNationalId || !saudiIdDetails.valid || !saudiIdDetails.type) {
+      return documents
+    }
+
+    documents.push({
+      ...saudiDocument,
+      type: saudiIdDetails.type,
+      number: normalizedNationalId,
+      issueDate: data?.nationalIdIssueDate || undefined,
+      expiryDate: saudiIdDetails.isIqama ? (data?.nationalIdExpiry || undefined) : undefined,
+    })
+
+    return documents
+  }
 
   const handleFileUpload = async (e, fieldName) => {
     const file = e.target.files?.[0]
@@ -143,6 +210,7 @@ export default function EmployeeForm() {
   const onSubmit = (data) => mutation.mutate({
     ...data,
     nationalId: normalizeSaudiId(data?.nationalId) || undefined,
+    documents: buildSaudiIdentityDocuments(data),
   })
 
   if (isEdit && isLoading) {
@@ -300,6 +368,13 @@ export default function EmployeeForm() {
                     {saudiIdTypeLabel}
                   </span>
                 </div>
+              ) : null}
+              {saudiIdMeta.valid ? (
+                <p className="mt-2 text-xs text-gray-500">
+                  {linkedSaudiDocument
+                    ? (language === 'ar' ? 'سيتم تحديث وثيقة الهوية المرتبطة تلقائياً عند الحفظ.' : 'The linked identity document will be updated automatically on save.')
+                    : (language === 'ar' ? 'سيتم إنشاء وثيقة هوية مرتبطة تلقائياً عند الحفظ.' : 'A linked identity document will be created automatically on save.')}
+                </p>
               ) : null}
             </div>
 
