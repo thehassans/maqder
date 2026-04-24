@@ -595,6 +595,31 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
             </div>
           )}
 
+          {isTravelContext && (
+            <div className="card p-6">
+              <h3 className="mb-3 text-lg font-semibold text-gray-900 dark:text-white">
+                {language === 'ar' ? 'تاريخ ووقت الفاتورة' : 'Invoice Date & Time'}
+              </h3>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <label className="label">
+                    {language === 'ar' ? 'تاريخ ووقت الإصدار المخصص' : 'Custom Issue Date & Time'}
+                  </label>
+                  <input
+                    type="datetime-local"
+                    {...register('issueDate')}
+                    className="input"
+                  />
+                  <p className="mt-1 text-[11px] text-gray-500">
+                    {language === 'ar'
+                      ? 'اتركه فارغاً لاستخدام الوقت الحالي. مفيد لإصدار فواتير بتاريخ سابق.'
+                      : 'Leave blank to use the current time. Useful for back-dating invoices.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="card p-6">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'بيانات العميل' : 'Customer Details'}</h3>
@@ -658,31 +683,6 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
               </div>
             )}
           </div>
-
-          {isTravelContext && (
-            <div className="card p-6">
-              <h3 className="mb-3 text-lg font-semibold text-gray-900 dark:text-white">
-                {language === 'ar' ? 'تاريخ ووقت الفاتورة' : 'Invoice Date & Time'}
-              </h3>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
-                  <label className="label">
-                    {language === 'ar' ? 'تاريخ ووقت الإصدار المخصص' : 'Custom Issue Date & Time'}
-                  </label>
-                  <input
-                    type="datetime-local"
-                    {...register('issueDate')}
-                    className="input"
-                  />
-                  <p className="mt-1 text-[11px] text-gray-500">
-                    {language === 'ar'
-                      ? 'اتركه فارغاً لاستخدام الوقت الحالي. مفيد لإصدار فواتير بتاريخ سابق.'
-                      : 'Leave blank to use the current time. Useful for back-dating invoices.'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
 
           <div className="card p-6">
             <div className="mb-4 flex items-center justify-between">
