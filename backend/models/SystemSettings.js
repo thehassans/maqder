@@ -7,6 +7,13 @@ const systemSettingsSchema = new mongoose.Schema({
     apiKey: { type: String },
     model: { type: String, default: 'gemini-2.5-flash' }
   },
+  identity: {
+    enabled: { type: Boolean, default: false },
+    provider: { type: String, default: 'custom_webhook' },
+    endpoint: { type: String, default: '' },
+    apiKey: { type: String, default: '' },
+    ocrEnabled: { type: Boolean, default: false }
+  },
   website: {
     brandName: { type: String, default: 'Maqder ERP' },
     domain: { type: String, default: 'maqder.com' },

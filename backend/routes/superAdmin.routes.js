@@ -147,6 +147,23 @@ const mergeWebsiteDefaults = (website) => {
   };
 };
 
+const mergeIdentityDefaults = (identity) => {
+  const defaultsDoc = new SystemSettings({ key: 'global', identity: {} });
+  const defaults = defaultsDoc.identity?.toObject?.() || defaultsDoc.identity || {};
+  const current = identity?.toObject?.() || identity || {};
+  return {
+    ...defaults,
+    ...current,
+  };
+};
+
+const serializeIdentitySettings = (identity) => ({
+  ...identity,
+  apiKey: '',
+  hasApiKey: !!identity?.apiKey,
+  apiKeyMasked: maskSecret(identity?.apiKey),
+});
+
 const mergeEmailDefaults = (email) => {
   const defaultsDoc = new SystemSettings({ key: 'global', website: {}, email: {} });
   const defaults = defaultsDoc.email?.toObject?.() || defaultsDoc.email || {};
@@ -483,6 +500,46 @@ router.post('/settings/email/test-connection', async (req, res) => {
     });
   } catch (error) {
     res.status(400).json({ error: error.message || 'Failed to verify mail connection' });
+  }
+});
+
+router.get('/settings/identity', async (req, res) => {
+  try {
+    const settings = await getGlobalSettings();
+    const identity = mergeIdentityDefaults(settings.identity);
+    res.json({ identity: serializeIdentitySettings(identity) });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.put('/settings/identity', async (req, res) => {
+  try {
+    const payload = req.body?.identity || req.body || {};
+    const settings = await getGlobalSettings();
+    const currentIdentity = mergeIdentityDefaults(settings.identity);
+
+    const nextIdentity = {
+      ...currentIdentity,
+      ...payload,
+      enabled: payload.enabled !== undefined ? payload.enabled === true : currentIdentity.enabled,
+      ocrEnabled: payload.ocrEnabled !== undefined ? payload.ocrEnabled === true : currentIdentity.ocrEnabled,
+      provider: String(payload.provider || currentIdentity.provider || 'custom_webhook').trim() || 'custom_webhook',
+      endpoint: String(payload.endpoint || currentIdentity.endpoint || '').trim(),
+    };
+
+    if (payload.apiKey !== undefined) {
+      const trimmedApiKey = String(payload.apiKey || '').trim();
+      nextIdentity.apiKey = trimmedApiKey || currentIdentity.apiKey || '';
+    }
+
+    settings.identity = nextIdentity;
+    settings.markModified('identity');
+    await settings.save();
+
+    res.json({ identity: serializeIdentitySettings(mergeIdentityDefaults(settings.identity)) });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 

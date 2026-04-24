@@ -6,8 +6,18 @@ import { useTranslation } from '../lib/translations'
 import Money from '../components/ui/Money'
 import ExportMenu from '../components/ui/ExportMenu'
 import { downloadBusinessReportPdf } from '../lib/businessReportPdf'
+import { downloadVatReturnReportPdf } from '../lib/vatReturnReportPdf'
 import { Download } from 'lucide-react'
 import toast from 'react-hot-toast'
+
+const formatInputDate = (value) => {
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
 
 export default function Reports() {
   const { language } = useSelector((state) => state.ui)
@@ -15,18 +25,21 @@ export default function Reports() {
   const { t } = useTranslation(language)
 
   const now = new Date()
-  const [month, setMonth] = useState(now.getMonth() + 1)
-  const [year, setYear] = useState(now.getFullYear())
+  const [startDate, setStartDate] = useState(formatInputDate(new Date(now.getFullYear(), now.getMonth(), 1)))
+  const [endDate, setEndDate] = useState(formatInputDate(now))
 
   const [reportType, setReportType] = useState('vat')
-  const [downloadingBusinessPdf, setDownloadingBusinessPdf] = useState(false)
+  const [downloadingReportPdf, setDownloadingReportPdf] = useState(false)
+  const hasInvalidRange = Boolean(startDate && endDate && new Date(startDate) > new Date(endDate))
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['reports', reportType, month, year],
+    queryKey: ['reports', reportType, startDate, endDate],
     queryFn: () =>
       api
-        .get(reportType === 'business' ? '/reports/business-summary' : '/reports/vat-return', { params: { month, year } })
+        .get(reportType === 'business' ? '/reports/business-summary' : '/reports/vat-return', { params: { startDate, endDate } })
         .then((res) => res.data)
+    ,
+    enabled: !!startDate && !!endDate && !hasInvalidRange,
   })
 
   const money = (value) => <Money value={value} minimumFractionDigits={2} maximumFractionDigits={2} />
@@ -35,8 +48,6 @@ export default function Reports() {
   const byCategory = totals?.byCategory
 
   const [exportTable, setExportTable] = useState('byCategory')
-
-  const years = Array.from({ length: 5 }, (_, i) => now.getFullYear() - 2 + i)
 
   const categories = [
     {
@@ -82,39 +93,31 @@ export default function Reports() {
             <option value="vat">{language === 'ar' ? 'VAT' : 'VAT'}</option>
             <option value="business">{language === 'ar' ? 'الأعمال' : 'Business'}</option>
           </select>
-          <select value={month} onChange={(e) => setMonth(Number(e.target.value))} className="select sm:w-44">
-            {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-              <option key={m} value={m}>
-                {new Date(2024, m - 1).toLocaleString(language === 'ar' ? 'ar' : 'en', { month: 'long' })}
-              </option>
-            ))}
-          </select>
-          <select value={year} onChange={(e) => setYear(Number(e.target.value))} className="select sm:w-32">
-            {years.map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            ))}
-          </select>
+          <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="input sm:w-44" />
+          <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="input sm:w-44" />
         </div>
 
-        {reportType === 'business' && data && !isLoading && !error && (
+        {data && !isLoading && !error && !hasInvalidRange && (
           <button
             type="button"
             onClick={async () => {
               try {
-                setDownloadingBusinessPdf(true)
-                await downloadBusinessReportPdf({ report: data, language, tenant })
+                setDownloadingReportPdf(true)
+                if (reportType === 'business') {
+                  await downloadBusinessReportPdf({ report: data, language, tenant })
+                } else {
+                  await downloadVatReturnReportPdf({ report: data, language, tenant })
+                }
               } catch (e) {
                 toast.error(language === 'ar' ? 'فشل تحميل PDF' : 'Failed to download PDF')
               } finally {
-                setDownloadingBusinessPdf(false)
+                setDownloadingReportPdf(false)
               }
             }}
-            disabled={downloadingBusinessPdf}
+            disabled={downloadingReportPdf}
             className="btn btn-secondary"
           >
-            {downloadingBusinessPdf ? (
+            {downloadingReportPdf ? (
               <div className="w-5 h-5 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
             ) : (
               <Download className="w-4 h-4" />
@@ -124,7 +127,19 @@ export default function Reports() {
         )}
       </div>
 
-      {isLoading ? (
+      {data?.period?.startDate && data?.period?.endDate && !hasInvalidRange ? (
+        <div className="text-sm text-gray-500 dark:text-gray-400">
+          {language === 'ar'
+            ? `الفترة المحددة: ${new Date(data.period.startDate).toLocaleDateString('ar-SA')} - ${new Date(data.period.endDate).toLocaleDateString('ar-SA')}`
+            : `Selected period: ${new Date(data.period.startDate).toLocaleDateString('en-US')} - ${new Date(data.period.endDate).toLocaleDateString('en-US')}`}
+        </div>
+      ) : null}
+
+      {hasInvalidRange ? (
+        <div className="card p-6 text-amber-700 dark:text-amber-300">
+          {language === 'ar' ? 'يجب أن يكون تاريخ البداية قبل أو يساوي تاريخ النهاية' : 'The from date must be before or equal to the to date'}
+        </div>
+      ) : isLoading ? (
         <div className="card p-8 text-center">
           <div className="inline-block w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
         </div>

@@ -74,6 +74,7 @@ import SuperAdminDashboard from './pages/super-admin/SuperAdminDashboard'
 import TenantManagement from './pages/super-admin/TenantManagement'
 import TenantForm from './pages/super-admin/TenantForm'
 import UserManagement from './pages/super-admin/UserManagement'
+import IdentitySettings from './pages/super-admin/IdentitySettings'
 import GeminiSettings from './pages/super-admin/GeminiSettings'
 import EmailSettings from './pages/super-admin/EmailSettings'
 import WebsiteSettings from './pages/super-admin/WebsiteSettings'
@@ -205,6 +206,7 @@ function App() {
         <Route path="users" element={<UserManagement />} />
         <Route path="website" element={<WebsiteSettings />} />
         <Route path="email" element={<EmailSettings />} />
+        <Route path="identity" element={<IdentitySettings />} />
         <Route path="gemini" element={<GeminiSettings />} />
       </Route>
 

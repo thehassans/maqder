@@ -2,6 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import Employee from '../models/Employee.js';
 import Tenant from '../models/Tenant.js';
+import SystemSettings from '../models/SystemSettings.js';
 import { protect, tenantFilter, checkPermission } from '../middleware/auth.js';
 import { describeSaudiId, normalizeSaudiId } from '../utils/saudiId.js';
 
@@ -68,6 +69,12 @@ function buildLookupDetailsFromEmployee(employee = null) {
 function getIdentityIntegrationSettings(tenant = {}) {
   const saudiIntegrations = tenant?.settings?.saudiIntegrations || {};
   const identity = saudiIntegrations?.identity || {};
+  const hasLocalConfig = Boolean(
+    String(identity?.endpoint || '').trim()
+    || String(identity?.apiKey || '').trim()
+    || identity?.enabled === true
+    || identity?.ocrEnabled === true
+  );
 
   return {
     enabled: saudiIntegrations?.enabled !== false && identity?.enabled === true,
@@ -75,11 +82,33 @@ function getIdentityIntegrationSettings(tenant = {}) {
     endpoint: String(identity?.endpoint || '').trim(),
     apiKey: String(identity?.apiKey || '').trim(),
     ocrEnabled: identity?.ocrEnabled === true,
+    hasLocalConfig,
+    saudiIntegrationEnabled: saudiIntegrations?.enabled !== false,
+  };
+}
+
+async function getEffectiveIdentityIntegrationSettings(tenant = {}) {
+  const tenantSettings = getIdentityIntegrationSettings(tenant);
+  if (tenantSettings.hasLocalConfig) {
+    return tenantSettings;
+  }
+
+  const globalSettings = await SystemSettings.findOne({ key: 'global' }).select('identity');
+  const globalIdentity = globalSettings?.identity?.toObject?.() || globalSettings?.identity || {};
+
+  return {
+    enabled: tenantSettings.saudiIntegrationEnabled && globalIdentity?.enabled === true,
+    provider: String(globalIdentity?.provider || tenantSettings.provider || 'custom_webhook').trim() || 'custom_webhook',
+    endpoint: String(globalIdentity?.endpoint || '').trim(),
+    apiKey: String(globalIdentity?.apiKey || '').trim(),
+    ocrEnabled: globalIdentity?.ocrEnabled === true,
+    hasLocalConfig: false,
+    saudiIntegrationEnabled: tenantSettings.saudiIntegrationEnabled,
   };
 }
 
 async function runIdentityProviderLookup({ tenant, mode = 'id', nationalId = '', idCardFront = '', idCardBack = '', language = 'en' }) {
-  const settings = getIdentityIntegrationSettings(tenant);
+  const settings = await getEffectiveIdentityIntegrationSettings(tenant);
 
   if (!settings.enabled || !settings.endpoint) {
     return {

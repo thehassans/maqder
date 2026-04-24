@@ -14,6 +14,7 @@ export const translations = {
     tenants: 'Tenants',
     users: 'Users',
     geminiSettings: 'Gemini Settings',
+    identitySettings: 'Identity Settings',
     websiteSettings: 'Website Settings',
     
     // Common
@@ -156,6 +157,7 @@ export const translations = {
     tenants: 'المستأجرين',
     users: 'المستخدمين',
     geminiSettings: 'إعدادات Gemini',
+    identitySettings: 'إعدادات الهوية',
     websiteSettings: 'إعدادات الموقع',
     
     // Common
