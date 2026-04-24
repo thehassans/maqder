@@ -10,8 +10,6 @@ import { useTranslation } from '../../lib/translations'
 import { getPrimaryBusinessType, getTenantBusinessTypes } from '../../lib/businessTypes'
 import { calculateInvoiceSummary, toNumber } from '../../lib/invoiceDocument'
 import { getInvoiceTemplateId } from '../../lib/invoiceBranding'
-import InvoiceTemplateSelector from '../invoices/InvoiceTemplateSelector'
-import QuotationDocumentPreview from './QuotationDocumentPreview'
 
 const emptyLine = {
   productId: '',
@@ -36,7 +34,6 @@ const formatDateForInput = (value) => {
 
 const buildQuotationFormValues = ({ quotation, tenant, defaultBusinessContext }) => ({
   businessContext: quotation?.businessContext || defaultBusinessContext,
-  pdfTemplateId: quotation?.pdfTemplateId || getInvoiceTemplateId(tenant, quotation?.businessContext || defaultBusinessContext),
   issueDate: formatDateForInput(quotation?.issueDate) || formatDateForInput(new Date()),
   validUntil: formatDateForInput(quotation?.validUntil),
   transactionType: quotation?.transactionType || 'B2C',
@@ -65,7 +62,7 @@ export default function QuotationComposer({ quotationId = '', initialQuotation =
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { language } = useSelector((state) => state.ui)
-  const { tenant, user } = useSelector((state) => state.auth)
+  const { tenant } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
   const isEdit = Boolean(quotationId)
   const tenantBusinessTypes = getTenantBusinessTypes(tenant)
@@ -88,7 +85,7 @@ export default function QuotationComposer({ quotationId = '', initialQuotation =
   const values = watch()
   const lineItems = Array.isArray(values?.lineItems) ? values.lineItems : []
   const businessContext = values?.businessContext || defaultBusinessContext
-  const selectedTemplateId = Number(values?.pdfTemplateId || getInvoiceTemplateId(tenant, businessContext))
+  const selectedTemplateId = Number(getInvoiceTemplateId(tenant, businessContext))
   const isTradingContext = businessContext === 'trading'
   const [customerLookupId, setCustomerLookupId] = useState('')
 
@@ -101,11 +98,6 @@ export default function QuotationComposer({ quotationId = '', initialQuotation =
     if (isEdit && initialQuotation?._id) return
     setValue('businessContext', defaultBusinessContext)
   }, [defaultBusinessContext, initialQuotation?._id, isEdit, setValue])
-
-  useEffect(() => {
-    if (isEdit && initialQuotation?._id && values?.pdfTemplateId) return
-    setValue('pdfTemplateId', getInvoiceTemplateId(tenant, businessContext))
-  }, [businessContext, initialQuotation?._id, isEdit, setValue, tenant, values?.pdfTemplateId])
 
   useEffect(() => {
     const customerId = initialQuotation?.customerId?._id || initialQuotation?.customerId || ''
@@ -217,38 +209,6 @@ export default function QuotationComposer({ quotationId = '', initialQuotation =
     saveMutation.mutate(payload)
   }
 
-  const previewQuotation = {
-    ...values,
-    quotationNumber: initialQuotation?.quotationNumber || 'QUOTATION-PREVIEW',
-    issueDate: values?.issueDate ? new Date(values.issueDate) : new Date(),
-    validUntil: values?.validUntil ? new Date(values.validUntil) : undefined,
-    status: initialQuotation?.status || 'draft',
-    subtotal: totals.subtotal,
-    totalDiscount: totals.totalDiscount,
-    taxableAmount: totals.taxableAmount,
-    totalTax: totals.totalTax,
-    grandTotal: totals.grandTotal,
-    lineItems: totals.lines.map((line, index) => ({
-      ...line.raw,
-      lineNumber: index + 1,
-      lineTotal: line.lineTotal,
-      taxAmount: line.taxAmount,
-      lineTotalWithTax: line.lineTotalWithTax,
-    })),
-    seller: {
-      name: tenant?.business?.legalNameEn,
-      nameAr: tenant?.business?.legalNameAr,
-      vatNumber: tenant?.business?.vatNumber,
-      crNumber: tenant?.business?.crNumber,
-      address: tenant?.business?.address,
-      contactPhone: tenant?.business?.contactPhone,
-      contactEmail: tenant?.business?.contactEmail,
-    },
-    createdByName: initialQuotation?.createdByName || [user?.firstName, user?.lastName].filter(Boolean).join(' '),
-    createdByNameAr: initialQuotation?.createdByNameAr || [user?.firstNameAr, user?.lastNameAr].filter(Boolean).join(' '),
-    createdBy: initialQuotation?.createdBy || user,
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -261,13 +221,13 @@ export default function QuotationComposer({ quotationId = '', initialQuotation =
           </h1>
           <p className="mt-1 text-gray-500 dark:text-gray-400">
             {language === 'ar'
-              ? 'أنشئ عرض سعر احترافي مع معاينة مباشرة وإمكانية تعديل الأسعار والبنود.'
-              : 'Create a premium quotation with live preview and fully editable pricing and line items.'}
+              ? 'أنشئ عرض سعر مبسط بسرعة مع نموذج واحد ثابت للبنود والتسعير.'
+              : 'Create a streamlined quotation quickly with one fixed template for pricing and line items.'}
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]">
+      <div>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="card p-6">
             <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'سياق عرض السعر' : 'Quotation Context'}</h3>
@@ -296,10 +256,8 @@ export default function QuotationComposer({ quotationId = '', initialQuotation =
           </div>
 
           <div className="card p-6">
-            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'القالب والتواريخ' : 'Template & Dates'}</h3>
+            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'التواريخ ونوع العميل' : 'Dates & Customer Type'}</h3>
             <div className="space-y-4">
-              <InvoiceTemplateSelector language={language} value={selectedTemplateId} onChange={(id) => setValue('pdfTemplateId', id)} />
-              <input type="hidden" {...register('pdfTemplateId')} />
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 <div>
                   <label className="label">{language === 'ar' ? 'تاريخ الإصدار' : 'Issue Date'}</label>
@@ -497,20 +455,6 @@ export default function QuotationComposer({ quotationId = '', initialQuotation =
             </button>
           </div>
         </form>
-
-        <div className="space-y-4 xl:sticky xl:top-24 self-start">
-          <div>
-            <h3 className="mb-3 text-lg font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'المعاينة الهادئة' : 'Minimal Preview'}</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {language === 'ar' ? 'سيُستخدم هذا التصميم البسيط أيضاً عند تحميل PDF والطباعة والإرسال بالبريد.' : 'This same minimal presentation will be used for PDF, print, and email delivery.'}
-            </p>
-          </div>
-          <QuotationDocumentPreview
-            quotation={previewQuotation}
-            tenant={tenant}
-            language={language}
-          />
-        </div>
       </div>
     </div>
   )

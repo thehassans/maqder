@@ -32,6 +32,7 @@ const getStatusLabel = (status, language = 'en') => {
     draft: language === 'ar' ? 'مسودة' : 'Draft',
     sent: language === 'ar' ? 'مرسل' : 'Sent',
     accepted: language === 'ar' ? 'مقبول' : 'Accepted',
+    approved: language === 'ar' ? 'معتمد' : 'Approved',
     rejected: language === 'ar' ? 'مرفوض' : 'Rejected',
     expired: language === 'ar' ? 'منتهي' : 'Expired',
     cancelled: language === 'ar' ? 'ملغي' : 'Cancelled',
@@ -43,6 +44,7 @@ const getStatusLabel = (status, language = 'en') => {
 const getStatusTone = (status) => {
   const value = String(status || 'draft').trim().toLowerCase()
   if (value === 'accepted') return 'bg-emerald-50 text-emerald-700 border-emerald-200'
+  if (value === 'approved') return 'bg-teal-50 text-teal-700 border-teal-200'
   if (value === 'converted') return 'bg-violet-50 text-violet-700 border-violet-200'
   if (value === 'sent') return 'bg-sky-50 text-sky-700 border-sky-200'
   if (value === 'rejected' || value === 'cancelled') return 'bg-rose-50 text-rose-700 border-rose-200'

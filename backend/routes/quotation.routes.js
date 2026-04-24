@@ -109,12 +109,33 @@ async function ensureCustomerRecord(tenantId, buyer = {}, existingCustomer = nul
 
 function resolveQuotationStatus(status) {
   const value = String(status || '').trim().toLowerCase();
-  return ['draft', 'sent', 'accepted', 'rejected', 'expired', 'cancelled', 'converted'].includes(value) ? value : 'draft';
+  return ['draft', 'sent', 'accepted', 'approved', 'rejected', 'expired', 'cancelled', 'converted'].includes(value) ? value : 'draft';
+}
+
+function isEditableQuotationStatus(status) {
+  const value = String(status || '').trim().toLowerCase();
+  return ['draft', 'sent', 'rejected'].includes(value);
+}
+
+function resolveEditableQuotationStatus(status, existingStatus = 'draft') {
+  const value = String(status || existingStatus || '').trim().toLowerCase();
+  if (value === 'rejected') return 'draft';
+  return ['draft', 'sent'].includes(value) ? value : 'draft';
+}
+
+function canApproveQuotation(quotation) {
+  const status = String(quotation?.status || '').trim().toLowerCase();
+  return ['draft', 'sent', 'accepted', 'rejected'].includes(status) && !quotation?.convertedInvoiceId;
+}
+
+function canRejectQuotation(quotation) {
+  const status = String(quotation?.status || '').trim().toLowerCase();
+  return ['draft', 'sent', 'accepted', 'approved'].includes(status) && !quotation?.convertedInvoiceId;
 }
 
 function canConvertQuotationToInvoice(quotation) {
   const status = String(quotation?.status || '').trim().toLowerCase();
-  return ['draft', 'sent', 'accepted'].includes(status) && !quotation?.convertedInvoiceId;
+  return status === 'approved' && !quotation?.convertedInvoiceId;
 }
 
 async function generateInvoiceNumber(tenantId) {
@@ -385,6 +406,9 @@ async function resolveQuotationPayload(req, existingQuotation = null) {
   const pdfTemplateId = resolvePdfTemplateId(req.body?.pdfTemplateId, tenant, businessContext);
   const issueDate = req.body.issueDate ? new Date(req.body.issueDate) : (existingQuotation?.issueDate || new Date());
   const validUntil = req.body.validUntil ? new Date(req.body.validUntil) : undefined;
+  const editableStatus = existingQuotation
+    ? resolveEditableQuotationStatus(req.body?.status, existingQuotation?.status)
+    : 'draft';
 
   return {
     tenant,
@@ -409,7 +433,7 @@ async function resolveQuotationPayload(req, existingQuotation = null) {
       transactionType: req.body.transactionType === 'B2B' ? 'B2B' : 'B2C',
       invoiceDiscount: Math.max(0, toNumber(req.body?.invoiceDiscount, 0)),
       lineItems,
-      status: resolveQuotationStatus(req.body?.status || existingQuotation?.status),
+      status: editableStatus,
       ...getUserDisplayNames(req.user),
     },
   };
@@ -449,6 +473,10 @@ router.put('/:id', checkPermission('invoicing', 'update'), async (req, res) => {
       return res.status(404).json({ error: 'Quotation not found' });
     }
 
+    if (!isEditableQuotationStatus(quotation.status)) {
+      return res.status(400).json({ error: 'This quotation cannot be edited' });
+    }
+
     const { payload } = await resolveQuotationPayload(req, quotation);
     const enrichedQuotationData = await enrichInvoiceArabicFields({
       ...quotation.toObject(),
@@ -459,6 +487,20 @@ router.put('/:id', checkPermission('invoicing', 'update'), async (req, res) => {
       updatedAt: quotation.updatedAt,
     });
 
+    if (enrichedQuotationData.status !== 'approved') {
+      enrichedQuotationData.approvedAt = undefined;
+      enrichedQuotationData.approvedBy = undefined;
+      enrichedQuotationData.approvedByName = undefined;
+      enrichedQuotationData.approvedByNameAr = undefined;
+    }
+
+    if (enrichedQuotationData.status !== 'rejected') {
+      enrichedQuotationData.rejectedAt = undefined;
+      enrichedQuotationData.rejectedBy = undefined;
+      enrichedQuotationData.rejectedByName = undefined;
+      enrichedQuotationData.rejectedByNameAr = undefined;
+    }
+
     Object.assign(quotation, enrichedQuotationData);
     await quotation.save();
 
@@ -466,6 +508,62 @@ router.put('/:id', checkPermission('invoicing', 'update'), async (req, res) => {
   } catch (error) {
     const statusCode = /invalid|not found/i.test(error.message) ? 400 : 500;
     res.status(statusCode).json({ error: error.message });
+  }
+});
+
+router.post('/:id/approve', checkPermission('invoicing', 'update'), async (req, res) => {
+  try {
+    const quotation = await Quotation.findOne({ _id: req.params.id, ...req.tenantFilter });
+    if (!quotation) {
+      return res.status(404).json({ error: 'Quotation not found' });
+    }
+
+    if (!canApproveQuotation(quotation)) {
+      return res.status(400).json({ error: 'This quotation cannot be approved' });
+    }
+
+    quotation.status = 'approved';
+    quotation.approvedAt = new Date();
+    quotation.approvedBy = req.user._id;
+    quotation.approvedByName = getUserDisplayNames(req.user).createdByName;
+    quotation.approvedByNameAr = getUserDisplayNames(req.user).createdByNameAr;
+    quotation.rejectedAt = undefined;
+    quotation.rejectedBy = undefined;
+    quotation.rejectedByName = undefined;
+    quotation.rejectedByNameAr = undefined;
+    await quotation.save();
+
+    res.json({ success: true, quotation });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/:id/reject', checkPermission('invoicing', 'update'), async (req, res) => {
+  try {
+    const quotation = await Quotation.findOne({ _id: req.params.id, ...req.tenantFilter });
+    if (!quotation) {
+      return res.status(404).json({ error: 'Quotation not found' });
+    }
+
+    if (!canRejectQuotation(quotation)) {
+      return res.status(400).json({ error: 'This quotation cannot be rejected' });
+    }
+
+    quotation.status = 'rejected';
+    quotation.rejectedAt = new Date();
+    quotation.rejectedBy = req.user._id;
+    quotation.rejectedByName = getUserDisplayNames(req.user).createdByName;
+    quotation.rejectedByNameAr = getUserDisplayNames(req.user).createdByNameAr;
+    quotation.approvedAt = undefined;
+    quotation.approvedBy = undefined;
+    quotation.approvedByName = undefined;
+    quotation.approvedByNameAr = undefined;
+    await quotation.save();
+
+    res.json({ success: true, quotation });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -484,7 +582,7 @@ router.post('/:id/convert-to-invoice', checkPermission('invoicing', 'create'), a
     }
 
     if (!canConvertQuotationToInvoice(quotation)) {
-      return res.status(400).json({ error: 'This quotation cannot be converted to an invoice' });
+      return res.status(400).json({ error: 'Quotation must be approved before it can be converted to an invoice' });
     }
 
     const tenant = await Tenant.findById(req.user.tenantId);
@@ -568,6 +666,17 @@ router.post('/:id/send-email', checkPermission('invoicing', 'update'), async (re
 
     if (quotation.status === 'draft') {
       quotation.status = 'sent';
+      quotation.rejectedAt = undefined;
+      quotation.rejectedBy = undefined;
+      quotation.rejectedByName = undefined;
+      quotation.rejectedByNameAr = undefined;
+      await quotation.save();
+    } else if (quotation.status === 'rejected') {
+      quotation.status = 'sent';
+      quotation.rejectedAt = undefined;
+      quotation.rejectedBy = undefined;
+      quotation.rejectedByName = undefined;
+      quotation.rejectedByNameAr = undefined;
       await quotation.save();
     }
 

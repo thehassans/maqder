@@ -5,7 +5,7 @@ import { ArrowLeft } from 'lucide-react'
 import api from '../../lib/api'
 import QuotationComposer from '../../components/quotations/QuotationComposer'
 
-const isEditableQuotation = (quotation) => ['draft', 'sent'].includes(String(quotation?.status || '').toLowerCase())
+const isEditableQuotation = (quotation) => ['draft', 'sent', 'rejected'].includes(String(quotation?.status || '').toLowerCase())
 
 export default function QuotationEditPage() {
   const { id } = useParams()
@@ -51,7 +51,7 @@ export default function QuotationEditPage() {
           </button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{language === 'ar' ? 'لا يمكن تعديل عرض السعر' : 'This quotation cannot be edited'}</h1>
-            <p className="mt-1 text-gray-500 dark:text-gray-400">{language === 'ar' ? 'يمكن تعديل العروض بحالة مسودة أو مرسل فقط.' : 'Only draft or sent quotations can be edited.'}</p>
+            <p className="mt-1 text-gray-500 dark:text-gray-400">{language === 'ar' ? 'يمكن تعديل العروض بحالة مسودة أو مرسل أو مرفوض فقط.' : 'Only draft, sent, or rejected quotations can be edited.'}</p>
           </div>
         </div>
       </div>

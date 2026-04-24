@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
-import { Plus, Search, Download, Edit, Eye, FileText } from 'lucide-react'
+import { Plus, Search, Download, Edit, Eye, FileText, CheckCircle, XCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
@@ -10,8 +10,10 @@ import Money from '../../components/ui/Money'
 import ExportMenu from '../../components/ui/ExportMenu'
 import { downloadQuotationPdf } from '../../lib/invoicePdf'
 
-const isEditableQuotation = (quotation) => ['draft', 'sent'].includes(String(quotation?.status || '').toLowerCase())
+const isEditableQuotation = (quotation) => ['draft', 'sent', 'rejected'].includes(String(quotation?.status || '').toLowerCase())
 const hasConvertedInvoice = (quotation) => Boolean(quotation?.convertedInvoiceId)
+const canApproveQuotation = (quotation) => ['draft', 'sent', 'accepted', 'rejected'].includes(String(quotation?.status || '').toLowerCase()) && !quotation?.convertedInvoiceId
+const canRejectQuotation = (quotation) => ['draft', 'sent', 'accepted', 'approved'].includes(String(quotation?.status || '').toLowerCase()) && !quotation?.convertedInvoiceId
 
 const getQuotationStatusMeta = (quotation, language = 'en') => {
   const status = String(quotation?.status || 'draft').toLowerCase()
@@ -19,6 +21,7 @@ const getQuotationStatusMeta = (quotation, language = 'en') => {
     draft: language === 'ar' ? 'مسودة' : 'Draft',
     sent: language === 'ar' ? 'مرسل' : 'Sent',
     accepted: language === 'ar' ? 'مقبول' : 'Accepted',
+    approved: language === 'ar' ? 'معتمد' : 'Approved',
     rejected: language === 'ar' ? 'مرفوض' : 'Rejected',
     expired: language === 'ar' ? 'منتهي' : 'Expired',
     cancelled: language === 'ar' ? 'ملغي' : 'Cancelled',
@@ -26,6 +29,8 @@ const getQuotationStatusMeta = (quotation, language = 'en') => {
   }
   const className = status === 'accepted'
     ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+    : status === 'approved'
+      ? 'border-teal-200 bg-teal-50 text-teal-700'
     : status === 'converted'
       ? 'border-violet-200 bg-violet-50 text-violet-700'
     : status === 'sent'
@@ -46,10 +51,33 @@ export default function Quotations() {
   const { language } = useSelector((state) => state.ui)
   const { tenant } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
+  const queryClient = useQueryClient()
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
   const [pdfLoadingId, setPdfLoadingId] = useState('')
+
+  const approveMutation = useMutation({
+    mutationFn: async (quotationId) => await api.post(`/quotations/${quotationId}/approve`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['quotations'] })
+      toast.success(language === 'ar' ? 'تم اعتماد عرض السعر' : 'Quotation approved successfully')
+    },
+    onError: (error) => {
+      toast.error(error?.response?.data?.error || error?.message || (language === 'ar' ? 'تعذر اعتماد عرض السعر' : 'Unable to approve quotation'))
+    },
+  })
+
+  const rejectMutation = useMutation({
+    mutationFn: async (quotationId) => await api.post(`/quotations/${quotationId}/reject`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['quotations'] })
+      toast.success(language === 'ar' ? 'تم رفض عرض السعر' : 'Quotation rejected successfully')
+    },
+    onError: (error) => {
+      toast.error(error?.response?.data?.error || error?.message || (language === 'ar' ? 'تعذر رفض عرض السعر' : 'Unable to reject quotation'))
+    },
+  })
 
   const { data, isLoading } = useQuery({
     queryKey: ['quotations', page, search, status],
@@ -154,6 +182,7 @@ export default function Quotations() {
               <option value="draft">{language === 'ar' ? 'مسودة' : 'Draft'}</option>
               <option value="sent">{language === 'ar' ? 'مرسل' : 'Sent'}</option>
               <option value="accepted">{language === 'ar' ? 'مقبول' : 'Accepted'}</option>
+              <option value="approved">{language === 'ar' ? 'معتمد' : 'Approved'}</option>
               <option value="converted">{language === 'ar' ? 'تم التحويل' : 'Converted'}</option>
               <option value="rejected">{language === 'ar' ? 'مرفوض' : 'Rejected'}</option>
               <option value="expired">{language === 'ar' ? 'منتهي' : 'Expired'}</option>
@@ -204,6 +233,28 @@ export default function Quotations() {
                   </div>
 
                   <div className="mt-5 flex items-center justify-end gap-2">
+                    {canApproveQuotation(quotation) ? (
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-icon"
+                        title={language === 'ar' ? 'اعتماد' : 'Approve'}
+                        disabled={approveMutation.isPending}
+                        onClick={() => approveMutation.mutate(quotation._id)}
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                      </button>
+                    ) : null}
+                    {canRejectQuotation(quotation) ? (
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-icon"
+                        title={language === 'ar' ? 'رفض' : 'Reject'}
+                        disabled={rejectMutation.isPending}
+                        onClick={() => rejectMutation.mutate(quotation._id)}
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </button>
+                    ) : null}
                     <Link to={`/app/dashboard/quotations/${quotation._id}`} className="btn btn-ghost btn-icon" title={language === 'ar' ? 'عرض' : 'View'}>
                       <Eye className="h-4 w-4" />
                     </Link>

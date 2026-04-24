@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
-import { ArrowLeft, Download, Mail, Printer, Edit, FileSpreadsheet, FileText } from 'lucide-react'
+import { ArrowLeft, Download, Mail, Printer, Edit, FileSpreadsheet, FileText, CheckCircle, XCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
@@ -30,7 +30,9 @@ const sanitizeAttachmentFileName = (value) => {
 }
 
 const isEditableQuotation = (quotation) => ['draft', 'sent'].includes(String(quotation?.status || '').toLowerCase())
-const canConvertQuotation = (quotation) => ['draft', 'sent', 'accepted'].includes(String(quotation?.status || '').toLowerCase()) && !quotation?.convertedInvoiceId
+const canApproveQuotation = (quotation) => ['draft', 'sent', 'accepted', 'rejected'].includes(String(quotation?.status || '').toLowerCase()) && !quotation?.convertedInvoiceId
+const canRejectQuotation = (quotation) => ['draft', 'sent', 'accepted', 'approved'].includes(String(quotation?.status || '').toLowerCase()) && !quotation?.convertedInvoiceId
+const canConvertQuotation = (quotation) => String(quotation?.status || '').toLowerCase() === 'approved' && !quotation?.convertedInvoiceId
 
 export default function QuotationView() {
   const { id } = useParams()
@@ -88,6 +90,30 @@ export default function QuotationView() {
     },
   })
 
+  const approveMutation = useMutation({
+    mutationFn: async () => await api.post(`/quotations/${id}/approve`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['quotation', id] })
+      queryClient.invalidateQueries({ queryKey: ['quotations'] })
+      toast.success(language === 'ar' ? 'تم اعتماد عرض السعر' : 'Quotation approved successfully')
+    },
+    onError: (error) => {
+      toast.error(error?.response?.data?.error || error?.message || (language === 'ar' ? 'تعذر اعتماد عرض السعر' : 'Unable to approve quotation'))
+    },
+  })
+
+  const rejectMutation = useMutation({
+    mutationFn: async () => await api.post(`/quotations/${id}/reject`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['quotation', id] })
+      queryClient.invalidateQueries({ queryKey: ['quotations'] })
+      toast.success(language === 'ar' ? 'تم رفض عرض السعر' : 'Quotation rejected successfully')
+    },
+    onError: (error) => {
+      toast.error(error?.response?.data?.error || error?.message || (language === 'ar' ? 'تعذر رفض عرض السعر' : 'Unable to reject quotation'))
+    },
+  })
+
   const convertMutation = useMutation({
     mutationFn: async () => await api.post(`/quotations/${id}/convert-to-invoice`),
     onSuccess: (response) => {
@@ -137,6 +163,36 @@ export default function QuotationView() {
         </div>
 
         <div className="flex flex-wrap gap-3">
+          {canApproveQuotation(quotation) ? (
+            <button
+              type="button"
+              onClick={() => approveMutation.mutate()}
+              disabled={approveMutation.isPending}
+              className="btn btn-primary"
+            >
+              {approveMutation.isPending ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <CheckCircle className="w-4 h-4" />
+              )}
+              {language === 'ar' ? 'اعتماد' : 'Approve'}
+            </button>
+          ) : null}
+          {canRejectQuotation(quotation) ? (
+            <button
+              type="button"
+              onClick={() => rejectMutation.mutate()}
+              disabled={rejectMutation.isPending}
+              className="btn btn-secondary"
+            >
+              {rejectMutation.isPending ? (
+                <div className="w-5 h-5 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <XCircle className="w-4 h-4" />
+              )}
+              {language === 'ar' ? 'رفض' : 'Reject'}
+            </button>
+          ) : null}
           {convertedInvoiceId ? (
             <button
               type="button"
@@ -159,6 +215,11 @@ export default function QuotationView() {
                 <FileText className="w-4 h-4" />
               )}
               {language === 'ar' ? 'تحويل إلى فاتورة' : 'Convert to Invoice'}
+            </button>
+          ) : !convertedInvoiceId ? (
+            <button type="button" className="btn btn-secondary" disabled>
+              <FileText className="w-4 h-4" />
+              {language === 'ar' ? 'يتطلب الاعتماد للتحويل' : 'Approval Required to Convert'}
             </button>
           ) : null}
           {isEditableQuotation(quotation) ? (
@@ -263,6 +324,18 @@ export default function QuotationView() {
               <div className="flex items-center justify-between"><span>{language === 'ar' ? 'الحالة' : 'Status'}</span><span className="font-semibold">{quotation?.status || 'draft'}</span></div>
               <div className="flex items-center justify-between"><span>{language === 'ar' ? 'العميل' : 'Customer'}</span><span className="font-semibold text-end">{language === 'ar' ? (quotation?.buyer?.nameAr || quotation?.buyer?.name || '—') : (quotation?.buyer?.name || quotation?.buyer?.nameAr || '—')}</span></div>
               <div className="flex items-center justify-between"><span>{language === 'ar' ? 'صالح حتى' : 'Valid Until'}</span><span className="font-semibold">{quotation?.validUntil ? new Date(quotation.validUntil).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US') : '—'}</span></div>
+              {quotation?.approvedAt ? (
+                <div className="flex items-center justify-between"><span>{language === 'ar' ? 'اعتمد في' : 'Approved At'}</span><span className="font-semibold">{new Date(quotation.approvedAt).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')}</span></div>
+              ) : null}
+              {quotation?.approvedByName || quotation?.approvedByNameAr ? (
+                <div className="flex items-center justify-between"><span>{language === 'ar' ? 'اعتمد بواسطة' : 'Approved By'}</span><span className="font-semibold text-end">{language === 'ar' ? (quotation?.approvedByNameAr || quotation?.approvedByName || '—') : (quotation?.approvedByName || quotation?.approvedByNameAr || '—')}</span></div>
+              ) : null}
+              {quotation?.rejectedAt ? (
+                <div className="flex items-center justify-between"><span>{language === 'ar' ? 'رُفض في' : 'Rejected At'}</span><span className="font-semibold">{new Date(quotation.rejectedAt).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')}</span></div>
+              ) : null}
+              {quotation?.rejectedByName || quotation?.rejectedByNameAr ? (
+                <div className="flex items-center justify-between"><span>{language === 'ar' ? 'رُفض بواسطة' : 'Rejected By'}</span><span className="font-semibold text-end">{language === 'ar' ? (quotation?.rejectedByNameAr || quotation?.rejectedByName || '—') : (quotation?.rejectedByName || quotation?.rejectedByNameAr || '—')}</span></div>
+              ) : null}
               {convertedInvoiceId ? (
                 <button
                   type="button"
