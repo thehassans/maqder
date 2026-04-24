@@ -1,11 +1,18 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Employee from '../models/Employee.js';
 import { protect, tenantFilter, checkPermission } from '../middleware/auth.js';
+import { describeSaudiId, normalizeSaudiId } from '../utils/saudiId.js';
 
 const router = express.Router();
 
 router.use(protect);
 router.use(tenantFilter);
+
+function getSaudiIdentityDocument(documents) {
+  if (!Array.isArray(documents)) return null;
+  return documents.find((doc) => doc?.type === 'national_id' || doc?.type === 'iqama') || null;
+}
 
 // @route   GET /api/employees
 router.get('/', checkPermission('hr', 'read'), async (req, res) => {
@@ -112,6 +119,104 @@ router.get('/stats', checkPermission('hr', 'read'), async (req, res) => {
     ]);
     
     res.json(stats[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/lookup-saudi-id', checkPermission('hr', 'read'), async (req, res) => {
+  try {
+    const normalizedId = normalizeSaudiId(req.body?.nationalId);
+    const saudiIdMeta = describeSaudiId(normalizedId);
+
+    if (!normalizedId) {
+      return res.status(400).json({ error: 'National ID / Iqama is required' });
+    }
+
+    if (!saudiIdMeta.valid || !saudiIdMeta.type) {
+      return res.status(400).json({
+        error: 'Invalid Saudi National ID / Iqama',
+        lookup: {
+          nationalId: normalizedId,
+          ...saudiIdMeta,
+          source: 'validation_only',
+          providerAvailable: false,
+          details: null,
+        },
+      });
+    }
+
+    const excludeEmployeeId = String(req.body?.excludeEmployeeId || '').trim();
+    const query = {
+      ...req.tenantFilter,
+      $or: [
+        { nationalId: normalizedId },
+        { 'documents.number': normalizedId },
+      ],
+    };
+
+    if (excludeEmployeeId && mongoose.isValidObjectId(excludeEmployeeId)) {
+      query._id = { $ne: new mongoose.Types.ObjectId(excludeEmployeeId) };
+    }
+
+    const employee = await Employee.findOne(query).select([
+      'employeeId',
+      'firstNameEn',
+      'lastNameEn',
+      'firstNameAr',
+      'lastNameAr',
+      'email',
+      'phone',
+      'alternatePhone',
+      'dateOfBirth',
+      'nationality',
+      'gender',
+      'maritalStatus',
+      'bloodGroup',
+      'nationalId',
+      'nationalIdIssueDate',
+      'nationalIdExpiry',
+      'idCardFront',
+      'idCardBack',
+      'documents',
+      'insurance',
+      'address',
+    ].join(' '));
+
+    const saudiDocument = getSaudiIdentityDocument(employee?.documents);
+
+    res.json({
+      lookup: {
+        nationalId: normalizedId,
+        ...saudiIdMeta,
+        source: employee ? 'tenant_records' : 'validation_only',
+        providerAvailable: false,
+        details: employee ? {
+          employeeId: employee.employeeId,
+          firstNameEn: employee.firstNameEn,
+          lastNameEn: employee.lastNameEn,
+          firstNameAr: employee.firstNameAr,
+          lastNameAr: employee.lastNameAr,
+          email: employee.email,
+          phone: employee.phone,
+          alternatePhone: employee.alternatePhone,
+          dateOfBirth: employee.dateOfBirth,
+          nationality: employee.nationality,
+          gender: employee.gender,
+          maritalStatus: employee.maritalStatus,
+          bloodGroup: employee.bloodGroup,
+          nationalIdIssueDate: employee.nationalIdIssueDate || saudiDocument?.issueDate,
+          nationalIdExpiry: employee.nationalIdExpiry || saudiDocument?.expiryDate,
+          idCardFront: employee.idCardFront,
+          idCardBack: employee.idCardBack,
+          insurance: employee.insurance,
+          address: employee.address,
+        } : null,
+        message: employee
+          ? 'Details found from existing employee records'
+          : 'ID validated, but no saved details were found in tenant records',
+      },
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

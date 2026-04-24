@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { useForm } from 'react-hook-form'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, Save, User, FileText, CreditCard, Briefcase, Shield, Heart, Upload, X, Camera, Users, Phone, Mail, MapPin, Building2, Calendar, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Save, User, FileText, CreditCard, Briefcase, Shield, Heart, Upload, X, Camera, Users, Phone, Mail, MapPin, Building2, Calendar, CheckCircle, Search } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
@@ -207,6 +207,70 @@ export default function EmployeeForm() {
     setValue(fieldName, null)
   }
 
+  const applyLookupDetails = (details = {}) => {
+    const fieldEntries = [
+      ['firstNameEn', details?.firstNameEn],
+      ['lastNameEn', details?.lastNameEn],
+      ['firstNameAr', details?.firstNameAr],
+      ['lastNameAr', details?.lastNameAr],
+      ['email', details?.email],
+      ['phone', details?.phone],
+      ['alternatePhone', details?.alternatePhone],
+      ['dateOfBirth', formatDateForInput(details?.dateOfBirth)],
+      ['nationality', details?.nationality],
+      ['gender', details?.gender],
+      ['maritalStatus', details?.maritalStatus],
+      ['bloodGroup', details?.bloodGroup],
+      ['nationalIdIssueDate', formatDateForInput(details?.nationalIdIssueDate)],
+      ['nationalIdExpiry', formatDateForInput(details?.nationalIdExpiry)],
+      ['idCardFront', details?.idCardFront],
+      ['idCardBack', details?.idCardBack],
+      ['insurance.provider', details?.insurance?.provider],
+      ['insurance.policyNumber', details?.insurance?.policyNumber],
+      ['insurance.memberId', details?.insurance?.memberId],
+      ['insurance.class', details?.insurance?.class],
+      ['insurance.startDate', formatDateForInput(details?.insurance?.startDate)],
+      ['insurance.expiryDate', formatDateForInput(details?.insurance?.expiryDate)],
+    ]
+
+    fieldEntries.forEach(([field, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        setValue(field, value, { shouldDirty: true, shouldValidate: true })
+      }
+    })
+  }
+
+  const lookupSaudiIdMutation = useMutation({
+    mutationFn: async () => {
+      const normalized = normalizeSaudiId(watch('nationalId'))
+      return await api.post('/employees/lookup-saudi-id', {
+        nationalId: normalized,
+        excludeEmployeeId: id,
+      }).then((res) => res.data)
+    },
+    onSuccess: (data) => {
+      const lookup = data?.lookup || {}
+      if (lookup?.nationalId) {
+        setValue('nationalId', lookup.nationalId, { shouldDirty: true, shouldValidate: true })
+      }
+      if (lookup?.details) {
+        applyLookupDetails(lookup.details)
+      }
+      if (lookup?.source === 'tenant_records') {
+        toast.success(language === 'ar' ? 'تم جلب بيانات الهوية من سجلات النظام' : 'Identity details loaded from tenant records')
+      } else {
+        toast.success(language === 'ar' ? 'تم التحقق من الهوية ولكن لا توجد بيانات محفوظة إضافية' : 'ID validated, but no saved details were found')
+      }
+    },
+    onError: (error) => {
+      const lookup = error?.response?.data?.lookup
+      if (lookup?.nationalId) {
+        setValue('nationalId', lookup.nationalId, { shouldDirty: true, shouldValidate: true })
+      }
+      toast.error(error?.response?.data?.error || (language === 'ar' ? 'تعذر جلب تفاصيل الهوية' : 'Unable to get ID details'))
+    }
+  })
+
   const onSubmit = (data) => mutation.mutate({
     ...data,
     nationalId: normalizeSaudiId(data?.nationalId) || undefined,
@@ -350,13 +414,28 @@ export default function EmployeeForm() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="lg:col-span-2">
               <label className="label">{language === 'ar' ? 'رقم الهوية / الإقامة' : 'National ID / Iqama Number'}</label>
-              <input
-                {...register('nationalId')}
-                className={`input ${nationalIdValue && !saudiIdMeta.valid ? 'border-red-300 focus:border-red-500' : ''}`}
-                inputMode="numeric"
-                maxLength={10}
-                placeholder={language === 'ar' ? '10 أرقام تبدأ بـ 1 أو 2' : '10 digits starting with 1 or 2'}
-              />
+              <div className="flex gap-2">
+                <input
+                  {...register('nationalId')}
+                  className={`input ${nationalIdValue && !saudiIdMeta.valid ? 'border-red-300 focus:border-red-500' : ''}`}
+                  inputMode="numeric"
+                  maxLength={10}
+                  placeholder={language === 'ar' ? '10 أرقام تبدأ بـ 1 أو 2' : '10 digits starting with 1 or 2'}
+                />
+                <button
+                  type="button"
+                  onClick={() => lookupSaudiIdMutation.mutate()}
+                  disabled={lookupSaudiIdMutation.isPending || !normalizeSaudiId(nationalIdValue)}
+                  className="btn btn-secondary shrink-0"
+                >
+                  {lookupSaudiIdMutation.isPending ? (
+                    <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Search className="w-4 h-4" />
+                  )}
+                  {language === 'ar' ? 'جلب التفاصيل' : 'Get Details'}
+                </button>
+              </div>
               {nationalIdValue ? (
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
                   <span className={`inline-flex rounded-full px-2.5 py-1 font-medium ${saudiIdMeta.valid ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'}`}>
