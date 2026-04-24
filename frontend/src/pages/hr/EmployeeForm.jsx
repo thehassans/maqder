@@ -10,7 +10,7 @@ import { useTranslation } from '../../lib/translations'
 import SarIcon from '../../components/ui/SarIcon'
 import { useLiveTranslation } from '../../lib/liveTranslation'
 import { describeSaudiId, normalizeSaudiId } from '../../lib/saudiId'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 export default function EmployeeForm() {
   const { id } = useParams()
@@ -19,6 +19,7 @@ export default function EmployeeForm() {
   const { language } = useSelector((state) => state.ui)
   const { t } = useTranslation(language)
   const isEdit = Boolean(id)
+  const [lookupMeta, setLookupMeta] = useState(null)
 
   const { register, handleSubmit, reset, setValue, watch, control, formState: { errors } } = useForm()
 
@@ -97,6 +98,7 @@ export default function EmployeeForm() {
   const nationalityValue = watch('nationality')
   const nationalIdIssueDateValue = watch('nationalIdIssueDate')
   const nationalIdExpiryValue = watch('nationalIdExpiry')
+  const hasIdentityImages = Boolean(idCardFrontValue || idCardBackValue)
   const saudiIdMeta = describeSaudiId(nationalIdValue)
   const saudiIdTypeLabel = saudiIdMeta.type === 'national_id'
     ? (language === 'ar' ? 'هوية وطنية' : 'Saudi National ID')
@@ -207,6 +209,43 @@ export default function EmployeeForm() {
     setValue(fieldName, null)
   }
 
+  const handleLookupResponse = (lookup = {}, options = {}) => {
+    const { showValidationOnlyToast = true } = options
+
+    setLookupMeta(lookup)
+
+    if (lookup?.nationalId) {
+      setValue('nationalId', lookup.nationalId, { shouldDirty: true, shouldValidate: true })
+    }
+
+    if (lookup?.details) {
+      applyLookupDetails(lookup.details)
+    }
+
+    if (lookup?.duplicate?.exists) {
+      toast.error(
+        language === 'ar'
+          ? `رقم الهوية مرتبط بالموظف ${lookup.duplicate.employeeName || lookup.duplicate.employeeId || ''}`
+          : `This ID is already linked to employee ${lookup.duplicate.employeeName || lookup.duplicate.employeeId || ''}`
+      )
+      return
+    }
+
+    if (lookup?.source === 'tenant_records') {
+      toast.success(language === 'ar' ? 'تم جلب بيانات الهوية من سجلات النظام' : 'Identity details loaded from tenant records')
+      return
+    }
+
+    if (lookup?.source === 'provider_live' || lookup?.source === 'provider_ocr') {
+      toast.success(language === 'ar' ? 'تم جلب بيانات الهوية من المزود الخارجي' : 'Identity details loaded from the external provider')
+      return
+    }
+
+    if (showValidationOnlyToast) {
+      toast.success(language === 'ar' ? 'تم التحقق من الهوية ولكن لا توجد بيانات محفوظة إضافية' : 'ID validated, but no saved details were found')
+    }
+  }
+
   const applyLookupDetails = (details = {}) => {
     const fieldEntries = [
       ['firstNameEn', details?.firstNameEn],
@@ -250,24 +289,43 @@ export default function EmployeeForm() {
     },
     onSuccess: (data) => {
       const lookup = data?.lookup || {}
-      if (lookup?.nationalId) {
-        setValue('nationalId', lookup.nationalId, { shouldDirty: true, shouldValidate: true })
+      handleLookupResponse(lookup)
+    },
+    onError: (error) => {
+      const lookup = error?.response?.data?.lookup
+      if (lookup) {
+        setLookupMeta(lookup)
+        if (lookup?.nationalId) {
+          setValue('nationalId', lookup.nationalId, { shouldDirty: true, shouldValidate: true })
+        }
       }
-      if (lookup?.details) {
-        applyLookupDetails(lookup.details)
-      }
-      if (lookup?.source === 'tenant_records') {
-        toast.success(language === 'ar' ? 'تم جلب بيانات الهوية من سجلات النظام' : 'Identity details loaded from tenant records')
-      } else {
-        toast.success(language === 'ar' ? 'تم التحقق من الهوية ولكن لا توجد بيانات محفوظة إضافية' : 'ID validated, but no saved details were found')
+      toast.error(error?.response?.data?.error || (language === 'ar' ? 'تعذر جلب تفاصيل الهوية' : 'Unable to get ID details'))
+    }
+  })
+
+  const lookupSaudiIdImagesMutation = useMutation({
+    mutationFn: async () => {
+      return await api.post('/employees/lookup-saudi-id-images', {
+        nationalId: normalizeSaudiId(watch('nationalId')),
+        idCardFront: idCardFrontValue,
+        idCardBack: idCardBackValue,
+        excludeEmployeeId: id,
+        language,
+      }).then((res) => res.data)
+    },
+    onSuccess: (data) => {
+      const lookup = data?.lookup || {}
+      handleLookupResponse(lookup, { showValidationOnlyToast: false })
+      if (!lookup?.details) {
+        toast.success(lookup?.message || (language === 'ar' ? 'تم إرسال الصور للمزود ولكن لم يتم إرجاع تفاصيل' : 'Images were sent, but no details were returned'))
       }
     },
     onError: (error) => {
       const lookup = error?.response?.data?.lookup
-      if (lookup?.nationalId) {
-        setValue('nationalId', lookup.nationalId, { shouldDirty: true, shouldValidate: true })
+      if (lookup) {
+        setLookupMeta(lookup)
       }
-      toast.error(error?.response?.data?.error || (language === 'ar' ? 'تعذر جلب تفاصيل الهوية' : 'Unable to get ID details'))
+      toast.error(error?.response?.data?.error || (language === 'ar' ? 'تعذر استخراج تفاصيل الهوية من الصور' : 'Unable to extract identity details from images'))
     }
   })
 
@@ -455,6 +513,16 @@ export default function EmployeeForm() {
                     : (language === 'ar' ? 'سيتم إنشاء وثيقة هوية مرتبطة تلقائياً عند الحفظ.' : 'A linked identity document will be created automatically on save.')}
                 </p>
               ) : null}
+              {lookupMeta?.duplicate?.exists ? (
+                <p className="mt-2 text-xs text-red-600 dark:text-red-400">
+                  {language === 'ar'
+                    ? `هذا الرقم مستخدم بالفعل للموظف ${lookupMeta.duplicate.employeeName || lookupMeta.duplicate.employeeId || ''}`
+                    : `This number is already used by employee ${lookupMeta.duplicate.employeeName || lookupMeta.duplicate.employeeId || ''}`}
+                </p>
+              ) : null}
+              {lookupMeta?.message && !lookupMeta?.duplicate?.exists ? (
+                <p className="mt-2 text-xs text-gray-500">{lookupMeta.message}</p>
+              ) : null}
             </div>
 
             <div>
@@ -544,6 +612,21 @@ export default function EmployeeForm() {
                 )}
               </div>
             </div>
+          </div>
+          <div className="mt-4 flex justify-end">
+            <button
+              type="button"
+              onClick={() => lookupSaudiIdImagesMutation.mutate()}
+              disabled={lookupSaudiIdImagesMutation.isPending || !hasIdentityImages}
+              className="btn btn-secondary"
+            >
+              {lookupSaudiIdImagesMutation.isPending ? (
+                <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Search className="w-4 h-4" />
+              )}
+              {language === 'ar' ? 'جلب التفاصيل من الصور' : 'Get Details from Images'}
+            </button>
           </div>
         </motion.div>
 

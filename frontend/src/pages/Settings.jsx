@@ -74,6 +74,11 @@ export default function Settings() {
   const [saudiIntegrationEnabled, setSaudiIntegrationEnabled] = useState(true)
   const [useSaudiIdValidation, setUseSaudiIdValidation] = useState(true)
   const [autoTrackIqamaExpiry, setAutoTrackIqamaExpiry] = useState(true)
+  const [identityLookupEnabled, setIdentityLookupEnabled] = useState(false)
+  const [identityProvider, setIdentityProvider] = useState('custom_webhook')
+  const [identityEndpoint, setIdentityEndpoint] = useState('')
+  const [identityApiKey, setIdentityApiKey] = useState('')
+  const [identityOcrEnabled, setIdentityOcrEnabled] = useState(false)
   const [gosiEnabled, setGosiEnabled] = useState(false)
   const [gosiEstablishmentId, setGosiEstablishmentId] = useState('')
   const [gosiClientId, setGosiClientId] = useState('')
@@ -114,6 +119,11 @@ export default function Settings() {
     setSaudiIntegrationEnabled(tenant.settings?.saudiIntegrations?.enabled !== false)
     setUseSaudiIdValidation(tenant.settings?.saudiIntegrations?.useSaudiIdValidation !== false)
     setAutoTrackIqamaExpiry(tenant.settings?.saudiIntegrations?.autoTrackIqamaExpiry !== false)
+    setIdentityLookupEnabled(tenant.settings?.saudiIntegrations?.identity?.enabled === true)
+    setIdentityProvider(tenant.settings?.saudiIntegrations?.identity?.provider || 'custom_webhook')
+    setIdentityEndpoint(tenant.settings?.saudiIntegrations?.identity?.endpoint || '')
+    setIdentityApiKey(tenant.settings?.saudiIntegrations?.identity?.apiKey || '')
+    setIdentityOcrEnabled(tenant.settings?.saudiIntegrations?.identity?.ocrEnabled === true)
     setGosiEnabled(tenant.settings?.saudiIntegrations?.gosi?.enabled === true)
     setGosiEstablishmentId(tenant.settings?.saudiIntegrations?.gosi?.establishmentId || '')
     setGosiClientId(tenant.settings?.saudiIntegrations?.gosi?.clientId || '')
@@ -738,6 +748,51 @@ export default function Settings() {
                     : 'Note: these settings store your credentials and enable the internal readiness layer. Actual GOSI synchronization requires valid establishment credentials and OAuth activation.'}
                 </div>
 
+                <div className="mt-8 border-t border-gray-200 pt-8 dark:border-dark-600">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'مزود الهوية / OCR' : 'Identity Provider / OCR'}</h4>
+                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        {language === 'ar'
+                          ? 'اربط Webhook أو مزود OCR خارجي لاستخدام جلب التفاصيل المباشر أو استخراج بيانات الهوية من الصور.'
+                          : 'Connect a webhook or external OCR provider to enable live identity lookups and image-based detail extraction.'}
+                      </p>
+                    </div>
+                    <button type="button" onClick={() => setIdentityLookupEnabled((v) => !v)} className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${identityLookupEnabled ? 'bg-primary-500 text-white' : 'bg-gray-100 text-gray-700 dark:bg-dark-700 dark:text-gray-300'}`}>
+                      {identityLookupEnabled ? (language === 'ar' ? 'مفعّل' : 'Enabled') : (language === 'ar' ? 'معطّل' : 'Disabled')}
+                    </button>
+                  </div>
+
+                  <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="label">{language === 'ar' ? 'نوع المزود' : 'Provider Type'}</label>
+                      <select value={identityProvider} onChange={(e) => setIdentityProvider(e.target.value)} className="select">
+                        <option value="custom_webhook">{language === 'ar' ? 'Webhook مخصص' : 'Custom Webhook'}</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="label">{language === 'ar' ? 'نقطة الربط' : 'Endpoint URL'}</label>
+                      <input value={identityEndpoint} onChange={(e) => setIdentityEndpoint(e.target.value)} className="input" placeholder="https://.../identity-lookup" />
+                    </div>
+                    <div>
+                      <label className="label">API Key</label>
+                      <input value={identityApiKey} onChange={(e) => setIdentityApiKey(e.target.value)} className="input" type="password" placeholder="Bearer token" />
+                    </div>
+                    <div className="flex items-end">
+                      <button type="button" onClick={() => setIdentityOcrEnabled((v) => !v)} className={`w-full rounded-2xl border px-4 py-3 text-start transition-all ${identityOcrEnabled ? 'border-emerald-400 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-900/20' : 'border-gray-200 dark:border-dark-600'}`}>
+                        <p className="font-medium text-gray-900 dark:text-white">{language === 'ar' ? 'تفعيل OCR للهوية' : 'Enable Identity OCR'}</p>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'يسمح باستخراج التفاصيل من صور الهوية الأمامية والخلفية.' : 'Allows detail extraction from uploaded front/back ID images.'}</p>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 rounded-2xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-300">
+                    {language === 'ar'
+                      ? 'سيتم استدعاء الـ webhook من الخادم مع nationalId و images.front و images.back و mode = id أو ocr. أعد response يحتوي على details أو lookup ليتم تعبئة النموذج.'
+                      : 'The server will call your webhook with nationalId, images.front, images.back, and mode = id or ocr. Return a response with details or lookup to auto-fill the employee form.'}
+                  </div>
+                </div>
+
                 <div className="mt-6 flex justify-end">
                   <button
                     type="button"
@@ -750,6 +805,14 @@ export default function Settings() {
                           enabled: saudiIntegrationEnabled,
                           useSaudiIdValidation,
                           autoTrackIqamaExpiry,
+                          identity: {
+                            ...(tenant?.settings?.saudiIntegrations?.identity || {}),
+                            enabled: identityLookupEnabled,
+                            provider: identityProvider,
+                            endpoint: identityEndpoint,
+                            apiKey: identityApiKey,
+                            ocrEnabled: identityOcrEnabled,
+                          },
                           gosi: {
                             ...(tenant?.settings?.saudiIntegrations?.gosi || {}),
                             enabled: gosiEnabled,

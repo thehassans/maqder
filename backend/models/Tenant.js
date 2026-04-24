@@ -123,6 +123,13 @@ const tenantSchema = new mongoose.Schema({
       enabled: { type: Boolean, default: true },
       useSaudiIdValidation: { type: Boolean, default: true },
       autoTrackIqamaExpiry: { type: Boolean, default: true },
+      identity: {
+        enabled: { type: Boolean, default: false },
+        provider: { type: String, default: 'custom_webhook' },
+        endpoint: { type: String, default: '' },
+        apiKey: { type: String, default: '' },
+        ocrEnabled: { type: Boolean, default: false },
+      },
       gosi: {
         enabled: { type: Boolean, default: false },
         establishmentId: { type: String, default: '' },
