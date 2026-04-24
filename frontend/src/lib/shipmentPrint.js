@@ -15,6 +15,20 @@ const waitForElementImages = async (sourceElement) => {
   }))
 }
 
+const renderElementCanvas = async (element) => {
+  if (!element || typeof window === 'undefined' || typeof document === 'undefined') return null
+
+  await waitForElementImages(element)
+  const html2canvasModule = await import('html2canvas')
+  const html2canvas = html2canvasModule?.default || html2canvasModule
+  return await html2canvas(element, {
+    backgroundColor: '#ffffff',
+    scale: Math.max(2, window.devicePixelRatio || 1),
+    useCORS: true,
+    logging: false,
+  })
+}
+
 const printDataUrl = async ({ dataUrl, title = 'Document' }) => {
   if (!dataUrl || typeof window === 'undefined' || typeof document === 'undefined') return false
 
@@ -68,17 +82,17 @@ window.onload = function () {
   return true
 }
 
-export const printElementHtml = async ({ element, title = 'Document' }) => {
-  if (!element || typeof window === 'undefined' || typeof document === 'undefined') return false
+export const buildElementImageBlob = async ({ element, type = 'image/png', quality = 1 }) => {
+  const canvas = await renderElementCanvas(element)
+  if (!canvas) return null
 
-  await waitForElementImages(element)
-  const html2canvasModule = await import('html2canvas')
-  const html2canvas = html2canvasModule?.default || html2canvasModule
-  const canvas = await html2canvas(element, {
-    backgroundColor: '#ffffff',
-    scale: Math.max(2, window.devicePixelRatio || 1),
-    useCORS: true,
-    logging: false,
+  return await new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob), type, quality)
   })
+}
+
+export const printElementHtml = async ({ element, title = 'Document' }) => {
+  const canvas = await renderElementCanvas(element)
+  if (!canvas) return false
   return await printDataUrl({ dataUrl: canvas.toDataURL('image/png'), title })
 }

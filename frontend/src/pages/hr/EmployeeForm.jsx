@@ -382,6 +382,13 @@ export default function EmployeeForm() {
               <label className="label">{language === 'ar' ? 'تاريخ الإصدار' : 'Issue Date'}</label>
               <input type="date" {...register('nationalIdIssueDate', { setValueAs: (v) => (v === '' ? undefined : v) })} className="input" />
               {nationalIdIssueDateValue ? <p className="mt-2 text-xs text-gray-500">{toHijri(nationalIdIssueDateValue)}</p> : null}
+              {!nationalIdIssueDateValue ? (
+                <p className="mt-2 text-xs text-gray-500">
+                  {language === 'ar'
+                    ? 'يمكن تعبئة التفاصيل والصور تلقائياً فقط عند ربط خدمة خارجية للهوية أو OCR.'
+                    : 'Full identity details and images can only be auto-filled when an external identity or OCR service is connected.'}
+                </p>
+              ) : null}
             </div>
 
             <div>
@@ -651,6 +658,24 @@ export default function EmployeeForm() {
               </label>
               <input type="number" {...register('currentSalary.transportAllowance', { valueAsNumber: true })} className="input" />
             </div>
+            <div>
+              <label className="label">
+                <span className="inline-flex items-center gap-1">
+                  {language === 'ar' ? 'بدل الطعام' : 'Food Allowance'}
+                  <SarIcon className="w-[1em] h-[1em]" />
+                </span>
+              </label>
+              <input type="number" {...register('currentSalary.foodAllowance', { valueAsNumber: true })} className="input" />
+            </div>
+            <div>
+              <label className="label">
+                <span className="inline-flex items-center gap-1">
+                  {language === 'ar' ? 'بدلات أخرى' : 'Other Allowances'}
+                  <SarIcon className="w-[1em] h-[1em]" />
+                </span>
+              </label>
+              <input type="number" {...register('currentSalary.otherAllowances', { valueAsNumber: true })} className="input" />
+            </div>
           </div>
         </motion.div>
 
@@ -668,12 +693,20 @@ export default function EmployeeForm() {
               <input {...register('bankDetails.bankName')} className="input" />
             </div>
             <div>
+              <label className="label">{language === 'ar' ? 'رمز البنك' : 'Bank Code'}</label>
+              <input {...register('bankDetails.bankCode')} className="input" placeholder="10" />
+            </div>
+            <div>
               <label className="label">IBAN</label>
               <input {...register('bankDetails.iban')} className="input" placeholder="SA..." />
             </div>
             <div>
               <label className="label">{language === 'ar' ? 'رقم الحساب' : 'Account Number'}</label>
               <input {...register('bankDetails.accountNumber')} className="input" />
+            </div>
+            <div>
+              <label className="label">SWIFT</label>
+              <input {...register('bankDetails.swiftCode')} className="input" />
             </div>
           </div>
         </motion.div>

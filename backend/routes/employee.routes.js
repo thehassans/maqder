@@ -27,7 +27,7 @@ router.get('/', checkPermission('hr', 'read'), async (req, res) => {
     }
     
     const employees = await Employee.find(query)
-      .select('-documents.fileUrl -salaryHistory -idCardProof')
+      .select('-documents.fileUrl -salaryHistory -idCardProof -idCardFront -idCardBack')
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit));

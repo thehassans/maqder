@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Download, CheckCircle, Clock, Calculator, FileText } from 'lucide-react'
+import { Plus, Download, CheckCircle, Clock, Calculator, FileText, Wallet } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
@@ -16,6 +16,7 @@ export default function Payroll() {
   const queryClient = useQueryClient()
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+  const [statusFilter, setStatusFilter] = useState('')
 
   const exportColumns = [
     {
@@ -56,8 +57,8 @@ export default function Payroll() {
   ]
 
   const { data, isLoading } = useQuery({
-    queryKey: ['payroll', selectedMonth, selectedYear],
-    queryFn: () => api.get('/payroll', { params: { month: selectedMonth, year: selectedYear } }).then(res => res.data)
+    queryKey: ['payroll', selectedMonth, selectedYear, statusFilter],
+    queryFn: () => api.get('/payroll', { params: { month: selectedMonth, year: selectedYear, status: statusFilter || undefined } }).then(res => res.data)
   })
 
   const generateMutation = useMutation({
@@ -82,6 +83,24 @@ export default function Payroll() {
       toast.success(language === 'ar' ? 'تم تحميل ملف WPS' : 'WPS file downloaded')
     },
     onError: (err) => toast.error(err.response?.data?.error || 'Failed to generate WPS')
+  })
+
+  const approveMutation = useMutation({
+    mutationFn: (payrollId) => api.put(`/payroll/${payrollId}/approve`),
+    onSuccess: () => {
+      toast.success(language === 'ar' ? 'تم اعتماد الراتب' : 'Payroll approved')
+      queryClient.invalidateQueries(['payroll'])
+    },
+    onError: (err) => toast.error(err.response?.data?.error || (language === 'ar' ? 'تعذر اعتماد الراتب' : 'Failed to approve payroll'))
+  })
+
+  const payMutation = useMutation({
+    mutationFn: ({ payrollId }) => api.put(`/payroll/${payrollId}/pay`, { paymentMethod: 'bank_transfer' }),
+    onSuccess: () => {
+      toast.success(language === 'ar' ? 'تم تسجيل دفع الراتب' : 'Payroll marked as paid')
+      queryClient.invalidateQueries(['payroll'])
+    },
+    onError: (err) => toast.error(err.response?.data?.error || (language === 'ar' ? 'تعذر تسجيل الدفع' : 'Failed to mark payroll as paid'))
   })
 
   const totalNet = data?.payrolls?.reduce((sum, p) => sum + p.netPay, 0) || 0
@@ -135,6 +154,15 @@ export default function Payroll() {
               {[2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}
             </select>
           </div>
+          <div>
+            <label className="label">{language === 'ar' ? 'الحالة' : 'Status'}</label>
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="select w-40">
+              <option value="">{language === 'ar' ? 'كل الحالات' : 'All statuses'}</option>
+              <option value="draft">{language === 'ar' ? 'مسودة' : 'Draft'}</option>
+              <option value="approved">{language === 'ar' ? 'معتمد' : 'Approved'}</option>
+              <option value="paid">{language === 'ar' ? 'مدفوع' : 'Paid'}</option>
+            </select>
+          </div>
           <button onClick={() => generateWPSMutation.mutate()} disabled={generateWPSMutation.isPending || !data?.payrolls?.length} className="btn btn-secondary">
             {generateWPSMutation.isPending ? <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" /> : <><Download className="w-4 h-4" />{t('generateWps')}</>}
           </button>
@@ -183,6 +211,7 @@ export default function Payroll() {
                   <th>{language === 'ar' ? 'التأمينات' : 'GOSI'}</th>
                   <th>{language === 'ar' ? 'صافي الراتب' : 'Net Pay'}</th>
                   <th>{t('status')}</th>
+                  <th>{language === 'ar' ? 'الإجراءات' : 'Actions'}</th>
                 </tr>
               </thead>
               <tbody>
@@ -191,7 +220,14 @@ export default function Payroll() {
                     <td className="font-medium">{p.employeeId?.employeeId}</td>
                     <td>{p.employeeId?.firstNameEn} {p.employeeId?.lastNameEn}</td>
                     <td><Money value={p.earnings?.find(e => e.type === 'basic')?.amount} /></td>
-                    <td><Money value={p.totalEarnings - (p.earnings?.find(e => e.type === 'basic')?.amount || 0)} /></td>
+                    <td>
+                      <div className="space-y-1">
+                        <div><Money value={p.totalEarnings - (p.earnings?.find(e => e.type === 'basic')?.amount || 0)} /></div>
+                        <div className="text-xs text-gray-500">
+                          {language === 'ar' ? 'سكن / نقل / طعام / أخرى' : 'Housing / Transport / Food / Other'}
+                        </div>
+                      </div>
+                    </td>
                     <td className="text-red-600">-<Money value={p.gosi?.employeeShare} /></td>
                     <td className="font-semibold text-primary-600"><Money value={p.netPay} /></td>
                     <td>
@@ -200,6 +236,32 @@ export default function Payroll() {
                         {p.status === 'draft' && <Clock className="w-3 h-3 me-1" />}
                         {p.status}
                       </span>
+                    </td>
+                    <td>
+                      <div className="flex items-center gap-2">
+                        {p.status === 'draft' ? (
+                          <button
+                            type="button"
+                            className="btn btn-ghost btn-icon"
+                            title={language === 'ar' ? 'اعتماد' : 'Approve'}
+                            onClick={() => approveMutation.mutate(p._id)}
+                            disabled={approveMutation.isPending}
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                          </button>
+                        ) : null}
+                        {p.status === 'approved' ? (
+                          <button
+                            type="button"
+                            className="btn btn-ghost btn-icon"
+                            title={language === 'ar' ? 'تسجيل الدفع' : 'Mark Paid'}
+                            onClick={() => payMutation.mutate({ payrollId: p._id })}
+                            disabled={payMutation.isPending}
+                          >
+                            <Wallet className="w-4 h-4" />
+                          </button>
+                        ) : null}
+                      </div>
                     </td>
                   </tr>
                 ))}

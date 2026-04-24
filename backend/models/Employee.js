@@ -24,10 +24,20 @@ const documentSchema = new mongoose.Schema({
 const bankDetailsSchema = new mongoose.Schema({
   bankName: { type: String },
   bankNameAr: { type: String },
+  bankCode: { type: String },
   accountNumber: { type: String },
   iban: { type: String },
   swiftCode: { type: String }
 });
+
+const insuranceSchema = new mongoose.Schema({
+  provider: { type: String },
+  policyNumber: { type: String },
+  memberId: { type: String },
+  class: { type: String },
+  startDate: { type: Date },
+  expiryDate: { type: Date }
+}, { _id: false });
 
 const salarySchema = new mongoose.Schema({
   basicSalary: { type: Number, required: true },
@@ -75,6 +85,8 @@ const employeeSchema = new mongoose.Schema({
   nationality: { type: String, required: true },
   religion: { type: String },
   photo: { type: String },
+  idCardFront: { type: String },
+  idCardBack: { type: String },
   idCardProof: { type: String },
 
   // Saudi National ID (starts with 1) or Iqama (starts with 2).
@@ -116,6 +128,8 @@ const employeeSchema = new mongoose.Schema({
 
   // Bank Details for WPS
   bankDetails: bankDetailsSchema,
+
+  insurance: insuranceSchema,
 
   // Salary History
   salaryHistory: [salarySchema],

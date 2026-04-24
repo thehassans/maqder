@@ -1,10 +1,12 @@
 import express from 'express';
 import Shipment from '../models/Shipment.js';
+import Tenant from '../models/Tenant.js';
 import Supplier from '../models/Supplier.js';
 import PurchaseOrder from '../models/PurchaseOrder.js';
 import Product from '../models/Product.js';
 import Warehouse from '../models/Warehouse.js';
 import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
+import { sendTenantEmail } from '../utils/tenantEmailService.js';
 
 const router = express.Router();
 
@@ -42,6 +44,45 @@ function sanitizeDeliveryRecipient(value = {}) {
       additionalNumber: normalizeText(address?.additionalNumber) || undefined,
     },
   };
+}
+
+function buildShipmentEmailHtml({ shipment, language = 'en' }) {
+  const recipient = shipment?.deliveryRecipient || {};
+  const customerName = normalizeText(recipient?.name)
+    || normalizeText(recipient?.nameAr)
+    || normalizeText(recipient?.company)
+    || 'Customer';
+  const shipmentNumber = normalizeText(shipment?.shipmentNumber) || 'Shipment';
+  const trackingNumber = normalizeText(shipment?.trackingNumber);
+  const carrier = normalizeText(shipment?.carrier);
+  const expectedDelivery = shipment?.expectedDelivery ? new Date(shipment.expectedDelivery).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US') : '';
+
+  return `
+    <div style="font-family: Arial, Helvetica, sans-serif; background:#f8fafc; padding:24px; color:#0f172a;">
+      <div style="max-width:720px; margin:0 auto; background:#ffffff; border:1px solid #e2e8f0; border-radius:24px; overflow:hidden; box-shadow:0 20px 60px -36px rgba(15,23,42,0.25);">
+        <div style="height:6px; background:#0f172a;"></div>
+        <div style="padding:32px;">
+          <h1 style="margin:0 0 8px; font-size:28px;">Delivery Note ${shipmentNumber}</h1>
+          <p style="margin:0 0 24px; color:#475569;">Please find the delivery note attached for your shipment.</p>
+          <div style="padding:20px; border:1px solid #e2e8f0; border-radius:18px; background:#f8fafc; margin-bottom:24px;">
+            <p style="margin:0 0 8px;"><strong>Recipient:</strong> ${customerName}</p>
+            <p style="margin:0 0 8px;"><strong>Shipment #:</strong> ${shipmentNumber}</p>
+            ${carrier ? `<p style="margin:0 0 8px;"><strong>Carrier:</strong> ${carrier}</p>` : ''}
+            ${trackingNumber ? `<p style="margin:0 0 8px;"><strong>Tracking #:</strong> ${trackingNumber}</p>` : ''}
+            ${expectedDelivery ? `<p style="margin:0;"><strong>Expected Delivery:</strong> ${expectedDelivery}</p>` : ''}
+          </div>
+          <div dir="rtl" style="padding:20px; border:1px solid #e2e8f0; border-radius:18px; background:#ffffff;">
+            <p style="margin:0 0 8px; font-weight:700;">إذن التسليم ${shipmentNumber}</p>
+            <p style="margin:0 0 8px; color:#475569;">مرفق لكم إذن التسليم الخاص بالشحنة.</p>
+            <p style="margin:0 0 8px;"><strong>المستلم:</strong> ${customerName}</p>
+            ${carrier ? `<p style="margin:0 0 8px;"><strong>شركة الشحن:</strong> ${carrier}</p>` : ''}
+            ${trackingNumber ? `<p style="margin:0 0 8px;"><strong>رقم التتبع:</strong> ${trackingNumber}</p>` : ''}
+            ${expectedDelivery ? `<p style="margin:0;"><strong>التسليم المتوقع:</strong> ${expectedDelivery}</p>` : ''}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 async function generateShipmentNumber(tenantFilterValue) {
@@ -285,6 +326,64 @@ router.put('/:id', checkPermission('supply_chain', 'update'), async (req, res) =
     );
 
     res.json(shipment);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/:id/send-email', checkPermission('supply_chain', 'update'), async (req, res) => {
+  try {
+    const shipment = await Shipment.findOne({ _id: req.params.id, ...req.tenantFilter, isActive: true });
+    if (!shipment) {
+      return res.status(404).json({ error: 'Shipment not found' });
+    }
+
+    if (shipment.type !== 'outbound') {
+      return res.status(400).json({ error: 'Only outbound shipments can send a delivery note' });
+    }
+
+    const tenant = await Tenant.findById(req.user.tenantId);
+    if (!tenant) {
+      return res.status(404).json({ error: 'Tenant not found' });
+    }
+
+    const hasEmailAddon = tenant?.subscription?.hasEmailAddon === true
+      || (Array.isArray(tenant?.subscription?.features) && tenant.subscription.features.includes('email_automation'));
+    if (!hasEmailAddon) {
+      return res.status(403).json({ error: 'Email automation add-on is not enabled for this tenant' });
+    }
+
+    const recipient = normalizeText(req.body?.to || shipment?.deliveryRecipient?.email).toLowerCase();
+    if (!recipient) {
+      return res.status(400).json({ error: 'Delivery recipient email is missing' });
+    }
+
+    const attachment = req.body?.attachment && typeof req.body.attachment === 'object'
+      ? {
+          filename: String(req.body.attachment.filename || `${shipment.shipmentNumber || 'delivery-note'}.png`).trim(),
+          contentBase64: String(req.body.attachment.contentBase64 || '').trim(),
+          contentType: String(req.body.attachment.contentType || 'image/png').trim() || 'image/png',
+          size: Number(req.body.attachment.size || 0),
+        }
+      : null;
+
+    if (!attachment?.contentBase64) {
+      return res.status(400).json({ error: 'Delivery note attachment is required' });
+    }
+
+    const subject = `${shipment.shipmentNumber} Delivery Note | إذن تسليم ${shipment.shipmentNumber}`;
+    const html = buildShipmentEmailHtml({ shipment, language: req.body?.language === 'ar' ? 'ar' : 'en' });
+
+    const delivery = await sendTenantEmail({
+      tenant,
+      to: recipient,
+      subject,
+      html,
+      attachments: [attachment],
+      metadata: { purpose: 'manual_delivery_note', shipmentNumber: shipment.shipmentNumber },
+    });
+
+    res.json({ success: true, delivery });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

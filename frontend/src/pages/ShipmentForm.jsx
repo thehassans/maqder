@@ -18,12 +18,24 @@ import {
   Building,
   Warehouse as WarehouseIcon,
   Package,
+  Mail,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
 import ShipmentDocumentPreview from '../components/shipments/ShipmentDocumentPreview'
-import { printElementHtml } from '../lib/shipmentPrint'
+import { buildElementImageBlob, printElementHtml } from '../lib/shipmentPrint'
+
+const blobToBase64 = (blob) => new Promise((resolve, reject) => {
+  const reader = new FileReader()
+  reader.onload = () => {
+    const result = String(reader.result || '')
+    const parts = result.split(',', 2)
+    resolve(parts[1] || '')
+  }
+  reader.onerror = () => reject(reader.error || new Error('Failed to read attachment'))
+  reader.readAsDataURL(blob)
+})
 
 export default function ShipmentForm() {
   const { id } = useParams()
@@ -38,6 +50,7 @@ export default function ShipmentForm() {
   const { language } = useSelector((state) => state.ui)
   const { tenant } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
+  const hasEmailAddon = tenant?.subscription?.hasEmailAddon === true || (Array.isArray(tenant?.subscription?.features) && tenant.subscription.features.includes('email_automation'))
 
   const formatDateForInput = (value) => {
     if (!value) return ''
@@ -282,6 +295,32 @@ export default function ShipmentForm() {
 
   const canPrintDeliveryDocuments = isOutbound && (documentShipment?.deliveryRecipient?.name || documentShipment?.deliveryRecipient?.company || documentShipment?.deliveryRecipient?.phone)
 
+  const sendEmailMutation = useMutation({
+    mutationFn: async () => {
+      if (!id) throw new Error(language === 'ar' ? 'احفظ الشحنة أولاً' : 'Save the shipment first')
+      const attachmentBlob = await buildElementImageBlob({ element: deliveryNoteRef.current })
+      if (!(attachmentBlob instanceof Blob)) {
+        throw new Error(language === 'ar' ? 'تعذر تجهيز إذن التسليم' : 'Unable to prepare delivery note attachment')
+      }
+      const contentBase64 = await blobToBase64(attachmentBlob)
+      return await api.post(`/shipments/${id}/send-email`, {
+        language,
+        attachment: {
+          filename: `${documentShipment?.shipmentNumber || 'delivery-note'}.png`,
+          contentBase64,
+          contentType: 'image/png',
+          size: attachmentBlob.size,
+        },
+      }, { timeout: 120000 })
+    },
+    onSuccess: () => {
+      toast.success(language === 'ar' ? 'تم إرسال إذن التسليم عبر البريد' : 'Delivery note sent successfully')
+    },
+    onError: (error) => {
+      toast.error(error?.response?.data?.error || error?.message || (language === 'ar' ? 'تعذر إرسال إذن التسليم' : 'Unable to send delivery note'))
+    },
+  })
+
   const onSubmit = (data) => {
     const deliveryRecipient = data.type === 'outbound'
       ? {
@@ -356,6 +395,21 @@ export default function ShipmentForm() {
 
         {isEdit && (
           <div className="flex items-center gap-2">
+            {shipment?.type === 'outbound' && hasEmailAddon ? (
+              <button
+                type="button"
+                onClick={() => sendEmailMutation.mutate()}
+                disabled={sendEmailMutation.isPending || !canPrintDeliveryDocuments}
+                className="btn btn-secondary"
+              >
+                {sendEmailMutation.isPending ? (
+                  <div className="w-5 h-5 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Mail className="w-4 h-4" />
+                )}
+                {language === 'ar' ? 'إرسال إذن التسليم' : 'Send Delivery Note'}
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={async () => {
@@ -438,6 +492,26 @@ export default function ShipmentForm() {
           </div>
         )}
       </div>
+
+      {isEdit && shipment?.type === 'outbound' ? (
+        <div className="card p-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-base font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'مستندات الشحنة' : 'Shipment Documents'}</h3>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                {language === 'ar'
+                  ? 'بعد إنشاء الشحنة يمكنك إرسال إذن التسليم بالبريد أو طباعة ملصق الشحن من الأعلى.'
+                  : 'After creating the shipment, you can send the delivery note by email or print the shipping label from the actions above.'}
+              </p>
+            </div>
+            {!canPrintDeliveryDocuments ? (
+              <span className="text-xs text-amber-600 dark:text-amber-400">
+                {language === 'ar' ? 'أكمل بيانات المستلم لتفعيل المستندات.' : 'Complete recipient details to enable shipment documents.'}
+              </span>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card p-6">
@@ -703,24 +777,18 @@ export default function ShipmentForm() {
             )}
           </button>
         </div>
-
-        {isOutbound && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.075 }} className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'معاينة المستندات' : 'Document Preview'}</h3>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                {language === 'ar' ? 'تصميم تسليم احترافي وملصق شحن بسيط للطباعة المباشرة.' : 'Premium delivery note and minimal shipping label ready for direct printing.'}
-              </p>
-            </div>
-            <div ref={deliveryNoteRef}>
-              <ShipmentDocumentPreview shipment={documentShipment} tenant={tenant} language={language} documentType="delivery-note" />
-            </div>
-            <div ref={shippingLabelRef}>
-              <ShipmentDocumentPreview shipment={documentShipment} tenant={tenant} language={language} documentType="shipping-label" />
-            </div>
-          </motion.div>
-        )}
       </form>
+
+      {isOutbound ? (
+        <div className="fixed left-[-10000px] top-0 opacity-0 pointer-events-none" aria-hidden="true">
+          <div ref={deliveryNoteRef}>
+            <ShipmentDocumentPreview shipment={documentShipment} tenant={tenant} language={language} documentType="delivery-note" />
+          </div>
+          <div ref={shippingLabelRef}>
+            <ShipmentDocumentPreview shipment={documentShipment} tenant={tenant} language={language} documentType="shipping-label" />
+          </div>
+        </div>
+      ) : null}
 
       {isEdit && shipment && (
         <div className="card p-4">
