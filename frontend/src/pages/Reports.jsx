@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
@@ -7,7 +7,7 @@ import Money from '../components/ui/Money'
 import ExportMenu from '../components/ui/ExportMenu'
 import { downloadBusinessReportPdf } from '../lib/businessReportPdf'
 import { downloadVatReturnReportPdf } from '../lib/vatReturnReportPdf'
-import { Download } from 'lucide-react'
+import { Clock3, Download, Mail, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const formatInputDate = (value) => {
@@ -19,9 +19,27 @@ const formatInputDate = (value) => {
   return `${year}-${month}-${day}`
 }
 
+const formatTimeInput = (hour = 8, minute = 0) => `${String(Number(hour) || 0).padStart(2, '0')}:${String(Number(minute) || 0).padStart(2, '0')}`
+
+const parseTimeInput = (value) => {
+  const [hour, minute] = String(value || '08:00').split(':')
+  return {
+    sendAtHour: Math.max(0, Math.min(23, Number(hour) || 8)),
+    sendAtMinute: Math.max(0, Math.min(59, Number(minute) || 0)),
+  }
+}
+
+const formatDateTime = (value, language) => {
+  if (!value) return '-'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '-'
+  return date.toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US')
+}
+
 export default function Reports() {
+  const queryClient = useQueryClient()
   const { language } = useSelector((state) => state.ui)
-  const { tenant } = useSelector((state) => state.auth)
+  const { tenant, user } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
 
   const now = new Date()
@@ -30,7 +48,22 @@ export default function Reports() {
 
   const [reportType, setReportType] = useState('vat')
   const [downloadingReportPdf, setDownloadingReportPdf] = useState(false)
+  const [showScheduleForm, setShowScheduleForm] = useState(false)
+  const [scheduleForm, setScheduleForm] = useState({
+    name: '',
+    reportType: 'vat',
+    rangePreset: 'this_month',
+    frequency: 'weekly',
+    dayOfWeek: '1',
+    dayOfMonth: '1',
+    time: '08:00',
+    recipients: tenant?.business?.contactEmail || '',
+    language,
+    enabled: true,
+  })
   const hasInvalidRange = Boolean(startDate && endDate && new Date(startDate) > new Date(endDate))
+  const hasEmailAddon = Boolean(tenant?.subscription?.hasEmailAddon || tenant?.subscription?.features?.includes('email_automation'))
+  const canManageSchedules = user?.role === 'admin' || user?.role === 'super_admin'
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['reports', reportType, startDate, endDate],
@@ -42,10 +75,53 @@ export default function Reports() {
     enabled: !!startDate && !!endDate && !hasInvalidRange,
   })
 
+  const { data: schedulesData, isLoading: schedulesLoading } = useQuery({
+    queryKey: ['report-schedules'],
+    queryFn: () => api.get('/reports/schedules').then((res) => res.data),
+    enabled: hasEmailAddon,
+  })
+
+  const createScheduleMutation = useMutation({
+    mutationFn: (payload) => api.post('/reports/schedules', { schedule: payload }).then((res) => res.data),
+    onSuccess: () => {
+      toast.success(language === 'ar' ? 'تم إنشاء الجدولة' : 'Report schedule created')
+      queryClient.invalidateQueries(['report-schedules'])
+      setShowScheduleForm(false)
+      setScheduleForm((current) => ({
+        ...current,
+        name: '',
+      }))
+    },
+    onError: (err) => toast.error(err?.response?.data?.error || (language === 'ar' ? 'فشل إنشاء الجدولة' : 'Failed to create schedule')),
+  })
+
+  const toggleScheduleMutation = useMutation({
+    mutationFn: (schedule) => api.put(`/reports/schedules/${schedule._id}`, {
+      schedule: {
+        ...schedule,
+        enabled: !schedule.enabled,
+      },
+    }).then((res) => res.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['report-schedules'])
+    },
+    onError: (err) => toast.error(err?.response?.data?.error || (language === 'ar' ? 'فشل تحديث الجدولة' : 'Failed to update schedule')),
+  })
+
+  const deleteScheduleMutation = useMutation({
+    mutationFn: (id) => api.delete(`/reports/schedules/${id}`).then((res) => res.data),
+    onSuccess: () => {
+      toast.success(language === 'ar' ? 'تم حذف الجدولة' : 'Report schedule deleted')
+      queryClient.invalidateQueries(['report-schedules'])
+    },
+    onError: (err) => toast.error(err?.response?.data?.error || (language === 'ar' ? 'فشل حذف الجدولة' : 'Failed to delete schedule')),
+  })
+
   const money = (value) => <Money value={value} minimumFractionDigits={2} maximumFractionDigits={2} />
 
   const totals = data?.totals
   const byCategory = totals?.byCategory
+  const schedules = schedulesData?.schedules || []
 
   const [exportTable, setExportTable] = useState('byCategory')
 
@@ -67,6 +143,26 @@ export default function Reports() {
       label: language === 'ar' ? 'خارج النطاق (Out of Scope)' : 'Out of Scope'
     }
   ]
+
+  const handleCreateSchedule = () => {
+    const { sendAtHour, sendAtMinute } = parseTimeInput(scheduleForm.time)
+    createScheduleMutation.mutate({
+      name: scheduleForm.name,
+      reportType: scheduleForm.reportType,
+      rangePreset: scheduleForm.rangePreset,
+      frequency: scheduleForm.frequency,
+      dayOfWeek: Number(scheduleForm.dayOfWeek || 1),
+      dayOfMonth: Number(scheduleForm.dayOfMonth || 1),
+      sendAtHour,
+      sendAtMinute,
+      recipients: scheduleForm.recipients
+        .split(/[\n,;]+/g)
+        .map((item) => item.trim())
+        .filter(Boolean),
+      language: scheduleForm.language,
+      enabled: scheduleForm.enabled,
+    })
+  }
 
   return (
     <div className="space-y-6">
@@ -134,6 +230,168 @@ export default function Reports() {
             : `Selected period: ${new Date(data.period.startDate).toLocaleDateString('en-US')} - ${new Date(data.period.endDate).toLocaleDateString('en-US')}`}
         </div>
       ) : null}
+
+      {hasEmailAddon ? (
+        <div className="card p-6 space-y-5">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <Mail className="w-5 h-5 text-primary-600" />
+                {language === 'ar' ? 'جدولة التقارير بالبريد' : 'Scheduled Report Delivery'}
+              </h2>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                {language === 'ar'
+                  ? 'أرسل تقارير VAT أو الأعمال تلقائياً إلى بريدك حسب الجدول.'
+                  : 'Automatically email VAT or business reports on a recurring schedule.'}
+              </p>
+            </div>
+            {canManageSchedules && (
+              <button type="button" className="btn btn-secondary" onClick={() => setShowScheduleForm((value) => !value)}>
+                <Clock3 className="w-4 h-4" />
+                {showScheduleForm
+                  ? (language === 'ar' ? 'إخفاء النموذج' : 'Hide Form')
+                  : (language === 'ar' ? 'جدولة جديدة' : 'New Schedule')}
+              </button>
+            )}
+          </div>
+
+          {showScheduleForm && canManageSchedules && (
+            <div className="rounded-2xl border border-gray-200 dark:border-dark-600 p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              <div>
+                <label className="label">{language === 'ar' ? 'اسم الجدولة' : 'Schedule Name'}</label>
+                <input value={scheduleForm.name} onChange={(e) => setScheduleForm((current) => ({ ...current, name: e.target.value }))} className="input" placeholder={language === 'ar' ? 'مثال: تقرير VAT الشهري' : 'Example: Monthly VAT Report'} />
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'نوع التقرير' : 'Report Type'}</label>
+                <select value={scheduleForm.reportType} onChange={(e) => setScheduleForm((current) => ({ ...current, reportType: e.target.value }))} className="select">
+                  <option value="vat">{language === 'ar' ? 'VAT' : 'VAT'}</option>
+                  <option value="business">{language === 'ar' ? 'الأعمال' : 'Business'}</option>
+                </select>
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'النطاق' : 'Range Preset'}</label>
+                <select value={scheduleForm.rangePreset} onChange={(e) => setScheduleForm((current) => ({ ...current, rangePreset: e.target.value }))} className="select">
+                  <option value="this_month">{language === 'ar' ? 'هذا الشهر' : 'This Month'}</option>
+                  <option value="last_month">{language === 'ar' ? 'الشهر الماضي' : 'Last Month'}</option>
+                  <option value="this_week">{language === 'ar' ? 'هذا الأسبوع' : 'This Week'}</option>
+                  <option value="last_7_days">{language === 'ar' ? 'آخر 7 أيام' : 'Last 7 Days'}</option>
+                </select>
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'التكرار' : 'Frequency'}</label>
+                <select value={scheduleForm.frequency} onChange={(e) => setScheduleForm((current) => ({ ...current, frequency: e.target.value }))} className="select">
+                  <option value="daily">{language === 'ar' ? 'يومي' : 'Daily'}</option>
+                  <option value="weekly">{language === 'ar' ? 'أسبوعي' : 'Weekly'}</option>
+                  <option value="monthly">{language === 'ar' ? 'شهري' : 'Monthly'}</option>
+                </select>
+              </div>
+              {scheduleForm.frequency === 'weekly' && (
+                <div>
+                  <label className="label">{language === 'ar' ? 'يوم الأسبوع' : 'Day of Week'}</label>
+                  <select value={scheduleForm.dayOfWeek} onChange={(e) => setScheduleForm((current) => ({ ...current, dayOfWeek: e.target.value }))} className="select">
+                    <option value="0">{language === 'ar' ? 'الأحد' : 'Sunday'}</option>
+                    <option value="1">{language === 'ar' ? 'الاثنين' : 'Monday'}</option>
+                    <option value="2">{language === 'ar' ? 'الثلاثاء' : 'Tuesday'}</option>
+                    <option value="3">{language === 'ar' ? 'الأربعاء' : 'Wednesday'}</option>
+                    <option value="4">{language === 'ar' ? 'الخميس' : 'Thursday'}</option>
+                    <option value="5">{language === 'ar' ? 'الجمعة' : 'Friday'}</option>
+                    <option value="6">{language === 'ar' ? 'السبت' : 'Saturday'}</option>
+                  </select>
+                </div>
+              )}
+              {scheduleForm.frequency === 'monthly' && (
+                <div>
+                  <label className="label">{language === 'ar' ? 'يوم الشهر' : 'Day of Month'}</label>
+                  <input type="number" min="1" max="28" value={scheduleForm.dayOfMonth} onChange={(e) => setScheduleForm((current) => ({ ...current, dayOfMonth: e.target.value }))} className="input" />
+                </div>
+              )}
+              <div>
+                <label className="label">{language === 'ar' ? 'وقت الإرسال' : 'Send Time'}</label>
+                <input type="time" value={scheduleForm.time} onChange={(e) => setScheduleForm((current) => ({ ...current, time: e.target.value }))} className="input" />
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'لغة البريد' : 'Email Language'}</label>
+                <select value={scheduleForm.language} onChange={(e) => setScheduleForm((current) => ({ ...current, language: e.target.value }))} className="select">
+                  <option value="en">English</option>
+                  <option value="ar">العربية</option>
+                </select>
+              </div>
+              <div className="md:col-span-2 xl:col-span-3">
+                <label className="label">{language === 'ar' ? 'المستلمون' : 'Recipients'}</label>
+                <textarea value={scheduleForm.recipients} onChange={(e) => setScheduleForm((current) => ({ ...current, recipients: e.target.value }))} className="input min-h-[96px]" placeholder={language === 'ar' ? 'admin@example.com, finance@example.com' : 'admin@example.com, finance@example.com'} />
+              </div>
+              <div className="md:col-span-2 xl:col-span-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                  <input type="checkbox" checked={scheduleForm.enabled} onChange={(e) => setScheduleForm((current) => ({ ...current, enabled: e.target.checked }))} className="h-4 w-4" />
+                  {language === 'ar' ? 'تفعيل الجدولة فوراً' : 'Enable schedule immediately'}
+                </label>
+                <button type="button" onClick={handleCreateSchedule} disabled={createScheduleMutation.isPending} className="btn btn-primary">
+                  {createScheduleMutation.isPending
+                    ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    : (language === 'ar' ? 'حفظ الجدولة' : 'Save Schedule')}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {schedulesLoading ? (
+            <div className="text-sm text-gray-500 dark:text-gray-400">{language === 'ar' ? 'جاري تحميل الجدولة...' : 'Loading schedules...'}</div>
+          ) : schedules.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-gray-300 dark:border-dark-600 p-4 text-sm text-gray-500 dark:text-gray-400">
+              {language === 'ar' ? 'لا توجد جدولة تقارير حالياً.' : 'No scheduled reports yet.'}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {schedules.map((schedule) => (
+                <div key={schedule._id} className="rounded-2xl border border-gray-200 dark:border-dark-600 p-4 flex flex-col gap-4">
+                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-semibold text-gray-900 dark:text-white">{schedule.name}</h3>
+                        <span className={`badge ${schedule.enabled ? 'badge-success' : 'badge-neutral'}`}>{schedule.enabled ? (language === 'ar' ? 'مفعل' : 'Enabled') : (language === 'ar' ? 'متوقف' : 'Disabled')}</span>
+                        <span className="badge badge-info">{schedule.reportType === 'business' ? (language === 'ar' ? 'الأعمال' : 'Business') : 'VAT'}</span>
+                      </div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {language === 'ar'
+                          ? `النطاق: ${schedule.rangePreset} • التكرار: ${schedule.frequency}`
+                          : `Range: ${schedule.rangePreset} • Frequency: ${schedule.frequency}`}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {language === 'ar' ? 'التالي:' : 'Next run:'} {formatDateTime(schedule.nextRunAt, language)}
+                        {' • '}
+                        {language === 'ar' ? 'آخر تشغيل:' : 'Last run:'} {formatDateTime(schedule.lastRunAt, language)}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 break-all">
+                        {schedule.recipients.join(', ')}
+                      </p>
+                      {schedule.lastError ? <p className="text-sm text-red-600">{schedule.lastError}</p> : null}
+                    </div>
+                    {canManageSchedules && (
+                      <div className="flex flex-wrap gap-2">
+                        <button type="button" className="btn btn-secondary" disabled={toggleScheduleMutation.isPending} onClick={() => toggleScheduleMutation.mutate(schedule)}>
+                          {schedule.enabled
+                            ? (language === 'ar' ? 'إيقاف' : 'Disable')
+                            : (language === 'ar' ? 'تفعيل' : 'Enable')}
+                        </button>
+                        <button type="button" className="btn btn-ghost text-red-600" disabled={deleteScheduleMutation.isPending} onClick={() => deleteScheduleMutation.mutate(schedule._id)}>
+                          <Trash2 className="w-4 h-4" />
+                          {language === 'ar' ? 'حذف' : 'Delete'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="card p-6 text-sm text-gray-500 dark:text-gray-400">
+          {language === 'ar'
+            ? 'تحتاج إلى إضافة البريد الإلكتروني لتفعيل جدولة التقارير.'
+            : 'You need the email add-on enabled to use scheduled report delivery.'}
+        </div>
+      )}
 
       {hasInvalidRange ? (
         <div className="card p-6 text-amber-700 dark:text-amber-300">

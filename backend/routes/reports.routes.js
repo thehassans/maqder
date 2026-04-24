@@ -2,12 +2,134 @@ import express from 'express';
 import Invoice from '../models/Invoice.js';
 import Expense from '../models/Expense.js';
 import VatReturn from '../models/VatReturn.js';
-import { protect, tenantFilter, authorize } from '../middleware/auth.js';
+import ReportSchedule from '../models/ReportSchedule.js';
+import { protect, tenantFilter, authorize, checkEmailAddon } from '../middleware/auth.js';
+import { computeNextRunAt, normalizeRecipients, serializeReportSchedule, REPORT_SCHEDULE_FREQUENCIES, REPORT_SCHEDULE_PRESETS, REPORT_SCHEDULE_TYPES } from '../utils/reportScheduleService.js';
 
 const router = express.Router();
 
 router.use(protect);
 router.use(tenantFilter);
+
+function normalizeReportSchedulePayload(payload = {}) {
+  const reportType = REPORT_SCHEDULE_TYPES.includes(String(payload?.reportType || '').trim())
+    ? String(payload.reportType).trim()
+    : 'vat';
+  const rangePreset = REPORT_SCHEDULE_PRESETS.includes(String(payload?.rangePreset || '').trim())
+    ? String(payload.rangePreset).trim()
+    : 'this_month';
+  const frequency = REPORT_SCHEDULE_FREQUENCIES.includes(String(payload?.frequency || '').trim())
+    ? String(payload.frequency).trim()
+    : 'weekly';
+  const sendAtHour = Math.max(0, Math.min(23, Number(payload?.sendAtHour) || 8));
+  const sendAtMinute = Math.max(0, Math.min(59, Number(payload?.sendAtMinute) || 0));
+  const dayOfWeek = Math.max(0, Math.min(6, Number(payload?.dayOfWeek) || 1));
+  const dayOfMonth = Math.max(1, Math.min(28, Number(payload?.dayOfMonth) || 1));
+
+  return {
+    name: String(payload?.name || '').trim(),
+    reportType,
+    rangePreset,
+    frequency,
+    dayOfWeek,
+    dayOfMonth,
+    sendAtHour,
+    sendAtMinute,
+    recipients: normalizeRecipients(payload?.recipients || []),
+    language: payload?.language === 'ar' ? 'ar' : 'en',
+    enabled: payload?.enabled !== false,
+  };
+}
+
+router.get('/schedules', checkEmailAddon, async (req, res) => {
+  try {
+    if (!req.user?.tenantId) {
+      return res.status(400).json({ error: 'Tenant context is required' });
+    }
+
+    const schedules = await ReportSchedule.find({ tenantId: req.user.tenantId }).sort({ createdAt: -1 });
+    return res.json({ schedules: schedules.map(serializeReportSchedule) });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/schedules', checkEmailAddon, authorize('admin'), async (req, res) => {
+  try {
+    if (!req.user?.tenantId) {
+      return res.status(400).json({ error: 'Tenant context is required' });
+    }
+
+    const payload = normalizeReportSchedulePayload(req.body?.schedule || req.body || {});
+    if (!payload.name) {
+      return res.status(400).json({ error: 'Schedule name is required' });
+    }
+    if (payload.recipients.length === 0) {
+      return res.status(400).json({ error: 'At least one recipient is required' });
+    }
+
+    const schedule = await ReportSchedule.create({
+      tenantId: req.user.tenantId,
+      ...payload,
+      nextRunAt: computeNextRunAt(payload),
+      createdBy: req.user._id,
+      updatedBy: req.user._id,
+    });
+
+    return res.status(201).json({ schedule: serializeReportSchedule(schedule) });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.put('/schedules/:id', checkEmailAddon, authorize('admin'), async (req, res) => {
+  try {
+    if (!req.user?.tenantId) {
+      return res.status(400).json({ error: 'Tenant context is required' });
+    }
+
+    const schedule = await ReportSchedule.findOne({ _id: req.params.id, tenantId: req.user.tenantId });
+    if (!schedule) {
+      return res.status(404).json({ error: 'Scheduled report not found' });
+    }
+
+    const payload = normalizeReportSchedulePayload({ ...schedule.toObject(), ...(req.body?.schedule || req.body || {}) });
+    if (!payload.name) {
+      return res.status(400).json({ error: 'Schedule name is required' });
+    }
+    if (payload.recipients.length === 0) {
+      return res.status(400).json({ error: 'At least one recipient is required' });
+    }
+
+    Object.assign(schedule, payload, {
+      nextRunAt: computeNextRunAt(payload),
+      updatedBy: req.user._id,
+      lastError: payload.enabled ? schedule.lastError : '',
+    });
+    await schedule.save();
+
+    return res.json({ schedule: serializeReportSchedule(schedule) });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+router.delete('/schedules/:id', checkEmailAddon, authorize('admin'), async (req, res) => {
+  try {
+    if (!req.user?.tenantId) {
+      return res.status(400).json({ error: 'Tenant context is required' });
+    }
+
+    const schedule = await ReportSchedule.findOneAndDelete({ _id: req.params.id, tenantId: req.user.tenantId });
+    if (!schedule) {
+      return res.status(404).json({ error: 'Scheduled report not found' });
+    }
+
+    return res.json({ success: true });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
 
 function resolvePeriod(req) {
   const now = new Date();
