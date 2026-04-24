@@ -1,4 +1,4 @@
-import { formatCurrency } from './currency'
+import { CURRENCY_CODE, formatCurrencyAmount } from './currency'
 
 const hexToRgb = (hex) => {
   if (!hex) return null
@@ -37,14 +37,25 @@ const safeText = (value) => {
   return String(value)
 }
 
+const sanitizePdfText = (value) => {
+  return safeText(value)
+    .replace(/[\u200e\u200f\u061c]/g, '')
+    .replace(/﷼/g, 'SAR')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 const fmtMoney = (value, { language, currency }) => {
-  return formatCurrency(Number(value || 0), {
+  const currencyCode = String(currency || CURRENCY_CODE).trim().toUpperCase() || CURRENCY_CODE
+  const amount = formatCurrencyAmount(Number(value || 0), {
     language,
-    currency: currency || 'SAR',
+    currency: currencyCode,
     currencyDisplay: 'code',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
+
+  return sanitizePdfText(language === 'ar' ? `${amount} ${currencyCode}` : `${currencyCode} ${amount}`)
 }
 
 const formatDate = (value, language) => {
@@ -115,24 +126,41 @@ export const downloadVatReturnReportPdf = async ({ report, language = 'en', tena
   const gap = 12
   const cardW = (pageW - margin * 2 - gap) / 2
 
+  const fitFontSize = (text, width, preferred = 14, minimum = 10) => {
+    let nextSize = preferred
+    doc.setFontSize(nextSize)
+    while (nextSize > minimum && doc.getTextWidth(sanitizePdfText(text)) > width) {
+      nextSize -= 0.5
+      doc.setFontSize(nextSize)
+    }
+    return nextSize
+  }
+
   const drawCard = ({ x, y, title, subtitle, value, valueColor }) => {
-    doc.setFillColor(255, 255, 255)
+    const safeTitle = sanitizePdfText(title)
+    const safeSubtitle = sanitizePdfText(subtitle)
+    const safeValueText = sanitizePdfText(value)
+
+    doc.setFillColor(248, 250, 252)
     doc.setDrawColor(226, 232, 240)
     doc.roundedRect(x, y, cardW, cardH, 14, 14, 'FD')
 
+    doc.setFont('helvetica', 'normal')
     doc.setFontSize(10)
     doc.setTextColor(100)
-    doc.text(title, isRtl ? x + cardW - 14 : x + 14, y + 24, { align })
+    doc.text(safeTitle, isRtl ? x + cardW - 14 : x + 14, y + 24, { align, maxWidth: cardW - 28 })
 
-    if (subtitle) {
+    if (safeSubtitle) {
       doc.setFontSize(9)
-      doc.text(subtitle, isRtl ? x + cardW - 14 : x + 14, y + 40, { align })
+      doc.text(safeSubtitle, isRtl ? x + cardW - 14 : x + 14, y + 40, { align, maxWidth: cardW - 28 })
     }
 
-    doc.setFontSize(14)
+    const valueFontSize = fitFontSize(safeValueText, cardW - 28, 14, 10)
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(valueFontSize)
     const [r, g, b] = valueColor || [15, 23, 42]
     doc.setTextColor(r, g, b)
-    doc.text(value, isRtl ? x + cardW - 14 : x + 14, y + 62, { align })
+    doc.text(safeValueText, isRtl ? x + cardW - 14 : x + 14, y + 62, { align, maxWidth: cardW - 28 })
   }
 
   drawCard({
@@ -174,15 +202,22 @@ export const downloadVatReturnReportPdf = async ({ report, language = 'en', tena
   let y = cardY + (cardH + gap) * 2 + 10
 
   const sectionTitle = (text) => {
+    const safeHeading = sanitizePdfText(text)
+    doc.setDrawColor(rgb.r, rgb.g, rgb.b)
+    doc.setLineWidth(1.2)
+    doc.line(margin, y + 4, margin + 28, y + 4)
     doc.setFontSize(12)
+    doc.setFont('helvetica', 'bold')
     doc.setTextColor(15, 23, 42)
-    doc.text(text, isRtl ? pageW - margin : margin, y, { align })
-    y += 10
+    doc.text(safeHeading, isRtl ? pageW - margin : margin + 38, y + 8, { align })
+    y += 18
   }
 
   const tableTheme = {
-    styles: { fontSize: 9, cellPadding: 6 },
+    styles: { fontSize: 9, cellPadding: 6, overflow: 'linebreak', textColor: [31, 41, 55], lineColor: [226, 232, 240], lineWidth: 0.5 },
     headStyles: { fillColor: [rgb.r, rgb.g, rgb.b], textColor: [255, 255, 255] },
+    alternateRowStyles: { fillColor: [248, 250, 252] },
+    margin: { left: margin, right: margin },
   }
 
   const summaryRows = [
@@ -217,11 +252,16 @@ export const downloadVatReturnReportPdf = async ({ report, language = 'en', tena
       language === 'ar' ? 'الضريبة' : 'VAT',
     ]],
     body: summaryRows.map((row) => ([
-      row.label,
+      sanitizePdfText(row.label),
       fmtMoney(row.taxableAmount, { language, currency }),
       fmtMoney(row.taxAmount, { language, currency }),
     ])),
     ...tableTheme,
+    columnStyles: {
+      0: { cellWidth: 170 },
+      1: { cellWidth: 150 },
+      2: { cellWidth: 140 },
+    },
   })
   y = doc.lastAutoTable.finalY + 22
 
@@ -238,13 +278,19 @@ export const downloadVatReturnReportPdf = async ({ report, language = 'en', tena
     body: (byTransactionType.length ? byTransactionType : [{}]).map((row) => {
       if (!row || !row._id) return [language === 'ar' ? 'لا توجد بيانات' : 'No data', '', '', '']
       return [
-        safeText(row._id),
-        safeText(row.invoiceCount || 0),
+        sanitizePdfText(row._id),
+        sanitizePdfText(row.invoiceCount || 0),
         fmtMoney(row.totalDiscount, { language, currency }),
         fmtMoney(row.totalTax, { language, currency }),
       ]
     }),
     ...tableTheme,
+    columnStyles: {
+      0: { cellWidth: 140 },
+      1: { cellWidth: 90 },
+      2: { cellWidth: 115 },
+      3: { cellWidth: 115 },
+    },
   })
   y = doc.lastAutoTable.finalY + 22
 
@@ -261,13 +307,19 @@ export const downloadVatReturnReportPdf = async ({ report, language = 'en', tena
     body: (byTaxCategory.length ? byTaxCategory : [{}]).map((row) => {
       if (!row || !row._id) return [language === 'ar' ? 'لا توجد بيانات' : 'No data', '', '', '']
       return [
-        safeText(row._id?.taxCategory || '-'),
-        `${safeText(row._id?.taxRate ?? 0)}%`,
+        sanitizePdfText(row._id?.taxCategory || '-'),
+        sanitizePdfText(`${safeText(row._id?.taxRate ?? 0)}%`),
         fmtMoney(row.taxableAmount, { language, currency }),
         fmtMoney(row.taxAmount, { language, currency }),
       ]
     }),
     ...tableTheme,
+    columnStyles: {
+      0: { cellWidth: 110 },
+      1: { cellWidth: 70 },
+      2: { cellWidth: 140 },
+      3: { cellWidth: 140 },
+    },
   })
   y = doc.lastAutoTable.finalY + 22
 
@@ -282,9 +334,9 @@ export const downloadVatReturnReportPdf = async ({ report, language = 'en', tena
   autoTable(doc, {
     startY: y,
     head: [[language === 'ar' ? 'البند' : 'Line Item', language === 'ar' ? 'القيمة' : 'Value']],
-    body: statementRows.map((row) => [row.label, fmtMoney(row.value, { language, currency })]),
+    body: statementRows.map((row) => [sanitizePdfText(row.label), fmtMoney(row.value, { language, currency })]),
     ...tableTheme,
-    columnStyles: { 0: { cellWidth: 290 } },
+    columnStyles: { 0: { cellWidth: 290 }, 1: { cellWidth: 160 } },
   })
 
   const pages = doc.getNumberOfPages()
