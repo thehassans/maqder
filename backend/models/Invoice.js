@@ -167,6 +167,7 @@ const invoiceSchema = new mongoose.Schema({
   purchaseOrderNumber: { type: String },
   contractNumber: { type: String },
   originalInvoiceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Invoice' },
+  sourceQuotationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Quotation', index: true },
 
   restaurantOrderId: { type: mongoose.Schema.Types.ObjectId, ref: 'RestaurantOrder', index: true },
   travelBookingId: { type: mongoose.Schema.Types.ObjectId, ref: 'TravelBooking', index: true },

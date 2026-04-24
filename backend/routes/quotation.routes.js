@@ -1,5 +1,6 @@
 import express from 'express';
 import mongoose from 'mongoose';
+import Invoice from '../models/Invoice.js';
 import Quotation from '../models/Quotation.js';
 import Tenant from '../models/Tenant.js';
 import Customer from '../models/Customer.js';
@@ -108,7 +109,113 @@ async function ensureCustomerRecord(tenantId, buyer = {}, existingCustomer = nul
 
 function resolveQuotationStatus(status) {
   const value = String(status || '').trim().toLowerCase();
-  return ['draft', 'sent', 'accepted', 'rejected', 'expired', 'cancelled'].includes(value) ? value : 'draft';
+  return ['draft', 'sent', 'accepted', 'rejected', 'expired', 'cancelled', 'converted'].includes(value) ? value : 'draft';
+}
+
+function canConvertQuotationToInvoice(quotation) {
+  const status = String(quotation?.status || '').trim().toLowerCase();
+  return ['draft', 'sent', 'accepted'].includes(status) && !quotation?.convertedInvoiceId;
+}
+
+async function generateInvoiceNumber(tenantId) {
+  const lastInvoice = await Invoice.findOne({ tenantId })
+    .sort({ createdAt: -1 })
+    .select('invoiceNumber');
+
+  const invoiceCount = lastInvoice
+    ? parseInt(String(lastInvoice.invoiceNumber || '').split('-').pop(), 10) + 1
+    : 1;
+
+  return `INV-${new Date().getFullYear()}-${String(invoiceCount).padStart(6, '0')}`;
+}
+
+async function buildInvoiceFromQuotation({ quotation, tenant, user }) {
+  let customer = null;
+  if (quotation?.customerId) {
+    customer = await Customer.findOne({ _id: quotation.customerId, tenantId: quotation.tenantId, isActive: true });
+  }
+
+  if (!customer && quotation?.businessContext === 'travel_agency') {
+    customer = await ensureCustomerRecord(quotation.tenantId, quotation?.buyer || {});
+  }
+
+  const buyer = {
+    ...(quotation?.buyer?.toObject?.() || quotation?.buyer || {}),
+  };
+
+  if (customer) {
+    buyer.name = buyer.name || customer.name;
+    buyer.nameAr = buyer.nameAr || customer.nameAr;
+    buyer.vatNumber = buyer.vatNumber || customer.vatNumber;
+    buyer.crNumber = buyer.crNumber || customer.crNumber;
+    buyer.contactEmail = buyer.contactEmail || customer.email;
+    buyer.contactPhone = buyer.contactPhone || customer.phone || customer.mobile;
+    buyer.address = { ...(customer.address?.toObject?.() || customer.address || {}), ...(buyer.address || {}) };
+  }
+
+  if (!buyer.name || !String(buyer.name).trim()) {
+    buyer.name = 'Cash Customer';
+    buyer.nameAr = buyer.nameAr || 'عميل نقدي';
+  }
+
+  const businessContext = quotation?.businessContext || 'trading';
+  const transactionType = businessContext === 'travel_agency'
+    ? 'B2C'
+    : (quotation?.transactionType === 'B2B' ? 'B2B' : 'B2C');
+  const invoiceSubtype = businessContext === 'travel_agency' ? 'travel_ticket' : 'standard';
+  const invoiceTypeCode = businessContext === 'travel_agency'
+    ? '0200000'
+    : (transactionType === 'B2C' ? '0200000' : '0100000');
+  const invoiceNumber = await generateInvoiceNumber(quotation.tenantId);
+  const lineItems = (quotation?.lineItems || []).map((line, index) => ({
+    ...(line?.toObject?.() || line),
+    lineNumber: line?.lineNumber || index + 1,
+    taxCategory: line?.taxCategory || 'S',
+  }));
+  const invoiceData = {
+    tenantId: quotation.tenantId,
+    flow: 'sell',
+    businessContext,
+    invoiceNumber,
+    invoiceSubtype,
+    pdfTemplateId: resolvePdfTemplateId(quotation?.pdfTemplateId, tenant, businessContext),
+    invoiceTypeCode,
+    transactionType,
+    issueDate: new Date(),
+    buyer,
+    customerId: customer?._id || quotation?.customerId || undefined,
+    seller: {
+      name: tenant.business.legalNameEn,
+      nameAr: tenant.business.legalNameAr,
+      vatNumber: tenant.business.vatNumber,
+      crNumber: tenant.business.crNumber,
+      address: tenant.business.address,
+      contactPhone: tenant.business.contactPhone,
+      contactEmail: tenant.business.contactEmail,
+    },
+    lineItems,
+    subtotal: toNumber(quotation?.subtotal, 0),
+    invoiceDiscount: Math.max(0, toNumber(quotation?.invoiceDiscount, 0)),
+    totalDiscount: toNumber(quotation?.totalDiscount, 0),
+    taxableAmount: toNumber(quotation?.taxableAmount, 0),
+    totalTax: toNumber(quotation?.totalTax, 0),
+    grandTotal: toNumber(quotation?.grandTotal, 0),
+    currency: quotation?.currency || 'SAR',
+    paymentStatus: 'pending',
+    status: 'draft',
+    notes: quotation?.notes,
+    internalNotes: quotation?.internalNotes,
+    sourceQuotationId: quotation._id,
+    createdBy: user._id,
+    ...getUserDisplayNames(user),
+  };
+
+  if (quotation?.travelDetails) {
+    invoiceData.travelDetails = quotation.travelDetails;
+  }
+
+  const enrichedInvoiceData = await enrichInvoiceArabicFields(invoiceData);
+  return await Invoice.create(enrichedInvoiceData);
 }
 
 function resolveRecipient(customer, quotation, fallbackRecipient = '') {
@@ -199,7 +306,8 @@ router.get('/:id', checkPermission('invoicing', 'read'), async (req, res) => {
   try {
     const quotation = await Quotation.findOne({ _id: req.params.id, ...req.tenantFilter })
       .populate('customerId', 'name nameAr email phone mobile vatNumber crNumber address')
-      .populate('createdBy', 'firstName lastName firstNameAr lastNameAr');
+      .populate('createdBy', 'firstName lastName firstNameAr lastNameAr')
+      .populate('convertedInvoiceId', 'invoiceNumber');
 
     if (!quotation) {
       return res.status(404).json({ error: 'Quotation not found' });
@@ -355,6 +463,49 @@ router.put('/:id', checkPermission('invoicing', 'update'), async (req, res) => {
     await quotation.save();
 
     res.json(quotation);
+  } catch (error) {
+    const statusCode = /invalid|not found/i.test(error.message) ? 400 : 500;
+    res.status(statusCode).json({ error: error.message });
+  }
+});
+
+router.post('/:id/convert-to-invoice', checkPermission('invoicing', 'create'), async (req, res) => {
+  try {
+    const quotation = await Quotation.findOne({ _id: req.params.id, ...req.tenantFilter });
+    if (!quotation) {
+      return res.status(404).json({ error: 'Quotation not found' });
+    }
+
+    if (quotation.convertedInvoiceId) {
+      return res.status(409).json({
+        error: 'Quotation has already been converted to an invoice',
+        invoiceId: quotation.convertedInvoiceId,
+      });
+    }
+
+    if (!canConvertQuotationToInvoice(quotation)) {
+      return res.status(400).json({ error: 'This quotation cannot be converted to an invoice' });
+    }
+
+    const tenant = await Tenant.findById(req.user.tenantId);
+    if (!tenant) {
+      return res.status(404).json({ error: 'Tenant not found' });
+    }
+
+    const invoice = await buildInvoiceFromQuotation({ quotation, tenant, user: req.user });
+
+    quotation.status = 'converted';
+    quotation.convertedInvoiceId = invoice._id;
+    quotation.convertedAt = new Date();
+    await quotation.save();
+
+    res.status(201).json({
+      success: true,
+      invoiceId: invoice._id,
+      invoiceNumber: invoice.invoiceNumber,
+      quotationId: quotation._id,
+      quotationNumber: quotation.quotationNumber,
+    });
   } catch (error) {
     const statusCode = /invalid|not found/i.test(error.message) ? 400 : 500;
     res.status(statusCode).json({ error: error.message });

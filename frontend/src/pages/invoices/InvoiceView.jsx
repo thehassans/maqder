@@ -306,7 +306,7 @@ export default function InvoiceView() {
             </div>
           </motion.div>
 
-          {(invoice?.restaurantOrderId || invoice?.travelBookingId || invoice?.contractNumber) && (
+          {(invoice?.restaurantOrderId || invoice?.travelBookingId || invoice?.contractNumber || invoice?.sourceQuotationId) && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -337,6 +337,16 @@ export default function InvoiceView() {
                   <div className="text-gray-700 dark:text-gray-200">
                     {language === 'ar' ? 'رقم العقد/المرجع' : 'Contract/Ref'}: {invoice.contractNumber}
                   </div>
+                )}
+                {invoice?.sourceQuotationId && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/app/dashboard/quotations/${invoice?.sourceQuotationId?._id || invoice?.sourceQuotationId}`)}
+                    className="flex items-center gap-2 text-primary-600 hover:underline text-start"
+                  >
+                    <FileText className="w-4 h-4" />
+                    {language === 'ar' ? 'عرض السعر المصدر' : 'Source Quotation'}: {invoice?.sourceQuotationId?.quotationNumber || String(invoice?.sourceQuotationId).slice(-6)}
+                  </button>
                 )}
               </div>
             </motion.div>

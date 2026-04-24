@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
-import { Plus, Search, Download, Edit, Eye } from 'lucide-react'
+import { Plus, Search, Download, Edit, Eye, FileText } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
@@ -11,6 +11,7 @@ import ExportMenu from '../../components/ui/ExportMenu'
 import { downloadQuotationPdf } from '../../lib/invoicePdf'
 
 const isEditableQuotation = (quotation) => ['draft', 'sent'].includes(String(quotation?.status || '').toLowerCase())
+const hasConvertedInvoice = (quotation) => Boolean(quotation?.convertedInvoiceId)
 
 const getQuotationStatusMeta = (quotation, language = 'en') => {
   const status = String(quotation?.status || 'draft').toLowerCase()
@@ -21,9 +22,12 @@ const getQuotationStatusMeta = (quotation, language = 'en') => {
     rejected: language === 'ar' ? 'مرفوض' : 'Rejected',
     expired: language === 'ar' ? 'منتهي' : 'Expired',
     cancelled: language === 'ar' ? 'ملغي' : 'Cancelled',
+    converted: language === 'ar' ? 'تم التحويل' : 'Converted',
   }
   const className = status === 'accepted'
     ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+    : status === 'converted'
+      ? 'border-violet-200 bg-violet-50 text-violet-700'
     : status === 'sent'
       ? 'border-sky-200 bg-sky-50 text-sky-700'
       : status === 'rejected' || status === 'cancelled'
@@ -150,6 +154,7 @@ export default function Quotations() {
               <option value="draft">{language === 'ar' ? 'مسودة' : 'Draft'}</option>
               <option value="sent">{language === 'ar' ? 'مرسل' : 'Sent'}</option>
               <option value="accepted">{language === 'ar' ? 'مقبول' : 'Accepted'}</option>
+              <option value="converted">{language === 'ar' ? 'تم التحويل' : 'Converted'}</option>
               <option value="rejected">{language === 'ar' ? 'مرفوض' : 'Rejected'}</option>
               <option value="expired">{language === 'ar' ? 'منتهي' : 'Expired'}</option>
             </select>
@@ -202,6 +207,11 @@ export default function Quotations() {
                     <Link to={`/app/dashboard/quotations/${quotation._id}`} className="btn btn-ghost btn-icon" title={language === 'ar' ? 'عرض' : 'View'}>
                       <Eye className="h-4 w-4" />
                     </Link>
+                    {hasConvertedInvoice(quotation) ? (
+                      <Link to={`/app/dashboard/invoices/${quotation.convertedInvoiceId}`} className="btn btn-ghost btn-icon" title={language === 'ar' ? 'عرض الفاتورة' : 'View Invoice'}>
+                        <FileText className="h-4 w-4" />
+                      </Link>
+                    ) : null}
                     {isEditableQuotation(quotation) ? (
                       <Link to={`/app/dashboard/quotations/${quotation._id}/edit`} className="btn btn-ghost btn-icon" title={language === 'ar' ? 'تعديل' : 'Edit'}>
                         <Edit className="h-4 w-4" />

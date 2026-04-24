@@ -1,8 +1,8 @@
 import { useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
-import { ArrowLeft, Download, Mail, Printer, Edit, FileSpreadsheet } from 'lucide-react'
+import { ArrowLeft, Download, Mail, Printer, Edit, FileSpreadsheet, FileText } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
@@ -30,10 +30,12 @@ const sanitizeAttachmentFileName = (value) => {
 }
 
 const isEditableQuotation = (quotation) => ['draft', 'sent'].includes(String(quotation?.status || '').toLowerCase())
+const canConvertQuotation = (quotation) => ['draft', 'sent', 'accepted'].includes(String(quotation?.status || '').toLowerCase()) && !quotation?.convertedInvoiceId
 
 export default function QuotationView() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const previewRef = useRef(null)
   const { language } = useSelector((state) => state.ui)
   const { tenant } = useSelector((state) => state.auth)
@@ -46,6 +48,8 @@ export default function QuotationView() {
   })
 
   const hasEmailAddon = tenant?.subscription?.hasEmailAddon === true || (Array.isArray(tenant?.subscription?.features) && tenant.subscription.features.includes('email_automation'))
+  const convertedInvoiceId = quotation?.convertedInvoiceId?._id || quotation?.convertedInvoiceId || ''
+  const convertedInvoiceNumber = quotation?.convertedInvoiceId?.invoiceNumber || ''
 
   const excelRows = useMemo(() => (Array.isArray(quotation?.lineItems) ? quotation.lineItems : []).map((line, index) => ({
     no: index + 1,
@@ -84,6 +88,29 @@ export default function QuotationView() {
     },
   })
 
+  const convertMutation = useMutation({
+    mutationFn: async () => await api.post(`/quotations/${id}/convert-to-invoice`),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ['quotation', id] })
+      queryClient.invalidateQueries({ queryKey: ['quotations'] })
+      queryClient.invalidateQueries({ queryKey: ['invoices'] })
+      toast.success(language === 'ar' ? 'تم تحويل عرض السعر إلى فاتورة بنجاح' : 'Quotation converted to invoice successfully')
+      const invoiceId = response?.data?.invoiceId
+      if (invoiceId) {
+        navigate(`/app/dashboard/invoices/${invoiceId}`)
+      }
+    },
+    onError: (error) => {
+      const existingInvoiceId = error?.response?.data?.invoiceId
+      if (existingInvoiceId) {
+        toast.success(language === 'ar' ? 'تم تحويل عرض السعر مسبقاً' : 'This quotation was already converted')
+        navigate(`/app/dashboard/invoices/${existingInvoiceId}`)
+        return
+      }
+      toast.error(error?.response?.data?.error || error?.message || (language === 'ar' ? 'تعذر تحويل عرض السعر إلى فاتورة' : 'Unable to convert quotation to invoice'))
+    },
+  })
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-96">
@@ -110,6 +137,30 @@ export default function QuotationView() {
         </div>
 
         <div className="flex flex-wrap gap-3">
+          {convertedInvoiceId ? (
+            <button
+              type="button"
+              onClick={() => navigate(`/app/dashboard/invoices/${convertedInvoiceId}`)}
+              className="btn btn-secondary"
+            >
+              <FileText className="w-4 h-4" />
+              {language === 'ar' ? 'عرض الفاتورة' : 'View Invoice'}
+            </button>
+          ) : canConvertQuotation(quotation) ? (
+            <button
+              type="button"
+              onClick={() => convertMutation.mutate()}
+              disabled={convertMutation.isPending}
+              className="btn btn-primary"
+            >
+              {convertMutation.isPending ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <FileText className="w-4 h-4" />
+              )}
+              {language === 'ar' ? 'تحويل إلى فاتورة' : 'Convert to Invoice'}
+            </button>
+          ) : null}
           {isEditableQuotation(quotation) ? (
             <button type="button" onClick={() => navigate(`/app/dashboard/quotations/${id}/edit`)} className="btn btn-secondary">
               <Edit className="w-4 h-4" />
@@ -212,6 +263,16 @@ export default function QuotationView() {
               <div className="flex items-center justify-between"><span>{language === 'ar' ? 'الحالة' : 'Status'}</span><span className="font-semibold">{quotation?.status || 'draft'}</span></div>
               <div className="flex items-center justify-between"><span>{language === 'ar' ? 'العميل' : 'Customer'}</span><span className="font-semibold text-end">{language === 'ar' ? (quotation?.buyer?.nameAr || quotation?.buyer?.name || '—') : (quotation?.buyer?.name || quotation?.buyer?.nameAr || '—')}</span></div>
               <div className="flex items-center justify-between"><span>{language === 'ar' ? 'صالح حتى' : 'Valid Until'}</span><span className="font-semibold">{quotation?.validUntil ? new Date(quotation.validUntil).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US') : '—'}</span></div>
+              {convertedInvoiceId ? (
+                <button
+                  type="button"
+                  onClick={() => navigate(`/app/dashboard/invoices/${convertedInvoiceId}`)}
+                  className="flex w-full items-center justify-between border-t border-gray-200 dark:border-dark-600 pt-3 text-start text-primary-600 hover:underline"
+                >
+                  <span>{language === 'ar' ? 'الفاتورة الناتجة' : 'Converted Invoice'}</span>
+                  <span className="font-semibold">{convertedInvoiceNumber || (language === 'ar' ? 'عرض' : 'Open')}</span>
+                </button>
+              ) : null}
               <div className="flex items-center justify-between border-t border-gray-200 dark:border-dark-600 pt-3"><span>{language === 'ar' ? 'الإجمالي النهائي' : 'Grand Total'}</span><span className="font-bold">{Number(quotation?.grandTotal || 0).toFixed(2)} {quotation?.currency || 'SAR'}</span></div>
             </div>
           </div>

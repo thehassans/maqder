@@ -543,7 +543,8 @@ router.get('/:id/pdf', checkPermission('invoicing', 'read'), async (req, res) =>
 router.get('/:id', checkPermission('invoicing', 'read'), async (req, res) => {
   try {
     const invoice = await Invoice.findOne({ _id: req.params.id, ...req.tenantFilter })
-      .populate('createdBy', 'firstName lastName firstNameAr lastNameAr email');
+      .populate('createdBy', 'firstName lastName firstNameAr lastNameAr email')
+      .populate('sourceQuotationId', 'quotationNumber');
     if (!invoice) {
       return res.status(404).json({ error: 'Invoice not found' });
     }

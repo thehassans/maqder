@@ -102,10 +102,12 @@ const quotationSchema = new mongoose.Schema({
   currency: { type: String, default: 'SAR' },
   status: {
     type: String,
-    enum: ['draft', 'sent', 'accepted', 'rejected', 'expired', 'cancelled'],
+    enum: ['draft', 'sent', 'accepted', 'rejected', 'expired', 'cancelled', 'converted'],
     default: 'draft',
     index: true,
   },
+  convertedInvoiceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Invoice', index: true },
+  convertedAt: { type: Date },
   notes: { type: String },
   internalNotes: { type: String },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
