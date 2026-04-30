@@ -7,6 +7,7 @@ import { Plus, Search, Users, AlertTriangle, Eye, Edit } from 'lucide-react'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import ExportMenu from '../../components/ui/ExportMenu'
+import EmployeeContactCards from '../../components/ui/EmployeeContactCards'
 
 export default function Employees() {
   const { language } = useSelector((state) => state.ui)
@@ -193,6 +194,10 @@ export default function Employees() {
           </select>
         </div>
       </div>
+
+      {!isLoading && (data?.employees || []).length > 0 && (
+        <EmployeeContactCards employees={data.employees.slice(0, 3)} language={language} />
+      )}
 
       {/* Table */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card">
