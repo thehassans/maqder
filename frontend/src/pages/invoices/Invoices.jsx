@@ -291,7 +291,8 @@ export default function Invoices() {
                         </div>
                       </td>
                       <td className="text-gray-600 dark:text-gray-400">
-                        {new Date(invoice.issueDate).toLocaleDateString()}
+                        <div>{new Date(invoice.issueDate).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')}</div>
+                        <div className="text-xs text-gray-400 mt-0.5">{new Date(invoice.issueDate).toLocaleTimeString(language === 'ar' ? 'ar-SA' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</div>
                       </td>
                       <td className="text-gray-600 dark:text-gray-400 text-sm">
                         {(() => {

@@ -142,7 +142,9 @@ export default function InvoiceView() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{invoice?.invoiceNumber}</h1>
             <p className="text-gray-500 dark:text-gray-400 mt-1">
-              {new Date(invoice?.issueDate).toLocaleDateString()}
+              {new Date(invoice?.issueDate).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')}
+              {' '}
+              <span className="text-gray-400 text-sm">{new Date(invoice?.issueDate).toLocaleTimeString(language === 'ar' ? 'ar-SA' : 'en-US', { hour: '2-digit', minute: '2-digit' })}</span>
             </p>
             {(() => {
               const createdByEn = [invoice?.createdBy?.firstName, invoice?.createdBy?.lastName].filter(Boolean).join(' ')

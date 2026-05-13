@@ -37,7 +37,7 @@ export const protect = async (req, res, next) => {
 
     // Check if tenant is active (for non-super admins).
     if (user.role !== 'super_admin' && user.tenantId) {
-      const tenant = await Tenant.findById(user.tenantId);
+      const tenant = await Tenant.findById(user.tenantId).lean();
       if (!tenant || !tenant.isActive) {
         return res.status(401).json({ error: 'Tenant account is inactive' });
       }
