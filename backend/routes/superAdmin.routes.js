@@ -1192,7 +1192,7 @@ router.post('/tenants/:id/send-backup', async (req, res) => {
     }
 
     const { startDate, endDate } = resolvePeriodDates({ period, startDate: rawStart, endDate: rawEnd });
-    const { buffers, invoices, expenses, employees, payrolls } = await buildTenantBackup({
+    const { buffers, invoices, expenses, employees, payrolls, summary } = await buildTenantBackup({
       tenantId: tenant._id,
       startDate,
       endDate,
@@ -1214,6 +1214,9 @@ router.post('/tenants/:id/send-backup', async (req, res) => {
     const tenantName = tenant.business?.legalNameEn || tenant.business?.legalNameAr || tenant.name || 'Tenant';
     const periodLabel = period === 'weekly' ? 'Weekly' : period === 'monthly' ? 'Monthly' : 'Custom';
     const periodText = `${startDate.toLocaleDateString('en-US')} — ${endDate.toLocaleDateString('en-US')}`;
+    const creatorRows = (summary?.invoiceCreators || []).slice(0, 5)
+      .map((row) => `<tr><td style="padding:8px 12px;border-top:1px solid #e5e7eb;">${row.creatorName}</td><td style="padding:8px 12px;border-top:1px solid #e5e7eb;text-align:center;">${row.invoiceCount}</td><td style="padding:8px 12px;border-top:1px solid #e5e7eb;text-align:right;">SAR ${Number(row.total || 0).toFixed(2)}</td></tr>`)
+      .join('');
 
     const attachments = [];
     if (normalizedFormats.includes('excel') && buffers.excel) {
@@ -1248,7 +1251,20 @@ router.post('/tenants/:id/send-backup', async (req, res) => {
         <tr><td style="padding:8px 12px;font-weight:600;">Expenses</td><td style="padding:8px 12px;">${expenses.length}</td></tr>
         <tr style="background:#f1f5f9;"><td style="padding:8px 12px;font-weight:600;">Employees</td><td style="padding:8px 12px;">${employees.length}</td></tr>
         <tr><td style="padding:8px 12px;font-weight:600;">Payroll Records</td><td style="padding:8px 12px;">${payrolls.length}</td></tr>
+        <tr style="background:#f1f5f9;"><td style="padding:8px 12px;font-weight:600;">Revenue</td><td style="padding:8px 12px;">SAR ${Number(summary?.totalRevenue || 0).toFixed(2)}</td></tr>
+        <tr><td style="padding:8px 12px;font-weight:600;">VAT</td><td style="padding:8px 12px;">SAR ${Number(summary?.totalVat || 0).toFixed(2)}</td></tr>
+        <tr style="background:#f1f5f9;"><td style="padding:8px 12px;font-weight:600;">Expenses Total</td><td style="padding:8px 12px;">SAR ${Number(summary?.totalExpenses || 0).toFixed(2)}</td></tr>
+        <tr><td style="padding:8px 12px;font-weight:600;">Payroll Total</td><td style="padding:8px 12px;">SAR ${Number(summary?.totalPayroll || 0).toFixed(2)}</td></tr>
+        <tr style="background:#f1f5f9;"><td style="padding:8px 12px;font-weight:600;">Total Profit</td><td style="padding:8px 12px;">SAR ${Number(summary?.totalProfit || 0).toFixed(2)}</td></tr>
       </table>
+      ${creatorRows ? `
+      <div style="margin-top:24px;">
+        <h3 style="margin:0 0 10px;font-size:15px;color:#111827;">Top Invoice Creators</h3>
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <tr style="background:#f8fafc;"><th style="padding:8px 12px;text-align:left;">User</th><th style="padding:8px 12px;text-align:center;">Invoices</th><th style="padding:8px 12px;text-align:right;">Grand Total</th></tr>
+          ${creatorRows}
+        </table>
+      </div>` : ''}
       <p style="margin:20px 0 0;font-size:12px;color:#6b7280;">This is an automated backup sent from Maqder ERP Super Admin Panel.</p>
     </div>
   </div>
@@ -1259,7 +1275,7 @@ router.post('/tenants/:id/send-backup', async (req, res) => {
       to: [recipientEmail],
       subject: `[${periodLabel} Backup] ${tenantName} — ${periodText}`,
       html,
-      text: `Maqder ERP ${periodLabel} Backup for ${tenantName}\nPeriod: ${periodText}\nInvoices: ${invoices.length} | Expenses: ${expenses.length} | Employees: ${employees.length} | Payroll: ${payrolls.length}`,
+      text: `Maqder ERP ${periodLabel} Backup for ${tenantName}\nPeriod: ${periodText}\nInvoices: ${invoices.length} | Expenses: ${expenses.length} | Employees: ${employees.length} | Payroll: ${payrolls.length}\nRevenue: SAR ${Number(summary?.totalRevenue || 0).toFixed(2)} | VAT: SAR ${Number(summary?.totalVat || 0).toFixed(2)} | Expenses Total: SAR ${Number(summary?.totalExpenses || 0).toFixed(2)} | Payroll Total: SAR ${Number(summary?.totalPayroll || 0).toFixed(2)} | Total Profit: SAR ${Number(summary?.totalProfit || 0).toFixed(2)}${summary?.invoiceCreators?.length ? `\nTop Creators: ${summary.invoiceCreators.slice(0, 5).map((row) => `${row.creatorName} (${row.invoiceCount} invoices, SAR ${Number(row.total || 0).toFixed(2)})`).join(' | ')}` : ''}`,
       attachments,
     });
 
@@ -1269,6 +1285,7 @@ router.post('/tenants/:id/send-backup', async (req, res) => {
       period: periodLabel,
       periodText,
       counts: { invoices: invoices.length, expenses: expenses.length, employees: employees.length, payrolls: payrolls.length },
+      summary,
       attachments: attachments.map((a) => a.filename),
     });
   } catch (error) {
