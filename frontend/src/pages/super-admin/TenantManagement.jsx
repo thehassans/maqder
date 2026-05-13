@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tansta
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Search, Building2, Edit, Users, LogIn, AlertCircle, RefreshCw, Trash2, RotateCcw, Send, X, FileSpreadsheet, FileText, Calendar, Mail } from 'lucide-react'
+import { Plus, Search, Building2, Edit, Users, LogIn, AlertCircle, RefreshCw, Trash2, RotateCcw, Send, X, FileSpreadsheet, FileText } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
@@ -354,14 +354,13 @@ export default function TenantManagement() {
                 </button>
               </div>
 
-              <div className="p-6 space-y-5 max-h-[65vh] overflow-y-auto">
+              <div className="px-6 pt-5 pb-2 space-y-4 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 220px)' }}>
 
                 {/* Period */}
                 <div>
-                  <label className="label flex items-center gap-1.5 mb-2">
-                    <Calendar className="w-4 h-4 text-gray-400" />
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">
                     {language === 'ar' ? 'الفترة الزمنية' : 'Period'}
-                  </label>
+                  </p>
                   <div className="grid grid-cols-3 gap-2">
                     {[['weekly', language === 'ar' ? 'أسبوعي' : 'Weekly'], ['monthly', language === 'ar' ? 'شهري' : 'Monthly'], ['custom', language === 'ar' ? 'مخصص' : 'Custom']].map(([val, label]) => (
                       <button
@@ -396,7 +395,7 @@ export default function TenantManagement() {
 
                 {/* Format */}
                 <div>
-                  <label className="label mb-2">{language === 'ar' ? 'التنسيق' : 'Format'}</label>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">{language === 'ar' ? 'التنسيق' : 'Format'}</p>
                   <div className="flex gap-3">
                     {[['excel', <FileSpreadsheet key="excel" className="w-4 h-4" />, 'Excel (.xlsx)'], ['pdf', <FileText key="pdf" className="w-4 h-4" />, 'PDF']].map(([fmt, icon, label]) => (
                       <button
@@ -417,10 +416,9 @@ export default function TenantManagement() {
 
                 {/* Recipient email */}
                 <div>
-                  <label className="label flex items-center gap-1.5 mb-2">
-                    <Mail className="w-4 h-4 text-gray-400" />
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">
                     {language === 'ar' ? 'البريد الإلكتروني للمستلم' : 'Recipient Email'}
-                  </label>
+                  </p>
                   <input
                     type="email"
                     value={backupForm.email}
@@ -434,27 +432,22 @@ export default function TenantManagement() {
                 </div>
 
                 {/* What will be included */}
-                <div className="rounded-2xl border border-emerald-100 bg-emerald-50 dark:border-emerald-900/30 dark:bg-emerald-900/10 p-4">
-                  <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300 mb-2">
-                    {language === 'ar' ? 'محتوى النسخة الاحتياطية' : 'Backup includes'}
-                  </p>
-                  <ul className="space-y-1 text-sm text-emerald-700 dark:text-emerald-400">
-                    {[
-                      language === 'ar' ? 'الفواتير وتفاصيلها' : 'Invoices with totals & VAT',
-                      language === 'ar' ? 'المصروفات والتصنيفات' : 'Expenses by category',
-                      language === 'ar' ? 'الموظفون النشطون' : 'Active employees & salaries',
-                      language === 'ar' ? 'سجلات الرواتب' : 'Payroll records',
-                    ].map((item, i) => (
-                      <li key={i} className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
+                <div className="flex flex-wrap gap-2 pb-1">
+                  {[
+                    language === 'ar' ? 'الفواتير' : 'Invoices',
+                    language === 'ar' ? 'المصروفات' : 'Expenses',
+                    language === 'ar' ? 'الموظفون' : 'Employees',
+                    language === 'ar' ? 'الرواتب' : 'Payroll',
+                  ].map((item, i) => (
+                    <span key={i} className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-900/40">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      {item}
+                    </span>
+                  ))}
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 p-6 border-t border-gray-100 dark:border-dark-700">
+              <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-dark-700">
                 <button type="button" onClick={() => setBackupTenant(null)} className="btn btn-secondary">
                   {t('cancel')}
                 </button>
