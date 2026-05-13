@@ -17,6 +17,7 @@ export default function TenantManagement() {
   const [page, setPage] = useState(1)
   const [backupTenant, setBackupTenant] = useState(null)
   const [backupForm, setBackupForm] = useState({ period: 'monthly', startDate: '', endDate: '', email: '', formats: ['excel', 'pdf'] })
+  const [backupErrorCode, setBackupErrorCode] = useState(null)
 
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ['tenants', page, search, filters],
@@ -86,11 +87,20 @@ export default function TenantManagement() {
       toast.success(language === 'ar' ? `تم إرسال النسخة الاحتياطية إلى ${data.message?.split('to ')[1] || 'البريد'}` : data.message || 'Backup sent successfully')
       setBackupTenant(null)
     },
-    onError: (err) => toast.error(err.response?.data?.error || (language === 'ar' ? 'فشل الإرسال' : 'Failed to send backup'))
+    onError: (err) => {
+      const code = err.response?.data?.code
+      const msg = err.response?.data?.error || (language === 'ar' ? 'فشل الإرسال' : 'Failed to send backup')
+      if (code === 'EMAIL_DISABLED' || code === 'EMAIL_NOT_CONFIGURED') {
+        setBackupErrorCode(code)
+      } else {
+        toast.error(msg)
+      }
+    }
   })
 
   const openBackupModal = (tenant) => {
     setBackupForm({ period: 'monthly', startDate: '', endDate: '', email: tenant.business?.email || '', formats: ['excel', 'pdf'] })
+    setBackupErrorCode(null)
     setBackupTenant(tenant)
   }
 
@@ -355,6 +365,29 @@ export default function TenantManagement() {
               </div>
 
               <div className="px-6 pt-5 pb-2 space-y-4 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 220px)' }}>
+
+                {/* Email config warning */}
+                {backupErrorCode && (
+                  <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-900/40 dark:bg-amber-900/10 px-4 py-3">
+                    <span className="text-amber-500 mt-0.5 shrink-0">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                        {backupErrorCode === 'EMAIL_DISABLED'
+                          ? (language === 'ar' ? 'إرسال البريد معطل' : 'Email delivery is disabled')
+                          : (language === 'ar' ? 'البريد غير مهيأ' : 'Email is not configured')}
+                      </p>
+                      <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                        {language === 'ar' ? 'يرجى تفعيل البريد من ' : 'Please enable it in '}
+                        <a href="/super-admin/email" target="_blank" rel="noreferrer" className="underline font-semibold hover:text-amber-900">
+                          {language === 'ar' ? 'إعدادات البريد' : 'Email Settings'}
+                        </a>
+                      </p>
+                    </div>
+                  </div>
+                )}
+
 
                 {/* Period */}
                 <div>

@@ -1201,8 +1201,12 @@ router.post('/tenants/:id/send-backup', async (req, res) => {
 
     const settings = await SystemSettings.findOne({ key: 'global' });
     const { config } = resolveGlobalEmailTransportConfig({ settings: settings || {}, payload: {} });
-    if (!config.enabled && !config.host && !config.brevoApiKey) {
-      return res.status(503).json({ error: 'Global email is not configured. Please set up email in Email Settings first.' });
+    const hasCredentials = config.provider === 'brevo' ? !!config.brevoApiKey : (!!config.host && !!config.user && !!config.pass);
+    if (!hasCredentials) {
+      return res.status(503).json({ error: 'Email is not configured. Please set up SMTP or Brevo in Super Admin → Email Settings.', code: 'EMAIL_NOT_CONFIGURED' });
+    }
+    if (!config.enabled) {
+      return res.status(503).json({ error: 'Email delivery is disabled. Please enable it in Super Admin → Email Settings.', code: 'EMAIL_DISABLED' });
     }
 
     const tenantName = tenant.business?.legalNameEn || tenant.business?.legalNameAr || tenant.name || 'Tenant';
