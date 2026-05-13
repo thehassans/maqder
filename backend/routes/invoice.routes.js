@@ -432,6 +432,11 @@ router.get('/', checkPermission('invoicing', 'read'), async (req, res) => {
       Invoice.countDocuments(query)
     ]);
 
+    const toNumber = (value) => {
+      const numericValue = Number(value);
+      return Number.isFinite(numericValue) ? numericValue : 0;
+    };
+
     const normalizedInvoices = (invoices || []).map((invoice) => {
       const customerPriceTotal = Array.isArray(invoice?.lineItems)
         ? invoice.lineItems.reduce((sum, line) => {
@@ -444,9 +449,23 @@ router.get('/', checkPermission('invoicing', 'read'), async (req, res) => {
           }, 0)
         : 0;
 
+      const effectiveVat = Array.isArray(invoice?.lineItems)
+        ? invoice.lineItems.reduce((sum, line) => {
+            if (line?.isTravelMargin) {
+              const taxCategory = String(line?.taxCategory || '').trim().toUpperCase();
+              if (taxCategory === 'S') {
+                return sum + (toNumber(line?.marginTaxable) * 0.15);
+              }
+            }
+
+            return sum + toNumber(line?.taxAmount);
+          }, 0)
+        : toNumber(invoice?.totalTax);
+
       return {
         ...invoice,
         customerPriceTotal,
+        effectiveVat,
         lineItems: undefined,
       };
     });

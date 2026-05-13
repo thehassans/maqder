@@ -51,6 +51,9 @@ const toNumber = (value) => {
 }
 
 const getInvoiceVatAmount = (invoice = {}) => {
+  const effectiveVat = toNumber(invoice?.effectiveVat)
+  if (effectiveVat > 0) return effectiveVat
+
   const storedTax = toNumber(invoice?.totalTax)
   if (storedTax > 0) return storedTax
 
