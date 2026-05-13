@@ -1200,14 +1200,16 @@ router.post('/tenants/:id/send-backup', async (req, res) => {
     });
 
     const settings = await SystemSettings.findOne({ key: 'global' });
-    const { config } = resolveGlobalEmailTransportConfig({ settings: settings || {}, payload: {} });
-    const hasCredentials = config.provider === 'brevo' ? !!config.brevoApiKey : (!!config.host && !!config.user && !!config.pass);
+    const { config: rawConfig } = resolveGlobalEmailTransportConfig({ settings: settings || {}, payload: {} });
+    const hasCredentials = rawConfig.provider === 'brevo'
+      ? !!rawConfig.brevoApiKey
+      : (!!rawConfig.host && !!rawConfig.user && !!rawConfig.pass);
     if (!hasCredentials) {
       return res.status(503).json({ error: 'Email is not configured. Please set up SMTP or Brevo in Super Admin → Email Settings.', code: 'EMAIL_NOT_CONFIGURED' });
     }
-    if (!config.enabled) {
-      return res.status(503).json({ error: 'Email delivery is disabled. Please enable it in Super Admin → Email Settings.', code: 'EMAIL_DISABLED' });
-    }
+    // For explicit admin actions, bypass the enabled flag so backups can be sent
+    // even when automated email delivery is toggled off.
+    const config = { ...rawConfig, enabled: true };
 
     const tenantName = tenant.business?.legalNameEn || tenant.business?.legalNameAr || tenant.name || 'Tenant';
     const periodLabel = period === 'weekly' ? 'Weekly' : period === 'monthly' ? 'Monthly' : 'Custom';
