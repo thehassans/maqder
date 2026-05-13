@@ -162,13 +162,14 @@ const buildBusinessPdfBuffer = (jsPDF, autoTable, { report, language }) => {
 };
 
 export const buildScheduledReportPdfAttachment = async ({ reportType, report, language = 'en' }) => {
-  let jsPDF, autoTable;
+  let jsPDF;
   try {
     ({ jsPDF } = await import('jspdf'));
-    ({ default: autoTable } = await import('jspdf-autotable'));
+    await import('jspdf-autotable');
   } catch {
     return null;
   }
+  const autoTable = (doc, opts) => doc.autoTable(opts);
   const normalizedType = reportType === 'business' ? 'business' : 'vat';
   const buffer = normalizedType === 'business'
     ? buildBusinessPdfBuffer(jsPDF, autoTable, { report, language })

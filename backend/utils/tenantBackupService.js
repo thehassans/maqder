@@ -131,10 +131,10 @@ const buildExcelBuffer = async ({ invoices, expenses, employees, payrolls, start
 };
 
 const buildPdfBuffer = async ({ invoices, expenses, employees, payrolls, startDate, endDate }) => {
-  let jsPDF, autoTable;
+  let jsPDF;
   try {
     ({ jsPDF } = await import('jspdf'));
-    ({ default: autoTable } = await import('jspdf-autotable'));
+    await import('jspdf-autotable');
   } catch {
     return null;
   }
@@ -183,6 +183,8 @@ const buildPdfBuffer = async ({ invoices, expenses, employees, payrolls, startDa
     doc.setTextColor(15, 23, 42);
     doc.text(m.value, x + 6, 88);
   });
+
+  const autoTable = (doc, opts) => doc.autoTable(opts);
 
   const tableOptions = (startY, head, body) => ({
     startY,
