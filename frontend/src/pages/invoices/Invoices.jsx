@@ -316,7 +316,7 @@ export default function Invoices() {
                       </td>
                       <td className="font-semibold"><Money value={invoice.grandTotal} /></td>
                       <td className="text-gray-600 dark:text-gray-400">
-                        {invoice.totalTax > 0 ? <Money value={invoice.totalTax} /> : <span className="text-gray-400">—</span>}
+                        <Money value={invoice.totalTax ?? 0} />
                       </td>
                       <td>{getStatusBadge(invoice)}</td>
                       <td>
