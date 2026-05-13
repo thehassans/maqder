@@ -124,6 +124,11 @@ export default function Invoices() {
       value: (r) => r?.grandTotal ?? ''
     },
     {
+      key: 'totalTax',
+      label: language === 'ar' ? 'ضريبة القيمة المضافة' : 'VAT',
+      value: (r) => r?.totalTax ?? 0
+    },
+    {
       key: 'zatcaStatus',
       label: t('zatcaStatus'),
       value: (r) => getZatcaStatusMeta(r, language).label
@@ -248,6 +253,7 @@ export default function Invoices() {
                     <th>{language === 'ar' ? 'تم الإنشاء بواسطة' : 'Created By'}</th>
                     <th>{language === 'ar' ? 'سعر العميل' : 'Customer Price'}</th>
                     <th>{t('total')}</th>
+                    <th>{language === 'ar' ? 'ضريبة القيمة المضافة' : 'VAT'}</th>
                     <th>{t('zatcaStatus')}</th>
                     <th>{t('actions')}</th>
                   </tr>
@@ -309,6 +315,9 @@ export default function Invoices() {
                           : '—'}
                       </td>
                       <td className="font-semibold"><Money value={invoice.grandTotal} /></td>
+                      <td className="text-gray-600 dark:text-gray-400">
+                        {invoice.totalTax > 0 ? <Money value={invoice.totalTax} /> : <span className="text-gray-400">—</span>}
+                      </td>
                       <td>{getStatusBadge(invoice)}</td>
                       <td>
                         <div className="flex items-center gap-2">
