@@ -3,6 +3,7 @@ import Expense from '../models/Expense.js';
 import Employee from '../models/Employee.js';
 import Payroll from '../models/Payroll.js';
 
+const TRAVEL_MARGIN_VAT_RATE = 15;
 const safeStr = (v) => String(v ?? '').trim();
 const toNumber = (v) => {
   const numericValue = Number(v);
@@ -15,6 +16,47 @@ const safeDate = (v) => {
   return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-US');
 };
 
+const getInvoiceZatcaStatus = (invoice = {}) => {
+  const submissionStatus = safeStr(invoice?.zatca?.submissionStatus).toLowerCase();
+  const invoiceStatus = safeStr(invoice?.status).toLowerCase();
+
+  if (submissionStatus && submissionStatus !== 'pending') return submissionStatus;
+
+  if (invoiceStatus === 'draft' && !invoice?.zatca?.signedXml) {
+    return 'draft';
+  }
+
+  if (invoice?.zatca?.submittedAt) {
+    return safeStr(invoice?.transactionType).toUpperCase() === 'B2C' ? 'reported' : 'submitted';
+  }
+
+  if (invoice?.zatca?.signedXml || invoice?.zatca?.invoiceHash) {
+    return submissionStatus === 'pending' ? 'generated' : (submissionStatus || 'generated');
+  }
+
+  if (invoice?.zatca?.qrCodeData && !invoice?.zatca?.signedXml) {
+    return invoiceStatus === 'pending' ? 'not_started' : (submissionStatus || 'draft');
+  }
+
+  return submissionStatus || 'not_started';
+};
+
+const getInvoiceZatcaLabel = (invoice = {}) => {
+  const status = getInvoiceZatcaStatus(invoice);
+  const labels = {
+    cleared: 'Cleared',
+    reported: 'Reported',
+    submitted: 'Submitted',
+    generated: 'E-Invoice Generated',
+    rejected: 'Rejected',
+    warning: 'Warning',
+    draft: 'Draft',
+    not_started: 'Not Submitted',
+    pending: 'Processing',
+  };
+  return labels[status] || status || 'Not Submitted';
+};
+
 const getInvoiceEffectiveVat = (invoice = {}) => {
   const storedTax = toNumber(invoice?.totalTax);
   if (storedTax > 0) return storedTax;
@@ -24,7 +66,7 @@ const getInvoiceEffectiveVat = (invoice = {}) => {
     if (line?.isTravelMargin) {
       const taxCategory = safeStr(line?.taxCategory).toUpperCase();
       if (taxCategory === 'S') {
-        return sum + (toNumber(line?.marginTaxable) * 0.15);
+        return sum + (toNumber(line?.marginTaxable) * (TRAVEL_MARGIN_VAT_RATE / 100));
       }
     }
 
@@ -43,17 +85,43 @@ const getInvoiceTravelAgencyCost = (invoice = {}) => {
   return lines.reduce((sum, line) => (
     line?.isTravelMargin
       ? sum + (toNumber(line?.quantity) * toNumber(line?.agencyPrice))
-      : sum
+    : sum
   ), 0);
+};
+
+const getInvoiceCustomerRevenue = (invoice = {}) => {
+  const lines = Array.isArray(invoice?.lineItems) ? invoice.lineItems : [];
+  const travelCustomerRevenue = lines.reduce((sum, line) => {
+    if (!line?.isTravelMargin) return sum;
+
+    const lineTotalWithTax = toNumber(line?.lineTotalWithTax);
+    if (lineTotalWithTax > 0) return sum + lineTotalWithTax;
+
+    return sum + (toNumber(line?.quantity) * (toNumber(line?.customerPrice) || toNumber(line?.unitPrice)));
+  }, 0);
+
+  if (travelCustomerRevenue > 0) {
+    const nonTravelRevenue = Math.max(0, toNumber(invoice?.grandTotal) - lines.reduce((sum, line) => (
+      line?.isTravelMargin ? sum + toNumber(line?.lineTotalWithTax) : sum
+    ), 0));
+    return travelCustomerRevenue + nonTravelRevenue;
+  }
+
+  return toNumber(invoice?.grandTotal);
 };
 
 const getInvoiceTravelMarginProfit = (invoice = {}) => {
   const lines = Array.isArray(invoice?.lineItems) ? invoice.lineItems : [];
-  return lines.reduce((sum, line) => (
-    line?.isTravelMargin
-      ? sum + toNumber(line?.marginTaxable)
-      : sum
-  ), 0);
+  return lines.reduce((sum, line) => {
+    if (!line?.isTravelMargin) return sum;
+
+    const customerAmount = toNumber(line?.lineTotalWithTax) || (toNumber(line?.quantity) * (toNumber(line?.customerPrice) || toNumber(line?.unitPrice)));
+    const agencyCost = toNumber(line?.quantity) * toNumber(line?.agencyPrice);
+    const vatAmount = toNumber(line?.taxAmount)
+      || (safeStr(line?.taxCategory).toUpperCase() === 'S' ? (toNumber(line?.marginTaxable) * (TRAVEL_MARGIN_VAT_RATE / 100)) : 0);
+
+    return sum + Math.max(0, customerAmount - agencyCost - vatAmount);
+  }, 0);
 };
 
 const buildBackupSummary = ({ invoices, expenses, employees, payrolls }) => {
@@ -61,6 +129,9 @@ const buildBackupSummary = ({ invoices, expenses, employees, payrolls }) => {
     ...invoice,
     effectiveVat: getInvoiceEffectiveVat(invoice),
     creatorName: getInvoiceCreatorName(invoice),
+    zatcaStatus: getInvoiceZatcaStatus(invoice),
+    zatcaStatusLabel: getInvoiceZatcaLabel(invoice),
+    customerRevenue: getInvoiceCustomerRevenue(invoice),
     travelAgencyCost: getInvoiceTravelAgencyCost(invoice),
     travelMarginProfit: getInvoiceTravelMarginProfit(invoice),
   }));
@@ -70,9 +141,13 @@ const buildBackupSummary = ({ invoices, expenses, employees, payrolls }) => {
   const totalVat = normalizedInvoices.reduce((sum, invoice) => sum + toNumber(invoice?.effectiveVat), 0);
   const totalExpenses = expenses.reduce((sum, expense) => sum + toNumber(expense?.amount), 0);
   const totalPayroll = payrolls.reduce((sum, payroll) => sum + toNumber(payroll?.totalSalary), 0);
+  const totalCustomerRevenue = normalizedInvoices.reduce((sum, invoice) => sum + toNumber(invoice?.customerRevenue), 0);
   const totalTravelAgencyCost = normalizedInvoices.reduce((sum, invoice) => sum + toNumber(invoice?.travelAgencyCost), 0);
   const totalTravelMarginProfit = normalizedInvoices.reduce((sum, invoice) => sum + toNumber(invoice?.travelMarginProfit), 0);
-  const totalProfit = totalSubtotal - totalExpenses - totalPayroll;
+  const totalInvoiceProfit = normalizedInvoices.reduce((sum, invoice) => (
+    sum + Math.max(0, toNumber(invoice?.customerRevenue) - toNumber(invoice?.travelAgencyCost) - toNumber(invoice?.effectiveVat))
+  ), 0);
+  const totalProfit = totalInvoiceProfit - totalExpenses - totalPayroll;
   const averageInvoiceValue = normalizedInvoices.length ? (totalRevenue / normalizedInvoices.length) : 0;
 
   const invoiceCreators = Object.values(normalizedInvoices.reduce((acc, invoice) => {
@@ -84,6 +159,7 @@ const buildBackupSummary = ({ invoices, expenses, employees, payrolls }) => {
         subtotal: 0,
         vat: 0,
         total: 0,
+        profit: 0,
       };
     }
 
@@ -91,6 +167,7 @@ const buildBackupSummary = ({ invoices, expenses, employees, payrolls }) => {
     acc[key].subtotal += toNumber(invoice?.subtotal);
     acc[key].vat += toNumber(invoice?.effectiveVat);
     acc[key].total += toNumber(invoice?.grandTotal);
+    acc[key].profit += Math.max(0, toNumber(invoice?.customerRevenue) - toNumber(invoice?.travelAgencyCost) - toNumber(invoice?.effectiveVat));
     return acc;
   }, {})).sort((a, b) => b.total - a.total || b.invoiceCount - a.invoiceCount || a.creatorName.localeCompare(b.creatorName));
 
@@ -121,8 +198,10 @@ const buildBackupSummary = ({ invoices, expenses, employees, payrolls }) => {
     totalRevenue,
     totalSubtotal,
     totalVat,
+    totalCustomerRevenue,
     totalExpenses,
     totalPayroll,
+    totalInvoiceProfit,
     totalTravelAgencyCost,
     totalTravelMarginProfit,
     totalProfit,
@@ -155,7 +234,7 @@ export const resolvePeriodDates = ({ period, startDate: customStart, endDate: cu
 export const buildTenantBackup = async ({ tenantId, startDate, endDate, formats = ['excel', 'pdf'] }) => {
   const [invoices, expenses, employees, payrolls] = await Promise.all([
     Invoice.find({ tenantId, issueDate: { $gte: startDate, $lte: endDate } })
-      .select('invoiceNumber issueDate buyer grandTotal totalTax subtotal status paymentStatus transactionType zatca createdByName createdByNameAr lineItems.taxAmount lineItems.isTravelMargin lineItems.taxCategory lineItems.marginTaxable lineItems.agencyPrice lineItems.quantity')
+      .select('invoiceNumber issueDate buyer grandTotal totalTax subtotal status transactionType zatca createdByName createdByNameAr lineItems.taxAmount lineItems.lineTotal lineItems.lineTotalWithTax lineItems.unitPrice lineItems.customerPrice lineItems.isTravelMargin lineItems.taxCategory lineItems.marginTaxable lineItems.agencyPrice lineItems.quantity')
       .lean(),
     Expense.find({ tenantId, date: { $gte: startDate, $lte: endDate } })
       .select('title category amount currency date status notes')
@@ -208,8 +287,10 @@ const buildExcelBuffer = async ({ invoices, expenses, employees, payrolls, start
     { Metric: 'Employees', Value: summary.counts.employees },
     { Metric: 'Payroll Records', Value: summary.counts.payrolls },
     { Metric: 'Revenue (SAR)', Value: safeMoney(summary.totalRevenue) },
+    { Metric: 'Customer Revenue (SAR)', Value: safeMoney(summary.totalCustomerRevenue) },
     { Metric: 'Taxable Revenue (SAR)', Value: safeMoney(summary.totalSubtotal) },
     { Metric: 'VAT (SAR)', Value: safeMoney(summary.totalVat) },
+    { Metric: 'Invoice Profit Before Overheads (SAR)', Value: safeMoney(summary.totalInvoiceProfit) },
     { Metric: 'Expenses Total (SAR)', Value: safeMoney(summary.totalExpenses) },
     { Metric: 'Payroll Total (SAR)', Value: safeMoney(summary.totalPayroll) },
     { Metric: 'Total Profit (SAR)', Value: safeMoney(summary.totalProfit) },
@@ -226,6 +307,7 @@ const buildExcelBuffer = async ({ invoices, expenses, employees, payrolls, start
         'Subtotal (SAR)': safeMoney(row.subtotal),
         'VAT (SAR)': safeMoney(row.vat),
         'Grand Total (SAR)': safeMoney(row.total),
+        'Profit (SAR)': safeMoney(row.profit),
       }))
     : [{ Note: 'No invoice creator data available' }];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(creatorRows), 'Invoice Creators');
@@ -249,8 +331,8 @@ const buildExcelBuffer = async ({ invoices, expenses, employees, payrolls, start
         'Subtotal (SAR)': safeMoney(inv.subtotal),
         'VAT (SAR)': safeMoney(inv.effectiveVat),
         'Grand Total (SAR)': safeMoney(inv.grandTotal),
-        'Payment Status': safeStr(inv.paymentStatus) || safeStr(inv.status),
-        'ZATCA Status': safeStr(inv.zatca?.submissionStatus) || 'not submitted',
+        'Profit (SAR)': safeMoney(Math.max(0, toNumber(inv?.customerRevenue) - toNumber(inv?.travelAgencyCost) - toNumber(inv?.effectiveVat))),
+        'ZATCA Status': safeStr(inv.zatcaStatusLabel),
       }))
     : [{ Note: `No invoices between ${safeDate(startDate)} and ${safeDate(endDate)}` }];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(invoiceRows), 'Invoices');
@@ -297,23 +379,9 @@ const buildExcelBuffer = async ({ invoices, expenses, employees, payrolls, start
 };
 
 const labelZatcaStatus = (inv) => {
-const s = safeStr(inv.zatca?.submissionStatus).toLowerCase();
-if (s === 'cleared') return 'E-Invoice Generated';
-if (s === 'reported') return 'Reported';
-if (s === 'submitted') return 'Processing';
-if (s === 'rejected') return 'Rejected';
-if (s === 'warning') return 'Warning';
-return 'Not Submitted';
-};
-
-const labelPaymentStatus = (inv) => {
-const s = safeStr(inv.paymentStatus || inv.status).toLowerCase();
-if (s === 'paid') return 'Paid';
-if (s === 'partial') return 'Partial';
-if (s === 'overdue') return 'Overdue';
-if (s === 'cancelled') return 'Cancelled';
-if (s === 'pending') return 'Pending';
-return safeStr(inv.paymentStatus || inv.status) || 'Pending';
+const label = safeStr(inv?.zatcaStatusLabel);
+if (label) return label;
+return getInvoiceZatcaLabel(inv);
 };
 
 const buildPdfBuffer = async ({ invoices, expenses, employees, payrolls, startDate, endDate, summary }) => {
@@ -413,8 +481,10 @@ return y + 14;
 let y = sectionTitle(116, 'Business Summary');
 autoTable(doc, tableOptions(y, [['Category', 'Amount (SAR)']], [
 ['Total Invoice Revenue', totalRevenue.toFixed(2)],
+['Customer Revenue', toNumber(summary?.totalCustomerRevenue).toFixed(2)],
 ['Taxable Amount (excl. VAT)', totalSubtotal.toFixed(2)],
 ['Total VAT', totalVat.toFixed(2)],
+['Invoice Profit Before Overheads', toNumber(summary?.totalInvoiceProfit).toFixed(2)],
 ['Total Expenses', totalExpAmt.toFixed(2)],
 ['Total Payroll', totalPayroll.toFixed(2)],
 ['Total Profit', totalProfit.toFixed(2)],
@@ -435,7 +505,7 @@ autoTable(doc, tableOptions(y, [['Transaction Type', 'Count', 'Taxable (SAR)', '
 y = sectionTitle(doc.lastAutoTable.finalY + 16, 'Invoices by Creator');
 autoTable(doc, tableOptions(
 y,
-[['Created By', 'Invoice Count', 'Subtotal (SAR)', 'VAT (SAR)', 'Grand Total (SAR)']],
+[['Created By', 'Invoice Count', 'Subtotal (SAR)', 'VAT (SAR)', 'Grand Total (SAR)', 'Profit (SAR)']],
 summary?.invoiceCreators?.length
 ? summary.invoiceCreators.map((row) => [
 safeStr(row.creatorName),
@@ -443,15 +513,16 @@ String(row.invoiceCount),
 safeMoney(row.subtotal),
 safeMoney(row.vat),
 safeMoney(row.total),
+safeMoney(row.profit),
 ])
-: [['No creator data', '0', '0.00', '0.00', '0.00']],
-{ columnStyles: { 1: { halign: 'center' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' } } },
+: [['No creator data', '0', '0.00', '0.00', '0.00', '0.00']],
+{ columnStyles: { 1: { halign: 'center' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' } } },
 ));
 
 y = sectionTitle(doc.lastAutoTable.finalY + 16, 'Invoice Details');
 autoTable(doc, tableOptions(
 y,
-[['Invoice #', 'Date', 'Customer', 'Created By', 'Type', 'Subtotal', 'VAT', 'Total', 'Payment', 'ZATCA']],
+[['Invoice #', 'Date', 'Customer', 'Created By', 'Type', 'Subtotal', 'VAT', 'Total', 'Profit', 'ZATCA']],
 invoices.length
 ? invoices.map((inv) => [
 safeStr(inv.invoiceNumber),
@@ -462,7 +533,7 @@ safeStr(inv.transactionType),
 safeMoney(inv.subtotal),
 safeMoney(inv.effectiveVat),
 safeMoney(inv.grandTotal),
-labelPaymentStatus(inv),
+safeMoney(Math.max(0, toNumber(inv?.customerRevenue) - toNumber(inv?.travelAgencyCost) - toNumber(inv?.effectiveVat))),
 labelZatcaStatus(inv),
 ])
 : [['—', '—', '—', '—', '—', '—', '—', '—', '—', 'No invoices in period']],
