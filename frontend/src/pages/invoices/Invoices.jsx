@@ -45,6 +45,28 @@ const getTransactionTypeLabel = (transactionType, language = 'en', t) => {
   return transactionType || (language === 'ar' ? 'غير محدد' : 'Unknown')
 }
 
+const toNumber = (value) => {
+  const numericValue = Number(value)
+  return Number.isFinite(numericValue) ? numericValue : 0
+}
+
+const getInvoiceVatAmount = (invoice = {}) => {
+  const storedTax = toNumber(invoice?.totalTax)
+  if (storedTax > 0) return storedTax
+
+  const lines = Array.isArray(invoice?.lineItems) ? invoice.lineItems : []
+  return lines.reduce((sum, line) => {
+    if (line?.isTravelMargin) {
+      const taxCategory = String(line?.taxCategory || '').trim().toUpperCase()
+      if (taxCategory === 'S') {
+        return sum + (toNumber(line?.marginTaxable) * 0.15)
+      }
+    }
+
+    return sum + toNumber(line?.taxAmount)
+  }, 0)
+}
+
 export default function Invoices() {
   const { language } = useSelector((state) => state.ui)
   const { tenant } = useSelector((state) => state.auth)
@@ -126,7 +148,7 @@ export default function Invoices() {
     {
       key: 'totalTax',
       label: language === 'ar' ? 'ضريبة القيمة المضافة' : 'VAT',
-      value: (r) => r?.totalTax ?? 0
+      value: (r) => getInvoiceVatAmount(r)
     },
     {
       key: 'zatcaStatus',
@@ -316,8 +338,8 @@ export default function Invoices() {
                       </td>
                       <td className="font-semibold"><Money value={invoice.grandTotal} /></td>
                       <td className="text-gray-600 dark:text-gray-400">
-                        {invoice.totalTax > 0
-                          ? <Money value={invoice.totalTax} />
+                        {getInvoiceVatAmount(invoice) > 0
+                          ? <Money value={getInvoiceVatAmount(invoice)} />
                           : <span className="text-gray-400 text-sm">—</span>}
                       </td>
                       <td>{getStatusBadge(invoice)}</td>
