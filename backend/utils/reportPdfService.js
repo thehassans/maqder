@@ -1,5 +1,3 @@
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
 
 const safeText = (value) => String(value ?? '').replace(/[\u200e\u200f\u061c]/g, '').replace(/﷼/g, 'SAR').replace(/\s+/g, ' ').trim();
 
@@ -70,7 +68,7 @@ const drawMetricGrid = (doc, cards) => {
   return y + cardHeight + 24;
 };
 
-const buildVatPdfBuffer = ({ report, language }) => {
+const buildVatPdfBuffer = (jsPDF, autoTable, { report, language }) => {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
   const currency = report?.currency || 'SAR';
   const periodText = `${language === 'ar' ? 'الفترة' : 'Period'}: ${formatDate(report?.period?.startDate, language)} - ${formatDate(report?.period?.endDate, language)}`;
@@ -117,7 +115,7 @@ const buildVatPdfBuffer = ({ report, language }) => {
   return Buffer.from(doc.output('arraybuffer'));
 };
 
-const buildBusinessPdfBuffer = ({ report, language }) => {
+const buildBusinessPdfBuffer = (jsPDF, autoTable, { report, language }) => {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
   const currency = report?.currency || 'SAR';
   const periodText = `${language === 'ar' ? 'الفترة' : 'Period'}: ${formatDate(report?.period?.startDate, language)} - ${formatDate(report?.period?.endDate, language)}`;
@@ -164,10 +162,17 @@ const buildBusinessPdfBuffer = ({ report, language }) => {
 };
 
 export const buildScheduledReportPdfAttachment = async ({ reportType, report, language = 'en' }) => {
+  let jsPDF, autoTable;
+  try {
+    ({ jsPDF } = await import('jspdf'));
+    ({ default: autoTable } = await import('jspdf-autotable'));
+  } catch {
+    return null;
+  }
   const normalizedType = reportType === 'business' ? 'business' : 'vat';
   const buffer = normalizedType === 'business'
-    ? buildBusinessPdfBuffer({ report, language })
-    : buildVatPdfBuffer({ report, language });
+    ? buildBusinessPdfBuffer(jsPDF, autoTable, { report, language })
+    : buildVatPdfBuffer(jsPDF, autoTable, { report, language });
   const fileName = normalizedType === 'business' ? 'business_report.pdf' : 'vat_return_report.pdf';
   return {
     filename: fileName,

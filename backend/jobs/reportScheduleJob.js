@@ -116,7 +116,7 @@ export async function processScheduledReports() {
           subject,
           html,
           text,
-          attachments: [attachment],
+          attachments: [attachment].filter(Boolean),
           metadata: {
             purpose: 'scheduled_report',
             reportType: schedule.reportType,
