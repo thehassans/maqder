@@ -1254,7 +1254,8 @@ router.post('/tenants/:id/send-backup', async (req, res) => {
   </div>
 </div>`;
 
-    await sendEmailWithConfig(config, {
+    await sendEmailWithConfig({
+      config,
       to: [recipientEmail],
       subject: `[${periodLabel} Backup] ${tenantName} — ${periodText}`,
       html,
