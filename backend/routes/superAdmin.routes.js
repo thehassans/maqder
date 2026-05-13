@@ -35,7 +35,8 @@ import {
 import { protect, authorize } from '../middleware/auth.js';
 import { getPrimaryBusinessType, normalizeBusinessTypes } from '../utils/businessTypes.js';
 import { sendTenantWelcomeEmail } from '../utils/emailService.js';
-import { verifyEmailDeliveryConnection } from '../utils/emailProviderService.js';
+import { verifyEmailDeliveryConnection, sendEmailWithConfig } from '../utils/emailProviderService.js';
+import { resolvePeriodDates, buildTenantBackup } from '../utils/tenantBackupService.js';
 
 const router = express.Router();
 const parsedDatabaseQueryTimeoutMs = Number(process.env.MONGODB_QUERY_TIMEOUT_MS || 10000);
@@ -1168,6 +1169,103 @@ router.get('/reports/revenue', async (req, res) => {
     res.json(revenue);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   POST /api/super-admin/tenants/:id/send-backup
+// @desc    Generate Excel + PDF backup of tenant data and email it
+router.post('/tenants/:id/send-backup', async (req, res) => {
+  try {
+    const tenant = await Tenant.findById(req.params.id);
+    if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+
+    const { period = 'monthly', startDate: rawStart, endDate: rawEnd, email, formats = ['excel', 'pdf'] } = req.body || {};
+
+    const recipientEmail = String(email || tenant.business?.email || '').trim();
+    if (!recipientEmail) {
+      return res.status(400).json({ error: 'Recipient email is required' });
+    }
+
+    const normalizedFormats = Array.isArray(formats) ? formats.filter((f) => ['excel', 'pdf'].includes(f)) : ['excel', 'pdf'];
+    if (normalizedFormats.length === 0) {
+      return res.status(400).json({ error: 'At least one format (excel or pdf) must be selected' });
+    }
+
+    const { startDate, endDate } = resolvePeriodDates({ period, startDate: rawStart, endDate: rawEnd });
+    const { buffers, invoices, expenses, employees, payrolls } = await buildTenantBackup({
+      tenantId: tenant._id,
+      startDate,
+      endDate,
+      formats: normalizedFormats,
+    });
+
+    const settings = await SystemSettings.findOne({ key: 'global' });
+    const { config } = resolveGlobalEmailTransportConfig({ settings: settings || {}, payload: {} });
+    if (!config.enabled && !config.host && !config.brevoApiKey) {
+      return res.status(503).json({ error: 'Global email is not configured. Please set up email in Email Settings first.' });
+    }
+
+    const tenantName = tenant.business?.legalNameEn || tenant.business?.legalNameAr || tenant.name || 'Tenant';
+    const periodLabel = period === 'weekly' ? 'Weekly' : period === 'monthly' ? 'Monthly' : 'Custom';
+    const periodText = `${startDate.toLocaleDateString('en-US')} — ${endDate.toLocaleDateString('en-US')}`;
+
+    const attachments = [];
+    if (normalizedFormats.includes('excel') && buffers.excel) {
+      attachments.push({
+        filename: `backup_${tenantName.replace(/\s+/g, '_')}_${period}.xlsx`,
+        content: buffers.excel,
+        contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+    }
+    if (normalizedFormats.includes('pdf') && buffers.pdf) {
+      attachments.push({
+        filename: `backup_${tenantName.replace(/\s+/g, '_')}_${period}.pdf`,
+        content: buffers.pdf,
+        contentType: 'application/pdf',
+      });
+    }
+
+    const html = `
+<div style="font-family:Segoe UI,Arial,sans-serif;background:#f8fafc;padding:24px;">
+  <div style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;">
+    <div style="background:#1a3d28;color:#fff;padding:24px 28px;">
+      <h2 style="margin:0;font-size:20px;">Maqder ERP — ${periodLabel} Backup</h2>
+      <p style="margin:8px 0 0;opacity:.75;font-size:14px;">Period: ${periodText}</p>
+    </div>
+    <div style="padding:28px;">
+      <p style="margin:0 0 16px;font-size:15px;">Hello,</p>
+      <p style="margin:0 0 20px;font-size:14px;line-height:1.7;color:#374151;">
+        Please find attached the ${periodLabel.toLowerCase()} data backup for <strong>${tenantName}</strong>.
+      </p>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <tr style="background:#f1f5f9;"><td style="padding:8px 12px;font-weight:600;">Invoices</td><td style="padding:8px 12px;">${invoices.length}</td></tr>
+        <tr><td style="padding:8px 12px;font-weight:600;">Expenses</td><td style="padding:8px 12px;">${expenses.length}</td></tr>
+        <tr style="background:#f1f5f9;"><td style="padding:8px 12px;font-weight:600;">Employees</td><td style="padding:8px 12px;">${employees.length}</td></tr>
+        <tr><td style="padding:8px 12px;font-weight:600;">Payroll Records</td><td style="padding:8px 12px;">${payrolls.length}</td></tr>
+      </table>
+      <p style="margin:20px 0 0;font-size:12px;color:#6b7280;">This is an automated backup sent from Maqder ERP Super Admin Panel.</p>
+    </div>
+  </div>
+</div>`;
+
+    await sendEmailWithConfig(config, {
+      to: [recipientEmail],
+      subject: `[${periodLabel} Backup] ${tenantName} — ${periodText}`,
+      html,
+      text: `Maqder ERP ${periodLabel} Backup for ${tenantName}\nPeriod: ${periodText}\nInvoices: ${invoices.length} | Expenses: ${expenses.length} | Employees: ${employees.length} | Payroll: ${payrolls.length}`,
+      attachments,
+    });
+
+    res.json({
+      success: true,
+      message: `Backup sent to ${recipientEmail}`,
+      period: periodLabel,
+      periodText,
+      counts: { invoices: invoices.length, expenses: expenses.length, employees: employees.length, payrolls: payrolls.length },
+      attachments: attachments.map((a) => a.filename),
+    });
+  } catch (error) {
+    sendRouteError(res, error);
   }
 });
 

@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { Plus, Search, Building2, Edit, Users, LogIn, AlertCircle, RefreshCw, Trash2, RotateCcw } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Plus, Search, Building2, Edit, Users, LogIn, AlertCircle, RefreshCw, Trash2, RotateCcw, Send, X, FileSpreadsheet, FileText, Calendar, Mail } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
@@ -15,6 +15,8 @@ export default function TenantManagement() {
   const [search, setSearch] = useState('')
   const [filters, setFilters] = useState({ status: '', plan: '' })
   const [page, setPage] = useState(1)
+  const [backupTenant, setBackupTenant] = useState(null)
+  const [backupForm, setBackupForm] = useState({ period: 'monthly', startDate: '', endDate: '', email: '', formats: ['excel', 'pdf'] })
 
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ['tenants', page, search, filters],
@@ -77,6 +79,48 @@ export default function TenantManagement() {
     },
     onError: (err) => toast.error(err.response?.data?.error || 'Failed to reset panel')
   })
+
+  const sendBackupMutation = useMutation({
+    mutationFn: ({ tenantId, payload }) => api.post(`/super-admin/tenants/${tenantId}/send-backup`, payload).then(res => res.data),
+    onSuccess: (data) => {
+      toast.success(language === 'ar' ? `تم إرسال النسخة الاحتياطية إلى ${data.message?.split('to ')[1] || 'البريد'}` : data.message || 'Backup sent successfully')
+      setBackupTenant(null)
+    },
+    onError: (err) => toast.error(err.response?.data?.error || (language === 'ar' ? 'فشل الإرسال' : 'Failed to send backup'))
+  })
+
+  const openBackupModal = (tenant) => {
+    setBackupForm({ period: 'monthly', startDate: '', endDate: '', email: tenant.business?.email || '', formats: ['excel', 'pdf'] })
+    setBackupTenant(tenant)
+  }
+
+  const toggleFormat = (fmt) => {
+    setBackupForm(prev => ({
+      ...prev,
+      formats: prev.formats.includes(fmt) ? prev.formats.filter(f => f !== fmt) : [...prev.formats, fmt]
+    }))
+  }
+
+  const handleSendBackup = () => {
+    if (!backupForm.email.trim()) {
+      toast.error(language === 'ar' ? 'البريد الإلكتروني مطلوب' : 'Recipient email is required')
+      return
+    }
+    if (backupForm.formats.length === 0) {
+      toast.error(language === 'ar' ? 'اختر تنسيقاً واحداً على الأقل' : 'Select at least one format')
+      return
+    }
+    sendBackupMutation.mutate({
+      tenantId: backupTenant._id,
+      payload: {
+        period: backupForm.period,
+        startDate: backupForm.period === 'custom' ? backupForm.startDate : undefined,
+        endDate: backupForm.period === 'custom' ? backupForm.endDate : undefined,
+        email: backupForm.email,
+        formats: backupForm.formats,
+      }
+    })
+  }
 
   const handleResetPanel = (tenant) => {
     const label = tenant?.name || tenant?.business?.legalNameEn || ''
@@ -247,6 +291,14 @@ export default function TenantManagement() {
                           >
                             <RotateCcw className="w-4 h-4" />
                           </button>
+                          <button
+                            type="button"
+                            onClick={() => openBackupModal(tenant)}
+                            className="p-2 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg text-emerald-700 disabled:opacity-50"
+                            title={language === 'ar' ? 'إرسال نسخة احتياطية' : 'Send data backup'}
+                          >
+                            <Send className="w-4 h-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -273,6 +325,156 @@ export default function TenantManagement() {
           </>
         )}
       </motion.div>
+
+      {/* ── Send Backup Modal ── */}
+      <AnimatePresence>
+        {backupTenant && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setBackupTenant(null)} className="fixed inset-0 bg-black/50 z-40" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-lg bg-white dark:bg-dark-800 rounded-2xl shadow-xl z-50 overflow-hidden"
+            >
+              <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-dark-700">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center">
+                    <Send className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                      {language === 'ar' ? 'إرسال نسخة احتياطية' : 'Send Data Backup'}
+                    </h3>
+                    <p className="text-sm text-gray-500">{backupTenant.name}</p>
+                  </div>
+                </div>
+                <button onClick={() => setBackupTenant(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-5 max-h-[65vh] overflow-y-auto">
+
+                {/* Period */}
+                <div>
+                  <label className="label flex items-center gap-1.5 mb-2">
+                    <Calendar className="w-4 h-4 text-gray-400" />
+                    {language === 'ar' ? 'الفترة الزمنية' : 'Period'}
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[['weekly', language === 'ar' ? 'أسبوعي' : 'Weekly'], ['monthly', language === 'ar' ? 'شهري' : 'Monthly'], ['custom', language === 'ar' ? 'مخصص' : 'Custom']].map(([val, label]) => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => setBackupForm(p => ({ ...p, period: val }))}
+                        className={`py-2.5 rounded-xl text-sm font-semibold border transition-all ${
+                          backupForm.period === val
+                            ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm'
+                            : 'bg-white dark:bg-dark-700 border-gray-200 dark:border-dark-600 text-gray-700 dark:text-gray-300 hover:border-emerald-400'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Custom date range */}
+                {backupForm.period === 'custom' && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="label">{language === 'ar' ? 'من' : 'From'}</label>
+                      <input type="date" value={backupForm.startDate} onChange={e => setBackupForm(p => ({ ...p, startDate: e.target.value }))} className="input" />
+                    </div>
+                    <div>
+                      <label className="label">{language === 'ar' ? 'إلى' : 'To'}</label>
+                      <input type="date" value={backupForm.endDate} onChange={e => setBackupForm(p => ({ ...p, endDate: e.target.value }))} className="input" />
+                    </div>
+                  </div>
+                )}
+
+                {/* Format */}
+                <div>
+                  <label className="label mb-2">{language === 'ar' ? 'التنسيق' : 'Format'}</label>
+                  <div className="flex gap-3">
+                    {[['excel', <FileSpreadsheet key="excel" className="w-4 h-4" />, 'Excel (.xlsx)'], ['pdf', <FileText key="pdf" className="w-4 h-4" />, 'PDF']].map(([fmt, icon, label]) => (
+                      <button
+                        key={fmt}
+                        type="button"
+                        onClick={() => toggleFormat(fmt)}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border transition-all ${
+                          backupForm.formats.includes(fmt)
+                            ? 'bg-emerald-600 border-emerald-600 text-white'
+                            : 'bg-white dark:bg-dark-700 border-gray-200 dark:border-dark-600 text-gray-600 dark:text-gray-300 hover:border-emerald-400'
+                        }`}
+                      >
+                        {icon}{label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Recipient email */}
+                <div>
+                  <label className="label flex items-center gap-1.5 mb-2">
+                    <Mail className="w-4 h-4 text-gray-400" />
+                    {language === 'ar' ? 'البريد الإلكتروني للمستلم' : 'Recipient Email'}
+                  </label>
+                  <input
+                    type="email"
+                    value={backupForm.email}
+                    onChange={e => setBackupForm(p => ({ ...p, email: e.target.value }))}
+                    placeholder="customer@gmail.com"
+                    className="input"
+                  />
+                  <p className="mt-1.5 text-xs text-gray-400">
+                    {language === 'ar' ? 'سيتم إرسال الملفات المرفقة إلى هذا البريد' : 'The backup files will be sent as email attachments to this address'}
+                  </p>
+                </div>
+
+                {/* What will be included */}
+                <div className="rounded-2xl border border-emerald-100 bg-emerald-50 dark:border-emerald-900/30 dark:bg-emerald-900/10 p-4">
+                  <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300 mb-2">
+                    {language === 'ar' ? 'محتوى النسخة الاحتياطية' : 'Backup includes'}
+                  </p>
+                  <ul className="space-y-1 text-sm text-emerald-700 dark:text-emerald-400">
+                    {[
+                      language === 'ar' ? 'الفواتير وتفاصيلها' : 'Invoices with totals & VAT',
+                      language === 'ar' ? 'المصروفات والتصنيفات' : 'Expenses by category',
+                      language === 'ar' ? 'الموظفون النشطون' : 'Active employees & salaries',
+                      language === 'ar' ? 'سجلات الرواتب' : 'Payroll records',
+                    ].map((item, i) => (
+                      <li key={i} className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 p-6 border-t border-gray-100 dark:border-dark-700">
+                <button type="button" onClick={() => setBackupTenant(null)} className="btn btn-secondary">
+                  {t('cancel')}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSendBackup}
+                  disabled={sendBackupMutation.isPending}
+                  className="btn btn-primary bg-emerald-600 hover:bg-emerald-700 border-emerald-600 hover:border-emerald-700"
+                >
+                  {sendBackupMutation.isPending ? (
+                    <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />{language === 'ar' ? 'جارٍ الإرسال...' : 'Sending...'}</>
+                  ) : (
+                    <><Send className="w-4 h-4" />{language === 'ar' ? 'إرسال النسخة الاحتياطية' : 'Send Backup'}</>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
