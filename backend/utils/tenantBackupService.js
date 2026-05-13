@@ -34,7 +34,7 @@ export const resolvePeriodDates = ({ period, startDate: customStart, endDate: cu
 export const buildTenantBackup = async ({ tenantId, startDate, endDate, formats = ['excel', 'pdf'] }) => {
   const [invoices, expenses, employees, payrolls] = await Promise.all([
     Invoice.find({ tenantId, issueDate: { $gte: startDate, $lte: endDate } })
-      .select('invoiceNumber issueDate buyer grandTotal totalTax subtotal status transactionType')
+      .select('invoiceNumber issueDate buyer grandTotal totalTax subtotal status paymentStatus transactionType zatca')
       .lean(),
     Expense.find({ tenantId, date: { $gte: startDate, $lte: endDate } })
       .select('title category amount currency date status notes')
@@ -84,7 +84,8 @@ const buildExcelBuffer = async ({ invoices, expenses, employees, payrolls, start
         'Subtotal (SAR)': safeMoney(inv.subtotal),
         'VAT (SAR)': safeMoney(inv.totalTax),
         'Grand Total (SAR)': safeMoney(inv.grandTotal),
-        'Status': safeStr(inv.status),
+        'Payment Status': safeStr(inv.paymentStatus) || safeStr(inv.status),
+        'ZATCA Status': safeStr(inv.zatca?.submissionStatus) || 'not submitted',
       }))
     : [{ Note: `No invoices between ${safeDate(startDate)} and ${safeDate(endDate)}` }];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(invoiceRows), 'Invoices');
@@ -130,6 +131,26 @@ const buildExcelBuffer = async ({ invoices, expenses, employees, payrolls, start
   return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
 };
 
+const labelZatcaStatus = (inv) => {
+  const s = safeStr(inv.zatca?.submissionStatus).toLowerCase();
+  if (s === 'cleared') return 'E-Invoice Generated';
+  if (s === 'reported') return 'Reported';
+  if (s === 'submitted') return 'Processing';
+  if (s === 'rejected') return 'Rejected';
+  if (s === 'warning') return 'Warning';
+  return 'Not Submitted';
+};
+
+const labelPaymentStatus = (inv) => {
+  const s = safeStr(inv.paymentStatus || inv.status).toLowerCase();
+  if (s === 'paid') return 'Paid';
+  if (s === 'partial') return 'Partial';
+  if (s === 'overdue') return 'Overdue';
+  if (s === 'cancelled') return 'Cancelled';
+  if (s === 'pending') return 'Pending';
+  return safeStr(inv.paymentStatus || inv.status) || 'Pending';
+};
+
 const buildPdfBuffer = async ({ invoices, expenses, employees, payrolls, startDate, endDate }) => {
   let jsPDF;
   try {
@@ -159,20 +180,26 @@ const buildPdfBuffer = async ({ invoices, expenses, employees, payrolls, startDa
   drawPageHeader();
 
   const totalRevenue = invoices.reduce((s, inv) => s + (Number(inv.grandTotal) || 0), 0);
-  const totalExpenses = expenses.reduce((s, exp) => s + (Number(exp.amount) || 0), 0);
+  const totalSubtotal = invoices.reduce((s, inv) => s + (Number(inv.subtotal) || 0), 0);
+  const totalVat = invoices.reduce((s, inv) => s + (Number(inv.totalTax) || 0), 0);
+  const totalExpAmt = expenses.reduce((s, exp) => s + (Number(exp.amount) || 0), 0);
+  const netIncome = totalRevenue - totalExpAmt;
+  const totalPayroll = payrolls.reduce((s, p) => s + (Number(p.totalSalary) || 0), 0);
+
   const metrics = [
     { label: 'Invoices', value: String(invoices.length) },
     { label: 'Revenue', value: `SAR ${totalRevenue.toFixed(2)}` },
-    { label: 'Expenses', value: String(expenses.length) },
-    { label: 'Total Exp.', value: `SAR ${totalExpenses.toFixed(2)}` },
+    { label: 'VAT Collected', value: `SAR ${totalVat.toFixed(2)}` },
+    { label: 'Expenses', value: `SAR ${totalExpAmt.toFixed(2)}` },
+    { label: 'Net Income', value: `SAR ${netIncome.toFixed(2)}` },
     { label: 'Employees', value: String(employees.length) },
-    { label: 'Payrolls', value: String(payrolls.length) },
   ];
   const cardW = (pageW - 80 - 10 * (metrics.length - 1)) / metrics.length;
   metrics.forEach((m, i) => {
     const x = 40 + i * (cardW + 10);
-    doc.setFillColor(244, 250, 246);
-    doc.setDrawColor(209, 231, 215);
+    const isNeg = m.label === 'Net Income' && netIncome < 0;
+    doc.setFillColor(isNeg ? 254 : 244, isNeg ? 242 : 250, isNeg ? 242 : 246);
+    doc.setDrawColor(isNeg ? 252 : 209, isNeg ? 165 : 231, isNeg ? 165 : 215);
     doc.roundedRect(x, 56, cardW, 46, 6, 6, 'FD');
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7.5);
@@ -180,13 +207,13 @@ const buildPdfBuffer = async ({ invoices, expenses, employees, payrolls, startDa
     doc.text(m.label, x + 6, 70);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
-    doc.setTextColor(15, 23, 42);
+    doc.setTextColor(isNeg ? 185 : 15, isNeg ? 28 : 23, isNeg ? 28 : 42);
     doc.text(m.value, x + 6, 88);
   });
 
   const autoTable = (doc, opts) => doc.autoTable(opts);
 
-  const tableOptions = (startY, head, body) => ({
+  const tableOptions = (startY, head, body, extraOpts = {}) => ({
     startY,
     head,
     body,
@@ -203,11 +230,60 @@ const buildPdfBuffer = async ({ invoices, expenses, employees, payrolls, startDa
         doc.text('Maqder ERP — Tenant Backup Report', 40, 12);
       }
     },
+    ...extraOpts,
   });
 
+  // ── Section header helper
+  const sectionTitle = (y, title) => {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(26, 61, 40);
+    doc.text(title, 40, y);
+    doc.setDrawColor(209, 231, 215);
+    doc.line(40, y + 3, pageW - 40, y + 3);
+    return y + 14;
+  };
+
+  // ── 1. Business Summary
+  let y = sectionTitle(116, 'Business Summary');
+  autoTable(doc, tableOptions(y, [['Category', 'Amount (SAR)']], [
+    ['Total Invoice Revenue', totalRevenue.toFixed(2)],
+    ['Taxable Amount (excl. VAT)', totalSubtotal.toFixed(2)],
+    ['VAT Collected (15%)', totalVat.toFixed(2)],
+    ['Total Expenses', totalExpAmt.toFixed(2)],
+    ['Total Payroll', totalPayroll.toFixed(2)],
+    ['Net Income (Revenue − Expenses)', netIncome.toFixed(2)],
+  ], { tableWidth: 'wrap', columnStyles: { 0: { cellWidth: 260 }, 1: { cellWidth: 120, halign: 'right' } } }));
+
+  // ── 2. VAT Summary
+  const b2bInvoices = invoices.filter(inv => safeStr(inv.transactionType).toUpperCase() === 'B2B');
+  const b2cInvoices = invoices.filter(inv => safeStr(inv.transactionType).toUpperCase() !== 'B2B');
+  y = sectionTitle(doc.lastAutoTable.finalY + 16, 'VAT Summary');
+  autoTable(doc, tableOptions(y, [['Transaction Type', 'Count', 'Taxable (SAR)', 'VAT (SAR)', 'Total (SAR)']], [
+    [
+      'B2B (Tax Invoice)',
+      String(b2bInvoices.length),
+      b2bInvoices.reduce((s, i) => s + (Number(i.subtotal) || 0), 0).toFixed(2),
+      b2bInvoices.reduce((s, i) => s + (Number(i.totalTax) || 0), 0).toFixed(2),
+      b2bInvoices.reduce((s, i) => s + (Number(i.grandTotal) || 0), 0).toFixed(2),
+    ],
+    [
+      'B2C (Simplified Invoice)',
+      String(b2cInvoices.length),
+      b2cInvoices.reduce((s, i) => s + (Number(i.subtotal) || 0), 0).toFixed(2),
+      b2cInvoices.reduce((s, i) => s + (Number(i.totalTax) || 0), 0).toFixed(2),
+      b2cInvoices.reduce((s, i) => s + (Number(i.grandTotal) || 0), 0).toFixed(2),
+    ],
+    ['TOTAL', String(invoices.length), totalSubtotal.toFixed(2), totalVat.toFixed(2), totalRevenue.toFixed(2)],
+  ], {
+    columnStyles: { 1: { halign: 'center' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' } },
+  }));
+
+  // ── 3. Invoices detail
+  y = sectionTitle(doc.lastAutoTable.finalY + 16, 'Invoice Details');
   autoTable(doc, tableOptions(
-    112,
-    [['Invoice #', 'Date', 'Customer', 'Type', 'Subtotal', 'VAT', 'Total (SAR)', 'Status']],
+    y,
+    [['Invoice #', 'Date', 'Customer', 'Type', 'Subtotal', 'VAT', 'Total', 'Payment', 'ZATCA']],
     invoices.length
       ? invoices.map((inv) => [
           safeStr(inv.invoiceNumber),
@@ -217,13 +293,17 @@ const buildPdfBuffer = async ({ invoices, expenses, employees, payrolls, startDa
           safeMoney(inv.subtotal),
           safeMoney(inv.totalTax),
           safeMoney(inv.grandTotal),
-          safeStr(inv.status),
+          labelPaymentStatus(inv),
+          labelZatcaStatus(inv),
         ])
-      : [['—', '—', '—', '—', '—', '—', '—', 'No invoices in period']],
+      : [['—', '—', '—', '—', '—', '—', '—', '—', 'No invoices in period']],
+    { styles: { fontSize: 7, cellPadding: 3 } },
   ));
 
+  // ── 4. Expenses detail
+  y = sectionTitle(doc.lastAutoTable.finalY + 16, 'Expenses');
   autoTable(doc, tableOptions(
-    doc.lastAutoTable.finalY + 18,
+    y,
     [['Title', 'Category', 'Date', 'Amount', 'Currency', 'Status']],
     expenses.length
       ? expenses.map((exp) => [
@@ -237,8 +317,10 @@ const buildPdfBuffer = async ({ invoices, expenses, employees, payrolls, startDa
       : [['—', '—', '—', '—', '—', 'No expenses in period']],
   ));
 
+  // ── 5. Employees
+  y = sectionTitle(doc.lastAutoTable.finalY + 16, 'Employees');
   autoTable(doc, tableOptions(
-    doc.lastAutoTable.finalY + 18,
+    y,
     [['Name (EN)', 'Name (AR)', 'Department', 'Position', 'Basic Salary (SAR)']],
     employees.length
       ? employees.map((emp) => [
@@ -251,9 +333,11 @@ const buildPdfBuffer = async ({ invoices, expenses, employees, payrolls, startDa
       : [['—', '—', '—', '—', 'No active employees']],
   ));
 
+  // ── 6. Payroll
   if (payrolls.length) {
+    y = sectionTitle(doc.lastAutoTable.finalY + 16, 'Payroll');
     autoTable(doc, tableOptions(
-      doc.lastAutoTable.finalY + 18,
+      y,
       [['Month', 'Year', 'Period Start', 'Period End', 'Total Salary (SAR)', 'Status']],
       payrolls.map((p) => [
         safeStr(p.month),
