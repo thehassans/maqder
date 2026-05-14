@@ -771,13 +771,11 @@ router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) =>
 
     const invoiceNumber = `INV-${new Date().getFullYear()}-${String(invoiceCount).padStart(6, '0')}`;
 
-    const transactionType = businessContext === 'travel_agency' ? 'B2C' : (req.body.transactionType || 'B2C');
+    const transactionType = req.body.transactionType === 'B2B' ? 'B2B' : 'B2C';
     const invoiceSubtype = businessContext === 'travel_agency'
       ? 'travel_ticket'
       : (req.body.invoiceSubtype === 'travel_ticket' ? 'travel_ticket' : 'standard');
-    const invoiceTypeCode = businessContext === 'travel_agency'
-      ? '0200000'
-      : (req.body.invoiceTypeCode || (transactionType === 'B2C' ? '0200000' : '0100000'));
+    const invoiceTypeCode = req.body.invoiceTypeCode || (transactionType === 'B2C' ? '0200000' : '0100000');
     const issueDate = req.body.issueDate ? new Date(req.body.issueDate) : new Date();
     const pdfTemplateId = resolvePdfTemplateId(req.body?.pdfTemplateId, tenant, businessContext);
 

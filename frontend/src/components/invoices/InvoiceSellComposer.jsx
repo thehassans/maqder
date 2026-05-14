@@ -152,9 +152,8 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
 
   useEffect(() => {
     if (isTravelContext) {
-      setInvoiceType('B2C')
-      setValue('transactionType', 'B2C')
-      setValue('invoiceTypeCode', '0200000')
+      setValue('transactionType', invoiceType)
+      setValue('invoiceTypeCode', invoiceType === 'B2B' ? '0100000' : '0200000')
       if (invoiceSubtype !== 'travel_ticket') {
         setValue('invoiceSubtype', 'travel_ticket')
       }
@@ -164,26 +163,14 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
     if (isTravelContext && !invoiceSubtype) {
       setValue('invoiceSubtype', 'travel_ticket')
     }
-  }, [invoiceSubtype, isTravelContext, setValue])
-
-  useEffect(() => {
-    if (skipBusinessContextResetRef.current) {
-      skipBusinessContextResetRef.current = false
-      return
-    }
-    setSourceId('')
-    setValue('restaurantOrderId', '')
-    setValue('travelBookingId', '')
-    setValue('contractNumber', '')
-    setValue('pdfTemplateId', getInvoiceTemplateId(tenant, businessContext))
-  }, [businessContext, setValue])
+  }, [invoiceSubtype, invoiceType, isTravelContext, setValue])
 
   useEffect(() => {
     if (!isTravelContext) return
     lineItems.forEach((line, index) => {
       // Travel agency invoices are VAT-exempt (0%).
-      if (toNumber(line?.taxRate, 0) !== 0) {
-        setValue(`lineItems.${index}.taxRate`, 0)
+      if (toNumber(line?.taxRate, 15) !== 15) {
+        setValue(`lineItems.${index}.taxRate`, 15)
       }
       if (!line?.isTravelMargin) {
         setValue(`lineItems.${index}.isTravelMargin`, true)
@@ -236,9 +223,10 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
       throw new Error('Unsupported business context')
     },
     onSuccess: ({ type, data }) => {
-      setInvoiceType('B2C')
-      setValue('transactionType', 'B2C')
-      setValue('invoiceTypeCode', '0200000')
+      const nextTransactionType = type === 'travel' ? invoiceType : 'B2C'
+      setInvoiceType(nextTransactionType)
+      setValue('transactionType', nextTransactionType)
+      setValue('invoiceTypeCode', nextTransactionType === 'B2B' ? '0100000' : '0200000')
 
       if (type === 'restaurant') {
         const items = (Array.isArray(data?.lineItems) ? data.lineItems : []).map((li) => ({
@@ -357,7 +345,7 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
   const totals = calculateInvoiceSummary({ lineItems, invoiceDiscount: values?.invoiceDiscount })
 
   const onSubmit = (data) => {
-    const transactionType = isTravelContext ? 'B2C' : invoiceType
+    const transactionType = invoiceType
     const invoiceTypeCode = transactionType === 'B2C' ? '0200000' : '0100000'
     const payload = {
       ...data,
@@ -387,7 +375,7 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
           lineNumber: index + 1,
           taxCategory: 'S',
           productId: isTradingContext ? line.productId || undefined : undefined,
-          taxRate: isTravelContext ? 0 : toNumber(line.taxRate, 15),
+          taxRate: isTravelContext ? Math.max(0, toNumber(line.taxRate, 15)) : toNumber(line.taxRate, 15),
           agencyPrice: isTravelContext ? agencyPrice : 0,
           customerPrice: isTravelContext ? (customerPriceRaw > 0 ? customerPriceRaw : unitPriceNum) : 0,
           isTravelMargin,
@@ -434,7 +422,7 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
     createdByNameAr: initialInvoice?.createdByNameAr || [user?.firstNameAr, user?.lastNameAr].filter(Boolean).join(' '),
     createdBy: initialInvoice?.createdBy || user,
     flow: 'sell',
-    transactionType: isTravelContext ? 'B2C' : invoiceType,
+    transactionType: invoiceType,
     invoiceSubtype: isTravelContext ? 'travel_ticket' : invoiceSubtype,
     pdfTemplateId: selectedTemplateId,
     invoiceDiscount: Math.max(0, toNumber(values?.invoiceDiscount, 0)),
@@ -547,23 +535,24 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
 
           <div className="card p-6">
             <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'نوع الفاتورة' : 'Invoice Type'}</h3>
-            {isTravelContext ? (
-              <div className="rounded-2xl border-2 border-primary-500 bg-primary-50 p-4 text-start dark:bg-primary-900/20">
-                <p className="font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'فاتورة سفر / تذاكر' : 'Travel / Ticket Invoice'}</p>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{language === 'ar' ? 'لفواتير السفر يتم استخدام صيغة B2C فقط' : 'Travel invoices use the B2C ticket-invoice format only'}</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <button type="button" onClick={() => setInvoiceType('B2C')} className={`rounded-2xl border-2 p-4 text-start ${invoiceType === 'B2C' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-dark-600'}`}>
-                  <p className="font-semibold text-gray-900 dark:text-white">{t('b2cInvoice')}</p>
-                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{language === 'ar' ? 'مبيعات نقدية أو مباشرة' : 'Cash or direct sale invoices'}</p>
-                </button>
-                <button type="button" onClick={() => setInvoiceType('B2B')} className={`rounded-2xl border-2 p-4 text-start ${invoiceType === 'B2B' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-dark-600'}`}>
-                  <p className="font-semibold text-gray-900 dark:text-white">{t('b2bInvoice')}</p>
-                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{language === 'ar' ? 'فواتير الشركات والجهات' : 'Invoices for business customers'}</p>
-                </button>
-              </div>
-            )}
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <button type="button" onClick={() => setInvoiceType('B2C')} className={`rounded-2xl border-2 p-4 text-start ${invoiceType === 'B2C' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-dark-600'}`}>
+                <p className="font-semibold text-gray-900 dark:text-white">{t('b2cInvoice')}</p>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  {isTravelContext
+                    ? (language === 'ar' ? 'فاتورة سفر مبسطة للأفراد' : 'Simplified travel invoice for individual customers')
+                    : (language === 'ar' ? 'مبيعات نقدية أو مباشرة' : 'Cash or direct sale invoices')}
+                </p>
+              </button>
+              <button type="button" onClick={() => setInvoiceType('B2B')} className={`rounded-2xl border-2 p-4 text-start ${invoiceType === 'B2B' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-dark-600'}`}>
+                <p className="font-semibold text-gray-900 dark:text-white">{t('b2bInvoice')}</p>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  {isTravelContext
+                    ? (language === 'ar' ? 'فاتورة سفر ضريبية للشركات والعملاء المسجلين ضريبياً' : 'Tax travel invoice for companies and VAT-registered customers')
+                    : (language === 'ar' ? 'فواتير الشركات والجهات' : 'Invoices for business customers')}
+                </p>
+              </button>
+            </div>
             <input type="hidden" {...register('invoiceSubtype')} />
           </div>
 
@@ -633,7 +622,49 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
             </div>
             <input type="hidden" {...register('customerId')} />
             {invoiceSubtype === 'travel_ticket' ? (
-              <TravelInvoiceFields language={language} register={register} control={control} watch={watch} setValue={setValue} />
+              <>
+                <TravelInvoiceFields language={language} register={register} control={control} watch={watch} setValue={setValue} />
+                {invoiceType === 'B2B' && (
+                  <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="label">{language === 'ar' ? 'الرقم الضريبي' : 'VAT Number'}</label>
+                      <input {...register('buyer.vatNumber')} className="input" />
+                    </div>
+                    <div>
+                      <label className="label">{language === 'ar' ? 'السجل التجاري' : 'CR Number'}</label>
+                      <input {...register('buyer.crNumber')} className="input" />
+                    </div>
+                    <div>
+                      <label className="label">{language === 'ar' ? 'المدينة' : 'City'}</label>
+                      <input {...register('buyer.address.city')} className="input" />
+                    </div>
+                    <div>
+                      <label className="label">{language === 'ar' ? 'الحي' : 'District'}</label>
+                      <input {...register('buyer.address.district')} className="input" />
+                    </div>
+                    <div>
+                      <label className="label">{language === 'ar' ? 'الشارع' : 'Street'}</label>
+                      <input {...register('buyer.address.street')} className="input" />
+                    </div>
+                    <div>
+                      <label className="label">{language === 'ar' ? 'الرمز البريدي' : 'Postal Code'}</label>
+                      <input {...register('buyer.address.postalCode')} className="input" />
+                    </div>
+                    <div>
+                      <label className="label">{language === 'ar' ? 'الدولة' : 'Country'}</label>
+                      <input {...register('buyer.address.country')} className="input" placeholder="SA" />
+                    </div>
+                    <div>
+                      <label className="label">{language === 'ar' ? 'رقم المبنى' : 'Building Number'}</label>
+                      <input {...register('buyer.address.buildingNumber')} className="input" />
+                    </div>
+                    <div>
+                      <label className="label">{language === 'ar' ? 'الرقم الإضافي' : 'Additional Number'}</label>
+                      <input {...register('buyer.address.additionalNumber')} className="input" />
+                    </div>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
@@ -767,19 +798,21 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
                   </div>
                   {isTravelContext && (() => {
                     const line = lineItems?.[index] || {}
+                    const summaryLine = totals.lines[index] || {}
                     const unitPriceNum = toNumber(line.unitPrice, 0)
                     const agencyPriceNum = Math.max(0, toNumber(line.agencyPrice, 0))
                     const qtyNum = Math.max(0, toNumber(line.quantity, 0))
-                    const profitPerUnit = Math.max(0, unitPriceNum - agencyPriceNum)
-                    const lineProfit = profitPerUnit * qtyNum
+                    const marginProfit = Math.max(0, unitPriceNum - agencyPriceNum) * qtyNum
+                    const marginVat = toNumber(summaryLine.taxAmount, 0)
+                    const netMarginProfit = Math.max(0, marginProfit - marginVat)
                     return (
                       <div className="mt-3 rounded-lg border border-dashed border-primary-200 bg-primary-50/40 p-3 dark:border-primary-900/40 dark:bg-primary-900/10">
                         <div className="grid grid-cols-1 items-end gap-4 md:grid-cols-12">
-                          <div className="md:col-span-9">
+                          <div className="md:col-span-6">
                             <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
                               {language === 'ar'
-                                ? 'فواتير وكالة السفر معفاة من ضريبة القيمة المضافة'
-                                : 'Travel agency invoices are VAT-exempt (0%).'}
+                                ? 'يتم احتساب الضريبة على هامش الربح فقط في فاتورة السفر'
+                                : 'VAT is calculated only on the travel margin profit.'}
                             </p>
                             <p className="mt-1 text-[11px] text-gray-500">
                               {language === 'ar'
@@ -787,9 +820,17 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
                                 : 'Customer Price is what the buyer sees on the invoice. Unit Price and Agency Price are hidden on the printed invoice.'}
                             </p>
                           </div>
-                          <div className="md:col-span-3 text-end">
-                            <p className="mb-1 text-xs text-gray-500">{language === 'ar' ? 'إجمالي الربح' : 'Total Profit'}</p>
-                            <p className="font-semibold text-emerald-600"><Money value={lineProfit} /></p>
+                          <div className="md:col-span-2 text-end">
+                            <p className="mb-1 text-xs text-gray-500">{language === 'ar' ? 'هامش الربح' : 'Margin Profit'}</p>
+                            <p className="font-semibold text-emerald-600"><Money value={marginProfit} /></p>
+                          </div>
+                          <div className="md:col-span-2 text-end">
+                            <p className="mb-1 text-xs text-gray-500">{language === 'ar' ? 'الضريبة على الهامش' : 'VAT on Margin'}</p>
+                            <p className="font-semibold text-amber-600"><Money value={marginVat} /></p>
+                          </div>
+                          <div className="md:col-span-2 text-end">
+                            <p className="mb-1 text-xs text-gray-500">{language === 'ar' ? 'صافي الربح' : 'Net Profit'}</p>
+                            <p className="font-semibold text-primary-600"><Money value={netMarginProfit} /></p>
                           </div>
                         </div>
                       </div>

@@ -248,8 +248,11 @@ invoiceSchema.pre('validate', function(next) {
       : Math.min(lineSubtotal, rawDiscount);
     const netBeforeInvoiceDiscount = Math.max(0, lineSubtotal - lineDiscount);
     // Travel agency invoices are VAT-exempt per tenant policy: force 0% on margin lines.
-    const taxRate = isTravelMargin ? 0 : Math.max(0, Number(line.taxRate) || 0);
-    if (isTravelMargin) line.taxRate = 0;
+    const requestedTaxRate = Number(line.taxRate);
+    const taxRate = isTravelMargin
+      ? Math.max(0, Number.isFinite(requestedTaxRate) && requestedTaxRate > 0 ? requestedTaxRate : 15)
+      : Math.max(0, requestedTaxRate || 0);
+    if (isTravelMargin) line.taxRate = taxRate;
     const marginPerUnit = isTravelMargin ? Math.max(0, unitPrice - agencyPrice) : 0;
     const marginBeforeInvoiceDiscount = isTravelMargin
       ? Math.max(0, (quantity * marginPerUnit) - (lineDiscount * (customerPriceEff > 0 ? marginPerUnit / customerPriceEff : 0)))

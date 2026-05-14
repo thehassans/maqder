@@ -166,6 +166,14 @@ const getPartyDetailLines = (party = {}, language = 'en', role = 'party') => {
 const getPartyDetailLinesBilingual = (party = {}, role = 'party') => {
   const lines = []
 
+  if (party?.vatNumber) {
+    lines.push({ label: role === 'seller' ? toBilingualText('Company VAT', 'الرقم الضريبي للشركة') : toBilingualText('VAT', 'الرقم الضريبي'), value: party.vatNumber, dir: 'ltr' })
+  }
+
+  if (party?.crNumber) {
+    lines.push({ label: toBilingualText('CR', 'السجل التجاري'), value: party.crNumber, dir: 'ltr' })
+  }
+
   if (role !== 'seller' && party?.contactPhone) {
     lines.push({ label: toBilingualText('Phone', 'الهاتف'), value: party.contactPhone })
   }
@@ -343,7 +351,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
         getAmountInWords(totals.grandTotal, currency, 'ar'),
       )
     : [getAmountInWords(totals.grandTotal, currency, language)]
-  const hideTaxOnInvoice = invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency'
+  const hideTaxOnInvoice = isTravelInvoice && toNumber(totals.totalTax) <= 0
   const showInvoiceTitle = isQuotation || !(invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency')
   const invoiceTitle = bilingual
     ? toBilingualText(getInvoiceTitle(invoice, 'en', documentType), getInvoiceTitle(invoice, 'ar', documentType))
