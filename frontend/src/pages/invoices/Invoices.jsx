@@ -1,20 +1,25 @@
 import { useEffect, useState } from 'react'
-import { useQuery, keepPreviousData } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
-import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  Download, 
-  Eye, 
+import { Link, useNavigate } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  Plus,
+  Search,
+  Download,
+  Eye,
   Edit,
   FileText,
   CheckCircle,
   Clock,
   XCircle,
-  AlertTriangle
+  AlertTriangle,
+  Send,
+  X,
+  PenLine,
+  ShieldCheck,
+  ShieldOff,
+  Layers
 } from 'lucide-react'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
@@ -74,11 +79,15 @@ export default function Invoices() {
   const { language } = useSelector((state) => state.ui)
   const { tenant } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
+  const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [filters, setFilters] = useState({ status: '', businessContext: '' })
+  const [zatcaFilter, setZatcaFilter] = useState('')
   const [page, setPage] = useState(1)
   const [pdfLoadingId, setPdfLoadingId] = useState(null)
+  const [signModalInvoice, setSignModalInvoice] = useState(null)
   const tenantBusinessTypes = getTenantBusinessTypes(tenant)
 
   useEffect(() => {
@@ -87,12 +96,25 @@ export default function Invoices() {
   }, [search])
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['invoices', page, debouncedSearch, filters],
+    queryKey: ['invoices', page, debouncedSearch, filters, zatcaFilter],
     queryFn: () => api.get('/invoices', {
-      params: { page, search: debouncedSearch, ...filters }
+      params: { page, search: debouncedSearch, ...filters, zatcaFilter }
     }).then(res => res.data),
     placeholderData: keepPreviousData,
-    staleTime: 60 * 1000,
+    staleTime: 30 * 1000,
+  })
+
+  const signMutation = useMutation({
+    mutationFn: (invoiceId) => api.post(`/invoices/${invoiceId}/sign`, undefined, { timeout: 120000 }),
+    onSuccess: () => {
+      toast.success(language === 'ar' ? 'تم توقيع الفاتورة بنجاح' : 'Invoice signed successfully')
+      setSignModalInvoice(null)
+      queryClient.invalidateQueries(['invoices'])
+      queryClient.invalidateQueries(['dashboard'])
+    },
+    onError: (err) => {
+      toast.error(err?.response?.data?.error || (language === 'ar' ? 'فشل توقيع الفاتورة' : 'Failed to sign invoice'))
+    },
   })
 
   const getStatusBadge = (invoice) => {
@@ -182,8 +204,115 @@ export default function Invoices() {
     return all
   }
 
+  const zatcaFilterOptions = [
+    { value: '', label: language === 'ar' ? 'الكل' : 'All', icon: <Layers className="w-3.5 h-3.5" /> },
+    { value: 'unsigned', label: language === 'ar' ? 'بانتظار التوقيع' : 'Pending Sign', icon: <ShieldOff className="w-3.5 h-3.5" /> },
+    { value: 'signed', label: language === 'ar' ? 'موقّعة' : 'Signed', icon: <ShieldCheck className="w-3.5 h-3.5" /> },
+    { value: 'submitted', label: language === 'ar' ? 'مُرسَلة' : 'Submitted', icon: <CheckCircle className="w-3.5 h-3.5" /> },
+  ]
+
   return (
     <div className="space-y-6">
+      {/* Sign Modal */}
+      <AnimatePresence>
+        {signModalInvoice && (
+          <motion.div
+            key="sign-modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={(e) => { if (e.target === e.currentTarget) setSignModalInvoice(null) }}
+          >
+            <motion.div
+              key="sign-modal-panel"
+              initial={{ opacity: 0, scale: 0.95, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 16 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+              className="relative w-full max-w-md rounded-2xl bg-white dark:bg-dark-800 shadow-2xl ring-1 ring-black/10 dark:ring-white/10"
+            >
+              <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-dark-700">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-primary-100 dark:bg-primary-900/30">
+                    <PenLine className="w-5 h-5 text-primary-600" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 dark:text-white">
+                      {language === 'ar' ? 'توقيع الفاتورة' : 'Sign Invoice'}
+                    </p>
+                    <p className="text-xs text-gray-500 font-mono mt-0.5">{signModalInvoice.invoiceNumber}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSignModalInvoice(null)}
+                  className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
+                >
+                  <X className="w-4 h-4 text-gray-500" />
+                </button>
+              </div>
+              <div className="p-5 space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-xl bg-gray-50 dark:bg-dark-700 p-3">
+                    <p className="text-xs text-gray-500 mb-1">{language === 'ar' ? 'العميل' : 'Customer'}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                      {(language === 'ar'
+                        ? (signModalInvoice.buyer?.nameAr || signModalInvoice.buyer?.name)
+                        : (signModalInvoice.buyer?.name || signModalInvoice.buyer?.nameAr)) || '—'}
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-gray-50 dark:bg-dark-700 p-3">
+                    <p className="text-xs text-gray-500 mb-1">{language === 'ar' ? 'الإجمالي' : 'Total'}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                      <Money value={signModalInvoice.grandTotal} />
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-gray-50 dark:bg-dark-700 p-3">
+                    <p className="text-xs text-gray-500 mb-1">{language === 'ar' ? 'التاريخ' : 'Date'}</p>
+                    <p className="text-sm text-gray-700 dark:text-gray-200">
+                      {new Date(signModalInvoice.issueDate).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')}
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-gray-50 dark:bg-dark-700 p-3">
+                    <p className="text-xs text-gray-500 mb-1">{language === 'ar' ? 'الحالة' : 'Status'}</p>
+                    {getStatusBadge(signModalInvoice)}
+                  </div>
+                </div>
+                <p className="text-xs text-gray-400 text-center">
+                  {language === 'ar'
+                    ? 'سيتم توقيع الفاتورة وإرسالها إلى هيئة الزكاة والضريبة والجمارك'
+                    : 'The invoice will be cryptographically signed and submitted to ZATCA'}
+                </p>
+              </div>
+              <div className="flex gap-3 p-5 pt-0">
+                <button
+                  type="button"
+                  onClick={() => setSignModalInvoice(null)}
+                  className="flex-1 btn btn-secondary"
+                  disabled={signMutation.isPending}
+                >
+                  {language === 'ar' ? 'إلغاء' : 'Cancel'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => signMutation.mutate(signModalInvoice._id)}
+                  disabled={signMutation.isPending}
+                  className="flex-1 btn btn-primary"
+                >
+                  {signMutation.isPending ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                  {language === 'ar' ? 'توقيع وإرسال' : 'Sign & Submit'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -211,13 +340,15 @@ export default function Invoices() {
       </div>
 
       {/* Filters */}
-      <div className="card p-4">
-        <div className="flex flex-col sm:flex-row gap-4">
+      <div className="card p-4 space-y-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1 relative">
             <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder={`${t('search')}...`}
+              placeholder={language === 'ar'
+                ? 'بحث بالرقم، الاسم، PNR، الهاتف، البريد، رقم التذكرة...'
+                : 'Search by number, name, PNR, phone, email, ticket number...'}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value)
@@ -253,6 +384,29 @@ export default function Invoices() {
             <option value="approved">{language === 'ar' ? 'معتمدة' : 'Approved'}</option>
           </select>
         </div>
+        {/* ZATCA status quick-filter chips */}
+        <div className="flex flex-wrap gap-2">
+          {zatcaFilterOptions.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => { setZatcaFilter(opt.value); setPage(1) }}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                zatcaFilter === opt.value
+                  ? 'bg-primary-600 text-white border-primary-600'
+                  : 'bg-white dark:bg-dark-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-dark-600 hover:border-primary-400'
+              }`}
+            >
+              {opt.icon}{opt.label}
+            </button>
+          ))}
+          {(isFetching && !isLoading) && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-400">
+              <div className="w-3 h-3 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" />
+              {language === 'ar' ? 'جارٍ التحديث...' : 'Updating...'}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Table */}
@@ -287,12 +441,18 @@ export default function Invoices() {
                   {data?.invoices?.map((invoice) => (
                     <tr key={invoice._id}>
                       <td>
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/app/dashboard/invoices/${invoice._id}`)}
+                          className="flex items-center gap-3 group text-start"
+                        >
+                          <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg group-hover:bg-primary-200 dark:group-hover:bg-primary-900/50 transition-colors">
                             <FileText className="w-4 h-4 text-primary-600" />
                           </div>
-                          <span className="font-medium">{invoice.invoiceNumber}</span>
-                        </div>
+                          <span className="font-medium text-primary-700 dark:text-primary-400 group-hover:underline underline-offset-2">
+                            {invoice.invoiceNumber}
+                          </span>
+                        </button>
                       </td>
                       <td>
                         <p className="font-medium text-gray-900 dark:text-white">
@@ -347,7 +507,17 @@ export default function Invoices() {
                       </td>
                       <td>{getStatusBadge(invoice)}</td>
                       <td>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
+                          {['draft', 'pending'].includes(invoice?.status) && !invoice?.zatca?.invoiceHash && invoice?.flow !== 'purchase' && (
+                            <button
+                              type="button"
+                              onClick={() => setSignModalInvoice(invoice)}
+                              className="p-2 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
+                              title={language === 'ar' ? 'توقيع وإرسال' : 'Sign & Submit'}
+                            >
+                              <Send className="w-4 h-4 text-primary-600" />
+                            </button>
+                          )}
                           {isEditableInvoice(invoice) && (
                             <Link
                               to={`/app/dashboard/invoices/${invoice._id}/edit`}

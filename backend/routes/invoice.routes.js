@@ -402,7 +402,7 @@ async function syncCustomerStats(tenantId, customerId) {
 // @route   GET /api/invoices
 router.get('/', checkPermission('invoicing', 'read'), async (req, res) => {
   try {
-    const { page = 1, limit = 20, status, transactionType, businessContext, search, startDate, endDate } = req.query;
+    const { page = 1, limit = 20, status, transactionType, businessContext, search, startDate, endDate, zatcaFilter } = req.query;
     
     const query = { ...req.tenantFilter };
     if (status) query.status = status;
@@ -414,11 +414,32 @@ router.get('/', checkPermission('invoicing', 'read'), async (req, res) => {
       if (endDate) query.issueDate.$lte = new Date(endDate);
     }
     if (search) {
+      const re = { $regex: search, $options: 'i' };
       query.$or = [
-        { invoiceNumber: { $regex: search, $options: 'i' } },
-        { 'buyer.name': { $regex: search, $options: 'i' } },
-        { 'buyer.vatNumber': { $regex: search, $options: 'i' } }
+        { invoiceNumber: re },
+        { contractNumber: re },
+        { 'buyer.name': re },
+        { 'buyer.nameAr': re },
+        { 'buyer.vatNumber': re },
+        { 'buyer.crNumber': re },
+        { 'buyer.contactPhone': re },
+        { 'buyer.contactEmail': re },
+        { 'travelDetails.pnr': re },
+        { 'travelDetails.travelerName': re },
+        { 'travelDetails.ticketNumber': re },
+        { 'travelDetails.passengers.pnr': re },
+        { 'travelDetails.passengers.travelerName': re },
+        { 'travelDetails.passengers.ticketNumber': re },
       ];
+    }
+    if (zatcaFilter === 'signed') {
+      query['zatca.signedXml'] = { $exists: true, $nin: [null, ''] };
+    } else if (zatcaFilter === 'unsigned') {
+      query.$and = (query.$and || []).concat([{
+        $or: [{ 'zatca.signedXml': { $exists: false } }, { 'zatca.signedXml': null }, { 'zatca.signedXml': '' }]
+      }]);
+    } else if (zatcaFilter === 'submitted') {
+      query['zatca.submittedAt'] = { $exists: true, $ne: null };
     }
    
    const [invoices, total] = await Promise.all([
