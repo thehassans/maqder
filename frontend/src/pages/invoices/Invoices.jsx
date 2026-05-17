@@ -565,31 +565,47 @@ export default function Invoices() {
             </div>
 
             {/* Pagination */}
-            {data?.pagination && (
-              <div className="p-4 border-t border-gray-100 dark:border-dark-700 flex items-center justify-between">
-                <p className="text-sm text-gray-500">
-                  {language === 'ar' 
-                    ? `عرض ${data.invoices.length} من ${data.pagination.total}`
-                    : `Showing ${data.invoices.length} of ${data.pagination.total}`}
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                    className="btn btn-secondary"
-                  >
-                    {language === 'ar' ? 'السابق' : 'Previous'}
-                  </button>
-                  <button
-                    onClick={() => setPage(p => p + 1)}
-                    disabled={page >= data.pagination.pages}
-                    className="btn btn-secondary"
-                  >
-                    {language === 'ar' ? 'التالي' : 'Next'}
-                  </button>
+            {data?.pagination && data.pagination.pages > 1 && (() => {
+              const totalPages = data.pagination.pages
+              const getPageNumbers = (current, total) => {
+                if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
+                const pages = [1]
+                if (current > 3) pages.push('...')
+                for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) pages.push(i)
+                if (current < total - 2) pages.push('...')
+                if (total > 1) pages.push(total)
+                return pages
+              }
+              return (
+                <div className="p-4 border-t border-gray-100 dark:border-dark-700 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <p className="text-sm text-gray-500">
+                    {language === 'ar'
+                      ? `${data.pagination.total} نتيجة — صفحة ${page} من ${totalPages}`
+                      : `${data.pagination.total} results — page ${page} of ${totalPages}`}
+                  </p>
+                  <div className="flex items-center gap-1">
+                    {getPageNumbers(page, totalPages).map((p, i) =>
+                      p === '...' ? (
+                        <span key={`ellipsis-${i}`} className="w-9 h-9 flex items-center justify-center text-gray-400 text-sm select-none">…</span>
+                      ) : (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => setPage(p)}
+                          className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
+                            p === page
+                              ? 'bg-primary-600 text-white shadow-sm'
+                              : 'hover:bg-gray-100 dark:hover:bg-dark-700 text-gray-700 dark:text-gray-300'
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      )
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )
+            })()}
           </>
         )}
       </motion.div>
