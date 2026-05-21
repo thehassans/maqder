@@ -8,6 +8,7 @@ import Product from '../models/Product.js';
 import Warehouse from '../models/Warehouse.js';
 import RestaurantOrder from '../models/RestaurantOrder.js';
 import TravelBooking from '../models/TravelBooking.js';
+import EmailMessage from '../models/EmailMessage.js';
 import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
 import { getPrimaryBusinessType, getTenantBusinessTypes } from '../utils/businessTypes.js';
 import { enrichInvoiceArabicFields } from '../utils/invoiceArabic.js';
@@ -354,6 +355,26 @@ async function postInventoryForInvoice(invoice, tenantFilterValue) {
 
   await invoice.save();
   return invoice;
+}
+
+async function reverseInventoryForDeletedInvoice(invoice, tenantFilterValue) {
+  const warehouseId = invoice.warehouseId || invoice?.inventory?.warehouseId;
+  if (!warehouseId || !invoice?.inventory?.postedAt) return;
+
+  for (const line of invoice.lineItems || []) {
+    const productId = line.productId;
+    if (!productId) continue;
+
+    const qty = toNumber(line.quantity, 0);
+    if (qty <= 0) continue;
+
+    const product = await Product.findOne({ _id: productId, ...tenantFilterValue });
+    if (!product) continue;
+
+    const reverseSign = invoice.flow === 'sell' ? 1 : -1;
+    product.updateStock(warehouseId, reverseSign * qty);
+    await product.save();
+  }
 }
 
 async function syncCustomerStats(tenantId, customerId) {
@@ -1122,6 +1143,62 @@ router.put('/:id', checkPermission('invoicing', 'update'), async (req, res) => {
     }
     
     res.json(invoice);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.delete('/:id', checkPermission('invoicing', 'update'), async (req, res) => {
+  try {
+    if (!['admin', 'super_admin'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Only admins can delete invoices' });
+    }
+
+    const invoice = await Invoice.findOne({ _id: req.params.id, ...req.tenantFilter });
+
+    if (!invoice) {
+      return res.status(404).json({ error: 'Invoice not found' });
+    }
+
+    const tenantId = invoice.tenantId;
+    const customerId = invoice.customerId;
+    const invoiceId = invoice._id;
+    const invoiceNumber = invoice.invoiceNumber;
+
+    await reverseInventoryForDeletedInvoice(invoice, req.tenantFilter);
+    await invoice.deleteOne();
+
+    await Promise.all([
+      TravelBooking.updateMany(
+        {
+          ...req.tenantFilter,
+          $or: [
+            { invoiceId },
+            { invoiceNumber },
+            ...(invoice.travelBookingId ? [{ _id: invoice.travelBookingId }] : []),
+          ],
+        },
+        { $set: { invoiceId: null, invoiceNumber: '', invoicedAt: null } }
+      ),
+      RestaurantOrder.updateMany(
+        {
+          ...req.tenantFilter,
+          $or: [
+            { invoiceId },
+            { invoiceNumber },
+            ...(invoice.restaurantOrderId ? [{ _id: invoice.restaurantOrderId }] : []),
+          ],
+        },
+        { $set: { invoiceId: null, invoiceNumber: '', invoicedAt: null } }
+      ),
+      EmailMessage.updateMany(
+        { ...req.tenantFilter, relatedInvoiceId: invoiceId },
+        { $set: { relatedInvoiceId: null } }
+      ),
+      syncCustomerStats(tenantId, customerId),
+    ]);
+
+    res.json({ success: true, deletedInvoiceId: invoiceId, invoiceNumber });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

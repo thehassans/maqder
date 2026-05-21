@@ -19,7 +19,8 @@ import {
   PenLine,
   ShieldCheck,
   ShieldOff,
-  Layers
+  Layers,
+  Trash2
 } from 'lucide-react'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
@@ -77,8 +78,9 @@ const getInvoiceVatAmount = (invoice = {}) => {
 
 export default function Invoices() {
   const { language } = useSelector((state) => state.ui)
-  const { tenant } = useSelector((state) => state.auth)
+  const { tenant, user } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin'
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
@@ -103,6 +105,37 @@ export default function Invoices() {
     placeholderData: keepPreviousData,
     staleTime: 30 * 1000,
   })
+
+  const deleteMutation = useMutation({
+    mutationFn: (invoiceId) => api.delete(`/invoices/${invoiceId}`).then((res) => res.data),
+    onSuccess: (result) => {
+      toast.success(
+        language === 'ar'
+          ? `تم حذف الفاتورة ${result?.invoiceNumber || ''} بنجاح`
+          : `Invoice ${result?.invoiceNumber || ''} deleted`
+      )
+      queryClient.invalidateQueries(['invoices'])
+      queryClient.invalidateQueries(['dashboard'])
+      queryClient.invalidateQueries(['dashboard-revenue'])
+      queryClient.invalidateQueries(['customers'])
+      queryClient.invalidateQueries(['travel-bookings'])
+    },
+    onError: (err) => {
+      toast.error(err?.response?.data?.error || (language === 'ar' ? 'فشل حذف الفاتورة' : 'Failed to delete invoice'))
+    },
+  })
+
+  const handleDeleteInvoice = (invoice) => {
+    const label = invoice.invoiceNumber || ''
+    const buyer = language === 'ar'
+      ? (invoice.buyer?.nameAr || invoice.buyer?.name || '')
+      : (invoice.buyer?.name || invoice.buyer?.nameAr || '')
+    const msg = language === 'ar'
+      ? `هل أنت متأكد من حذف الفاتورة "${label}" للعميل "${buyer}" نهائياً؟ لا يمكن التراجع عن هذا الإجراء.`
+      : `Permanently delete invoice "${label}" for "${buyer}"? This cannot be undone.`
+    if (!window.confirm(msg)) return
+    deleteMutation.mutate(invoice._id)
+  }
 
   const signMutation = useMutation({
     mutationFn: (invoiceId) => api.post(`/invoices/${invoiceId}/sign`, undefined, { timeout: 120000 }),
@@ -556,6 +589,17 @@ export default function Invoices() {
                               <Download className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                             )}
                           </button>
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteInvoice(invoice)}
+                              disabled={deleteMutation.isPending}
+                              className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                              title={language === 'ar' ? 'حذف الفاتورة' : 'Delete invoice'}
+                            >
+                              <Trash2 className="w-4 h-4 text-red-500" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
