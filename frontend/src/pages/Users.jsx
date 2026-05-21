@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus, Search, X, Save, Shield, CheckCircle2,
-  UserPlus, Users, UserCheck, AlertTriangle,
+  UserPlus, Users as UsersIcon, UserCheck, AlertTriangle,
   ChevronRight, Eye, EyeOff, Mail, Phone,
   Lock, Fingerprint, Sliders
 } from 'lucide-react'
@@ -295,7 +295,7 @@ export default function Users() {
         <div>
           <div className="flex items-center gap-3 mb-1">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-teal-500 flex items-center justify-center shadow-lg shadow-primary-500/30">
-              <Users className="w-5 h-5 text-white" />
+              <UsersIcon className="w-5 h-5 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('users')}</h1>
           </div>
@@ -429,7 +429,7 @@ export default function Users() {
             {!isLoading && users.length === 0 && (
               <div className="card p-12 text-center">
                 <div className="w-16 h-16 bg-gray-100 dark:bg-dark-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <Users className="w-8 h-8 text-gray-400" />
+                  <UsersIcon className="w-8 h-8 text-gray-400" />
                 </div>
                 <p className="text-gray-500 dark:text-gray-400 font-medium mb-4">{language === 'ar' ? 'لا يوجد مستخدمون' : 'No users yet'}</p>
                 <button onClick={() => openPanel()} className="btn btn-primary">
