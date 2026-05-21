@@ -549,6 +549,16 @@ export default function TenantForm() {
               </div>
               <input type="checkbox" {...register('subscription.hasEmailAddon')} className="h-4 w-4" />
             </label>
+            <label className="md:col-span-3 rounded-2xl border border-cyan-200 bg-cyan-50/70 p-4 dark:border-cyan-900/40 dark:bg-cyan-950/20 flex items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'إضافة إنترنت الأشياء (IoT)' : 'IoT Add-on'}</p>
+                  <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-[10px] font-bold uppercase">Smart Corp</span>
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{language === 'ar' ? 'يمكّن المستأجر من دمج وإدارة بنيته التحتية الكاملة عبر شبكة إنترنت الأشياء — مستشعرات، بوابات، عدادات، وأنظمة مؤسسية ذكية.' : 'Enables the tenant to integrate and manage their complete corporate infrastructure through a unified IoT network — sensors, gateways, meters, and smart enterprise systems.'}</p>
+              </div>
+              <input type="checkbox" {...register('subscription.hasIotAddon')} className="h-4 w-4 accent-cyan-500" />
+            </label>
           </div>
         </motion.div>
 
