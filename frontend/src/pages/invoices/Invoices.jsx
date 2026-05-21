@@ -78,9 +78,8 @@ const getInvoiceVatAmount = (invoice = {}) => {
 
 export default function Invoices() {
   const { language } = useSelector((state) => state.ui)
-  const { tenant, user } = useSelector((state) => state.auth)
+  const { tenant } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
-  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin'
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
@@ -589,17 +588,15 @@ export default function Invoices() {
                               <Download className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                             )}
                           </button>
-                          {isAdmin && (
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteInvoice(invoice)}
-                              disabled={deleteMutation.isPending}
-                              className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                              title={language === 'ar' ? 'حذف الفاتورة' : 'Delete invoice'}
-                            >
-                              <Trash2 className="w-4 h-4 text-red-500" />
-                            </button>
-                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteInvoice(invoice)}
+                            disabled={deleteMutation.isPending}
+                            className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                            title={language === 'ar' ? 'حذف الفاتورة' : 'Delete invoice'}
+                          >
+                            <Trash2 className="w-4 h-4 text-red-500" />
+                          </button>
                         </div>
                       </td>
                     </tr>
