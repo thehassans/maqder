@@ -1,5 +1,7 @@
 import { CURRENCY_CODE, formatCurrencyAmount } from './currency'
 
+// ─── Utilities ────────────────────────────────────────────────────────────────
+
 const hexToRgb = (hex) => {
   if (!hex) return null
   const raw = String(hex).trim().replace('#', '')
@@ -54,7 +56,6 @@ const fmtMoney = (value, { language, currency }) => {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
-
   return sanitizePdfText(language === 'ar' ? `${amount} ${currencyCode}` : `${currencyCode} ${amount}`)
 }
 
@@ -65,6 +66,8 @@ const formatDate = (value, language) => {
   return d.toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')
 }
 
+// ─── Main export ──────────────────────────────────────────────────────────────
+
 export const downloadVatReturnReportPdf = async ({ report, language = 'en', tenant }) => {
   if (!report) return
 
@@ -74,8 +77,17 @@ export const downloadVatReturnReportPdf = async ({ report, language = 'en', tena
   const autoTable = autoTableModule?.default || autoTableModule
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' })
-  const primary = tenant?.branding?.primaryColor || '#2563EB'
-  const rgb = hexToRgb(primary) || { r: 37, g: 99, b: 235 }
+
+  // ── Theme colours ─────────────────────────────────────────────────────────
+  const accentHex = tenant?.branding?.primaryColor || '#2563EB'
+  const accentRgb = hexToRgb(accentHex) || { r: 37, g: 99, b: 235 }
+  const darkBg1 = { r: 15, g: 23, b: 42 }
+  const darkBg2 = { r: 30, g: 41, b: 59 }
+  const white = { r: 255, g: 255, b: 255 }
+  const cardBg = { r: 248, g: 250, b: 252 }
+  const border = { r: 226, g: 232, b: 240 }
+  const textDark = { r: 15, g: 23, b: 42 }
+  const textMuted = { r: 100, g: 116, b: 139 }
 
   const pageW = doc.internal.pageSize.getWidth()
   const pageH = doc.internal.pageSize.getHeight()
@@ -86,47 +98,75 @@ export const downloadVatReturnReportPdf = async ({ report, language = 'en', tena
   const logo = tenant?.branding?.logo
   const logoFormat = detectImageFormat(logo)
 
-  doc.setFillColor(rgb.r, rgb.g, rgb.b)
-  doc.rect(0, 0, pageW, 6, 'F')
-
-  doc.setFontSize(18)
-  doc.setTextColor(15, 23, 42)
-  doc.text(language === 'ar' ? 'تقرير إقرار ضريبة القيمة المضافة' : 'VAT Return Report', isRtl ? pageW - margin : margin, 46, { align })
-
-  doc.setFontSize(10)
-  doc.setTextColor(100)
+  const currency = report?.currency || tenant?.settings?.currency || 'SAR'
+  const companyName = tenant?.business?.name || tenant?.name || (language === 'ar' ? 'الشركة' : 'Company')
+  const reportTitle = language === 'ar' ? 'تقرير إقرار ضريبة القيمة المضافة' : 'VAT Return Report'
   const startDate = report?.period?.startDate
   const endDate = report?.period?.endDate
-  doc.text(
-    `${language === 'ar' ? 'الفترة' : 'Period'}: ${formatDate(startDate, language)} - ${formatDate(endDate, language)}`,
-    isRtl ? pageW - margin : margin,
-    64,
-    { align }
-  )
+  const periodText = `${formatDate(startDate, language)} – ${formatDate(endDate, language)}`
 
-  if (logo && logoFormat) {
-    const imgW = 92
-    const imgH = 28
-    const x = isRtl ? margin : pageW - margin - imgW
-    const y = 26
-    doc.setFillColor(255, 255, 255)
-    doc.roundedRect(x - 6, y - 6, imgW + 12, imgH + 12, 10, 10, 'F')
-    doc.setDrawColor(226, 232, 240)
-    doc.roundedRect(x - 6, y - 6, imgW + 12, imgH + 12, 10, 10, 'S')
-    doc.addImage(logo, logoFormat, x, y, imgW, imgH)
+  // ── Dark gradient header ──────────────────────────────────────────────────
+  const headerH = 90
+  const steps = 40
+  for (let i = 0; i < steps; i++) {
+    const ratio = i / steps
+    const r = Math.round(darkBg1.r + (darkBg2.r - darkBg1.r) * ratio)
+    const g = Math.round(darkBg1.g + (darkBg2.g - darkBg1.g) * ratio)
+    const b = Math.round(darkBg1.b + (darkBg2.b - darkBg1.b) * ratio)
+    doc.setFillColor(r, g, b)
+    doc.rect(0, (headerH / steps) * i, pageW, headerH / steps + 0.5, 'F')
   }
 
-  const currency = report?.currency || tenant?.settings?.currency || 'SAR'
+  // Accent stripe at very top
+  doc.setFillColor(accentRgb.r, accentRgb.g, accentRgb.b)
+  doc.rect(0, 0, pageW, 3, 'F')
+
+  // Company name
+  const textX = isRtl ? pageW - margin : margin
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(20)
+  doc.setTextColor(white.r, white.g, white.b)
+  doc.text(sanitizePdfText(companyName), textX, 36, { align })
+
+  // Report title
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(11)
+  doc.setTextColor(255, 255, 255)
+  doc.setGState(doc.GState({ opacity: 0.7 }))
+  doc.text(reportTitle, textX, 54, { align })
+  doc.setGState(doc.GState({ opacity: 1 }))
+
+  // Period
+  const periodX = isRtl ? margin : pageW - margin
+  const periodAlign = isRtl ? 'left' : 'right'
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  doc.setTextColor(255, 255, 255)
+  doc.setGState(doc.GState({ opacity: 0.75 }))
+  doc.text(language === 'ar' ? 'الفترة' : 'Period', periodX, 36, { align: periodAlign })
+  doc.setGState(doc.GState({ opacity: 1 }))
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(9)
+  doc.setTextColor(white.r, white.g, white.b)
+  doc.text(periodText, periodX, 50, { align: periodAlign })
+
+  // Logo pill
+  if (logo && logoFormat) {
+    const imgW = 88
+    const imgH = 28
+    const logoX = isRtl ? margin : pageW - margin - imgW
+    const logoY = 56
+    doc.setFillColor(255, 255, 255)
+    doc.roundedRect(logoX - 6, logoY - 4, imgW + 12, imgH + 8, 8, 8, 'F')
+    doc.addImage(logo, logoFormat, logoX, logoY, imgW, imgH)
+  }
+
+  // ── KPI stat cards: 4 cards ───────────────────────────────────────────────
   const totals = report?.totals || {}
   const vatReturn = report?.vatReturn || {}
   const byCategory = totals?.byCategory || {}
 
-  const cardY = 86
-  const cardH = 78
-  const gap = 12
-  const cardW = (pageW - margin * 2 - gap) / 2
-
-  const fitFontSize = (text, width, preferred = 14, minimum = 10) => {
+  const fitFontSize = (text, width, preferred = 10, minimum = 7.5) => {
     let nextSize = preferred
     doc.setFontSize(nextSize)
     while (nextSize > minimum && doc.getTextWidth(sanitizePdfText(text)) > width) {
@@ -136,108 +176,174 @@ export const downloadVatReturnReportPdf = async ({ report, language = 'en', tena
     return nextSize
   }
 
-  const drawCard = ({ x, y, title, subtitle, value, valueColor }) => {
-    const safeTitle = sanitizePdfText(title)
-    const safeSubtitle = sanitizePdfText(subtitle)
-    const safeValueText = sanitizePdfText(value)
+  const cardTop = headerH + 18
+  const cardH = 64
+  const totalCardsW = pageW - margin * 2
+  const cardGap = 10
+  const cardCount = 4
+  const cardW = (totalCardsW - cardGap * (cardCount - 1)) / cardCount
 
-    doc.setFillColor(248, 250, 252)
-    doc.setDrawColor(226, 232, 240)
-    doc.roundedRect(x, y, cardW, cardH, 14, 14, 'FD')
+  const kpiCards = [
+    {
+      label: language === 'ar' ? 'عدد الفواتير' : 'Invoices',
+      value: safeText(totals?.invoiceCount || 0),
+      color: [15, 23, 42],
+    },
+    {
+      label: language === 'ar' ? 'المبلغ الخاضع للضريبة' : 'Taxable Amount',
+      value: fmtMoney(totals?.taxableAmount, { language, currency }),
+      color: [37, 99, 235],
+    },
+    {
+      label: language === 'ar' ? 'إجمالي ضريبة القيمة المضافة' : 'Total VAT',
+      value: fmtMoney(totals?.totalTax, { language, currency }),
+      color: [22, 163, 74],
+    },
+    {
+      label: language === 'ar' ? 'صافي الضريبة المستحقة' : 'Net VAT Due',
+      value: fmtMoney(vatReturn?.statement?.netVatDue?.vatAmount, { language, currency }),
+      color: [234, 88, 12],
+    },
+  ]
 
+  kpiCards.forEach((card, i) => {
+    const cx = margin + i * (cardW + cardGap)
+    const cy = cardTop
+
+    doc.setFillColor(cardBg.r, cardBg.g, cardBg.b)
+    doc.setDrawColor(border.r, border.g, border.b)
+    doc.setLineWidth(0.5)
+    doc.roundedRect(cx, cy, cardW, cardH, 8, 8, 'FD')
+
+    // Accent top bar
+    doc.setFillColor(accentRgb.r, accentRgb.g, accentRgb.b)
+    doc.roundedRect(cx, cy, cardW, 3, 1, 1, 'F')
+
+    // Label
     doc.setFont('helvetica', 'normal')
-    doc.setFontSize(10)
-    doc.setTextColor(100)
-    doc.text(safeTitle, isRtl ? x + cardW - 14 : x + 14, y + 24, { align, maxWidth: cardW - 28 })
+    doc.setFontSize(7.5)
+    doc.setTextColor(textMuted.r, textMuted.g, textMuted.b)
+    const labelX = isRtl ? cx + cardW - 8 : cx + 8
+    doc.text(sanitizePdfText(card.label).toUpperCase(), labelX, cy + 18, { align, maxWidth: cardW - 16 })
 
-    if (safeSubtitle) {
-      doc.setFontSize(9)
-      doc.text(safeSubtitle, isRtl ? x + cardW - 14 : x + 14, y + 40, { align, maxWidth: cardW - 28 })
-    }
-
-    const valueFontSize = fitFontSize(safeValueText, cardW - 28, 14, 10)
+    // Value
+    const valueFontSize = fitFontSize(card.value, cardW - 16, 11, 7.5)
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(valueFontSize)
-    const [r, g, b] = valueColor || [15, 23, 42]
-    doc.setTextColor(r, g, b)
-    doc.text(safeValueText, isRtl ? x + cardW - 14 : x + 14, y + 62, { align, maxWidth: cardW - 28 })
-  }
-
-  drawCard({
-    x: margin,
-    y: cardY,
-    title: language === 'ar' ? 'عدد الفواتير' : 'Invoices',
-    subtitle: language === 'ar' ? 'خلال الفترة المحددة' : 'Within selected period',
-    value: safeText(totals?.invoiceCount || 0),
-    valueColor: [15, 23, 42],
+    doc.setTextColor(card.color[0], card.color[1], card.color[2])
+    doc.text(sanitizePdfText(card.value), labelX, cy + 48, { align, maxWidth: cardW - 16 })
   })
 
-  drawCard({
-    x: margin + cardW + gap,
-    y: cardY,
-    title: language === 'ar' ? 'المبلغ الخاضع للضريبة' : 'Taxable Amount',
-    subtitle: language === 'ar' ? 'إجمالي المبيعات الخاضعة' : 'Total taxable sales',
-    value: fmtMoney(totals?.taxableAmount, { language, currency }),
-    valueColor: [37, 99, 235],
-  })
+  // ── Divider ───────────────────────────────────────────────────────────────
+  let y = cardTop + cardH + 20
 
-  drawCard({
-    x: margin,
-    y: cardY + cardH + gap,
-    title: language === 'ar' ? 'إجمالي ضريبة القيمة المضافة' : 'Total VAT',
-    subtitle: language === 'ar' ? 'المخرجات خلال الفترة' : 'Output tax for the period',
-    value: fmtMoney(totals?.totalTax, { language, currency }),
-    valueColor: [22, 163, 74],
-  })
+  doc.setDrawColor(accentRgb.r, accentRgb.g, accentRgb.b)
+  doc.setLineWidth(1.5)
+  doc.line(margin, y, pageW - margin, y)
+  y += 16
 
-  drawCard({
-    x: margin + cardW + gap,
-    y: cardY + cardH + gap,
-    title: language === 'ar' ? 'صافي الضريبة المستحقة' : 'Net VAT Due',
-    subtitle: language === 'ar' ? 'بعد الخصومات والتعديلات' : 'After credits and adjustments',
-    value: fmtMoney(vatReturn?.statement?.netVatDue?.vatAmount, { language, currency }),
-    valueColor: [234, 88, 12],
-  })
-
-  let y = cardY + (cardH + gap) * 2 + 10
-
+  // ── Section heading helper ────────────────────────────────────────────────
   const sectionTitle = (text) => {
     const safeHeading = sanitizePdfText(text)
-    doc.setDrawColor(rgb.r, rgb.g, rgb.b)
-    doc.setLineWidth(1.2)
-    doc.line(margin, y + 4, margin + 28, y + 4)
-    doc.setFontSize(12)
+    doc.setFillColor(accentRgb.r, accentRgb.g, accentRgb.b)
+    doc.rect(isRtl ? pageW - margin - 4 : margin, y, 4, 14, 'F')
+
     doc.setFont('helvetica', 'bold')
-    doc.setTextColor(15, 23, 42)
-    doc.text(safeHeading, isRtl ? pageW - margin : margin + 38, y + 8, { align })
-    y += 18
+    doc.setFontSize(11)
+    doc.setTextColor(textDark.r, textDark.g, textDark.b)
+    const titleX = isRtl ? pageW - margin - 12 : margin + 12
+    doc.text(safeHeading, titleX, y + 10.5, { align })
+    y += 22
   }
 
+  // ── Shared table theme ────────────────────────────────────────────────────
   const tableTheme = {
-    styles: { fontSize: 9, cellPadding: 6, overflow: 'linebreak', textColor: [31, 41, 55], lineColor: [226, 232, 240], lineWidth: 0.5 },
-    headStyles: { fillColor: [rgb.r, rgb.g, rgb.b], textColor: [255, 255, 255] },
-    alternateRowStyles: { fillColor: [248, 250, 252] },
+    styles: {
+      fontSize: 9,
+      cellPadding: 6,
+      overflow: 'linebreak',
+      textColor: [31, 41, 55],
+      lineColor: [border.r, border.g, border.b],
+      lineWidth: 0.4,
+    },
+    headStyles: {
+      fillColor: [accentRgb.r, accentRgb.g, accentRgb.b],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold',
+      fontSize: 9,
+    },
+    alternateRowStyles: {
+      fillColor: [cardBg.r, cardBg.g, cardBg.b],
+    },
     margin: { left: margin, right: margin },
+    tableLineColor: [border.r, border.g, border.b],
+    tableLineWidth: 0.4,
   }
 
+  // ── VAT Statement (highlighted) ───────────────────────────────────────────
+  const statementRows = [
+    {
+      label: language === 'ar' ? 'إجمالي ضريبة الفترة الحالية' : 'Total VAT Due Current Period',
+      value: vatReturn?.statement?.totalVatDueCurrentPeriod?.vatAmount || 0,
+      bold: false,
+    },
+    {
+      label: language === 'ar' ? 'تصحيحات الفترات السابقة' : 'Corrections Previous Period',
+      value: vatReturn?.statement?.correctionsPreviousPeriod?.vatAmount || 0,
+      bold: false,
+    },
+    {
+      label: language === 'ar' ? 'رصيد ضريبة مرحل' : 'VAT Credit Carried Forward',
+      value: vatReturn?.statement?.vatCreditCarriedForward?.vatAmount || 0,
+      bold: false,
+    },
+    {
+      label: language === 'ar' ? 'صافي الضريبة المستحقة' : 'Net VAT Due',
+      value: vatReturn?.statement?.netVatDue?.vatAmount || 0,
+      bold: true,
+    },
+  ]
+
+  sectionTitle(language === 'ar' ? 'بيان الضريبة' : 'VAT Statement')
+  autoTable(doc, {
+    startY: y,
+    head: [[language === 'ar' ? 'البند' : 'Line Item', language === 'ar' ? 'القيمة' : 'Value']],
+    body: statementRows.map((row) => [
+      sanitizePdfText(row.label),
+      fmtMoney(row.value, { language, currency }),
+    ]),
+    ...tableTheme,
+    columnStyles: { 0: { cellWidth: 290 }, 1: { cellWidth: 160 } },
+    didParseCell: (data) => {
+      // Bold + highlight the Net VAT Due row (last body row)
+      if (data.section === 'body' && data.row.index === statementRows.length - 1) {
+        data.cell.styles.fontStyle = 'bold'
+        data.cell.styles.fillColor = [239, 246, 255]   // accent-50 blue-ish
+        data.cell.styles.textColor = [accentRgb.r, accentRgb.g, accentRgb.b]
+      }
+    },
+  })
+  y = doc.lastAutoTable.finalY + 24
+
+  // ── Summary by category ───────────────────────────────────────────────────
   const summaryRows = [
     {
-      label: language === 'ar' ? 'خاضع للضريبة' : 'Standard Rated',
+      label: language === 'ar' ? 'خاضع للضريبة (Standard)' : 'Standard Rated',
       taxableAmount: byCategory?.standardRated?.taxableAmount || 0,
       taxAmount: byCategory?.standardRated?.taxAmount || 0,
     },
     {
-      label: language === 'ar' ? 'صفرية' : 'Zero Rated',
+      label: language === 'ar' ? 'صفرية (Zero)' : 'Zero Rated',
       taxableAmount: byCategory?.zeroRated?.taxableAmount || 0,
       taxAmount: byCategory?.zeroRated?.taxAmount || 0,
     },
     {
-      label: language === 'ar' ? 'معفاة' : 'Exempt',
+      label: language === 'ar' ? 'معفاة (Exempt)' : 'Exempt',
       taxableAmount: byCategory?.exempt?.taxableAmount || 0,
       taxAmount: byCategory?.exempt?.taxAmount || 0,
     },
     {
-      label: language === 'ar' ? 'خارج النطاق' : 'Out of Scope',
+      label: language === 'ar' ? 'خارج النطاق (Out of Scope)' : 'Out of Scope',
       taxableAmount: byCategory?.outOfScope?.taxableAmount || 0,
       taxAmount: byCategory?.outOfScope?.taxAmount || 0,
     },
@@ -263,9 +369,12 @@ export const downloadVatReturnReportPdf = async ({ report, language = 'en', tena
       2: { cellWidth: 140 },
     },
   })
-  y = doc.lastAutoTable.finalY + 22
+  y = doc.lastAutoTable.finalY + 24
 
-  const byTransactionType = Array.isArray(report?.breakdown?.byTransactionType) ? report.breakdown.byTransactionType : []
+  // ── By transaction type ───────────────────────────────────────────────────
+  const byTransactionType = Array.isArray(report?.breakdown?.byTransactionType)
+    ? report.breakdown.byTransactionType : []
+
   sectionTitle(language === 'ar' ? 'حسب نوع المعاملة' : 'By Transaction Type')
   autoTable(doc, {
     startY: y,
@@ -292,9 +401,12 @@ export const downloadVatReturnReportPdf = async ({ report, language = 'en', tena
       3: { cellWidth: 115 },
     },
   })
-  y = doc.lastAutoTable.finalY + 22
+  y = doc.lastAutoTable.finalY + 24
 
-  const byTaxCategory = Array.isArray(report?.breakdown?.byTaxCategory) ? report.breakdown.byTaxCategory : []
+  // ── Details by tax category ───────────────────────────────────────────────
+  const byTaxCategory = Array.isArray(report?.breakdown?.byTaxCategory)
+    ? report.breakdown.byTaxCategory : []
+
   sectionTitle(language === 'ar' ? 'تفاصيل حسب فئة الضريبة' : 'Details by Tax Category')
   autoTable(doc, {
     startY: y,
@@ -321,34 +433,38 @@ export const downloadVatReturnReportPdf = async ({ report, language = 'en', tena
       3: { cellWidth: 140 },
     },
   })
-  y = doc.lastAutoTable.finalY + 22
 
-  const statementRows = [
-    { label: language === 'ar' ? 'إجمالي ضريبة الفترة الحالية' : 'Total VAT Due Current Period', value: vatReturn?.statement?.totalVatDueCurrentPeriod?.vatAmount || 0 },
-    { label: language === 'ar' ? 'تصحيحات الفترات السابقة' : 'Corrections Previous Period', value: vatReturn?.statement?.correctionsPreviousPeriod?.vatAmount || 0 },
-    { label: language === 'ar' ? 'رصيد ضريبة مرحل' : 'VAT Credit Carried Forward', value: vatReturn?.statement?.vatCreditCarriedForward?.vatAmount || 0 },
-    { label: language === 'ar' ? 'صافي الضريبة المستحقة' : 'Net VAT Due', value: vatReturn?.statement?.netVatDue?.vatAmount || 0 },
-  ]
-
-  sectionTitle(language === 'ar' ? 'بيان الضريبة' : 'VAT Statement')
-  autoTable(doc, {
-    startY: y,
-    head: [[language === 'ar' ? 'البند' : 'Line Item', language === 'ar' ? 'القيمة' : 'Value']],
-    body: statementRows.map((row) => [sanitizePdfText(row.label), fmtMoney(row.value, { language, currency })]),
-    ...tableTheme,
-    columnStyles: { 0: { cellWidth: 290 }, 1: { cellWidth: 160 } },
-  })
-
+  // ── Footer on every page ──────────────────────────────────────────────────
   const pages = doc.getNumberOfPages()
   for (let i = 1; i <= pages; i += 1) {
     doc.setPage(i)
-    doc.setFontSize(9)
-    doc.setTextColor(100)
+
+    // Footer line
+    doc.setDrawColor(border.r, border.g, border.b)
+    doc.setLineWidth(0.6)
+    doc.line(margin, pageH - 36, pageW - margin, pageH - 36)
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8)
+    doc.setTextColor(textMuted.r, textMuted.g, textMuted.b)
+
+    // Left: company + Confidential
+    doc.text(
+      `${sanitizePdfText(companyName)} · ${language === 'ar' ? 'سري' : 'Confidential'}`,
+      margin,
+      pageH - 22,
+      { align: 'left' }
+    )
+
+    // Center: report title
+    doc.text(reportTitle, pageW / 2, pageH - 22, { align: 'center' })
+
+    // Right: Page X of Y
     doc.text(
       `${language === 'ar' ? 'صفحة' : 'Page'} ${i} / ${pages}`,
-      isRtl ? margin : pageW - margin,
+      pageW - margin,
       pageH - 22,
-      { align: isRtl ? 'left' : 'right' }
+      { align: 'right' }
     )
   }
 

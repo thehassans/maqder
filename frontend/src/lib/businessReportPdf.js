@@ -1,5 +1,7 @@
 import { formatCurrency } from './currency'
 
+// ─── Utilities ────────────────────────────────────────────────────────────────
+
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value))
 
 const hexToRgb = (hex) => {
@@ -56,6 +58,8 @@ const formatDate = (value, language) => {
   return d.toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')
 }
 
+// ─── Main export ──────────────────────────────────────────────────────────────
+
 export const downloadBusinessReportPdf = async ({ report, language = 'en', tenant }) => {
   if (!report) return
 
@@ -66,170 +70,239 @@ export const downloadBusinessReportPdf = async ({ report, language = 'en', tenan
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' })
 
-  const primary = tenant?.branding?.primaryColor || '#2563EB'
-  const rgb = hexToRgb(primary) || { r: 37, g: 99, b: 235 }
+  // ── Theme colours ─────────────────────────────────────────────────────────
+  const accentHex = tenant?.branding?.primaryColor || '#2563EB'
+  const accentRgb = hexToRgb(accentHex) || { r: 37, g: 99, b: 235 }
+  const darkBg1 = { r: 15, g: 23, b: 42 }      // #0f172a
+  const darkBg2 = { r: 30, g: 41, b: 59 }       // #1e293b
+  const white = { r: 255, g: 255, b: 255 }
+  const cardBg = { r: 248, g: 250, b: 252 }      // #f8fafc
+  const border = { r: 226, g: 232, b: 240 }      // #e2e8f0
+  const textDark = { r: 15, g: 23, b: 42 }
+  const textMuted = { r: 100, g: 116, b: 139 }   // slate-500
 
   const pageW = doc.internal.pageSize.getWidth()
   const pageH = doc.internal.pageSize.getHeight()
   const margin = 40
-
   const isRtl = language === 'ar'
   const align = isRtl ? 'right' : 'left'
 
   const logo = tenant?.branding?.logo
   const logoFormat = detectImageFormat(logo)
 
-  doc.setFillColor(rgb.r, rgb.g, rgb.b)
-  doc.rect(0, 0, pageW, 6, 'F')
-
-  const title = language === 'ar' ? 'تقرير الأعمال' : 'Business Report'
-
-  doc.setFontSize(18)
-  doc.setTextColor(15, 23, 42)
-  doc.text(title, isRtl ? pageW - margin : margin, 46, { align })
-
-  doc.setFontSize(10)
-  doc.setTextColor(100)
-
+  const currency = report?.currency || tenant?.settings?.currency || 'SAR'
+  const companyName = tenant?.business?.name || tenant?.name || (language === 'ar' ? 'الشركة' : 'Company')
+  const reportTitle = language === 'ar' ? 'تقرير الأعمال' : 'Business Report'
   const startDate = report?.period?.startDate
   const endDate = report?.period?.endDate
-  const periodText = `${formatDate(startDate, language)} - ${formatDate(endDate, language)}`
+  const periodText = `${formatDate(startDate, language)} – ${formatDate(endDate, language)}`
 
-  doc.text(
-    `${language === 'ar' ? 'الفترة' : 'Period'}: ${periodText}`,
-    isRtl ? pageW - margin : margin,
-    64,
-    { align }
-  )
+  // ── Header gradient block (height 90pt) ──────────────────────────────────
+  const headerH = 90
 
-  if (logo && logoFormat) {
-    const imgW = 92
-    const imgH = 28
-    const x = isRtl ? margin : pageW - margin - imgW
-    const y = 26
-    doc.setFillColor(255, 255, 255)
-    doc.roundedRect(x - 6, y - 6, imgW + 12, imgH + 12, 10, 10, 'F')
-    doc.setDrawColor(226, 232, 240)
-    doc.roundedRect(x - 6, y - 6, imgW + 12, imgH + 12, 10, 10, 'S')
-    doc.addImage(logo, logoFormat, x, y, imgW, imgH)
+  // Draw gradient manually with stacked thin rects
+  const steps = 40
+  for (let i = 0; i < steps; i++) {
+    const ratio = i / steps
+    const r = Math.round(darkBg1.r + (darkBg2.r - darkBg1.r) * ratio)
+    const g = Math.round(darkBg1.g + (darkBg2.g - darkBg1.g) * ratio)
+    const b = Math.round(darkBg1.b + (darkBg2.b - darkBg1.b) * ratio)
+    doc.setFillColor(r, g, b)
+    doc.rect(0, (headerH / steps) * i, pageW, headerH / steps + 0.5, 'F')
   }
 
-  const currency = report?.currency || tenant?.settings?.currency || 'SAR'
+  // Accent stripe at very top (3pt)
+  doc.setFillColor(accentRgb.r, accentRgb.g, accentRgb.b)
+  doc.rect(0, 0, pageW, 3, 'F')
 
+  // Company name (left/right depending on RTL)
+  const textX = isRtl ? pageW - margin : margin
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(20)
+  doc.setTextColor(white.r, white.g, white.b)
+  doc.text(safeText(companyName), textX, 36, { align })
+
+  // Report title below company name
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(11)
+  doc.setTextColor(255, 255, 255)
+  doc.setGState(doc.GState({ opacity: 0.7 }))
+  doc.text(reportTitle, textX, 54, { align })
+  doc.setGState(doc.GState({ opacity: 1 }))
+
+  // Period (opposite side)
+  const periodX = isRtl ? margin : pageW - margin
+  const periodAlign = isRtl ? 'left' : 'right'
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  doc.setTextColor(255, 255, 255)
+  doc.setGState(doc.GState({ opacity: 0.75 }))
+  doc.text(language === 'ar' ? 'الفترة' : 'Period', periodX, 36, { align: periodAlign })
+  doc.setGState(doc.GState({ opacity: 1 }))
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(9)
+  doc.setTextColor(white.r, white.g, white.b)
+  doc.text(periodText, periodX, 50, { align: periodAlign })
+
+  // Logo pill (right/left)
+  if (logo && logoFormat) {
+    const imgW = 88
+    const imgH = 28
+    const logoX = isRtl ? margin : pageW - margin - imgW
+    const logoY = 56
+    doc.setFillColor(255, 255, 255)
+    doc.roundedRect(logoX - 6, logoY - 4, imgW + 12, imgH + 8, 8, 8, 'F')
+    doc.addImage(logo, logoFormat, logoX, logoY, imgW, imgH)
+  }
+
+  // ── KPI stat cards (5 in a row) ───────────────────────────────────────────
   const sales = report?.totals?.sales || {}
   const purchases = report?.totals?.purchases || {}
   const expenses = report?.totals?.expenses || {}
+  const discounts = Number(sales?.totalDiscount || 0)
   const net = Number(report?.totals?.net || 0)
 
-  const cardY = 86
-  const cardH = 78
-  const gap = 12
-  const cardW = (pageW - margin * 2 - gap) / 2
+  const cardTop = headerH + 18
+  const cardH = 64
+  const totalCardsW = pageW - margin * 2
+  const cardGap = 8
+  const cardCount = 5
+  const cardW = (totalCardsW - cardGap * (cardCount - 1)) / cardCount
 
-  const drawCard = ({ x, y, title: t, subtitle, value, valueColor }) => {
-    doc.setFillColor(255, 255, 255)
-    doc.setDrawColor(226, 232, 240)
-    doc.roundedRect(x, y, cardW, cardH, 14, 14, 'FD')
+  const kpiCards = [
+    {
+      label: language === 'ar' ? 'المبيعات' : 'Sales',
+      value: fmtMoney(sales.grandTotal, { language, currency }),
+      color: [22, 163, 74],
+    },
+    {
+      label: language === 'ar' ? 'المشتريات' : 'Purchases',
+      value: fmtMoney(purchases.grandTotal, { language, currency }),
+      color: [37, 99, 235],
+    },
+    {
+      label: language === 'ar' ? 'المصاريف' : 'Expenses',
+      value: fmtMoney(expenses.totalAmount, { language, currency }),
+      color: [234, 88, 12],
+    },
+    {
+      label: language === 'ar' ? 'الخصومات' : 'Discounts',
+      value: fmtMoney(discounts, { language, currency }),
+      color: [202, 138, 4],
+    },
+    {
+      label: language === 'ar' ? 'صافي الربح' : 'Net Profit',
+      value: fmtMoney(net, { language, currency }),
+      color: net >= 0 ? [22, 163, 74] : [220, 38, 38],
+    },
+  ]
 
-    doc.setFontSize(10)
-    doc.setTextColor(100)
-    doc.text(t, isRtl ? x + cardW - 14 : x + 14, y + 24, { align })
+  kpiCards.forEach((card, i) => {
+    const cx = margin + i * (cardW + cardGap)
+    const cy = cardTop
 
-    if (subtitle) {
-      doc.setFontSize(9)
-      doc.text(subtitle, isRtl ? x + cardW - 14 : x + 14, y + 40, { align })
-    }
+    // Card background
+    doc.setFillColor(cardBg.r, cardBg.g, cardBg.b)
+    doc.setDrawColor(border.r, border.g, border.b)
+    doc.setLineWidth(0.5)
+    doc.roundedRect(cx, cy, cardW, cardH, 8, 8, 'FD')
 
-    doc.setFontSize(14)
-    const [r, g, b] = valueColor || [15, 23, 42]
-    doc.setTextColor(r, g, b)
-    doc.text(value, isRtl ? x + cardW - 14 : x + 14, y + 62, { align })
-  }
+    // Accent bar at top of card
+    doc.setFillColor(accentRgb.r, accentRgb.g, accentRgb.b)
+    doc.roundedRect(cx, cy, cardW, 3, 1, 1, 'F')
 
-  const salesSubtitle = language === 'ar'
-    ? `فواتير: ${sales.invoiceCount || 0}`
-    : `Invoices: ${sales.invoiceCount || 0}`
-  const purchasesSubtitle = language === 'ar'
-    ? `فواتير: ${purchases.invoiceCount || 0}`
-    : `Invoices: ${purchases.invoiceCount || 0}`
-  const expensesSubtitle = language === 'ar'
-    ? `مصروفات: ${expenses.expenseCount || 0}`
-    : `Expenses: ${expenses.expenseCount || 0}`
+    // Label
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(7.5)
+    doc.setTextColor(textMuted.r, textMuted.g, textMuted.b)
+    const labelX = isRtl ? cx + cardW - 8 : cx + 8
+    doc.text(safeText(card.label).toUpperCase(), labelX, cy + 18, { align })
 
-  drawCard({
-    x: margin,
-    y: cardY,
-    title: language === 'ar' ? 'المبيعات' : 'Sales',
-    subtitle: salesSubtitle,
-    value: fmtMoney(sales.grandTotal, { language, currency }),
-    valueColor: [22, 163, 74],
+    // Value
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(clamp(10 - card.value.length * 0.08, 8, 11))
+    doc.setTextColor(card.color[0], card.color[1], card.color[2])
+    doc.text(safeText(card.value), labelX, cy + 48, { align, maxWidth: cardW - 16 })
   })
 
-  drawCard({
-    x: margin + cardW + gap,
-    y: cardY,
-    title: language === 'ar' ? 'المشتريات' : 'Purchases',
-    subtitle: purchasesSubtitle,
-    value: fmtMoney(purchases.grandTotal, { language, currency }),
-    valueColor: [37, 99, 235],
-  })
+  // ── Divider ───────────────────────────────────────────────────────────────
+  let y = cardTop + cardH + 20
 
-  drawCard({
-    x: margin,
-    y: cardY + cardH + gap,
-    title: language === 'ar' ? 'المصاريف' : 'Expenses',
-    subtitle: expensesSubtitle,
-    value: fmtMoney(expenses.totalAmount, { language, currency }),
-    valueColor: [234, 88, 12],
-  })
+  doc.setDrawColor(accentRgb.r, accentRgb.g, accentRgb.b)
+  doc.setLineWidth(1.5)
+  doc.line(margin, y, pageW - margin, y)
+  y += 16
 
-  drawCard({
-    x: margin + cardW + gap,
-    y: cardY + cardH + gap,
-    title: language === 'ar' ? 'صافي الربح' : 'Net Profit',
-    subtitle: language === 'ar' ? 'بعد المشتريات والمصاريف' : 'After purchases and expenses',
-    value: fmtMoney(net, { language, currency }),
-    valueColor: net >= 0 ? [22, 163, 74] : [220, 38, 38],
-  })
-
-  let y = cardY + (cardH + gap) * 2 + 10
-
+  // ── Section heading helper ────────────────────────────────────────────────
   const sectionTitle = (text) => {
-    doc.setFontSize(12)
-    doc.setTextColor(15, 23, 42)
-    doc.text(text, isRtl ? pageW - margin : margin, y, { align })
-    y += 10
+    // Colored left accent bar
+    doc.setFillColor(accentRgb.r, accentRgb.g, accentRgb.b)
+    doc.rect(isRtl ? pageW - margin - 4 : margin, y, 4, 14, 'F')
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(11)
+    doc.setTextColor(textDark.r, textDark.g, textDark.b)
+    const titleX = isRtl ? pageW - margin - 12 : margin + 12
+    doc.text(safeText(text), titleX, y + 10.5, { align })
+    y += 22
   }
 
+  // ── Shared table theme ────────────────────────────────────────────────────
   const tableTheme = {
-    styles: { fontSize: 9, cellPadding: 6 },
-    headStyles: { fillColor: [rgb.r, rgb.g, rgb.b], textColor: [255, 255, 255] },
+    styles: {
+      fontSize: 9,
+      cellPadding: 6,
+      overflow: 'linebreak',
+      textColor: [31, 41, 55],
+      lineColor: [border.r, border.g, border.b],
+      lineWidth: 0.4,
+    },
+    headStyles: {
+      fillColor: [accentRgb.r, accentRgb.g, accentRgb.b],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold',
+      fontSize: 9,
+    },
+    alternateRowStyles: {
+      fillColor: [cardBg.r, cardBg.g, cardBg.b],
+    },
+    margin: { left: margin, right: margin },
+    tableLineColor: [border.r, border.g, border.b],
+    tableLineWidth: 0.4,
   }
 
-  const salesByType = Array.isArray(report?.breakdown?.salesByTransactionType) ? report.breakdown.salesByTransactionType : []
+  // ── Sales by transaction type ─────────────────────────────────────────────
+  const salesByType = Array.isArray(report?.breakdown?.salesByTransactionType)
+    ? report.breakdown.salesByTransactionType : []
+
   sectionTitle(language === 'ar' ? 'المبيعات حسب النوع' : 'Sales by Transaction Type')
   autoTable(doc, {
     startY: y,
     head: [[
       language === 'ar' ? 'النوع' : 'Type',
       language === 'ar' ? 'عدد الفواتير' : 'Invoices',
+      language === 'ar' ? 'الخصم' : 'Discount',
       language === 'ar' ? 'الإيراد' : 'Revenue',
       language === 'ar' ? 'الضريبة' : 'Tax',
     ]],
     body: (salesByType.length ? salesByType : [{}]).map((r) => {
-      if (!r || !r._id) return [language === 'ar' ? 'لا توجد بيانات' : 'No data', '', '', '']
+      if (!r || !r._id) return [language === 'ar' ? 'لا توجد بيانات' : 'No data', '', '', '', '']
       return [
         safeText(r._id),
         safeText(r.invoiceCount || 0),
+        fmtMoney(r.discount, { language, currency }),
         fmtMoney(r.revenue, { language, currency }),
         fmtMoney(r.tax, { language, currency }),
       ]
     }),
     ...tableTheme,
   })
-  y = doc.lastAutoTable.finalY + 22
+  y = doc.lastAutoTable.finalY + 24
 
-  const topCustomers = Array.isArray(report?.breakdown?.topCustomers) ? report.breakdown.topCustomers : []
+  // ── Top customers ─────────────────────────────────────────────────────────
+  const topCustomers = Array.isArray(report?.breakdown?.topCustomers)
+    ? report.breakdown.topCustomers : []
+
   sectionTitle(language === 'ar' ? 'أفضل العملاء' : 'Top Customers')
   autoTable(doc, {
     startY: y,
@@ -249,9 +322,12 @@ export const downloadBusinessReportPdf = async ({ report, language = 'en', tenan
     ...tableTheme,
     columnStyles: { 0: { cellWidth: 240 } },
   })
-  y = doc.lastAutoTable.finalY + 22
+  y = doc.lastAutoTable.finalY + 24
 
-  const expensesByCategory = Array.isArray(report?.breakdown?.expensesByCategory) ? report.breakdown.expensesByCategory : []
+  // ── Expenses by category ──────────────────────────────────────────────────
+  const expensesByCategory = Array.isArray(report?.breakdown?.expensesByCategory)
+    ? report.breakdown.expensesByCategory : []
+
   sectionTitle(language === 'ar' ? 'المصاريف حسب التصنيف' : 'Expenses by Category')
   autoTable(doc, {
     startY: y,
@@ -271,16 +347,32 @@ export const downloadBusinessReportPdf = async ({ report, language = 'en', tenan
     ...tableTheme,
   })
 
+  // ── Footer on every page ──────────────────────────────────────────────────
   const pages = doc.getNumberOfPages()
   for (let i = 1; i <= pages; i += 1) {
     doc.setPage(i)
-    doc.setFontSize(9)
-    doc.setTextColor(100)
+
+    // Footer line
+    doc.setDrawColor(border.r, border.g, border.b)
+    doc.setLineWidth(0.6)
+    doc.line(margin, pageH - 36, pageW - margin, pageH - 36)
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8)
+    doc.setTextColor(textMuted.r, textMuted.g, textMuted.b)
+
+    // Left: company + Confidential
+    doc.text(`${safeText(companyName)} · ${language === 'ar' ? 'سري' : 'Confidential'}`, margin, pageH - 22, { align: 'left' })
+
+    // Center: report title
+    doc.text(reportTitle, pageW / 2, pageH - 22, { align: 'center' })
+
+    // Right: Page X of Y
     doc.text(
       `${language === 'ar' ? 'صفحة' : 'Page'} ${i} / ${pages}`,
-      isRtl ? margin : pageW - margin,
+      pageW - margin,
       pageH - 22,
-      { align: isRtl ? 'left' : 'right' }
+      { align: 'right' }
     )
   }
 
