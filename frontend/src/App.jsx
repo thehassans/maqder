@@ -33,6 +33,7 @@ import Employees from './pages/hr/Employees'
 import EmployeeForm from './pages/hr/EmployeeForm'
 import Payroll from './pages/hr/Payroll'
 import PayrollCalculators from './pages/hr/PayrollCalculators'
+import Attendance from './pages/hr/Attendance'
 import Products from './pages/inventory/Products'
 import ProductForm from './pages/inventory/ProductForm'
 import Warehouses from './pages/inventory/Warehouses'
@@ -253,6 +254,7 @@ function App() {
         <Route path="employees/:id" element={<EmployeeForm />} />
         <Route path="payroll" element={<Payroll />} />
         <Route path="payroll/calculators" element={<PayrollCalculators />} />
+        <Route path="attendance" element={<Attendance />} />
         <Route path="products" element={<BusinessTypeRoute allowedTypes={['trading']}><Products /></BusinessTypeRoute>} />
         <Route path="products/new" element={<BusinessTypeRoute allowedTypes={['trading']}><ProductForm /></BusinessTypeRoute>} />
         <Route path="products/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><ProductForm /></BusinessTypeRoute>} />

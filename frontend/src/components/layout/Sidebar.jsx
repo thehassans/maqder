@@ -28,6 +28,7 @@ import {
   Receipt,
   Plane,
   UtensilsCrossed,
+  Fingerprint,
 } from 'lucide-react'
 import { toggleSidebarCollapse, setMobileMenuOpen } from '../../store/slices/uiSlice'
 import { useTranslation } from '../../lib/translations'
@@ -71,6 +72,7 @@ export default function Sidebar() {
       title: language === 'ar' ? 'الموارد البشرية' : 'Human Resources',
       items: [
         { path: '/app/dashboard/employees', icon: Users, label: t('employees'), perm: { module: 'hr', action: 'read' } },
+        { path: '/app/dashboard/attendance', icon: Fingerprint, label: language === 'ar' ? 'الحضور والبيومتري' : 'Attendance & Biometrics', perm: { module: 'hr', action: 'read' } },
         { path: '/app/dashboard/payroll', icon: Wallet, label: t('payroll'), perm: { module: 'payroll', action: 'read' } },
         { path: '/app/dashboard/payroll/calculators', icon: Calculator, label: 'GOSI/EOSB', perm: { module: 'payroll', action: 'read' } },
       ]
