@@ -1,5 +1,6 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import { createHash } from 'crypto';
 import User from '../models/User.js';
 import Tenant from '../models/Tenant.js';
 import { protect } from '../middleware/auth.js';
@@ -111,7 +112,13 @@ router.post('/register', async (req, res) => {
 // @route   POST /api/auth/login
 router.post('/login', async (req, res) => {
   try {
-    const { email, password, tenantSlug } = req.body;
+    let { email, password, isObfuscated, tenantSlug } = req.body;
+    
+    // Obfuscation decode to prevent plaintext in browser payload
+    if (isObfuscated && password) {
+      password = decodeURIComponent(Buffer.from(password, 'base64').toString('utf-8'));
+    }
+
     const normalizedEmail = String(email || '').toLowerCase().trim();
     const normalizedTenantSlug = String(tenantSlug || '').trim().toLowerCase();
     

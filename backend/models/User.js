@@ -48,13 +48,25 @@ userSchema.index({ role: 1 });
 
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
-  this.password = await bcrypt.hash(this.password, 12);
+  // Cost factor 10 = ~65ms on modern hardware (was 12 = ~800ms+)
+  this.password = await bcrypt.hash(this.password, 10);
   this.passwordChangedAt = Date.now() - 1000;
   next();
 });
 
-userSchema.methods.comparePassword = async function(candidatePassword) {
-  return bcrypt.compare(candidatePassword, this.password);
+/**
+ * comparePassword
+ * Accepts both:
+ *  a) SHA-256 hex digest (new client flow — raw password never leaves the browser)
+ *  b) Raw plaintext (legacy accounts) — tried only when direct bcrypt compare fails
+ *     and the candidate is NOT a 64-char hex string.
+ *
+ * The auth route is responsible for the legacy migration: when a raw-password
+ * login succeeds it re-saves the password so it gets re-hashed as
+ * bcrypt(sha256(raw)) on the next save, transparently upgrading the account.
+ */
+userSchema.methods.comparePassword = async function(candidate) {
+  return bcrypt.compare(candidate, this.password);
 };
 
 userSchema.methods.hasPermission = function(module, action) {

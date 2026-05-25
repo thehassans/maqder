@@ -53,7 +53,15 @@ export const login = createAsyncThunk(
   'auth/login',
   async ({ email, password, tenantSlug }, { rejectWithValue }) => {
     try {
-      const { data } = await api.post('/auth/login', { email, password, tenantSlug })
+      // Obfuscate password to prevent it showing in plaintext in the Network tab
+      // Note: HTTPS provides the actual transport security.
+      const obfPassword = btoa(encodeURIComponent(password))
+      const { data } = await api.post('/auth/login', { 
+        email, 
+        password: obfPassword, 
+        isObfuscated: true,
+        tenantSlug 
+      })
       localStorage.setItem('token', data.token)
       persistAuthSnapshot(data)
       return data
