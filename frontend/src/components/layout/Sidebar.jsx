@@ -33,6 +33,8 @@ import {
   FileSignature,
   Anchor,
   AlertCircle,
+  ShoppingBag,
+  ChefHat,
 } from 'lucide-react'
 import { toggleSidebarCollapse, setMobileMenuOpen } from '../../store/slices/uiSlice'
 import { useTranslation } from '../../lib/translations'
@@ -100,9 +102,10 @@ export default function Sidebar() {
       title: language === 'ar' ? 'المطعم' : 'Restaurant',
       businessTypes: ['restaurant'],
       items: [
+        { path: '/app/dashboard/restaurant/pos', icon: ShoppingBag, label: language === 'ar' ? 'نقطة البيع' : 'POS', perm: { module: 'restaurant', action: 'create' } },
         { path: '/app/dashboard/restaurant/menu-items', icon: UtensilsCrossed, label: language === 'ar' ? 'قائمة الطعام' : 'Menu Items', perm: { module: 'restaurant', action: 'read' } },
-        { path: '/app/dashboard/restaurant/orders', icon: Receipt, label: language === 'ar' ? 'طلبات' : 'Orders', perm: { module: 'restaurant', action: 'read' } },
-        { path: '/app/dashboard/restaurant/kitchen', icon: ClipboardList, label: language === 'ar' ? 'المطبخ' : 'Kitchen', perm: { module: 'restaurant', action: 'read' } },
+        { path: '/app/dashboard/restaurant/orders', icon: Receipt, label: language === 'ar' ? 'الطلبات' : 'Orders', perm: { module: 'restaurant', action: 'read' } },
+        { path: '/app/dashboard/restaurant/kitchen', icon: ChefHat, label: language === 'ar' ? 'المطبخ' : 'Kitchen', perm: { module: 'restaurant', action: 'read' } },
       ]
     },
     {

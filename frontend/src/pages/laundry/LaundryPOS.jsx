@@ -5,6 +5,8 @@ import { Plus, Minus, Trash2, ShoppingBag, CreditCard, Search, UserPlus } from '
 import api from '../../lib/api'
 import { addItem, updateItemQuantity, removeItem, clearCart, setCustomer } from '../../store/slices/laundryCartSlice'
 import { toast } from 'react-hot-toast'
+import ThermalReceipt from '../../components/ui/ThermalReceipt'
+import { useRef } from 'react'
 
 export default function LaundryPOS() {
   const dispatch = useDispatch()
@@ -18,6 +20,19 @@ export default function LaundryPOS() {
   
   // Checkout states
   const [isProcessing, setIsProcessing] = useState(false)
+  const [completedOrder, setCompletedOrder] = useState(null)
+  const receiptRef = useRef(null)
+
+  const handlePrint = () => {
+    if (receiptRef.current) {
+      window.print()
+    }
+  }
+
+  const handleCloseReceipt = () => {
+    setCompletedOrder(null)
+    dispatch(clearCart())
+  }
   
   useEffect(() => {
     fetchServices()
@@ -67,8 +82,8 @@ export default function LaundryPOS() {
       }
       
       const { data } = await api.post('/laundry/orders/checkout', payload)
-      toast.success(`Order created: ${data.orderNumber}`)
-      dispatch(clearCart())
+      toast.success(isRtl ? `تم إنشاء الطلب: ${data.orderNumber}` : `Order created: ${data.orderNumber}`)
+      setCompletedOrder(data)
     } catch (error) {
       toast.error(error.response?.data?.error || 'Checkout failed')
     } finally {
@@ -201,7 +216,7 @@ export default function LaundryPOS() {
             disabled={cart.items.length === 0 || isProcessing}
             className="w-full mt-4 bg-teal-600 hover:bg-teal-700 text-white py-3 px-4 rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            {isProcessing ? 'Processing...' : (
+            {isProcessing ? (isRtl ? 'جاري المعالجة...' : 'Processing...') : (
               <>
                 <CreditCard className="w-5 h-5" />
                 {isRtl ? 'الدفع' : 'Checkout'}
@@ -210,6 +225,33 @@ export default function LaundryPOS() {
           </button>
         </div>
       </div>
+
+      {/* Print Modal */}
+      {completedOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 print:bg-white print:static print:inset-auto">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-[400px] max-h-[90vh] overflow-y-auto print:shadow-none print:p-0 print:w-auto print:max-h-none print:overflow-visible">
+            <div className="flex justify-between items-center mb-4 print:hidden">
+              <h3 className="text-lg font-bold">{isRtl ? 'إيصال الطلب' : 'Order Receipt'}</h3>
+              <button onClick={handleCloseReceipt} className="text-gray-500 hover:text-gray-700">
+                <Minus className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="border border-gray-200 rounded-lg p-2 print:border-none print:p-0 flex justify-center">
+              <ThermalReceipt ref={receiptRef} order={completedOrder} type="laundry" />
+            </div>
+
+            <div className="mt-6 flex gap-3 print:hidden">
+              <button onClick={handleCloseReceipt} className="btn btn-secondary flex-1">
+                {isRtl ? 'إغلاق' : 'Close'}
+              </button>
+              <button onClick={handlePrint} className="btn btn-primary flex-1">
+                {isRtl ? 'طباعة' : 'Print Receipt'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
