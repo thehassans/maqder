@@ -15,6 +15,7 @@ import {
   MessageCircle,
   Package,
   Phone,
+  PieChart,
   PlayCircle,
   Receipt,
   ShieldCheck,
@@ -25,8 +26,6 @@ import {
   Warehouse,
   Zap,
 } from 'lucide-react'
-import toast from 'react-hot-toast'
-import { demoLogin } from '../../store/slices/authSlice'
 import { usePublicWebsiteSettings } from '../../lib/website'
 
 const fade = {
@@ -39,46 +38,10 @@ export default function MarketingHome() {
   const navigate = useNavigate()
   const { language } = useSelector((state) => state.ui)
   const { data } = usePublicWebsiteSettings()
-  const [isStartingDemo, setIsStartingDemo] = useState(false)
 
   const isArabic = language === 'ar'
 
   const phone = data?.contactPhone || '+966595930045'
-  const isDemoConfigured = !!data?.demo?.enabled && !!data?.demo?.tenantSlug && !!data?.demo?.email
-
-  const showDemoUnavailableToast = () => {
-    toast.dismiss('marketing-demo-unavailable')
-    toast.error(
-      isArabic
-        ? 'التجربة المباشرة غير متاحة حالياً. تواصل معنا وسنقوم بترتيب عرض مباشر لك.'
-        : 'Live demo is not available right now. Contact us and we will arrange a guided demo for you.',
-      { id: 'marketing-demo-unavailable' }
-    )
-  }
-
-  const startDemo = async () => {
-    if (isStartingDemo) {
-      return
-    }
-
-    if (!isDemoConfigured) {
-      showDemoUnavailableToast()
-      navigate('/contact')
-      return
-    }
-
-    setIsStartingDemo(true)
-
-    try {
-      await dispatch(demoLogin()).unwrap()
-      navigate('/app/dashboard')
-    } catch (e) {
-      showDemoUnavailableToast()
-      navigate('/contact')
-    } finally {
-      setIsStartingDemo(false)
-    }
-  }
 
   const heroSubtitle = isArabic ? data?.hero?.subtitleAr : data?.hero?.subtitleEn
 
@@ -143,14 +106,17 @@ export default function MarketingHome() {
                   {isArabic ? 'ابدأ الآن' : 'Get started'}
                   <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
                 </Link>
-                <button
-                  onClick={startDemo}
-                  disabled={isStartingDemo}
+                <a
+                  href="#demos"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById('demos').scrollIntoView({ behavior: 'smooth' });
+                  }}
                   className="inline-flex items-center justify-center gap-2.5 rounded-2xl border border-white/12 bg-white/[0.06] px-7 py-4 font-semibold text-white backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10"
                 >
                   <PlayCircle className="h-5 w-5 text-emerald-300" />
-                  {isStartingDemo ? (isArabic ? 'جارٍ التحضير...' : 'Preparing...') : (isArabic ? 'تجربة مباشرة' : 'Live demo')}
-                </button>
+                  {isArabic ? 'التجارب الحية' : 'Live demos'}
+                </a>
               </div>
 
               <div className="mt-8 flex flex-wrap gap-2">
@@ -350,6 +316,114 @@ export default function MarketingHome() {
         </div>
       </section>
 
+      {/* ── LIVE DEMOS ── */}
+      <section id="demos" className="bg-slate-50 py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-14 text-center">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-800">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
+              </span>
+              {isArabic ? 'تجربة حية' : 'Live Demos'}
+            </div>
+            <h2 className="text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
+              {isArabic ? 'جرب النظام بنفسك' : 'Experience It Yourself'}
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-500">
+              {isArabic
+                ? 'اختر نوع نشاطك التجاري وجرب واجهة النظام المخصصة مع بيانات تجريبية.'
+                : 'Select your business type and explore the customized interface with demo data.'}
+            </p>
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                title: 'Trading & ERP',
+                titleAr: 'التجارة وإدارة الموارد',
+                icon: Building2,
+                color: 'from-blue-500 to-indigo-600',
+                bg: 'bg-blue-50',
+                border: 'border-blue-100',
+                description: 'Standard wholesale/retail with inventory tracking.',
+                descriptionAr: 'تجارة الجملة والتجزئة مع تتبع المخزون.',
+                email: 'admin@maqder.com'
+              },
+              {
+                title: 'Travel Agency',
+                titleAr: 'وكالة سفر',
+                icon: Globe,
+                color: 'from-sky-500 to-cyan-600',
+                bg: 'bg-sky-50',
+                border: 'border-sky-100',
+                description: 'Margin scheme taxation & flight booking logs.',
+                descriptionAr: 'نظام الهامش الضريبي وتتبع الرحلات.',
+                email: 'travel@maqder.com'
+              },
+              {
+                title: 'Car Rental',
+                titleAr: 'تأجير سيارات',
+                icon: Truck,
+                color: 'from-rose-500 to-red-600',
+                bg: 'bg-rose-50',
+                border: 'border-rose-100',
+                description: 'Fleet tracking and active rental contracts.',
+                descriptionAr: 'تتبع الأسطول وعقود التأجير النشطة.',
+                email: 'rental@maqder.com'
+              },
+              {
+                title: 'Laundry Management',
+                titleAr: 'إدارة المغاسل',
+                icon: Sparkles,
+                color: 'from-emerald-500 to-teal-600',
+                bg: 'bg-emerald-50',
+                border: 'border-emerald-100',
+                description: 'Garment tracking, touch POS & weight billing.',
+                descriptionAr: 'تتبع الملابس، نقاط البيع باللمس والوزن.',
+                email: 'laundry@maqder.com'
+              },
+              {
+                title: 'Restaurant POS',
+                titleAr: 'نقاط بيع المطاعم',
+                icon: PieChart,
+                color: 'from-amber-500 to-orange-600',
+                bg: 'bg-amber-50',
+                border: 'border-amber-100',
+                description: 'Tables, kitchen displays, and shift management.',
+                descriptionAr: 'الطاولات وشاشات المطبخ وإدارة الورديات.',
+                email: 'restaurant@maqder.com'
+              }
+            ].map((demo, idx) => (
+              <motion.div key={idx} variants={fade} initial="initial" whileInView="animate" viewport={{ once: true }} transition={{ duration: 0.5, delay: idx * 0.1 }}
+                className={`group relative overflow-hidden rounded-3xl border ${demo.border} bg-white p-8 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl`}>
+                <div className={`absolute -right-8 -top-8 h-32 w-32 rounded-bl-full ${demo.bg} transition-transform group-hover:scale-110`} />
+                <div className="relative z-10 flex h-full flex-col">
+                  <div className={`mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${demo.color} shadow-md`}>
+                    <demo.icon className="h-7 w-7 text-white" />
+                  </div>
+                  <h3 className="mb-3 text-xl font-bold text-slate-900">
+                    {isArabic ? demo.titleAr : demo.title}
+                  </h3>
+                  <p className="mb-8 flex-grow text-slate-600">
+                    {isArabic ? demo.descriptionAr : demo.description}
+                  </p>
+                  
+                  <Link
+                    to="/login"
+                    state={{ email: demo.email, password: 'password123' }}
+                    className={`inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r ${demo.color} py-3.5 font-semibold text-white shadow-md transition-all hover:shadow-lg`}
+                  >
+                    {isArabic ? 'دخول للنسخة التجريبية' : 'Launch Demo'}
+                    <ArrowRight className={`h-5 w-5 ${isArabic ? 'rotate-180' : ''}`} />
+                  </Link>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── TESTIMONIALS ── */}
       <section className="bg-white py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -414,14 +488,17 @@ export default function MarketingHome() {
                   {isArabic ? 'ابدأ الآن' : 'Get started'}
                   <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
                 </Link>
-                <button
-                  onClick={startDemo}
-                  disabled={isStartingDemo}
+                <a
+                  href="#demos"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById('demos').scrollIntoView({ behavior: 'smooth' });
+                  }}
                   className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/12 bg-white/[0.05] px-8 py-4 font-semibold text-white transition-all hover:bg-white/10"
                 >
                   <PlayCircle className="h-5 w-5 text-emerald-300" />
-                  {isStartingDemo ? (isArabic ? 'جارٍ التحضير...' : 'Preparing...') : (isArabic ? 'تجربة مباشرة' : 'Live demo')}
-                </button>
+                  {isArabic ? 'التجارب الحية' : 'Live demos'}
+                </a>
               </div>
             </div>
           </div>
