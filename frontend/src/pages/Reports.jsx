@@ -907,53 +907,222 @@ export default function Reports() {
               {/* ── Business Report ──────────────────────────────────────── */}
               {reportType === 'business' ? (
                 <>
-                  {/* KPI grid — 5 cards */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                    <KpiCard
-                      icon={TrendingUp}
-                      iconBg="bg-gradient-to-br from-emerald-400 to-emerald-600"
-                      label={language === 'ar' ? 'إجمالي المبيعات' : 'Total Sales'}
-                      value={money(totals?.sales?.grandTotal || 0)}
-                      valueClass="text-emerald-600 dark:text-emerald-400"
-                      sub={language === 'ar' ? `صافي: ${money(totals?.sales?.taxableAmount || 0)}` : `Ex-VAT: ${money(totals?.sales?.taxableAmount || 0)}`}
-                      delay={0.05}
-                    />
-                    <KpiCard
-                      icon={ShoppingCart}
-                      iconBg="bg-gradient-to-br from-blue-400 to-blue-600"
-                      label={language === 'ar' ? 'المشتريات' : 'Purchases'}
-                      value={money(totals?.purchases?.grandTotal || 0)}
-                      sub={language === 'ar' ? `صافي: ${money(totals?.purchases?.taxableAmount || 0)}` : `Ex-VAT: ${money(totals?.purchases?.taxableAmount || 0)}`}
-                      delay={0.1}
-                    />
-                    <KpiCard
-                      icon={Receipt}
-                      iconBg="bg-gradient-to-br from-orange-400 to-orange-600"
-                      label={language === 'ar' ? 'المصاريف' : 'Expenses'}
-                      value={money(totals?.expenses?.totalAmount || 0)}
-                      sub={language === 'ar' ? `قبل الضريبة: ${money((totals?.expenses?.totalAmount || 0) - (totals?.expenses?.taxAmount || 0))}` : `Pre-tax: ${money((totals?.expenses?.totalAmount || 0) - (totals?.expenses?.taxAmount || 0))}`}
-                      delay={0.15}
-                    />
-                    <KpiCard
-                      icon={Tag}
-                      iconBg="bg-gradient-to-br from-amber-400 to-amber-600"
-                      label={language === 'ar' ? 'خصومات المبيعات' : 'Sales Discounts'}
-                      value={money(totals?.sales?.totalDiscount || 0)}
-                      valueClass="text-amber-600 dark:text-amber-400"
-                      delay={0.2}
-                    />
-                    <KpiCard
-                      icon={BarChart3}
-                      iconBg={`bg-gradient-to-br ${(totals?.net || 0) >= 0 ? 'from-primary-400 to-primary-700' : 'from-red-400 to-red-600'}`}
-                      label={language === 'ar' ? 'صافي الربح' : 'Net Profit'}
-                      value={money(totals?.net || 0)}
-                      valueClass={(totals?.net || 0) >= 0 ? 'text-primary-600 dark:text-primary-400' : 'text-red-600 dark:text-red-400'}
-                      sub={language === 'ar' ? 'مبيعات − مشتريات − مصاريف (بدون ضريبة)' : 'Sales − Purchases − Expenses (ex-VAT)'}
-                      delay={0.25}
-                    />
-                  </div>
+                  {/* ── Travel Agency mode ──────────────────────────────── */}
+                  {totals?.travelMargin?.isTravelAgency ? (
+                    <>
+                      {/* Travel-aware banner */}
+                      <motion.div
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex items-center gap-3 rounded-2xl border border-blue-100 bg-blue-50/60 px-5 py-3"
+                      >
+                        <span className="text-lg">✈️</span>
+                        <div>
+                          <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">
+                            {language === 'ar' ? 'تقرير وكالة السفر — نظام هامش الربح' : 'Travel Agency Report — Margin Scheme P&L'}
+                          </p>
+                          <p className="text-xs text-blue-600/80 dark:text-blue-400 mt-0.5">
+                            {language === 'ar'
+                              ? 'يُظهر هذا التقرير الهامش الفعلي المكتسب (السعر للعميل − تكلفة الوكالة)، وليس إجمالي الفوترة'
+                              : 'This report shows your actual earned margin (customer price − agency cost), not the gross billing amount'}
+                          </p>
+                        </div>
+                      </motion.div>
 
-                  {/* Tables grid */}
+                      {/* 6-card travel KPI grid */}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                        <KpiCard
+                          icon={TrendingUp}
+                          iconBg="bg-gradient-to-br from-slate-400 to-slate-600"
+                          label={language === 'ar' ? 'إجمالي الفوترة' : 'Customer Billed'}
+                          value={money(totals?.sales?.grandTotal || 0)}
+                          valueClass="text-slate-700 dark:text-slate-300"
+                          sub={language === 'ar' ? 'المبلغ الكلي للعملاء' : 'Total invoiced to clients'}
+                          delay={0.05}
+                        />
+                        <KpiCard
+                          icon={ShoppingCart}
+                          iconBg="bg-gradient-to-br from-rose-400 to-rose-600"
+                          label={language === 'ar' ? 'تكلفة الوكالة' : 'Agency Cost'}
+                          value={money(totals?.travelMargin?.agencyCost || 0)}
+                          valueClass="text-rose-600 dark:text-rose-400"
+                          sub={language === 'ar' ? 'ما دُفع للموردين' : 'Paid to suppliers'}
+                          delay={0.1}
+                        />
+                        <KpiCard
+                          icon={BarChart3}
+                          iconBg="bg-gradient-to-br from-emerald-400 to-emerald-600"
+                          label={language === 'ar' ? 'الهامش الإجمالي' : 'Gross Margin'}
+                          value={money(totals?.travelMargin?.marginTaxable || 0)}
+                          valueClass="text-emerald-600 dark:text-emerald-400"
+                          sub={language === 'ar' ? 'الإيراد الفعلي للوكالة (خاضع للضريبة)' : 'Actual agency revenue (taxable)'}
+                          delay={0.15}
+                        />
+                        <KpiCard
+                          icon={Receipt}
+                          iconBg="bg-gradient-to-br from-primary-400 to-primary-600"
+                          label={language === 'ar' ? 'ضريبة الهامش' : 'VAT on Margin'}
+                          value={money(totals?.travelMargin?.vatOnMargin || 0)}
+                          valueClass="text-primary-600 dark:text-primary-400"
+                          sub={language === 'ar' ? 'ضريبة 15% على الهامش فقط' : '15% VAT on margin only'}
+                          delay={0.2}
+                        />
+                        <KpiCard
+                          icon={Tag}
+                          iconBg="bg-gradient-to-br from-orange-400 to-orange-600"
+                          label={language === 'ar' ? 'المصاريف' : 'Expenses'}
+                          value={money(totals?.expenses?.totalAmount || 0)}
+                          sub={language === 'ar' ? `قبل الضريبة: ${money((totals?.expenses?.totalAmount || 0) - (totals?.expenses?.taxAmount || 0))}` : `Pre-tax: ${money((totals?.expenses?.totalAmount || 0) - (totals?.expenses?.taxAmount || 0))}`}
+                          delay={0.22}
+                        />
+                        <KpiCard
+                          icon={TrendingUp}
+                          iconBg={`bg-gradient-to-br ${(totals?.net || 0) >= 0 ? 'from-primary-400 to-primary-700' : 'from-red-400 to-red-600'}`}
+                          label={language === 'ar' ? 'صافي الربح' : 'Net Profit'}
+                          value={money(totals?.net || 0)}
+                          valueClass={(totals?.net || 0) >= 0 ? 'text-primary-600 dark:text-primary-400' : 'text-red-600 dark:text-red-400'}
+                          sub={language === 'ar' ? 'الهامش − المصاريف' : 'Margin − Expenses'}
+                          delay={0.25}
+                        />
+                      </div>
+
+                      {/* Travel agency P&L summary card */}
+                      <motion.div
+                        initial={{ opacity: 0, y: 16 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.4, delay: 0.3 }}
+                        className="rounded-2xl bg-white dark:bg-dark-800 border border-gray-100 dark:border-dark-700 shadow-sm overflow-hidden"
+                      >
+                        <div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-gray-100 dark:border-dark-700">
+                          <span className="text-base">✈️</span>
+                          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                            {language === 'ar' ? 'بيان الربح والخسارة — وكالة السفر' : 'Travel Agency P&L Statement'}
+                          </h3>
+                        </div>
+                        <div className="p-6">
+                          <div className="space-y-2 text-sm">
+                            {[
+                              {
+                                label: language === 'ar' ? 'إجمالي الفوترة للعملاء' : 'Gross Billing to Clients',
+                                value: totals?.sales?.grandTotal || 0,
+                                class: 'text-slate-700 dark:text-slate-300',
+                                indent: false,
+                              },
+                              {
+                                label: language === 'ar' ? 'تكلفة الوكالة (مدفوعة للموردين)' : 'Agency Cost (paid to suppliers)',
+                                value: -(totals?.travelMargin?.agencyCost || 0),
+                                class: 'text-rose-600 dark:text-rose-400',
+                                indent: true,
+                              },
+                              null, // divider
+                              {
+                                label: language === 'ar' ? 'الهامش الإجمالي (الإيراد الفعلي)' : 'Gross Margin (Actual Revenue)',
+                                value: totals?.travelMargin?.marginTaxable || 0,
+                                class: 'text-emerald-700 dark:text-emerald-400 font-bold',
+                                indent: false,
+                              },
+                              {
+                                label: language === 'ar' ? 'ضريبة القيمة المضافة على الهامش (15%)' : 'VAT on Margin (15%)',
+                                value: -(totals?.travelMargin?.vatOnMargin || 0),
+                                class: 'text-primary-600 dark:text-primary-400',
+                                indent: true,
+                              },
+                              {
+                                label: language === 'ar' ? 'المصاريف التشغيلية (قبل الضريبة)' : 'Operating Expenses (pre-tax)',
+                                value: -Math.max(0, (totals?.expenses?.totalAmount || 0) - (totals?.expenses?.taxAmount || 0)),
+                                class: 'text-orange-600 dark:text-orange-400',
+                                indent: true,
+                              },
+                              null, // divider
+                              {
+                                label: language === 'ar' ? 'صافي الربح' : 'Net Profit',
+                                value: totals?.net || 0,
+                                class: (totals?.net || 0) >= 0 ? 'text-primary-600 dark:text-primary-400 font-bold text-base' : 'text-red-600 dark:text-red-400 font-bold text-base',
+                                indent: false,
+                              },
+                            ].map((row, i) =>
+                              row === null ? (
+                                <div key={i} className="border-t border-gray-100 dark:border-dark-700 my-3" />
+                              ) : (
+                                <div key={i} className={`flex items-center justify-between py-1 ${row.indent ? 'pl-5 text-gray-500 dark:text-gray-400' : ''}`}>
+                                  <span className={row.indent ? '' : 'font-semibold text-gray-700 dark:text-gray-200'}>{row.label}</span>
+                                  <span className={row.class}>{money(row.value)}</span>
+                                </div>
+                              )
+                            )}
+                          </div>
+
+                          {/* Margin % badge */}
+                          {(totals?.travelMargin?.customerNet || 0) > 0 && (
+                            <div className="mt-5 flex items-center gap-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/30 px-4 py-3">
+                              <div>
+                                <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold uppercase tracking-wider">
+                                  {language === 'ar' ? 'نسبة هامش الربح' : 'Margin Rate'}
+                                </p>
+                                <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300 mt-0.5">
+                                  {(((totals?.travelMargin?.marginTaxable || 0) / (totals?.travelMargin?.customerNet || 1)) * 100).toFixed(1)}%
+                                </p>
+                              </div>
+                              <div className="ml-auto text-right">
+                                <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                                  {language === 'ar' ? 'الهامش ÷ إجمالي الفوترة' : 'Margin ÷ Gross Billing'}
+                                </p>
+                                <p className="text-xs text-emerald-500 mt-0.5">
+                                  {money(totals?.travelMargin?.marginTaxable || 0)} / {money(totals?.travelMargin?.customerNet || 0)}
+                                </p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    </>
+                  ) : (
+                    /* ── Regular business KPI grid ──────────────────────── */
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                      <KpiCard
+                        icon={TrendingUp}
+                        iconBg="bg-gradient-to-br from-emerald-400 to-emerald-600"
+                        label={language === 'ar' ? 'إجمالي المبيعات' : 'Total Sales'}
+                        value={money(totals?.sales?.grandTotal || 0)}
+                        valueClass="text-emerald-600 dark:text-emerald-400"
+                        sub={language === 'ar' ? `صافي: ${money(totals?.sales?.taxableAmount || 0)}` : `Ex-VAT: ${money(totals?.sales?.taxableAmount || 0)}`}
+                        delay={0.05}
+                      />
+                      <KpiCard
+                        icon={ShoppingCart}
+                        iconBg="bg-gradient-to-br from-blue-400 to-blue-600"
+                        label={language === 'ar' ? 'المشتريات' : 'Purchases'}
+                        value={money(totals?.purchases?.grandTotal || 0)}
+                        sub={language === 'ar' ? `صافي: ${money(totals?.purchases?.taxableAmount || 0)}` : `Ex-VAT: ${money(totals?.purchases?.taxableAmount || 0)}`}
+                        delay={0.1}
+                      />
+                      <KpiCard
+                        icon={Receipt}
+                        iconBg="bg-gradient-to-br from-orange-400 to-orange-600"
+                        label={language === 'ar' ? 'المصاريف' : 'Expenses'}
+                        value={money(totals?.expenses?.totalAmount || 0)}
+                        sub={language === 'ar' ? `قبل الضريبة: ${money((totals?.expenses?.totalAmount || 0) - (totals?.expenses?.taxAmount || 0))}` : `Pre-tax: ${money((totals?.expenses?.totalAmount || 0) - (totals?.expenses?.taxAmount || 0))}`}
+                        delay={0.15}
+                      />
+                      <KpiCard
+                        icon={Tag}
+                        iconBg="bg-gradient-to-br from-amber-400 to-amber-600"
+                        label={language === 'ar' ? 'خصومات المبيعات' : 'Sales Discounts'}
+                        value={money(totals?.sales?.totalDiscount || 0)}
+                        valueClass="text-amber-600 dark:text-amber-400"
+                        delay={0.2}
+                      />
+                      <KpiCard
+                        icon={BarChart3}
+                        iconBg={`bg-gradient-to-br ${(totals?.net || 0) >= 0 ? 'from-primary-400 to-primary-700' : 'from-red-400 to-red-600'}`}
+                        label={language === 'ar' ? 'صافي الربح' : 'Net Profit'}
+                        value={money(totals?.net || 0)}
+                        valueClass={(totals?.net || 0) >= 0 ? 'text-primary-600 dark:text-primary-400' : 'text-red-600 dark:text-red-400'}
+                        sub={language === 'ar' ? 'مبيعات − مشتريات − مصاريف (بدون ضريبة)' : 'Sales − Purchases − Expenses (ex-VAT)'}
+                        delay={0.25}
+                      />
+                    </div>
+                  )}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <SectionCard
                       title={language === 'ar' ? 'المبيعات حسب النوع' : 'Sales by Type'}

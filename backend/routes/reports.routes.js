@@ -676,6 +676,34 @@ router.get('/business-summary', async (req, res) => {
                 }
               }
             ],
+            // Travel agency margin breakdown — sums marginTaxable and agency cost
+            // from line items flagged as isTravelMargin. Used to compute accurate
+            // net profit for travel agencies (margin-scheme billing).
+            travelMargin: [
+              { $match: { flow: 'sell' } },
+              { $unwind: '$lineItems' },
+              { $match: { 'lineItems.isTravelMargin': true } },
+              {
+                $group: {
+                  _id: null,
+                  lineCount: { $sum: 1 },
+                  // Total customer-facing price (full package price billed)
+                  customerNet: { $sum: { $ifNull: ['$lineItems.lineTotal', 0] } },
+                  // Agency cost paid to supplier (agencyPrice × qty)
+                  agencyCost: {
+                    $sum: {
+                      $multiply: [
+                        { $ifNull: ['$lineItems.quantity', 0] },
+                        { $ifNull: ['$lineItems.agencyPrice', 0] }
+                      ]
+                    }
+                  },
+                  // Margin = customerNet - agencyCost (the taxable profit)
+                  marginTaxable: { $sum: { $ifNull: ['$lineItems.marginTaxable', 0] } },
+                  vatOnMargin: { $sum: { $ifNull: ['$lineItems.taxAmount', 0] } },
+                }
+              }
+            ],
             byTransactionType: [
               {
                 $match: { flow: 'sell' }
@@ -747,13 +775,16 @@ router.get('/business-summary', async (req, res) => {
     const purchase = totalsByFlow.find((r) => r._id === 'purchase') || { invoiceCount: 0, totalDiscount: 0, taxableAmount: 0, totalTax: 0, grandTotal: 0 };
 
     const expenseTotals = expenseResult?.totals?.[0] || { expenseCount: 0, totalAmount: 0, taxAmount: 0 };
+    const travelMarginTotals = invoiceResult?.travelMargin?.[0] || { lineCount: 0, customerNet: 0, agencyCost: 0, marginTaxable: 0, vatOnMargin: 0 };
 
-    // Net profit = sales revenue ex-VAT  - purchase cost ex-VAT  - pre-tax expense cost
-    // Using taxableAmount (ex-VAT) instead of grandTotal avoids counting VAT as profit.
-    // For travel agencies using the margin scheme, taxableAmount reflects the actual margin
-    // earned (not the full pass-through package price), giving a meaningful profit figure.
+    // For travel agencies using the margin scheme: net profit = margin earned - expenses.
+    // For regular businesses: net profit = sales ex-VAT - purchases ex-VAT - expenses.
+    // Travel agency is detected when there are margin-scheme line items in the period.
+    const isTravelAgency = (travelMarginTotals.lineCount || 0) > 0;
     const expenseBaseAmount = (expenseTotals.totalAmount || 0) - (expenseTotals.taxAmount || 0);
-    const net = (sell.taxableAmount || 0) - (purchase.taxableAmount || 0) - Math.max(0, expenseBaseAmount);
+    const net = isTravelAgency
+      ? (travelMarginTotals.marginTaxable || 0) - (purchase.taxableAmount || 0) - Math.max(0, expenseBaseAmount)
+      : (sell.taxableAmount || 0) - (purchase.taxableAmount || 0) - Math.max(0, expenseBaseAmount);
 
     res.json({
       period: { startDate, endDate },
@@ -778,7 +809,15 @@ router.get('/business-summary', async (req, res) => {
           totalAmount: expenseTotals.totalAmount || 0,
           taxAmount: expenseTotals.taxAmount || 0,
         },
-        net
+        net,
+        travelMargin: {
+          isTravelAgency,
+          lineCount: travelMarginTotals.lineCount || 0,
+          customerNet: travelMarginTotals.customerNet || 0,
+          agencyCost: travelMarginTotals.agencyCost || 0,
+          marginTaxable: travelMarginTotals.marginTaxable || 0,
+          vatOnMargin: travelMarginTotals.vatOnMargin || 0,
+        },
       },
       breakdown: {
         salesByTransactionType: invoiceResult.byTransactionType || [],
