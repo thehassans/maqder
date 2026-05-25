@@ -503,15 +503,15 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
   return (
     <div className={`relative overflow-hidden rounded-[2rem] border shadow-[0_30px_80px_-40px_rgba(15,23,42,0.30)] ${styles.shell}`} style={shellStyle}>
       <div className="absolute inset-x-0 top-0 h-1.5" style={accentBarStyle} />
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-        {logoSrc ? <img src={logoSrc} alt="" className="h-52 w-52 object-contain opacity-[0.05]" /> : null}
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
+        {logoSrc ? <img src={logoSrc} alt="" className="h-[32rem] w-[32rem] object-contain opacity-[0.06]" /> : null}
       </div>
       <div className="relative px-6 pb-6 pt-7">
         <div className="border-b border-slate-200 pb-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex min-w-0 flex-1 items-start gap-4">
-              <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-[1.75rem] border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-3 shadow-sm">
-                <img src={logoSrc} alt="" className="h-full w-full object-contain" />
+              <div className="flex h-32 max-w-[18rem] shrink-0 items-center justify-center overflow-hidden bg-transparent">
+                <img src={logoSrc} alt="" className="max-h-full max-w-full object-contain" />
               </div>
               <div className="min-w-0 max-w-[34rem] flex-1">
                 <p className={joinClasses('text-[11px] uppercase tracking-[0.24em]', isQuotation ? mutedText : (isTravelInvoice ? travelInvoiceLabelMeta?.textClassName : mutedText))}>{getInvoiceEyebrow(invoice, language, documentType)}</p>
