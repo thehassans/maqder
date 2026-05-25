@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
@@ -31,7 +31,14 @@ export default function Login() {
   const whatsappNumber = salesPhone.replace(/\D/g, '')
   const contactSalesSubject = encodeURIComponent('Maqder ERP Sales Inquiry')
 
-  const { register, handleSubmit, formState: { errors } } = useForm()
+  const location = useLocation()
+  
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    defaultValues: {
+      email: location.state?.email || '',
+      password: location.state?.password || ''
+    }
+  })
 
   useEffect(() => {
     dispatch(clearError())

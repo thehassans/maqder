@@ -3,7 +3,11 @@ import Invoice from '../models/Invoice.js';
 import Expense from '../models/Expense.js';
 import VatReturn from '../models/VatReturn.js';
 import ReportSchedule from '../models/ReportSchedule.js';
-import { protect, tenantFilter, authorize, checkEmailAddon } from '../middleware/auth.js';
+import RentalContract from '../models/RentalContract.js';
+import LaundryOrder from '../models/LaundryOrder.js';
+import RestaurantOrder from '../models/RestaurantOrder.js';
+import { protect, tenantFilter, authorize, checkEmailAddon, requireBusinessType } from '../middleware/auth.js';
+import { getTenantBusinessTypes } from '../utils/businessTypes.js';
 import { computeNextRunAt, normalizeRecipients, serializeReportSchedule, REPORT_SCHEDULE_FREQUENCIES, REPORT_SCHEDULE_PRESETS, REPORT_SCHEDULE_TYPES } from '../utils/reportScheduleService.js';
 
 const router = express.Router();
@@ -777,14 +781,43 @@ router.get('/business-summary', async (req, res) => {
     const expenseTotals = expenseResult?.totals?.[0] || { expenseCount: 0, totalAmount: 0, taxAmount: 0 };
     const travelMarginTotals = invoiceResult?.travelMargin?.[0] || { lineCount: 0, customerNet: 0, agencyCost: 0, marginTaxable: 0, vatOnMargin: 0 };
 
+    // Fetch extra revenue from modular systems
+    const businessTypes = getTenantBusinessTypes(req.tenant);
+    let extraRevenue = 0;
+    
+    if (businessTypes.includes('car_rental')) {
+      const [{ rev } = { rev: 0 }] = await RentalContract.aggregate([
+        { $match: { ...req.tenantFilter, createdAt: { $gte: startDate, $lte: endDate }, status: { $in: ['active', 'completed'] } } },
+        { $group: { _id: null, rev: { $sum: { $ifNull: ['$subtotal', 0] } } } }
+      ]).catch(() => [{ rev: 0 }]);
+      extraRevenue += rev;
+    }
+    
+    if (businessTypes.includes('laundry')) {
+      const [{ rev } = { rev: 0 }] = await LaundryOrder.aggregate([
+        { $match: { ...req.tenantFilter, createdAt: { $gte: startDate, $lte: endDate }, status: { $nin: ['cancelled'] } } },
+        { $group: { _id: null, rev: { $sum: { $ifNull: ['$subtotal', 0] } } } }
+      ]).catch(() => [{ rev: 0 }]);
+      extraRevenue += rev;
+    }
+
+    if (businessTypes.includes('restaurant')) {
+      const [{ rev } = { rev: 0 }] = await RestaurantOrder.aggregate([
+        { $match: { ...req.tenantFilter, createdAt: { $gte: startDate, $lte: endDate }, status: { $nin: ['cancelled'] } } },
+        { $group: { _id: null, rev: { $sum: { $ifNull: ['$subtotal', 0] } } } }
+      ]).catch(() => [{ rev: 0 }]);
+      extraRevenue += rev;
+    }
+
     // For travel agencies using the margin scheme: net profit = margin earned - expenses.
     // For regular businesses: net profit = sales ex-VAT - purchases ex-VAT - expenses.
     // Travel agency is detected when there are margin-scheme line items in the period.
     const isTravelAgency = (travelMarginTotals.lineCount || 0) > 0;
+    // Note: expenses are stored with totalAmount and taxAmount. Taxable expense = totalAmount - taxAmount
     const expenseBaseAmount = (expenseTotals.totalAmount || 0) - (expenseTotals.taxAmount || 0);
-    const net = isTravelAgency
-      ? (travelMarginTotals.marginTaxable || 0) - (purchase.taxableAmount || 0) - Math.max(0, expenseBaseAmount)
-      : (sell.taxableAmount || 0) - (purchase.taxableAmount || 0) - Math.max(0, expenseBaseAmount);
+    const invoiceRevenue = isTravelAgency ? (travelMarginTotals.marginTaxable || 0) : (sell.taxableAmount || 0);
+    
+    const net = (invoiceRevenue + extraRevenue) - (purchase.taxableAmount || 0) - Math.max(0, expenseBaseAmount);
 
     res.json({
       period: { startDate, endDate },
@@ -793,7 +826,7 @@ router.get('/business-summary', async (req, res) => {
         sales: {
           invoiceCount: sell.invoiceCount || 0,
           totalDiscount: sell.totalDiscount || 0,
-          taxableAmount: sell.taxableAmount || 0,
+          taxableAmount: (sell.taxableAmount || 0) + extraRevenue,
           totalTax: sell.totalTax || 0,
           grandTotal: sell.grandTotal || 0,
         },

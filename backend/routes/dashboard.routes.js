@@ -7,6 +7,8 @@ import Customer from '../models/Customer.js';
 import Expense from '../models/Expense.js';
 import TravelBooking from '../models/TravelBooking.js';
 import RestaurantOrder from '../models/RestaurantOrder.js';
+import RentalContract from '../models/RentalContract.js';
+import LaundryOrder from '../models/LaundryOrder.js';
 import { protect, tenantFilter } from '../middleware/auth.js';
 import { getTenantBusinessTypes } from '../utils/businessTypes.js';
 
@@ -37,7 +39,7 @@ router.get('/', async (req, res) => {
           $facet: {
             total: [
               { $match: { status: { $nin: ['draft', 'cancelled', 'credited'] } } },
-              { $group: { _id: null, count: { $sum: 1 }, revenue: { $sum: '$grandTotal' }, tax: { $sum: '$totalTax' }, discount: { $sum: { $ifNull: ['$totalDiscount', 0] } } } }
+              { $group: { _id: null, count: { $sum: 1 }, revenue: { $sum: '$taxableAmount' }, tax: { $sum: '$totalTax' }, discount: { $sum: { $ifNull: ['$totalDiscount', 0] } } } }
             ],
             thisMonth: [
               {
@@ -46,7 +48,7 @@ router.get('/', async (req, res) => {
                   status: { $nin: ['draft', 'cancelled', 'credited'] }
                 }
               },
-              { $group: { _id: null, count: { $sum: 1 }, revenue: { $sum: '$grandTotal' }, discount: { $sum: { $ifNull: ['$totalDiscount', 0] } } } }
+              { $group: { _id: null, count: { $sum: 1 }, revenue: { $sum: '$taxableAmount' }, discount: { $sum: { $ifNull: ['$totalDiscount', 0] } } } }
             ],
             byStatus: [{ $group: { _id: '$status', count: { $sum: 1 } } }],
             zatcaStatus: [{ $group: { _id: '$zatca.submissionStatus', count: { $sum: 1 } } }]
@@ -211,7 +213,7 @@ router.get('/', async (req, res) => {
           $group: {
             _id: null,
             count: { $sum: 1 },
-            revenue: { $sum: '$grandTotal' }
+            revenue: { $sum: '$taxableAmount' }
           }
         }
       ]),
@@ -311,33 +313,142 @@ router.get('/', async (req, res) => {
 router.get('/charts/revenue', async (req, res) => {
   try {
     const { months = 12 } = req.query;
+    const businessTypes = getTenantBusinessTypes(req.tenant);
     
     const startDate = new Date();
     startDate.setMonth(startDate.getMonth() - parseInt(months));
     
-    const revenue = await Invoice.aggregate([
+    const byKey = new Map();
+
+    const addRevenue = (year, month, revenue, tax, count) => {
+      const key = `${year}-${month}`;
+      const existing = byKey.get(key) || { _id: { year, month }, revenue: 0, tax: 0, count: 0 };
+      byKey.set(key, {
+        _id: existing._id,
+        revenue: existing.revenue + (revenue || 0),
+        tax: existing.tax + (tax || 0),
+        count: existing.count + (count || 0)
+      });
+    };
+    
+    // 1. Invoices (Trading, Travel Agency, Construction)
+    const invoiceRevenue = await Invoice.aggregate([
       {
         $match: {
           ...req.tenantFilter,
           issueDate: { $gte: startDate },
-          status: { $nin: ['draft', 'cancelled', 'credited'] }
+          status: { $nin: ['draft', 'cancelled', 'credited'] },
+          flow: 'sell' // Only sales invoices count towards revenue
         }
       },
       {
-        $group: {
-          _id: {
-            year: { $year: '$issueDate' },
-            month: { $month: '$issueDate' }
-          },
-          revenue: { $sum: '$grandTotal' },
-          tax: { $sum: '$totalTax' },
-          count: { $sum: 1 }
+        $facet: {
+          standard: [
+            // Standard Invoices
+            {
+              $group: {
+                _id: { year: { $year: '$issueDate' }, month: { $month: '$issueDate' } },
+                revenue: { $sum: { $ifNull: ['$taxableAmount', 0] } },
+                tax: { $sum: { $ifNull: ['$totalTax', 0] } },
+                count: { $sum: 1 }
+              }
+            }
+          ],
+          travelMargin: [
+            // Travel Margin specific logic (since margin isn't part of standard taxableAmount sometimes)
+            { $unwind: '$lineItems' },
+            { $match: { 'lineItems.isTravelMargin': true } },
+            {
+              $group: {
+                _id: { year: { $year: '$issueDate' }, month: { $month: '$issueDate' } },
+                revenue: { $sum: { $ifNull: ['$lineItems.marginTaxable', 0] } },
+                tax: { $sum: { $ifNull: ['$lineItems.taxAmount', 0] } },
+                count: { $sum: 0 } // Don't double count the invoice
+              }
+            }
+          ]
         }
-      },
-      { $sort: { '_id.year': 1, '_id.month': 1 } }
+      }
     ]);
+
+    invoiceRevenue[0]?.standard?.forEach(r => addRevenue(r._id.year, r._id.month, r.revenue, r.tax, r.count));
+    if (businessTypes.includes('travel_agency')) {
+       // If travel agency, standard taxableAmount might be 0 for margin lines, so we add marginTaxable
+       invoiceRevenue[0]?.travelMargin?.forEach(r => addRevenue(r._id.year, r._id.month, r.revenue, r.tax, r.count));
+    }
+
+    // 2. Car Rental
+    if (businessTypes.includes('car_rental')) {
+      const rentalRevenue = await RentalContract.aggregate([
+        {
+          $match: {
+            ...req.tenantFilter,
+            createdAt: { $gte: startDate },
+            status: { $in: ['active', 'completed'] }
+          }
+        },
+        {
+          $group: {
+            _id: { year: { $year: '$createdAt' }, month: { $month: '$createdAt' } },
+            revenue: { $sum: { $ifNull: ['$subtotal', 0] } },
+            tax: { $sum: { $ifNull: ['$totalVat', 0] } },
+            count: { $sum: 1 }
+          }
+        }
+      ]);
+      rentalRevenue.forEach(r => addRevenue(r._id.year, r._id.month, r.revenue, r.tax, r.count));
+    }
+
+    // 3. Laundry
+    if (businessTypes.includes('laundry')) {
+      const laundryRevenue = await LaundryOrder.aggregate([
+        {
+          $match: {
+            ...req.tenantFilter,
+            createdAt: { $gte: startDate },
+            status: { $nin: ['cancelled'] }
+          }
+        },
+        {
+          $group: {
+            _id: { year: { $year: '$createdAt' }, month: { $month: '$createdAt' } },
+            revenue: { $sum: { $ifNull: ['$subtotal', 0] } },
+            tax: { $sum: { $ifNull: ['$totalVat', 0] } },
+            count: { $sum: 1 }
+          }
+        }
+      ]);
+      laundryRevenue.forEach(r => addRevenue(r._id.year, r._id.month, r.revenue, r.tax, r.count));
+    }
+
+    // 4. Restaurant
+    if (businessTypes.includes('restaurant')) {
+      const restaurantRevenue = await RestaurantOrder.aggregate([
+        {
+          $match: {
+            ...req.tenantFilter,
+            createdAt: { $gte: startDate },
+            status: { $nin: ['cancelled'] }
+          }
+        },
+        {
+          $group: {
+            _id: { year: { $year: '$createdAt' }, month: { $month: '$createdAt' } },
+            revenue: { $sum: { $ifNull: ['$subtotal', 0] } },
+            tax: { $sum: { $ifNull: ['$totalVat', 0] } },
+            count: { $sum: 1 }
+          }
+        }
+      ]);
+      restaurantRevenue.forEach(r => addRevenue(r._id.year, r._id.month, r.revenue, r.tax, r.count));
+    }
     
-    res.json(revenue);
+    const merged = Array.from(byKey.values()).sort((a, b) => {
+      if (a._id.year !== b._id.year) return a._id.year - b._id.year;
+      return a._id.month - b._id.month;
+    });
+
+    res.json(merged);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -385,7 +496,7 @@ router.get('/charts/expenses', async (req, res) => {
             year: { $year: '$expenseDate' },
             month: { $month: '$expenseDate' }
           },
-          other: { $sum: { $ifNull: ['$totalAmount', 0] } },
+          other: { $sum: { $ifNull: ['$amount', 0] } },
           count: { $sum: 1 }
         }
       },

@@ -698,6 +698,128 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Live Demos Section */}
+      <section id="demos" className="py-24 bg-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-primary-50 rounded-full blur-3xl opacity-50 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-96 h-96 bg-emerald-50 rounded-full blur-3xl opacity-50 pointer-events-none" />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-600 rounded-full font-medium text-sm mb-6 border border-rose-100">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+              </span>
+              {isArabic ? 'تجربة حية' : 'Live Demos'}
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+              {isArabic ? 'جرب النظام بنفسك' : 'Experience It Yourself'}
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              {isArabic
+                ? 'اختر نوع نشاطك التجاري وجرب واجهة النظام المخصصة مع بيانات تجريبية.'
+                : 'Select your business type and explore the customized interface with demo data.'}
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {[
+              {
+                title: 'Trading & ERP',
+                titleAr: 'التجارة وإدارة الموارد',
+                icon: Building2,
+                color: 'from-blue-500 to-indigo-600',
+                bg: 'bg-blue-50',
+                border: 'border-blue-100',
+                description: 'Standard wholesale/retail with inventory tracking.',
+                descriptionAr: 'تجارة الجملة والتجزئة مع تتبع المخزون.',
+                email: 'admin@maqder.com'
+              },
+              {
+                title: 'Travel Agency',
+                titleAr: 'وكالة سفر',
+                icon: Globe,
+                color: 'from-sky-500 to-cyan-600',
+                bg: 'bg-sky-50',
+                border: 'border-sky-100',
+                description: 'Margin scheme taxation & flight booking logs.',
+                descriptionAr: 'نظام الهامش الضريبي وتتبع الرحلات.',
+                email: 'travel@maqder.com'
+              },
+              {
+                title: 'Car Rental',
+                titleAr: 'تأجير سيارات',
+                icon: Truck,
+                color: 'from-rose-500 to-red-600',
+                bg: 'bg-rose-50',
+                border: 'border-rose-100',
+                description: 'Fleet tracking and active rental contracts.',
+                descriptionAr: 'تتبع الأسطول وعقود التأجير النشطة.',
+                email: 'rental@maqder.com'
+              },
+              {
+                title: 'Laundry Management',
+                titleAr: 'إدارة المغاسل',
+                icon: Sparkles,
+                color: 'from-emerald-500 to-teal-600',
+                bg: 'bg-emerald-50',
+                border: 'border-emerald-100',
+                description: 'Garment tracking, touch POS & weight billing.',
+                descriptionAr: 'تتبع الملابس، نقاط البيع باللمس والوزن.',
+                email: 'laundry@maqder.com'
+              },
+              {
+                title: 'Restaurant POS',
+                titleAr: 'نقاط بيع المطاعم',
+                icon: PieChart,
+                color: 'from-amber-500 to-orange-600',
+                bg: 'bg-amber-50',
+                border: 'border-amber-100',
+                description: 'Tables, kitchen displays, and shift management.',
+                descriptionAr: 'الطاولات وشاشات المطبخ وإدارة الورديات.',
+                email: 'restaurant@maqder.com'
+              }
+            ].map((demo, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className={`relative overflow-hidden group rounded-3xl p-8 border ${demo.border} bg-white shadow-sm hover:shadow-xl transition-all duration-300`}
+              >
+                <div className={`absolute top-0 right-0 w-32 h-32 ${demo.bg} rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110`} />
+                <div className="relative z-10 flex flex-col h-full">
+                  <div className={`w-14 h-14 bg-gradient-to-br ${demo.color} rounded-2xl flex items-center justify-center mb-6 shadow-md`}>
+                    <demo.icon className="w-7 h-7 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">
+                    {isArabic ? demo.titleAr : demo.title}
+                  </h3>
+                  <p className="text-gray-600 mb-8 flex-grow">
+                    {isArabic ? demo.descriptionAr : demo.description}
+                  </p>
+                  
+                  <Link
+                    to="/login"
+                    state={{ email: demo.email, password: 'password123' }}
+                    className={`inline-flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-white font-semibold shadow-md transition-all hover:shadow-lg bg-gradient-to-r ${demo.color}`}
+                  >
+                    {isArabic ? 'دخول للنسخة التجريبية' : 'Launch Demo'}
+                    <ArrowRight className={`w-5 h-5 ${isArabic ? 'rotate-180' : ''}`} />
+                  </Link>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Testimonials */}
       <section className="py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
