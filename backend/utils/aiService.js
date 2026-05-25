@@ -3,7 +3,7 @@ import { GoogleGenAI } from '@google/genai';
 import SystemSettings from '../models/SystemSettings.js';
 
 export const getAISettings = async () => {
-  const settings = await SystemSettings.findOne({ key: 'global' }).select('gemini openai grok').lean();
+  const settings = await SystemSettings.findOne({ key: 'global' }).select('gemini openai grok groq').lean();
   return settings || {};
 };
 
@@ -45,6 +45,22 @@ export const translateWithFallback = async ({ text, targetLanguage }) => {
     } catch (e) {
       lastError = e;
       console.warn('[Translation] Grok failed, falling back...', e.message);
+    }
+  }
+
+  // 3. Try Groq
+  if (settings?.groq?.enabled !== false && settings?.groq?.apiKey) {
+    try {
+      const client = new OpenAI({ apiKey: settings.groq.apiKey, baseURL: "https://api.groq.com/openai/v1" });
+      const response = await client.chat.completions.create({
+        model: settings.groq.model || 'llama3-8b-8192',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.1,
+      });
+      if (response.choices?.[0]?.message?.content) return response.choices[0].message.content.trim();
+    } catch (e) {
+      lastError = e;
+      console.warn('[Translation] Groq failed, falling back...', e.message);
     }
   }
 

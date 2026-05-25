@@ -21,6 +21,9 @@ export default function GeminiSettings() {
       grokModel: 'grok-2-latest',
       grokKey: '',
       grokEnabled: true,
+      groqModel: 'llama3-8b-8192',
+      groqKey: '',
+      groqEnabled: true,
     },
   })
 
@@ -38,6 +41,9 @@ export default function GeminiSettings() {
         grokModel: d?.grok?.model || 'grok-2-latest',
         grokKey: '',
         grokEnabled: d?.grok?.enabled !== false,
+        groqModel: d?.groq?.model || 'llama3-8b-8192',
+        groqKey: '',
+        groqEnabled: d?.groq?.enabled !== false,
       })
     },
   })
@@ -58,6 +64,9 @@ export default function GeminiSettings() {
         grokModel: d?.grok?.model || 'grok-2-latest',
         grokKey: '',
         grokEnabled: d?.grok?.enabled !== false,
+        groqModel: d?.groq?.model || 'llama3-8b-8192',
+        groqKey: '',
+        groqEnabled: d?.groq?.enabled !== false,
       })
     },
     onError: (err) => toast.error(err.response?.data?.error || 'Error saving settings'),
@@ -90,12 +99,17 @@ export default function GeminiSettings() {
       grok: {
         model: String(formData.grokModel || 'grok-2-latest').trim(),
         enabled: formData.grokEnabled
+      },
+      groq: {
+        model: String(formData.groqModel || 'llama3-8b-8192').trim(),
+        enabled: formData.groqEnabled
       }
     }
 
     if (String(formData.geminiKey || '').trim()) payload.gemini.apiKey = String(formData.geminiKey).trim()
     if (String(formData.openaiKey || '').trim()) payload.openai.apiKey = String(formData.openaiKey).trim()
     if (String(formData.grokKey || '').trim()) payload.grok.apiKey = String(formData.grokKey).trim()
+    if (String(formData.groqKey || '').trim()) payload.groq.apiKey = String(formData.groqKey).trim()
 
     saveMutation.mutate(payload)
   }
@@ -111,7 +125,7 @@ export default function GeminiSettings() {
           {language === 'ar' ? 'إعدادات الذكاء الاصطناعي (AI)' : 'AI Providers Settings'}
         </h1>
         <p className="text-gray-500 mt-1">
-          {language === 'ar' ? 'إعداد مفاتيح API للترجمة والتحليل (Gemini, OpenAI, Grok)' : 'Configure API keys for translation & analysis (Gemini, OpenAI, Grok)'}
+          {language === 'ar' ? 'إعداد مفاتيح API للترجمة والتحليل (Gemini, OpenAI, Grok, Groq)' : 'Configure API keys for translation & analysis (Gemini, OpenAI, Grok, Groq)'}
         </p>
       </div>
 
@@ -192,6 +206,32 @@ export default function GeminiSettings() {
             <div className="flex justify-end">
               <button type="button" disabled={testMutation.isPending || !data?.openai?.hasApiKey} onClick={() => testMutation.mutate('openai')} className="btn btn-secondary btn-sm">
                 <PlugZap className="w-4 h-4" />{language === 'ar' ? 'اختبار OpenAI' : 'Test OpenAI'}
+              </button>
+            </div>
+          </div>
+
+          {/* Groq */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-gray-100 dark:border-dark-700 pb-2">
+              <h3 className="text-lg font-bold">Groq (Fallback 3)</h3>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" {...register('groqEnabled')} className="checkbox" />
+                <span className="text-sm">{language === 'ar' ? 'مفعل' : 'Enabled'}</span>
+              </label>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="label">{language === 'ar' ? 'الموديل' : 'Model'}</label>
+                <input {...register('groqModel')} className="input" placeholder="llama3-8b-8192" />
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'مفتاح API' : 'API Key'}</label>
+                <input type="password" {...register('groqKey')} className="input" placeholder={data?.groq?.hasApiKey ? `Saved: ${data.groq.apiKeyMasked}` : 'Enter key'} />
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <button type="button" disabled={testMutation.isPending || !data?.groq?.hasApiKey} onClick={() => testMutation.mutate('groq')} className="btn btn-secondary btn-sm">
+                <PlugZap className="w-4 h-4" />{language === 'ar' ? 'اختبار Groq' : 'Test Groq'}
               </button>
             </div>
           </div>

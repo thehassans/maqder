@@ -565,6 +565,12 @@ router.get('/settings/ai', async (req, res) => {
         model: settings.grok?.model || 'grok-2-latest',
         hasApiKey: !!settings.grok?.apiKey,
         apiKeyMasked: maskApiKey(settings.grok?.apiKey)
+      },
+      groq: {
+        enabled: settings.groq?.enabled !== false,
+        model: settings.groq?.model || 'llama3-8b-8192',
+        hasApiKey: !!settings.groq?.apiKey,
+        apiKeyMasked: maskApiKey(settings.groq?.apiKey)
       }
     });
   } catch (error) {
@@ -574,7 +580,7 @@ router.get('/settings/ai', async (req, res) => {
 
 router.put('/settings/ai', async (req, res) => {
   try {
-    const { gemini, openai, grok } = req.body || {};
+    const { gemini, openai, grok, groq } = req.body || {};
 
     const settings = await getGlobalSettings();
     
@@ -617,9 +623,23 @@ router.put('/settings/ai', async (req, res) => {
       settings.grok = nextGrok;
     }
 
+    if (groq) {
+      const nextGroq = {
+        ...(settings.groq?.toObject?.() || settings.groq || {}),
+        model: (groq.model || settings.groq?.model || 'llama3-8b-8192').trim(),
+        enabled: groq.enabled !== undefined ? groq.enabled : settings.groq?.enabled
+      };
+      if (groq.apiKey !== undefined) {
+        const trimmed = String(groq.apiKey || '').trim();
+        if (trimmed) nextGroq.apiKey = trimmed;
+      }
+      settings.groq = nextGroq;
+    }
+
     settings.markModified('gemini');
     settings.markModified('openai');
     settings.markModified('grok');
+    settings.markModified('groq');
     await settings.save();
 
     res.json({
@@ -640,6 +660,12 @@ router.put('/settings/ai', async (req, res) => {
         model: settings.grok?.model || 'grok-2-latest',
         hasApiKey: !!settings.grok?.apiKey,
         apiKeyMasked: maskApiKey(settings.grok?.apiKey)
+      },
+      groq: {
+        enabled: settings.groq?.enabled !== false,
+        model: settings.groq?.model || 'llama3-8b-8192',
+        hasApiKey: !!settings.groq?.apiKey,
+        apiKeyMasked: maskApiKey(settings.groq?.apiKey)
       }
     });
   } catch (error) {
