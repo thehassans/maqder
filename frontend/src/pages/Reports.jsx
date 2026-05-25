@@ -45,7 +45,7 @@ function SkeletonBlock({ className = '' }) {
 }
 
 // ─── Premium KPI card ────────────────────────────────────────────────────────
-function KpiCard({ icon: Icon, iconBg, label, value, valueClass = 'text-gray-900 dark:text-white', delay = 0 }) {
+function KpiCard({ icon: Icon, iconBg, label, value, valueClass = 'text-gray-900 dark:text-white', sub, delay = 0 }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -58,6 +58,7 @@ function KpiCard({ icon: Icon, iconBg, label, value, valueClass = 'text-gray-900
       </div>
       <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">{label}</p>
       <p className={`text-2xl font-bold leading-none ${valueClass}`}>{value}</p>
+      {sub && <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1.5 truncate">{sub}</p>}
       {/* subtle decorative circle */}
       <div className="pointer-events-none absolute -bottom-4 -right-4 w-20 h-20 rounded-full opacity-5 bg-current" />
     </motion.div>
@@ -911,9 +912,10 @@ export default function Reports() {
                     <KpiCard
                       icon={TrendingUp}
                       iconBg="bg-gradient-to-br from-emerald-400 to-emerald-600"
-                      label={language === 'ar' ? 'المبيعات' : 'Sales'}
+                      label={language === 'ar' ? 'إجمالي المبيعات' : 'Total Sales'}
                       value={money(totals?.sales?.grandTotal || 0)}
                       valueClass="text-emerald-600 dark:text-emerald-400"
+                      sub={language === 'ar' ? `صافي: ${money(totals?.sales?.taxableAmount || 0)}` : `Ex-VAT: ${money(totals?.sales?.taxableAmount || 0)}`}
                       delay={0.05}
                     />
                     <KpiCard
@@ -921,6 +923,7 @@ export default function Reports() {
                       iconBg="bg-gradient-to-br from-blue-400 to-blue-600"
                       label={language === 'ar' ? 'المشتريات' : 'Purchases'}
                       value={money(totals?.purchases?.grandTotal || 0)}
+                      sub={language === 'ar' ? `صافي: ${money(totals?.purchases?.taxableAmount || 0)}` : `Ex-VAT: ${money(totals?.purchases?.taxableAmount || 0)}`}
                       delay={0.1}
                     />
                     <KpiCard
@@ -928,6 +931,7 @@ export default function Reports() {
                       iconBg="bg-gradient-to-br from-orange-400 to-orange-600"
                       label={language === 'ar' ? 'المصاريف' : 'Expenses'}
                       value={money(totals?.expenses?.totalAmount || 0)}
+                      sub={language === 'ar' ? `قبل الضريبة: ${money((totals?.expenses?.totalAmount || 0) - (totals?.expenses?.taxAmount || 0))}` : `Pre-tax: ${money((totals?.expenses?.totalAmount || 0) - (totals?.expenses?.taxAmount || 0))}`}
                       delay={0.15}
                     />
                     <KpiCard
@@ -940,10 +944,11 @@ export default function Reports() {
                     />
                     <KpiCard
                       icon={BarChart3}
-                      iconBg="bg-gradient-to-br from-primary-400 to-primary-700"
+                      iconBg={`bg-gradient-to-br ${(totals?.net || 0) >= 0 ? 'from-primary-400 to-primary-700' : 'from-red-400 to-red-600'}`}
                       label={language === 'ar' ? 'صافي الربح' : 'Net Profit'}
                       value={money(totals?.net || 0)}
-                      valueClass="text-primary-600 dark:text-primary-400"
+                      valueClass={(totals?.net || 0) >= 0 ? 'text-primary-600 dark:text-primary-400' : 'text-red-600 dark:text-red-400'}
+                      sub={language === 'ar' ? 'مبيعات − مشتريات − مصاريف (بدون ضريبة)' : 'Sales − Purchases − Expenses (ex-VAT)'}
                       delay={0.25}
                     />
                   </div>

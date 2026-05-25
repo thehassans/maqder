@@ -748,7 +748,12 @@ router.get('/business-summary', async (req, res) => {
 
     const expenseTotals = expenseResult?.totals?.[0] || { expenseCount: 0, totalAmount: 0, taxAmount: 0 };
 
-    const net = (sell.grandTotal || 0) - (purchase.grandTotal || 0) - (expenseTotals.totalAmount || 0);
+    // Net profit = sales revenue ex-VAT  - purchase cost ex-VAT  - pre-tax expense cost
+    // Using taxableAmount (ex-VAT) instead of grandTotal avoids counting VAT as profit.
+    // For travel agencies using the margin scheme, taxableAmount reflects the actual margin
+    // earned (not the full pass-through package price), giving a meaningful profit figure.
+    const expenseBaseAmount = (expenseTotals.totalAmount || 0) - (expenseTotals.taxAmount || 0);
+    const net = (sell.taxableAmount || 0) - (purchase.taxableAmount || 0) - Math.max(0, expenseBaseAmount);
 
     res.json({
       period: { startDate, endDate },
