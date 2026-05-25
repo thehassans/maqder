@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { motion } from 'framer-motion'
 import { Plus, Minus, Trash2, ShoppingBag, CreditCard, Search, UserPlus } from 'lucide-react'
-import api from '../../../lib/api'
+import api from '../../lib/api'
 import { addItem, updateItemQuantity, removeItem, clearCart, setCustomer } from '../../../store/slices/laundryCartSlice'
 import { toast } from 'react-hot-toast'
 
