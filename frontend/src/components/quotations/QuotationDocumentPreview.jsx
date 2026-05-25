@@ -12,8 +12,8 @@ const formatDate = (value, language = 'en') => {
   })
 }
 
-const joinAddress = (address = {}) => {
-  return [
+const joinAddress = (address = {}) =>
+  [
     address?.buildingNumber,
     address?.additionalNumber,
     address?.street,
@@ -22,20 +22,19 @@ const joinAddress = (address = {}) => {
     address?.postalCode,
     address?.country,
   ].filter(Boolean)
-}
 
 const pickLocalizedText = (primary, secondary) => primary || secondary || '—'
 
 const getStatusLabel = (status, language = 'en') => {
   const value = String(status || 'draft').trim().toLowerCase()
   const map = {
-    draft: language === 'ar' ? 'مسودة' : 'Draft',
-    sent: language === 'ar' ? 'مرسل' : 'Sent',
-    accepted: language === 'ar' ? 'مقبول' : 'Accepted',
-    approved: language === 'ar' ? 'معتمد' : 'Approved',
-    rejected: language === 'ar' ? 'مرفوض' : 'Rejected',
-    expired: language === 'ar' ? 'منتهي' : 'Expired',
-    cancelled: language === 'ar' ? 'ملغي' : 'Cancelled',
+    draft:     language === 'ar' ? 'مسودة'      : 'Draft',
+    sent:      language === 'ar' ? 'مرسل'       : 'Sent',
+    accepted:  language === 'ar' ? 'مقبول'      : 'Accepted',
+    approved:  language === 'ar' ? 'معتمد'      : 'Approved',
+    rejected:  language === 'ar' ? 'مرفوض'     : 'Rejected',
+    expired:   language === 'ar' ? 'منتهي'      : 'Expired',
+    cancelled: language === 'ar' ? 'ملغي'       : 'Cancelled',
     converted: language === 'ar' ? 'تم التحويل' : 'Converted',
   }
   return map[value] || status || '—'
@@ -43,132 +42,228 @@ const getStatusLabel = (status, language = 'en') => {
 
 const getStatusTone = (status) => {
   const value = String(status || 'draft').trim().toLowerCase()
-  if (value === 'accepted') return 'bg-emerald-50 text-emerald-700 border-emerald-200'
-  if (value === 'approved') return 'bg-teal-50 text-teal-700 border-teal-200'
+  if (value === 'accepted')  return 'bg-emerald-50 text-emerald-700 border-emerald-200'
+  if (value === 'approved')  return 'bg-teal-50 text-teal-700 border-teal-200'
   if (value === 'converted') return 'bg-violet-50 text-violet-700 border-violet-200'
-  if (value === 'sent') return 'bg-sky-50 text-sky-700 border-sky-200'
+  if (value === 'sent')      return 'bg-sky-50 text-sky-700 border-sky-200'
   if (value === 'rejected' || value === 'cancelled') return 'bg-rose-50 text-rose-700 border-rose-200'
-  if (value === 'expired') return 'bg-amber-50 text-amber-700 border-amber-200'
-  return 'bg-slate-50 text-slate-700 border-slate-200'
+  if (value === 'expired')   return 'bg-amber-50 text-amber-700 border-amber-200'
+  return 'bg-slate-50 text-slate-600 border-slate-200'
 }
 
 export default function QuotationDocumentPreview({ quotation, tenant, language = 'en' }) {
   const branding = getInvoiceBranding(tenant, language, quotation?.businessContext || 'trading')
   const logoSrc = branding?.logoSrc || tenant?.business?.logoUrl || tenant?.branding?.logo || '/maqder-logo.png'
+
   const companyName = language === 'ar'
     ? pickLocalizedText(tenant?.business?.legalNameAr, tenant?.business?.legalNameEn)
     : pickLocalizedText(tenant?.business?.legalNameEn, tenant?.business?.legalNameAr)
   const companySecondary = language === 'ar'
     ? pickLocalizedText(tenant?.business?.legalNameEn, tenant?.business?.legalNameAr)
     : pickLocalizedText(tenant?.business?.legalNameAr, tenant?.business?.legalNameEn)
+
   const buyerName = language === 'ar'
     ? pickLocalizedText(quotation?.buyer?.nameAr, quotation?.buyer?.name)
     : pickLocalizedText(quotation?.buyer?.name, quotation?.buyer?.nameAr)
   const buyerAddress = joinAddress(quotation?.buyer?.address || {})
+
   const currency = quotation?.currency || 'SAR'
   const lineItems = Array.isArray(quotation?.lineItems) ? quotation.lineItems : []
   const totals = {
-    subtotal: Number(quotation?.subtotal || 0),
+    subtotal:      Number(quotation?.subtotal || 0),
     totalDiscount: Number(quotation?.totalDiscount || quotation?.invoiceDiscount || 0),
-    totalTax: Number(quotation?.totalTax || 0),
-    grandTotal: Number(quotation?.grandTotal || 0),
+    totalTax:      Number(quotation?.totalTax || 0),
+    grandTotal:    Number(quotation?.grandTotal || 0),
   }
   const itemCount = lineItems.length
 
   return (
-    <div className="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_28px_90px_-48px_rgba(15,23,42,0.28)]">
-      <div className="absolute inset-x-0 top-0 h-1.5 bg-slate-950" />
+    /* ── Outer wrapper: pure white, no dark bg anywhere ── */
+    <div className="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_28px_90px_-48px_rgba(15,23,42,0.18)]">
+
+      {/* Top accent stripe — uses CSS variable so it matches brand color */}
+      <div style={{ background: 'var(--color-primary-500, #16a34a)', height: 3 }} />
+
+      {/* Watermark logo — very faint */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-        {logoSrc ? <img src={logoSrc} alt="" className="h-56 w-56 object-contain opacity-[0.04]" /> : null}
+        {logoSrc ? <img src={logoSrc} alt="" className="h-56 w-56 object-contain opacity-[0.03]" /> : null}
       </div>
 
-      <div className="relative px-7 pb-7 pt-8">
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
-          <div className="min-w-0">
-            <div className="flex items-start gap-4">
-              <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white p-3 shadow-sm">
-                {logoSrc ? (
-                  <img src={logoSrc} alt="" className="h-full w-full object-contain" />
-                ) : (
-                  <div className="text-sm font-semibold tracking-[0.3em] text-slate-500">{companyName.slice(0, 2)}</div>
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[11px] uppercase tracking-[0.28em] text-slate-500">{language === 'ar' ? 'عرض سعر احترافي' : 'Minimal Commercial Offer'}</p>
-                <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">{language === 'ar' ? 'عرض سعر' : 'Quotation'}</h2>
-                <p className="mt-3 text-base font-semibold text-slate-900">{companyName}</p>
-                <p className="mt-1 text-sm text-slate-500">{companySecondary}</p>
-              </div>
+      <div className="relative px-7 pb-8 pt-7">
+
+        {/* ── Section 1: Header ────────────────────────────────── */}
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_268px] lg:items-start">
+
+          {/* Left: Logo + company */}
+          <div className="flex items-start gap-4">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white p-2.5 shadow-sm">
+              {logoSrc ? (
+                <img src={logoSrc} alt="" className="h-full w-full object-contain" />
+              ) : (
+                <span className="text-sm font-bold tracking-[0.25em] text-slate-500">{companyName.slice(0, 2)}</span>
+              )}
+            </div>
+            <div className="min-w-0 flex-1 pt-1">
+              <p className="text-[10px] uppercase tracking-[0.3em] text-slate-400">
+                {language === 'ar' ? 'عرض سعر احترافي' : 'Commercial Quotation'}
+              </p>
+              <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
+                {language === 'ar' ? 'عرض سعر' : 'Quotation'}
+              </h2>
+              <p className="mt-1.5 text-sm font-semibold text-slate-800">{companyName}</p>
+              {companySecondary !== companyName && (
+                <p className="mt-0.5 text-xs text-slate-400">{companySecondary}</p>
+              )}
             </div>
           </div>
 
-          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-5">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{language === 'ar' ? 'الحالة' : 'Status'}</p>
-              <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-medium ${getStatusTone(quotation?.status)}`}>
+          {/* Right: meta card — light only */}
+          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">
+                {language === 'ar' ? 'الحالة' : 'Status'}
+              </p>
+              <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${getStatusTone(quotation?.status)}`}>
                 {getStatusLabel(quotation?.status, language)}
               </span>
             </div>
-            <div className="mt-5 space-y-4 text-sm text-slate-600">
+
+            <div className="space-y-3">
               <div>
-                <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400">{language === 'ar' ? 'رقم العرض' : 'Quotation #'}</p>
-                <p className="mt-1 text-lg font-semibold text-slate-950">{quotation?.quotationNumber || '—'}</p>
+                <p className="text-[10px] uppercase tracking-[0.18em] text-slate-400">
+                  {language === 'ar' ? 'رقم العرض' : 'Quotation #'}
+                </p>
+                <p className="mt-1 text-lg font-bold text-slate-900 tracking-tight">
+                  {quotation?.quotationNumber || '—'}
+                </p>
               </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400">{language === 'ar' ? 'تاريخ الإصدار' : 'Issue Date'}</p>
-                  <p className="mt-1 font-medium text-slate-900">{formatDate(quotation?.issueDate, language)}</p>
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-slate-400">
+                    {language === 'ar' ? 'تاريخ الإصدار' : 'Issue Date'}
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-slate-800">
+                    {formatDate(quotation?.issueDate, language)}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400">{language === 'ar' ? 'صالح حتى' : 'Valid Until'}</p>
-                  <p className="mt-1 font-medium text-slate-900">{formatDate(quotation?.validUntil, language)}</p>
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-slate-400">
+                    {language === 'ar' ? 'صالح حتى' : 'Valid Until'}
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-slate-800">
+                    {formatDate(quotation?.validUntil, language)}
+                  </p>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="mt-7 grid gap-4 lg:grid-cols-2">
+        {/* ── Section 2: FROM / TO ─────────────────────────────── */}
+        <div className="mt-6 grid gap-4 lg:grid-cols-2">
+
+          {/* FROM — white card */}
           <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5">
-            <p className="text-[11px] uppercase tracking-[0.22em] text-slate-500">{language === 'ar' ? 'من' : 'Prepared By'}</p>
-            <p className="mt-3 text-lg font-semibold text-slate-950">{companyName}</p>
-            <div className="mt-3 space-y-2 text-sm text-slate-600">
-              <p>{language === 'ar' ? 'الرقم الضريبي' : 'VAT'}: <span className="font-medium text-slate-900">{tenant?.business?.vatNumber || '—'}</span></p>
-              <p>{language === 'ar' ? 'السجل التجاري' : 'CR'}: <span className="font-medium text-slate-900">{tenant?.business?.crNumber || '—'}</span></p>
-              <p>{language === 'ar' ? 'البريد' : 'Email'}: <span className="font-medium text-slate-900">{tenant?.business?.contactEmail || '—'}</span></p>
+            <p className="text-[10px] uppercase tracking-[0.25em] text-slate-400 mb-3">
+              {language === 'ar' ? 'من' : 'Prepared By'}
+            </p>
+            <p className="text-base font-bold text-slate-900">{companyName}</p>
+            <div className="mt-3 space-y-1.5 text-sm text-slate-600">
+              {tenant?.business?.vatNumber && (
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-400 text-[11px] w-8 shrink-0">
+                    {language === 'ar' ? 'ض.ق' : 'VAT'}
+                  </span>
+                  <span className="font-medium text-slate-800">{tenant.business.vatNumber}</span>
+                </div>
+              )}
+              {tenant?.business?.crNumber && (
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-400 text-[11px] w-8 shrink-0">CR</span>
+                  <span className="font-medium text-slate-800">{tenant.business.crNumber}</span>
+                </div>
+              )}
+              {tenant?.business?.contactEmail && (
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-400 text-[11px] w-8 shrink-0">
+                    {language === 'ar' ? 'بريد' : 'Email'}
+                  </span>
+                  <span className="font-medium text-slate-800 truncate">{tenant.business.contactEmail}</span>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-950 p-5 text-white">
-            <p className="text-[11px] uppercase tracking-[0.22em] text-slate-300">{language === 'ar' ? 'إلى' : 'Prepared For'}</p>
-            <p className="mt-3 text-lg font-semibold">{buyerName}</p>
-            <div className="mt-3 space-y-2 text-sm text-slate-200">
-              <p>{language === 'ar' ? 'الرقم الضريبي' : 'VAT'}: <span className="font-medium text-white">{quotation?.buyer?.vatNumber || '—'}</span></p>
-              <p>{language === 'ar' ? 'الهاتف' : 'Phone'}: <span className="font-medium text-white">{quotation?.buyer?.contactPhone || '—'}</span></p>
-              <p>{language === 'ar' ? 'البريد' : 'Email'}: <span className="font-medium text-white">{quotation?.buyer?.contactEmail || '—'}</span></p>
+          {/* TO — light blue tint card (NO dark bg) */}
+          <div className="rounded-[1.5rem] border border-blue-100 bg-blue-50/50 p-5">
+            <p className="text-[10px] uppercase tracking-[0.25em] text-blue-400 mb-3">
+              {language === 'ar' ? 'إلى' : 'Prepared For'}
+            </p>
+            <p className="text-base font-bold text-slate-900">{buyerName}</p>
+            <div className="mt-3 space-y-1.5 text-sm text-slate-600">
+              {quotation?.buyer?.vatNumber && (
+                <div className="flex items-center gap-2">
+                  <span className="text-blue-400 text-[11px] w-8 shrink-0">
+                    {language === 'ar' ? 'ض.ق' : 'VAT'}
+                  </span>
+                  <span className="font-medium text-slate-800">{quotation.buyer.vatNumber}</span>
+                </div>
+              )}
+              {quotation?.buyer?.contactPhone && (
+                <div className="flex items-center gap-2">
+                  <span className="text-blue-400 text-[11px] w-8 shrink-0">
+                    {language === 'ar' ? 'هاتف' : 'Tel'}
+                  </span>
+                  <span className="font-medium text-slate-800">{quotation.buyer.contactPhone}</span>
+                </div>
+              )}
+              {quotation?.buyer?.contactEmail && (
+                <div className="flex items-center gap-2">
+                  <span className="text-blue-400 text-[11px] w-8 shrink-0">
+                    {language === 'ar' ? 'بريد' : 'Email'}
+                  </span>
+                  <span className="font-medium text-slate-800 truncate">{quotation.buyer.contactEmail}</span>
+                </div>
+              )}
             </div>
-            <div className="mt-4 rounded-[1.25rem] border border-white/15 bg-white/5 px-4 py-3">
-              <p className="text-[11px] uppercase tracking-[0.18em] text-slate-300">{language === 'ar' ? 'العنوان' : 'Address'}</p>
-              <div className="mt-2 space-y-1 text-sm text-white">
-                {buyerAddress.length > 0 ? buyerAddress.map((line, index) => <p key={`${line}-${index}`}>{line}</p>) : <p>—</p>}
+            {buyerAddress.length > 0 && (
+              <div className="mt-3 rounded-xl border border-blue-100 bg-white/70 px-3.5 py-2.5">
+                <p className="text-[10px] uppercase tracking-[0.18em] text-blue-400 mb-1.5">
+                  {language === 'ar' ? 'العنوان' : 'Address'}
+                </p>
+                <div className="space-y-0.5 text-xs text-slate-700">
+                  {buyerAddress.map((line, i) => <p key={`${line}-${i}`}>{line}</p>)}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
-        <div className="mt-7 overflow-hidden rounded-[1.5rem] border border-slate-200">
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-100 text-slate-700">
-              <tr>
-                <th className="px-4 py-3 text-start font-medium">#</th>
-                <th className="px-4 py-3 text-start font-medium">{language === 'ar' ? 'البند' : 'Item'}</th>
-                <th className="px-4 py-3 text-start font-medium">{language === 'ar' ? 'الوصف' : 'Description'}</th>
-                <th className="px-4 py-3 text-end font-medium">{language === 'ar' ? 'الكمية' : 'Qty'}</th>
-                <th className="px-4 py-3 text-end font-medium">{language === 'ar' ? 'السعر' : 'Price'}</th>
-                <th className="px-4 py-3 text-end font-medium">{language === 'ar' ? 'الإجمالي' : 'Total'}</th>
+        {/* ── Section 3: Line items table ──────────────────────── */}
+        <div className="mt-6 overflow-hidden rounded-[1.5rem] border border-slate-200">
+          <table className="min-w-full divide-y divide-slate-100 text-sm">
+            <thead>
+              <tr className="bg-slate-50">
+                <th className="px-4 py-3 text-start text-[11px] font-semibold uppercase tracking-wider text-slate-500">#</th>
+                <th className="px-4 py-3 text-start text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  {language === 'ar' ? 'البند' : 'Item'}
+                </th>
+                <th className="px-4 py-3 text-start text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  {language === 'ar' ? 'الوصف' : 'Description'}
+                </th>
+                <th className="px-4 py-3 text-end text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  {language === 'ar' ? 'الكمية' : 'Qty'}
+                </th>
+                <th className="px-4 py-3 text-end text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  {language === 'ar' ? 'السعر' : 'Price'}
+                </th>
+                <th className="px-4 py-3 text-end text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  {language === 'ar' ? 'الإجمالي' : 'Total'}
+                </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 bg-white text-slate-700">
+            <tbody className="divide-y divide-slate-100 bg-white text-slate-700">
               {lineItems.length > 0 ? lineItems.map((line, index) => {
                 const itemName = language === 'ar'
                   ? pickLocalizedText(line?.productNameAr, line?.productName)
@@ -176,55 +271,87 @@ export default function QuotationDocumentPreview({ quotation, tenant, language =
                 const description = language === 'ar'
                   ? pickLocalizedText(line?.descriptionAr, line?.description)
                   : pickLocalizedText(line?.description, line?.descriptionAr)
+                const isEven = index % 2 === 1
                 return (
-                  <tr key={`${line?._id || index}`}>
-                    <td className="px-4 py-4">{index + 1}</td>
-                    <td className="px-4 py-4 font-medium text-slate-950">{itemName}</td>
-                    <td className="px-4 py-4">{description}</td>
-                    <td className="px-4 py-4 text-end">{Number(line?.quantity || 0)}</td>
-                    <td className="px-4 py-4 text-end">{formatCurrency(line?.unitPrice || 0, { language, currency })}</td>
-                    <td className="px-4 py-4 text-end font-semibold text-slate-950">{formatCurrency(line?.lineTotalWithTax || line?.lineTotal || 0, { language, currency })}</td>
+                  <tr key={`${line?._id || index}`} className={isEven ? 'bg-slate-50/50' : 'bg-white'}>
+                    <td className="px-4 py-3.5 text-slate-400 text-xs">{index + 1}</td>
+                    <td className="px-4 py-3.5 font-semibold text-slate-900">{itemName}</td>
+                    <td className="px-4 py-3.5 text-slate-500">{description}</td>
+                    <td className="px-4 py-3.5 text-end text-slate-700">{Number(line?.quantity || 0)}</td>
+                    <td className="px-4 py-3.5 text-end text-slate-700">{formatCurrency(line?.unitPrice || 0, { language, currency })}</td>
+                    <td className="px-4 py-3.5 text-end font-bold text-slate-900">{formatCurrency(line?.lineTotalWithTax || line?.lineTotal || 0, { language, currency })}</td>
                   </tr>
                 )
               }) : (
                 <tr>
-                  <td className="px-4 py-8 text-center text-slate-500" colSpan="6">{language === 'ar' ? 'لا توجد بنود' : 'No quotation items'}</td>
+                  <td className="px-4 py-8 text-center text-slate-400" colSpan="6">
+                    {language === 'ar' ? 'لا توجد بنود' : 'No quotation items'}
+                  </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
 
-        <div className="mt-7 grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5">
-            <p className="text-[11px] uppercase tracking-[0.18em] text-slate-500">{language === 'ar' ? 'ملاحظات العرض' : 'Quotation Notes'}</p>
-            <p className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-700">{quotation?.notes || '—'}</p>
+        {/* ── Section 4: Totals + Notes ────────────────────────── */}
+        <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+
+          {/* Notes */}
+          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/60 p-5">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400 mb-3">
+              {language === 'ar' ? 'ملاحظات العرض' : 'Quotation Notes'}
+            </p>
+            <p className="whitespace-pre-line text-sm leading-7 text-slate-600">
+              {quotation?.notes || '—'}
+            </p>
           </div>
 
-          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
-            <div className="flex items-center justify-between text-sm text-slate-600">
-              <span>{language === 'ar' ? 'عدد البنود' : 'Items'}</span>
-              <span className="font-semibold text-slate-950">{itemCount}</span>
+          {/* Totals */}
+          <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/60 p-5">
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-500">{language === 'ar' ? 'عدد البنود' : 'Items'}</span>
+                <span className="font-semibold text-slate-800">{itemCount}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-500">{language === 'ar' ? 'الإجمالي الفرعي' : 'Subtotal'}</span>
+                <span className="font-semibold text-slate-800">{formatCurrency(totals.subtotal, { language, currency })}</span>
+              </div>
+              {totals.totalDiscount > 0 && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-500">{language === 'ar' ? 'الخصم' : 'Discount'}</span>
+                  <span className="font-semibold text-rose-600">− {formatCurrency(totals.totalDiscount, { language, currency })}</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-500">{language === 'ar' ? 'الضريبة (VAT)' : 'VAT'}</span>
+                <span className="font-semibold text-slate-800">{formatCurrency(totals.totalTax, { language, currency })}</span>
+              </div>
             </div>
-            <div className="mt-3 flex items-center justify-between text-sm text-slate-600">
-              <span>{language === 'ar' ? 'الإجمالي الفرعي' : 'Subtotal'}</span>
-              <span className="font-semibold text-slate-950">{formatCurrency(totals.subtotal, { language, currency })}</span>
-            </div>
-            <div className="mt-3 flex items-center justify-between text-sm text-slate-600">
-              <span>{language === 'ar' ? 'الخصم' : 'Discount'}</span>
-              <span className="font-semibold text-slate-950">{formatCurrency(totals.totalDiscount, { language, currency })}</span>
-            </div>
-            <div className="mt-3 flex items-center justify-between text-sm text-slate-600">
-              <span>{language === 'ar' ? 'الضريبة' : 'Tax'}</span>
-              <span className="font-semibold text-slate-950">{formatCurrency(totals.totalTax, { language, currency })}</span>
-            </div>
-            <div className="mt-4 border-t border-slate-200 pt-4">
+
+            {/* Grand total — light accent row */}
+            <div className="mt-4 rounded-xl border border-slate-200 bg-white px-4 py-3.5">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-600">{language === 'ar' ? 'الإجمالي النهائي' : 'Grand Total'}</span>
-                <span className="text-xl font-semibold tracking-tight text-slate-950">{formatCurrency(totals.grandTotal, { language, currency })}</span>
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  {language === 'ar' ? 'الإجمالي النهائي' : 'Grand Total'}
+                </span>
+                <span className="text-xl font-bold tracking-tight text-slate-900">
+                  {formatCurrency(totals.grandTotal, { language, currency })}
+                </span>
               </div>
             </div>
           </div>
+        </div>
+
+        {/* ── Footer ───────────────────────────────────────────── */}
+        <div className="mt-6 flex items-center justify-between pt-4 border-t border-slate-100">
+          <p className="text-[10px] text-slate-400 truncate">
+            {companyName}
+            {tenant?.business?.vatNumber ? ` · VAT ${tenant.business.vatNumber}` : ''}
+          </p>
+          <p className="text-[10px] text-slate-400">
+            {language === 'ar' ? 'وثيقة سرية' : 'Confidential Document'}
+          </p>
         </div>
       </div>
     </div>

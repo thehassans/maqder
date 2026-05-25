@@ -6,7 +6,7 @@ import {
   Inbox, Mail, MailOpen, Paperclip, PenSquare, RefreshCw,
   Reply, Save, Search, Send, Settings2, ShieldCheck,
   Sparkles, X, ChevronDown, AtSign, Clock, Download,
-  AlertCircle, Zap
+  AlertCircle, Zap, Users
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
@@ -118,6 +118,8 @@ export default function EmailWorkspace() {
   const [showSettings, setShowSettings] = useState(false)
   const [composeState, setComposeState] = useState(null)
   const [showCcBcc, setShowCcBcc] = useState(false)
+  const [showEmployeeEmail, setShowEmployeeEmail] = useState(false)
+  const [empEmailForm, setEmpEmailForm] = useState({ employeeId: '', subject: '', body: '' })
 
   useEffect(() => {
     const h = setTimeout(() => setDebouncedSearch(search), 350)
@@ -144,6 +146,13 @@ export default function EmailWorkspace() {
     refetchOnWindowFocus: false,
     retry: 1, retryDelay: 1500,
     placeholderData: (prev) => prev,
+  })
+
+  const employeesForEmailQuery = useQuery({
+    queryKey: ['employees-for-email-compose'],
+    queryFn: () => api.get('/employees', { params: { limit: 200 } }).then((r) => r.data),
+    enabled: hasEmailAddon && showEmployeeEmail,
+    staleTime: 5 * 60 * 1000,
   })
 
   const selectedMessageQuery = useQuery({
@@ -195,6 +204,25 @@ export default function EmailWorkspace() {
       setSelectedMessageId(response?.draft?._id || response?.delivery?.message?._id || '')
     },
     onError: (err) => toast.error(err.userMessage || err.response?.data?.error || 'Failed to send'),
+  })
+
+  const sendEmployeeEmailMutation = useMutation({
+    mutationFn: ({ employeeId, subject, body }) =>
+      api.post(`/employees/${employeeId}/send-email`, {
+        subject,
+        bodyText: body,
+        bodyHtml: `<p>${body.replace(/\n/g, '<br>')}</p>`,
+      }).then((r) => r.data),
+    onSuccess: (data) => {
+      toast.success(
+        isArabic
+          ? `تم الإرسال إلى ${data.recipientEmail}`
+          : `Email sent to ${data.recipientEmail}`
+      )
+      setShowEmployeeEmail(false)
+      setEmpEmailForm({ employeeId: '', subject: '', body: '' })
+    },
+    onError: (err) => toast.error(err.response?.data?.error || 'Failed to send employee email'),
   })
 
   const handleOpenMessage = async (message) => {
@@ -403,10 +431,17 @@ export default function EmailWorkspace() {
           </button>
           <button
             onClick={() => { setComposeState(buildComposeState()); setShowCcBcc(false) }}
-            className="btn btn-primary"
+            className="btn btn-secondary"
           >
             <PenSquare className="w-4 h-4" />
             {isArabic ? 'إنشاء' : 'Compose'}
+          </button>
+          <button
+            onClick={() => setShowEmployeeEmail(true)}
+            className="btn btn-primary"
+          >
+            <Users className="w-4 h-4" />
+            {isArabic ? 'مراسلة موظف' : 'Email Employee'}
           </button>
         </div>
       </div>
@@ -829,6 +864,141 @@ export default function EmailWorkspace() {
         initialSettings={currentEmailSettings}
         tenant={tenant}
       />
+
+      {/* ── Email Employee Modal ───────────────────────────────── */}
+      <AnimatePresence>
+        {showEmployeeEmail && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              key="emp-email-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+              onClick={() => setShowEmployeeEmail(false)}
+            />
+            {/* Slide-in panel */}
+            <motion.div
+              key="emp-email-panel"
+              initial={{ opacity: 0, x: 80 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 80 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+              className="fixed top-0 right-0 bottom-0 z-50 w-full max-w-md bg-white dark:bg-dark-900 border-l border-gray-200 dark:border-dark-700 flex flex-col shadow-2xl"
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-dark-700">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-teal-500 flex items-center justify-center shadow-lg shadow-primary-500/30">
+                    <Users className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="font-bold text-gray-900 dark:text-white text-sm leading-none">
+                      {isArabic ? 'مراسلة موظف' : 'Email Employee'}
+                    </h2>
+                    <p className="text-[11px] text-gray-400 mt-0.5">
+                      {isArabic ? 'أرسل بريداً مباشراً لأي موظف' : 'Send a direct email to any employee'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowEmployeeEmail(false)}
+                  className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-dark-700 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="flex-1 overflow-y-auto p-5 space-y-4">
+                {/* Employee selector */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">
+                    {isArabic ? 'الموظف' : 'Employee'}
+                  </label>
+                  {employeesForEmailQuery.isLoading ? (
+                    <div className="h-10 rounded-xl bg-gray-100 dark:bg-dark-700 animate-pulse" />
+                  ) : (
+                    <select
+                      value={empEmailForm.employeeId}
+                      onChange={(e) => setEmpEmailForm((f) => ({ ...f, employeeId: e.target.value }))}
+                      className="w-full rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 text-sm text-gray-900 dark:text-white px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500/40"
+                    >
+                      <option value="">{isArabic ? '-- اختر موظفاً --' : '-- Select employee --'}</option>
+                      {(employeesForEmailQuery.data?.employees || []).map((emp) => {
+                        const name = isArabic
+                          ? ([emp.firstNameAr, emp.lastNameAr].filter(Boolean).join(' ') || [emp.firstNameEn, emp.lastNameEn].filter(Boolean).join(' '))
+                          : ([emp.firstNameEn, emp.lastNameEn].filter(Boolean).join(' ') || [emp.firstNameAr, emp.lastNameAr].filter(Boolean).join(' '))
+                        return (
+                          <option key={emp._id} value={emp._id} disabled={!emp.email}>
+                            {name || emp.employeeId}{emp.email ? ` — ${emp.email}` : isArabic ? ' (لا بريد)' : ' (no email)'}
+                          </option>
+                        )
+                      })}
+                    </select>
+                  )}
+                </div>
+
+                {/* Subject */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">
+                    {isArabic ? 'الموضوع' : 'Subject'}
+                  </label>
+                  <input
+                    type="text"
+                    value={empEmailForm.subject}
+                    onChange={(e) => setEmpEmailForm((f) => ({ ...f, subject: e.target.value }))}
+                    placeholder={isArabic ? 'موضوع الرسالة...' : 'Email subject...'}
+                    className="w-full rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 text-sm text-gray-900 dark:text-white px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500/40 placeholder-gray-400"
+                  />
+                </div>
+
+                {/* Body */}
+                <div className="flex-1">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-2">
+                    {isArabic ? 'نص الرسالة' : 'Message'}
+                  </label>
+                  <textarea
+                    rows={10}
+                    value={empEmailForm.body}
+                    onChange={(e) => setEmpEmailForm((f) => ({ ...f, body: e.target.value }))}
+                    placeholder={isArabic ? 'اكتب رسالتك هنا...' : 'Type your message here...'}
+                    className="w-full rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 text-sm text-gray-900 dark:text-white px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500/40 placeholder-gray-400 resize-none"
+                  />
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="px-5 py-4 border-t border-gray-200 dark:border-dark-700 flex items-center justify-between gap-3">
+                <button
+                  onClick={() => setShowEmployeeEmail(false)}
+                  className="btn btn-secondary flex-1"
+                >
+                  {isArabic ? 'إلغاء' : 'Cancel'}
+                </button>
+                <button
+                  onClick={() => {
+                    if (!empEmailForm.employeeId) { toast.error(isArabic ? 'اختر موظفاً' : 'Select an employee'); return }
+                    if (!empEmailForm.subject.trim()) { toast.error(isArabic ? 'أدخل موضوع الرسالة' : 'Enter a subject'); return }
+                    if (!empEmailForm.body.trim()) { toast.error(isArabic ? 'أدخل نص الرسالة' : 'Enter a message'); return }
+                    sendEmployeeEmailMutation.mutate(empEmailForm)
+                  }}
+                  disabled={sendEmployeeEmailMutation.isPending}
+                  className="btn btn-primary flex-1"
+                >
+                  {sendEmployeeEmailMutation.isPending ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                  {isArabic ? 'إرسال' : 'Send'}
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

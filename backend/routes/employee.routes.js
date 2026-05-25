@@ -3,7 +3,8 @@ import mongoose from 'mongoose';
 import Employee from '../models/Employee.js';
 import Tenant from '../models/Tenant.js';
 import SystemSettings from '../models/SystemSettings.js';
-import { protect, tenantFilter, checkPermission } from '../middleware/auth.js';
+import { protect, tenantFilter, checkPermission, checkEmailAddon } from '../middleware/auth.js';
+import { sendTenantEmail } from '../utils/tenantEmailService.js';
 import { describeSaudiId, normalizeSaudiId } from '../utils/saudiId.js';
 
 const router = express.Router();
@@ -598,6 +599,46 @@ router.get('/:id/expiring-documents', checkPermission('hr', 'read'), async (req,
     });
     
     res.json(expiringDocs);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   POST /api/employees/:id/send-email
+// Send a custom email to a specific employee via the tenant's email service
+router.post('/:id/send-email', checkPermission('hr', 'read'), checkEmailAddon, async (req, res) => {
+  try {
+    const employee = await Employee.findOne({ _id: req.params.id, ...req.tenantFilter }).lean();
+    if (!employee) return res.status(404).json({ error: 'Employee not found' });
+
+    const recipientEmail = employee.email;
+    if (!recipientEmail) return res.status(400).json({ error: 'Employee has no email address on file' });
+
+    const tenant = await Tenant.findById(req.user.tenantId);
+    if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+
+    const { subject, bodyHtml, bodyText, attachments } = req.body || {};
+    if (!subject || !String(subject).trim()) return res.status(400).json({ error: 'Subject is required' });
+
+    const employeeName = [employee.firstNameEn, employee.lastNameEn].filter(Boolean).join(' ').trim()
+      || [employee.firstNameAr, employee.lastNameAr].filter(Boolean).join(' ').trim()
+      || employee.employeeId || '';
+
+    const delivery = await sendTenantEmail({
+      tenant,
+      to: [{ email: recipientEmail, name: employeeName }],
+      subject: String(subject).trim(),
+      html: bodyHtml || `<p>${String(bodyText || '').replace(/\n/g, '<br>')}</p>`,
+      text: bodyText || '',
+      attachments: Array.isArray(attachments) ? attachments : [],
+      metadata: {
+        purpose: 'employee_email',
+        employeeId: String(employee._id),
+        sentBy: String(req.user._id),
+      },
+    });
+
+    res.status(201).json({ success: true, delivery, recipientEmail, employeeName });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
