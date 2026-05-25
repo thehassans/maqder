@@ -98,6 +98,12 @@ import CheckoutPOS from './pages/car-rental/CheckoutPOS'
 import CheckinPOS from './pages/car-rental/CheckinPOS'
 import ContractDetail from './pages/car-rental/ContractDetail'
 
+import LaundryLayout from './layouts/LaundryLayout'
+import LaundryPOS from './pages/laundry/LaundryPOS'
+import LaundryKanban from './pages/laundry/LaundryKanban'
+import LaundryCustomers from './pages/laundry/LaundryCustomers'
+import LaundryInventory from './pages/laundry/LaundryInventory'
+
 import LoadingScreen from './components/ui/LoadingScreen'
 
 function LegacyDashboardRedirect() {
@@ -351,6 +357,25 @@ function App() {
         <Route path="contracts" element={<Navigate to="/app/rental/active" replace />} />
         <Route path="contracts/:id" element={<ContractDetail />} />
         <Route path="contracts/:id/checkin" element={<CheckinPOS />} />
+      </Route>
+
+      {/* ───── Laundry Shell ───── */}
+      <Route
+        path="/app/laundry"
+        element={
+          <ProtectedRoute redirectSuperAdmin>
+            <BusinessTypeRoute allowedTypes={['laundry']}>
+              <LaundryLayout />
+            </BusinessTypeRoute>
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Navigate to="/app/laundry/pos" replace />} />
+        <Route path="pos" element={<LaundryPOS />} />
+        <Route path="orders" element={<LaundryKanban />} />
+        <Route path="customers" element={<LaundryCustomers />} />
+        <Route path="inventory" element={<LaundryInventory />} />
+        <Route path="catalog" element={<Navigate to="/app/laundry/pos" replace />} />
       </Route>
 
       {/* Catch all */}

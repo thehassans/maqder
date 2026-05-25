@@ -1,4 +1,4 @@
-export const BUSINESS_TYPES = ['trading', 'construction', 'travel_agency', 'restaurant', 'car_rental']
+export const BUSINESS_TYPES = ['trading', 'construction', 'travel_agency', 'restaurant', 'car_rental', 'laundry']
 
 export const getBusinessTypeOptions = (language = 'en') => [
   {
@@ -25,6 +25,11 @@ export const getBusinessTypeOptions = (language = 'en') => [
     id: 'car_rental',
     label: language === 'ar' ? 'تأجير سيارات' : 'Car Rental',
     description: language === 'ar' ? 'إدارة الأسطول والعقود ونقطة البيع للتأجير' : 'Fleet management, rental contracts, and POS',
+  },
+  {
+    id: 'laundry',
+    label: language === 'ar' ? 'مغسلة' : 'Laundry',
+    description: language === 'ar' ? 'نظام إدارة المغاسل، الفواتير، ونقطة البيع' : 'Laundry management, billing, and POS',
   },
 ]
 

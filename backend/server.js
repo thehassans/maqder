@@ -48,6 +48,11 @@ import rentalCarRoutes from './routes/rentalCar.routes.js';
 import rentalCustomerRoutes from './routes/rentalCustomer.routes.js';
 import rentalContractRoutes from './routes/rentalContract.routes.js';
 
+import laundryServiceRoutes from './routes/laundryService.routes.js';
+import laundryCustomerRoutes from './routes/laundryCustomer.routes.js';
+import laundryOrderRoutes from './routes/laundryOrder.routes.js';
+import laundryInventoryRoutes from './routes/laundryInventory.routes.js';
+
 import { checkIqamaExpiry } from './jobs/iqamaChecker.js';
 import { processScheduledReports } from './jobs/reportScheduleJob.js';
 import { syncZatcaInvoices } from './jobs/zatcaSync.js';
@@ -330,6 +335,11 @@ app.use('/api/compliance', ensureDatabaseReady, complianceRoutes);
 app.use('/api/rental/cars', ensureDatabaseReady, rentalCarRoutes);
 app.use('/api/rental/customers', ensureDatabaseReady, rentalCustomerRoutes);
 app.use('/api/rental/contracts', ensureDatabaseReady, rentalContractRoutes);
+
+app.use('/api/laundry/services', ensureDatabaseReady, laundryServiceRoutes);
+app.use('/api/laundry/customers', ensureDatabaseReady, laundryCustomerRoutes);
+app.use('/api/laundry/orders', ensureDatabaseReady, laundryOrderRoutes);
+app.use('/api/laundry/inventory', ensureDatabaseReady, laundryInventoryRoutes);
 
 // Serve static frontend files in production
 const __filename = fileURLToPath(import.meta.url);
