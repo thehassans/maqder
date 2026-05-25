@@ -60,7 +60,7 @@ export default function TenantForm() {
 
   useEffect(() => {
     if (!watchedBusinessTypes.includes(watchedPrimaryBusinessType)) {
-      setValue('businessType', watchedBusinessTypes[0] || 'trading')
+      setValue('businessTypes', Array.from(new Set([...watchedBusinessTypes, watchedPrimaryBusinessType])))
     }
   }, [setValue, watchedBusinessTypes, watchedPrimaryBusinessType])
 
@@ -274,10 +274,9 @@ export default function TenantForm() {
             <div>
               <label className="label">{language === 'ar' ? 'النشاط الافتراضي' : 'Primary Business Type'}</label>
               <select {...register('businessType')} className="select">
-                {watchedBusinessTypes.map((businessTypeId) => {
-                  const option = businessTypeOptions.find((item) => item.id === businessTypeId)
-                  return <option key={businessTypeId} value={businessTypeId}>{option?.label || businessTypeId}</option>
-                })}
+                {businessTypeOptions.map((option) => (
+                  <option key={option.id} value={option.id}>{option.label}</option>
+                ))}
               </select>
             </div>
             <div>
