@@ -80,6 +80,23 @@ import GeminiSettings from './pages/super-admin/GeminiSettings'
 import EmailSettings from './pages/super-admin/EmailSettings'
 import WebsiteSettings from './pages/super-admin/WebsiteSettings'
 import EmailCommunication from './pages/EmailCommunication'
+import FleetAssets from './pages/fleet/FleetAssets'
+import FleetAssetForm from './pages/fleet/FleetAssetForm'
+import MaintenanceAlerts from './pages/fleet/MaintenanceAlerts'
+import Contracts from './pages/contracts/Contracts'
+import ContractForm from './pages/contracts/ContractForm'
+import LandedCosts from './pages/landed-costs/LandedCosts'
+import LandedCostForm from './pages/landed-costs/LandedCostForm'
+import Compliance from './pages/compliance/Compliance'
+import CarRentalLayout from './layouts/CarRentalLayout'
+import FleetList from './pages/car-rental/FleetList'
+import CarForm from './pages/car-rental/CarForm'
+import CustomerRegistry from './pages/car-rental/CustomerRegistry'
+import CustomerKycForm from './pages/car-rental/CustomerForm'
+import ActiveRentals from './pages/car-rental/ActiveRentals'
+import CheckoutPOS from './pages/car-rental/CheckoutPOS'
+import CheckinPOS from './pages/car-rental/CheckinPOS'
+import ContractDetail from './pages/car-rental/ContractDetail'
 
 import LoadingScreen from './components/ui/LoadingScreen'
 
@@ -290,6 +307,50 @@ function App() {
         <Route path="email" element={<EmailCommunication />} />
         <Route path="users" element={<Users />} />
         <Route path="settings" element={<Settings />} />
+        {/* Fleet & Machinery */}
+        <Route path="fleet" element={<BusinessTypeRoute allowedTypes={['construction','trading']}><FleetAssets /></BusinessTypeRoute>} />
+        <Route path="fleet/new" element={<BusinessTypeRoute allowedTypes={['construction','trading']}><FleetAssetForm /></BusinessTypeRoute>} />
+        <Route path="fleet/maintenance-alerts" element={<BusinessTypeRoute allowedTypes={['construction','trading']}><MaintenanceAlerts /></BusinessTypeRoute>} />
+        <Route path="fleet/:id" element={<BusinessTypeRoute allowedTypes={['construction','trading']}><FleetAssetForm /></BusinessTypeRoute>} />
+        {/* Contract Management */}
+        <Route path="contracts" element={<BusinessTypeRoute allowedTypes={['construction']}><Contracts /></BusinessTypeRoute>} />
+        <Route path="contracts/new" element={<BusinessTypeRoute allowedTypes={['construction']}><ContractForm /></BusinessTypeRoute>} />
+        <Route path="contracts/:id" element={<BusinessTypeRoute allowedTypes={['construction']}><ContractForm /></BusinessTypeRoute>} />
+        {/* Landed Costs */}
+        <Route path="landed-costs" element={<BusinessTypeRoute allowedTypes={['trading']}><LandedCosts /></BusinessTypeRoute>} />
+        <Route path="landed-costs/new" element={<BusinessTypeRoute allowedTypes={['trading']}><LandedCostForm /></BusinessTypeRoute>} />
+        <Route path="landed-costs/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><LandedCostForm /></BusinessTypeRoute>} />
+        {/* Local Compliance */}
+        <Route path="compliance" element={<Compliance />} />
+      </Route>
+
+      {/* ───── Car Rental Shell ───── */}
+      <Route
+        path="/app/rental"
+        element={
+          <ProtectedRoute redirectSuperAdmin>
+            <BusinessTypeRoute allowedTypes={['car_rental']}>
+              <CarRentalLayout />
+            </BusinessTypeRoute>
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Navigate to="/app/rental/active" replace />} />
+        {/* POS */}
+        <Route path="checkout" element={<CheckoutPOS />} />
+        <Route path="active" element={<ActiveRentals />} />
+        {/* Fleet */}
+        <Route path="fleet" element={<FleetList />} />
+        <Route path="fleet/new" element={<CarForm />} />
+        <Route path="fleet/:id" element={<CarForm />} />
+        {/* Customers */}
+        <Route path="customers" element={<CustomerRegistry />} />
+        <Route path="customers/new" element={<CustomerKycForm />} />
+        <Route path="customers/:id" element={<CustomerKycForm />} />
+        {/* Contracts */}
+        <Route path="contracts" element={<Navigate to="/app/rental/active" replace />} />
+        <Route path="contracts/:id" element={<ContractDetail />} />
+        <Route path="contracts/:id/checkin" element={<CheckinPOS />} />
       </Route>
 
       {/* Catch all */}

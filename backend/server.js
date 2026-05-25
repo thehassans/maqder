@@ -40,6 +40,13 @@ import restaurantMenuItemRoutes from './routes/restaurantMenuItem.routes.js';
 import restaurantOrderRoutes from './routes/restaurantOrder.routes.js';
 import emailRoutes from './routes/email.routes.js';
 import webhookRoutes from './routes/webhook.routes.js';
+import fleetRoutes from './routes/fleet.routes.js';
+import contractRoutes from './routes/contract.routes.js';
+import landedCostRoutes from './routes/landedCost.routes.js';
+import complianceRoutes from './routes/compliance.routes.js';
+import rentalCarRoutes from './routes/rentalCar.routes.js';
+import rentalCustomerRoutes from './routes/rentalCustomer.routes.js';
+import rentalContractRoutes from './routes/rentalContract.routes.js';
 
 import { checkIqamaExpiry } from './jobs/iqamaChecker.js';
 import { processScheduledReports } from './jobs/reportScheduleJob.js';
@@ -316,6 +323,13 @@ app.use('/api/users', ensureDatabaseReady, usersRoutes);
 app.use('/api/travel-bookings', ensureDatabaseReady, travelBookingRoutes);
 app.use('/api/restaurant/menu-items', ensureDatabaseReady, restaurantMenuItemRoutes);
 app.use('/api/restaurant/orders', ensureDatabaseReady, restaurantOrderRoutes);
+app.use('/api/fleet', ensureDatabaseReady, fleetRoutes);
+app.use('/api/contracts', ensureDatabaseReady, contractRoutes);
+app.use('/api/landed-costs', ensureDatabaseReady, landedCostRoutes);
+app.use('/api/compliance', ensureDatabaseReady, complianceRoutes);
+app.use('/api/rental/cars', ensureDatabaseReady, rentalCarRoutes);
+app.use('/api/rental/customers', ensureDatabaseReady, rentalCustomerRoutes);
+app.use('/api/rental/contracts', ensureDatabaseReady, rentalContractRoutes);
 
 // Serve static frontend files in production
 const __filename = fileURLToPath(import.meta.url);

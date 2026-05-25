@@ -29,6 +29,10 @@ import {
   Plane,
   UtensilsCrossed,
   Fingerprint,
+  Shield,
+  FileSignature,
+  Anchor,
+  AlertCircle,
 } from 'lucide-react'
 import { toggleSidebarCollapse, setMobileMenuOpen } from '../../store/slices/uiSlice'
 import { useTranslation } from '../../lib/translations'
@@ -154,6 +158,34 @@ export default function Sidebar() {
         { path: '/app/dashboard/reports', icon: BarChart3, label: language === 'ar' ? 'التقارير' : 'Reports', perm: { module: 'invoicing', action: 'read' } },
         { path: '/app/dashboard/users', icon: Users, label: t('users'), perm: { module: 'settings', action: 'read' } },
         { path: '/app/dashboard/settings', icon: Settings, label: t('settings'), perm: { module: 'settings', action: 'read' } },
+      ]
+    },
+    {
+      title: language === 'ar' ? 'الأسطول والمعدات' : 'Fleet & Machinery',
+      businessTypes: ['construction', 'trading'],
+      items: [
+        { path: '/app/dashboard/fleet', icon: Truck, label: language === 'ar' ? 'الأصول' : 'Assets', perm: { module: 'fleet', action: 'read' } },
+        { path: '/app/dashboard/fleet/maintenance-alerts', icon: AlertCircle, label: language === 'ar' ? 'تنبيهات الصيانة' : 'Maintenance Alerts', perm: { module: 'fleet', action: 'read' } },
+      ]
+    },
+    {
+      title: language === 'ar' ? 'إدارة العقود' : 'Contracts',
+      businessTypes: ['construction'],
+      items: [
+        { path: '/app/dashboard/contracts', icon: FileSignature, label: language === 'ar' ? 'العقود' : 'Contracts', perm: { module: 'contracts', action: 'read' } },
+      ]
+    },
+    {
+      title: language === 'ar' ? 'التكاليف المرسية' : 'Landed Costs',
+      businessTypes: ['trading'],
+      items: [
+        { path: '/app/dashboard/landed-costs', icon: Anchor, label: language === 'ar' ? 'التكاليف المرسية' : 'Landed Costs', perm: { module: 'landed_costs', action: 'read' } },
+      ]
+    },
+    {
+      title: language === 'ar' ? 'الامتثال' : 'Compliance',
+      items: [
+        { path: '/app/dashboard/compliance', icon: Shield, label: language === 'ar' ? 'لوحة الامتثال' : 'Compliance Dashboard' },
       ]
     },
   ]
