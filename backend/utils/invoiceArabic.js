@@ -1,5 +1,4 @@
-import { GoogleGenAI } from '@google/genai'
-import SystemSettings from '../models/SystemSettings.js'
+import { translateWithFallback } from './aiService.js'
 
 const hasArabicText = (value = '') => /[\u0600-\u06FF]/.test(String(value || ''))
 const hasTranslatableText = (value = '') => /[A-Za-z\u0600-\u06FF]/.test(String(value || '').trim())
@@ -11,38 +10,8 @@ const resolveWithin = (promise, timeoutMs, fallbackValue = '') => Promise.race([
   new Promise((resolve) => setTimeout(() => resolve(fallbackValue), timeoutMs)),
 ])
 
-const getGeminiSettings = async () => {
-  const settings = await SystemSettings.findOne({ key: 'global' }).select('gemini').lean()
-  return settings?.gemini || null
-}
-
-const translateText = async ({ client, model, text, targetLanguage }) => {
-  const prompt = targetLanguage === 'en'
-    ? `Translate the following text to natural English. If it is a proper name, transliterate it naturally in English. Return only the English text with no quotes and no extra explanation.\n\nText:\n"""${text}"""`
-    : `Translate the following text to Arabic. If it is a proper name, transliterate it naturally in Arabic. Return only the Arabic text with no quotes and no extra explanation.\n\nText:\n"""${text}"""`
-
-  const response = await client.models.generateContent({
-    model,
-    contents: prompt,
-    config: {
-      temperature: 0.1,
-      maxOutputTokens: 256,
-    },
-  })
-
-  return String(response?.text || '').trim()
-}
-
 export const enrichInvoiceArabicFields = async (invoiceData = {}) => {
   const next = JSON.parse(JSON.stringify(invoiceData || {}))
-  const gemini = await getGeminiSettings()
-
-  if (!gemini?.apiKey) {
-    return next
-  }
-
-  const client = new GoogleGenAI({ apiKey: gemini.apiKey })
-  const model = String(gemini.model || 'gemini-2.5-flash').trim()
   const translationCache = new Map()
   const tasks = []
 
@@ -62,7 +31,7 @@ export const enrichInvoiceArabicFields = async (invoiceData = {}) => {
     }
 
     const pending = resolveWithin(
-      translateText({ client, model, text: source, targetLanguage }),
+      translateWithFallback({ text: source, targetLanguage }),
       translationTimeoutMs,
       ''
     )

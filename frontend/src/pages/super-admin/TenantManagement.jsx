@@ -228,6 +228,7 @@ export default function TenantManagement() {
                     <th>{language === 'ar' ? 'الرقم الضريبي' : 'VAT Number'}</th>
                     <th>{language === 'ar' ? 'الخطة' : 'Plan'}</th>
                     <th>{language === 'ar' ? 'المستخدمين' : 'Users'}</th>
+                    <th>{language === 'ar' ? 'الفواتير' : 'Invoices'}</th>
                     <th>{t('status')}</th>
                     <th>{language === 'ar' ? 'تاريخ الإنشاء' : 'Created'}</th>
                     <th>{t('actions')}</th>
@@ -262,6 +263,12 @@ export default function TenantManagement() {
                         <div className="flex items-center gap-1">
                           <Users className="w-4 h-4 text-gray-400" />
                           <span>{tenant.userCount || 0}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="flex items-center gap-1">
+                          <FileText className="w-4 h-4 text-gray-400" />
+                          <span>{tenant.invoiceCount || 0}</span>
                         </div>
                       </td>
                       <td>

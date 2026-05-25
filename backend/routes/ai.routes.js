@@ -1,11 +1,10 @@
 import express from 'express';
 import multer from 'multer';
 import OpenAI from 'openai';
-import { GoogleGenAI } from '@google/genai';
 import Product from '../models/Product.js';
 import Invoice from '../models/Invoice.js';
-import SystemSettings from '../models/SystemSettings.js';
 import { protect, tenantFilter, checkPermission } from '../middleware/auth.js';
+import { translateWithFallback } from '../utils/aiService.js';
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -23,30 +22,6 @@ const checkAI = (req, res, next) => {
     return res.status(503).json({ error: 'AI features disabled - OPENAI_API_KEY not configured' });
   }
   next();
-};
-
-const getGeminiSettings = async () => {
-  const settings = await SystemSettings.findOne({ key: 'global' }).select('gemini');
-  return settings?.gemini;
-};
-
-const geminiTranslate = async ({ apiKey, model, text, sourceLang, targetLang }) => {
-  const safeModel = (model || 'gemini-2.5-flash').trim();
-  
-  const client = new GoogleGenAI({ apiKey });
-  const prompt = `Translate the following text from ${sourceLang} to ${targetLang}. If the text is a proper name, transliterate it appropriately. Return only the translated text without quotes or extra commentary.\n\nText:\n"""${text}"""`;
-
-  const response = await client.models.generateContent({
-    model: safeModel,
-    contents: prompt,
-    config: {
-      temperature: 0.2,
-      maxOutputTokens: 256,
-    }
-  });
-
-  const translated = response?.text || '';
-  return translated.trim();
 };
 
 // @route   POST /api/ai/extract-document
@@ -103,18 +78,9 @@ router.post('/translate', async (req, res) => {
       return res.status(400).json({ error: 'Text is too long (max 1000 chars)' });
     }
 
-    const gemini = await getGeminiSettings();
-    if (!gemini?.apiKey) {
-      console.error('[Translation] Gemini API key missing');
-      return res.status(503).json({ error: 'Translation is disabled - Gemini API key not configured' });
-    }
-
-    const translatedText = await geminiTranslate({
-      apiKey: gemini.apiKey,
-      model: gemini.model,
+    const translatedText = await translateWithFallback({
       text: trimmed,
-      sourceLang,
-      targetLang
+      targetLanguage: targetLang
     });
 
     if (!translatedText) {

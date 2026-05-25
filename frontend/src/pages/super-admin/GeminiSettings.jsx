@@ -12,38 +12,62 @@ export default function GeminiSettings() {
 
   const { register, handleSubmit, reset, getValues } = useForm({
     defaultValues: {
-      model: 'gemini-3-flash-preview',
-      apiKey: '',
+      geminiModel: 'gemini-2.5-flash',
+      geminiKey: '',
+      geminiEnabled: true,
+      openaiModel: 'gpt-4o-mini',
+      openaiKey: '',
+      openaiEnabled: true,
+      grokModel: 'grok-2-latest',
+      grokKey: '',
+      grokEnabled: true,
     },
   })
 
   const { data, isLoading } = useQuery({
-    queryKey: ['gemini-settings'],
-    queryFn: () => api.get('/super-admin/settings/gemini').then((res) => res.data),
+    queryKey: ['ai-settings'],
+    queryFn: () => api.get('/super-admin/settings/ai').then((res) => res.data),
     onSuccess: (d) => {
       reset({
-        model: d?.model || 'gemini-3-flash-preview',
-        apiKey: '',
+        geminiModel: d?.gemini?.model || 'gemini-2.5-flash',
+        geminiKey: '',
+        geminiEnabled: d?.gemini?.enabled !== false,
+        openaiModel: d?.openai?.model || 'gpt-4o-mini',
+        openaiKey: '',
+        openaiEnabled: d?.openai?.enabled !== false,
+        grokModel: d?.grok?.model || 'grok-2-latest',
+        grokKey: '',
+        grokEnabled: d?.grok?.enabled !== false,
       })
     },
   })
 
   const saveMutation = useMutation({
-    mutationFn: (payload) => api.put('/super-admin/settings/gemini', payload).then((res) => res.data),
+    mutationFn: (payload) => api.put('/super-admin/settings/ai', payload).then((res) => res.data),
     onSuccess: (d) => {
-      toast.success(language === 'ar' ? 'تم حفظ إعدادات Gemini' : 'Gemini settings saved')
-      queryClient.setQueryData(['gemini-settings'], d)
-      queryClient.invalidateQueries(['gemini-settings'])
+      toast.success(language === 'ar' ? 'تم حفظ إعدادات الذكاء الاصطناعي' : 'AI settings saved')
+      queryClient.setQueryData(['ai-settings'], d)
+      queryClient.invalidateQueries(['ai-settings'])
       reset({
-        model: d?.model || 'gemini-3-flash-preview',
-        apiKey: '',
+        geminiModel: d?.gemini?.model || 'gemini-2.5-flash',
+        geminiKey: '',
+        geminiEnabled: d?.gemini?.enabled !== false,
+        openaiModel: d?.openai?.model || 'gpt-4o-mini',
+        openaiKey: '',
+        openaiEnabled: d?.openai?.enabled !== false,
+        grokModel: d?.grok?.model || 'grok-2-latest',
+        grokKey: '',
+        grokEnabled: d?.grok?.enabled !== false,
       })
     },
     onError: (err) => toast.error(err.response?.data?.error || 'Error saving settings'),
   })
 
   const testMutation = useMutation({
-    mutationFn: () => api.post('/super-admin/settings/gemini/test', { apiKey: getValues('apiKey') }).then((res) => res.data),
+    mutationFn: (provider) => api.post('/super-admin/settings/ai/test', { 
+      provider, 
+      apiKey: getValues(`${provider}Key`) 
+    }).then((res) => res.data),
     onSuccess: (d) => {
       toast.success(language === 'ar' ? 'تم الاتصال بنجاح' : 'Connection successful')
       if (d?.responseText) {
@@ -55,11 +79,23 @@ export default function GeminiSettings() {
 
   const onSubmit = (formData) => {
     const payload = {
-      model: String(formData.model || 'gemini-3-flash-preview').trim(),
+      gemini: {
+        model: String(formData.geminiModel || 'gemini-2.5-flash').trim(),
+        enabled: formData.geminiEnabled
+      },
+      openai: {
+        model: String(formData.openaiModel || 'gpt-4o-mini').trim(),
+        enabled: formData.openaiEnabled
+      },
+      grok: {
+        model: String(formData.grokModel || 'grok-2-latest').trim(),
+        enabled: formData.grokEnabled
+      }
     }
 
-    const apiKey = String(formData.apiKey || '').trim()
-    if (apiKey) payload.apiKey = apiKey
+    if (String(formData.geminiKey || '').trim()) payload.gemini.apiKey = String(formData.geminiKey).trim()
+    if (String(formData.openaiKey || '').trim()) payload.openai.apiKey = String(formData.openaiKey).trim()
+    if (String(formData.grokKey || '').trim()) payload.grok.apiKey = String(formData.grokKey).trim()
 
     saveMutation.mutate(payload)
   }
@@ -72,58 +108,97 @@ export default function GeminiSettings() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          {language === 'ar' ? 'إعدادات Gemini 2.5 Flash' : 'Gemini 2.5 Flash Settings'}
+          {language === 'ar' ? 'إعدادات الذكاء الاصطناعي (AI)' : 'AI Providers Settings'}
         </h1>
         <p className="text-gray-500 mt-1">
-          {language === 'ar' ? 'إعداد مفتاح API واختبار الاتصال' : 'Configure the API key and test connectivity'}
+          {language === 'ar' ? 'إعداد مفاتيح API للترجمة والتحليل (Gemini, OpenAI, Grok)' : 'Configure API keys for translation & analysis (Gemini, OpenAI, Grok)'}
         </p>
       </div>
 
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="card p-6">
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-          <div className="p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
-            <p className="font-medium text-green-800 dark:text-green-300">
-              {language === 'ar' ? 'Gemini مفعّل تلقائياً عند وجود مفتاح API' : 'Gemini is automatically enabled when API key is configured'}
-            </p>
-            <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-              {data?.hasApiKey 
-                ? (language === 'ar' ? '✓ مفتاح API محفوظ - الترجمة الحية نشطة' : '✓ API key saved - Live translation is active')
-                : (language === 'ar' ? 'أدخل مفتاح API لتفعيل الترجمة الحية' : 'Enter an API key to enable live translation')}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="label">{language === 'ar' ? 'الموديل' : 'Model'}</label>
-              <input {...register('model')} className="input" placeholder="gemini-2.5-flash" />
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+          
+          {/* Gemini */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-gray-100 dark:border-dark-700 pb-2">
+              <h3 className="text-lg font-bold">Google Gemini</h3>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" {...register('geminiEnabled')} className="checkbox" />
+                <span className="text-sm">{language === 'ar' ? 'مفعل' : 'Enabled'}</span>
+              </label>
             </div>
-
-            <div>
-              <label className="label">{language === 'ar' ? 'مفتاح API' : 'API Key'}</label>
-              <input
-                type="password"
-                {...register('apiKey')}
-                className="input"
-                placeholder={data?.hasApiKey ? (language === 'ar' ? `محفوظ: ${data.apiKeyMasked}` : `Saved: ${data.apiKeyMasked}`) : (language === 'ar' ? 'أدخل المفتاح' : 'Enter key')}
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                {language === 'ar' ? 'اتركه فارغاً للاحتفاظ بالمفتاح الحالي' : 'Leave empty to keep the current key'}
-              </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="label">{language === 'ar' ? 'الموديل' : 'Model'}</label>
+                <input {...register('geminiModel')} className="input" placeholder="gemini-2.5-flash" />
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'مفتاح API' : 'API Key'}</label>
+                <input type="password" {...register('geminiKey')} className="input" placeholder={data?.gemini?.hasApiKey ? `Saved: ${data.gemini.apiKeyMasked}` : 'Enter key'} />
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <button type="button" disabled={testMutation.isPending || !data?.gemini?.hasApiKey} onClick={() => testMutation.mutate('gemini')} className="btn btn-secondary btn-sm">
+                <PlugZap className="w-4 h-4" />{language === 'ar' ? 'اختبار Gemini' : 'Test Gemini'}
+              </button>
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-2">
-            <button
-              type="button"
-              disabled={testMutation.isPending || !data?.hasApiKey}
-              onClick={() => testMutation.mutate()}
-              className="btn btn-secondary"
-            >
-              {testMutation.isPending ? <div className="w-5 h-5 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" /> : <><PlugZap className="w-4 h-4" />{language === 'ar' ? 'اختبار الاتصال' : 'Test Connection'}</>}
-            </button>
+          {/* Grok */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-gray-100 dark:border-dark-700 pb-2">
+              <h3 className="text-lg font-bold">xAI Grok (Fallback 1)</h3>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" {...register('grokEnabled')} className="checkbox" />
+                <span className="text-sm">{language === 'ar' ? 'مفعل' : 'Enabled'}</span>
+              </label>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="label">{language === 'ar' ? 'الموديل' : 'Model'}</label>
+                <input {...register('grokModel')} className="input" placeholder="grok-2-latest" />
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'مفتاح API' : 'API Key'}</label>
+                <input type="password" {...register('grokKey')} className="input" placeholder={data?.grok?.hasApiKey ? `Saved: ${data.grok.apiKeyMasked}` : 'Enter key'} />
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <button type="button" disabled={testMutation.isPending || !data?.grok?.hasApiKey} onClick={() => testMutation.mutate('grok')} className="btn btn-secondary btn-sm">
+                <PlugZap className="w-4 h-4" />{language === 'ar' ? 'اختبار Grok' : 'Test Grok'}
+              </button>
+            </div>
+          </div>
 
-            <button type="submit" disabled={saveMutation.isPending} className="btn btn-primary">
-              {saveMutation.isPending ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Save className="w-4 h-4" />{language === 'ar' ? 'حفظ' : 'Save'}</>}
+          {/* OpenAI */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-gray-100 dark:border-dark-700 pb-2">
+              <h3 className="text-lg font-bold">OpenAI (Fallback 2)</h3>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" {...register('openaiEnabled')} className="checkbox" />
+                <span className="text-sm">{language === 'ar' ? 'مفعل' : 'Enabled'}</span>
+              </label>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="label">{language === 'ar' ? 'الموديل' : 'Model'}</label>
+                <input {...register('openaiModel')} className="input" placeholder="gpt-4o-mini" />
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'مفتاح API' : 'API Key'}</label>
+                <input type="password" {...register('openaiKey')} className="input" placeholder={data?.openai?.hasApiKey ? `Saved: ${data.openai.apiKeyMasked}` : 'Enter key'} />
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <button type="button" disabled={testMutation.isPending || !data?.openai?.hasApiKey} onClick={() => testMutation.mutate('openai')} className="btn btn-secondary btn-sm">
+                <PlugZap className="w-4 h-4" />{language === 'ar' ? 'اختبار OpenAI' : 'Test OpenAI'}
+              </button>
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-6 border-t border-gray-100 dark:border-dark-700">
+            <button type="submit" disabled={saveMutation.isPending} className="btn btn-primary w-full sm:w-auto">
+              {saveMutation.isPending ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Save className="w-4 h-4" />{language === 'ar' ? 'حفظ إعدادات الذكاء الاصطناعي' : 'Save AI Settings'}</>}
             </button>
           </div>
         </form>

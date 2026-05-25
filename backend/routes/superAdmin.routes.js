@@ -544,72 +544,158 @@ router.put('/settings/identity', async (req, res) => {
   }
 });
 
-router.get('/settings/gemini', async (req, res) => {
+router.get('/settings/ai', async (req, res) => {
   try {
     const settings = await getGlobalSettings();
-    const hasApiKey = !!settings.gemini?.apiKey;
     res.json({
-      enabled: hasApiKey,
-      model: settings.gemini?.model || 'gemini-3-flash-preview',
-      hasApiKey,
-      apiKeyMasked: maskApiKey(settings.gemini?.apiKey)
+      gemini: {
+        enabled: settings.gemini?.enabled !== false,
+        model: settings.gemini?.model || 'gemini-2.5-flash',
+        hasApiKey: !!settings.gemini?.apiKey,
+        apiKeyMasked: maskApiKey(settings.gemini?.apiKey)
+      },
+      openai: {
+        enabled: settings.openai?.enabled !== false,
+        model: settings.openai?.model || 'gpt-4o-mini',
+        hasApiKey: !!settings.openai?.apiKey,
+        apiKeyMasked: maskApiKey(settings.openai?.apiKey)
+      },
+      grok: {
+        enabled: settings.grok?.enabled !== false,
+        model: settings.grok?.model || 'grok-2-latest',
+        hasApiKey: !!settings.grok?.apiKey,
+        apiKeyMasked: maskApiKey(settings.grok?.apiKey)
+      }
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-router.put('/settings/gemini', async (req, res) => {
+router.put('/settings/ai', async (req, res) => {
   try {
-    const { model, apiKey } = req.body || {};
+    const { gemini, openai, grok } = req.body || {};
 
     const settings = await getGlobalSettings();
-    const nextGemini = {
-      ...(settings.gemini?.toObject?.() || settings.gemini || {}),
-      model: (model || settings.gemini?.model || 'gemini-3-flash-preview').trim()
-    };
-
-    if (apiKey !== undefined) {
-      const trimmed = String(apiKey || '').trim();
-      if (trimmed) nextGemini.apiKey = trimmed;
+    
+    if (gemini) {
+      const nextGemini = {
+        ...(settings.gemini?.toObject?.() || settings.gemini || {}),
+        model: (gemini.model || settings.gemini?.model || 'gemini-2.5-flash').trim(),
+        enabled: gemini.enabled !== undefined ? gemini.enabled : settings.gemini?.enabled
+      };
+      if (gemini.apiKey !== undefined) {
+        const trimmed = String(gemini.apiKey || '').trim();
+        if (trimmed) nextGemini.apiKey = trimmed;
+      }
+      settings.gemini = nextGemini;
     }
 
-    settings.gemini = nextGemini;
+    if (openai) {
+      const nextOpenAI = {
+        ...(settings.openai?.toObject?.() || settings.openai || {}),
+        model: (openai.model || settings.openai?.model || 'gpt-4o-mini').trim(),
+        enabled: openai.enabled !== undefined ? openai.enabled : settings.openai?.enabled
+      };
+      if (openai.apiKey !== undefined) {
+        const trimmed = String(openai.apiKey || '').trim();
+        if (trimmed) nextOpenAI.apiKey = trimmed;
+      }
+      settings.openai = nextOpenAI;
+    }
+
+    if (grok) {
+      const nextGrok = {
+        ...(settings.grok?.toObject?.() || settings.grok || {}),
+        model: (grok.model || settings.grok?.model || 'grok-2-latest').trim(),
+        enabled: grok.enabled !== undefined ? grok.enabled : settings.grok?.enabled
+      };
+      if (grok.apiKey !== undefined) {
+        const trimmed = String(grok.apiKey || '').trim();
+        if (trimmed) nextGrok.apiKey = trimmed;
+      }
+      settings.grok = nextGrok;
+    }
+
     settings.markModified('gemini');
+    settings.markModified('openai');
+    settings.markModified('grok');
     await settings.save();
 
-    const hasApiKey = !!settings.gemini?.apiKey;
     res.json({
-      enabled: hasApiKey,
-      model: settings.gemini?.model || 'gemini-3-flash-preview',
-      hasApiKey,
-      apiKeyMasked: maskApiKey(settings.gemini?.apiKey)
+      gemini: {
+        enabled: settings.gemini?.enabled !== false,
+        model: settings.gemini?.model || 'gemini-2.5-flash',
+        hasApiKey: !!settings.gemini?.apiKey,
+        apiKeyMasked: maskApiKey(settings.gemini?.apiKey)
+      },
+      openai: {
+        enabled: settings.openai?.enabled !== false,
+        model: settings.openai?.model || 'gpt-4o-mini',
+        hasApiKey: !!settings.openai?.apiKey,
+        apiKeyMasked: maskApiKey(settings.openai?.apiKey)
+      },
+      grok: {
+        enabled: settings.grok?.enabled !== false,
+        model: settings.grok?.model || 'grok-2-latest',
+        hasApiKey: !!settings.grok?.apiKey,
+        apiKeyMasked: maskApiKey(settings.grok?.apiKey)
+      }
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-router.post('/settings/gemini/test', async (req, res) => {
+router.post('/settings/ai/test', async (req, res) => {
   try {
+    const { provider, apiKey } = req.body;
     const settings = await getGlobalSettings();
-    const providedKey = req.body.apiKey; // Allow testing with a new key before saving
     
-    const apiKey = providedKey || settings.gemini?.apiKey;
-    
-    if (!apiKey) {
-      return res.status(400).json({ error: 'Gemini API key is missing' });
+    let activeKey = apiKey;
+    if (!activeKey) {
+      if (provider === 'gemini') activeKey = settings.gemini?.apiKey;
+      if (provider === 'openai') activeKey = settings.openai?.apiKey;
+      if (provider === 'grok') activeKey = settings.grok?.apiKey;
     }
 
-    const model = settings.gemini?.model || 'gemini-3-flash-preview'; // Default to 3-flash as per request snippet, or keep 2.5? The request used 3-flash. I will allow fallback but prefer settings.
-    
-    const client = new GoogleGenAI({ apiKey });
-    const response = await client.models.generateContent({
-      model: model,
-      contents: "Explain how AI works in a few words",
-    });
+    if (!activeKey) {
+      return res.status(400).json({ error: `${provider} API key is missing` });
+    }
 
-    const text = response?.text || '';
+    let text = '';
+    let model = '';
+
+    if (provider === 'gemini') {
+      model = settings.gemini?.model || 'gemini-2.5-flash';
+      const client = new GoogleGenAI({ apiKey: activeKey });
+      const response = await client.models.generateContent({
+        model,
+        contents: "Explain how AI works in a few words",
+      });
+      text = response?.text || '';
+    } else if (provider === 'openai') {
+      model = settings.openai?.model || 'gpt-4o-mini';
+      const client = new OpenAI({ apiKey: activeKey });
+      const response = await client.chat.completions.create({
+        model,
+        messages: [{ role: 'user', content: "Explain how AI works in a few words" }],
+        max_tokens: 50,
+      });
+      text = response.choices?.[0]?.message?.content || '';
+    } else if (provider === 'grok') {
+      model = settings.grok?.model || 'grok-2-latest';
+      const client = new OpenAI({ apiKey: activeKey, baseURL: "https://api.x.ai/v1" });
+      const response = await client.chat.completions.create({
+        model,
+        messages: [{ role: 'user', content: "Explain how AI works in a few words" }],
+        max_tokens: 50,
+      });
+      text = response.choices?.[0]?.message?.content || '';
+    } else {
+      return res.status(400).json({ error: 'Invalid provider' });
+    }
+
     res.json({ success: true, model, responseText: text });
   } catch (error) {
     const apiError = error.response?.data?.error?.message || error.response?.data?.error || error.message;
@@ -663,10 +749,17 @@ router.get('/tenants', async (req, res) => {
       { $group: { _id: '$tenantId', count: { $sum: 1 } } }
     ]).option({ maxTimeMS: databaseQueryTimeoutMs });
     const userCountMap = new Map(userCounts.map((item) => [String(item._id), item.count || 0]));
+
+    const invoiceCounts = await Invoice.aggregate([
+      { $match: { tenantId: { $in: tenantIds } } },
+      { $group: { _id: '$tenantId', count: { $sum: 1 } } }
+    ]).option({ maxTimeMS: databaseQueryTimeoutMs });
+    const invoiceCountMap = new Map(invoiceCounts.map((item) => [String(item._id), item.count || 0]));
     
     const tenantsWithCounts = tenants.map(t => ({
       ...serializeTenantForSuperAdmin(t),
-      userCount: userCountMap.get(String(t._id)) || 0
+      userCount: userCountMap.get(String(t._id)) || 0,
+      invoiceCount: invoiceCountMap.get(String(t._id)) || 0
     }));
     
     res.json({

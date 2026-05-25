@@ -7,6 +7,16 @@ const systemSettingsSchema = new mongoose.Schema({
     apiKey: { type: String },
     model: { type: String, default: 'gemini-2.5-flash' }
   },
+  openai: {
+    enabled: { type: Boolean, default: false },
+    apiKey: { type: String },
+    model: { type: String, default: 'gpt-4o-mini' }
+  },
+  grok: {
+    enabled: { type: Boolean, default: false },
+    apiKey: { type: String },
+    model: { type: String, default: 'grok-2-latest' }
+  },
   identity: {
     enabled: { type: Boolean, default: false },
     provider: { type: String, default: 'custom_webhook' },
