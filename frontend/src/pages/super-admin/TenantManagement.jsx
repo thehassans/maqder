@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tansta
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Search, Building2, Edit, Users, LogIn, AlertCircle, RefreshCw, Trash2, RotateCcw, Send, X, FileSpreadsheet, FileText } from 'lucide-react'
+import { Plus, Search, Building2, Edit, Users, LogIn, AlertCircle, RefreshCw, Trash2, RotateCcw, Send, X, FileSpreadsheet, FileText, Eraser } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
@@ -80,6 +80,32 @@ export default function TenantManagement() {
     },
     onError: (err) => toast.error(err.response?.data?.error || 'Failed to reset panel')
   })
+
+  const deleteTenantMutation = useMutation({
+    mutationFn: (tenantId) => api.delete(`/super-admin/tenants/${tenantId}`).then(res => res.data),
+    onSuccess: (data) => {
+      toast.success(language === 'ar' ? 'تم حذف المستأجر بالكامل بنجاح' : 'Tenant completely deleted successfully')
+      queryClient.invalidateQueries()
+    },
+    onError: (err) => toast.error(err.response?.data?.error || 'Failed to delete tenant')
+  })
+
+  const handleDeleteTenant = (tenant) => {
+    const label = tenant?.name || tenant?.business?.legalNameEn || ''
+    const confirmMsg = language === 'ar'
+      ? `تحذير نهائي: سيتم حذف المستأجر "${label}" وكافة المستخدمين والبيانات التابعة له بشكل لا يمكن التراجع عنه. هل أنت متأكد تماماً؟`
+      : `FINAL WARNING: This will permanently delete the tenant "${label}" and ALL of its users and data. This action cannot be undone. Are you absolutely sure?`
+    
+    if (!window.confirm(confirmMsg)) return
+    
+    const doubleConfirmMsg = language === 'ar'
+      ? `أنت على وشك حذف المستأجر بالكامل. اضغط "موافق" للتأكيد النهائي.`
+      : `You are about to completely delete this tenant. Click "OK" to final confirm.`
+      
+    if (window.confirm(doubleConfirmMsg)) {
+      deleteTenantMutation.mutate(tenant._id)
+    }
+  }
 
   const sendBackupMutation = useMutation({
     mutationFn: ({ tenantId, payload }) => api.post(`/super-admin/tenants/${tenantId}/send-backup`, payload).then(res => res.data),
@@ -294,10 +320,10 @@ export default function TenantManagement() {
                             type="button"
                             onClick={() => handleClearInvoices(tenant)}
                             disabled={clearInvoicesMutation.isPending}
-                            className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-red-600 disabled:opacity-50"
+                            className="p-2 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg text-orange-600 disabled:opacity-50"
                             title={language === 'ar' ? 'حذف جميع الفواتير' : 'Clear all invoices'}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Eraser className="w-4 h-4" />
                           </button>
                           <button
                             type="button"
@@ -307,6 +333,15 @@ export default function TenantManagement() {
                             title={language === 'ar' ? 'تصفير لوحة المستأجر بالكامل' : 'Reset entire tenant panel'}
                           >
                             <RotateCcw className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteTenant(tenant)}
+                            disabled={deleteTenantMutation.isPending}
+                            className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-red-600 disabled:opacity-50"
+                            title={language === 'ar' ? 'حذف المستأجر بالكامل' : 'Delete entire tenant'}
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </button>
                           <button
                             type="button"

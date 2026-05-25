@@ -1092,6 +1092,73 @@ router.post('/tenants/:id/reset', async (req, res) => {
   }
 });
 
+// @route   DELETE /api/super-admin/tenants/:id
+// @desc    Completely delete a tenant and all of its associated data
+router.delete('/tenants/:id', async (req, res) => {
+  try {
+    const tenant = await Tenant.findById(req.params.id);
+    if (!tenant) {
+      return res.status(404).json({ error: 'Tenant not found' });
+    }
+
+    const tenantId = tenant._id;
+    const filter = { tenantId };
+
+    const collections = [
+      ['invoices', Invoice],
+      ['customers', Customer],
+      ['travelBookings', TravelBooking],
+      ['restaurantOrders', RestaurantOrder],
+      ['restaurantMenuItems', RestaurantMenuItem],
+      ['emails', EmailMessage],
+      ['expenses', Expense],
+      ['products', Product],
+      ['purchaseOrders', PurchaseOrder],
+      ['suppliers', Supplier],
+      ['warehouses', Warehouse],
+      ['shipments', Shipment],
+      ['vatReturns', VatReturn],
+      ['tasks', Task],
+      ['projects', Project],
+      ['payroll', Payroll],
+      ['jobCostEntries', JobCostEntry],
+      ['jobCostingJobs', JobCostingJob],
+      ['iotDevices', IoTDevice],
+      ['iotReadings', IoTReading],
+      ['whatsappContacts', WhatsAppContact],
+      ['whatsappMessages', WhatsAppMessage],
+      ['whatsappTemplates', WhatsAppTemplate],
+      ['whatsappQuickReplies', QuickReply],
+      ['whatsappBroadcasts', Broadcast],
+      ['users', User],
+      ['employees', Employee]
+    ];
+
+    const results = await Promise.all(
+      collections.map(async ([key, Model]) => {
+        try {
+          const result = await Model.deleteMany(filter);
+          return [key, result?.deletedCount || 0];
+        } catch (err) {
+          return [key, { error: err.message }];
+        }
+      })
+    );
+
+    await Tenant.findByIdAndDelete(tenantId);
+    results.push(['tenant', 1]);
+
+    const summary = Object.fromEntries(results);
+    res.json({
+      success: true,
+      message: 'Tenant and all associated data completely deleted',
+      deleted: summary,
+    });
+  } catch (error) {
+    sendRouteError(res, error);
+  }
+});
+
 // @route   GET /api/super-admin/users
 router.get('/users', async (req, res) => {
   try {
