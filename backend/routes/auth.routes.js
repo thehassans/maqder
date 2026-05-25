@@ -231,13 +231,18 @@ router.post('/login', async (req, res) => {
     
     // Reset login attempts on successful login — fire-and-forget so the response
     // is not blocked by an extra DB round-trip.
-    User.updateOne(
-      { _id: user._id },
-      {
-        $set: { loginAttempts: 0, lastLogin: new Date() },
-        $unset: { lockUntil: 1 },
-      }
-    ).catch(() => {});
+    const updatePayload = {
+      $set: { loginAttempts: 0, lastLogin: new Date() },
+      $unset: { lockUntil: 1 },
+    };
+
+    // Auto-migrate legacy cost factor 12 hashes to cost factor 10
+    if (user.password && (user.password.startsWith('$2a$12$') || user.password.startsWith('$2b$12$'))) {
+      const bcrypt = (await import('bcryptjs')).default;
+      updatePayload.$set.password = await bcrypt.hash(password, 10);
+    }
+
+    User.updateOne({ _id: user._id }, updatePayload).catch(() => {});
 
     const token = generateToken(user._id);
     const responseTenant = serializeAuthTenant(tenant);
