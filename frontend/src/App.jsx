@@ -101,6 +101,7 @@ import ContractDetail from './pages/car-rental/ContractDetail'
 
 import LaundryLayout from './layouts/LaundryLayout'
 import LaundryPOS from './pages/laundry/LaundryPOS'
+import LaundryServices from './pages/laundry/LaundryServices'
 import LaundryKanban from './pages/laundry/LaundryKanban'
 import LaundryCustomers from './pages/laundry/LaundryCustomers'
 import LaundryInventory from './pages/laundry/LaundryInventory'
