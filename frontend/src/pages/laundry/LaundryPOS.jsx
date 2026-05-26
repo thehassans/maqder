@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { motion } from 'framer-motion'
 import { Plus, Minus, Trash2, ShoppingBag, CreditCard, Search, User, Phone, X, Zap } from 'lucide-react'
 import api from '../../lib/api'
-import { addItem, updateItemQuantity, removeItem, clearCart, setIsUrgent, setUrgentPrice, setCustomerName, setCustomerPhone } from '../../store/slices/laundryCartSlice'
+import { addItem, updateItemQuantity, updateItemPrice, removeItem, clearCart, setIsUrgent, setUrgentPrice, setCustomerName, setCustomerPhone } from '../../store/slices/laundryCartSlice'
 import { toast } from 'react-hot-toast'
 import ThermalReceipt from '../../components/ui/ThermalReceipt'
 
@@ -14,19 +14,30 @@ export default function LaundryPOS() {
   const isRtl = language === 'ar'
 
   const [services, setServices] = useState([])
+  const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('all') // 'all', 'services', 'products', or laundry categories
   
-  // Customization Modal states
-  const [selectedService, setSelectedService] = useState(null)
+  // Customization Modal states (Unified for both services and products)
+  const [selectedItem, setSelectedItem] = useState(null)
+  const [itemType, setItemType] = useState('service') // 'service' or 'product'
   const [selectedTreatment, setSelectedTreatment] = useState('')
   const [selectedCustomizations, setSelectedCustomizations] = useState([])
   const [itemQuantity, setItemQuantity] = useState(1)
+  const [itemPrice, setItemPrice] = useState(0)
 
   // Checkout states
   const [isProcessing, setIsProcessing] = useState(false)
   const [completedOrder, setCompletedOrder] = useState(null)
   const receiptRef = useRef(null)
+
+  const CATEGORIES = {
+    wash_fold: isRtl ? 'غسيل وطي' : 'Wash & Fold',
+    dry_clean: isRtl ? 'غسيل جاف' : 'Dry Clean',
+    ironing: isRtl ? 'كوي' : 'Ironing',
+    premium_care: isRtl ? 'عناية فائقة' : 'Premium Care'
+  }
 
   const ALL_CUSTOMIZATIONS = [
     { id: 'folded', labelEn: 'Folded', labelAr: 'مطوي' },
@@ -48,40 +59,87 @@ export default function LaundryPOS() {
   }
   
   useEffect(() => {
-    fetchServices()
+    fetchServicesAndProducts()
   }, [])
 
-  const fetchServices = async () => {
+  const fetchServicesAndProducts = async () => {
     try {
-      const { data } = await api.get('/laundry/services?isActive=true')
-      setServices(data)
+      setLoading(true)
+      const servicesRes = await api.get('/laundry/services?isActive=true')
+      setServices(servicesRes.data)
+      
+      try {
+        const productsRes = await api.get('/products?limit=100')
+        setProducts(productsRes.data.products || [])
+      } catch (err) {
+        console.warn('Products could not be loaded for laundry tenant:', err)
+        setProducts([])
+      }
     } catch (error) {
-      toast.error('Failed to load services')
+      toast.error('Failed to load services or products')
     } finally {
       setLoading(false)
     }
   }
 
-  const filteredServices = services.filter(s => 
-    (s.nameEn?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-     s.nameAr?.includes(searchQuery))
-  )
+  const filteredItems = [
+    ...services.map(s => ({ ...s, itemType: 'service' })),
+    ...products.map(p => ({ ...p, itemType: 'product' }))
+  ].filter(item => {
+    const nameMatches = item.itemType === 'service'
+      ? (item.nameEn?.toLowerCase().includes(searchQuery.toLowerCase()) || item.nameAr?.includes(searchQuery))
+      : (item.nameEn?.toLowerCase().includes(searchQuery.toLowerCase()) || item.nameAr?.includes(searchQuery) || item.sku?.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+    let categoryMatches = false;
+    if (selectedCategory === 'all') {
+      categoryMatches = true;
+    } else if (selectedCategory === 'services') {
+      categoryMatches = item.itemType === 'service';
+    } else if (selectedCategory === 'products') {
+      categoryMatches = item.itemType === 'product';
+    } else {
+      categoryMatches = item.itemType === 'service' && item.category === selectedCategory;
+    }
+    
+    return nameMatches && categoryMatches;
+  })
 
-  const openCustomizationModal = (service) => {
-    setSelectedService(service)
-    setSelectedTreatment(service.treatments?.[0] || 'Wash & Fold')
-    setSelectedCustomizations([])
-    setItemQuantity(1)
+  const openCustomizationModal = (item, type = 'service') => {
+    setSelectedItem(item)
+    setItemType(type)
+    
+    if (type === 'service') {
+      setSelectedTreatment(item.treatments?.[0] || 'Wash & Fold')
+      setSelectedCustomizations([])
+      setItemQuantity(1)
+      setItemPrice(item.basePrice)
+    } else {
+      setSelectedTreatment('None')
+      setSelectedCustomizations([])
+      setItemQuantity(1)
+      setItemPrice(item.sellingPrice)
+    }
   }
 
   const handleAddToCart = () => {
-    dispatch(addItem({
-      service: selectedService,
-      quantity: itemQuantity,
-      treatment: selectedTreatment,
-      customizations: selectedCustomizations
-    }))
-    setSelectedService(null)
+    if (itemType === 'service') {
+      dispatch(addItem({
+        service: selectedItem,
+        quantity: itemQuantity,
+        treatment: selectedTreatment,
+        customizations: selectedCustomizations,
+        unitPrice: itemPrice
+      }))
+    } else {
+      dispatch(addItem({
+        product: selectedItem,
+        quantity: itemQuantity,
+        treatment: 'None',
+        customizations: [],
+        unitPrice: itemPrice
+      }))
+    }
+    setSelectedItem(null)
   }
 
   const toggleCustomization = (id) => {
@@ -102,18 +160,19 @@ export default function LaundryPOS() {
         customerName: cart.customerName || (cart.customer ? cart.customer.fullName : undefined),
         customerPhone: cart.customerPhone || (cart.customer ? cart.customer.mobile : undefined),
         items: cart.items.map(item => ({
-          service: item.service._id,
+          service: item.product ? undefined : item.service?._id,
+          product: item.product?._id,
           nameEn: item.nameEn,
           nameAr: item.nameAr,
           billingType: item.billingType,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
-          taxRate: item.service.taxRate,
+          taxRate: item.product ? (item.product.taxRate || 15) : (item.service?.taxRate || 15),
           subtotal: item.subtotal,
           taxAmount: item.taxAmount,
           total: item.total,
-          treatment: item.treatment,
-          customizations: item.customizations
+          treatment: item.treatment || 'None',
+          customizations: item.customizations || []
         })),
         isUrgent: cart.isUrgent,
         deliveryType: cart.deliveryType,
@@ -138,59 +197,150 @@ export default function LaundryPOS() {
   return (
     <div className="flex flex-col lg:flex-row h-[calc(100vh-6rem)] gap-6">
       
-      {/* Left: Service Grid */}
+      {/* Left: Service & Product Grid */}
       <div className="flex-1 flex flex-col min-w-0">
+        
+        {/* Search Bar */}
         <div className="mb-4 relative">
           <Search className={`absolute top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 ${isRtl ? 'right-4' : 'left-4'}`} />
           <input
             type="text"
-            placeholder={isRtl ? "البحث عن خدمة..." : "Search services..."}
+            placeholder={isRtl ? "البحث عن خدمة أو منتج..." : "Search services or products..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className={`w-full bg-white dark:bg-dark-800 border-none rounded-2xl shadow-sm py-3 focus:ring-2 focus:ring-teal-500 ${isRtl ? 'pr-12' : 'pl-12'}`}
           />
         </div>
 
+        {/* Category Tabs */}
+        <div className="flex gap-2 overflow-x-auto pb-3 mb-4 custom-scrollbar whitespace-nowrap">
+          <button
+            onClick={() => setSelectedCategory('all')}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+              selectedCategory === 'all'
+                ? 'bg-teal-600 text-white shadow-md'
+                : 'bg-white dark:bg-dark-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700'
+            }`}
+          >
+            {isRtl ? 'الكل' : 'All'}
+          </button>
+          
+          <button
+            onClick={() => setSelectedCategory('services')}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+              selectedCategory === 'services'
+                ? 'bg-teal-600 text-white shadow-md'
+                : 'bg-white dark:bg-dark-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700'
+            }`}
+          >
+            {isRtl ? 'الخدمات' : 'Services Only'}
+          </button>
+          
+          <button
+            onClick={() => setSelectedCategory('products')}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+              selectedCategory === 'products'
+                ? 'bg-indigo-600 text-white shadow-md'
+                : 'bg-white dark:bg-dark-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700'
+            }`}
+          >
+            {isRtl ? 'المنتجات' : 'Products Only'}
+          </button>
+          
+          <div className="w-[1px] h-6 bg-gray-200 dark:bg-dark-700 self-center mx-1"></div>
+          
+          {Object.entries(CATEGORIES).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setSelectedCategory(key)}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                selectedCategory === key
+                  ? 'bg-teal-600 text-white shadow-md'
+                  : 'bg-white dark:bg-dark-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-700'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
           {loading ? (
             <div className="flex items-center justify-center h-full text-gray-500">Loading...</div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
-              {filteredServices.map(service => (
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  key={service._id}
-                  onClick={() => openCustomizationModal(service)}
-                  className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-transparent hover:border-teal-500 text-left flex flex-col overflow-hidden group"
-                >
-                  <div className="h-32 w-full bg-gray-100 dark:bg-dark-700 relative">
-                    {service.imageUrl ? (
-                      <img src={service.imageUrl} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400">No Image</div>
-                    )}
-                    <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
-                      {service.category.replace('_', ' ').toUpperCase()}
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4 animate-in fade-in duration-200">
+              {filteredItems.map(item => {
+                const isProd = item.itemType === 'product'
+                return (
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    key={item._id}
+                    onClick={() => openCustomizationModal(item, item.itemType)}
+                    className={`bg-white dark:bg-dark-800 rounded-2xl shadow-sm border-2 border-transparent text-left flex flex-col overflow-hidden group transition-all duration-200 ${
+                      isProd 
+                        ? 'hover:border-indigo-500 hover:shadow-indigo-500/10' 
+                        : 'hover:border-teal-500 hover:shadow-teal-500/10'
+                    }`}
+                  >
+                    <div className="h-32 w-full bg-gray-100 dark:bg-dark-700 relative">
+                      {isProd ? (
+                        item.images?.[0]?.url ? (
+                          <img src={item.images[0].url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                            <ShoppingBag className="w-8 h-8 opacity-40 mb-1" />
+                            <span className="text-xs">No Image</span>
+                          </div>
+                        )
+                      ) : (
+                        item.imageUrl ? (
+                          <img src={item.imageUrl} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                            <Zap className="w-8 h-8 opacity-40 mb-1" />
+                            <span className="text-xs">No Image</span>
+                          </div>
+                        )
+                      )}
+                      
+                      {/* Badges to distinguish Service vs Product */}
+                      <div className={`absolute top-2 left-2 backdrop-blur-md text-white text-[9px] px-2.5 py-0.5 rounded-full font-bold uppercase ${
+                        isProd ? 'bg-indigo-600/90' : 'bg-teal-600/90'
+                      }`}>
+                        {isProd ? (isRtl ? 'منتج' : 'Product') : (isRtl ? 'خدمة' : 'Service')}
+                      </div>
+                      
+                      {!isProd && (
+                        <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-white text-[9px] px-2 py-0.5 rounded-full font-semibold">
+                          {item.category?.replace('_', ' ').toUpperCase()}
+                        </div>
+                      )}
+                      {isProd && item.sku && (
+                        <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md text-white text-[9px] px-2 py-0.5 rounded-full font-mono">
+                          {item.sku}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                  <div className="p-3 flex-1 flex flex-col">
-                    <div className="font-bold text-gray-900 dark:text-white mb-1 line-clamp-1">
-                      {isRtl ? service.nameAr : service.nameEn}
+                    
+                    <div className="p-3 flex-1 flex flex-col justify-between">
+                      <div className="font-bold text-gray-900 dark:text-white mb-1 line-clamp-2 min-h-[2.5rem]">
+                        {isRtl ? (item.nameAr || item.nameEn) : item.nameEn}
+                      </div>
+                      <div className={`text-sm font-bold ${isProd ? 'text-indigo-600' : 'text-teal-600'}`}>
+                        SAR {isProd ? item.sellingPrice.toFixed(2) : item.basePrice.toFixed(2)} / {isProd ? (isRtl ? 'حبة' : 'PC') : (item.billingType === 'per_kg' ? 'KG' : 'PC')}
+                      </div>
                     </div>
-                    <div className="text-sm text-teal-600 font-bold mb-2">
-                      SAR {service.basePrice.toFixed(2)} / {service.billingType === 'per_kg' ? 'KG' : 'PC'}
-                    </div>
-                  </div>
-                </motion.button>
-              ))}
+                  </motion.button>
+                )
+              })}
             </div>
           )}
         </div>
       </div>
 
       {/* Right: Cart Sidebar */}
-      <div className="w-full lg:w-96 bg-white dark:bg-dark-800 rounded-2xl shadow-sm flex flex-col flex-shrink-0">
+      <div className="w-full lg:w-96 bg-white dark:bg-dark-800 rounded-2xl shadow-sm flex flex-col flex-shrink-0 border border-gray-200 dark:border-dark-700">
         <div className="p-4 border-b border-gray-100 dark:border-dark-700">
           <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <ShoppingBag className="w-5 h-5 text-teal-600" />
@@ -259,6 +409,7 @@ export default function LaundryPOS() {
           )}
         </div>
 
+        {/* Cart Item List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
           {cart.items.length === 0 ? (
             <div className="text-center text-gray-500 py-10 flex flex-col items-center">
@@ -267,16 +418,41 @@ export default function LaundryPOS() {
             </div>
           ) : (
             cart.items.map(item => (
-              <div key={item.cartItemId} className="flex gap-3 items-start border-b border-gray-100 dark:border-dark-700 pb-3 last:border-0">
+              <div key={item.cartItemId} className="flex gap-3 items-start border-b border-gray-100 dark:border-dark-700 pb-3 last:border-0 animate-in fade-in">
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-gray-900 dark:text-white truncate">
-                    {isRtl ? item.nameAr : item.nameEn}
+                  <div className="font-medium text-gray-900 dark:text-white truncate flex items-center gap-1.5">
+                    {item.product ? (
+                      <span className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300 text-[8px] font-extrabold px-1.5 py-0.5 rounded uppercase">
+                        {isRtl ? 'منتج' : 'Prod'}
+                      </span>
+                    ) : (
+                      <span className="bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300 text-[8px] font-extrabold px-1.5 py-0.5 rounded uppercase">
+                        {isRtl ? 'خدمة' : 'Serv'}
+                      </span>
+                    )}
+                    <span className="font-semibold text-sm">{isRtl ? item.nameAr : item.nameEn}</span>
                   </div>
-                  <div className="text-xs text-gray-500 mt-0.5">
-                    {item.treatment} {item.customizations?.length > 0 && `• ${item.customizations.join(', ')}`}
-                  </div>
-                  <div className="text-sm text-teal-600 font-medium mt-1">
-                    SAR {item.unitPrice.toFixed(2)} x {item.quantity}
+                  
+                  {!item.product && (
+                    <div className="text-xs text-gray-500 mt-0.5">
+                      {item.treatment} {item.customizations?.length > 0 && `• ${item.customizations.join(', ')}`}
+                    </div>
+                  )}
+                  
+                  {/* Changeable Prices directly in cart */}
+                  <div className="flex items-center gap-1 mt-1">
+                    <span className="text-xs text-gray-400">SAR</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={item.unitPrice}
+                      onChange={(e) => dispatch(updateItemPrice({ cartItemId: item.cartItemId, unitPrice: parseFloat(e.target.value) || 0 }))}
+                      className={`w-16 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded px-1.5 py-0.5 text-xs font-bold text-center focus:ring-1 focus:outline-none ${
+                        item.product ? 'text-indigo-600 focus:ring-indigo-500' : 'text-teal-600 focus:ring-teal-500'
+                      }`}
+                    />
+                    <span className="text-xs text-gray-400">x {item.quantity}</span>
                   </div>
                 </div>
                 
@@ -286,14 +462,14 @@ export default function LaundryPOS() {
                   </div>
                   <div className="flex items-center gap-2 bg-gray-100 dark:bg-dark-700 rounded-lg p-1">
                     <button 
-                      onClick={() => dispatch(updateItemQuantity({ cartItemId: item.cartItemId, quantity: item.quantity - 1 }))}
+                      onClick={() => dispatch(updateItemQuantity({ cartItemId: item.cartItemId, quantity: item.quantity - (item.billingType === 'per_kg' ? 0.5 : 1) }))}
                       className="p-1 hover:bg-white dark:hover:bg-dark-600 rounded text-gray-600 dark:text-gray-300"
                     >
                       <Minus className="w-3 h-3" />
                     </button>
-                    <span className="w-4 text-center text-xs font-medium">{item.quantity}</span>
+                    <span className="w-8 text-center text-xs font-bold">{item.quantity}</span>
                     <button 
-                      onClick={() => dispatch(updateItemQuantity({ cartItemId: item.cartItemId, quantity: item.quantity + 1 }))}
+                      onClick={() => dispatch(updateItemQuantity({ cartItemId: item.cartItemId, quantity: item.quantity + (item.billingType === 'per_kg' ? 0.5 : 1) }))}
                       className="p-1 hover:bg-white dark:hover:bg-dark-600 rounded text-gray-600 dark:text-gray-300"
                     >
                       <Plus className="w-3 h-3" />
@@ -341,27 +517,34 @@ export default function LaundryPOS() {
       </div>
 
       {/* Item Customization Modal */}
-      {selectedService && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-dark-800 rounded-2xl w-full max-w-md overflow-hidden shadow-xl">
-            <div className="p-4 border-b border-gray-100 dark:border-dark-700 flex justify-between items-center bg-gray-50 dark:bg-dark-900">
-              <h3 className="font-bold text-lg">
-                {isRtl ? selectedService.nameAr : selectedService.nameEn}
-              </h3>
-              <button onClick={() => setSelectedService(null)} className="p-1 hover:bg-gray-200 dark:hover:bg-dark-700 rounded-lg">
+      {selectedItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-dark-800 rounded-2xl w-full max-w-md overflow-hidden shadow-xl border border-gray-200 dark:border-dark-700">
+            <div className={`p-4 border-b border-gray-100 dark:border-dark-700 flex justify-between items-center text-white ${
+              itemType === 'product' ? 'bg-indigo-600 dark:bg-indigo-700' : 'bg-teal-600 dark:bg-teal-700'
+            }`}>
+              <div>
+                <span className="text-[10px] uppercase font-bold tracking-wider opacity-90 block mb-0.5">
+                  {itemType === 'product' ? (isRtl ? 'إضافة منتج' : 'Add Product') : (isRtl ? 'تخصيص الخدمة' : 'Customize Service')}
+                </span>
+                <h3 className="font-bold text-lg leading-tight">
+                  {isRtl ? (selectedItem.nameAr || selectedItem.nameEn) : selectedItem.nameEn}
+                </h3>
+              </div>
+              <button onClick={() => setSelectedItem(null)} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
             
             <div className="p-5 space-y-6">
-              {/* Treatment Selection */}
-              {selectedService.treatments?.length > 0 && (
+              {/* Treatment Selection (Services Only) */}
+              {itemType === 'service' && selectedItem.treatments?.length > 0 && (
                 <div>
                   <h4 className="font-semibold text-gray-900 dark:text-white mb-3">
                     {isRtl ? 'اختر المعالجة' : 'Select Treatment'}
                   </h4>
                   <div className="grid grid-cols-2 gap-2">
-                    {selectedService.treatments.map(treatment => (
+                    {selectedItem.treatments.map(treatment => (
                       <button
                         key={treatment}
                         onClick={() => setSelectedTreatment(treatment)}
@@ -378,59 +561,107 @@ export default function LaundryPOS() {
                 </div>
               )}
 
-              {/* Customizations */}
+              {/* Customizations (Services Only) */}
+              {itemType === 'service' && (
+                <div>
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-3">
+                    {isRtl ? 'التخصيص' : 'Customizations'}
+                  </h4>
+                  <div className="flex flex-wrap gap-2">
+                    {ALL_CUSTOMIZATIONS.map(opt => {
+                      const isSelected = selectedCustomizations.includes(opt.id)
+                      return (
+                        <button
+                          key={opt.id}
+                          onClick={() => toggleCustomization(opt.id)}
+                          className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                            isSelected
+                              ? 'border-teal-500 bg-teal-500 text-white'
+                              : 'border-gray-300 dark:border-dark-600 text-gray-600 dark:text-gray-300 hover:border-teal-500'
+                          }`}
+                        >
+                          {isRtl ? opt.labelAr : opt.labelEn}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Changeable Price Input */}
               <div>
                 <h4 className="font-semibold text-gray-900 dark:text-white mb-3">
-                  {isRtl ? 'التخصيص' : 'Customizations'}
+                  {isRtl ? 'سعر الوحدة (SAR)' : 'Unit Price (SAR)'}
                 </h4>
-                <div className="flex flex-wrap gap-2">
-                  {ALL_CUSTOMIZATIONS.map(opt => {
-                    const isSelected = selectedCustomizations.includes(opt.id)
-                    return (
-                      <button
-                        key={opt.id}
-                        onClick={() => toggleCustomization(opt.id)}
-                        className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-                          isSelected
-                            ? 'border-teal-500 bg-teal-500 text-white'
-                            : 'border-gray-300 dark:border-dark-600 text-gray-600 dark:text-gray-300 hover:border-teal-500'
-                        }`}
-                      >
-                        {isRtl ? opt.labelAr : opt.labelEn}
-                      </button>
-                    )
-                  })}
+                <div className="relative">
+                  <span className={`absolute top-1/2 -translate-y-1/2 text-gray-400 text-sm font-bold ${isRtl ? 'right-3' : 'left-3'}`}>SAR</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={itemPrice}
+                    onChange={(e) => setItemPrice(parseFloat(e.target.value) || 0)}
+                    className={`w-full bg-white dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-xl py-2.5 text-sm font-bold focus:ring-2 ${
+                      itemType === 'product' ? 'focus:ring-indigo-500 text-indigo-600' : 'focus:ring-teal-500 text-teal-600'
+                    } ${isRtl ? 'pr-12 pl-3' : 'pl-12 pr-3'}`}
+                  />
                 </div>
               </div>
 
-              {/* Quantity */}
+              {/* Quantity / Weight / SQM Area Selection */}
               <div>
                 <h4 className="font-semibold text-gray-900 dark:text-white mb-3">
-                  {isRtl ? 'الكمية' : 'Quantity'}
+                  {itemType === 'service' && selectedItem.billingType === 'per_kg'
+                    ? (selectedItem.nameEn?.toLowerCase().includes('carpet')
+                      ? (isRtl ? 'إجمالي المساحة (متر مربع - SQM)' : 'Total Area (SQM)')
+                      : (isRtl ? 'الوزن الإجمالي (كجم)' : 'Total Weight (KG)'))
+                    : (isRtl ? 'الكمية' : 'Quantity')
+                  }
                 </h4>
-                <div className="flex items-center gap-4">
-                  <button 
-                    onClick={() => setItemQuantity(Math.max(1, itemQuantity - 1))}
-                    className="p-3 bg-gray-100 dark:bg-dark-700 rounded-xl hover:bg-gray-200"
-                  >
-                    <Minus className="w-5 h-5" />
-                  </button>
-                  <span className="text-xl font-bold w-12 text-center">{itemQuantity}</span>
-                  <button 
-                    onClick={() => setItemQuantity(itemQuantity + 1)}
-                    className="p-3 bg-gray-100 dark:bg-dark-700 rounded-xl hover:bg-gray-200"
-                  >
-                    <Plus className="w-5 h-5" />
-                  </button>
-                </div>
+                {itemType === 'service' && selectedItem.billingType === 'per_kg' ? (
+                  <div className="relative">
+                    <input 
+                      type="number" 
+                      step="0.1" 
+                      min="0.1" 
+                      value={itemQuantity}
+                      onChange={(e) => setItemQuantity(parseFloat(e.target.value) || 0)}
+                      className="w-full bg-white dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-xl py-2.5 px-4 text-lg font-bold text-center focus:ring-2 focus:ring-teal-500"
+                    />
+                    <span className={`absolute top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm ${isRtl ? 'left-4' : 'right-4'}`}>
+                      {selectedItem.nameEn?.toLowerCase().includes('carpet') ? 'SQM' : 'KG'}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-4">
+                    <button 
+                      onClick={() => setItemQuantity(Math.max(1, itemQuantity - 1))}
+                      className="p-3 bg-gray-100 dark:bg-dark-700 rounded-xl hover:bg-gray-200 transition-colors"
+                    >
+                      <Minus className="w-5 h-5" />
+                    </button>
+                    <span className="text-xl font-bold w-12 text-center">{itemQuantity}</span>
+                    <button 
+                      onClick={() => setItemQuantity(itemQuantity + 1)}
+                      className="p-3 bg-gray-100 dark:bg-dark-700 rounded-xl hover:bg-gray-200 transition-colors"
+                    >
+                      <Plus className="w-5 h-5" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
-            <div className="p-4 border-t border-gray-100 dark:border-dark-700 flex gap-3">
-              <button onClick={() => setSelectedService(null)} className="btn btn-secondary flex-1">
+            <div className="p-4 border-t border-gray-100 dark:border-dark-700 flex gap-3 bg-gray-50 dark:bg-dark-900/50">
+              <button onClick={() => setSelectedItem(null)} className="btn btn-secondary flex-1">
                 {isRtl ? 'إلغاء' : 'Cancel'}
               </button>
-              <button onClick={handleAddToCart} className="btn btn-primary flex-1 bg-teal-600 hover:bg-teal-700 text-white border-none">
+              <button 
+                onClick={handleAddToCart} 
+                className={`btn flex-1 text-white border-none shadow-md ${
+                  itemType === 'product' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-teal-600 hover:bg-teal-700'
+                }`}
+              >
                 {isRtl ? 'إضافة للطلب' : 'Add to Order'}
               </button>
             </div>

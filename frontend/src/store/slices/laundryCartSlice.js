@@ -45,28 +45,45 @@ const laundryCartSlice = createSlice({
       state.customerPhone = action.payload;
     },
     addItem: (state, action) => {
-      const { service, quantity, treatment, customizations } = action.payload;
-      const cartItemId = `${service._id}-${treatment || 'default'}-${(customizations || []).join('-')}`;
+      const { service, product, quantity, treatment, customizations, unitPrice } = action.payload;
       
+      const isProduct = Boolean(product);
+      const itemId = isProduct ? product._id : service._id;
+      const price = unitPrice !== undefined ? Number(unitPrice) : (isProduct ? product.sellingPrice : service.basePrice);
+      
+      const cartItemId = isProduct
+        ? `prod-${itemId}-${price}`
+        : `${itemId}-${treatment || 'default'}-${(customizations || []).join('-')}-${price}`;
+        
       const existingItemIndex = state.items.findIndex(item => item.cartItemId === cartItemId);
       
       if (existingItemIndex >= 0) {
-        // Update existing item
         state.items[existingItemIndex].quantity += quantity;
         state.items[existingItemIndex] = calculateItemTotals(state.items[existingItemIndex]);
       } else {
-        // Add new item
-        state.items.push(calculateItemTotals({
+        const itemObj = {
           cartItemId,
-          service,
-          nameEn: service.nameEn,
-          nameAr: service.nameAr,
-          billingType: service.billingType,
-          unitPrice: service.basePrice,
           quantity,
-          treatment: treatment || service.treatments?.[0] || 'Wash & Fold',
-          customizations: customizations || []
-        }));
+          unitPrice: price,
+          treatment: isProduct ? 'None' : (treatment || service.treatments?.[0] || 'Wash & Fold'),
+          customizations: isProduct ? [] : (customizations || [])
+        };
+        
+        if (isProduct) {
+          itemObj.product = product;
+          itemObj.nameEn = product.nameEn;
+          itemObj.nameAr = product.nameAr || product.nameEn;
+          itemObj.billingType = 'per_piece';
+          const taxRate = product.taxRate !== undefined ? product.taxRate : 15;
+          itemObj.service = { taxRate }; // to keep backward compatibility with calculateItemTotals helper
+        } else {
+          itemObj.service = service;
+          itemObj.nameEn = service.nameEn;
+          itemObj.nameAr = service.nameAr;
+          itemObj.billingType = service.billingType;
+        }
+        
+        state.items.push(calculateItemTotals(itemObj));
       }
     },
     updateItemQuantity: (state, action) => {
@@ -81,6 +98,14 @@ const laundryCartSlice = createSlice({
         }
       }
     },
+    updateItemPrice: (state, action) => {
+      const { cartItemId, unitPrice } = action.payload;
+      const index = state.items.findIndex(item => item.cartItemId === cartItemId);
+      if (index >= 0) {
+        state.items[index].unitPrice = Number(unitPrice) || 0;
+        state.items[index] = calculateItemTotals(state.items[index]);
+      }
+    },
     removeItem: (state, action) => {
       const cartItemId = action.payload;
       state.items = state.items.filter(item => item.cartItemId !== cartItemId);
@@ -92,7 +117,7 @@ const laundryCartSlice = createSlice({
 export const { 
   setCustomer, setDeliveryType, setNotes, setIsUrgent, setUrgentPrice,
   setCustomerName, setCustomerPhone,
-  addItem, updateItemQuantity, removeItem, clearCart 
+  addItem, updateItemQuantity, updateItemPrice, removeItem, clearCart 
 } = laundryCartSlice.actions;
 
 // Selectors

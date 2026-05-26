@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.use(protect);
 router.use(tenantFilter);
-router.use(requireBusinessType('trading'));
+router.use(requireBusinessType('trading', 'laundry'));
 
 const computeTotalStock = (product) => {
   const stocks = Array.isArray(product?.stocks) ? product.stocks : [];

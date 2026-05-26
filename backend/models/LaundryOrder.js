@@ -2,7 +2,8 @@ import mongoose from 'mongoose';
 import { generateZatcaQr } from '../lib/zatcaQr.js';
 
 const laundryOrderItemSchema = new mongoose.Schema({
-  service: { type: mongoose.Schema.Types.ObjectId, ref: 'LaundryService', required: true },
+  service: { type: mongoose.Schema.Types.ObjectId, ref: 'LaundryService' },
+  product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
   nameEn: { type: String, required: true },
   nameAr: { type: String, required: true },
   billingType: { type: String, enum: ['per_kg', 'per_piece'], required: true },
@@ -12,13 +13,13 @@ const laundryOrderItemSchema = new mongoose.Schema({
   subtotal: { type: Number, required: true },
   taxAmount: { type: Number, required: true },
   total: { type: Number, required: true },
-  treatment: { type: String, enum: ['Wash & Fold', 'Dry Clean', 'Wash & Iron', 'Iron Only', 'Pressing'], default: 'Wash & Fold' },
+  treatment: { type: String, enum: ['Wash & Fold', 'Dry Clean', 'Wash & Iron', 'Iron Only', 'Pressing', 'None'], default: 'Wash & Fold' },
   customizations: [{ type: String }] // e.g., 'On Hanger', 'Folded', 'Starch'
 }, { _id: true });
 
 const laundryOrderSchema = new mongoose.Schema({
   tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
-  orderNumber: { type: String, required: true },
+  orderNumber: { type: String },
   customer: { type: mongoose.Schema.Types.ObjectId, ref: 'LaundryCustomer' },
   customerName: { type: String },
   customerPhone: { type: String },
