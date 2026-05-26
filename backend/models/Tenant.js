@@ -183,8 +183,8 @@ const tenantSchema = new mongoose.Schema({
 
 tenantSchema.pre('validate', function(next) {
   const values = Array.isArray(this.businessTypes) && this.businessTypes.length > 0
-    ? this.businessTypes
-    : [this.businessType || 'trading'];
+    ? this.businessTypes.map(v => String(v || '').trim().toLowerCase())
+    : [String(this.businessType || 'trading').trim().toLowerCase()];
   const currentSubscription = this.subscription?.toObject?.() || this.subscription || {};
   const features = Array.isArray(currentSubscription.features) ? currentSubscription.features.filter(Boolean) : [];
   const hasEmailAddon = currentSubscription.hasEmailAddon === true;
