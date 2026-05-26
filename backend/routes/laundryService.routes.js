@@ -32,18 +32,154 @@ router.post('/seed', checkPermission('laundry', 'create'), async (req, res) => {
     }
 
     const defaultServicesRaw = [
-      { nameEn: 'Shirt Wash & Iron', nameAr: 'غسيل وكوي قميص', category: 'wash_fold', billingType: 'per_piece', basePrice: 5, imgName: 'shirt', treatments: ['Wash & Iron', 'Dry Clean'] },
-      { nameEn: 'T-Shirt Wash & Fold', nameAr: 'غسيل وطي تي شيرت', category: 'wash_fold', billingType: 'per_piece', basePrice: 3, imgName: 'tshirt', treatments: ['Wash & Fold'] },
-      { nameEn: 'Pants / Trousers', nameAr: 'بنطلون', category: 'dry_clean', billingType: 'per_piece', basePrice: 7, imgName: 'pants', treatments: ['Dry Clean', 'Wash & Iron'] },
-      { nameEn: 'Suit (2 Piece)', nameAr: 'بدلة قطعتين', category: 'dry_clean', billingType: 'per_piece', basePrice: 25, imgName: 'suit', treatments: ['Dry Clean'] },
-      { nameEn: 'Dress', nameAr: 'فستان', category: 'dry_clean', billingType: 'per_piece', basePrice: 20, imgName: 'dress', treatments: ['Dry Clean', 'Wash & Iron'] },
-      { nameEn: 'Blanket / Comforter', nameAr: 'بطانية / لحاف', category: 'premium_care', billingType: 'per_piece', basePrice: 35, imgName: 'blanket', treatments: ['Wash & Fold'] },
-      { nameEn: 'Carpet (per SQM)', nameAr: 'سجاد (بالمتر المربع)', category: 'premium_care', billingType: 'per_kg', basePrice: 15, imgName: 'carpet', treatments: ['Wash'] },
-      { nameEn: 'Jacket / Coat', nameAr: 'جاكيت / معطف', category: 'dry_clean', billingType: 'per_piece', basePrice: 18, imgName: 'jacket', treatments: ['Dry Clean'] },
-      { nameEn: 'Thobe (Traditional)', nameAr: 'ثوب', category: 'wash_fold', billingType: 'per_piece', basePrice: 6, imgName: 'thobe', treatments: ['Wash & Iron', 'Dry Clean'] },
-      { nameEn: 'Abaya', nameAr: 'عباية', category: 'dry_clean', billingType: 'per_piece', basePrice: 15, imgName: 'abaya', treatments: ['Dry Clean', 'Wash & Iron'] },
-      { nameEn: 'Shemagh', nameAr: 'شماغ', category: 'ironing', billingType: 'per_piece', basePrice: 4, imgName: 'shemagh', treatments: ['Wash & Iron', 'Iron Only'] },
-      { nameEn: 'Curtains (per kg)', nameAr: 'ستائر (بالكيلو)', category: 'premium_care', billingType: 'per_kg', basePrice: 10, imgName: 'curtains', treatments: ['Wash & Fold'] }
+      {
+        nameEn: 'Thobe (Traditional)',
+        nameAr: 'ثوب تقليدي',
+        category: 'clothes',
+        billingType: 'per_piece',
+        basePrice: 7,
+        imgName: 'thobe',
+        treatments: [
+          { nameEn: 'Wash & Iron', nameAr: 'غسيل وكوي', price: 7 },
+          { nameEn: 'Dry Clean', nameAr: 'تنظيف جاف', price: 12 },
+          { nameEn: 'Iron Only', nameAr: 'كوي فقط', price: 4 }
+        ]
+      },
+      {
+        nameEn: 'Abaya',
+        nameAr: 'عباية',
+        category: 'clothes',
+        billingType: 'per_piece',
+        basePrice: 12,
+        imgName: 'abaya',
+        treatments: [
+          { nameEn: 'Wash & Iron', nameAr: 'غسيل وكوي', price: 12 },
+          { nameEn: 'Dry Clean', nameAr: 'تنظيف جاف', price: 15 },
+          { nameEn: 'Iron Only', nameAr: 'كوي فقط', price: 6 }
+        ]
+      },
+      {
+        nameEn: 'Shemagh',
+        nameAr: 'شماغ',
+        category: 'clothes',
+        billingType: 'per_piece',
+        basePrice: 5,
+        imgName: 'shemagh',
+        treatments: [
+          { nameEn: 'Wash & Iron', nameAr: 'غسيل وكوي', price: 5 },
+          { nameEn: 'Iron Only', nameAr: 'كوي فقط', price: 3 }
+        ]
+      },
+      {
+        nameEn: 'Shirt',
+        nameAr: 'قميص',
+        category: 'clothes',
+        billingType: 'per_piece',
+        basePrice: 5,
+        imgName: 'shirt',
+        treatments: [
+          { nameEn: 'Wash & Iron', nameAr: 'غسيل وكوي', price: 5 },
+          { nameEn: 'Dry Clean', nameAr: 'تنظيف جاف', price: 10 },
+          { nameEn: 'Iron Only', nameAr: 'كوي فقط', price: 3 },
+          { nameEn: 'Wash & Fold', nameAr: 'غسيل وطي', price: 4 }
+        ]
+      },
+      {
+        nameEn: 'T-Shirt',
+        nameAr: 'تي شيرت',
+        category: 'clothes',
+        billingType: 'per_piece',
+        basePrice: 3,
+        imgName: 'tshirt',
+        treatments: [
+          { nameEn: 'Wash & Fold', nameAr: 'غسيل وطي', price: 3 },
+          { nameEn: 'Wash & Iron', nameAr: 'غسيل وكوي', price: 4 },
+          { nameEn: 'Dry Clean', nameAr: 'تنظيف جاف', price: 7 }
+        ]
+      },
+      {
+        nameEn: 'Pants / Trousers',
+        nameAr: 'بنطلون',
+        category: 'clothes',
+        billingType: 'per_piece',
+        basePrice: 6,
+        imgName: 'pants',
+        treatments: [
+          { nameEn: 'Wash & Iron', nameAr: 'غسيل وكوي', price: 6 },
+          { nameEn: 'Dry Clean', nameAr: 'تنظيف جاف', price: 8 },
+          { nameEn: 'Iron Only', nameAr: 'كوي فقط', price: 4 }
+        ]
+      },
+      {
+        nameEn: 'Suit (2 Piece)',
+        nameAr: 'بدلة قطعتين',
+        category: 'clothes',
+        billingType: 'per_piece',
+        basePrice: 25,
+        imgName: 'suit',
+        treatments: [
+          { nameEn: 'Dry Clean', nameAr: 'تنظيف جاف', price: 25 },
+          { nameEn: 'Pressing', nameAr: 'كبس فقط', price: 15 }
+        ]
+      },
+      {
+        nameEn: 'Dress',
+        nameAr: 'فستان',
+        category: 'clothes',
+        billingType: 'per_piece',
+        basePrice: 20,
+        imgName: 'dress',
+        treatments: [
+          { nameEn: 'Dry Clean', nameAr: 'تنظيف جاف', price: 20 },
+          { nameEn: 'Wash & Iron', nameAr: 'غسيل وكوي', price: 18 }
+        ]
+      },
+      {
+        nameEn: 'Jacket / Coat',
+        nameAr: 'جاكيت / معطف',
+        category: 'clothes',
+        billingType: 'per_piece',
+        basePrice: 18,
+        imgName: 'jacket',
+        treatments: [
+          { nameEn: 'Dry Clean', nameAr: 'تنظيف جاف', price: 18 },
+          { nameEn: 'Pressing', nameAr: 'كبس فقط', price: 10 }
+        ]
+      },
+      {
+        nameEn: 'Blanket / Comforter',
+        nameAr: 'بطانية / لحاف',
+        category: 'bedding',
+        billingType: 'per_piece',
+        basePrice: 30,
+        imgName: 'blanket',
+        treatments: [
+          { nameEn: 'Wash & Fold', nameAr: 'غسيل وطي', price: 30 },
+          { nameEn: 'Dry Clean', nameAr: 'تنظيف جاف', price: 40 }
+        ]
+      },
+      {
+        nameEn: 'Carpet',
+        nameAr: 'سجاد',
+        category: 'carpets',
+        billingType: 'per_sqm',
+        basePrice: 15,
+        imgName: 'carpet',
+        treatments: [
+          { nameEn: 'Wash', nameAr: 'غسيل سجاد', price: 15 }
+        ]
+      },
+      {
+        nameEn: 'Curtains',
+        nameAr: 'ستائر',
+        category: 'accessories',
+        billingType: 'per_kg',
+        basePrice: 15,
+        imgName: 'curtains',
+        treatments: [
+          { nameEn: 'Wash & Fold', nameAr: 'غسيل وطي ستائر', price: 15 }
+        ]
+      }
     ];
 
     const defaultServices = defaultServicesRaw.map(s => {

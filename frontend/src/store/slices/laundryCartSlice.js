@@ -49,11 +49,23 @@ const laundryCartSlice = createSlice({
       
       const isProduct = Boolean(product);
       const itemId = isProduct ? product._id : service._id;
-      const price = unitPrice !== undefined ? Number(unitPrice) : (isProduct ? product.sellingPrice : service.basePrice);
       
+      // Determine default treatment and price
+      let selectedTreatment = 'None';
+      let price = 0;
+      
+      if (isProduct) {
+        price = unitPrice !== undefined ? Number(unitPrice) : (product.sellingPrice || 0);
+      } else {
+        const defaultTreatmentObj = service.treatments?.find(t => t.nameEn === treatment) || service.treatments?.[0];
+        selectedTreatment = defaultTreatmentObj ? defaultTreatmentObj.nameEn : 'Wash & Fold';
+        price = unitPrice !== undefined ? Number(unitPrice) : (defaultTreatmentObj ? defaultTreatmentObj.price : (service.basePrice || 0));
+      }
+      
+      // Cart item ID based on item type and selected treatment
       const cartItemId = isProduct
-        ? `prod-${itemId}-${price}`
-        : `${itemId}-${treatment || 'default'}-${(customizations || []).join('-')}-${price}`;
+        ? `prod-${itemId}`
+        : `service-${itemId}-${selectedTreatment}`;
         
       const existingItemIndex = state.items.findIndex(item => item.cartItemId === cartItemId);
       
@@ -65,7 +77,7 @@ const laundryCartSlice = createSlice({
           cartItemId,
           quantity,
           unitPrice: price,
-          treatment: isProduct ? 'None' : (treatment || service.treatments?.[0] || 'Wash & Fold'),
+          treatment: selectedTreatment,
           customizations: isProduct ? [] : (customizations || [])
         };
         
@@ -75,7 +87,7 @@ const laundryCartSlice = createSlice({
           itemObj.nameAr = product.nameAr || product.nameEn;
           itemObj.billingType = 'per_piece';
           const taxRate = product.taxRate !== undefined ? product.taxRate : 15;
-          itemObj.service = { taxRate }; // to keep backward compatibility with calculateItemTotals helper
+          itemObj.service = { taxRate };
         } else {
           itemObj.service = service;
           itemObj.nameEn = service.nameEn;
@@ -90,10 +102,11 @@ const laundryCartSlice = createSlice({
       const { cartItemId, quantity } = action.payload;
       const index = state.items.findIndex(item => item.cartItemId === cartItemId);
       if (index >= 0) {
-        if (quantity <= 0) {
+        const newQty = Number(quantity);
+        if (newQty <= 0) {
           state.items.splice(index, 1);
         } else {
-          state.items[index].quantity = quantity;
+          state.items[index].quantity = newQty;
           state.items[index] = calculateItemTotals(state.items[index]);
         }
       }
@@ -104,6 +117,41 @@ const laundryCartSlice = createSlice({
       if (index >= 0) {
         state.items[index].unitPrice = Number(unitPrice) || 0;
         state.items[index] = calculateItemTotals(state.items[index]);
+      }
+    },
+    updateItemTreatment: (state, action) => {
+      const { cartItemId, treatmentName, unitPrice } = action.payload;
+      const index = state.items.findIndex(item => item.cartItemId === cartItemId);
+      if (index >= 0) {
+        const item = state.items[index];
+        const isProduct = Boolean(item.product);
+        
+        if (!isProduct) {
+          item.treatment = treatmentName;
+          item.unitPrice = Number(unitPrice);
+          
+          // Regenerate cartItemId because treatment changed
+          const newCartItemId = `service-${item.service._id}-${treatmentName}`;
+          
+          // Check if there is already an item with this new ID
+          const existingIndex = state.items.findIndex(it => it.cartItemId === newCartItemId);
+          if (existingIndex >= 0 && existingIndex !== index) {
+            // Merge them
+            state.items[existingIndex].quantity += item.quantity;
+            state.items[existingIndex] = calculateItemTotals(state.items[existingIndex]);
+            state.items.splice(index, 1);
+          } else {
+            item.cartItemId = newCartItemId;
+            state.items[index] = calculateItemTotals(item);
+          }
+        }
+      }
+    },
+    updateItemCustomizations: (state, action) => {
+      const { cartItemId, customizations } = action.payload;
+      const index = state.items.findIndex(item => item.cartItemId === cartItemId);
+      if (index >= 0) {
+        state.items[index].customizations = customizations;
       }
     },
     removeItem: (state, action) => {
@@ -117,7 +165,7 @@ const laundryCartSlice = createSlice({
 export const { 
   setCustomer, setDeliveryType, setNotes, setIsUrgent, setUrgentPrice,
   setCustomerName, setCustomerPhone,
-  addItem, updateItemQuantity, updateItemPrice, removeItem, clearCart 
+  addItem, updateItemQuantity, updateItemPrice, updateItemTreatment, updateItemCustomizations, removeItem, clearCart 
 } = laundryCartSlice.actions;
 
 // Selectors
