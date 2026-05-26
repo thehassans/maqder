@@ -502,9 +502,9 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
 
   return (
     <div className={`relative overflow-hidden rounded-[2rem] border shadow-[0_30px_80px_-40px_rgba(15,23,42,0.30)] ${styles.shell}`} style={shellStyle}>
-      <div className="absolute inset-x-0 top-0 h-1.5 print:hidden" style={accentBarStyle} />
+      <div className="absolute inset-x-0 top-0 h-1.5 print:hidden" style={accentBarStyle} data-html2canvas-ignore="true" />
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
-        {logoSrc ? <img src={logoSrc} alt="" className="h-[32rem] w-[32rem] object-contain opacity-[0.12]" /> : null}
+        {logoSrc ? <img src={logoSrc} alt="" className="h-[32rem] w-[32rem] object-contain opacity-[0.15]" /> : null}
       </div>
       <div className="relative px-6 pb-6 pt-7">
         <div className="border-b border-slate-200 pb-6">
