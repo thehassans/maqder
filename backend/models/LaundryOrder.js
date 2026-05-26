@@ -20,6 +20,8 @@ const laundryOrderSchema = new mongoose.Schema({
   tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
   orderNumber: { type: String, required: true },
   customer: { type: mongoose.Schema.Types.ObjectId, ref: 'LaundryCustomer' },
+  customerName: { type: String },
+  customerPhone: { type: String },
   
   status: { 
     type: String, 
@@ -39,6 +41,7 @@ const laundryOrderSchema = new mongoose.Schema({
   // Financials
   subtotal: { type: Number, required: true, default: 0 },
   totalVat: { type: Number, required: true, default: 0 },
+  urgentFee: { type: Number, default: 0 },
   grandTotal: { type: Number, required: true, default: 0 },
   amountPaid: { type: Number, default: 0 },
   paymentStatus: { type: String, enum: ['unpaid', 'partial', 'paid'], default: 'unpaid' },
@@ -85,7 +88,9 @@ laundryOrderSchema.pre('save', async function(next) {
     
     this.subtotal = subtotal;
     this.totalVat = totalVat;
-    this.grandTotal = subtotal + totalVat;
+    this.grandTotal = subtotal + totalVat + (this.urgentFee || 0);
+  } else if (this.isModified('urgentFee')) {
+    this.grandTotal = this.subtotal + this.totalVat + (this.urgentFee || 0);
   }
   
   // 3. Payment Status

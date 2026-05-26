@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { motion } from 'framer-motion'
-import { Plus, Minus, Trash2, ShoppingBag, CreditCard, Search, UserPlus, X, Zap } from 'lucide-react'
+import { Plus, Minus, Trash2, ShoppingBag, CreditCard, Search, User, Phone, X, Zap } from 'lucide-react'
 import api from '../../lib/api'
-import { addItem, updateItemQuantity, removeItem, clearCart, setIsUrgent } from '../../store/slices/laundryCartSlice'
+import { addItem, updateItemQuantity, removeItem, clearCart, setIsUrgent, setUrgentPrice, setCustomerName, setCustomerPhone } from '../../store/slices/laundryCartSlice'
 import { toast } from 'react-hot-toast'
 import ThermalReceipt from '../../components/ui/ThermalReceipt'
 
@@ -99,6 +99,8 @@ export default function LaundryPOS() {
     try {
       const payload = {
         customer: cart.customer?._id,
+        customerName: cart.customerName || (cart.customer ? cart.customer.fullName : undefined),
+        customerPhone: cart.customerPhone || (cart.customer ? cart.customer.mobile : undefined),
         items: cart.items.map(item => ({
           service: item.service._id,
           nameEn: item.nameEn,
@@ -118,8 +120,9 @@ export default function LaundryPOS() {
         notes: cart.notes,
         subtotal: cart.items.reduce((s, i) => s + i.subtotal, 0),
         totalVat: cart.items.reduce((s, i) => s + i.taxAmount, 0),
-        grandTotal: cart.items.reduce((s, i) => s + i.total, 0) + (cart.isUrgent ? 10 : 0), // Flat urgency fee or could be %
-        amountPaid: cart.items.reduce((s, i) => s + i.total, 0) + (cart.isUrgent ? 10 : 0), 
+        urgentFee: cart.isUrgent ? cart.urgentPrice : 0,
+        grandTotal: cart.items.reduce((s, i) => s + i.total, 0) + (cart.isUrgent ? cart.urgentPrice : 0),
+        amountPaid: cart.items.reduce((s, i) => s + i.total, 0) + (cart.isUrgent ? cart.urgentPrice : 0), 
       }
       
       const { data } = await api.post('/laundry/orders/checkout', payload)
@@ -195,30 +198,65 @@ export default function LaundryPOS() {
           </h2>
         </div>
 
-        {/* Customer Selector (Simple version) */}
-        <div className="p-4 border-b border-gray-100 dark:border-dark-700">
-          <button className="w-full flex items-center justify-center gap-2 py-2 border-2 border-dashed border-gray-300 dark:border-dark-600 rounded-xl text-gray-500 hover:text-teal-600 hover:border-teal-500 transition-colors">
-            <UserPlus className="w-4 h-4" />
-            {isRtl ? 'إضافة عميل' : 'Add Customer (Optional)'}
-          </button>
+        {/* Customer Quick Inputs */}
+        <div className="p-4 border-b border-gray-100 dark:border-dark-700 space-y-3 bg-gray-50 dark:bg-dark-900/30">
+          <div className="relative">
+            <User className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 ${isRtl ? 'right-3' : 'left-3'}`} />
+            <input
+              type="text"
+              placeholder={isRtl ? "اسم العميل" : "Customer Name"}
+              value={cart.customerName}
+              onChange={(e) => dispatch(setCustomerName(e.target.value))}
+              className={`w-full bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-600 rounded-xl py-2 text-sm focus:ring-2 focus:ring-teal-500 ${isRtl ? 'pr-9 pl-3' : 'pl-9 pr-3'}`}
+            />
+          </div>
+          <div className="relative">
+            <Phone className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 ${isRtl ? 'right-3' : 'left-3'}`} />
+            <input
+              type="text"
+              placeholder={isRtl ? "رقم الهاتف" : "Phone Number"}
+              value={cart.customerPhone}
+              onChange={(e) => dispatch(setCustomerPhone(e.target.value))}
+              className={`w-full bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-600 rounded-xl py-2 text-sm focus:ring-2 focus:ring-teal-500 ${isRtl ? 'pr-9 pl-3' : 'pl-9 pr-3'}`}
+            />
+          </div>
         </div>
 
         {/* Order Urgency Toggle */}
         <div className="p-4 border-b border-gray-100 dark:border-dark-700 bg-gray-50 dark:bg-dark-900/30">
-          <label className="flex items-center justify-between cursor-pointer">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between mb-2">
+            <label className="flex items-center gap-2 cursor-pointer">
               <Zap className={`w-5 h-5 ${cart.isUrgent ? 'text-amber-500' : 'text-gray-400'}`} />
               <span className={`font-semibold ${cart.isUrgent ? 'text-amber-600 dark:text-amber-500' : 'text-gray-600 dark:text-gray-300'}`}>
-                {isRtl ? 'طلب عاجل (+10 ريال)' : 'Urgent Order (+10 SAR)'}
+                {isRtl ? 'طلب عاجل' : 'Urgent Order'}
               </span>
-            </div>
+            </label>
             <input 
               type="checkbox" 
               className="toggle toggle-warning" 
               checked={cart.isUrgent} 
               onChange={(e) => dispatch(setIsUrgent(e.target.checked))} 
             />
-          </label>
+          </div>
+          
+          {cart.isUrgent && (
+            <div className="flex items-center justify-between gap-3 mt-3 animate-in fade-in slide-in-from-top-2">
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                {isRtl ? 'رسوم العاجل:' : 'Urgent Fee:'}
+              </span>
+              <div className="relative w-32">
+                <span className={`absolute top-1/2 -translate-y-1/2 text-gray-500 text-sm ${isRtl ? 'right-3' : 'left-3'}`}>SAR</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={cart.urgentPrice}
+                  onChange={(e) => dispatch(setUrgentPrice(e.target.value))}
+                  className={`w-full bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-600 rounded-lg py-1.5 text-sm focus:ring-2 focus:ring-amber-500 font-bold ${isRtl ? 'pr-12 pl-2' : 'pl-12 pr-2'}`}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
@@ -279,12 +317,12 @@ export default function LaundryPOS() {
           {cart.isUrgent && (
             <div className="flex justify-between text-sm text-amber-600 dark:text-amber-500 font-medium">
               <span>{isRtl ? 'رسوم العاجل' : 'Urgent Fee'}</span>
-              <span>SAR 10.00</span>
+              <span>SAR {cart.urgentPrice.toFixed(2)}</span>
             </div>
           )}
           <div className="flex justify-between text-xl font-bold text-gray-900 dark:text-white pt-2 border-t border-gray-200 dark:border-dark-600">
             <span>{isRtl ? 'الإجمالي' : 'Total'}</span>
-            <span>SAR {(cart.items.reduce((s, i) => s + i.total, 0) + (cart.isUrgent ? 10 : 0)).toFixed(2)}</span>
+            <span>SAR {(cart.items.reduce((s, i) => s + i.total, 0) + (cart.isUrgent ? cart.urgentPrice : 0)).toFixed(2)}</span>
           </div>
           
           <button

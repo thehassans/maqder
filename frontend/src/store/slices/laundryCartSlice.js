@@ -6,6 +6,9 @@ const initialState = {
   deliveryType: 'walk_in',
   notes: '',
   isUrgent: false,
+  urgentPrice: 10,
+  customerName: '',
+  customerPhone: '',
 };
 
 const calculateItemTotals = (item) => {
@@ -31,6 +34,15 @@ const laundryCartSlice = createSlice({
     },
     setIsUrgent: (state, action) => {
       state.isUrgent = action.payload;
+    },
+    setUrgentPrice: (state, action) => {
+      state.urgentPrice = Number(action.payload) || 0;
+    },
+    setCustomerName: (state, action) => {
+      state.customerName = action.payload;
+    },
+    setCustomerPhone: (state, action) => {
+      state.customerPhone = action.payload;
     },
     addItem: (state, action) => {
       const { service, quantity, treatment, customizations } = action.payload;
@@ -78,7 +90,8 @@ const laundryCartSlice = createSlice({
 });
 
 export const { 
-  setCustomer, setDeliveryType, setNotes, setIsUrgent,
+  setCustomer, setDeliveryType, setNotes, setIsUrgent, setUrgentPrice,
+  setCustomerName, setCustomerPhone,
   addItem, updateItemQuantity, removeItem, clearCart 
 } = laundryCartSlice.actions;
 

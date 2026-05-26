@@ -118,7 +118,7 @@ const ThermalReceipt = forwardRef(({ order, type = 'laundry' }, ref) => {
         {order.isUrgent && (
           <div className="flex justify-between mt-1 font-semibold text-gray-800 border-b border-dashed border-gray-200 pb-1">
             <span>{isRtl ? 'رسوم العاجل:' : 'Urgent Fee:'}</span>
-            <span>10.00</span>
+            <span>{(Number(order.urgentFee || 0)).toFixed(2)}</span>
           </div>
         )}
         <div className="flex justify-between mt-1">
