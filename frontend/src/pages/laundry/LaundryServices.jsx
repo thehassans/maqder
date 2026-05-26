@@ -15,7 +15,7 @@ export default function LaundryServices() {
   const [showModal, setShowModal] = useState(false)
   const [editingService, setEditingService] = useState(null)
 
-  const { register, handleSubmit, reset, setValue } = useForm({
+  const { register, handleSubmit, reset, setValue, watch } = useForm({
     defaultValues: {
       nameEn: '',
       nameAr: '',
@@ -26,6 +26,8 @@ export default function LaundryServices() {
       treatments: ''
     }
   })
+
+  const useFormImageUrl = watch('imageUrl')
 
   const { data: services = [], isLoading } = useQuery({
     queryKey: ['laundry-services'],
@@ -92,6 +94,27 @@ export default function LaundryServices() {
     setShowModal(false)
     setEditingService(null)
     reset()
+  }
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type?.startsWith('image/')) {
+      toast.error(isRtl ? 'الملف يجب أن يكون صورة' : 'File must be an image')
+      return
+    }
+
+    if (file.size > 1024 * 1024 * 2) { // 2MB limit
+      toast.error(isRtl ? 'حجم الصورة كبير جداً (الحد 2MB)' : 'Image is too large (max 2MB)')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      setValue('imageUrl', reader.result, { shouldDirty: true, shouldValidate: true })
+    }
+    reader.readAsDataURL(file)
   }
 
   const filteredServices = services.filter(s => 
@@ -237,9 +260,29 @@ export default function LaundryServices() {
                   <label className="label">{isRtl ? 'السعر الأساسي' : 'Base Price (SAR)'}</label>
                   <input type="number" step="0.01" {...register('basePrice')} className="input" required />
                 </div>
-                <div>
-                  <label className="label">{isRtl ? 'رابط الصورة' : 'Image URL'}</label>
-                  <input {...register('imageUrl')} className="input" placeholder="https://..." />
+                <div className="md:col-span-2">
+                  <label className="label">{isRtl ? 'صورة الخدمة' : 'Service Image'}</label>
+                  <div className="flex items-center gap-4">
+                    <div className="w-24 h-24 rounded-xl border-2 border-dashed border-gray-300 dark:border-dark-600 flex items-center justify-center overflow-hidden bg-gray-50 dark:bg-dark-800">
+                      {useFormImageUrl ? (
+                        <img src={useFormImageUrl} alt="Preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <Package className="w-8 h-8 text-gray-400" />
+                      )}
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={handleImageUpload} 
+                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 dark:file:bg-teal-500/10 dark:file:text-teal-400"
+                      />
+                      <input type="hidden" {...register('imageUrl')} />
+                      <p className="text-xs text-gray-500">
+                        {isRtl ? 'الحد الأقصى للحجم 2 ميجابايت' : 'Maximum size 2MB'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
                 <div className="md:col-span-2">
                   <label className="label">{isRtl ? 'أنواع المعالجة (مفصولة بفاصلة)' : 'Treatments (comma separated)'}</label>

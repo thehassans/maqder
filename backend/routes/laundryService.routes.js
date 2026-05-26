@@ -31,20 +31,33 @@ router.post('/seed', checkPermission('laundry', 'create'), async (req, res) => {
       return res.status(400).json({ error: 'Services already seeded' });
     }
 
-    const defaultServices = [
-      { nameEn: 'Shirt Wash & Iron', nameAr: 'غسيل وكوي قميص', category: 'wash_fold', billingType: 'per_piece', basePrice: 5, imageUrl: 'https://images.unsplash.com/photo-1620799140188-3b2a02fd9a77?w=500&q=80', treatments: ['Wash & Iron', 'Dry Clean'] },
-      { nameEn: 'T-Shirt Wash & Fold', nameAr: 'غسيل وطي تي شيرت', category: 'wash_fold', billingType: 'per_piece', basePrice: 3, imageUrl: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=500&q=80', treatments: ['Wash & Fold'] },
-      { nameEn: 'Pants / Trousers', nameAr: 'بنطلون', category: 'dry_clean', billingType: 'per_piece', basePrice: 7, imageUrl: 'https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=500&q=80', treatments: ['Dry Clean', 'Wash & Iron'] },
-      { nameEn: 'Suit (2 Piece)', nameAr: 'بدلة قطعتين', category: 'dry_clean', billingType: 'per_piece', basePrice: 25, imageUrl: 'https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=500&q=80', treatments: ['Dry Clean'] },
-      { nameEn: 'Dress', nameAr: 'فستان', category: 'dry_clean', billingType: 'per_piece', basePrice: 20, imageUrl: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=500&q=80', treatments: ['Dry Clean', 'Wash & Iron'] },
-      { nameEn: 'Blanket / Comforter', nameAr: 'بطانية / لحاف', category: 'premium_care', billingType: 'per_piece', basePrice: 35, imageUrl: 'https://images.unsplash.com/photo-1580301762395-21ce84d00bc6?w=500&q=80', treatments: ['Wash & Fold'] },
-      { nameEn: 'Carpet (per SQM)', nameAr: 'سجاد (بالمتر المربع)', category: 'premium_care', billingType: 'per_kg', basePrice: 15, imageUrl: 'https://images.unsplash.com/photo-1600166898405-da9535204843?w=500&q=80', treatments: ['Wash'] },
-      { nameEn: 'Jacket / Coat', nameAr: 'جاكيت / معطف', category: 'dry_clean', billingType: 'per_piece', basePrice: 18, imageUrl: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=500&q=80', treatments: ['Dry Clean'] },
-      { nameEn: 'Thobe (Traditional)', nameAr: 'ثوب', category: 'wash_fold', billingType: 'per_piece', basePrice: 6, imageUrl: 'https://images.unsplash.com/photo-1583307779774-8eb78b277d33?w=500&q=80', treatments: ['Wash & Iron', 'Dry Clean'] },
-      { nameEn: 'Abaya', nameAr: 'عباية', category: 'dry_clean', billingType: 'per_piece', basePrice: 15, imageUrl: 'https://images.unsplash.com/photo-1585487000160-6ebcfceb0d03?w=500&q=80', treatments: ['Dry Clean', 'Wash & Iron'] },
-      { nameEn: 'Shemagh', nameAr: 'شماغ', category: 'ironing', billingType: 'per_piece', basePrice: 4, imageUrl: 'https://images.unsplash.com/photo-1603251648218-c21c6ba4d9a5?w=500&q=80', treatments: ['Wash & Iron', 'Iron Only'] },
-      { nameEn: 'Curtains (per kg)', nameAr: 'ستائر (بالكيلو)', category: 'premium_care', billingType: 'per_kg', basePrice: 10, imageUrl: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=500&q=80', treatments: ['Wash & Fold'] }
+    const svgToDataUrl = (text, bgColor) => {
+      const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300' width='400' height='300'>
+        <rect width='400' height='300' fill='${bgColor}' />
+        <text x='50%' y='50%' font-family='Arial, sans-serif' font-size='24' font-weight='bold' fill='#ffffff' dominant-baseline='middle' text-anchor='middle'>${text}</text>
+      </svg>`;
+      return 'data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64');
+    };
+
+    const defaultServicesRaw = [
+      { nameEn: 'Shirt Wash & Iron', nameAr: 'غسيل وكوي قميص', category: 'wash_fold', billingType: 'per_piece', basePrice: 5, color: '#0d9488', treatments: ['Wash & Iron', 'Dry Clean'] },
+      { nameEn: 'T-Shirt Wash & Fold', nameAr: 'غسيل وطي تي شيرت', category: 'wash_fold', billingType: 'per_piece', basePrice: 3, color: '#0f766e', treatments: ['Wash & Fold'] },
+      { nameEn: 'Pants / Trousers', nameAr: 'بنطلون', category: 'dry_clean', billingType: 'per_piece', basePrice: 7, color: '#115e59', treatments: ['Dry Clean', 'Wash & Iron'] },
+      { nameEn: 'Suit (2 Piece)', nameAr: 'بدلة قطعتين', category: 'dry_clean', billingType: 'per_piece', basePrice: 25, color: '#0f766e', treatments: ['Dry Clean'] },
+      { nameEn: 'Dress', nameAr: 'فستان', category: 'dry_clean', billingType: 'per_piece', basePrice: 20, color: '#0d9488', treatments: ['Dry Clean', 'Wash & Iron'] },
+      { nameEn: 'Blanket / Comforter', nameAr: 'بطانية / لحاف', category: 'premium_care', billingType: 'per_piece', basePrice: 35, color: '#3b82f6', treatments: ['Wash & Fold'] },
+      { nameEn: 'Carpet (per SQM)', nameAr: 'سجاد (بالمتر المربع)', category: 'premium_care', billingType: 'per_kg', basePrice: 15, color: '#2563eb', treatments: ['Wash'] },
+      { nameEn: 'Jacket / Coat', nameAr: 'جاكيت / معطف', category: 'dry_clean', billingType: 'per_piece', basePrice: 18, color: '#1d4ed8', treatments: ['Dry Clean'] },
+      { nameEn: 'Thobe (Traditional)', nameAr: 'ثوب', category: 'wash_fold', billingType: 'per_piece', basePrice: 6, color: '#0d9488', treatments: ['Wash & Iron', 'Dry Clean'] },
+      { nameEn: 'Abaya', nameAr: 'عباية', category: 'dry_clean', billingType: 'per_piece', basePrice: 15, color: '#115e59', treatments: ['Dry Clean', 'Wash & Iron'] },
+      { nameEn: 'Shemagh', nameAr: 'شماغ', category: 'ironing', billingType: 'per_piece', basePrice: 4, color: '#db2777', treatments: ['Wash & Iron', 'Iron Only'] },
+      { nameEn: 'Curtains (per kg)', nameAr: 'ستائر (بالكيلو)', category: 'premium_care', billingType: 'per_kg', basePrice: 10, color: '#be185d', treatments: ['Wash & Fold'] }
     ];
+
+    const defaultServices = defaultServicesRaw.map(s => ({
+      ...s,
+      imageUrl: svgToDataUrl(s.nameEn, s.color)
+    }));
 
     const servicesToInsert = defaultServices.map(s => ({
       ...s,
