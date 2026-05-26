@@ -31,7 +31,7 @@ export default function LaundryServices() {
 
   const { data: services = [], isLoading } = useQuery({
     queryKey: ['laundry-services'],
-    queryFn: () => api.get('/laundry/services').then(res => res.data)
+    queryFn: () => api.get('/laundry/services?isActive=true').then(res => res.data)
   })
 
   const seedMutation = useMutation({

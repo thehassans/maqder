@@ -26,7 +26,7 @@ router.get('/', checkPermission('laundry', 'read'), async (req, res) => {
 // POST /api/laundry/services/seed
 router.post('/seed', checkPermission('laundry', 'create'), async (req, res) => {
   try {
-    const existingCount = await LaundryService.countDocuments({ tenantId: req.tenant._id });
+    const existingCount = await LaundryService.countDocuments({ tenantId: req.tenant._id, isActive: true });
     if (existingCount > 0) {
       return res.status(400).json({ error: 'Services already seeded' });
     }
