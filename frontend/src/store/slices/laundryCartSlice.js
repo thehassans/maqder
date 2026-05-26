@@ -5,6 +5,7 @@ const initialState = {
   items: [], // { service: {}, quantity, unitPrice, subtotal, taxAmount, total }
   deliveryType: 'walk_in',
   notes: '',
+  isUrgent: false,
 };
 
 const calculateItemTotals = (item) => {
@@ -28,9 +29,14 @@ const laundryCartSlice = createSlice({
     setNotes: (state, action) => {
       state.notes = action.payload;
     },
+    setIsUrgent: (state, action) => {
+      state.isUrgent = action.payload;
+    },
     addItem: (state, action) => {
-      const { service, quantity } = action.payload;
-      const existingItemIndex = state.items.findIndex(item => item.service._id === service._id);
+      const { service, quantity, treatment, customizations } = action.payload;
+      const cartItemId = `${service._id}-${treatment || 'default'}-${(customizations || []).join('-')}`;
+      
+      const existingItemIndex = state.items.findIndex(item => item.cartItemId === cartItemId);
       
       if (existingItemIndex >= 0) {
         // Update existing item
@@ -39,18 +45,21 @@ const laundryCartSlice = createSlice({
       } else {
         // Add new item
         state.items.push(calculateItemTotals({
+          cartItemId,
           service,
           nameEn: service.nameEn,
           nameAr: service.nameAr,
           billingType: service.billingType,
           unitPrice: service.basePrice,
-          quantity
+          quantity,
+          treatment: treatment || service.treatments?.[0] || 'Wash & Fold',
+          customizations: customizations || []
         }));
       }
     },
     updateItemQuantity: (state, action) => {
-      const { serviceId, quantity } = action.payload;
-      const index = state.items.findIndex(item => item.service._id === serviceId);
+      const { cartItemId, quantity } = action.payload;
+      const index = state.items.findIndex(item => item.cartItemId === cartItemId);
       if (index >= 0) {
         if (quantity <= 0) {
           state.items.splice(index, 1);
@@ -61,15 +70,15 @@ const laundryCartSlice = createSlice({
       }
     },
     removeItem: (state, action) => {
-      const serviceId = action.payload;
-      state.items = state.items.filter(item => item.service._id !== serviceId);
+      const cartItemId = action.payload;
+      state.items = state.items.filter(item => item.cartItemId !== cartItemId);
     },
     clearCart: () => initialState,
   }
 });
 
 export const { 
-  setCustomer, setDeliveryType, setNotes, 
+  setCustomer, setDeliveryType, setNotes, setIsUrgent,
   addItem, updateItemQuantity, removeItem, clearCart 
 } = laundryCartSlice.actions;
 

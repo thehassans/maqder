@@ -67,7 +67,7 @@ export default function Sidebar() {
       title: language === 'ar' ? 'الرئيسية' : 'Main',
       items: [
         { path: '/app/dashboard', icon: LayoutDashboard, label: t('dashboard'), end: true },
-        { path: '/app/dashboard/invoices', icon: FileText, label: t('invoices'), perm: { module: 'invoicing', action: 'read' } },
+        { path: '/app/dashboard/invoices', icon: FileText, label: t('invoices'), perm: { module: 'invoicing', action: 'read' }, excludeBusinessTypes: ['laundry'] },
         { path: '/app/dashboard/quotations', icon: FileText, label: language === 'ar' ? 'عروض الأسعار' : 'Quotations', perm: { module: 'invoicing', action: 'read' } },
         { path: '/app/dashboard/shipments/new?type=outbound&document=delivery-note', icon: FileText, label: language === 'ar' ? 'إذن تسليم' : 'Delivery Note', perm: { module: 'supply_chain', action: 'read' }, businessTypes: ['trading'] },
         { path: '/app/dashboard/contacts', icon: Users, label: language === 'ar' ? 'جهات الاتصال' : 'Contacts', perm: { module: 'invoicing', action: 'read' } },
@@ -96,6 +96,15 @@ export default function Sidebar() {
       businessTypes: ['travel_agency'],
       items: [
         { path: '/app/dashboard/travel-bookings', icon: Plane, label: language === 'ar' ? 'الحجوزات' : 'Bookings', perm: { module: 'travel', action: 'read' } },
+      ]
+    },
+    {
+      title: language === 'ar' ? 'نقطة البيع (مغسلة)' : 'Point of sale',
+      businessTypes: ['laundry'],
+      items: [
+        { path: '/app/dashboard/laundry/pos', icon: ShoppingBag, label: language === 'ar' ? 'البيع' : 'Sell', perm: { module: 'laundry', action: 'create' } },
+        { path: '/app/dashboard/laundry/services', icon: Package, label: language === 'ar' ? 'الخدمات' : 'Services', perm: { module: 'laundry', action: 'read' } },
+        { path: '/app/dashboard/laundry/orders', icon: Receipt, label: language === 'ar' ? 'الطلبات' : 'Orders', perm: { module: 'laundry', action: 'read' } },
       ]
     },
     {
@@ -201,6 +210,9 @@ export default function Sidebar() {
 
       const items = (Array.isArray(section.items) ? section.items : []).filter((item) => {
         if (Array.isArray(item?.businessTypes) && !item.businessTypes.some((type) => businessTypes.includes(type))) {
+          return false
+        }
+        if (Array.isArray(item?.excludeBusinessTypes) && item.excludeBusinessTypes.some((type) => businessTypes.includes(type))) {
           return false
         }
         if (!item?.perm) return true

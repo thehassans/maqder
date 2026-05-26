@@ -18,6 +18,7 @@ const laundryServiceSchema = new mongoose.Schema({
   // ZATCA specific
   taxRate: { type: Number, default: 15 }, 
   isActive: { type: Boolean, default: true },
+  imageUrl: { type: String }, // For service images
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, {
   timestamps: true

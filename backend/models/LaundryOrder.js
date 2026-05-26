@@ -11,7 +11,9 @@ const laundryOrderItemSchema = new mongoose.Schema({
   taxRate: { type: Number, default: 15 },
   subtotal: { type: Number, required: true },
   taxAmount: { type: Number, required: true },
-  total: { type: Number, required: true }
+  total: { type: Number, required: true },
+  treatment: { type: String, enum: ['Wash & Fold', 'Dry Clean', 'Wash & Iron', 'Iron Only', 'Pressing'], default: 'Wash & Fold' },
+  customizations: [{ type: String }] // e.g., 'On Hanger', 'Folded', 'Starch'
 }, { _id: true });
 
 const laundryOrderSchema = new mongoose.Schema({
@@ -24,6 +26,8 @@ const laundryOrderSchema = new mongoose.Schema({
     enum: ['received', 'processing', 'ready', 'out_for_delivery', 'delivered', 'cancelled'],
     default: 'received'
   },
+  
+  isUrgent: { type: Boolean, default: false },
   
   items: [laundryOrderItemSchema],
   

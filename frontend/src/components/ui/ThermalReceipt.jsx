@@ -91,7 +91,12 @@ const ThermalReceipt = forwardRef(({ order, type = 'laundry' }, ref) => {
                 <div className="font-semibold break-words">
                   {isRtl ? (item.nameAr || item.nameEn || item.name) : (item.nameEn || item.nameAr || item.name)}
                 </div>
-                <div className="text-[10px] text-gray-500">
+                {type === 'laundry' && item.treatment && (
+                  <div className="text-[10px] text-gray-600 mt-0.5 font-medium leading-tight">
+                    {item.treatment} {item.customizations?.length > 0 && `(${item.customizations.join(', ')})`}
+                  </div>
+                )}
+                <div className="text-[10px] text-gray-500 mt-0.5">
                   {Number(item.unitPrice).toFixed(2)}
                 </div>
               </td>
@@ -110,6 +115,12 @@ const ThermalReceipt = forwardRef(({ order, type = 'laundry' }, ref) => {
           <span>{isRtl ? 'المجموع الفرعي:' : 'Subtotal:'}</span>
           <span>{(Number(order.subtotal)).toFixed(2)}</span>
         </div>
+        {order.isUrgent && (
+          <div className="flex justify-between mt-1 font-semibold text-gray-800 border-b border-dashed border-gray-200 pb-1">
+            <span>{isRtl ? 'رسوم العاجل:' : 'Urgent Fee:'}</span>
+            <span>10.00</span>
+          </div>
+        )}
         <div className="flex justify-between mt-1">
           <span>{isRtl ? 'ضريبة القيمة المضافة:' : 'VAT:'}</span>
           <span>{(Number(order.totalVat || order.totalTax)).toFixed(2)}</span>

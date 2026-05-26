@@ -270,6 +270,9 @@ function App() {
         <Route path="restaurant/orders" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantOrders /></BusinessTypeRoute>} />
         <Route path="restaurant/orders/new" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantOrderForm /></BusinessTypeRoute>} />
         <Route path="restaurant/orders/:id" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantOrderForm /></BusinessTypeRoute>} />
+        <Route path="laundry/pos" element={<BusinessTypeRoute allowedTypes={['laundry']}><LaundryPOS /></BusinessTypeRoute>} />
+        <Route path="laundry/services" element={<BusinessTypeRoute allowedTypes={['laundry']}><LaundryServices /></BusinessTypeRoute>} />
+        <Route path="laundry/orders" element={<BusinessTypeRoute allowedTypes={['laundry']}><LaundryKanban /></BusinessTypeRoute>} />
         <Route path="restaurant/kitchen" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantKitchen /></BusinessTypeRoute>} />
         <Route path="expenses" element={<Expenses />} />
         <Route path="expenses/new" element={<ExpenseForm />} />
