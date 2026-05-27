@@ -7,8 +7,11 @@ import { Plus, Search, UtensilsCrossed, Edit } from 'lucide-react'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import Money from '../../components/ui/Money'
+import { useQueryClient, useMutation } from '@tanstack/react-query'
+import toast from 'react-hot-toast'
 
 export default function RestaurantMenuItems() {
+  const queryClient = useQueryClient()
   const { language } = useSelector((state) => state.ui)
   const { t } = useTranslation(language)
 
@@ -25,6 +28,17 @@ export default function RestaurantMenuItems() {
 
   const items = data?.items || []
   const pagination = data?.pagination
+
+  const seedMutation = useMutation({
+    mutationFn: () => api.post('/restaurant/menu-items/seed-drinks'),
+    onSuccess: () => {
+      toast.success(language === 'ar' ? 'تم إنشاء المشروبات بنجاح' : 'Drinks seeded successfully')
+      queryClient.invalidateQueries(['restaurant-menu-items'])
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.error || 'Failed to seed drinks')
+    }
+  })
 
   return (
     <div className="space-y-6">
@@ -116,8 +130,24 @@ export default function RestaurantMenuItems() {
                 ))}
                 {items.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="p-8 text-center text-gray-500">
-                      {language === 'ar' ? 'لا توجد أصناف' : 'No items found'}
+                    <td colSpan={6} className="p-8 text-center">
+                      <div className="flex flex-col items-center justify-center space-y-4">
+                        <p className="text-gray-500">
+                          {language === 'ar' ? 'لا توجد أصناف' : 'No items found'}
+                        </p>
+                        <button
+                          onClick={() => seedMutation.mutate()}
+                          disabled={seedMutation.isPending}
+                          className="btn btn-primary"
+                        >
+                          {seedMutation.isPending ? (
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <UtensilsCrossed className="w-4 h-4" />
+                          )}
+                          {language === 'ar' ? 'توليد قائمة مشروبات تجريبية' : 'Seed Demo Drinks Menu'}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 )}
