@@ -9,7 +9,7 @@ import { useTranslation } from '../../lib/translations'
 
 import RestaurantMenuItems from '../restaurant/RestaurantMenuItems'
 import Tables from '../restaurant/Tables'
-import LaundryServices from '../laundry/Services'
+import LaundryServices from '../laundry/LaundryServices'
 import { Outlet, useLocation } from 'react-router-dom'
 
 export default function TenantCustomization() {
