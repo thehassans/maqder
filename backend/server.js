@@ -9,6 +9,9 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 import authRoutes from './routes/auth.routes.js';
 import tenantRoutes from './routes/tenant.routes.js';
 import employeeRoutes from './routes/employee.routes.js';
@@ -349,8 +352,6 @@ app.use('/api/laundry/orders', ensureDatabaseReady, laundryOrderRoutes);
 app.use('/api/laundry/inventory', ensureDatabaseReady, laundryInventoryRoutes);
 
 // Serve static frontend files in production
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const resolveFrontendBuild = () => {
   const candidates = [
     {
