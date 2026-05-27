@@ -177,6 +177,33 @@ router.post('/seed-drinks', checkPermission('restaurant', 'create'), async (req,
       },
       {
         sku: 'DRK-007', nameEn: 'Coca-Cola Can', nameAr: 'كوكاكولا علبة', descriptionEn: 'Cold tin can of Coca-Cola.', descriptionAr: 'علبة كوكاكولا باردة.', category: 'Cold Drinks', sellingPrice: 8, taxRate: 15, hasHalfPlate: false, calories: 140, prepTime: 1, isActive: true, localImage: 'coke_can.png'
+      },
+      {
+        sku: 'DRK-008', nameEn: 'Mirinda Orange Can', nameAr: 'ميريندا برتقال علبة', descriptionEn: 'Cold tin can of Mirinda Orange soda.', descriptionAr: 'علبة ميريندا برتقال باردة.', category: 'Cold Drinks', sellingPrice: 8, taxRate: 15, hasHalfPlate: false, calories: 150, prepTime: 1, isActive: true, localImage: 'mirinda_orange_can.png'
+      },
+      {
+        sku: 'DRK-009', nameEn: 'Mirinda Citrus Can', nameAr: 'ميريندا حمضيات علبة', descriptionEn: 'Cold tin can of Mirinda Citrus soda.', descriptionAr: 'علبة ميريندا حمضيات باردة.', category: 'Cold Drinks', sellingPrice: 8, taxRate: 15, hasHalfPlate: false, calories: 150, prepTime: 1, isActive: true, localImage: 'mirinda_citrus_can.png'
+      },
+      {
+        sku: 'DRK-010', nameEn: 'Fanta Orange Can', nameAr: 'فانتا برتقال علبة', descriptionEn: 'Cold tin can of Fanta Orange soda.', descriptionAr: 'علبة فانتا برتقال باردة.', category: 'Cold Drinks', sellingPrice: 8, taxRate: 15, hasHalfPlate: false, calories: 150, prepTime: 1, isActive: true, localImage: 'fanta_orange_can.png'
+      },
+      {
+        sku: 'DRK-011', nameEn: 'Fanta Strawberry Can', nameAr: 'فانتا فراولة علبة', descriptionEn: 'Cold tin can of Fanta Strawberry soda.', descriptionAr: 'علبة فانتا فراولة باردة.', category: 'Cold Drinks', sellingPrice: 8, taxRate: 15, hasHalfPlate: false, calories: 160, prepTime: 1, isActive: true, localImage: 'fanta_strawberry_can.png'
+      },
+      {
+        sku: 'DRK-012', nameEn: 'Pepsi Large (2.25L)', nameAr: 'بيبسي عائلي (2.25 لتر)', descriptionEn: 'Large family-size bottle of Pepsi.', descriptionAr: 'زجاجة بيبسي حجم عائلي كبير.', category: 'Cold Drinks', sellingPrice: 20, taxRate: 15, hasHalfPlate: false, calories: 950, prepTime: 1, isActive: true, localImage: 'pepsi_large.png'
+      },
+      {
+        sku: 'DRK-013', nameEn: '7Up Large (2.25L)', nameAr: 'سفن اب عائلي (2.25 لتر)', descriptionEn: 'Large family-size bottle of 7Up.', descriptionAr: 'زجاجة سفن اب حجم عائلي كبير.', category: 'Cold Drinks', sellingPrice: 20, taxRate: 15, hasHalfPlate: false, calories: 900, prepTime: 1, isActive: true, localImage: 'seven_up_large.png'
+      },
+      {
+        sku: 'DRK-014', nameEn: 'Coca-Cola Large (2.25L)', nameAr: 'كوكاكولا عائلي (2.25 لتر)', descriptionEn: 'Large family-size bottle of Coca-Cola.', descriptionAr: 'زجاجة كوكاكولا حجم عائلي كبير.', category: 'Cold Drinks', sellingPrice: 20, taxRate: 15, hasHalfPlate: false, calories: 950, prepTime: 1, isActive: true, localImage: 'coke_large.png'
+      },
+      {
+        sku: 'DRK-015', nameEn: 'Mirinda Orange Large (2.25L)', nameAr: 'ميريندا برتقال عائلي (2.25 لتر)', descriptionEn: 'Large family-size bottle of Mirinda Orange.', descriptionAr: 'زجاجة ميريندا برتقال حجم عائلي كبير.', category: 'Cold Drinks', sellingPrice: 20, taxRate: 15, hasHalfPlate: false, calories: 980, prepTime: 1, isActive: true, localImage: 'mirinda_orange_large.png'
+      },
+      {
+        sku: 'DRK-016', nameEn: 'Fanta Orange Large (2.25L)', nameAr: 'فانتا برتقال عائلي (2.25 لتر)', descriptionEn: 'Large family-size bottle of Fanta Orange.', descriptionAr: 'زجاجة فانتا برتقال حجم عائلي كبير.', category: 'Cold Drinks', sellingPrice: 20, taxRate: 15, hasHalfPlate: false, calories: 980, prepTime: 1, isActive: true, localImage: 'fanta_orange_large.png'
       }
     ];
 
