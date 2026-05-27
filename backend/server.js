@@ -298,6 +298,9 @@ app.get('/api/health/ready', (req, res) => {
   });
 });
 
+// Serve uploads
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+
 // API Routes
 app.use('/api/public', publicRoutes);
 app.use('/api/webhooks', ensureDatabaseReady, webhookRoutes);

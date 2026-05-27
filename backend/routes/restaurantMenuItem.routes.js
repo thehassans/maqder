@@ -168,6 +168,15 @@ router.post('/seed-drinks', checkPermission('restaurant', 'create'), async (req,
       },
       {
         sku: 'DRK-004', nameEn: 'Vimto Ice', nameAr: 'فيمتو مثلج', descriptionEn: 'The classic berry beverage served ice-cold, a local favorite.', descriptionAr: 'مشروب التوت الكلاسيكي يقدم بارداً جداً، المفضل محلياً.', category: 'Cold Drinks', sellingPrice: 18, taxRate: 15, hasHalfPlate: false, calories: 150, prepTime: 3, isActive: true, localImage: 'vimto_drink.png'
+      },
+      {
+        sku: 'DRK-005', nameEn: 'Pepsi Can', nameAr: 'بيبسي علبة', descriptionEn: 'Cold tin can of Pepsi cola.', descriptionAr: 'علبة بيبسي باردة.', category: 'Cold Drinks', sellingPrice: 8, taxRate: 15, hasHalfPlate: false, calories: 150, prepTime: 1, isActive: true, localImage: 'pepsi_can.png'
+      },
+      {
+        sku: 'DRK-006', nameEn: '7Up Can', nameAr: 'سفن اب علبة', descriptionEn: 'Cold tin can of 7Up lemon-lime soda.', descriptionAr: 'علبة سفن اب باردة.', category: 'Cold Drinks', sellingPrice: 8, taxRate: 15, hasHalfPlate: false, calories: 140, prepTime: 1, isActive: true, localImage: 'seven_up_can.png'
+      },
+      {
+        sku: 'DRK-007', nameEn: 'Coca-Cola Can', nameAr: 'كوكاكولا علبة', descriptionEn: 'Cold tin can of Coca-Cola.', descriptionAr: 'علبة كوكاكولا باردة.', category: 'Cold Drinks', sellingPrice: 8, taxRate: 15, hasHalfPlate: false, calories: 140, prepTime: 1, isActive: true, localImage: 'coke_can.png'
       }
     ];
 

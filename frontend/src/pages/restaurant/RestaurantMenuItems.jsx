@@ -51,10 +51,24 @@ export default function RestaurantMenuItems() {
             {language === 'ar' ? 'إدارة أصناف قائمة الطعام' : 'Manage restaurant menu items'}
           </p>
         </div>
-        <Link to="/app/dashboard/restaurant/menu-items/new" className="btn btn-primary">
-          <Plus className="w-4 h-4" />
-          {language === 'ar' ? 'إضافة صنف' : 'Add Item'}
-        </Link>
+        <div className="flex gap-2">
+          <button
+            onClick={() => seedMutation.mutate()}
+            disabled={seedMutation.isPending}
+            className="btn btn-secondary bg-amber-50 text-amber-600 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:hover:bg-amber-900/40 border-transparent"
+          >
+            {seedMutation.isPending ? (
+              <div className="w-4 h-4 border-2 border-amber-600 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <UtensilsCrossed className="w-4 h-4" />
+            )}
+            {language === 'ar' ? 'توليد مشروبات' : 'Seed Drinks'}
+          </button>
+          <Link to="/app/dashboard/restaurant/menu-items/new" className="btn btn-primary">
+            <Plus className="w-4 h-4" />
+            {language === 'ar' ? 'إضافة صنف' : 'Add Item'}
+          </Link>
+        </div>
       </div>
 
       <div className="card p-4">
@@ -130,24 +144,8 @@ export default function RestaurantMenuItems() {
                 ))}
                 {items.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="p-8 text-center">
-                      <div className="flex flex-col items-center justify-center space-y-4">
-                        <p className="text-gray-500">
-                          {language === 'ar' ? 'لا توجد أصناف' : 'No items found'}
-                        </p>
-                        <button
-                          onClick={() => seedMutation.mutate()}
-                          disabled={seedMutation.isPending}
-                          className="btn btn-primary"
-                        >
-                          {seedMutation.isPending ? (
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          ) : (
-                            <UtensilsCrossed className="w-4 h-4" />
-                          )}
-                          {language === 'ar' ? 'توليد قائمة مشروبات تجريبية' : 'Seed Demo Drinks Menu'}
-                        </button>
-                      </div>
+                    <td colSpan={6} className="p-8 text-center text-gray-500">
+                      {language === 'ar' ? 'لا توجد أصناف' : 'No items found'}
                     </td>
                   </tr>
                 )}
