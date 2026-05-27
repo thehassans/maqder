@@ -1,4 +1,4 @@
-import { useSelector } from 'react'
+import { useSelector } from 'react-redux'
 import { Building2, Sparkles, PhoneCall } from 'lucide-react'
 
 export default function RestaurantBranches() {

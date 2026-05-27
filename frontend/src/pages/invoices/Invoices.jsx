@@ -90,6 +90,7 @@ export default function Invoices() {
   const [pdfLoadingId, setPdfLoadingId] = useState(null)
   const [signModalInvoice, setSignModalInvoice] = useState(null)
   const tenantBusinessTypes = getTenantBusinessTypes(tenant)
+  const showNewInvoiceBtn = !tenantBusinessTypes.every(t => ['laundry', 'restaurant'].includes(t))
 
   useEffect(() => {
     const handle = setTimeout(() => setDebouncedSearch(search), 300)
@@ -364,10 +365,12 @@ export default function Invoices() {
             title={language === 'ar' ? 'الفواتير' : 'Invoices'}
             disabled={isLoading || (data?.invoices || []).length === 0}
           />
-          <Link to="/app/dashboard/invoices/new" className="btn btn-action-dark">
-            <Plus className="w-4 h-4" />
-            {t('newInvoice')}
-          </Link>
+          {showNewInvoiceBtn && (
+            <Link to="/app/dashboard/invoices/new" className="btn btn-action-dark">
+              <Plus className="w-4 h-4" />
+              {t('newInvoice')}
+            </Link>
+          )}
         </div>
       </div>
 

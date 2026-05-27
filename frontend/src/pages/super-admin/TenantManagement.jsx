@@ -251,6 +251,7 @@ export default function TenantManagement() {
                 <thead>
                   <tr>
                     <th>{language === 'ar' ? 'المستأجر' : 'Tenant'}</th>
+                    <th>{language === 'ar' ? 'النشاط' : 'Business Type'}</th>
                     <th>{language === 'ar' ? 'الرقم الضريبي' : 'VAT Number'}</th>
                     <th>{language === 'ar' ? 'الخطة' : 'Plan'}</th>
                     <th>{language === 'ar' ? 'المستخدمين' : 'Users'}</th>
@@ -273,6 +274,17 @@ export default function TenantManagement() {
                             <p className="text-xs text-gray-500">{tenant.slug}</p>
                           </div>
                         </div>
+                      </td>
+                      <td>
+                        {(() => {
+                          const bt = Array.isArray(tenant.businessTypes) && tenant.businessTypes.length > 0
+                            ? tenant.businessTypes[0]
+                            : tenant.businessType;
+                          if (!bt) return '-';
+                          const labelEn = bt.charAt(0).toUpperCase() + bt.slice(1).replace('_', ' ');
+                          const labelAr = bt === 'trading' ? 'تجارة' : bt === 'construction' ? 'مقاولات' : bt === 'restaurant' ? 'مطعم' : bt === 'laundry' ? 'مغسلة' : bt === 'travel_agency' ? 'وكالة سفر' : labelEn;
+                          return <span className="badge badge-neutral">{language === 'ar' ? labelAr : labelEn}</span>
+                        })()}
                       </td>
                       <td className="font-mono text-sm">{tenant.business?.vatNumber || '-'}</td>
                       <td>
