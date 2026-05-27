@@ -1,8 +1,13 @@
 import express from 'express';
+import multer from 'multer';
+import sharp from 'sharp';
+import path from 'path';
+import fs from 'fs';
 import RestaurantMenuItem from '../models/RestaurantMenuItem.js';
 import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
 
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
 router.use(protect);
 router.use(tenantFilter);
@@ -72,6 +77,39 @@ router.post('/', checkPermission('restaurant', 'create'), async (req, res) => {
       return res.status(400).json({ error: 'Duplicate SKU' });
     }
     res.status(500).json({ error: error.message });
+  }
+});
+
+// Image Upload Endpoint
+router.post('/upload-image', checkPermission('restaurant', 'create'), upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image uploaded' });
+    }
+
+    const tenantIdStr = req.user.tenantId.toString();
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'restaurant', tenantIdStr);
+    
+    // Ensure directory exists
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    const filename = `menu-${Date.now()}-${Math.round(Math.random() * 1E9)}.webp`;
+    const filepath = path.join(uploadsDir, filename);
+
+    // Convert to webp
+    await sharp(req.file.buffer)
+      .resize({ width: 800, withoutEnlargement: true }) // reasonable size for menu
+      .webp({ quality: 80 })
+      .toFile(filepath);
+
+    const imageUrl = `/uploads/restaurant/${tenantIdStr}/${filename}`;
+    
+    res.json({ imageUrl });
+  } catch (error) {
+    console.error('Image processing error:', error);
+    res.status(500).json({ error: 'Failed to process image' });
   }
 });
 

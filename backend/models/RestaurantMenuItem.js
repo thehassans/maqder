@@ -6,7 +6,16 @@ const restaurantMenuItemSchema = new mongoose.Schema({
   sku: { type: String },
   nameEn: { type: String, required: true },
   nameAr: { type: String },
+  descriptionEn: { type: String },
+  descriptionAr: { type: String },
   category: { type: String },
+  imageUrl: { type: String },
+  
+  calories: { type: Number },
+  prepTime: { type: Number }, // in minutes
+
+  hasHalfPlate: { type: Boolean, default: false },
+  halfPlatePrice: { type: Number },
 
   sellingPrice: { type: Number, required: true },
   taxRate: { type: Number, default: 15 },

@@ -55,6 +55,9 @@ import RestaurantOrders from './pages/restaurant/RestaurantOrders'
 import RestaurantOrderForm from './pages/restaurant/RestaurantOrderForm'
 import RestaurantKitchen from './pages/restaurant/RestaurantKitchen'
 import RestaurantPOS from './pages/restaurant/RestaurantPOS'
+import RestaurantTables from './pages/restaurant/Tables'
+import RestaurantInventory from './pages/restaurant/Inventory'
+import RestaurantBranches from './pages/restaurant/Branches'
 import Projects from './pages/Projects'
 import ProjectForm from './pages/ProjectForm'
 import Tasks from './pages/Tasks'
@@ -265,6 +268,9 @@ function App() {
         <Route path="travel-bookings/new" element={<BusinessTypeRoute allowedTypes={['travel_agency']}><TravelBookingForm /></BusinessTypeRoute>} />
         <Route path="travel-bookings/:id" element={<BusinessTypeRoute allowedTypes={['travel_agency']}><TravelBookingForm /></BusinessTypeRoute>} />
         <Route path="restaurant/pos" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantPOS /></BusinessTypeRoute>} />
+        <Route path="restaurant/tables" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantTables /></BusinessTypeRoute>} />
+        <Route path="restaurant/inventory" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantInventory /></BusinessTypeRoute>} />
+        <Route path="restaurant/branches" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantBranches /></BusinessTypeRoute>} />
         <Route path="restaurant/menu-items" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantMenuItems /></BusinessTypeRoute>} />
         <Route path="restaurant/menu-items/new" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantMenuItemForm /></BusinessTypeRoute>} />
         <Route path="restaurant/menu-items/:id" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantMenuItemForm /></BusinessTypeRoute>} />

@@ -33,6 +33,9 @@ const restaurantOrderSchema = new mongoose.Schema({
   kitchenStatusUpdatedAt: { type: Date },
 
   tableNumber: { type: String },
+  tableId: { type: mongoose.Schema.Types.ObjectId, ref: 'RestaurantTable' },
+  orderType: { type: String, enum: ['dine_in', 'takeaway', 'delivery'], default: 'dine_in' },
+
   customerName: { type: String },
   customerPhone: { type: String },
 

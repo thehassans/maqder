@@ -113,8 +113,11 @@ export default function Sidebar() {
       items: [
         { path: '/app/dashboard/restaurant/pos', icon: ShoppingBag, label: language === 'ar' ? 'نقطة البيع' : 'POS', perm: { module: 'restaurant', action: 'create' } },
         { path: '/app/dashboard/restaurant/menu-items', icon: UtensilsCrossed, label: language === 'ar' ? 'قائمة الطعام' : 'Menu Items', perm: { module: 'restaurant', action: 'read' } },
+        { path: '/app/dashboard/restaurant/tables', icon: Users, label: language === 'ar' ? 'الطاولات' : 'Tables', perm: { module: 'restaurant', action: 'read' } },
+        { path: '/app/dashboard/restaurant/inventory', icon: Package, label: language === 'ar' ? 'المخزون' : 'Inventory', perm: { module: 'restaurant', action: 'read' } },
         { path: '/app/dashboard/restaurant/orders', icon: Receipt, label: language === 'ar' ? 'الطلبات' : 'Orders', perm: { module: 'restaurant', action: 'read' } },
         { path: '/app/dashboard/restaurant/kitchen', icon: ChefHat, label: language === 'ar' ? 'المطبخ' : 'Kitchen', perm: { module: 'restaurant', action: 'read' } },
+        { path: '/app/dashboard/restaurant/branches', icon: Building, label: language === 'ar' ? 'الفروع' : 'Branches', perm: { module: 'restaurant', action: 'read' } },
       ]
     },
     {
