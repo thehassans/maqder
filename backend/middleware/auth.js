@@ -115,7 +115,12 @@ export const checkPermission = (module, action) => {
 
 export const tenantFilter = (req, res, next) => {
   if (req.user.role === 'super_admin') {
-    req.tenantFilter = {};
+    if (req.headers['x-tenant-id']) {
+      req.tenantFilter = { tenantId: req.headers['x-tenant-id'] };
+      req.user.tenantId = req.headers['x-tenant-id']; // allow POSTs to inherit
+    } else {
+      req.tenantFilter = {};
+    }
   } else {
     req.tenantFilter = { tenantId: req.user.tenantId };
   }

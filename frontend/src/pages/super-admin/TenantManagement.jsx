@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tansta
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Search, Building2, Edit, Users, LogIn, AlertCircle, RefreshCw, Trash2, RotateCcw, Send, X, FileSpreadsheet, FileText, Eraser } from 'lucide-react'
+import { Plus, Search, Building2, Edit, Users, LogIn, AlertCircle, RefreshCw, Trash2, RotateCcw, Send, X, FileSpreadsheet, FileText, Eraser, Sliders } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
@@ -326,7 +326,10 @@ export default function TenantManagement() {
                             <LogIn className="w-4 h-4" />
                           </button>
                           <Link to={`/super-admin/tenants/${tenant._id}`} className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg">
-                            <Edit className="w-4 h-4 text-gray-600" />
+                            <Edit className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                          </Link>
+                          <Link to={`/super-admin/tenants/${tenant._id}/customization`} className="p-2 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg" title={language === 'ar' ? 'تخصيص البيانات' : 'Data Customization'}>
+                            <Sliders className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                           </Link>
                           <button
                             type="button"

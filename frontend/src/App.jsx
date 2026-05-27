@@ -78,6 +78,7 @@ import Users from './pages/Users'
 import SuperAdminDashboard from './pages/super-admin/SuperAdminDashboard'
 import TenantManagement from './pages/super-admin/TenantManagement'
 import TenantForm from './pages/super-admin/TenantForm'
+import TenantCustomization from './pages/super-admin/TenantCustomization'
 import UserManagement from './pages/super-admin/UserManagement'
 import IdentitySettings from './pages/super-admin/IdentitySettings'
 import GeminiSettings from './pages/super-admin/GeminiSettings'
@@ -229,10 +230,14 @@ function App() {
         }
       >
         <Route index element={<SuperAdminDashboard />} />
-        <Route path="tenants" element={<TenantManagement />} />
-        <Route path="tenants/new" element={<TenantForm />} />
-        <Route path="tenants/:id" element={<TenantForm />} />
-        <Route path="users" element={<UserManagement />} />
+          <Route path="tenants" element={<TenantManagement />} />
+          <Route path="tenants/new" element={<TenantForm />} />
+          <Route path="tenants/:id" element={<TenantForm />} />
+          <Route path="tenants/:id/customization" element={<TenantCustomization />}>
+            <Route path="new" element={<RestaurantMenuItemForm />} />
+            <Route path=":itemId" element={<RestaurantMenuItemForm />} />
+          </Route>
+          <Route path="users" element={<UserManagement />} />
         <Route path="website" element={<WebsiteSettings />} />
         <Route path="email" element={<EmailSettings />} />
         <Route path="identity" element={<IdentitySettings />} />

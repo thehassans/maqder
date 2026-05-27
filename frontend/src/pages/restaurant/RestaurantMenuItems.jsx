@@ -1,17 +1,21 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Plus, Search, UtensilsCrossed, Edit } from 'lucide-react'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import Money from '../../components/ui/Money'
-import { useQueryClient, useMutation } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
+import SarIcon from '../../components/ui/SarIcon'
 
 export default function RestaurantMenuItems() {
   const queryClient = useQueryClient()
+  const location = useLocation()
+  const basePath = location.pathname.includes('/super-admin') 
+    ? location.pathname 
+    : '/app/dashboard/restaurant/menu-items'
   const { language } = useSelector((state) => state.ui)
   const { t } = useTranslation(language)
 
@@ -64,7 +68,7 @@ export default function RestaurantMenuItems() {
             )}
             {language === 'ar' ? 'توليد مشروبات' : 'Seed Drinks'}
           </button>
-          <Link to="/app/dashboard/restaurant/menu-items/new" className="btn btn-primary">
+          <Link to={`${basePath}/new`} className="btn btn-primary">
             <Plus className="w-4 h-4" />
             {language === 'ar' ? 'إضافة صنف' : 'Add Item'}
           </Link>
@@ -133,7 +137,7 @@ export default function RestaurantMenuItems() {
                     <td>
                       <div className="flex items-center gap-2">
                         <Link
-                          to={`/app/dashboard/restaurant/menu-items/${it._id}`}
+                          to={`${basePath}/${it._id}`}
                           className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg"
                         >
                           <Edit className="w-4 h-4 text-gray-600" />
