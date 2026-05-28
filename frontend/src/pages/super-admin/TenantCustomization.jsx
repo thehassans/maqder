@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, UtensilsCrossed, Grid2X2, Shirt, Building2 } from 'lucide-react'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
+import { getTenantBusinessTypes } from '../../lib/businessTypes'
 
 import RestaurantMenuItems from '../restaurant/RestaurantMenuItems'
 import Tables from '../restaurant/Tables'
@@ -37,11 +38,23 @@ export default function TenantCustomization() {
     queryFn: () => api.get(`/super-admin/tenants/${id}`).then(res => res.data),
   })
 
-  const tabs = [
-    { id: 'menu-items', label: language === 'ar' ? 'قائمة الطعام' : 'Menu Items', icon: UtensilsCrossed, component: RestaurantMenuItems },
-    { id: 'tables', label: language === 'ar' ? 'الطاولات' : 'Tables', icon: Grid2X2, component: Tables },
-    { id: 'laundry', label: language === 'ar' ? 'خدمات المغسلة' : 'Laundry Services', icon: Shirt, component: LaundryServices },
-  ]
+  const tabs = useMemo(() => {
+    const tenantBusinessTypes = getTenantBusinessTypes(tenant)
+    const isRestaurant = tenantBusinessTypes.includes('restaurant')
+    const isLaundry = tenantBusinessTypes.includes('laundry')
+
+    return [
+      { id: 'menu-items', label: language === 'ar' ? 'قائمة الطعام' : 'Menu Items', icon: UtensilsCrossed, component: RestaurantMenuItems, show: isRestaurant },
+      { id: 'tables', label: language === 'ar' ? 'الطاولات' : 'Tables', icon: Grid2X2, component: Tables, show: isRestaurant },
+      { id: 'laundry', label: language === 'ar' ? 'خدمات المغسلة' : 'Laundry Services', icon: Shirt, component: LaundryServices, show: isLaundry },
+    ].filter(t => t.show)
+  }, [tenant, language])
+
+  useEffect(() => {
+    if (tabs.length > 0 && !tabs.find(t => t.id === activeTab)) {
+      setActiveTab(tabs[0].id)
+    }
+  }, [tabs, activeTab])
 
   const ActiveComponent = tabs.find(t => t.id === activeTab)?.component
 
