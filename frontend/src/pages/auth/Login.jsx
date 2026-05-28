@@ -52,8 +52,21 @@ export default function Login() {
         ...data,
         tenantSlug: String(data.tenantSlug || initialTenantSlug || '').trim().toLowerCase() || undefined,
       })).unwrap()
+      const tenant = result.tenant;
+      const businessTypes = tenant?.business?.businessType 
+        ? (Array.isArray(tenant.business.businessType) ? tenant.business.businessType : [tenant.business.businessType])
+        : [];
+      
+      let redirectPath = '/app/dashboard';
+      if (result.user?.role === 'super_admin') {
+        redirectPath = '/super-admin';
+      } else if (businessTypes.includes('saloon')) {
+        redirectPath = '/app/saloon/pos';
+      } else if (businessTypes.includes('laundry')) {
+        redirectPath = '/app/laundry/pos';
+      }
 
-      navigate(result.user?.role === 'super_admin' ? '/super-admin' : '/app/dashboard', { replace: true })
+      navigate(redirectPath, { replace: true })
     } catch {
       // handled by auth slice state
     }
