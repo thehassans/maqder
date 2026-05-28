@@ -258,6 +258,7 @@ export default function TenantManagement() {
                     <th>{language === 'ar' ? 'الفواتير' : 'Invoices'}</th>
                     <th>{t('status')}</th>
                     <th>{language === 'ar' ? 'تاريخ الإنشاء' : 'Created'}</th>
+                    <th>{language === 'ar' ? 'تاريخ الانتهاء' : 'Expiring Date'}</th>
                     <th>{t('actions')}</th>
                   </tr>
                 </thead>
@@ -315,6 +316,7 @@ export default function TenantManagement() {
                         </span>
                       </td>
                       <td className="text-gray-500">{new Date(tenant.createdAt).toLocaleDateString()}</td>
+                      <td className="text-gray-500">{tenant.subscription?.endDate ? new Date(tenant.subscription.endDate).toLocaleDateString() : '-'}</td>
                       <td>
                         <div className="flex items-center gap-2">
                           <button 
