@@ -280,9 +280,111 @@ const complianceLogos = [
   { src: '/saudi-vision-2030-logo.png', alt: 'Saudi Vision 2030', imageClassName: 'scale-100' },
 ]
 
+const solutionsData = [
+  {
+    title: 'Trading & Supply Chain',
+    titleAr: 'التجارة وسلاسل الإمداد',
+    icon: Building2,
+    image: '/images/solutions/trading.png',
+    color: 'from-blue-500 to-indigo-600',
+    description: 'Complete wholesale, retail, and advanced inventory tracking.',
+    descriptionAr: 'تتبع شامل لتجارة الجملة والتجزئة والمخزون المتقدم.',
+    longDescription: 'Optimize your entire supply chain with multi-warehouse tracking, automated reorder points, comprehensive supplier management, and seamless ZATCA e-invoicing for B2B and B2C transactions.',
+    longDescriptionAr: 'قم بتحسين سلسلة التوريد الخاصة بك بالكامل مع تتبع المستودعات المتعددة ونقاط إعادة الطلب الآلية وإدارة الموردين الشاملة والفوترة الإلكترونية السلسة لمعاملات B2B و B2C.',
+    features: ['Multi-warehouse inventory', 'Automated purchase orders', 'Real-time stock valuation', 'ZATCA B2B & B2C invoicing'],
+    featuresAr: ['مخزون متعدد المستودعات', 'أوامر شراء مؤتمتة', 'تقييم المخزون في الوقت الفعلي', 'فواتير ZATCA B2B و B2C'],
+    email: 'admin@maqder.com'
+  },
+  {
+    title: 'Construction & Contracting',
+    titleAr: 'المقاولات والبناء',
+    icon: HardHat,
+    image: '/images/solutions/construction.png',
+    color: 'from-orange-500 to-red-600',
+    description: 'Project management, job costing, and fleet tracking.',
+    descriptionAr: 'إدارة المشاريع وحساب تكاليف العمليات وتتبع الأسطول.',
+    longDescription: 'Take control of your construction projects with precise job costing, material requisitions, fleet and machinery maintenance tracking, and detailed project profitability reports.',
+    longDescriptionAr: 'تحكم في مشاريع البناء الخاصة بك من خلال حساب دقيق لتكاليف العمل، وطلبات المواد، وتتبع صيانة الأسطول والآلات، وتقارير ربحية المشروع المفصلة.',
+    features: ['Detailed Job Costing', 'Project Management & Tasks', 'Heavy Machinery Fleet Tracking', 'Subcontractor Invoicing'],
+    featuresAr: ['حساب مفصل لتكاليف العمل', 'إدارة المشاريع والمهام', 'تتبع أسطول الآليات الثقيلة', 'فواتير المقاولين من الباطن'],
+    email: 'admin@maqder.com'
+  },
+  {
+    title: 'Travel & Tourism',
+    titleAr: 'السياحة والسفر',
+    icon: Globe,
+    image: '/images/solutions/travel.png',
+    color: 'from-sky-500 to-cyan-600',
+    description: 'Flight bookings, margin scheme taxation, and itineraries.',
+    descriptionAr: 'حجوزات الطيران ونظام ضريبة الهامش والمسارات.',
+    longDescription: 'Tailored for travel agencies, our system supports complex Margin Scheme VAT calculations, passenger tracking, flight ticket logs, and comprehensive booking profitability analysis.',
+    longDescriptionAr: 'مصمم خصيصاً لوكالات السفر، يدعم نظامنا حسابات ضريبة القيمة المضافة المعقدة (نظام الهامش)، وتتبع الركاب، وسجلات تذاكر الطيران، والتحليل الشامل لربحية الحجوزات.',
+    features: ['Margin Scheme VAT (ZATCA)', 'Flight & Hotel Booking Logs', 'Passenger Manifests', 'Supplier Payment Tracking'],
+    featuresAr: ['ضريبة القيمة المضافة بنظام الهامش', 'سجلات حجوزات الطيران والفنادق', 'قوائم الركاب', 'تتبع مدفوعات الموردين'],
+    email: 'travel@maqder.com'
+  },
+  {
+    title: 'Restaurant & Cafe',
+    titleAr: 'المطاعم والمقاهي',
+    icon: PieChart,
+    image: '/images/solutions/restaurant.png',
+    color: 'from-amber-500 to-orange-500',
+    description: 'Table management, kitchen displays, and smart POS.',
+    descriptionAr: 'إدارة الطاولات وشاشات المطبخ ونقاط البيع الذكية.',
+    longDescription: 'A lightning-fast, touch-friendly POS integrated with a Kitchen Display System (KDS). Manage table reservations, recipe ingredients, shift cash registers, and deliver exceptional dining experiences.',
+    longDescriptionAr: 'نظام نقاط بيع فائق السرعة وسهل الاستخدام باللمس ومتكامل مع شاشة المطبخ (KDS). قم بإدارة حجوزات الطاولات ومكونات الوصفات وسجلات النقد للورديات.',
+    features: ['Touch-friendly Smart POS', 'Kitchen Display System (KDS)', 'Table & Area Management', 'Recipe & Ingredient Tracking'],
+    featuresAr: ['نظام نقاط بيع ذكي باللمس', 'نظام عرض المطبخ (KDS)', 'إدارة الطاولات والمناطق', 'تتبع الوصفات والمكونات'],
+    email: 'restaurant@maqder.com'
+  },
+  {
+    title: 'Car Rental',
+    titleAr: 'تأجير السيارات',
+    icon: Truck,
+    image: '/images/solutions/car-rental.png',
+    color: 'from-rose-500 to-red-600',
+    description: 'Vehicle tracking, rental contracts, and maintenance logs.',
+    descriptionAr: 'تتبع المركبات وعقود التأجير وسجلات الصيانة.',
+    longDescription: 'Manage your rental fleet with ease. Create dynamic rental agreements, track vehicle availability, monitor maintenance schedules, and automatically calculate late return fees.',
+    longDescriptionAr: 'إدارة أسطول التأجير الخاص بك بسهولة. إنشاء اتفاقيات تأجير ديناميكية، وتتبع توفر المركبات، ومراقبة جداول الصيانة، وحساب رسوم التأخير تلقائياً.',
+    features: ['Dynamic Rental Contracts', 'Fleet Availability Calendar', 'Damage Check-in/Check-out', 'Automated Late Fees'],
+    featuresAr: ['عقود تأجير ديناميكية', 'تقويم توفر الأسطول', 'فحص الأضرار عند التسليم والاستلام', 'رسوم التأخير التلقائية'],
+    email: 'rental@maqder.com'
+  },
+  {
+    title: 'Laundry Services',
+    titleAr: 'خدمات المغاسل',
+    icon: Sparkles,
+    image: '/images/solutions/laundry.png',
+    color: 'from-emerald-500 to-teal-600',
+    description: 'Garment tracking, weight billing, and touch POS.',
+    descriptionAr: 'تتبع الملابس والفواتير بالوزن ونقاط البيع باللمس.',
+    longDescription: 'Streamline your laundry operations with precise garment tracking, automated weight-based billing, express service surcharges, and integrated WhatsApp notifications when clothes are ready.',
+    longDescriptionAr: 'تبسيط عمليات المغسلة الخاصة بك مع التتبع الدقيق للملابس، والفوترة الآلية على أساس الوزن، ورسوم الخدمة السريعة، وإشعارات الواتساب المتكاملة عندما تكون الملابس جاهزة.',
+    features: ['Garment Tracking Tags', 'Weight-based Billing', 'Express Service Management', 'WhatsApp Ready Alerts'],
+    featuresAr: ['علامات تتبع الملابس', 'الفوترة بناءً على الوزن', 'إدارة الخدمة السريعة', 'إشعارات الواتساب للجاهزية'],
+    email: 'laundry@maqder.com'
+  },
+  {
+    title: 'Saloon & Barber Shop',
+    titleAr: 'صالونات الحلاقة والتجميل',
+    icon: Scissors,
+    image: '/images/solutions/saloon.png',
+    color: 'from-purple-500 to-fuchsia-600',
+    description: 'Appointments scheduling, staff commissions, and service POS.',
+    descriptionAr: 'جدولة المواعيد وعمولات الموظفين ونقاط بيع الخدمات.',
+    longDescription: 'Elevate your grooming business with sleek appointment scheduling, automated staff commission calculations, premium service catalogs, and customer loyalty tracking.',
+    longDescriptionAr: 'ارتق بأعمال الصالون الخاصة بك مع جدولة المواعيد الأنيقة، وحسابات عمولات الموظفين الآلية، وقوائم الخدمات المتميزة، وتتبع ولاء العملاء.',
+    features: ['Staff Commission Tracking', 'Appointment Scheduling', 'Service Variations POS', 'Customer Loyalty'],
+    featuresAr: ['تتبع عمولات الموظفين', 'جدولة المواعيد', 'نظام نقاط البيع للخدمات', 'ولاء العملاء'],
+    email: 'saloon@maqder.com'
+  }
+]
+
 export default function Landing() {
   const [language, setLanguage] = useState('en')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [selectedSolution, setSelectedSolution] = useState(null)
   const isArabic = language === 'ar'
 
   return (
@@ -729,85 +831,15 @@ export default function Landing() {
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              {
-                title: 'Trading & Supply Chain',
-                titleAr: 'التجارة وسلاسل الإمداد',
-                icon: Building2,
-                image: '/images/solutions/trading.png',
-                color: 'from-blue-500 to-indigo-600',
-                description: 'Complete wholesale, retail, and advanced inventory tracking.',
-                descriptionAr: 'تتبع شامل لتجارة الجملة والتجزئة والمخزون المتقدم.',
-                email: 'admin@maqder.com'
-              },
-              {
-                title: 'Construction & Contracting',
-                titleAr: 'المقاولات والبناء',
-                icon: HardHat,
-                image: '/images/solutions/construction.png',
-                color: 'from-orange-500 to-red-600',
-                description: 'Project management, job costing, and fleet tracking.',
-                descriptionAr: 'إدارة المشاريع وحساب تكاليف العمليات وتتبع الأسطول.',
-                email: 'admin@maqder.com'
-              },
-              {
-                title: 'Travel & Tourism',
-                titleAr: 'السياحة والسفر',
-                icon: Globe,
-                image: '/images/solutions/travel.png',
-                color: 'from-sky-500 to-cyan-600',
-                description: 'Flight bookings, margin scheme taxation, and itineraries.',
-                descriptionAr: 'حجوزات الطيران ونظام ضريبة الهامش والمسارات.',
-                email: 'travel@maqder.com'
-              },
-              {
-                title: 'Restaurant & Cafe',
-                titleAr: 'المطاعم والمقاهي',
-                icon: PieChart,
-                image: '/images/solutions/restaurant.png',
-                color: 'from-amber-500 to-orange-500',
-                description: 'Table management, kitchen displays, and smart POS.',
-                descriptionAr: 'إدارة الطاولات وشاشات المطبخ ونقاط البيع الذكية.',
-                email: 'restaurant@maqder.com'
-              },
-              {
-                title: 'Car Rental',
-                titleAr: 'تأجير السيارات',
-                icon: Truck,
-                image: '/images/solutions/car-rental.png',
-                color: 'from-rose-500 to-red-600',
-                description: 'Vehicle tracking, rental contracts, and maintenance logs.',
-                descriptionAr: 'تتبع المركبات وعقود التأجير وسجلات الصيانة.',
-                email: 'rental@maqder.com'
-              },
-              {
-                title: 'Laundry Services',
-                titleAr: 'خدمات المغاسل',
-                icon: Sparkles,
-                image: '/images/solutions/laundry.png',
-                color: 'from-emerald-500 to-teal-600',
-                description: 'Garment tracking, weight billing, and touch POS.',
-                descriptionAr: 'تتبع الملابس والفواتير بالوزن ونقاط البيع باللمس.',
-                email: 'laundry@maqder.com'
-              },
-              {
-                title: 'Saloon & Barber Shop',
-                titleAr: 'صالونات الحلاقة والتجميل',
-                icon: Scissors,
-                image: '/images/solutions/saloon.png',
-                color: 'from-purple-500 to-fuchsia-600',
-                description: 'Appointments scheduling, staff commissions, and service POS.',
-                descriptionAr: 'جدولة المواعيد وعمولات الموظفين ونقاط بيع الخدمات.',
-                email: 'saloon@maqder.com'
-              }
-            ].map((solution, index) => (
+            {solutionsData.map((solution, index) => (
               <motion.div
                 key={index}
+                onClick={() => setSelectedSolution(solution)}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1, duration: 0.6 }}
-                className="group relative h-[420px] rounded-3xl overflow-hidden shadow-2xl bg-gray-800"
+                className="group relative h-[420px] rounded-3xl overflow-hidden shadow-2xl bg-gray-800 cursor-pointer"
               >
                 {/* Background Image */}
                 <div className="absolute inset-0">
@@ -833,20 +865,99 @@ export default function Landing() {
                     {isArabic ? solution.descriptionAr : solution.description}
                   </p>
                   
-                  <Link
-                    to="/login"
-                    state={{ email: solution.email, password: 'password123' }}
-                    className="inline-flex items-center justify-between w-full p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/10 backdrop-blur-lg text-white font-medium transition-all duration-300 transform group-hover:-translate-y-1"
-                  >
-                    <span>{isArabic ? 'دخول للنسخة التجريبية' : 'Launch Demo'}</span>
+                  <div className="inline-flex items-center justify-between w-full p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/10 backdrop-blur-lg text-white font-medium transition-all duration-300 transform group-hover:-translate-y-1">
+                    <span>{isArabic ? 'عرض التفاصيل' : 'View Details'}</span>
                     <ArrowRight className={`w-5 h-5 ${isArabic ? 'rotate-180' : ''}`} />
-                  </Link>
+                  </div>
                 </div>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
+
+      {/* Solution Detail Modal */}
+      <AnimatePresence>
+        {selectedSolution && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" dir={isArabic ? 'rtl' : 'ltr'}>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedSolution(null)}
+              className="absolute inset-0 bg-gray-900/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white rounded-3xl shadow-2xl overflow-hidden custom-scrollbar"
+            >
+              <button 
+                onClick={() => setSelectedSolution(null)}
+                className={`absolute top-4 ${isArabic ? 'left-4' : 'right-4'} z-10 p-2 bg-black/20 hover:bg-black/40 backdrop-blur-md rounded-full text-white transition-colors`}
+              >
+                <X className="w-6 h-6" />
+              </button>
+              
+              <div className="relative h-64 sm:h-80 w-full bg-gray-900">
+                <img src={selectedSolution.image} className="absolute inset-0 w-full h-full object-cover opacity-80" alt={selectedSolution.title} />
+                <div className={`absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/60 to-transparent`} />
+                <div className="absolute inset-0 bg-gradient-to-r from-gray-900/90 to-transparent" />
+                
+                <div className="absolute bottom-0 left-0 right-0 p-8">
+                  <div className={`w-16 h-16 bg-gradient-to-br ${selectedSolution.color} rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-black/30 backdrop-blur-md border border-white/20`}>
+                    <selectedSolution.icon className="w-8 h-8 text-white" />
+                  </div>
+                  <h2 className="text-3xl sm:text-5xl font-bold text-white mb-2">
+                    {isArabic ? selectedSolution.titleAr : selectedSolution.title}
+                  </h2>
+                </div>
+              </div>
+
+              <div className="p-8">
+                <p className="text-xl text-gray-700 leading-relaxed mb-10 font-light">
+                  {isArabic ? selectedSolution.longDescriptionAr : selectedSolution.longDescription}
+                </p>
+
+                <h3 className="text-lg font-bold text-gray-900 mb-6 uppercase tracking-wider text-sm">
+                  {isArabic ? 'المميزات الرئيسية' : 'Key Features'}
+                </h3>
+                
+                <div className="grid sm:grid-cols-2 gap-4 mb-10">
+                  {(isArabic ? selectedSolution.featuresAr : selectedSolution.features).map((feature, idx) => (
+                    <div key={idx} className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                      <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                      </div>
+                      <span className="text-gray-700 font-medium">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-100">
+                  <Link
+                    to="/login"
+                    state={{ email: selectedSolution.email, password: 'password123' }}
+                    className={`flex-1 inline-flex items-center justify-center gap-2 py-4 rounded-xl text-white font-semibold shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-0.5 bg-gradient-to-r ${selectedSolution.color}`}
+                  >
+                    <Play className="w-5 h-5 fill-current" />
+                    <span>{isArabic ? 'إطلاق النسخة التجريبية' : 'Launch Live Demo'}</span>
+                  </Link>
+                  <a
+                    href="#contact"
+                    onClick={() => setSelectedSolution(null)}
+                    className="flex-1 inline-flex items-center justify-center gap-2 py-4 rounded-xl text-gray-700 bg-gray-100 hover:bg-gray-200 font-semibold transition-colors"
+                  >
+                    <Headphones className="w-5 h-5" />
+                    <span>{isArabic ? 'تواصل مع المبيعات' : 'Contact Sales'}</span>
+                  </a>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Testimonials */}
       <section className="py-24 bg-gray-50">
