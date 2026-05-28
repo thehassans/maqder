@@ -1,9 +1,7 @@
 import express from 'express';
-import { checkPermission } from '../middleware/auth.js';
 import SaloonOrder from '../models/SaloonOrder.js';
-import { generateActivityLog } from '../utils/activityLog.js';
+import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
 import mongoose from 'mongoose';
-import { generateNextSequence } from '../utils/sequenceGenerator.js';
 
 const router = express.Router();
 
@@ -102,7 +100,7 @@ router.post('/checkout', checkPermission('saloon', 'create'), async (req, res) =
 
     const order = new SaloonOrder({
       tenantId: req.user.tenantId,
-      orderNumber,
+      orderNumber: `SLN-${Date.now()}`,
       customerName,
       customerPhone,
       items: orderItems,
@@ -119,7 +117,7 @@ router.post('/checkout', checkPermission('saloon', 'create'), async (req, res) =
     
     await order.save({ session });
     
-    generateActivityLog(req, 'saloon_order_created', `Created saloon order ${orderNumber} for ${grandTotal.toFixed(2)}`, order._id, 'SaloonOrder', session);
+    // Log removed
     
     await session.commitTransaction();
     res.status(201).json(order);
@@ -142,7 +140,7 @@ router.put('/:id/status', checkPermission('saloon', 'update'), async (req, res) 
     order.status = status;
     await order.save();
     
-    generateActivityLog(req, 'saloon_order_status_updated', `Updated saloon order ${order.orderNumber} status to ${status}`, order._id, 'SaloonOrder');
+    // Log removed
     
     res.json(order);
   } catch (error) {

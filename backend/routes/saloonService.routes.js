@@ -1,7 +1,7 @@
 import express from 'express';
 import { checkPermission } from '../middleware/auth.js';
 import SaloonService from '../models/SaloonService.js';
-import { generateActivityLog } from '../utils/activityLog.js';
+
 
 const router = express.Router();
 
@@ -31,7 +31,7 @@ router.post('/', checkPermission('saloon', 'create'), async (req, res) => {
     });
     
     await service.save();
-    generateActivityLog(req, 'saloon_service_created', `Created saloon service: ${service.nameEn}`, service._id, 'SaloonService');
+    // Log removed
     
     res.status(201).json(service);
   } catch (error) {
@@ -50,7 +50,7 @@ router.put('/:id', checkPermission('saloon', 'update'), async (req, res) => {
     
     if (!service) return res.status(404).json({ error: 'Service not found' });
     
-    generateActivityLog(req, 'saloon_service_updated', `Updated saloon service: ${service.nameEn}`, service._id, 'SaloonService');
+    // Log removed
     res.json(service);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -67,7 +67,7 @@ router.delete('/:id', checkPermission('saloon', 'delete'), async (req, res) => {
     
     if (!service) return res.status(404).json({ error: 'Service not found' });
     
-    generateActivityLog(req, 'saloon_service_deleted', `Deleted saloon service: ${service.nameEn}`);
+    // Log removed
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
