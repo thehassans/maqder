@@ -57,6 +57,8 @@ import laundryServiceRoutes from './routes/laundryService.routes.js';
 import laundryCustomerRoutes from './routes/laundryCustomer.routes.js';
 import laundryOrderRoutes from './routes/laundryOrder.routes.js';
 import laundryInventoryRoutes from './routes/laundryInventory.routes.js';
+import saloonServiceRoutes from './routes/saloonService.routes.js';
+import saloonOrderRoutes from './routes/saloonOrder.routes.js';
 
 import { checkIqamaExpiry } from './jobs/iqamaChecker.js';
 import { processScheduledReports } from './jobs/reportScheduleJob.js';
@@ -350,6 +352,9 @@ app.use('/api/laundry/services', ensureDatabaseReady, laundryServiceRoutes);
 app.use('/api/laundry/customers', ensureDatabaseReady, laundryCustomerRoutes);
 app.use('/api/laundry/orders', ensureDatabaseReady, laundryOrderRoutes);
 app.use('/api/laundry/inventory', ensureDatabaseReady, laundryInventoryRoutes);
+
+app.use('/api/saloon/services', ensureDatabaseReady, saloonServiceRoutes);
+app.use('/api/saloon/orders', ensureDatabaseReady, saloonOrderRoutes);
 
 // Serve static frontend files in production
 const resolveFrontendBuild = () => {

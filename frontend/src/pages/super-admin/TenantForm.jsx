@@ -55,6 +55,10 @@ export default function TenantForm() {
       ...tenant.tenant,
       businessTypes: getTenantBusinessTypes(tenant.tenant),
       businessType: getPrimaryBusinessType(tenant.tenant),
+      subscription: {
+        ...tenant.tenant?.subscription,
+        endDate: tenant.tenant?.subscription?.endDate ? new Date(tenant.tenant.subscription.endDate).toISOString().split('T')[0] : ''
+      }
     })
   }, [reset, tenant])
 
@@ -523,6 +527,10 @@ export default function TenantForm() {
                 <option value="monthly">{language === 'ar' ? 'شهري' : 'Monthly'}</option>
                 <option value="yearly">{language === 'ar' ? 'سنوي' : 'Yearly'}</option>
               </select>
+            </div>
+            <div>
+              <label className="label">{language === 'ar' ? 'تاريخ الانتهاء' : 'End Date'}</label>
+              <input type="date" {...register('subscription.endDate')} className="input" />
             </div>
             <div>
               <label className="label">{language === 'ar' ? 'الحد الأقصى للمستخدمين' : 'Max Users'}</label>

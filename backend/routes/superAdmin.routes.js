@@ -937,7 +937,7 @@ router.put('/tenants/:id', async (req, res) => {
 // @route   PUT /api/super-admin/tenants/:id/subscription
 router.put('/tenants/:id/subscription', async (req, res) => {
   try {
-    const { plan, status, maxUsers, maxInvoices, features, billingCycle, price, hasEmailAddon } = req.body;
+    const { plan, status, maxUsers, maxInvoices, features, billingCycle, price, hasEmailAddon, endDate } = req.body;
     
     const updateData = { 'subscription.plan': plan };
     if (status) updateData['subscription.status'] = status;
@@ -961,7 +961,9 @@ router.put('/tenants/:id/subscription', async (req, res) => {
     }
     
     // Extend end date
-    if (status === 'active') {
+    if (endDate) {
+      updateData['subscription.endDate'] = new Date(endDate);
+    } else if (status === 'active' && !updateData['subscription.endDate']) {
       const days = billingCycle === 'yearly' ? 365 : 30;
       updateData['subscription.endDate'] = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
     }

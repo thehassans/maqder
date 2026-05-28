@@ -110,6 +110,11 @@ import LaundryKanban from './pages/laundry/LaundryKanban'
 import LaundryCustomers from './pages/laundry/LaundryCustomers'
 import LaundryInventory from './pages/laundry/LaundryInventory'
 
+import SaloonLayout from './layouts/SaloonLayout'
+import SaloonPOS from './pages/saloon/SaloonPOS'
+import SaloonServices from './pages/saloon/SaloonServices'
+import SaloonOrders from './pages/saloon/SaloonOrders'
+
 import LoadingScreen from './components/ui/LoadingScreen'
 
 function LegacyDashboardRedirect() {
@@ -393,6 +398,22 @@ function App() {
         <Route path="customers" element={<LaundryCustomers />} />
         <Route path="inventory" element={<LaundryInventory />} />
         <Route path="catalog" element={<Navigate to="/app/laundry/pos" replace />} />
+      </Route>
+
+      <Route
+        path="/app/saloon"
+        element={
+          <ProtectedRoute redirectSuperAdmin>
+            <BusinessTypeRoute allowedTypes={['saloon']}>
+              <SaloonLayout />
+            </BusinessTypeRoute>
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<Navigate to="/app/saloon/pos" replace />} />
+        <Route path="pos" element={<SaloonPOS />} />
+        <Route path="services" element={<SaloonServices />} />
+        <Route path="orders" element={<SaloonOrders />} />
       </Route>
 
       {/* Catch all */}
