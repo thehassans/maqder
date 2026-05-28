@@ -44,6 +44,8 @@ import {
   BadgeCheck,
   Award,
   Headphones,
+  Scissors,
+  HardHat,
 } from 'lucide-react'
 
 const fadeInUp = {
@@ -698,119 +700,145 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Live Demos Section */}
-      <section id="demos" className="py-24 bg-white relative overflow-hidden">
-        <div className="absolute top-0 right-0 -mt-20 -mr-20 w-96 h-96 bg-primary-50 rounded-full blur-3xl opacity-50 pointer-events-none" />
-        <div className="absolute bottom-0 left-0 -mb-20 -ml-20 w-96 h-96 bg-emerald-50 rounded-full blur-3xl opacity-50 pointer-events-none" />
+      {/* Solutions Showcase Section */}
+      <section id="solutions" className="py-24 bg-gray-900 relative overflow-hidden">
+        <div className="absolute inset-0">
+          <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-primary-900/40 to-transparent" />
+          <div className="absolute bottom-0 left-0 w-1/2 h-full bg-gradient-to-t from-emerald-900/30 to-transparent" />
+        </div>
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="text-center mb-20"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-600 rounded-full font-medium text-sm mb-6 border border-rose-100">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
-              </span>
-              {isArabic ? 'تجربة حية' : 'Live Demos'}
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md text-white rounded-full font-medium text-sm mb-6 border border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+              <Sparkles className="w-4 h-4 text-primary-400" />
+              {isArabic ? 'حلول مصممة لنشاطك' : 'Tailored Solutions'}
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              {isArabic ? 'جرب النظام بنفسك' : 'Experience It Yourself'}
+            <h2 className="text-4xl sm:text-5xl font-bold text-white mb-6 tracking-tight">
+              {isArabic ? 'صناعتك، بطريقتنا' : 'Your Industry, Our Expertise'}
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-400 max-w-3xl mx-auto font-light">
               {isArabic
-                ? 'اختر نوع نشاطك التجاري وجرب واجهة النظام المخصصة مع بيانات تجريبية.'
-                : 'Select your business type and explore the customized interface with demo data.'}
+                ? 'اختر نوع نشاطك التجاري واستكشف كيف يسهل نظام مقدر إدارة عملياتك اليومية بأناقة وفعالية.'
+                : 'Select your business type and explore how Maqder streamlines your daily operations with elegance and efficiency.'}
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
               {
-                title: 'Trading & ERP',
-                titleAr: 'التجارة وإدارة الموارد',
+                title: 'Trading & Supply Chain',
+                titleAr: 'التجارة وسلاسل الإمداد',
                 icon: Building2,
+                image: '/images/solutions/trading.png',
                 color: 'from-blue-500 to-indigo-600',
-                bg: 'bg-blue-50',
-                border: 'border-blue-100',
-                description: 'Standard wholesale/retail with inventory tracking.',
-                descriptionAr: 'تجارة الجملة والتجزئة مع تتبع المخزون.',
+                description: 'Complete wholesale, retail, and advanced inventory tracking.',
+                descriptionAr: 'تتبع شامل لتجارة الجملة والتجزئة والمخزون المتقدم.',
                 email: 'admin@maqder.com'
               },
               {
-                title: 'Travel Agency',
-                titleAr: 'وكالة سفر',
+                title: 'Construction & Contracting',
+                titleAr: 'المقاولات والبناء',
+                icon: HardHat,
+                image: '/images/solutions/construction.png',
+                color: 'from-orange-500 to-red-600',
+                description: 'Project management, job costing, and fleet tracking.',
+                descriptionAr: 'إدارة المشاريع وحساب تكاليف العمليات وتتبع الأسطول.',
+                email: 'admin@maqder.com'
+              },
+              {
+                title: 'Travel & Tourism',
+                titleAr: 'السياحة والسفر',
                 icon: Globe,
+                image: '/images/solutions/travel.png',
                 color: 'from-sky-500 to-cyan-600',
-                bg: 'bg-sky-50',
-                border: 'border-sky-100',
-                description: 'Margin scheme taxation & flight booking logs.',
-                descriptionAr: 'نظام الهامش الضريبي وتتبع الرحلات.',
+                description: 'Flight bookings, margin scheme taxation, and itineraries.',
+                descriptionAr: 'حجوزات الطيران ونظام ضريبة الهامش والمسارات.',
                 email: 'travel@maqder.com'
               },
               {
+                title: 'Restaurant & Cafe',
+                titleAr: 'المطاعم والمقاهي',
+                icon: PieChart,
+                image: '/images/solutions/restaurant.png',
+                color: 'from-amber-500 to-orange-500',
+                description: 'Table management, kitchen displays, and smart POS.',
+                descriptionAr: 'إدارة الطاولات وشاشات المطبخ ونقاط البيع الذكية.',
+                email: 'restaurant@maqder.com'
+              },
+              {
                 title: 'Car Rental',
-                titleAr: 'تأجير سيارات',
+                titleAr: 'تأجير السيارات',
                 icon: Truck,
+                image: '/images/solutions/car-rental.png',
                 color: 'from-rose-500 to-red-600',
-                bg: 'bg-rose-50',
-                border: 'border-rose-100',
-                description: 'Fleet tracking and active rental contracts.',
-                descriptionAr: 'تتبع الأسطول وعقود التأجير النشطة.',
+                description: 'Vehicle tracking, rental contracts, and maintenance logs.',
+                descriptionAr: 'تتبع المركبات وعقود التأجير وسجلات الصيانة.',
                 email: 'rental@maqder.com'
               },
               {
-                title: 'Laundry Management',
-                titleAr: 'إدارة المغاسل',
+                title: 'Laundry Services',
+                titleAr: 'خدمات المغاسل',
                 icon: Sparkles,
+                image: '/images/solutions/laundry.png',
                 color: 'from-emerald-500 to-teal-600',
-                bg: 'bg-emerald-50',
-                border: 'border-emerald-100',
-                description: 'Garment tracking, touch POS & weight billing.',
-                descriptionAr: 'تتبع الملابس، نقاط البيع باللمس والوزن.',
+                description: 'Garment tracking, weight billing, and touch POS.',
+                descriptionAr: 'تتبع الملابس والفواتير بالوزن ونقاط البيع باللمس.',
                 email: 'laundry@maqder.com'
               },
               {
-                title: 'Restaurant POS',
-                titleAr: 'نقاط بيع المطاعم',
-                icon: PieChart,
-                color: 'from-amber-500 to-orange-600',
-                bg: 'bg-amber-50',
-                border: 'border-amber-100',
-                description: 'Tables, kitchen displays, and shift management.',
-                descriptionAr: 'الطاولات وشاشات المطبخ وإدارة الورديات.',
-                email: 'restaurant@maqder.com'
+                title: 'Saloon & Barber Shop',
+                titleAr: 'صالونات الحلاقة والتجميل',
+                icon: Scissors,
+                image: '/images/solutions/saloon.png',
+                color: 'from-purple-500 to-fuchsia-600',
+                description: 'Appointments scheduling, staff commissions, and service POS.',
+                descriptionAr: 'جدولة المواعيد وعمولات الموظفين ونقاط بيع الخدمات.',
+                email: 'saloon@maqder.com'
               }
-            ].map((demo, index) => (
+            ].map((solution, index) => (
               <motion.div
                 key={index}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className={`relative overflow-hidden group rounded-3xl p-8 border ${demo.border} bg-white shadow-sm hover:shadow-xl transition-all duration-300`}
+                transition={{ delay: index * 0.1, duration: 0.6 }}
+                className="group relative h-[420px] rounded-3xl overflow-hidden shadow-2xl bg-gray-800"
               >
-                <div className={`absolute top-0 right-0 w-32 h-32 ${demo.bg} rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110`} />
-                <div className="relative z-10 flex flex-col h-full">
-                  <div className={`w-14 h-14 bg-gradient-to-br ${demo.color} rounded-2xl flex items-center justify-center mb-6 shadow-md`}>
-                    <demo.icon className="w-7 h-7 text-white" />
+                {/* Background Image */}
+                <div className="absolute inset-0">
+                  <img 
+                    src={solution.image} 
+                    alt={solution.title} 
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-70 group-hover:opacity-100"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/60 to-transparent transition-opacity duration-500 group-hover:opacity-90" />
+                </div>
+                
+                {/* Content Container */}
+                <div className="relative h-full flex flex-col justify-end p-8 z-10">
+                  <div className={`w-14 h-14 bg-gradient-to-br ${solution.color} rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-black/30 backdrop-blur-md border border-white/20 transform transition-transform duration-500 group-hover:-translate-y-2`}>
+                    <solution.icon className="w-7 h-7 text-white" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-3">
-                    {isArabic ? demo.titleAr : demo.title}
+                  
+                  <h3 className="text-2xl font-bold text-white mb-3 transform transition-all duration-500 group-hover:-translate-y-2">
+                    {isArabic ? solution.titleAr : solution.title}
                   </h3>
-                  <p className="text-gray-600 mb-8 flex-grow">
-                    {isArabic ? demo.descriptionAr : demo.description}
+                  
+                  <p className="text-gray-300 mb-6 font-light leading-relaxed opacity-0 translate-y-4 transition-all duration-500 group-hover:opacity-100 group-hover:translate-y-0 h-0 group-hover:h-auto overflow-hidden">
+                    {isArabic ? solution.descriptionAr : solution.description}
                   </p>
                   
                   <Link
                     to="/login"
-                    state={{ email: demo.email, password: 'password123' }}
-                    className={`inline-flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-white font-semibold shadow-md transition-all hover:shadow-lg bg-gradient-to-r ${demo.color}`}
+                    state={{ email: solution.email, password: 'password123' }}
+                    className="inline-flex items-center justify-between w-full p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/10 backdrop-blur-lg text-white font-medium transition-all duration-300 transform group-hover:-translate-y-1"
                   >
-                    {isArabic ? 'دخول للنسخة التجريبية' : 'Launch Demo'}
+                    <span>{isArabic ? 'دخول للنسخة التجريبية' : 'Launch Demo'}</span>
                     <ArrowRight className={`w-5 h-5 ${isArabic ? 'rotate-180' : ''}`} />
                   </Link>
                 </div>
