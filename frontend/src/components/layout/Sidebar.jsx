@@ -108,6 +108,15 @@ export default function Sidebar() {
       ]
     },
     {
+      title: language === 'ar' ? 'صالون / حلاقة' : 'Saloon & POS',
+      businessTypes: ['saloon'],
+      items: [
+        { path: '/app/saloon/pos', icon: ShoppingBag, label: language === 'ar' ? 'نقطة البيع (صالون)' : 'Saloon POS', perm: { module: 'saloon', action: 'create' } },
+        { path: '/app/saloon/orders', icon: Receipt, label: language === 'ar' ? 'الطلبات النشطة' : 'Active Orders', perm: { module: 'saloon', action: 'read' } },
+        { path: '/app/saloon/services', icon: Package, label: language === 'ar' ? 'قائمة الخدمات' : 'Services Catalog', perm: { module: 'saloon', action: 'read' } },
+      ]
+    },
+    {
       title: language === 'ar' ? 'المطعم' : 'Restaurant',
       businessTypes: ['restaurant'],
       items: [
