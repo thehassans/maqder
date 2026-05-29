@@ -18,12 +18,16 @@ import {
 } from '../../store/slices/laundryCartSlice'
 import { toast } from 'react-hot-toast'
 import ThermalReceipt from '../../components/ui/ThermalReceipt'
+import CardPaymentModal from '../../components/pos/CardPaymentModal'
 
 export default function LaundryPOS() {
   const dispatch = useDispatch()
   const { language } = useSelector(state => state.ui)
+  const { tenant } = useSelector(state => state.auth)
   const cart = useSelector(state => state.laundryCart)
   const isRtl = language === 'ar'
+  const cardTerminalEnabled = Boolean(tenant?.settings?.posTerminal?.enabled)
+  const [showCardModal, setShowCardModal] = useState(false)
 
   const [services, setServices] = useState([])
   const [products, setProducts] = useState([])
@@ -130,12 +134,13 @@ export default function LaundryPOS() {
     }
   }
 
-  const handleCheckout = async () => {
+  const handleCheckout = async (paymentMethod = 'cash') => {
     if (cart.items.length === 0) return toast.error('Cart is empty')
     
     setIsProcessing(true)
     try {
       const payload = {
+        paymentMethod,
         customer: cart.customer?._id,
         customerName: cart.customerName || (cart.customer ? cart.customer.fullName : undefined),
         customerPhone: cart.customerPhone || (cart.customer ? cart.customer.mobile : undefined),
@@ -542,20 +547,39 @@ export default function LaundryPOS() {
             <span>SAR {(cart.items.reduce((s, i) => s + i.total, 0) + (cart.isUrgent ? cart.urgentPrice : 0)).toFixed(2)}</span>
           </div>
           
-          <button
-            onClick={handleCheckout}
-            disabled={cart.items.length === 0 || isProcessing}
-            className="w-full mt-4 bg-teal-600 hover:bg-teal-700 text-white py-3 px-4 rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            {isProcessing ? (isRtl ? 'جاري المعالجة...' : 'Processing...') : (
-              <>
+          <div className="mt-4 flex gap-2">
+            <button
+              onClick={() => handleCheckout('cash')}
+              disabled={cart.items.length === 0 || isProcessing}
+              className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-3 px-4 rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isProcessing ? (isRtl ? 'جاري المعالجة...' : 'Processing...') : (
+                <>{isRtl ? 'نقداً / الدفع' : 'Cash / Checkout'}</>
+              )}
+            </button>
+            {cardTerminalEnabled && (
+              <button
+                onClick={() => setShowCardModal(true)}
+                disabled={cart.items.length === 0 || isProcessing}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              >
                 <CreditCard className="w-5 h-5" />
-                {isRtl ? 'الدفع' : 'Checkout'}
-              </>
+                {isRtl ? 'بطاقة' : 'Card'}
+              </button>
             )}
-          </button>
+          </div>
         </div>
       </div>
+
+      <CardPaymentModal
+        open={showCardModal}
+        amount={cart.items.reduce((s, i) => s + i.total, 0) + (cart.isUrgent ? cart.urgentPrice : 0)}
+        currency="SAR"
+        source="laundry"
+        orderType="laundry"
+        onApproved={() => { setShowCardModal(false); handleCheckout('card') }}
+        onClose={() => setShowCardModal(false)}
+      />
 
       {/* Print Modal */}
       {completedOrder && (

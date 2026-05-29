@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector, useDispatch } from 'react-redux'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
-import { Building2, Shield, Globe, Palette, Bell, Save, Key, CheckCircle, Image, Database, Download, FileText } from 'lucide-react'
+import { Building2, Shield, Globe, Palette, Bell, Save, Key, CheckCircle, Image, Database, Download, FileText, CreditCard } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
@@ -12,6 +12,7 @@ import { updateTenant } from '../store/slices/authSlice'
 import { useLiveTranslation } from '../lib/liveTranslation'
 import { getInvoiceBrandingProfile, getInvoiceTemplateId, getInvoiceTypography, INVOICE_FONT_OPTIONS } from '../lib/invoiceBranding'
 import { invoiceTemplateOptions } from '../lib/invoiceTemplates'
+import PosTerminalSettings from '../components/settings/PosTerminalSettings'
 
 const invoiceBrandingContexts = [
   { key: 'trading', labelEn: 'Trading Invoice', labelAr: 'فاتورة تجارة' },
@@ -241,6 +242,7 @@ export default function Settings() {
     { id: 'zatca', label: t('zatcaSettings'), icon: Shield },
     { id: 'saudi', label: language === 'ar' ? 'التكاملات السعودية' : 'Saudi Integrations', icon: Key },
     { id: 'preferences', label: language === 'ar' ? 'التفضيلات' : 'Preferences', icon: Palette },
+    { id: 'cardMachine', label: language === 'ar' ? 'جهاز الدفع' : 'Card Machine', icon: CreditCard },
     { id: 'backup', label: language === 'ar' ? 'النسخ الاحتياطي' : 'Backup', icon: Database },
   ]
 
@@ -1188,6 +1190,10 @@ export default function Settings() {
                 </div>
               </div>
             </motion.div>
+          )}
+
+          {activeTab === 'cardMachine' && (
+            <PosTerminalSettings tenant={tenant} />
           )}
 
           {activeTab === 'backup' && (

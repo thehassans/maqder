@@ -6,10 +6,14 @@ import { Search, Plus, Minus, Trash2, CreditCard, Banknote, Scissors, CheckCircl
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import SarIcon from '../../components/ui/SarIcon'
+import CardPaymentModal from '../../components/pos/CardPaymentModal'
 
 export default function SaloonPOS() {
   const { language } = useSelector((state) => state.ui)
+  const { tenant } = useSelector((state) => state.auth)
   const isRtl = language === 'ar'
+  const cardTerminalEnabled = Boolean(tenant?.settings?.posTerminal?.enabled)
+  const [showCardModal, setShowCardModal] = useState(false)
   const queryClient = useQueryClient()
   
   const [searchTerm, setSearchTerm] = useState('')
@@ -82,12 +86,7 @@ export default function SaloonPOS() {
     }
   })
 
-  const handleCheckout = (paymentMethod) => {
-    if (cart.length === 0) {
-      toast.error(isRtl ? 'السلة فارغة' : 'Cart is empty')
-      return
-    }
-    
+  const submitCheckout = (paymentMethod) => {
     // For MVP we assume they pay full if cash/card, or 0 if "none" (walking in to wait)
     const amountPaid = paymentMethod === 'none' ? 0 : grandTotal
 
@@ -98,6 +97,21 @@ export default function SaloonPOS() {
       paymentMethod,
       amountPaid
     })
+  }
+
+  const handleCheckout = (paymentMethod) => {
+    if (cart.length === 0) {
+      toast.error(isRtl ? 'السلة فارغة' : 'Cart is empty')
+      return
+    }
+
+    // Route card payments through the physical terminal when configured.
+    if (paymentMethod === 'card' && cardTerminalEnabled) {
+      setShowCardModal(true)
+      return
+    }
+
+    submitCheckout(paymentMethod)
   }
 
   return (
@@ -279,6 +293,16 @@ export default function SaloonPOS() {
           </div>
         </div>
       </div>
+
+      <CardPaymentModal
+        open={showCardModal}
+        amount={grandTotal}
+        currency="SAR"
+        source="saloon"
+        orderType="saloon"
+        onApproved={() => { setShowCardModal(false); submitCheckout('card') }}
+        onClose={() => setShowCardModal(false)}
+      />
     </div>
   )
 }

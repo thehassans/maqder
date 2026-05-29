@@ -13,6 +13,8 @@ import MarketingLayout from './layouts/MarketingLayout'
 
 import Login from './pages/auth/Login'
 import MarketingHome from './pages/marketing/Home'
+import MarketingSolutions from './pages/marketing/Solutions'
+import SolutionDetail from './pages/marketing/SolutionDetail'
 import MarketingPricing from './pages/marketing/Pricing'
 import MarketingAbout from './pages/marketing/About'
 import MarketingContact from './pages/marketing/Contact'
@@ -188,6 +190,8 @@ function App() {
       {/* Public Marketing Website */}
       <Route path="/" element={<MarketingLayout />}>
         <Route index element={<MarketingHome />} />
+        <Route path="solutions" element={<MarketingSolutions />} />
+        <Route path="solutions/:slug" element={<SolutionDetail />} />
         <Route path="pricing" element={<MarketingPricing />} />
         <Route path="about" element={<MarketingAbout />} />
         <Route path="contact" element={<MarketingContact />} />

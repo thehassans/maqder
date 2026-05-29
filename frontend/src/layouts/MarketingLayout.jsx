@@ -18,6 +18,7 @@ export default function MarketingLayout() {
   const navItems = useMemo(
     () => [
       { to: '/', labelEn: 'Home', labelAr: 'الرئيسية' },
+      { to: '/solutions', labelEn: 'Solutions', labelAr: 'الحلول' },
       { to: '/pricing', labelEn: 'Pricing', labelAr: 'الأسعار' },
       { to: '/about', labelEn: 'About', labelAr: 'من نحن' },
       { to: '/contact', labelEn: 'Contact', labelAr: 'تواصل معنا' },

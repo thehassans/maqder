@@ -85,6 +85,10 @@ router.put('/current', authorize('admin'), async (req, res) => {
           ...(currentSettings.invoiceBranding || {}),
           ...(settings.invoiceBranding || {}),
         },
+        posTerminal: {
+          ...(currentSettings.posTerminal || {}),
+          ...(settings.posTerminal || {}),
+        },
       };
     }
     

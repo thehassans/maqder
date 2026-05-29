@@ -5,10 +5,13 @@ import { Plus, Minus, Trash2, ShoppingBag, CreditCard, Search, Coffee, Truck, Ut
 import api from '../../lib/api'
 import { toast } from 'react-hot-toast'
 import ThermalReceipt from '../../components/ui/ThermalReceipt'
+import CardPaymentModal from '../../components/pos/CardPaymentModal'
 
 export default function RestaurantPOS() {
   const { language } = useSelector(state => state.ui)
+  const { tenant } = useSelector(state => state.auth)
   const isRtl = language === 'ar'
+  const cardTerminalEnabled = Boolean(tenant?.settings?.posTerminal?.enabled)
 
   const [menuItems, setMenuItems] = useState([])
   const [tables, setTables] = useState([])
@@ -26,6 +29,7 @@ export default function RestaurantPOS() {
   // Checkout states
   const [isProcessing, setIsProcessing] = useState(false)
   const [completedOrder, setCompletedOrder] = useState(null)
+  const [showCardModal, setShowCardModal] = useState(false)
   const receiptRef = useRef(null)
 
   // Half plate modal state
@@ -123,7 +127,17 @@ export default function RestaurantPOS() {
   const handleCheckout = async () => {
     if (cart.length === 0) return toast.error('Cart is empty')
     if (orderType === 'dine_in' && !selectedTable) return toast.error(isRtl ? 'الرجاء اختيار الطاولة' : 'Please select a table')
-    
+
+    // Route card payments through the physical terminal when configured.
+    if (paymentMethod === 'card' && cardTerminalEnabled) {
+      setShowCardModal(true)
+      return
+    }
+
+    await submitOrder()
+  }
+
+  const submitOrder = async () => {
     setIsProcessing(true)
     try {
       const payload = {
@@ -164,6 +178,11 @@ export default function RestaurantPOS() {
     } finally {
       setIsProcessing(false)
     }
+  }
+
+  const handleCardApproved = () => {
+    setShowCardModal(false)
+    submitOrder()
   }
 
   const handlePrint = () => {
@@ -503,6 +522,16 @@ export default function RestaurantPOS() {
           </div>
         </div>
       )}
+
+      <CardPaymentModal
+        open={showCardModal}
+        amount={cartTotal}
+        currency="SAR"
+        source="restaurant"
+        orderType="restaurant"
+        onApproved={handleCardApproved}
+        onClose={() => setShowCardModal(false)}
+      />
     </div>
   )
 }

@@ -166,6 +166,32 @@ const tenantSchema = new mongoose.Schema({
         signatureEn: { type: String, default: '' },
         signatureAr: { type: String, default: '' }
       }
+    },
+    posTerminal: {
+      enabled: { type: Boolean, default: false },
+      // Supported gateways that push a payment to a physical card terminal.
+      provider: {
+        type: String,
+        enum: ['geidea', 'paytabs', 'ngenius', 'urway', 'moyasar', 'custom'],
+        default: 'custom'
+      },
+      // Display label for the connected device shown in the POS.
+      terminalLabel: { type: String, default: '' },
+      // Provider credentials / identifiers (stored per tenant).
+      apiBaseUrl: { type: String, default: '' },
+      apiKey: { type: String, default: '' },
+      apiSecret: { type: String, default: '' },
+      merchantId: { type: String, default: '' },
+      terminalId: { type: String, default: '' },
+      outletId: { type: String, default: '' },
+      webhookSecret: { type: String, default: '' },
+      currency: { type: String, default: 'SAR' },
+      environment: { type: String, enum: ['test', 'live'], default: 'test' },
+      // How long (seconds) the POS waits for the cardholder to complete payment.
+      pollTimeoutSec: { type: Number, default: 120 },
+      autoProceedOnApproval: { type: Boolean, default: true },
+      lastTestedAt: { type: Date },
+      lastTestStatus: { type: String, default: '' }
     }
   },
   branding: {

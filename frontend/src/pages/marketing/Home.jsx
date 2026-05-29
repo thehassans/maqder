@@ -335,6 +335,15 @@ export default function MarketingHome() {
                 ? 'اختر نوع نشاطك التجاري وجرب واجهة النظام المخصصة مع بيانات تجريبية.'
                 : 'Select your business type and explore the customized interface with demo data.'}
             </p>
+            <div className="mt-6">
+              <Link
+                to="/solutions"
+                className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-2.5 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100"
+              >
+                {isArabic ? 'استكشف كل الحلول حسب نشاطك' : 'Explore all industry solutions'}
+                <ArrowRight className={`h-4 w-4 ${isArabic ? 'rotate-180' : ''}`} />
+              </Link>
+            </div>
           </div>
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
