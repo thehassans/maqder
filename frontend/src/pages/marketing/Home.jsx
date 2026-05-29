@@ -402,6 +402,17 @@ export default function MarketingHome() {
                 description: 'Tables, kitchen displays, and shift management.',
                 descriptionAr: 'الطاولات وشاشات المطبخ وإدارة الورديات.',
                 email: 'restaurant@maqder.com'
+              },
+              {
+                title: 'Saloon & Barber',
+                titleAr: 'صالون وحلاقة',
+                icon: Sparkles,
+                color: 'from-fuchsia-500 to-purple-600',
+                bg: 'bg-fuchsia-50',
+                border: 'border-fuchsia-100',
+                description: 'Service POS, staff assignment and queue tickets.',
+                descriptionAr: 'نقاط بيع الخدمات وتعيين الموظفين وتذاكر الانتظار.',
+                email: 'saloon@maqder.com'
               }
             ].map((demo, idx) => (
               <motion.div key={idx} variants={fade} initial="initial" whileInView="animate" viewport={{ once: true }} transition={{ duration: 0.5, delay: idx * 0.1 }}
