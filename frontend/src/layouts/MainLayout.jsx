@@ -19,15 +19,15 @@ export default function MainLayout() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-900 flex flex-col">
-      <TerminationBanner />
       <OfflineBanner />
       <div className="flex flex-1">
         <Sidebar />
         <div
-          className={`flex-1 transition-all duration-300 w-full ${
+          className={`flex-1 transition-all duration-300 w-full flex flex-col ${
             sidebarCollapsed ? 'lg:ms-20' : 'lg:ms-72'
           }`}
         >
+        <TerminationBanner />
         <Header />
         <main className="p-4 lg:p-6">
           <Outlet />
