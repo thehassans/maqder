@@ -27,6 +27,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { usePublicWebsiteSettings } from '../../lib/website'
+import { SOLUTIONS } from '../../lib/solutionsContent'
 
 const fade = {
   initial: { opacity: 0, y: 18 },
@@ -347,99 +348,46 @@ export default function MarketingHome() {
           </div>
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              {
-                title: 'Trading & ERP',
-                titleAr: 'التجارة وإدارة الموارد',
-                icon: Building2,
-                color: 'from-blue-500 to-indigo-600',
-                bg: 'bg-blue-50',
-                border: 'border-blue-100',
-                description: 'Standard wholesale/retail with inventory tracking.',
-                descriptionAr: 'تجارة الجملة والتجزئة مع تتبع المخزون.',
-                email: 'admin@maqder.com'
-              },
-              {
-                title: 'Travel Agency',
-                titleAr: 'وكالة سفر',
-                icon: Globe,
-                color: 'from-sky-500 to-cyan-600',
-                bg: 'bg-sky-50',
-                border: 'border-sky-100',
-                description: 'Margin scheme taxation & flight booking logs.',
-                descriptionAr: 'نظام الهامش الضريبي وتتبع الرحلات.',
-                email: 'travel@maqder.com'
-              },
-              {
-                title: 'Car Rental',
-                titleAr: 'تأجير سيارات',
-                icon: Truck,
-                color: 'from-rose-500 to-red-600',
-                bg: 'bg-rose-50',
-                border: 'border-rose-100',
-                description: 'Fleet tracking and active rental contracts.',
-                descriptionAr: 'تتبع الأسطول وعقود التأجير النشطة.',
-                email: 'rental@maqder.com'
-              },
-              {
-                title: 'Laundry Management',
-                titleAr: 'إدارة المغاسل',
-                icon: Sparkles,
-                color: 'from-emerald-500 to-teal-600',
-                bg: 'bg-emerald-50',
-                border: 'border-emerald-100',
-                description: 'Garment tracking, touch POS & weight billing.',
-                descriptionAr: 'تتبع الملابس، نقاط البيع باللمس والوزن.',
-                email: 'laundry@maqder.com'
-              },
-              {
-                title: 'Restaurant POS',
-                titleAr: 'نقاط بيع المطاعم',
-                icon: PieChart,
-                color: 'from-amber-500 to-orange-600',
-                bg: 'bg-amber-50',
-                border: 'border-amber-100',
-                description: 'Tables, kitchen displays, and shift management.',
-                descriptionAr: 'الطاولات وشاشات المطبخ وإدارة الورديات.',
-                email: 'restaurant@maqder.com'
-              },
-              {
-                title: 'Saloon & Barber',
-                titleAr: 'صالون وحلاقة',
-                icon: Sparkles,
-                color: 'from-fuchsia-500 to-purple-600',
-                bg: 'bg-fuchsia-50',
-                border: 'border-fuchsia-100',
-                description: 'Service POS, staff assignment and queue tickets.',
-                descriptionAr: 'نقاط بيع الخدمات وتعيين الموظفين وتذاكر الانتظار.',
-                email: 'saloon@maqder.com'
-              }
-            ].map((demo, idx) => (
-              <motion.div key={idx} variants={fade} initial="initial" whileInView="animate" viewport={{ once: true }} transition={{ duration: 0.5, delay: idx * 0.1 }}
-                className={`group relative overflow-hidden rounded-3xl border ${demo.border} bg-white p-8 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl`}>
-                <div className={`absolute -right-8 -top-8 h-32 w-32 rounded-bl-full ${demo.bg} transition-transform group-hover:scale-110`} />
-                <div className="relative z-10 flex h-full flex-col">
-                  <div className={`mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${demo.color} shadow-md`}>
-                    <demo.icon className="h-7 w-7 text-white" />
+            {SOLUTIONS.map((demo, idx) => {
+              const Icon = demo.icon === 'Building2' ? Building2 :
+                           demo.icon === 'UtensilsCrossed' ? PieChart :
+                           demo.icon === 'Sparkles' ? Sparkles :
+                           demo.icon === 'Scissors' ? Sparkles :
+                           demo.icon === 'Globe' ? Globe :
+                           demo.icon === 'Truck' ? Truck :
+                           demo.icon === 'Landmark' ? Landmark : Building2;
+
+              return (
+                <motion.div key={idx} variants={fade} initial="initial" whileInView="animate" viewport={{ once: true }} transition={{ duration: 0.5, delay: idx * 0.1 }}
+                  className={`group relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-8 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl`}>
+                  <div className={`absolute -right-8 -top-8 h-32 w-32 rounded-bl-full ${demo.glow} transition-transform group-hover:scale-110`} />
+                  <div className="relative z-10 flex h-full flex-col">
+                    <div className="mb-6 relative h-40 w-full overflow-hidden rounded-2xl border border-slate-100">
+                      <img src={demo.image} alt={isArabic ? demo.nameAr : demo.nameEn} className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                      <div className={`absolute bottom-3 left-3 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${demo.accent} shadow-md`}>
+                        <Icon className="h-5 w-5 text-white" />
+                      </div>
+                    </div>
+                    <h3 className="mb-3 text-xl font-bold text-slate-900">
+                      {isArabic ? demo.nameAr : demo.nameEn}
+                    </h3>
+                    <p className="mb-8 flex-grow text-slate-600">
+                      {isArabic ? demo.taglineAr : demo.taglineEn}
+                    </p>
+                    
+                    <Link
+                      to="/login"
+                      state={{ email: demo.demoEmail, password: 'password123' }}
+                      className={`inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r ${demo.accent} py-3.5 font-semibold text-white shadow-md transition-all hover:shadow-lg`}
+                    >
+                      {isArabic ? 'دخول للنسخة التجريبية' : 'Launch Demo'}
+                      <ArrowRight className={`h-5 w-5 ${isArabic ? 'rotate-180' : ''}`} />
+                    </Link>
                   </div>
-                  <h3 className="mb-3 text-xl font-bold text-slate-900">
-                    {isArabic ? demo.titleAr : demo.title}
-                  </h3>
-                  <p className="mb-8 flex-grow text-slate-600">
-                    {isArabic ? demo.descriptionAr : demo.description}
-                  </p>
-                  
-                  <Link
-                    to="/login"
-                    state={{ email: demo.email, password: 'password123' }}
-                    className={`inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r ${demo.color} py-3.5 font-semibold text-white shadow-md transition-all hover:shadow-lg`}
-                  >
-                    {isArabic ? 'دخول للنسخة التجريبية' : 'Launch Demo'}
-                    <ArrowRight className={`h-5 w-5 ${isArabic ? 'rotate-180' : ''}`} />
-                  </Link>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              )
+            })}
           </div>
         </div>
       </section>

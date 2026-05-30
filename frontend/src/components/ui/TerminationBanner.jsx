@@ -1,4 +1,5 @@
 import { useSelector } from 'react-redux'
+import { useState, useEffect } from 'react'
 import { AlertTriangle, LogOut, Phone, Mail } from 'lucide-react'
 import { useTranslation } from '../../lib/translations'
 
@@ -25,7 +26,35 @@ export function hasTerminationNotice(tenant) {
 export default function TerminationBanner() {
   const { tenant } = useSelector((state) => state.auth)
   const { language } = useSelector((state) => state.ui)
+  const [timeLeft, setTimeLeft] = useState('')
   
+  useEffect(() => {
+    if (!tenant?.terminationNotice?.date) return
+    
+    const targetDate = new Date(tenant.terminationNotice.date).getTime()
+    
+    const updateCountdown = () => {
+      const now = new Date().getTime()
+      const distance = targetDate - now
+      
+      if (distance < 0) {
+        setTimeLeft(language === 'ar' ? 'انتهى الوقت' : 'Time expired')
+        return
+      }
+      
+      const hours = Math.floor(distance / (1000 * 60 * 60))
+      const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))
+      const seconds = Math.floor((distance % (1000 * 60)) / 1000)
+      
+      setTimeLeft(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`)
+    }
+    
+    updateCountdown()
+    const interval = setInterval(updateCountdown, 1000)
+    
+    return () => clearInterval(interval)
+  }, [tenant?.terminationNotice?.date, language])
+
   if (!hasTerminationNotice(tenant)) return null
 
   const date = new Date(tenant.terminationNotice.date).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US', {
@@ -43,6 +72,9 @@ export default function TerminationBanner() {
             ? `إنذار: سيتم إنهاء اشتراكك في هذا النظام بتاريخ ${date}. يرجى اتخاذ الإجراء اللازم.`
             : `Warning: Your panel will be terminated on ${date}. Please take necessary action.`}
         </span>
+        <div className="ms-2 px-2.5 py-0.5 rounded bg-white/20 font-bold tabular-nums tracking-widest text-xs flex items-center gap-1 shadow-sm">
+          {timeLeft}
+        </div>
       </div>
       <div className="hidden sm:flex items-center gap-3">
         <a href="tel:+966596775485" title={language === 'ar' ? 'اتصال' : 'Call'} className="hover:text-rose-200 transition-colors">
