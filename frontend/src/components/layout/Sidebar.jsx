@@ -75,7 +75,7 @@ export default function Sidebar() {
       title: language === 'ar' ? 'الرئيسية' : 'Main',
       items: [
         { path: '/app/dashboard', icon: LayoutDashboard, label: t('dashboard'), end: true },
-        { path: '/app/dashboard/invoices', icon: FileText, label: t('invoices'), perm: { module: 'invoicing', action: 'read' }, excludeBusinessTypes: ['laundry'] },
+        { path: '/app/dashboard/invoices', icon: FileText, label: t('invoices'), perm: { module: 'invoicing', action: 'read' } },
         { path: '/app/dashboard/quotations', icon: FileText, label: language === 'ar' ? 'عروض الأسعار' : 'Quotations', perm: { module: 'invoicing', action: 'read' }, excludeBusinessTypes: ['laundry', 'saloon', 'restaurant'] },
         { path: '/app/dashboard/shipments/new?type=outbound&document=delivery-note', icon: FileText, label: language === 'ar' ? 'إذن تسليم' : 'Delivery Note', perm: { module: 'supply_chain', action: 'read' }, businessTypes: ['trading'] },
         { path: '/app/dashboard/contacts', icon: Users, label: language === 'ar' ? 'جهات الاتصال' : 'Contacts', perm: { module: 'invoicing', action: 'read' } },

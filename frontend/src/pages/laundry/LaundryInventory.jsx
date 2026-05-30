@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { useSelector } from 'react-redux'
 import api from '../../lib/api'
 import { toast } from 'react-hot-toast'
-import { Box, AlertTriangle, Plus } from 'lucide-react'
+import { Box, AlertTriangle, Plus, X } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 export default function LaundryInventory() {
   const { language } = useSelector(state => state.ui)
@@ -10,6 +11,14 @@ export default function LaundryInventory() {
   
   const [inventory, setInventory] = useState([])
   const [loading, setLoading] = useState(true)
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [formData, setFormData] = useState({
+    itemNameEn: '',
+    itemNameAr: '',
+    stockLevel: 0,
+    unit: 'kg',
+    reorderThreshold: 0
+  })
 
   useEffect(() => {
     fetchInventory()
@@ -26,13 +35,29 @@ export default function LaundryInventory() {
     }
   }
 
+  const handleAddItem = async (e) => {
+    e.preventDefault()
+    try {
+      const { data } = await api.post('/laundry/inventory', formData)
+      setInventory([...inventory, data])
+      setShowAddModal(false)
+      setFormData({ itemNameEn: '', itemNameAr: '', stockLevel: 0, unit: 'kg', reorderThreshold: 0 })
+      toast.success(isRtl ? 'تم إضافة العنصر بنجاح' : 'Item added successfully')
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Failed to add item')
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
           {isRtl ? 'مخزون المستلزمات' : 'Supplies Inventory'}
         </h1>
-        <button className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-xl flex items-center justify-center gap-2 font-medium transition-colors">
+        <button 
+          onClick={() => setShowAddModal(true)}
+          className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-xl flex items-center justify-center gap-2 font-medium transition-colors"
+        >
           <Plus className="w-5 h-5" />
           {isRtl ? 'عنصر جديد' : 'Add Item'}
         </button>
@@ -83,6 +108,113 @@ export default function LaundryInventory() {
           )
         })}
       </div>
+
+      <AnimatePresence>
+        {showAddModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/50"
+              onClick={() => setShowAddModal(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative bg-white dark:bg-dark-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+            >
+              <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-dark-700">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                  {isRtl ? 'إضافة عنصر للمخزون' : 'Add Inventory Item'}
+                </h3>
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="p-2 text-gray-400 hover:text-gray-500 rounded-xl hover:bg-gray-100 dark:hover:bg-dark-700"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleAddItem} className="p-6 space-y-4">
+                <div>
+                  <label className="label">{isRtl ? 'الاسم (عربي)' : 'Item Name (Arabic)'}</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.itemNameAr}
+                    onChange={(e) => setFormData({ ...formData, itemNameAr: e.target.value })}
+                    className="input"
+                  />
+                </div>
+                <div>
+                  <label className="label">{isRtl ? 'الاسم (انجليزي)' : 'Item Name (English)'}</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.itemNameEn}
+                    onChange={(e) => setFormData({ ...formData, itemNameEn: e.target.value })}
+                    className="input"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="label">{isRtl ? 'مستوى المخزون' : 'Stock Level'}</label>
+                    <input
+                      type="number"
+                      required
+                      min="0"
+                      value={formData.stockLevel}
+                      onChange={(e) => setFormData({ ...formData, stockLevel: parseInt(e.target.value) || 0 })}
+                      className="input"
+                    />
+                  </div>
+                  <div>
+                    <label className="label">{isRtl ? 'الوحدة' : 'Unit'}</label>
+                    <select
+                      value={formData.unit}
+                      onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                      className="select"
+                    >
+                      <option value="kg">{isRtl ? 'كيلو جرام' : 'kg'}</option>
+                      <option value="liter">{isRtl ? 'لتر' : 'liter'}</option>
+                      <option value="pieces">{isRtl ? 'قطع' : 'pieces'}</option>
+                      <option value="rolls">{isRtl ? 'لفات' : 'rolls'}</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="label">{isRtl ? 'حد إعادة الطلب' : 'Reorder Threshold'}</label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    value={formData.reorderThreshold}
+                    onChange={(e) => setFormData({ ...formData, reorderThreshold: parseInt(e.target.value) || 0 })}
+                    className="input"
+                  />
+                </div>
+
+                <div className="pt-4 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="btn btn-secondary"
+                  >
+                    {isRtl ? 'إلغاء' : 'Cancel'}
+                  </button>
+                  <button type="submit" className="btn btn-primary bg-teal-600 hover:bg-teal-700 border-teal-600">
+                    {isRtl ? 'إضافة' : 'Add Item'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

@@ -408,7 +408,7 @@ function App() {
         <Route path="orders" element={<LaundryKanban />} />
         <Route path="customers" element={<LaundryCustomers />} />
         <Route path="inventory" element={<LaundryInventory />} />
-        <Route path="catalog" element={<Navigate to="/app/laundry/pos" replace />} />
+        <Route path="catalog" element={<LaundryServices />} />
       </Route>
 
       <Route
