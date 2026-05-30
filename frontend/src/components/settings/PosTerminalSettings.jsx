@@ -28,7 +28,7 @@ const PROVIDERS = [
   {
     id: 'geidea',
     label: 'Geidea',
-    desc_en: 'Saudi Arabia's leading POS gateway – VISA, MC, Mada',
+    desc_en: "Saudi Arabia's leading POS gateway – VISA, MC, Mada",
     desc_ar: 'بوابة جيدية – المعيار السعودي لنقاط البيع',
     color: 'from-blue-600 to-blue-800',
     emoji: '🏦',
