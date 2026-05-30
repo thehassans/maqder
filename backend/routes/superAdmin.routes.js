@@ -1352,7 +1352,8 @@ router.post('/tenants/:id/login-as', async (req, res) => {
         business: tenant.business,
         branding: tenant.branding,
         settings: tenant.settings,
-        subscription: tenant.subscription
+        subscription: tenant.subscription,
+        terminationNotice: tenant.terminationNotice
       }
     });
   } catch (error) {

@@ -28,16 +28,19 @@ export default function TerminationBanner() {
   
   if (!hasTerminationNotice(tenant)) return null
 
-  const date = new Date(tenant.terminationNotice.date).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US')
-  const reason = tenant.terminationNotice.reason
+  const date = new Date(tenant.terminationNotice.date).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
 
   return (
-    <div className="bg-rose-600 text-white px-4 py-2 text-sm font-medium flex items-center justify-center gap-2 z-50 relative">
+    <div className="bg-rose-600 text-white px-4 py-2.5 text-sm font-medium flex items-center justify-center gap-2 z-50 relative shadow-sm">
       <AlertTriangle className="w-4 h-4 shrink-0" />
       <span className="text-center">
         {language === 'ar' 
-          ? `سيتم إنهاء اشتراكك في هذا النظام بتاريخ ${date}. السبب: ${reason}`
-          : `Your tenant will be terminated on ${date}. Reason: ${reason}`}
+          ? `إنذار: سيتم إنهاء اشتراكك في هذا النظام بتاريخ ${date}. يرجى اتخاذ الإجراء اللازم.`
+          : `Warning: Your panel will be terminated on ${date}. Please take necessary action.`}
       </span>
     </div>
   )
@@ -56,33 +59,40 @@ export function TerminationBlocker() {
   const reason = tenant?.terminationNotice?.reason
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-dark-900 flex flex-col items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white dark:bg-dark-800 rounded-2xl shadow-xl overflow-hidden border border-rose-100 dark:border-rose-900/30">
-        <div className="bg-rose-50 dark:bg-rose-900/20 p-6 flex flex-col items-center border-b border-rose-100 dark:border-rose-900/30">
-          <div className="w-16 h-16 bg-rose-100 dark:bg-rose-900/40 rounded-full flex items-center justify-center mb-4 text-rose-600 dark:text-rose-400">
-            <AlertTriangle className="w-8 h-8" />
-          </div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white text-center">
-            {language === 'ar' ? 'تم إنهاء اللوحة' : 'Your panel is terminated'}
-          </h2>
+    <div className="fixed inset-0 z-[100] bg-white dark:bg-dark-900 flex flex-col items-center justify-center p-6 text-center antialiased">
+      <div className="max-w-lg w-full flex flex-col items-center">
+        <div className="w-16 h-16 rounded-full bg-rose-50 dark:bg-rose-900/20 text-rose-600 flex items-center justify-center mb-8">
+          <AlertTriangle className="w-8 h-8" />
         </div>
-        <div className="p-6 text-center space-y-6">
-          <p className="text-gray-600 dark:text-gray-300">
-            {language === 'ar' 
-              ? 'تم إنهاء اشتراك مؤسستك في هذا النظام. لم يعد بإمكانك الوصول إلى البيانات أو اللوحة.'
-              : 'Your organization\'s subscription has been terminated. You can no longer access the data or the panel.'}
-          </p>
-          {reason && (
-            <div className="bg-gray-50 dark:bg-dark-700 rounded-xl p-4 text-sm text-gray-600 dark:text-gray-300">
-              <span className="font-semibold block mb-1">{language === 'ar' ? 'سبب الإنهاء:' : 'Termination Reason:'}</span>
+        
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-4">
+          {language === 'ar' ? 'تم إيقاف اللوحة' : 'Panel Terminated'}
+        </h1>
+        
+        <p className="text-base sm:text-lg text-gray-500 dark:text-gray-400 mb-8 max-w-md mx-auto leading-relaxed">
+          {language === 'ar' 
+            ? 'لقد تم إنهاء الوصول إلى هذا النظام نهائياً. لا يمكنك الوصول إلى بياناتك بعد الآن.'
+            : 'Access to this system has been permanently terminated. You can no longer access your data.'}
+        </p>
+        
+        {reason && (
+          <div className="w-full max-w-sm mb-10">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">
+              {language === 'ar' ? 'سبب الإيقاف' : 'Reason for termination'}
+            </p>
+            <p className="text-gray-900 dark:text-gray-100 text-lg font-medium bg-gray-50 dark:bg-dark-800 py-4 px-6 rounded-2xl border border-gray-100 dark:border-dark-700">
               {reason}
-            </div>
-          )}
-          <button onClick={handleLogout} className="btn btn-secondary w-full justify-center">
-            <LogOut className="w-4 h-4" />
-            {t('logout')}
-          </button>
-        </div>
+            </p>
+          </div>
+        )}
+
+        <button 
+          onClick={handleLogout} 
+          className="group inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gray-900 text-white dark:bg-white dark:text-gray-900 font-semibold hover:opacity-90 transition-opacity"
+        >
+          <LogOut className="w-4 h-4" />
+          {t('logout')}
+        </button>
       </div>
     </div>
   )
