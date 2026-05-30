@@ -11,16 +11,6 @@ export default function MainLayout() {
   const location = useLocation()
 
   const businessTypes = getTenantBusinessTypes(tenant)
-  const isOnlySaloon = businessTypes.includes('saloon') && businessTypes.length === 1
-  const isOnlyLaundry = businessTypes.includes('laundry') && businessTypes.length === 1
-
-  if (isOnlySaloon && !location.pathname.startsWith('/app/saloon')) {
-    return <Navigate to="/app/saloon/pos" replace />
-  }
-
-  if (isOnlyLaundry && !location.pathname.startsWith('/app/laundry')) {
-    return <Navigate to="/app/laundry/pos" replace />
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-900">

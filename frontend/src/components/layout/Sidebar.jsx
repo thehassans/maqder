@@ -37,6 +37,12 @@ import {
   ShoppingBag,
   ChefHat,
   Globe,
+  ListOrdered,
+  Shirt,
+  Car,
+  PlusCircle,
+  Wrench,
+  Ban
 } from 'lucide-react'
 import { toggleSidebarCollapse, setMobileMenuOpen } from '../../store/slices/uiSlice'
 import { useTranslation } from '../../lib/translations'
@@ -104,18 +110,31 @@ export default function Sidebar() {
       title: language === 'ar' ? 'نقطة البيع (مغسلة)' : 'Point of sale',
       businessTypes: ['laundry'],
       items: [
-        { path: '/app/dashboard/laundry/pos', icon: ShoppingBag, label: language === 'ar' ? 'البيع' : 'Sell', perm: { module: 'laundry', action: 'create' } },
-        { path: '/app/dashboard/laundry/services', icon: Package, label: language === 'ar' ? 'الخدمات' : 'Services', perm: { module: 'laundry', action: 'read' } },
-        { path: '/app/dashboard/laundry/orders', icon: Receipt, label: language === 'ar' ? 'الطلبات' : 'Orders', perm: { module: 'laundry', action: 'read' } },
+        { path: '/app/laundry/pos', icon: ShoppingCart, label: language === 'ar' ? 'طلب جديد (نقطة البيع)' : 'New Order (POS)', perm: { module: 'laundry', action: 'create' } },
+        { path: '/app/laundry/orders', icon: ListOrdered, label: language === 'ar' ? 'الطلبات النشطة' : 'Active Orders', perm: { module: 'laundry', action: 'read' } },
+        { path: '/app/laundry/customers', icon: Users, label: language === 'ar' ? 'العملاء' : 'Customers', perm: { module: 'laundry', action: 'read' } },
+        { path: '/app/laundry/inventory', icon: Package, label: language === 'ar' ? 'مخزون المستلزمات' : 'Supplies Inventory', perm: { module: 'laundry', action: 'read' } },
+        { path: '/app/laundry/catalog', icon: Shirt, label: language === 'ar' ? 'قائمة الخدمات' : 'Service Catalog', perm: { module: 'laundry', action: 'read' } },
       ]
     },
     {
       title: language === 'ar' ? 'صالون / حلاقة' : 'Saloon & POS',
       businessTypes: ['saloon'],
       items: [
-        { path: '/app/saloon/pos', icon: ShoppingBag, label: language === 'ar' ? 'نقطة البيع (صالون)' : 'Saloon POS', perm: { module: 'saloon', action: 'create' } },
-        { path: '/app/saloon/orders', icon: Receipt, label: language === 'ar' ? 'الطلبات النشطة' : 'Active Orders', perm: { module: 'saloon', action: 'read' } },
+        { path: '/app/saloon/pos', icon: ShoppingCart, label: language === 'ar' ? 'نقطة البيع (صالون)' : 'Saloon POS', perm: { module: 'saloon', action: 'create' } },
+        { path: '/app/saloon/orders', icon: ListOrdered, label: language === 'ar' ? 'الطلبات النشطة' : 'Active Orders', perm: { module: 'saloon', action: 'read' } },
         { path: '/app/saloon/services', icon: Package, label: language === 'ar' ? 'قائمة الخدمات' : 'Services Catalog', perm: { module: 'saloon', action: 'read' } },
+      ]
+    },
+    {
+      title: language === 'ar' ? 'تأجير السيارات' : 'Car Rental',
+      businessTypes: ['car_rental'],
+      items: [
+        { path: '/app/rental/checkout', icon: PlusCircle, label: language === 'ar' ? 'تأجير جديد' : 'New Rental', perm: { module: 'car_rental', action: 'create' } },
+        { path: '/app/rental/active', icon: Car, label: language === 'ar' ? 'تأجيرات نشطة' : 'Active Rentals', perm: { module: 'car_rental', action: 'read' } },
+        { path: '/app/rental/fleet', icon: Car, label: language === 'ar' ? 'الأسطول' : 'All Cars', perm: { module: 'car_rental', action: 'read' } },
+        { path: '/app/rental/customers', icon: Users, label: language === 'ar' ? 'العملاء' : 'Customer Registry', perm: { module: 'car_rental', action: 'read' } },
+        { path: '/app/rental/contracts', icon: FileText, label: language === 'ar' ? 'العقود' : 'All Contracts', perm: { module: 'car_rental', action: 'read' } },
       ]
     },
     {

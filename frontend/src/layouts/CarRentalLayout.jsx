@@ -1,11 +1,11 @@
 import { Outlet } from 'react-router-dom'
 import { useSelector } from 'react-redux'
-import CarRentalSidebar from '../components/layout/CarRentalSidebar'
+import Sidebar from '../components/layout/Sidebar'
 import Header from '../components/layout/Header'
 
 /**
  * CarRentalLayout — dedicated shell for tenants with businessType: 'car_rental'.
- * Mirrors MainLayout structure but uses CarRentalSidebar instead of the
+ * Mirrors MainLayout structure but uses Sidebar instead of the
  * standard ERP Sidebar. The Header component is shared (it is business-type agnostic).
  */
 export default function CarRentalLayout() {
