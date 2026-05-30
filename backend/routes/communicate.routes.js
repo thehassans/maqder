@@ -129,6 +129,26 @@ router.patch('/:id/read', async (req, res) => {
   }
 });
 
+// PATCH /api/communicate/:id/close
+router.patch('/:id/close', async (req, res) => {
+  try {
+    // Both sender and recipient of the parent message can close the thread
+    const msg = await Message.findOneAndUpdate(
+      { 
+        _id: req.params.id, 
+        ...req.tenantFilter,
+        $or: [{ fromUser: req.user._id }, { toUser: req.user._id }]
+      },
+      { isClosed: true },
+      { new: true }
+    );
+    if (!msg) return res.status(404).json({ error: 'Message not found or not authorized' });
+    res.json(msg);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // DELETE /api/communicate/:id (soft delete, own messages only)
 router.delete('/:id', async (req, res) => {
   try {

@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSelector } from 'react-redux'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  MessageSquare, Search, Send, Plus, X, Tag, ChevronRight,
-  Clock, Inbox, Activity, Users, FileText, ShoppingCart,
-  Briefcase, CheckSquare, Globe, Circle, Edit3, Paperclip, Hash
+  MessageSquare, Search, Send, Plus, X,
+  Inbox, Activity, Users, FileText, ShoppingCart,
+  Briefcase, CheckSquare, Globe, Edit3, Lock
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
@@ -18,14 +18,14 @@ function formatRelative(dateStr, isAr) {
   if (diff < 60) return isAr ? 'الآن' : 'Just now'
   if (diff < 3600) {
     const m = Math.floor(diff / 60)
-    return isAr ? `منذ ${m} دقيقة` : `${m}m ago`
+    return isAr ? `منذ ${m} دقيقة` : `${m}m`
   }
   if (diff < 86400) {
     const h = Math.floor(diff / 3600)
-    return isAr ? `منذ ${h} ساعة` : `${h}h ago`
+    return isAr ? `منذ ${h} ساعة` : `${h}h`
   }
   const d = Math.floor(diff / 86400)
-  return isAr ? `منذ ${d} يوم` : `${d}d ago`
+  return isAr ? `منذ ${d} يوم` : `${d}d`
 }
 
 function getInitials(name = '') {
@@ -41,27 +41,19 @@ const TAG_TYPES = [
 ]
 
 const TAG_COLOR_MAP = {
-  invoice: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-  project: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
-  order: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
-  task: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
-  general: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
+  invoice: 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 border-blue-100 dark:border-blue-800',
+  project: 'bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400 border-purple-100 dark:border-purple-800',
+  order: 'bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400 border-orange-100 dark:border-orange-800',
+  task: 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400 border-green-100 dark:border-green-800',
+  general: 'bg-gray-50 text-gray-600 dark:bg-dark-800 dark:text-gray-400 border-gray-200 dark:border-dark-700',
 }
 
 // ─── sub-components ───────────────────────────────────────────────────────────
 
-function AvatarBubble({ name, size = 'md', color = 0 }) {
-  const colors = [
-    'from-violet-500 to-purple-600',
-    'from-blue-500 to-cyan-600',
-    'from-emerald-500 to-teal-600',
-    'from-rose-500 to-pink-600',
-    'from-amber-500 to-orange-600',
-    'from-indigo-500 to-blue-600',
-  ]
+function AvatarBubble({ name, size = 'md' }) {
   const sz = size === 'sm' ? 'w-8 h-8 text-xs' : size === 'lg' ? 'w-12 h-12 text-base' : 'w-10 h-10 text-sm'
   return (
-    <div className={`${sz} rounded-full bg-gradient-to-br ${colors[color % colors.length]} flex items-center justify-center text-white font-bold flex-shrink-0 shadow-md`}>
+    <div className={`${sz} rounded-full bg-gray-100 dark:bg-dark-800 text-gray-700 dark:text-gray-300 flex items-center justify-center font-medium flex-shrink-0 border border-gray-200 dark:border-dark-700`}>
       {getInitials(name)}
     </div>
   )
@@ -71,7 +63,7 @@ function TagBadge({ tag }) {
   const def = TAG_TYPES.find(t => t.value === tag?.type) || TAG_TYPES[4]
   const Icon = def.icon
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${TAG_COLOR_MAP[def.value]}`}>
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium border ${TAG_COLOR_MAP[def.value]}`}>
       <Icon className="w-3 h-3" />
       {def.label}{tag?.refId ? ` #${tag.refId}` : ''}
     </span>
@@ -86,6 +78,8 @@ function NewMessageModal({ users, onClose, onSent, isAr, currentUser }) {
   const [tagType, setTagType] = useState('general')
   const [refId, setRefId] = useState('')
   const qc = useQueryClient()
+  
+  const isAdmin = currentUser?.role === 'super_admin' || currentUser?.role === 'admin'
 
   const { mutate: sendMsg, isPending } = useMutation({
     mutationFn: (data) => api.post('/communicate', data),
@@ -99,11 +93,11 @@ function NewMessageModal({ users, onClose, onSent, isAr, currentUser }) {
   })
 
   const handleSend = () => {
-    if (!recipient || !body.trim()) return toast.error(isAr ? 'يرجى تحديد المستلم وكتابة الرسالة' : 'Select recipient and write a message')
+    if (!recipient || !body.trim()) return toast.error(isAr ? 'يرجى التحديد والكتابة' : 'Select recipient and write')
     sendMsg({
-      recipient,
+      toUser: recipient,
       body: body.trim(),
-      tags: [{ type: tagType, refId: refId.trim() || undefined }]
+      tags: isAdmin && tagType !== 'general' ? [{ type: tagType, refId: refId.trim() || undefined }] : []
     })
   }
 
@@ -112,88 +106,76 @@ function NewMessageModal({ users, onClose, onSent, isAr, currentUser }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <motion.div
-        initial={{ scale: 0.9, y: 20 }}
+        initial={{ scale: 0.95, y: 10 }}
         animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.9, y: 20 }}
-        className="bg-white dark:bg-dark-800 rounded-3xl shadow-2xl w-full max-w-lg border border-gray-100 dark:border-dark-700 overflow-hidden"
+        exit={{ scale: 0.95, y: 10 }}
+        className="bg-white dark:bg-dark-900 rounded-2xl shadow-xl w-full max-w-md border border-gray-100 dark:border-dark-800 overflow-hidden"
       >
-        {/* Header */}
-        <div className="px-6 py-5 bg-gradient-to-r from-primary-600 to-primary-700 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
-              <Edit3 className="w-4 h-4 text-white" />
-            </div>
-            <h2 className="text-white font-bold text-lg">
-              {isAr ? 'رسالة جديدة' : 'New Message'}
-            </h2>
-          </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors">
-            <X className="w-4 h-4" />
+        <div className="px-6 py-4 border-b border-gray-100 dark:border-dark-800 flex items-center justify-between">
+          <h2 className="text-gray-900 dark:text-white font-semibold flex items-center gap-2">
+            <Edit3 className="w-4 h-4 text-gray-400" />
+            {isAr ? 'رسالة جديدة' : 'New Message'}
+          </h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-6 space-y-4">
-          {/* Recipient */}
+        <div className="p-6 space-y-5">
           <div>
-            <label className="label">{isAr ? 'المستلم' : 'To'}</label>
             <select
-              className="select w-full mt-1"
+              className="w-full bg-transparent border-b border-gray-200 dark:border-dark-700 py-2 text-sm focus:outline-none focus:border-gray-900 dark:focus:border-white transition-colors"
               value={recipient}
               onChange={e => setRecipient(e.target.value)}
             >
-              <option value="">{isAr ? '-- اختر مستلماً --' : '-- Select recipient --'}</option>
+              <option value="">{isAr ? 'إلى: (اختر مستلماً)' : 'To: (Select recipient)'}</option>
               {users?.filter(u => u._id !== currentUser?._id).map(u => (
                 <option key={u._id} value={u._id}>{u.name} ({u.role})</option>
               ))}
             </select>
           </div>
 
-          {/* Body */}
           <div>
-            <label className="label">{isAr ? 'الرسالة' : 'Message'}</label>
             <textarea
-              className="input w-full mt-1 resize-none"
-              rows={4}
-              placeholder={isAr ? 'اكتب رسالتك هنا...' : 'Write your message here...'}
+              className="w-full bg-transparent border-none py-2 text-sm focus:outline-none focus:ring-0 resize-none placeholder-gray-400 min-h-[100px]"
+              placeholder={isAr ? 'اكتب رسالتك...' : 'Write your message...'}
               value={body}
               onChange={e => setBody(e.target.value)}
             />
           </div>
 
-          {/* Tags */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="label">{isAr ? 'نوع الوسم' : 'Tag Type'}</label>
-              <select className="select w-full mt-1" value={tagType} onChange={e => setTagType(e.target.value)}>
+          {isAdmin && (
+            <div className="flex gap-3 bg-gray-50 dark:bg-dark-800 p-3 rounded-xl border border-gray-100 dark:border-dark-700">
+              <select className="bg-transparent border-none text-xs focus:ring-0 text-gray-600 dark:text-gray-300 w-1/2 cursor-pointer" value={tagType} onChange={e => setTagType(e.target.value)}>
                 {TAG_TYPES.map(t => (
                   <option key={t.value} value={t.value}>{isAr ? t.labelAr : t.label}</option>
                 ))}
               </select>
+              {tagType !== 'general' && (
+                <input
+                  className="bg-transparent border-none text-xs focus:ring-0 text-gray-600 dark:text-gray-300 w-1/2 placeholder-gray-400"
+                  placeholder={isAr ? '# المرجع' : '# Ref ID'}
+                  value={refId}
+                  onChange={e => setRefId(e.target.value)}
+                />
+              )}
             </div>
-            <div>
-              <label className="label">{isAr ? 'رقم المرجع (اختياري)' : 'Ref ID (optional)'}</label>
-              <input
-                className="input w-full mt-1"
-                placeholder="INV-001"
-                value={refId}
-                onChange={e => setRefId(e.target.value)}
-              />
-            </div>
-          </div>
+          )}
 
-          {/* Send */}
-          <button
-            onClick={handleSend}
-            disabled={isPending}
-            className="btn btn-primary w-full justify-center gap-2"
-          >
-            <Send className="w-4 h-4" />
-            {isPending ? (isAr ? 'جاري الإرسال...' : 'Sending...') : (isAr ? 'إرسال' : 'Send Message')}
-          </button>
+          <div className="pt-2">
+            <button
+              onClick={handleSend}
+              disabled={isPending}
+              className="w-full bg-gray-900 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-gray-900 py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2"
+            >
+              <Send className="w-4 h-4" />
+              {isPending ? (isAr ? 'إرسال...' : 'Sending...') : (isAr ? 'إرسال' : 'Send')}
+            </button>
+          </div>
         </div>
       </motion.div>
     </motion.div>
@@ -208,19 +190,17 @@ export default function Communicate() {
   const isAr = language === 'ar'
   const t = (en, ar) => isAr ? ar : en
 
-  const [activeView, setActiveView] = useState('inbox') // 'inbox' | 'activity'
+  const [activeView, setActiveView] = useState('inbox')
   const [selectedUser, setSelectedUser] = useState(null)
   const [selectedMsg, setSelectedMsg] = useState(null)
   const [search, setSearch] = useState('')
   const [replyBody, setReplyBody] = useState('')
-  const [replyTagType, setReplyTagType] = useState('general')
-  const [replyRefId, setReplyRefId] = useState('')
   const [showNewMsg, setShowNewMsg] = useState(false)
 
   const messagesEndRef = useRef(null)
   const qc = useQueryClient()
 
-  // ── queries ──────────────────────────────────────────────────────────────
+  // ── queries
   const { data: usersData } = useQuery({
     queryKey: ['communicate-users'],
     queryFn: () => api.get('/communicate/users').then(r => r.data),
@@ -230,7 +210,6 @@ export default function Communicate() {
   const { data: messagesData } = useQuery({
     queryKey: ['communicate-messages', selectedUser?._id],
     queryFn: () => api.get('/communicate', { params: { userId: selectedUser?._id } }).then(r => r.data),
-    enabled: true,
     refetchInterval: 5000,
   })
 
@@ -245,12 +224,19 @@ export default function Communicate() {
     mutationFn: (data) => api.post('/communicate', data),
     onSuccess: () => {
       setReplyBody('')
-      setReplyRefId('')
-      setReplyTagType('general')
       qc.invalidateQueries({ queryKey: ['communicate-thread', selectedMsg?._id] })
       qc.invalidateQueries({ queryKey: ['communicate-messages'] })
     },
     onError: (err) => toast.error(err.userMessage || t('Failed to send', 'فشل الإرسال')),
+  })
+  
+  const { mutate: closeThread } = useMutation({
+    mutationFn: (id) => api.patch(`/communicate/${id}/close`),
+    onSuccess: () => {
+      toast.success(t('Ticket closed', 'تم إغلاق التذكرة'))
+      qc.invalidateQueries({ queryKey: ['communicate-thread', selectedMsg?._id] })
+      qc.invalidateQueries({ queryKey: ['communicate-messages'] })
+    },
   })
 
   const users = usersData?.users || usersData || []
@@ -279,390 +265,257 @@ export default function Communicate() {
     sendReply({
       body: replyBody.trim(),
       thread: selectedMsg?._id,
-      recipient: thread?.parent?.sender?._id === user?._id
-        ? thread?.parent?.recipient?._id
-        : thread?.parent?.sender?._id,
-      tags: replyTagType !== 'general' ? [{ type: replyTagType, refId: replyRefId.trim() || undefined }] : [],
+      toUser: thread?.parent?.fromUser?._id === user?._id
+        ? thread?.parent?.toUser?._id
+        : thread?.parent?.fromUser?._id,
     })
   }
 
-  // ── thread replies
   const replies = thread?.replies || []
   const parent = thread?.parent || selectedMsg
 
   return (
-    <div className={`flex h-[calc(100vh-6rem)] overflow-hidden rounded-2xl border border-gray-200 dark:border-dark-700 shadow-xl bg-white dark:bg-dark-900 ${isAr ? 'rtl' : 'ltr'}`}>
-
-      {/* ── LEFT: Users list ──────────────────────────────────────────────── */}
-      <div className="w-[280px] flex-shrink-0 flex flex-col bg-gradient-to-b from-gray-900 via-dark-900 to-gray-950 border-r border-dark-700">
-        {/* Header */}
-        <div className="px-4 py-5 flex items-center justify-between border-b border-white/10">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-primary-600 flex items-center justify-center">
-              <MessageSquare className="w-4 h-4 text-white" />
-            </div>
-            <h2 className="text-white font-bold text-base">{t('Messages', 'الرسائل')}</h2>
-          </div>
-          <button
-            onClick={() => setShowNewMsg(true)}
-            className="w-8 h-8 rounded-xl bg-white/10 hover:bg-primary-600 flex items-center justify-center text-gray-300 hover:text-white transition-all"
-          >
-            <Plus className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* View tabs */}
-        <div className="flex mx-3 mt-3 rounded-xl overflow-hidden bg-white/5 p-0.5">
-          {[
-            { id: 'inbox', label: t('Inbox', 'البريد'), icon: Inbox },
-            { id: 'activity', label: t('Activity', 'النشاط'), icon: Activity },
-          ].map(v => (
+    <div className={`flex h-[calc(100vh-6rem)] bg-white dark:bg-dark-900 border border-gray-100 dark:border-dark-800 rounded-[2rem] shadow-sm overflow-hidden ${isAr ? 'rtl' : 'ltr'}`}>
+      
+      {/* ── LEFT: Users list ── */}
+      <div className="w-[280px] flex-shrink-0 flex flex-col border-r border-gray-100 dark:border-dark-800 bg-gray-50/30 dark:bg-dark-900">
+        <div className="p-6 pb-2">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-medium tracking-tight text-gray-900 dark:text-white">{t('Messages', 'الرسائل')}</h2>
             <button
-              key={v.id}
-              onClick={() => setActiveView(v.id)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${
-                activeView === v.id
-                  ? 'bg-primary-600 text-white shadow-lg'
-                  : 'text-gray-400 hover:text-white'
-              }`}
+              onClick={() => setShowNewMsg(true)}
+              className="w-8 h-8 rounded-full border border-gray-200 dark:border-dark-700 flex items-center justify-center text-gray-500 hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors"
             >
-              <v.icon className="w-3.5 h-3.5" />
-              {v.label}
+              <Edit3 className="w-4 h-4" />
             </button>
-          ))}
-        </div>
+          </div>
 
-        {/* Search */}
-        <div className="px-3 mt-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+          <div className="relative mb-6">
+            <Search className={`absolute ${isAr ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400`} />
             <input
-              className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-primary-500 transition-colors"
-              placeholder={t('Search users...', 'البحث...')}
+              className={`w-full bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-full py-2 ${isAr ? 'pr-9 pl-4' : 'pl-9 pr-4'} text-sm placeholder-gray-400 focus:outline-none focus:border-gray-400 transition-colors`}
+              placeholder={t('Search...', 'بحث...')}
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
           </div>
+
+          <div className="flex gap-4 mb-2">
+            <button
+              onClick={() => setActiveView('inbox')}
+              className={`text-sm font-medium pb-2 border-b-2 transition-colors ${activeView === 'inbox' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+            >
+              {t('Inbox', 'البريد')}
+            </button>
+            <button
+              onClick={() => setActiveView('activity')}
+              className={`text-sm font-medium pb-2 border-b-2 transition-colors ${activeView === 'activity' ? 'border-gray-900 dark:border-white text-gray-900 dark:text-white' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
+            >
+              {t('Tickets', 'التذاكر')}
+            </button>
+          </div>
         </div>
 
-        {/* Users list */}
-        <div className="flex-1 overflow-y-auto mt-3 px-2 pb-4 space-y-1">
-          {filteredUsers.length === 0 && (
-            <div className="text-center py-8 text-gray-600 text-sm">
-              <Users className="w-8 h-8 mx-auto mb-2 opacity-40" />
-              <p>{t('No users found', 'لا يوجد مستخدمون')}</p>
-            </div>
-          )}
-          {filteredUsers.map((u, idx) => {
-            const unread = messages.filter(m => m.sender?._id === u._id && !m.read).length
+        <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-1 custom-scrollbar">
+          {filteredUsers.map((u) => {
             const isActive = selectedUser?._id === u._id
             return (
-              <motion.button
+              <button
                 key={u._id}
-                whileHover={{ x: 2 }}
                 onClick={() => { setSelectedUser(u); setSelectedMsg(null) }}
-                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all text-left ${
-                  isActive
-                    ? 'bg-primary-600/20 border border-primary-500/30'
-                    : 'hover:bg-white/5 border border-transparent'
+                className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all text-left ${
+                  isActive ? 'bg-white dark:bg-dark-800 shadow-sm border border-gray-100 dark:border-dark-700' : 'hover:bg-gray-100 dark:hover:bg-dark-800 border border-transparent'
                 }`}
               >
-                <div className="relative">
-                  <AvatarBubble name={u.name} size="md" color={idx} />
-                  {/* Status dot */}
-                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-gray-900" />
-                </div>
+                <AvatarBubble name={u.name} size="sm" />
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-semibold truncate ${isActive ? 'text-primary-300' : 'text-gray-200'}`}>{u.name}</p>
-                  <p className="text-xs text-gray-500 truncate capitalize">{u.role}</p>
+                  <p className={`text-sm font-medium truncate ${isActive ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>{u.name}</p>
                 </div>
-                {unread > 0 && (
-                  <span className="w-5 h-5 rounded-full bg-primary-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
-                    {unread}
-                  </span>
-                )}
-              </motion.button>
+              </button>
             )
           })}
         </div>
       </div>
 
-      {/* ── CENTER: Messages ──────────────────────────────────────────────── */}
-      <div className="w-[350px] flex-shrink-0 flex flex-col border-r border-gray-100 dark:border-dark-700 bg-gray-50 dark:bg-dark-800/50">
-        {/* Center header */}
-        <div className="px-5 py-4 border-b border-gray-200 dark:border-dark-700 bg-white dark:bg-dark-800">
-          <h3 className="font-bold text-gray-900 dark:text-white">
-            {activeView === 'inbox'
-              ? (selectedUser ? selectedUser.name : t('All Messages', 'جميع الرسائل'))
-              : t('Activity Feed', 'سجل النشاط')}
+      {/* ── CENTER: Thread List ── */}
+      <div className="w-[320px] flex-shrink-0 flex flex-col border-r border-gray-100 dark:border-dark-800 bg-white dark:bg-dark-900">
+        <div className="p-6 border-b border-gray-50 dark:border-dark-800">
+          <h3 className="font-medium text-gray-800 dark:text-gray-200">
+            {activeView === 'inbox' ? (selectedUser ? selectedUser.name : t('All Chats', 'كل المحادثات')) : t('Tagged Tickets', 'تذاكر موسومة')}
           </h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-            {activeView === 'inbox'
-              ? `${filteredMessages.length} ${t('messages', 'رسالة')}`
-              : `${taggedMessages.length} ${t('tagged items', 'عنصر موسوم')}`}
-          </p>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-3 space-y-2">
+        <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
           {activeView === 'inbox' ? (
-            filteredMessages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                <Inbox className="w-12 h-12 mb-3 opacity-30" />
-                <p className="text-sm">{t('No messages yet', 'لا توجد رسائل بعد')}</p>
-              </div>
-            ) : (
-              filteredMessages.map((msg) => {
-                const isSelected = selectedMsg?._id === msg._id
-                const isUnread = !msg.read && msg.recipient?._id === user?._id
-                const senderName = msg.sender?.name || t('Unknown', 'غير معروف')
-                return (
-                  <motion.button
-                    key={msg._id}
-                    whileHover={{ scale: 1.01 }}
-                    onClick={() => setSelectedMsg(msg)}
-                    className={`w-full text-left p-4 rounded-2xl border transition-all ${
-                      isSelected
-                        ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-700 shadow-md'
-                        : isUnread
-                          ? 'bg-white dark:bg-dark-800 border-l-4 border-l-blue-500 border-r border-t border-b border-gray-100 dark:border-dark-700'
-                          : 'bg-white dark:bg-dark-800 border-gray-100 dark:border-dark-700 hover:border-gray-200 dark:hover:border-dark-600'
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <AvatarBubble name={senderName} size="sm" color={senderName.charCodeAt(0) % 6} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <span className={`text-sm font-semibold truncate ${isUnread ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>
-                            {senderName}
-                          </span>
-                          <span className="text-xs text-gray-400 whitespace-nowrap flex-shrink-0">
-                            {formatRelative(msg.createdAt, isAr)}
-                          </span>
-                        </div>
-                        <p className={`text-xs truncate mb-2 ${isUnread ? 'text-gray-800 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400'}`}>
-                          {msg.body}
-                        </p>
-                        {msg.tags?.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {msg.tags.map((tag, i) => <TagBadge key={i} tag={tag} />)}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    {isUnread && (
-                      <div className="w-2 h-2 rounded-full bg-blue-500 absolute top-4 right-4" />
-                    )}
-                  </motion.button>
-                )
-              })
-            )
-          ) : (
-            // Activity Feed
-            Object.entries(
-              taggedMessages.reduce((acc, msg) => {
-                const type = msg.tags?.[0]?.type || 'general'
-                if (!acc[type]) acc[type] = []
-                acc[type].push(msg)
-                return acc
-              }, {})
-            ).map(([type, msgs]) => {
-              const def = TAG_TYPES.find(t => t.value === type) || TAG_TYPES[4]
-              const Icon = def.icon
+            filteredMessages.map((msg) => {
+              const isSelected = selectedMsg?._id === msg._id
+              const isUnread = !msg.isRead && msg.toUser?._id === user?._id
+              const senderName = msg.fromUser?.name || t('Unknown', 'غير معروف')
               return (
-                <div key={type} className="mb-4">
-                  <div className="flex items-center gap-2 px-2 mb-2">
-                    <Icon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                    <span className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                      {isAr ? def.labelAr : def.label}
-                    </span>
-                    <span className="text-xs bg-gray-200 dark:bg-dark-600 text-gray-500 px-2 py-0.5 rounded-full">{msgs.length}</span>
+                <button
+                  key={msg._id}
+                  onClick={() => setSelectedMsg(msg)}
+                  className={`w-full text-left p-4 rounded-2xl border transition-all ${
+                    isSelected
+                      ? 'border-gray-900 dark:border-white shadow-sm bg-gray-50 dark:bg-dark-800'
+                      : isUnread
+                        ? 'border-blue-200 dark:border-blue-900/50 bg-blue-50/30 dark:bg-blue-900/10'
+                        : 'border-transparent hover:bg-gray-50 dark:hover:bg-dark-800'
+                  }`}
+                >
+                  <div className="flex justify-between items-center mb-1">
+                    <span className={`text-sm font-medium truncate ${isUnread ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>{senderName}</span>
+                    <span className="text-[10px] text-gray-400">{formatRelative(msg.createdAt, isAr)}</span>
                   </div>
-                  <div className="space-y-1.5">
-                    {msgs.map(msg => (
-                      <motion.button
-                        key={msg._id}
-                        whileHover={{ x: 2 }}
-                        onClick={() => { setSelectedMsg(msg); setActiveView('inbox') }}
-                        className="w-full text-left px-3 py-3 rounded-xl bg-white dark:bg-dark-800 border border-gray-100 dark:border-dark-700 hover:border-primary-200 dark:hover:border-primary-700 transition-all"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                              <span className="font-semibold text-gray-700 dark:text-gray-300">{msg.sender?.name}</span>
-                              {' → '}
-                              <span>{msg.recipient?.name}</span>
-                            </p>
-                            <p className="text-sm text-gray-800 dark:text-gray-200 truncate">{msg.body}</p>
-                            <div className="flex gap-1 mt-1.5">
-                              {msg.tags?.map((tag, i) => <TagBadge key={i} tag={tag} />)}
-                            </div>
-                          </div>
-                          <span className="text-xs text-gray-400 whitespace-nowrap">{formatRelative(msg.createdAt, isAr)}</span>
-                        </div>
-                      </motion.button>
-                    ))}
+                  <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-2 leading-relaxed">{msg.body}</p>
+                  <div className="flex flex-wrap gap-1 items-center">
+                    {msg.isClosed && <Lock className="w-3 h-3 text-gray-400" />}
+                    {msg.tags?.map((tag, i) => <TagBadge key={i} tag={tag} />)}
                   </div>
-                </div>
+                </button>
               )
             })
+          ) : (
+            taggedMessages.map(msg => (
+               <button
+                  key={msg._id}
+                  onClick={() => { setSelectedMsg(msg); setActiveView('inbox') }}
+                  className={`w-full text-left p-4 rounded-2xl border transition-all ${
+                    selectedMsg?._id === msg._id
+                      ? 'border-gray-900 dark:border-white shadow-sm bg-gray-50 dark:bg-dark-800'
+                      : 'border-transparent hover:bg-gray-50 dark:hover:bg-dark-800'
+                  }`}
+                >
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate">{msg.fromUser?.name}</span>
+                    <span className="text-[10px] text-gray-400">{formatRelative(msg.createdAt, isAr)}</span>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mb-2 leading-relaxed">{msg.body}</p>
+                  <div className="flex flex-wrap gap-1 items-center">
+                    {msg.isClosed && <Lock className="w-3 h-3 text-gray-400" />}
+                    {msg.tags?.map((tag, i) => <TagBadge key={i} tag={tag} />)}
+                  </div>
+                </button>
+            ))
           )}
         </div>
       </div>
 
-      {/* ── RIGHT: Thread View ────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col bg-white dark:bg-dark-900 min-w-0">
+      {/* ── RIGHT: Chat View ── */}
+      <div className="flex-1 flex flex-col bg-gray-50/30 dark:bg-dark-900/50 relative">
         {!selectedMsg ? (
-          <div className="flex-1 flex flex-col items-center justify-center gap-4 text-gray-400 dark:text-gray-600">
-            <div className="w-20 h-20 rounded-3xl bg-gray-100 dark:bg-dark-800 flex items-center justify-center">
-              <MessageSquare className="w-10 h-10 opacity-40" />
-            </div>
+          <div className="flex-1 flex items-center justify-center text-gray-400">
             <div className="text-center">
-              <p className="font-semibold text-gray-500 dark:text-gray-400">{t('Select a message', 'اختر رسالة')}</p>
-              <p className="text-sm mt-1">{t('Pick a conversation to view the thread', 'اختر محادثة لعرض تفاصيلها')}</p>
+              <MessageSquare className="w-8 h-8 mx-auto mb-3 opacity-20" strokeWidth={1.5} />
+              <p className="text-sm">{t('Select a conversation', 'اختر محادثة')}</p>
             </div>
-            <button onClick={() => setShowNewMsg(true)} className="btn btn-primary gap-2">
-              <Plus className="w-4 h-4" />
-              {t('New Message', 'رسالة جديدة')}
-            </button>
           </div>
         ) : (
           <>
-            {/* Thread header */}
-            <div className="px-6 py-4 border-b border-gray-100 dark:border-dark-700 bg-white dark:bg-dark-800 flex items-center gap-4">
-              <AvatarBubble name={parent?.sender?.name || ''} size="md" color={(parent?.sender?.name || '').charCodeAt(0) % 6} />
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-gray-900 dark:text-white truncate">{parent?.sender?.name}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {t('to', 'إلى')} {parent?.recipient?.name} · {formatRelative(parent?.createdAt, isAr)}
-                </p>
+            {/* Header */}
+            <div className="px-8 py-5 border-b border-gray-100 dark:border-dark-800 flex items-center justify-between bg-white dark:bg-dark-900">
+              <div className="flex items-center gap-3">
+                <AvatarBubble name={parent?.fromUser?.name || ''} />
+                <div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white">{parent?.fromUser?.name}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xs text-gray-500">{t('to', 'إلى')} {parent?.toUser?.name || t('All', 'الجميع')}</span>
+                    {parent?.tags?.map((tag, i) => <TagBadge key={i} tag={tag} />)}
+                    {parent?.isClosed && (
+                      <span className="text-[10px] bg-red-50 text-red-600 px-2 py-0.5 rounded-full flex items-center gap-1 border border-red-100"><Lock className="w-2.5 h-2.5"/> {t('Closed', 'مغلق')}</span>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div className="flex gap-2">
-                {parent?.tags?.map((tag, i) => <TagBadge key={i} tag={tag} />)}
+              <div className="flex items-center gap-3">
+                {!parent?.isClosed && (
+                   <button 
+                    onClick={() => closeThread(parent._id)}
+                    className="text-xs font-medium text-red-500 hover:text-red-600 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-full transition-colors"
+                  >
+                    {t('Close Ticket', 'إغلاق التذكرة')}
+                  </button>
+                )}
+                <button onClick={() => setSelectedMsg(null)} className="p-2 text-gray-400 hover:bg-gray-100 rounded-full transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-              <button onClick={() => setSelectedMsg(null)} className="w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-700 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
-                <X className="w-4 h-4" />
-              </button>
             </div>
 
-            {/* Thread body */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {/* Parent message */}
-              <div className={`flex gap-3 ${parent?.sender?._id === user?._id ? 'flex-row-reverse' : ''}`}>
-                <AvatarBubble name={parent?.sender?.name || ''} size="sm" color={(parent?.sender?.name || '').charCodeAt(0) % 6} />
-                <div className={`max-w-[70%] ${parent?.sender?._id === user?._id ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
-                  <div className={`px-4 py-3 rounded-2xl shadow-sm ${
-                    parent?.sender?._id === user?._id
-                      ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-tr-sm'
-                      : 'bg-gray-100 dark:bg-dark-700 text-gray-900 dark:text-gray-100 rounded-tl-sm'
+            {/* Chat History */}
+            <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
+              {/* Parent */}
+              <div className={`flex gap-4 ${parent?.fromUser?._id === user?._id ? 'flex-row-reverse' : ''}`}>
+                <AvatarBubble name={parent?.fromUser?.name || ''} size="sm" />
+                <div className={`max-w-[65%] flex flex-col ${parent?.fromUser?._id === user?._id ? 'items-end' : 'items-start'}`}>
+                  <div className={`px-5 py-3.5 rounded-2xl text-sm leading-relaxed ${
+                    parent?.fromUser?._id === user?._id
+                      ? 'bg-gray-900 text-white rounded-tr-sm dark:bg-white dark:text-gray-900'
+                      : 'bg-white border border-gray-100 dark:bg-dark-800 dark:border-dark-700 text-gray-800 dark:text-gray-200 rounded-tl-sm'
                   }`}>
-                    <p className="text-sm leading-relaxed">{parent?.body}</p>
+                    {parent?.body}
                   </div>
-                  {parent?.tags?.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {parent.tags.map((tag, i) => <TagBadge key={i} tag={tag} />)}
-                    </div>
-                  )}
-                  <span className="text-xs text-gray-400">{formatRelative(parent?.createdAt, isAr)}</span>
+                  <span className="text-[10px] text-gray-400 mt-1.5 px-1">{formatRelative(parent?.createdAt, isAr)}</span>
                 </div>
               </div>
 
-              {/* Separator */}
-              {replies.length > 0 && (
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-px bg-gray-100 dark:bg-dark-700" />
-                  <span className="text-xs text-gray-400 px-2">{replies.length} {t('replies', 'رد')}</span>
-                  <div className="flex-1 h-px bg-gray-100 dark:bg-dark-700" />
-                </div>
-              )}
-
               {/* Replies */}
-              {replies.map((reply) => (
-                <motion.div
-                  key={reply._id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`flex gap-3 ${reply.sender?._id === user?._id ? 'flex-row-reverse' : ''}`}
-                >
-                  <AvatarBubble name={reply.sender?.name || ''} size="sm" color={(reply.sender?.name || '').charCodeAt(0) % 6} />
-                  <div className={`max-w-[70%] flex flex-col gap-1 ${reply.sender?._id === user?._id ? 'items-end' : 'items-start'}`}>
-                    <div className={`px-4 py-3 rounded-2xl shadow-sm ${
-                      reply.sender?._id === user?._id
-                        ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white rounded-tr-sm'
-                        : 'bg-gray-100 dark:bg-dark-700 text-gray-900 dark:text-gray-100 rounded-tl-sm'
+              {replies.map(reply => (
+                <div key={reply._id} className={`flex gap-4 ${reply.fromUser?._id === user?._id ? 'flex-row-reverse' : ''}`}>
+                  <AvatarBubble name={reply.fromUser?.name || ''} size="sm" />
+                  <div className={`max-w-[65%] flex flex-col ${reply.fromUser?._id === user?._id ? 'items-end' : 'items-start'}`}>
+                    <div className={`px-5 py-3.5 rounded-2xl text-sm leading-relaxed ${
+                      reply.fromUser?._id === user?._id
+                        ? 'bg-gray-900 text-white rounded-tr-sm dark:bg-white dark:text-gray-900'
+                        : 'bg-white border border-gray-100 dark:bg-dark-800 dark:border-dark-700 text-gray-800 dark:text-gray-200 rounded-tl-sm'
                     }`}>
-                      <p className="text-sm leading-relaxed">{reply.body}</p>
+                      {reply.body}
                     </div>
-                    {reply.tags?.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {reply.tags.map((tag, i) => <TagBadge key={i} tag={tag} />)}
-                      </div>
-                    )}
-                    <span className="text-xs text-gray-400">{formatRelative(reply.createdAt, isAr)}</span>
+                    <span className="text-[10px] text-gray-400 mt-1.5 px-1">{formatRelative(reply.createdAt, isAr)}</span>
                   </div>
-                </motion.div>
+                </div>
               ))}
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Reply composer */}
-            <div className="border-t border-gray-100 dark:border-dark-700 bg-white dark:bg-dark-800 p-4">
-              {/* Tag selectors */}
-              <div className="flex gap-2 mb-3">
-                <select
-                  className="select text-xs py-1.5 pl-2 pr-7"
-                  value={replyTagType}
-                  onChange={e => setReplyTagType(e.target.value)}
-                >
-                  {TAG_TYPES.map(t => (
-                    <option key={t.value} value={t.value}>{isAr ? t.labelAr : t.label}</option>
-                  ))}
-                </select>
-                {replyTagType !== 'general' && (
-                  <input
-                    className="input text-xs py-1.5 w-32"
-                    placeholder={t('Ref ID...', 'رقم المرجع...')}
-                    value={replyRefId}
-                    onChange={e => setReplyRefId(e.target.value)}
+            {/* Composer */}
+            {parent?.isClosed ? (
+              <div className="p-6 bg-white dark:bg-dark-900 border-t border-gray-100 dark:border-dark-800 text-center text-sm text-gray-500">
+                <Lock className="w-4 h-4 mx-auto mb-1 opacity-50"/>
+                {t('This ticket is closed and cannot receive new replies.', 'هذه التذكرة مغلقة ولا يمكن الرد عليها.')}
+              </div>
+            ) : (
+              <div className="p-6 bg-white dark:bg-dark-900 border-t border-gray-100 dark:border-dark-800">
+                <div className="relative flex items-end gap-2 bg-gray-50 dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-3xl p-2 focus-within:border-gray-400 dark:focus-within:border-gray-500 transition-colors">
+                  <textarea
+                    className="w-full bg-transparent border-none text-sm resize-none py-2 px-4 focus:ring-0 placeholder-gray-400"
+                    rows={1}
+                    placeholder={t('Type a reply...', 'اكتب ردًا...')}
+                    value={replyBody}
+                    onChange={e => setReplyBody(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault()
+                        handleSendReply()
+                      }
+                    }}
                   />
-                )}
+                  <button
+                    onClick={handleSendReply}
+                    disabled={sending || !replyBody.trim()}
+                    className="w-10 h-10 rounded-full bg-gray-900 text-white dark:bg-white dark:text-gray-900 flex items-center justify-center flex-shrink-0 disabled:opacity-50 transition-opacity"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-
-              {/* Text + send */}
-              <div className="flex gap-3">
-                <textarea
-                  className="input flex-1 resize-none text-sm"
-                  rows={2}
-                  placeholder={isAr ? 'اكتب ردًا...' : 'Write a reply...'}
-                  value={replyBody}
-                  onChange={e => setReplyBody(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleSendReply()
-                  }}
-                />
-                <button
-                  onClick={handleSendReply}
-                  disabled={sending || !replyBody.trim()}
-                  className="btn btn-primary px-4 flex-shrink-0 self-end"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
-              </div>
-              <p className="text-xs text-gray-400 mt-1.5 ms-1">{t('Ctrl+Enter to send', 'Ctrl+Enter للإرسال')}</p>
-            </div>
+            )}
           </>
         )}
       </div>
 
-      {/* New Message Modal */}
       <AnimatePresence>
-        {showNewMsg && (
-          <NewMessageModal
-            users={users}
-            onClose={() => setShowNewMsg(false)}
-            isAr={isAr}
-            currentUser={user}
-          />
-        )}
+        {showNewMsg && <NewMessageModal users={users} onClose={() => setShowNewMsg(false)} isAr={isAr} currentUser={user} />}
       </AnimatePresence>
     </div>
   )

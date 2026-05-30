@@ -15,6 +15,7 @@ const messageSchema = new mongoose.Schema({
   tags: [tagSchema],
   isRead: { type: Boolean, default: false },
   readAt: { type: Date },
+  isClosed: { type: Boolean, default: false },
   isDeleted: { type: Boolean, default: false },
 }, { timestamps: true });
 
