@@ -1001,6 +1001,40 @@ router.put('/tenants/:id/toggle-status', async (req, res) => {
   }
 });
 
+// @route   PUT /api/super-admin/tenants/:id/termination
+router.put('/tenants/:id/termination', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { date, reason, clear } = req.body;
+
+    const tenant = await Tenant.findById(id);
+    if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+
+    if (clear) {
+      tenant.terminationNotice = undefined;
+      if (tenant.subscription.status === 'terminated') {
+        tenant.subscription.status = 'active';
+      }
+    } else {
+      if (!date || !reason) {
+        return res.status(400).json({ error: 'Date and reason are required' });
+      }
+      tenant.terminationNotice = {
+        date: new Date(date),
+        reason
+      };
+      if (new Date(date) <= new Date()) {
+        tenant.subscription.status = 'terminated';
+      }
+    }
+
+    await tenant.save();
+    res.json(tenant);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // @route   DELETE /api/super-admin/tenants/:id/invoices
 // @desc    Purge every invoice for a tenant and reset derived stats (dashboard, reports, customer stats, travel/restaurant bookings)
 router.delete('/tenants/:id/invoices', async (req, res) => {

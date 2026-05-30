@@ -90,7 +90,8 @@ export default function Invoices() {
   const [pdfLoadingId, setPdfLoadingId] = useState(null)
   const [signModalInvoice, setSignModalInvoice] = useState(null)
   const tenantBusinessTypes = getTenantBusinessTypes(tenant)
-  const showNewInvoiceBtn = !tenantBusinessTypes.every(t => ['laundry', 'restaurant'].includes(t))
+  const hasTravel = tenantBusinessTypes.includes('travel_agency')
+  const showNewInvoiceBtn = !tenantBusinessTypes.every(t => ['laundry', 'restaurant', 'saloon'].includes(t))
 
   useEffect(() => {
     const handle = setTimeout(() => setDebouncedSearch(search), 300)
@@ -382,8 +383,8 @@ export default function Invoices() {
             <input
               type="text"
               placeholder={language === 'ar'
-                ? 'بحث بالرقم، الاسم، PNR، الهاتف، البريد، رقم التذكرة...'
-                : 'Search by number, name, PNR, phone, email, ticket number...'}
+                ? (hasTravel ? 'بحث بالرقم، الاسم، PNR، الهاتف، البريد، رقم التذكرة...' : 'بحث بالرقم، الاسم، الهاتف، البريد...')
+                : (hasTravel ? 'Search by number, name, PNR, phone, email, ticket number...' : 'Search by number, name, phone, email...')}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value)

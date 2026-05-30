@@ -9,7 +9,7 @@ const subscriptionSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['active', 'suspended', 'cancelled', 'expired'],
+    enum: ['active', 'suspended', 'cancelled', 'expired', 'terminated'],
     default: 'active'
   },
   startDate: { type: Date, default: Date.now },
@@ -87,6 +87,10 @@ const tenantSchema = new mongoose.Schema({
   },
   business: businessDetailsSchema,
   subscription: subscriptionSchema,
+  terminationNotice: {
+    date: { type: Date },
+    reason: { type: String }
+  },
   zatca: zatcaConfigSchema,
   settings: {
     language: { type: String, enum: ['en', 'ar'], default: 'ar' },

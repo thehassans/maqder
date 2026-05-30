@@ -76,34 +76,10 @@ export default function Sidebar() {
       items: [
         { path: '/app/dashboard', icon: LayoutDashboard, label: t('dashboard'), end: true },
         { path: '/app/dashboard/invoices', icon: FileText, label: t('invoices'), perm: { module: 'invoicing', action: 'read' }, excludeBusinessTypes: ['laundry'] },
-        { path: '/app/dashboard/quotations', icon: FileText, label: language === 'ar' ? 'عروض الأسعار' : 'Quotations', perm: { module: 'invoicing', action: 'read' } },
+        { path: '/app/dashboard/quotations', icon: FileText, label: language === 'ar' ? 'عروض الأسعار' : 'Quotations', perm: { module: 'invoicing', action: 'read' }, excludeBusinessTypes: ['laundry', 'saloon', 'restaurant'] },
         { path: '/app/dashboard/shipments/new?type=outbound&document=delivery-note', icon: FileText, label: language === 'ar' ? 'إذن تسليم' : 'Delivery Note', perm: { module: 'supply_chain', action: 'read' }, businessTypes: ['trading'] },
         { path: '/app/dashboard/contacts', icon: Users, label: language === 'ar' ? 'جهات الاتصال' : 'Contacts', perm: { module: 'invoicing', action: 'read' } },
         { path: '/app/dashboard/customers', icon: Building, label: language === 'ar' ? 'العملاء' : 'Customers', perm: { module: 'invoicing', action: 'read' } },
-      ]
-    },
-    {
-      title: language === 'ar' ? 'الموارد البشرية' : 'Human Resources',
-      items: [
-        { path: '/app/dashboard/employees', icon: Users, label: t('employees'), perm: { module: 'hr', action: 'read' } },
-        { path: '/app/dashboard/attendance', icon: Fingerprint, label: language === 'ar' ? 'الحضور والبيومتري' : 'Attendance & Biometrics', perm: { module: 'hr', action: 'read' } },
-        { path: '/app/dashboard/payroll', icon: Wallet, label: t('payroll'), perm: { module: 'payroll', action: 'read' } },
-        { path: '/app/dashboard/payroll/calculators', icon: Calculator, label: 'GOSI/EOSB', perm: { module: 'payroll', action: 'read' } },
-      ]
-    },
-    {
-      title: language === 'ar' ? 'المخزون' : 'Inventory',
-      businessTypes: ['trading'],
-      items: [
-        { path: '/app/dashboard/products', icon: Package, label: t('products'), perm: { module: 'inventory', action: 'read' } },
-        { path: '/app/dashboard/warehouses', icon: Warehouse, label: t('warehouses'), perm: { module: 'inventory', action: 'read' } },
-      ]
-    },
-    {
-      title: language === 'ar' ? 'السفر' : 'Travel',
-      businessTypes: ['travel_agency'],
-      items: [
-        { path: '/app/dashboard/travel-bookings', icon: Plane, label: language === 'ar' ? 'الحجوزات' : 'Bookings', perm: { module: 'travel', action: 'read' } },
       ]
     },
     {
@@ -127,17 +103,6 @@ export default function Sidebar() {
       ]
     },
     {
-      title: language === 'ar' ? 'تأجير السيارات' : 'Car Rental',
-      businessTypes: ['car_rental'],
-      items: [
-        { path: '/app/rental/checkout', icon: PlusCircle, label: language === 'ar' ? 'تأجير جديد' : 'New Rental', perm: { module: 'car_rental', action: 'create' } },
-        { path: '/app/rental/active', icon: Car, label: language === 'ar' ? 'تأجيرات نشطة' : 'Active Rentals', perm: { module: 'car_rental', action: 'read' } },
-        { path: '/app/rental/fleet', icon: Car, label: language === 'ar' ? 'الأسطول' : 'All Cars', perm: { module: 'car_rental', action: 'read' } },
-        { path: '/app/rental/customers', icon: Users, label: language === 'ar' ? 'العملاء' : 'Customer Registry', perm: { module: 'car_rental', action: 'read' } },
-        { path: '/app/rental/contracts', icon: FileText, label: language === 'ar' ? 'العقود' : 'All Contracts', perm: { module: 'car_rental', action: 'read' } },
-      ]
-    },
-    {
       title: language === 'ar' ? 'المطعم' : 'Restaurant',
       businessTypes: ['restaurant'],
       items: [
@@ -151,12 +116,47 @@ export default function Sidebar() {
       ]
     },
     {
+      title: language === 'ar' ? 'تأجير السيارات' : 'Car Rental',
+      businessTypes: ['car_rental'],
+      items: [
+        { path: '/app/rental/checkout', icon: PlusCircle, label: language === 'ar' ? 'تأجير جديد' : 'New Rental', perm: { module: 'car_rental', action: 'create' } },
+        { path: '/app/rental/active', icon: Car, label: language === 'ar' ? 'تأجيرات نشطة' : 'Active Rentals', perm: { module: 'car_rental', action: 'read' } },
+        { path: '/app/rental/fleet', icon: Car, label: language === 'ar' ? 'الأسطول' : 'All Cars', perm: { module: 'car_rental', action: 'read' } },
+        { path: '/app/rental/customers', icon: Users, label: language === 'ar' ? 'العملاء' : 'Customer Registry', perm: { module: 'car_rental', action: 'read' } },
+        { path: '/app/rental/contracts', icon: FileText, label: language === 'ar' ? 'العقود' : 'All Contracts', perm: { module: 'car_rental', action: 'read' } },
+      ]
+    },
+    {
+      title: language === 'ar' ? 'المخزون' : 'Inventory',
+      businessTypes: ['trading'],
+      items: [
+        { path: '/app/dashboard/products', icon: Package, label: t('products'), perm: { module: 'inventory', action: 'read' } },
+        { path: '/app/dashboard/warehouses', icon: Warehouse, label: t('warehouses'), perm: { module: 'inventory', action: 'read' } },
+      ]
+    },
+    {
       title: language === 'ar' ? 'سلسلة التوريد' : 'Supply Chain',
       businessTypes: ['trading'],
       items: [
         { path: '/app/dashboard/suppliers', icon: Building, label: language === 'ar' ? 'الموردين' : 'Suppliers', perm: { module: 'supply_chain', action: 'read' } },
         { path: '/app/dashboard/purchase-orders', icon: ShoppingCart, label: language === 'ar' ? 'طلبات الشراء' : 'Purchase Orders', perm: { module: 'supply_chain', action: 'read' } },
         { path: '/app/dashboard/shipments', icon: Truck, label: language === 'ar' ? 'الشحنات' : 'Shipments', perm: { module: 'supply_chain', action: 'read' } },
+      ]
+    },
+    {
+      title: language === 'ar' ? 'السفر' : 'Travel',
+      businessTypes: ['travel_agency'],
+      items: [
+        { path: '/app/dashboard/travel-bookings', icon: Plane, label: language === 'ar' ? 'الحجوزات' : 'Bookings', perm: { module: 'travel', action: 'read' } },
+      ]
+    },
+    {
+      title: language === 'ar' ? 'الموارد البشرية' : 'Human Resources',
+      items: [
+        { path: '/app/dashboard/employees', icon: Users, label: t('employees'), perm: { module: 'hr', action: 'read' } },
+        { path: '/app/dashboard/attendance', icon: Fingerprint, label: language === 'ar' ? 'الحضور والبيومتري' : 'Attendance & Biometrics', perm: { module: 'hr', action: 'read' } },
+        { path: '/app/dashboard/payroll', icon: Wallet, label: t('payroll'), perm: { module: 'payroll', action: 'read' } },
+        { path: '/app/dashboard/payroll/calculators', icon: Calculator, label: 'GOSI/EOSB', perm: { module: 'payroll', action: 'read' } },
       ]
     },
     {

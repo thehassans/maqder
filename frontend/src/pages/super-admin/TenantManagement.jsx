@@ -18,6 +18,8 @@ export default function TenantManagement() {
   const [backupTenant, setBackupTenant] = useState(null)
   const [backupForm, setBackupForm] = useState({ period: 'monthly', startDate: '', endDate: '', email: '', formats: ['excel', 'pdf'] })
   const [backupErrorCode, setBackupErrorCode] = useState(null)
+  const [terminationTenant, setTerminationTenant] = useState(null)
+  const [terminationForm, setTerminationForm] = useState({ date: '', reason: '' })
 
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ['tenants', page, search, filters],
@@ -123,6 +125,42 @@ export default function TenantManagement() {
       }
     }
   })
+
+  const terminationMutation = useMutation({
+    mutationFn: ({ tenantId, payload }) => api.put(`/super-admin/tenants/${tenantId}/termination`, payload).then(res => res.data),
+    onSuccess: (data) => {
+      toast.success(language === 'ar' ? 'تم تحديث إشعار الإنهاء' : 'Termination notice updated')
+      setTerminationTenant(null)
+      queryClient.invalidateQueries({ queryKey: ['tenants'] })
+    },
+    onError: (err) => toast.error(err.response?.data?.error || 'Failed to update termination notice')
+  })
+
+  const openTerminationModal = (tenant) => {
+    setTerminationForm({
+      date: tenant.terminationNotice?.date ? new Date(tenant.terminationNotice.date).toISOString().split('T')[0] : '',
+      reason: tenant.terminationNotice?.reason || ''
+    })
+    setTerminationTenant(tenant)
+  }
+
+  const handleSetTermination = () => {
+    if (!terminationForm.date || !terminationForm.reason) {
+      toast.error(language === 'ar' ? 'التاريخ والسبب مطلوبان' : 'Date and reason are required')
+      return
+    }
+    terminationMutation.mutate({
+      tenantId: terminationTenant._id,
+      payload: { date: terminationForm.date, reason: terminationForm.reason, clear: false }
+    })
+  }
+
+  const handleClearTermination = () => {
+    terminationMutation.mutate({
+      tenantId: terminationTenant._id,
+      payload: { clear: true }
+    })
+  }
 
   const openBackupModal = (tenant) => {
     setBackupForm({ period: 'monthly', startDate: '', endDate: '', email: tenant.business?.email || '', formats: ['excel', 'pdf'] })
@@ -344,6 +382,14 @@ export default function TenantManagement() {
                           </button>
                           <button
                             type="button"
+                            onClick={() => openTerminationModal(tenant)}
+                            className="p-2 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg text-rose-600 disabled:opacity-50"
+                            title={language === 'ar' ? 'إشعار إنهاء' : 'Termination Notice'}
+                          >
+                            <AlertCircle className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => handleResetPanel(tenant)}
                             disabled={resetPanelMutation.isPending}
                             className="p-2 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg text-amber-600 disabled:opacity-50"
@@ -553,6 +599,87 @@ export default function TenantManagement() {
                     <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />{language === 'ar' ? 'جارٍ الإرسال...' : 'Sending...'}</>
                   ) : (
                     <><Send className="w-4 h-4" />{language === 'ar' ? 'إرسال النسخة الاحتياطية' : 'Send Backup'}</>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ── Termination Modal ── */}
+      <AnimatePresence>
+        {terminationTenant && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setTerminationTenant(null)} className="fixed inset-0 bg-black/50 z-40" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-md bg-white dark:bg-dark-800 rounded-2xl shadow-xl z-50 overflow-hidden"
+            >
+              <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-dark-700">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-rose-500 to-rose-600 rounded-xl flex items-center justify-center">
+                    <AlertCircle className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                      {language === 'ar' ? 'إشعار إنهاء المستأجر' : 'Tenant Termination Notice'}
+                    </h3>
+                    <p className="text-sm text-gray-500">{terminationTenant.name}</p>
+                  </div>
+                </div>
+                <button onClick={() => setTerminationTenant(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="label">{language === 'ar' ? 'تاريخ الإنهاء' : 'Termination Date'}</label>
+                  <input
+                    type="date"
+                    value={terminationForm.date}
+                    onChange={e => setTerminationForm(p => ({ ...p, date: e.target.value }))}
+                    className="input"
+                  />
+                </div>
+                <div>
+                  <label className="label">{language === 'ar' ? 'سبب الإنهاء' : 'Termination Reason'}</label>
+                  <textarea
+                    value={terminationForm.reason}
+                    onChange={e => setTerminationForm(p => ({ ...p, reason: e.target.value }))}
+                    className="input min-h-[100px] resize-none"
+                    placeholder={language === 'ar' ? 'اكتب سبب الإنهاء هنا...' : 'Enter termination reason here...'}
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-dark-700">
+                {terminationTenant.terminationNotice && (
+                  <button
+                    type="button"
+                    onClick={handleClearTermination}
+                    disabled={terminationMutation.isPending}
+                    className="btn btn-secondary text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 mr-auto"
+                  >
+                    {language === 'ar' ? 'إلغاء الإنهاء' : 'Clear Notice'}
+                  </button>
+                )}
+                <button type="button" onClick={() => setTerminationTenant(null)} className="btn btn-secondary">
+                  {t('cancel')}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSetTermination}
+                  disabled={terminationMutation.isPending}
+                  className="btn btn-primary bg-rose-600 hover:bg-rose-700 border-rose-600 hover:border-rose-700"
+                >
+                  {terminationMutation.isPending ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    language === 'ar' ? 'حفظ' : 'Save'
                   )}
                 </button>
               </div>
