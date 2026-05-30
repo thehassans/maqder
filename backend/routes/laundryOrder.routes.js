@@ -117,4 +117,20 @@ router.get('/:id', checkPermission('laundry', 'read'), async (req, res) => {
   }
 });
 
+// PATCH /api/laundry/orders/:id/payment
+router.patch('/:id/payment', checkPermission('laundry', 'update'), async (req, res) => {
+  try {
+    const { paymentMethod, posPaymentId, status } = req.body;
+    const order = await LaundryOrder.findOne({ _id: req.params.id, ...req.tenantFilter });
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    if (paymentMethod) order.paymentMethod = paymentMethod;
+    if (posPaymentId) order.posPaymentId = posPaymentId;
+    if (status) order.status = status;
+    await order.save();
+    res.json(order);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

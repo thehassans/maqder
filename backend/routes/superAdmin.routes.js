@@ -1481,4 +1481,29 @@ router.post('/tenants/:id/send-backup', async (req, res) => {
   }
 });
 
+// GET /api/super-admin/system-settings
+router.get('/system-settings', async (req, res) => {
+  try {
+    let settings = await SystemSettings.findOne();
+    if (!settings) settings = await SystemSettings.create({});
+    res.json(settings);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/super-admin/system-settings
+router.put('/system-settings', async (req, res) => {
+  try {
+    const allowed = ['errorTracking', 'analytics', 'rateLimiting', 'sessionConfig', 'xssProtection', 'mongoSanitize'];
+    const update = {};
+    allowed.forEach(key => { if (req.body[key] !== undefined) update[key] = req.body[key]; });
+
+    let settings = await SystemSettings.findOneAndUpdate({}, { $set: update }, { new: true, upsert: true });
+    res.json(settings);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

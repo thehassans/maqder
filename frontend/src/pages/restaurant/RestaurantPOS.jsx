@@ -12,6 +12,7 @@ export default function RestaurantPOS() {
   const { tenant } = useSelector(state => state.auth)
   const isRtl = language === 'ar'
   const cardTerminalEnabled = Boolean(tenant?.settings?.posTerminal?.enabled)
+  const terminalLabel = tenant?.settings?.posTerminal?.terminalLabel || ''
 
   const [menuItems, setMenuItems] = useState([])
   const [tables, setTables] = useState([])
@@ -180,9 +181,50 @@ export default function RestaurantPOS() {
     }
   }
 
-  const handleCardApproved = () => {
+  const handleCardApproved = async (posPayment) => {
     setShowCardModal(false)
-    submitOrder()
+    // Submit the restaurant order with card payment
+    setIsProcessing(true)
+    try {
+      const payload = {
+        status: 'paid',
+        kitchenStatus: 'new',
+        orderType,
+        customerName: customerName.trim(),
+        customerPhone: customerPhone.trim(),
+        paymentMethod: 'card',
+        lineItems: cart.map(item => ({
+          menuItemId: item.menuItem._id,
+          name: item.nameEn,
+          nameAr: item.nameAr,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          taxRate: item.taxRate,
+        }))
+      }
+      if (orderType === 'dine_in') {
+        const table = tables.find(t => t._id === selectedTable)
+        if (table) { payload.tableId = table._id; payload.tableNumber = table.tableNumber }
+      }
+      const { data } = await api.post('/restaurant/orders', payload)
+      // Best-effort PATCH to record the POS payment
+      try {
+        await api.patch(`/restaurant/orders/${data._id}/payment`, {
+          paymentMethod: 'card',
+          posPaymentId: posPayment._id,
+          status: 'paid',
+        })
+      } catch {
+        // ignore
+      }
+      toast.success(isRtl ? `تم إنشاء الطلب: ${data.orderNumber}` : `Order created: ${data.orderNumber}`)
+      setCompletedOrder(data)
+      if (orderType === 'dine_in') fetchData()
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Checkout failed')
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   const handlePrint = () => {
@@ -529,7 +571,12 @@ export default function RestaurantPOS() {
         currency="SAR"
         source="restaurant"
         orderType="restaurant"
+        orderNumber={''}
+        terminalLabel={terminalLabel}
         onApproved={handleCardApproved}
+        onDeclined={() => setShowCardModal(false)}
+        onFailed={() => setShowCardModal(false)}
+        onExpired={() => setShowCardModal(false)}
         onClose={() => setShowCardModal(false)}
       />
     </div>

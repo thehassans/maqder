@@ -20,6 +20,7 @@ import {
   ShoppingCart,
   Building,
   MessageCircle,
+  MessageSquare,
   Mail,
   Cpu,
   Landmark,
@@ -35,6 +36,7 @@ import {
   AlertCircle,
   ShoppingBag,
   ChefHat,
+  Globe,
 } from 'lucide-react'
 import { toggleSidebarCollapse, setMobileMenuOpen } from '../../store/slices/uiSlice'
 import { useTranslation } from '../../lib/translations'
@@ -149,6 +151,7 @@ export default function Sidebar() {
     {
       title: language === 'ar' ? 'التواصل' : 'Communication',
       items: [
+        { path: '/app/dashboard/communicate', icon: MessageSquare, label: language === 'ar' ? 'الرسائل' : 'Communicate', perm: { module: 'settings', action: 'read' } },
         { path: '/app/dashboard/whatsapp', icon: MessageCircle, label: 'WhatsApp', perm: { module: 'settings', action: 'read' } },
         { path: '/app/dashboard/email', icon: Mail, label: language === 'ar' ? 'البريد' : 'Email', perm: { module: 'settings', action: 'read' } },
       ]
@@ -210,6 +213,7 @@ export default function Sidebar() {
       title: language === 'ar' ? 'الامتثال' : 'Compliance',
       items: [
         { path: '/app/dashboard/compliance', icon: Shield, label: language === 'ar' ? 'لوحة الامتثال' : 'Compliance Dashboard' },
+        { path: '/app/dashboard/saudi-compliance', icon: Globe, label: language === 'ar' ? 'الامتثال التنظيمي السعودي' : 'Saudi Regulatory' },
       ]
     },
   ]

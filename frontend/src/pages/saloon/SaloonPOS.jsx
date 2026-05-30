@@ -13,7 +13,9 @@ export default function SaloonPOS() {
   const { tenant } = useSelector((state) => state.auth)
   const isRtl = language === 'ar'
   const cardTerminalEnabled = Boolean(tenant?.settings?.posTerminal?.enabled)
+  const terminalLabel = tenant?.settings?.posTerminal?.terminalLabel || ''
   const [showCardModal, setShowCardModal] = useState(false)
+  const [pendingCardOrder, setPendingCardOrder] = useState(null)
   const queryClient = useQueryClient()
   
   const [searchTerm, setSearchTerm] = useState('')
@@ -107,7 +109,16 @@ export default function SaloonPOS() {
 
     // Route card payments through the physical terminal when configured.
     if (paymentMethod === 'card' && cardTerminalEnabled) {
-      setShowCardModal(true)
+      // Pre-create the order so we have an ID for the PATCH after approval
+      checkoutMutation.mutate(
+        { items: cart, customerName, customerPhone, paymentMethod: 'pending_card', amountPaid: 0 },
+        {
+          onSuccess: (res) => {
+            setPendingCardOrder(res?.data)
+            setShowCardModal(true)
+          },
+        }
+      )
       return
     }
 
@@ -300,8 +311,32 @@ export default function SaloonPOS() {
         currency="SAR"
         source="saloon"
         orderType="saloon"
-        onApproved={() => { setShowCardModal(false); submitCheckout('card') }}
-        onClose={() => setShowCardModal(false)}
+        orderNumber={pendingCardOrder?.orderNumber || ''}
+        terminalLabel={terminalLabel}
+        onApproved={async (posPayment) => {
+          try {
+            if (pendingCardOrder?._id) {
+              await api.patch(`/saloon/orders/${pendingCardOrder._id}/payment`, {
+                paymentMethod: 'card',
+                posPaymentId: posPayment._id,
+                status: 'paid',
+              })
+            }
+          } catch {
+            // order was already submitted as pending_card, ignore patch error
+          }
+          setShowCardModal(false)
+          setPendingCardOrder(null)
+          setCart([])
+          setCustomerName('')
+          setCustomerPhone('')
+          queryClient.invalidateQueries(['saloon-kanban'])
+          toast.success(isRtl ? 'تمت الموافقة على الدفع بالبطاقة' : 'Card payment approved')
+        }}
+        onDeclined={() => { setShowCardModal(false); setPendingCardOrder(null) }}
+        onFailed={() => { setShowCardModal(false); setPendingCardOrder(null) }}
+        onExpired={() => { setShowCardModal(false); setPendingCardOrder(null) }}
+        onClose={() => { setShowCardModal(false); setPendingCardOrder(null) }}
       />
     </div>
   )

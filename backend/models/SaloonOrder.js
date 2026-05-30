@@ -36,7 +36,8 @@ const saloonOrderSchema = new mongoose.Schema({
   grandTotal: { type: Number, required: true, default: 0 },
   amountPaid: { type: Number, default: 0 },
   paymentStatus: { type: String, enum: ['unpaid', 'partial', 'paid'], default: 'unpaid' },
-  paymentMethod: { type: String, enum: ['cash', 'card', 'transfer', 'none'], default: 'none' },
+  paymentMethod: { type: String, enum: ['cash', 'card', 'transfer', 'other', 'none'], default: 'none' },
+  posPaymentId: { type: mongoose.Schema.Types.ObjectId, ref: 'PosPayment' },
   
   zatcaQrCode: { type: String },
   notes: { type: String },

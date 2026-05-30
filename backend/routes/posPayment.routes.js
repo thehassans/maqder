@@ -63,6 +63,19 @@ router.post('/test-connection', authorize('admin'), async (req, res) => {
   }
 });
 
+// @route   GET /api/pos/payments — list recent payments (last 20)
+router.get('/payments', async (req, res) => {
+  try {
+    const limit = Math.min(Number(req.query.limit) || 20, 100);
+    const payments = await PosPayment.find(req.tenantFilter)
+      .sort({ createdAt: -1 })
+      .limit(limit);
+    res.json(payments.map(sanitizePayment));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // @route   POST /api/pos/payments  (start a card payment on the terminal)
 router.post('/payments', async (req, res) => {
   try {

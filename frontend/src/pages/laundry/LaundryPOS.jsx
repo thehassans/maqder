@@ -27,7 +27,9 @@ export default function LaundryPOS() {
   const cart = useSelector(state => state.laundryCart)
   const isRtl = language === 'ar'
   const cardTerminalEnabled = Boolean(tenant?.settings?.posTerminal?.enabled)
+  const terminalLabel = tenant?.settings?.posTerminal?.terminalLabel || ''
   const [showCardModal, setShowCardModal] = useState(false)
+  const [pendingCardOrder, setPendingCardOrder] = useState(null)
 
   const [services, setServices] = useState([])
   const [products, setProducts] = useState([])
@@ -559,7 +561,49 @@ export default function LaundryPOS() {
             </button>
             {cardTerminalEnabled && (
               <button
-                onClick={() => setShowCardModal(true)}
+                onClick={async () => {
+                  if (cart.items.length === 0) return toast.error('Cart is empty')
+                  // Pre-create the order as pending_card so we have an ID after approval
+                  setIsProcessing(true)
+                  try {
+                    const payload = {
+                      paymentMethod: 'pending_card',
+                      customer: cart.customer?._id,
+                      customerName: cart.customerName || (cart.customer ? cart.customer.fullName : undefined),
+                      customerPhone: cart.customerPhone || (cart.customer ? cart.customer.mobile : undefined),
+                      items: cart.items.map(item => ({
+                        service: item.product ? undefined : item.service?._id,
+                        product: item.product?._id,
+                        nameEn: item.nameEn,
+                        nameAr: item.nameAr,
+                        billingType: item.billingType,
+                        quantity: item.quantity,
+                        unitPrice: item.unitPrice,
+                        taxRate: item.product ? (item.product.taxRate || 15) : (item.service?.taxRate || 15),
+                        subtotal: item.subtotal,
+                        taxAmount: item.taxAmount,
+                        total: item.total,
+                        treatment: item.treatment || 'None',
+                        customizations: item.customizations || []
+                      })),
+                      isUrgent: cart.isUrgent,
+                      deliveryType: cart.deliveryType,
+                      notes: cart.notes,
+                      subtotal: cart.items.reduce((s, i) => s + i.subtotal, 0),
+                      totalVat: cart.items.reduce((s, i) => s + i.taxAmount, 0),
+                      urgentFee: cart.isUrgent ? cart.urgentPrice : 0,
+                      grandTotal: cart.items.reduce((s, i) => s + i.total, 0) + (cart.isUrgent ? cart.urgentPrice : 0),
+                      amountPaid: 0,
+                    }
+                    const { data } = await api.post('/laundry/orders/checkout', payload)
+                    setPendingCardOrder(data)
+                    setShowCardModal(true)
+                  } catch (error) {
+                    toast.error(error.response?.data?.error || 'Failed to initiate card payment')
+                  } finally {
+                    setIsProcessing(false)
+                  }
+                }}
                 disabled={cart.items.length === 0 || isProcessing}
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
               >
@@ -577,8 +621,29 @@ export default function LaundryPOS() {
         currency="SAR"
         source="laundry"
         orderType="laundry"
-        onApproved={() => { setShowCardModal(false); handleCheckout('card') }}
-        onClose={() => setShowCardModal(false)}
+        orderNumber={pendingCardOrder?.orderNumber || ''}
+        terminalLabel={terminalLabel}
+        onApproved={async (posPayment) => {
+          try {
+            if (pendingCardOrder?._id) {
+              await api.patch(`/laundry/orders/${pendingCardOrder._id}/payment`, {
+                paymentMethod: 'card',
+                posPaymentId: posPayment._id,
+                status: 'paid',
+              })
+            }
+          } catch {
+            // best-effort patch
+          }
+          setShowCardModal(false)
+          setPendingCardOrder(null)
+          setCompletedOrder(pendingCardOrder)
+          toast.success(isRtl ? `تم الدفع بالبطاقة: ${pendingCardOrder?.orderNumber || ''}` : `Card payment approved: ${pendingCardOrder?.orderNumber || ''}`)
+        }}
+        onDeclined={() => { setShowCardModal(false); setPendingCardOrder(null) }}
+        onFailed={() => { setShowCardModal(false); setPendingCardOrder(null) }}
+        onExpired={() => { setShowCardModal(false); setPendingCardOrder(null) }}
+        onClose={() => { setShowCardModal(false); setPendingCardOrder(null) }}
       />
 
       {/* Print Modal */}

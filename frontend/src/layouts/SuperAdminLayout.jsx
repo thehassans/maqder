@@ -28,6 +28,7 @@ export default function SuperAdminLayout() {
     { path: '/super-admin/email', icon: Mail, label: language === 'ar' ? 'البريد' : 'Email' },
     { path: '/super-admin/identity', icon: ShieldCheck, label: t('identitySettings') },
     { path: '/super-admin/gemini', icon: Settings, label: t('geminiSettings') },
+    { path: '/super-admin/system-settings', icon: Settings, label: 'System Settings' },
   ]
 
   return (

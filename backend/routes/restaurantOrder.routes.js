@@ -405,4 +405,20 @@ router.delete('/:id', checkPermission('restaurant', 'delete'), async (req, res) 
   }
 });
 
+// PATCH /api/restaurant/orders/:id/payment
+router.patch('/:id/payment', checkPermission('restaurant', 'update'), async (req, res) => {
+  try {
+    const { paymentMethod, posPaymentId, status } = req.body;
+    const order = await RestaurantOrder.findOne({ _id: req.params.id, ...req.tenantFilter });
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    if (paymentMethod) order.paymentMethod = paymentMethod;
+    if (posPaymentId) order.posPaymentId = posPaymentId;
+    if (status) order.status = status;
+    await order.save();
+    res.json(order);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

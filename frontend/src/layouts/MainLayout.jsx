@@ -2,6 +2,7 @@ import { Outlet, Navigate, useLocation } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import Sidebar from '../components/layout/Sidebar'
 import Header from '../components/layout/Header'
+import OfflineBanner from '../components/ui/OfflineBanner'
 import { getTenantBusinessTypes } from '../lib/businessTypes'
 
 export default function MainLayout() {
@@ -23,6 +24,7 @@ export default function MainLayout() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-900">
+      <OfflineBanner />
       <Sidebar />
       <div
         className={`transition-all duration-300 ${

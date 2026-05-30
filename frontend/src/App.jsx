@@ -5,6 +5,7 @@ import { getMe } from './store/slices/authSlice'
 import { setLanguage, setTheme } from './store/slices/uiSlice'
 import { applyTenantBranding } from './lib/branding'
 import { getTenantBusinessTypes } from './lib/businessTypes'
+import { ErrorBoundary } from './lib/errorBoundary'
 
 import MainLayout from './layouts/MainLayout'
 import AuthLayout from './layouts/AuthLayout'
@@ -86,6 +87,7 @@ import IdentitySettings from './pages/super-admin/IdentitySettings'
 import GeminiSettings from './pages/super-admin/GeminiSettings'
 import EmailSettings from './pages/super-admin/EmailSettings'
 import WebsiteSettings from './pages/super-admin/WebsiteSettings'
+import SystemSettings from './pages/super-admin/SystemSettings'
 import EmailCommunication from './pages/EmailCommunication'
 import FleetAssets from './pages/fleet/FleetAssets'
 import FleetAssetForm from './pages/fleet/FleetAssetForm'
@@ -95,6 +97,8 @@ import ContractForm from './pages/contracts/ContractForm'
 import LandedCosts from './pages/landed-costs/LandedCosts'
 import LandedCostForm from './pages/landed-costs/LandedCostForm'
 import Compliance from './pages/compliance/Compliance'
+import Communicate from './pages/Communicate'
+import SaudiCompliance from './pages/compliance/SaudiCompliance'
 import CarRentalLayout from './layouts/CarRentalLayout'
 import FleetList from './pages/car-rental/FleetList'
 import CarForm from './pages/car-rental/CarForm'
@@ -251,6 +255,7 @@ function App() {
         <Route path="email" element={<EmailSettings />} />
         <Route path="identity" element={<IdentitySettings />} />
         <Route path="gemini" element={<GeminiSettings />} />
+        <Route path="system-settings" element={<SystemSettings />} />
       </Route>
 
       {/* Main App Routes */}
@@ -337,6 +342,8 @@ function App() {
         <Route path="reports" element={<Reports />} />
         <Route path="vat-returns" element={<VatReturns />} />
         <Route path="email" element={<EmailCommunication />} />
+        <Route path="communicate" element={<ErrorBoundary><Communicate /></ErrorBoundary>} />
+        <Route path="saudi-compliance" element={<ErrorBoundary><SaudiCompliance /></ErrorBoundary>} />
         <Route path="users" element={<Users />} />
         <Route path="settings" element={<Settings />} />
         {/* Fleet & Machinery */}

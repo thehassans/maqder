@@ -116,7 +116,39 @@ const systemSettingsSchema = new mongoose.Schema({
         bodyAr: { type: String, default: 'مرحباً {{customerName}}،\n\nنرفق لكم الفاتورة رقم {{invoiceNumber}} بتاريخ {{invoiceDate}} بإجمالي {{invoiceTotal}}.\n\nشكراً لتعاملكم معنا.\n{{companyName}}' }
       }
     }
-  }
+  },
+  errorTracking: {
+    enabled: { type: Boolean, default: false },
+    provider: { type: String, enum: ['sentry', 'bugsnag', 'custom'], default: 'sentry' },
+    dsn: { type: String, default: '' },
+    uploadSourceMaps: { type: Boolean, default: false },
+  },
+  analytics: {
+    enabled: { type: Boolean, default: false },
+    provider: { type: String, enum: ['posthog', 'mixpanel', 'amplitude', 'custom'], default: 'posthog' },
+    apiKey: { type: String, default: '' },
+    endpoint: { type: String, default: '' },
+    trackEvents: {
+      signUp: { type: Boolean, default: true },
+      login: { type: Boolean, default: true },
+      invoiceCreated: { type: Boolean, default: true },
+      posPayment: { type: Boolean, default: true },
+      orderCompleted: { type: Boolean, default: true },
+    },
+  },
+  rateLimiting: {
+    authMaxRequests: { type: Number, default: 20 },
+    authWindowMinutes: { type: Number, default: 15 },
+    apiMaxRequests: { type: Number, default: 200 },
+    apiWindowMinutes: { type: Number, default: 1 },
+  },
+  sessionConfig: {
+    accessTokenExpiryMinutes: { type: Number, default: 60 },
+    refreshTokenExpiryDays: { type: Number, default: 30 },
+    sessionTimeoutMinutes: { type: Number, default: 480 },
+  },
+  xssProtection: { type: Boolean, default: true },
+  mongoSanitize: { type: Boolean, default: true },
 }, {
   timestamps: true
 });
