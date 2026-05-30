@@ -16,12 +16,12 @@ const NavItem = ({ path, icon: Icon, label, end, collapsed, badge, onClick }) =>
     className={({ isActive }) =>
       `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group relative ${
         isActive
-          ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30'
-          : 'text-gray-300 hover:bg-white/10 hover:text-white'
+          ? 'bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 shadow-sm'
+          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-dark-700 hover:text-gray-900 dark:hover:text-white'
       }`
     }
   >
-    <Icon className="w-5 h-5 flex-shrink-0" />
+    <Icon className={`w-5 h-5 flex-shrink-0 ${collapsed ? 'mx-auto' : ''}`} />
     <AnimatePresence>
       {!collapsed && (
         <motion.span
@@ -44,10 +44,10 @@ const NavItem = ({ path, icon: Icon, label, end, collapsed, badge, onClick }) =>
 
 const SectionLabel = ({ label, collapsed }) =>
   !collapsed ? (
-    <p className="px-3 pt-4 pb-1 text-[10px] font-bold uppercase tracking-[0.15em] text-amber-400/70 select-none">
+    <p className="px-3 pt-4 pb-1 text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 select-none">
       {label}
     </p>
-  ) : <div className="pt-3 border-t border-white/10 mx-2" />
+  ) : <div className="pt-3 border-t border-gray-100 dark:border-dark-700 mx-2" />
 
 export default function CarRentalSidebar() {
   const dispatch = useDispatch()
@@ -57,40 +57,66 @@ export default function CarRentalSidebar() {
   const isAr = language === 'ar'
   const t = (en, ar) => isAr ? ar : en
 
-  const logo = tenant?.branding?.logo
+  const sidebarStyle = tenant?.branding?.sidebarStyle || 'solid'
+  const sidebarClassName =
+    sidebarStyle === 'glass'
+      ? 'bg-white/70 dark:bg-dark-800/70 backdrop-blur-xl'
+      : 'bg-white dark:bg-dark-800'
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full">
-      {/* Brand */}
-      <div className="flex items-center justify-between px-4 h-16 bg-black/30 flex-shrink-0">
+    <div className="flex flex-col h-full bg-transparent">
+      {/* Brand Header */}
+      <div className="flex items-center justify-between px-4 h-16 bg-[#1a3d28]">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-amber-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
-            {logo
-              ? <img src={logo} alt="" className="w-full h-full object-contain rounded-xl" />
-              : <Car className="w-5 h-5 text-white" />
-            }
+          <div className="w-10 h-10 bg-white rounded-xl p-1 shadow-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+            {tenant?.branding?.logo ? (
+              <img src={tenant.branding.logo} alt="" className="w-full h-full object-contain" />
+            ) : (
+              <img src="/maqder-logo.png" alt="Maqder" className="w-full h-full object-contain" />
+            )}
           </div>
           {!sidebarCollapsed && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <span className="font-black text-white text-sm leading-tight block">
-                {tenant?.business?.tradeName || tenant?.name || 'Car Rental'}
-              </span>
-              <span className="text-[10px] text-amber-300 font-medium">
-                {t('Rental Management', 'إدارة التأجير')}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <span className="font-bold text-lg text-white">Maqder ERP</span>
+              <span className="block text-[10px] text-primary-200 uppercase tracking-wider font-semibold truncate">
+                {isAr ? 'نظام التأجير' : 'Rental System'}
               </span>
             </motion.div>
           )}
         </div>
+        
+        {/* Mobile close button */}
         <button
-          onClick={() => dispatch(toggleSidebarCollapse())}
-          className="hidden lg:flex p-1.5 rounded-lg hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+          onClick={() => dispatch(setMobileMenuOpen(false))}
+          className="lg:hidden p-2 rounded-lg hover:bg-white/10 text-white"
         >
-          {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          <X className="w-5 h-5" />
         </button>
       </div>
 
+      {/* Tenant Info */}
+      {!sidebarCollapsed && tenant && (
+        <div className="px-4 py-4 border-b border-gray-200 dark:border-dark-700">
+          <div className="p-3 bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-xl">
+            <p className="text-xs text-primary-600 dark:text-primary-400 font-medium mb-1">
+              {isAr ? 'الشركة' : 'Company'}
+            </p>
+            <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">
+              {isAr ? tenant.business?.legalNameAr : tenant.business?.legalNameEn}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              VAT: {tenant.business?.vatNumber}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto px-2 py-2 space-y-0.5">
+      <nav className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-0.5">
         <SectionLabel label={t('POS', 'نقطة البيع')} collapsed={sidebarCollapsed} />
         <NavItem path="/app/rental/checkout" icon={PlusCircle} label={t('New Rental', 'تأجير جديد')} collapsed={sidebarCollapsed} onClick={() => dispatch(setMobileMenuOpen(false))} />
         <NavItem path="/app/rental/active" icon={Car} label={t('Active Rentals', 'تأجيرات نشطة')} collapsed={sidebarCollapsed} onClick={() => dispatch(setMobileMenuOpen(false))} />
@@ -113,19 +139,36 @@ export default function CarRentalSidebar() {
         <SectionLabel label={t('Settings', 'الإعدادات')} collapsed={sidebarCollapsed} />
         <NavItem path="/app/dashboard/settings" icon={Settings} label={t('Settings', 'الإعدادات')} collapsed={sidebarCollapsed} onClick={() => dispatch(setMobileMenuOpen(false))} />
       </nav>
+
+      {/* Collapse Button (Desktop) */}
+      <div className="hidden lg:block p-3 border-t border-gray-200 dark:border-dark-700">
+        <button
+          onClick={() => dispatch(toggleSidebarCollapse())}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-xl transition-colors"
+        >
+          {sidebarCollapsed ? (
+            <ChevronRight className="w-5 h-5" />
+          ) : (
+            <>
+              <ChevronLeft className="w-5 h-5" />
+              <span>{isAr ? 'طي القائمة' : 'Collapse'}</span>
+            </>
+          )}
+        </button>
+      </div>
     </div>
   )
 
   return (
     <>
       {/* Desktop */}
-      <div
-        className={`hidden lg:flex flex-col fixed inset-y-0 start-0 z-50 transition-all duration-300 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 shadow-2xl ${
+      <aside
+        className={`hidden lg:flex flex-col fixed inset-y-0 start-0 z-50 transition-all duration-300 border-e border-gray-200 dark:border-dark-700 ${sidebarClassName} ${
           sidebarCollapsed ? 'w-20' : 'w-72'
         }`}
       >
         <SidebarContent />
-      </div>
+      </aside>
 
       {/* Mobile overlay */}
       <AnimatePresence>
@@ -136,18 +179,13 @@ export default function CarRentalSidebar() {
               className="fixed inset-0 z-40 bg-black/50 lg:hidden"
               onClick={() => dispatch(setMobileMenuOpen(false))}
             />
-            <motion.div
+            <motion.aside
               initial={{ x: isAr ? '100%' : '-100%' }} animate={{ x: 0 }} exit={{ x: isAr ? '100%' : '-100%' }}
               transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-              className="fixed inset-y-0 start-0 z-50 w-72 flex flex-col bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 lg:hidden"
+              className={`fixed inset-y-0 start-0 z-50 w-72 flex flex-col border-e border-gray-200 dark:border-dark-700 ${sidebarClassName} lg:hidden`}
             >
-              <div className="absolute top-4 end-4">
-                <button onClick={() => dispatch(setMobileMenuOpen(false))} className="p-2 rounded-xl bg-white/10 text-white">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
               <SidebarContent />
-            </motion.div>
+            </motion.aside>
           </>
         )}
       </AnimatePresence>

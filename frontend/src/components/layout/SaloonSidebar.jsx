@@ -53,6 +53,23 @@ export default function SaloonSidebar() {
         </button>
       </div>
 
+      {/* Tenant Info */}
+      {!sidebarCollapsed && tenant && (
+        <div className="px-4 py-4 border-b border-gray-200 dark:border-dark-700">
+          <div className="p-3 bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-xl">
+            <p className="text-xs text-primary-600 dark:text-primary-400 font-medium mb-1">
+              {language === 'ar' ? 'الشركة' : 'Company'}
+            </p>
+            <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">
+              {language === 'ar' ? tenant.business?.legalNameAr : tenant.business?.legalNameEn}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              VAT: {tenant.business?.vatNumber}
+            </p>
+          </div>
+        </div>
+      )}
+
       <nav className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-6">
         <div className="space-y-1">
           {navItems.map((item) => (

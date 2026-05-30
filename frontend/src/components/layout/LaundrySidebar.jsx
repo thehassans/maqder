@@ -9,9 +9,10 @@ import {
   Box,
   Settings,
   X,
-  ChevronRight
+  ChevronRight,
+  ChevronLeft
 } from 'lucide-react'
-import { toggleSidebar } from '../../store/slices/uiSlice'
+import { toggleSidebar, toggleSidebarCollapse, setMobileMenuOpen } from '../../store/slices/uiSlice'
 
 const NAV_ITEMS = [
   { id: 'pos', path: '/app/laundry/pos', icon: ShoppingCart, labelEn: 'New Order (POS)', labelAr: 'طلب جديد (نقطة البيع)' },
@@ -23,32 +24,67 @@ const NAV_ITEMS = [
 
 export default function LaundrySidebar() {
   const dispatch = useDispatch()
-  const { sidebarOpen, sidebarCollapsed, language } = useSelector(state => state.ui)
+  const { sidebarCollapsed, mobileMenuOpen, language } = useSelector(state => state.ui)
+  const { tenant } = useSelector(state => state.auth)
   const isRtl = language === 'ar'
+  
+  const sidebarStyle = tenant?.branding?.sidebarStyle || 'solid'
+  const sidebarClassName =
+    sidebarStyle === 'glass'
+      ? 'bg-white/70 dark:bg-dark-800/70 backdrop-blur-xl'
+      : 'bg-white dark:bg-dark-800'
 
   const NavContent = () => (
-    <div className="flex flex-col h-full bg-white dark:bg-dark-800 border-e border-gray-200 dark:border-dark-700 shadow-sm">
-      {/* Brand Header */}
-      <div className="h-16 flex items-center px-4 border-b border-gray-200 dark:border-dark-700 justify-between">
-        <div className={`flex items-center gap-3 overflow-hidden ${sidebarCollapsed ? 'justify-center w-full' : ''}`}>
-          <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center flex-shrink-0">
-            <Shirt className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+    <div className="flex flex-col h-full bg-transparent">
+      {/* Logo */}
+      <div className="flex items-center justify-between px-4 h-16 bg-[#1a3d28]">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-white rounded-xl p-1 shadow-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+            {tenant?.branding?.logo ? (
+              <img src={tenant.branding.logo} alt="" className="w-full h-full object-contain" />
+            ) : (
+              <img src="/maqder-logo.png" alt="Maqder" className="w-full h-full object-contain" />
+            )}
           </div>
           {!sidebarCollapsed && (
-            <span className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal-600 to-teal-400 truncate whitespace-nowrap">
-              {isRtl ? 'المغسلة' : 'Laundry System'}
-            </span>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <span className="font-bold text-lg text-white">Maqder ERP</span>
+              <span className="block text-[10px] text-primary-200 uppercase tracking-wider font-semibold truncate">
+                {isRtl ? 'نظام المغسلة' : 'Laundry System'}
+              </span>
+            </motion.div>
           )}
         </div>
         
-        {/* Mobile Close Button */}
-        <button 
+        {/* Mobile close button */}
+        <button
           onClick={() => dispatch(toggleSidebar())}
-          className="lg:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-dark-700"
+          className="lg:hidden p-2 rounded-lg hover:bg-white/10 text-white"
         >
           <X className="w-5 h-5" />
         </button>
       </div>
+
+      {/* Tenant Info */}
+      {!sidebarCollapsed && tenant && (
+        <div className="px-4 py-4 border-b border-gray-200 dark:border-dark-700">
+          <div className="p-3 bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-xl">
+            <p className="text-xs text-primary-600 dark:text-primary-400 font-medium mb-1">
+              {language === 'ar' ? 'الشركة' : 'Company'}
+            </p>
+            <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">
+              {language === 'ar' ? tenant.business?.legalNameAr : tenant.business?.legalNameEn}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              VAT: {tenant.business?.vatNumber}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Navigation Links */}
       <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1 custom-scrollbar">
@@ -59,7 +95,7 @@ export default function LaundrySidebar() {
             className={({ isActive }) => `
               group flex items-center px-3 py-2.5 rounded-xl transition-all duration-200 relative
               ${isActive 
-                ? 'bg-teal-50 dark:bg-teal-500/10 text-teal-600 dark:text-teal-400 font-medium' 
+                ? 'bg-primary-50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400 font-medium' 
                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-dark-700/50 hover:text-gray-900 dark:hover:text-white'
               }
             `}
@@ -71,10 +107,6 @@ export default function LaundrySidebar() {
             
             {!sidebarCollapsed && (
               <span className="truncate">{isRtl ? item.labelAr : item.labelEn}</span>
-            )}
-            
-            {!sidebarCollapsed && (
-              <ChevronRight className={`w-4 h-4 ms-auto opacity-0 -translate-x-2 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0 ${isRtl ? 'rotate-180' : ''}`} />
             )}
           </NavLink>
         ))}
@@ -93,6 +125,23 @@ export default function LaundrySidebar() {
           )}
         </NavLink>
       </div>
+
+      {/* Collapse Button (Desktop) */}
+      <div className="hidden lg:block p-3 border-t border-gray-200 dark:border-dark-700">
+        <button
+          onClick={() => dispatch(toggleSidebarCollapse())}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-xl transition-colors"
+        >
+          {sidebarCollapsed ? (
+            <ChevronRight className="w-5 h-5" />
+          ) : (
+            <>
+              <ChevronLeft className="w-5 h-5" />
+              <span>{language === 'ar' ? 'طي القائمة' : 'Collapse'}</span>
+            </>
+          )}
+        </button>
+      </div>
     </div>
   )
 
@@ -100,7 +149,7 @@ export default function LaundrySidebar() {
     <>
       {/* Mobile Backdrop */}
       <AnimatePresence>
-        {sidebarOpen && (
+        {mobileMenuOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -113,10 +162,10 @@ export default function LaundrySidebar() {
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed top-0 bottom-0 z-50 transition-all duration-300 ease-in-out
+        className={`fixed top-0 bottom-0 z-50 transition-all duration-300 ease-in-out border-e border-gray-200 dark:border-dark-700 ${sidebarClassName}
           ${isRtl ? 'right-0' : 'left-0'}
           ${sidebarCollapsed ? 'w-20' : 'w-72'}
-          ${sidebarOpen ? 'translate-x-0' : isRtl ? 'translate-x-full lg:translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          ${mobileMenuOpen ? 'translate-x-0' : isRtl ? 'translate-x-full lg:translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
         <NavContent />
