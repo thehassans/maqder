@@ -21,6 +21,16 @@ import MarketingAbout from './pages/marketing/About'
 import MarketingContact from './pages/marketing/Contact'
 import MarketingPrivacy from './pages/marketing/Privacy'
 import MarketingTerms from './pages/marketing/Terms'
+import KhayyatDashboard from './pages/khayyat/Dashboard'
+import KhayyatWorkers from './pages/khayyat/Workers'
+import KhayyatWorkerForm from './pages/khayyat/WorkerForm'
+import KhayyatWorkerAmounts from './pages/khayyat/WorkerAmounts'
+import KhayyatStitchings from './pages/khayyat/Stitchings'
+import KhayyatStitchingForm from './pages/khayyat/StitchingForm'
+import KhayyatEmbroideryDesigns from './pages/khayyat/EmbroideryDesigns'
+import KhayyatFabrics from './pages/khayyat/Fabrics'
+import KhayyatLaundry from './pages/khayyat/Laundry'
+import KhayyatLoyalty from './pages/khayyat/Loyalty'
 import Dashboard from './pages/Dashboard'
 import Invoices from './pages/invoices/Invoices'
 import InvoiceCreate from './pages/invoices/InvoiceCreate'
@@ -268,6 +278,19 @@ function App() {
         }
       >
         <Route index element={<Dashboard />} />
+          {/* Khayyat Routes */}
+          <Route path="khayyat" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatDashboard /></BusinessTypeRoute>} />
+          <Route path="khayyat/workers" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatWorkers /></BusinessTypeRoute>} />
+          <Route path="khayyat/workers/new" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatWorkerForm /></BusinessTypeRoute>} />
+          <Route path="khayyat/workers/:id" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatWorkerForm /></BusinessTypeRoute>} />
+          <Route path="khayyat/worker-amounts" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatWorkerAmounts /></BusinessTypeRoute>} />
+          <Route path="khayyat/stitchings" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatStitchings /></BusinessTypeRoute>} />
+          <Route path="khayyat/stitchings/new" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatStitchingForm /></BusinessTypeRoute>} />
+          <Route path="khayyat/stitchings/:id" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatStitchingForm /></BusinessTypeRoute>} />
+          <Route path="khayyat/embroidery-designs" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatEmbroideryDesigns /></BusinessTypeRoute>} />
+          <Route path="khayyat/fabrics" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatFabrics /></BusinessTypeRoute>} />
+          <Route path="khayyat/laundry" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatLaundry /></BusinessTypeRoute>} />
+          <Route path="khayyat/loyalty" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatLoyalty /></BusinessTypeRoute>} />
         <Route path="invoices" element={<Invoices />} />
         <Route path="invoices/new" element={<InvoiceCreate />} />
         <Route path="invoices/new/sell" element={<InvoiceCreateSell />} />
@@ -434,3 +457,4 @@ function App() {
 }
 
 export default App
+

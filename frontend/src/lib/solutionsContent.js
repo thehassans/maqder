@@ -179,6 +179,31 @@ export const SOLUTIONS = [
       { titleEn: 'Bill by milestone', titleAr: 'الفوترة بالمراحل', descEn: 'Issue progress invoices to ZATCA.', descAr: 'أصدر فواتير الإنجاز لـ ZATCA.' },
     ],
   },
+  {
+    slug: 'khayyat',
+    icon: 'Scissors',
+    accent: 'from-violet-500 to-purple-600',
+    glow: 'bg-violet-500/20',
+    demoEmail: 'admin@maqder.com',
+    image: '/images/solutions/saloon.png',
+    nameEn: 'Tailoring & Boutique',
+    nameAr: 'الخياطة والمشاغل',
+    taglineEn: 'Customer measurements, worker earnings, fabric inventory, and POS.',
+    taglineAr: 'مقاسات العملاء، أرباح العمال، مخزون الأقمشة ونقاط البيع.',
+    heroEn: 'Run your entire tailoring shop — track fabrics, manage embroideries, log measurements, and settle worker payouts instantly.',
+    heroAr: 'أدر مشغلك بالكامل — تتبع الأقمشة والتطريز وسجل المقاسات وسوّي أرباح العمال فوراً.',
+    features: [
+      { icon: 'Scissors', titleEn: 'Measurements', titleAr: 'المقاسات', descEn: 'Detailed digital measurements per customer.', descAr: 'مقاسات رقمية مفصلة لكل عميل.' },
+      { icon: 'Users', titleEn: 'Worker Earnings', titleAr: 'أرباح العمال', descEn: 'Track stitched items and pay workers per piece.', descAr: 'تتبع القطع المخيطة وادفع للعمال بالقطعة.' },
+      { icon: 'Package', titleEn: 'Fabric Rolls', titleAr: 'طاقات الأقمشة', descEn: 'Manage fabric inventory down to the meter.', descAr: 'إدارة مخزون الأقمشة حتى المتر.' },
+      { icon: 'Sparkles', titleEn: 'Embroidery', titleAr: 'التطريز', descEn: 'Visual catalogs for embroidery and styles.', descAr: 'كتالوجات مرئية للتطريز والتصاميم.' },
+    ],
+    workflow: [
+      { titleEn: 'Take Measurements', titleAr: 'أخذ المقاسات', descEn: 'Log customer dimensions and select fabric/style.', descAr: 'سجل مقاسات العميل واختر القماش والتصميم.' },
+      { titleEn: 'Assign Tailor', titleAr: 'تكليف خياط', descEn: 'Route the order to a worker and track status.', descAr: 'وجّه الطلب للعامل وتتبع حالته.' },
+      { titleEn: 'Deliver & Pay', titleAr: 'التسليم والدفع', descEn: 'Hand over the garment, settle POS, and credit the worker.', descAr: 'سلّم الثوب، حاسب بالنقاط، وأضف رصيد العامل.' },
+    ],
+  },
 ]
 
 export const getSolution = (slug) => SOLUTIONS.find((s) => s.slug === slug) || null

@@ -62,6 +62,13 @@ import saloonServiceRoutes from './routes/saloonService.routes.js';
 import saloonOrderRoutes from './routes/saloonOrder.routes.js';
 import posPaymentRoutes from './routes/posPayment.routes.js';
 
+import khayyatWorkerRoutes from './routes/khayyat/worker.js';
+import khayyatEmbroideryRoutes from './routes/khayyat/embroideryDesigns.js';
+import khayyatFabricRoutes from './routes/khayyat/fabric.js';
+import khayyatLaundryRoutes from './routes/khayyat/laundry.js';
+import khayyatStitchingRoutes from './routes/khayyat/stitching.js';
+import khayyatPaymentRoutes from './routes/khayyat/payment.js';
+
 import { checkIqamaExpiry } from './jobs/iqamaChecker.js';
 import { processScheduledReports } from './jobs/reportScheduleJob.js';
 import { syncZatcaInvoices } from './jobs/zatcaSync.js';
@@ -360,6 +367,13 @@ app.use('/api/saloon/services', ensureDatabaseReady, saloonServiceRoutes);
 app.use('/api/saloon/orders', ensureDatabaseReady, saloonOrderRoutes);
 
 app.use('/api/pos', ensureDatabaseReady, posPaymentRoutes);
+
+app.use('/api/khayyat/workers', ensureDatabaseReady, khayyatWorkerRoutes);
+app.use('/api/khayyat/embroidery', ensureDatabaseReady, khayyatEmbroideryRoutes);
+app.use('/api/khayyat/fabrics', ensureDatabaseReady, khayyatFabricRoutes);
+app.use('/api/khayyat/laundry', ensureDatabaseReady, khayyatLaundryRoutes);
+app.use('/api/khayyat/stitchings', ensureDatabaseReady, khayyatStitchingRoutes);
+app.use('/api/khayyat/payments', ensureDatabaseReady, khayyatPaymentRoutes);
 
 // Serve static frontend files in production
 const resolveFrontendBuild = () => {

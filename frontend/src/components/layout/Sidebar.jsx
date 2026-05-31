@@ -71,6 +71,20 @@ export default function Sidebar() {
       : 'bg-white dark:bg-dark-800'
 
   const navSections = [
+      {
+        title: language === 'ar' ? '???????' : 'Tailoring',
+        businessTypes: ['khayyat'],
+        items: [
+          { path: '/app/dashboard/khayyat', icon: LayoutDashboard, label: language === 'ar' ? '???? ???????' : 'Dashboard', end: true },
+          { path: '/app/dashboard/khayyat/stitchings', icon: FileSignature, label: language === 'ar' ? '????? ???????' : 'Orders' },
+          { path: '/app/dashboard/khayyat/workers', icon: Users, label: language === 'ar' ? '??????' : 'Workers' },
+          { path: '/app/dashboard/khayyat/worker-amounts', icon: Wallet, label: language === 'ar' ? '????? ??????' : 'Worker Amounts' },
+          { path: '/app/dashboard/khayyat/embroidery-designs', icon: Package, label: language === 'ar' ? '?????? ???????' : 'Embroidery Designs' },
+          { path: '/app/dashboard/khayyat/fabrics', icon: Package, label: language === 'ar' ? '???????' : 'Fabrics' },
+          { path: '/app/dashboard/khayyat/laundry', icon: ShoppingBag, label: language === 'ar' ? '???????' : 'Laundry' },
+          { path: '/app/dashboard/khayyat/loyalty', icon: Landmark, label: language === 'ar' ? '??????' : 'Loyalty' },
+        ]
+      },
     {
       title: language === 'ar' ? 'الرئيسية' : 'Main',
       items: [
@@ -400,3 +414,4 @@ export default function Sidebar() {
     </>
   )
 }
+

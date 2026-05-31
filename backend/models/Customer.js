@@ -1,5 +1,22 @@
 import mongoose from 'mongoose';
 
+const khayyatMeasurementSchema = new mongoose.Schema({
+  length: { type: Number, default: null },
+  shoulderWidth: { type: Number, default: null },
+  chest: { type: Number, default: null },
+  waist: { type: Number, default: null },
+  hips: { type: Number, default: null },
+  sleeveLength: { type: Number, default: null },
+  bicep: { type: Number, default: null },
+  forearm: { type: Number, default: null },
+  neck: { type: Number, default: null },
+  wrist: { type: Number, default: null },
+  cuffWidth: { type: Number, default: null },
+  expansion: { type: Number, default: null },
+  armhole: { type: Number, default: null },
+  bottom: { type: Number, default: null }
+}, { _id: false });
+
 const customerSchema = new mongoose.Schema({
   tenantId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -86,6 +103,25 @@ const customerSchema = new mongoose.Schema({
   },
   lastInvoiceDate: {
     type: Date
+  },
+  khayyatMeasurements: {
+    type: khayyatMeasurementSchema,
+    default: () => ({})
+  },
+  loyaltyPoints: {
+    type: Number,
+    default: 0
+  },
+  khayyatRelations: {
+    type: [
+      {
+        customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true },
+        customerName: { type: String, default: '' },
+        customerPhone: { type: String, default: '' },
+        relationType: { type: String, default: '' }
+      }
+    ],
+    default: () => []
   }
 }, {
   timestamps: true
