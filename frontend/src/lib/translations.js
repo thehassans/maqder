@@ -153,16 +153,20 @@ export const translations = {
     'styleOptions.options.collar.round': 'Round',
     'styleOptions.options.collar.mandarin': 'Mandarin',
     'styleOptions.options.collar.open': 'Open',
+    'styleOptions.options.collar.v_neck': 'V-Neck',
+    'styleOptions.options.collar.chinese': 'Chinese',
     
     'styleOptions.options.bain.hidden': 'Hidden',
     'styleOptions.options.bain.visible': 'Visible',
     'styleOptions.options.bain.zip': 'Zip',
     'styleOptions.options.bain.half': 'Half',
+    'styleOptions.options.bain.full': 'Full',
     
     'styleOptions.options.cuff.single': 'Single',
     'styleOptions.options.cuff.double': 'Double',
     'styleOptions.options.cuff.round': 'Round',
     'styleOptions.options.cuff.angled': 'Angled',
+    'styleOptions.options.cuff.wide': 'Wide',
     
     'styleOptions.options.pocket.none': 'None',
     'styleOptions.options.pocket.chest': 'Chest',
@@ -173,11 +177,13 @@ export const translations = {
     'styleOptions.options.buttons.hidden': 'Hidden',
     'styleOptions.options.buttons.snap': 'Snap',
     'styleOptions.options.buttons.premium': 'Premium',
+    'styleOptions.options.buttons.golden': 'Golden',
     
     'styleOptions.options.embroidery.none': 'None',
     'styleOptions.options.embroidery.name': 'Name',
     'styleOptions.options.embroidery.logo': 'Logo',
     'styleOptions.options.embroidery.premium': 'Premium',
+    'styleOptions.options.embroidery.arabic': 'Arabic Script',
 
     // Khayyat
     'thawbTypes.saudi': 'Saudi',
@@ -351,16 +357,20 @@ export const translations = {
     'styleOptions.options.collar.round': 'دائري',
     'styleOptions.options.collar.mandarin': 'صيني',
     'styleOptions.options.collar.open': 'مفتوح',
+    'styleOptions.options.collar.v_neck': 'ڤي نك',
+    'styleOptions.options.collar.chinese': 'شيني',
     
     'styleOptions.options.bain.hidden': 'مخفي',
     'styleOptions.options.bain.visible': 'ظاهر',
     'styleOptions.options.bain.zip': 'سحاب',
     'styleOptions.options.bain.half': 'نصف',
+    'styleOptions.options.bain.full': 'كامل',
     
     'styleOptions.options.cuff.single': 'مفرد',
     'styleOptions.options.cuff.double': 'مزدوج',
     'styleOptions.options.cuff.round': 'دائري',
     'styleOptions.options.cuff.angled': 'مشطوف',
+    'styleOptions.options.cuff.wide': 'عريض',
     
     'styleOptions.options.pocket.none': 'بدون',
     'styleOptions.options.pocket.chest': 'صدر',
@@ -371,11 +381,13 @@ export const translations = {
     'styleOptions.options.buttons.hidden': 'مخفي',
     'styleOptions.options.buttons.snap': 'طقطق',
     'styleOptions.options.buttons.premium': 'فاخر',
+    'styleOptions.options.buttons.golden': 'ذهبي',
     
     'styleOptions.options.embroidery.none': 'بدون',
     'styleOptions.options.embroidery.name': 'الاسم',
     'styleOptions.options.embroidery.logo': 'الشعار',
     'styleOptions.options.embroidery.premium': 'فاخر',
+    'styleOptions.options.embroidery.arabic': 'خط عربي',
 
     // Khayyat
     'thawbTypes.saudi': 'سعودي',

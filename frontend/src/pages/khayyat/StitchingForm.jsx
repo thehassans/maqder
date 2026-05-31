@@ -1551,12 +1551,66 @@ const StitchingForm = () => {
   });
 
   const fallbackStyleGroups = [
-    { key: 'collar', name: '', enabled: true, sortOrder: 0, options: [{ key: 'classic', name: '', image: '/thawbs/styles/collar_classic.png' }, { key: 'round', name: '', image: '/thawbs/styles/collar_round.png' }, { key: 'mandarin', name: '', image: '/thawbs/styles/collar_mandarin.png' }, { key: 'open', name: '', image: '/thawbs/styles/collar_open.png' }] },
-    { key: 'bain', name: '', enabled: true, sortOrder: 1, options: [{ key: 'hidden', name: '', image: '/thawbs/styles/bain_hidden.png' }, { key: 'visible', name: '', image: '/thawbs/styles/bain_visible.png' }, { key: 'zip', name: '' }, { key: 'half', name: '' }] },
-    { key: 'cuff', name: '', enabled: true, sortOrder: 2, options: [{ key: 'single', name: '' }, { key: 'double', name: '' }, { key: 'round', name: '' }, { key: 'angled', name: '' }] },
-    { key: 'pocket', name: '', enabled: true, sortOrder: 3, options: [{ key: 'none', name: '', image: '/thawbs/styles/pocket_none.png' }, { key: 'chest', name: '', image: '/thawbs/styles/pocket_chest.png' }, { key: 'side', name: '', image: '/thawbs/styles/pocket_side.png' }, { key: 'both', name: '', image: '/thawbs/styles/pocket_both.png' }] },
-    { key: 'buttons', name: '', enabled: true, sortOrder: 4, options: [{ key: 'classic', name: '' }, { key: 'hidden', name: '' }, { key: 'snap', name: '' }, { key: 'premium', name: '' }] },
-    { key: 'embroidery', name: '', enabled: true, sortOrder: 5, options: [{ key: 'none', name: '' }, { key: 'name', name: '' }, { key: 'logo', name: '' }, { key: 'premium', name: '' }] }
+    {
+      key: 'collar', name: '', enabled: true, sortOrder: 0,
+      options: [
+        { key: 'classic',  name: '', image: '/thawbs/styles/collar_classic.png' },
+        { key: 'round',    name: '', image: '/thawbs/styles/collar_round.png' },
+        { key: 'mandarin', name: '', image: '/thawbs/styles/collar_mandarin.png' },
+        { key: 'open',     name: '', image: '/thawbs/styles/collar_open.png' },
+        { key: 'v_neck',   name: '', image: '/thawbs/styles/collar_v_neck.png' },
+        { key: 'chinese',  name: '', image: '/thawbs/styles/collar_chinese.png' },
+      ]
+    },
+    {
+      key: 'bain', name: '', enabled: true, sortOrder: 1,
+      options: [
+        { key: 'hidden',  name: '', image: '/thawbs/styles/bain_hidden.png' },
+        { key: 'visible', name: '', image: '/thawbs/styles/bain_visible.png' },
+        { key: 'zip',     name: '', image: '/thawbs/styles/bain_zip.png' },
+        { key: 'half',    name: '', image: '/thawbs/styles/bain_half.png' },
+        { key: 'full',    name: '', image: '/thawbs/styles/bain_full.png' },
+      ]
+    },
+    {
+      key: 'cuff', name: '', enabled: true, sortOrder: 2,
+      options: [
+        { key: 'single', name: '', image: '/thawbs/styles/cuff_single.png' },
+        { key: 'double', name: '', image: '/thawbs/styles/cuff_double.png' },
+        { key: 'round',  name: '', image: '/thawbs/styles/cuff_round.png' },
+        { key: 'angled', name: '', image: '/thawbs/styles/cuff_angled.png' },
+        { key: 'wide',   name: '', image: '/thawbs/styles/cuff_wide.png' },
+      ]
+    },
+    {
+      key: 'pocket', name: '', enabled: true, sortOrder: 3,
+      options: [
+        { key: 'none',  name: '', image: '/thawbs/styles/pocket_none.png' },
+        { key: 'chest', name: '', image: '/thawbs/styles/pocket_chest.png' },
+        { key: 'side',  name: '', image: '/thawbs/styles/pocket_side.png' },
+        { key: 'both',  name: '', image: '/thawbs/styles/pocket_both.png' },
+      ]
+    },
+    {
+      key: 'buttons', name: '', enabled: true, sortOrder: 4,
+      options: [
+        { key: 'classic', name: '', image: '/thawbs/styles/buttons_classic.png' },
+        { key: 'hidden',  name: '', image: '/thawbs/styles/buttons_hidden.png' },
+        { key: 'snap',    name: '', image: '/thawbs/styles/buttons_snap.png' },
+        { key: 'premium', name: '', image: '/thawbs/styles/buttons_premium.png' },
+        { key: 'golden',  name: '', image: '/thawbs/styles/buttons_golden.png' },
+      ]
+    },
+    {
+      key: 'embroidery', name: '', enabled: true, sortOrder: 5,
+      options: [
+        { key: 'none',    name: '', image: '/thawbs/styles/embroidery_none.png' },
+        { key: 'name',    name: '', image: '/thawbs/styles/embroidery_name.png' },
+        { key: 'logo',    name: '' },
+        { key: 'premium', name: '' },
+        { key: 'arabic',  name: '' },
+      ]
+    },
   ];
 
   const styleGroups = ((styleCatalog?.groups?.length ? styleCatalog.groups : fallbackStyleGroups) || [])
