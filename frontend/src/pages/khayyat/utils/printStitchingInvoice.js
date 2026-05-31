@@ -1,3 +1,4 @@
+const t = (key) => key;
 import QRCode from 'qrcode';
 import { formatSaudiRiyal } from './saudi';
 

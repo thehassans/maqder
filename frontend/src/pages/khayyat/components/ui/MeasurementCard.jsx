@@ -1,3 +1,5 @@
+import { useTranslation } from '../../../../../lib/translations.js';
+import { useSelector } from 'react-redux';
 import React, { useEffect, useMemo, useState } from 'react';
 
 // SVG illustrations for each measurement type
@@ -147,15 +149,11 @@ const MeasurementIcons = {
   bottom: () => <MeasurementIcons.expansion />
 };
 
-const MeasurementCard = ({ 
-  measurementKey, 
-  label, 
-  value, 
-  onChange, 
-  imageSrc,
-  unit = 'cm', 
-  disabled = false 
-}) => {
+const MeasurementCard = (props) => {
+  const { language } = useSelector(state => state.ui) || { language: 'en' };
+  const { t } = useTranslation(language);
+  const { language } = useSelector(state => state.ui) || { language: 'en' };
+  const { t } = useTranslation(language);
   const IconComponent = MeasurementIcons[measurementKey] || MeasurementIcons.length;
 
   const base = useMemo(() => `/images/measurements/${measurementKey}`, [measurementKey]);

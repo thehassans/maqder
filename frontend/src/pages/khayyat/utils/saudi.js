@@ -1,3 +1,4 @@
+const t = (key) => key;
 const saudiRiyalFormatter = new Intl.NumberFormat('en-SA', {
   minimumFractionDigits: 0,
   maximumFractionDigits: 2

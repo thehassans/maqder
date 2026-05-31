@@ -369,7 +369,7 @@ app.use('/api/saloon/orders', ensureDatabaseReady, saloonOrderRoutes);
 
 app.use('/api/pos', ensureDatabaseReady, posPaymentRoutes);
 
-app.use('/api/khayyat/workers', ensureDatabaseReady, khayyatWorkerRoutes);
+app.use('/api/khayyat/worker', ensureDatabaseReady, khayyatWorkerRoutes);
 app.use('/api/khayyat/embroidery', ensureDatabaseReady, khayyatEmbroideryRoutes);
 app.use('/api/khayyat/fabrics', ensureDatabaseReady, khayyatFabricRoutes);
 app.use('/api/khayyat/laundry', ensureDatabaseReady, khayyatLaundryRoutes);
