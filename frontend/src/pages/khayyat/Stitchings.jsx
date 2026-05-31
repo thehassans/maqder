@@ -27,8 +27,8 @@ const Stitchings = () => {
   const [stitchings, setStitchings] = useState([]);
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchInput, setSearchInput] = useState(() => searchParams.ge(language === 'ar' ? 'search' : 'search') || '');
-  const [search, setSearch] = useState(() => searchParams.ge(language === 'ar' ? 'search' : 'search') || '');
+  const [searchInput, setSearchInput] = useState(() => searchParams.get('search') || '');
+  const [search, setSearch] = useState(() => searchParams.get('search') || '');
   const [statusFilter, setStatusFilter] = useState('');
   const [assignModal, setAssignModal] = useState({ open: false, stitching: null });
   const [deleteModal, setDeleteModal] = useState({ open: false, stitching: null, loading: false });
@@ -65,7 +65,7 @@ const Stitchings = () => {
   };
 
   useEffect(() => {
-    const q = searchParams.ge(language === 'ar' ? 'search' : 'search') || '';
+    const q = searchParams.get('search') || '';
     setSearchInput((prev) => (prev === q ? prev : q));
     setSearch((prev) => (prev === q ? prev : q));
   }, [searchParams]);
@@ -90,9 +90,9 @@ const Stitchings = () => {
   }, [searchInput]);
 
   useEffect(() => {
-    const isTutorial = (searchParams.ge(language === 'ar' ? 'tutorial' : 'tutorial') || '') === '1';
-    const shouldOpen = (searchParams.ge(language === 'ar' ? 'invoice' : 'invoice') || '') === '1';
-    const orderId = String(searchParams.ge(language === 'ar' ? 'orderId' : 'orderId') || '').trim();
+    const isTutorial = (searchParams.get('tutorial') || '') === '1';
+    const shouldOpen = (searchParams.get('invoice') || '') === '1';
+    const orderId = String(searchParams.get('orderId') || '').trim();
     if (!isTutorial) return;
     if (!shouldOpen) return;
     if (!orderId) return;

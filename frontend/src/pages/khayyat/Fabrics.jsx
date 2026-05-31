@@ -72,7 +72,7 @@ const FabricRollar = () => {
   };
 
   useEffect(() => {
-    const shouldOpen = (searchParams.ge(language === 'ar' ? 'create' : 'create') || '') === '1';
+    const shouldOpen = (searchParams.get('create') || '') === '1';
     if (!shouldOpen) return;
     if (tutorialCreateOpenedRef.current) return;
     if (createOpen) return;

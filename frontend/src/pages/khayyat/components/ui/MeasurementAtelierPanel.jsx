@@ -52,6 +52,7 @@ const toneMap = {
 const defaultTone = toneMap.slate;
 
 const formatValue = (value) => {
+  const { language } = useSelector(state => state.ui) || { language: 'en' };
   if (value === undefined || value === null || value === '') return '—';
   const num = Number(value);
   if (!Number.isFinite(num)) return String(value);

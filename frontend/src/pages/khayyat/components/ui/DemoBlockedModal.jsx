@@ -4,6 +4,7 @@ import { Modal } from './Modal';
 import { PhoneCall } from 'lucide-react';
 
 const DemoBlockedModal = ({ isOpen, onClose, title, phone = '+966596775485' }) => {
+  const { language } = useSelector(state => state.ui) || { language: 'en' };
   
   return (
     <Modal

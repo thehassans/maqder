@@ -90,7 +90,7 @@ const EmbroideryDesigns = () => {
   };
 
   useEffect(() => {
-    const shouldOpen = (searchParams.ge(language === 'ar' ? 'create' : 'create') || '') === '1';
+    const shouldOpen = (searchParams.get('create') || '') === '1';
     if (!shouldOpen) return;
     if (tutorialCreateOpenedRef.current) return;
     if (uploadModalOpen) return;
@@ -129,10 +129,10 @@ const EmbroideryDesigns = () => {
     const scale = img.width ? Math.min(1, maxWidth / img.width) : 1;
     const w = Math.max(1, Math.round(img.width * scale));
     const h = Math.max(1, Math.round(img.height * scale));
-    const canvas = document.createElemen(language === 'ar' ? 'canvas' : 'canvas');
+    const canvas = document.createElement('canvas');
     canvas.width = w;
     canvas.height = h;
-    const ctx = canvas.getContex(language === 'ar' ? '2d' : '2d');
+    const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Canvas is not available');
     ctx.drawImage(img, 0, 0, w, h);
 

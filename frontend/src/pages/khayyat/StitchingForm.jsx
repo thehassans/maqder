@@ -215,7 +215,7 @@ const StitchingForm = () => {
       setCustomerMeasurementsOpen(true);
       setOrderForMeasurementsOpen(false);
 
-      const shouldFillMeasurements = (searchParams.ge(language === 'ar' ? 'tutorial' : 'tutorial') || '') === '1' && (searchParams.ge(language === 'ar' ? 'fillMeasurements' : 'fillMeasurements') || '') === '1';
+      const shouldFillMeasurements = (searchParams.get('tutorial') || '') === '1' && (searchParams.get('fillMeasurements') || '') === '1';
       const defaults = {
         length: 10,
         shoulderWidth: 10,
@@ -257,7 +257,7 @@ const StitchingForm = () => {
   useEffect(() => {
     const preselectCustomer = async () => {
       if (isEdit) return;
-      const customerId = searchParams.ge(language === 'ar' ? 'customerId' : 'customerId');
+      const customerId = searchParams.get('customerId');
 
       const normalizePhone = (v) => String(v || '').replace(/\D/g, '');
       const phoneVariants = (digits) => {
@@ -272,8 +272,8 @@ const StitchingForm = () => {
         }
         return Array.from(set);
       };
-      const tutorial = (searchParams.ge(language === 'ar' ? 'tutorial' : 'tutorial') || '') === '1';
-      const customerPhone = tutorial ? normalizePhone(searchParams.ge(language === 'ar' ? 'customerPhone' : 'customerPhone')) : '';
+      const tutorial = (searchParams.get('tutorial') || '') === '1';
+      const customerPhone = tutorial ? normalizePhone(searchParams.get('customerPhone')) : '';
       const customerPhoneOptions = tutorial ? phoneVariants(customerPhone) : [];
 
       if (customerId) {
@@ -304,12 +304,12 @@ const StitchingForm = () => {
         });
 
         if (match?._id) {
-          setCustomerSearch(searchParams.ge(language === 'ar' ? 'customerPhone' : 'customerPhone') || '');
+          setCustomerSearch(searchParams.get('customerPhone') || '');
           await loadCustomerDetails(match._id);
           return;
         }
 
-        setCustomerSearch(searchParams.ge(language === 'ar' ? 'customerPhone' : 'customerPhone') || '');
+        setCustomerSearch(searchParams.get('customerPhone') || '');
         setDropdownOpen(true);
       }
     };
@@ -320,7 +320,7 @@ const StitchingForm = () => {
   useEffect(() => {
     const preselectEmbroideryDesign = async () => {
       if (isEdit) return;
-      const designId = searchParams.ge(language === 'ar' ? 'embroideryDesignId' : 'embroideryDesignId');
+      const designId = searchParams.get('embroideryDesignId');
       if (!designId) return;
       if (formData.embroideryDesignId === designId) return;
 
@@ -422,7 +422,7 @@ const StitchingForm = () => {
         price: stitch.price || '',
         paidAmount: stitch.paidAmount || '',
         description: stitch.description || '',
-        dueDate: stitch.dueDate ? new Date(stitch.dueDate).toISOString().spli(language === 'ar' ? 'T' : 'T')[0] : '',
+        dueDate: stitch.dueDate ? new Date(stitch.dueDate).toISOString().split('T')[0] : '',
         status: stitch.status || 'pending',
         thawbType: stitch.thawbType || 'saudi',
         fabricColor: stitch.fabricColor || '',
