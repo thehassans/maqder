@@ -1,3 +1,4 @@
+const t = (key, opts) => opts?.defaultValue || key;
 import { useTranslation } from '../../../../lib/translations.js';
 import { useSelector } from 'react-redux';
 import React from 'react';
