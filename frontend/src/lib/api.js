@@ -51,8 +51,13 @@ api.interceptors.response.use(
       || requestUrl.includes('/auth/register')
 
     if (error.response?.status === 401 && !isAuthEntryRequest) {
-      localStorage.removeItem('token')
-      window.location.href = '/login'
+      if (error.response?.data?.error === 'Tenant account is inactive' || error.response?.data?.error === 'Account is deactivated') {
+        localStorage.removeItem('token')
+        window.location.href = '/inactive'
+      } else {
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+      }
     }
 
     return Promise.reject(error)

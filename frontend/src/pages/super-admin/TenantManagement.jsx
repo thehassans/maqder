@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tansta
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Search, Building2, Edit, Users, LogIn, AlertCircle, RefreshCw, Trash2, RotateCcw, Send, X, FileSpreadsheet, FileText, Eraser, Sliders } from 'lucide-react'
+import { Plus, Search, Building2, Edit, Users, LogIn, AlertCircle, RefreshCw, Trash2, RotateCcw, Send, X, FileSpreadsheet, FileText, Eraser, Sliders, Ban, Play } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
@@ -134,6 +134,15 @@ export default function TenantManagement() {
       queryClient.invalidateQueries({ queryKey: ['tenants'] })
     },
     onError: (err) => toast.error(err.response?.data?.error || 'Failed to update termination notice')
+  })
+
+  const toggleStatusMutation = useMutation({
+    mutationFn: (tenantId) => api.put(`/super-admin/tenants/${tenantId}/toggle-status`).then(res => res.data),
+    onSuccess: () => {
+      toast.success(language === 'ar' ? 'تم تغيير حالة المستأجر بنجاح' : 'Tenant status updated successfully')
+      queryClient.invalidateQueries({ queryKey: ['tenants'] })
+    },
+    onError: (err) => toast.error(err.response?.data?.error || 'Failed to toggle status')
   })
 
   const openTerminationModal = (tenant) => {
@@ -364,6 +373,15 @@ export default function TenantManagement() {
                             title={language === 'ar' ? 'تسجيل الدخول كمستأجر' : 'Login as Tenant'}
                           >
                             <LogIn className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleStatusMutation.mutate(tenant._id)}
+                            disabled={toggleStatusMutation.isPending}
+                            className={`p-2 rounded-lg disabled:opacity-50 ${tenant.isActive ? 'hover:bg-rose-50 text-rose-600 dark:hover:bg-rose-900/20' : 'hover:bg-emerald-50 text-emerald-600 dark:hover:bg-emerald-900/20'}`}
+                            title={tenant.isActive ? (language === 'ar' ? 'إيقاف المستأجر' : 'Stop Tenant') : (language === 'ar' ? 'تفعيل المستأجر' : 'Start Tenant')}
+                          >
+                            {tenant.isActive ? <Ban className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                           </button>
                           <Link to={`/super-admin/tenants/${tenant._id}`} className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg">
                             <Edit className="w-4 h-4 text-gray-600 dark:text-gray-400" />

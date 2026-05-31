@@ -21,6 +21,8 @@ import MarketingAbout from './pages/marketing/About'
 import MarketingContact from './pages/marketing/Contact'
 import MarketingPrivacy from './pages/marketing/Privacy'
 import MarketingTerms from './pages/marketing/Terms'
+import ResetPassword from './pages/auth/ResetPassword'
+import InactiveTenant from './pages/auth/InactiveTenant'
 import KhayyatDashboard from './pages/khayyat/Dashboard'
 import KhayyatWorkers from './pages/khayyat/Workers'
 import KhayyatWorkerForm from './pages/khayyat/WorkerForm'
@@ -216,6 +218,7 @@ function App() {
       {/* Auth Routes */}
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<Login />} />
+        <Route path="/inactive" element={<InactiveTenant />} />
       </Route>
 
       <Route path="/app" element={<Navigate to="/app/dashboard" replace />} />
