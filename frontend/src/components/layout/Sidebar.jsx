@@ -42,7 +42,8 @@ import {
   Car,
   PlusCircle,
   Wrench,
-  Ban
+  Ban,
+  TrendingUp
 } from 'lucide-react'
 import { toggleSidebarCollapse, setMobileMenuOpen } from '../../store/slices/uiSlice'
 import { useTranslation } from '../../lib/translations'
@@ -75,8 +76,8 @@ export default function Sidebar() {
         title: language === 'ar' ? 'الخياطة' : 'Tailoring',
         businessTypes: ['khayyat'],
         items: [
-          { path: '/app/dashboard/khayyat', icon: LayoutDashboard, label: t('tailorDashboard'), end: true },
-          { path: '/app/dashboard/khayyat/stitchings/new', icon: ShoppingCart, label: t('tailorPOS') },
+          { path: '/app/dashboard/khayyat', icon: LayoutDashboard, label: language === 'ar' ? 'نقطة البيع (الخياط)' : 'Tailor POS', end: true },
+          { path: '/app/dashboard/khayyat/analytics', icon: TrendingUp, label: language === 'ar' ? 'الإحصائيات' : 'Analytics' },
           { path: '/app/dashboard/khayyat/stitchings', icon: FileSignature, label: t('orders') },
           { path: '/app/dashboard/khayyat/workers', icon: Users, label: t('workers') },
           { path: '/app/dashboard/khayyat/worker-amounts', icon: Wallet, label: language === 'ar' ? 'أرباح العمال' : 'Worker Amounts' },

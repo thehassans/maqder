@@ -674,6 +674,7 @@ const MeasurementAtelierPanel = ({
   showMeasurementImageControl = true
 }) => {
   const { language } = useSelector(state => state.ui) || { language: 'en' };
+  const { t } = useTranslation(language);
     const palette = toneMap[tone] || defaultTone;
   const normalizedStyleGroups = useMemo(() => (
     (styleGroups || [])

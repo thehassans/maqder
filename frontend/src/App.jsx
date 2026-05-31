@@ -279,13 +279,14 @@ function App() {
       >
         <Route index element={<Dashboard />} />
           {/* Khayyat Routes */}
-          <Route path="khayyat" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatDashboard /></BusinessTypeRoute>} />
+          <Route path="khayyat" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatStitchingForm /></BusinessTypeRoute>} />
+          <Route path="khayyat/analytics" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatDashboard /></BusinessTypeRoute>} />
           <Route path="khayyat/workers" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatWorkers /></BusinessTypeRoute>} />
           <Route path="khayyat/workers/new" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatWorkerForm /></BusinessTypeRoute>} />
           <Route path="khayyat/workers/:id" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatWorkerForm /></BusinessTypeRoute>} />
           <Route path="khayyat/worker-amounts" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatWorkerAmounts /></BusinessTypeRoute>} />
           <Route path="khayyat/stitchings" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatStitchings /></BusinessTypeRoute>} />
-          <Route path="khayyat/stitchings/new" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatStitchingForm /></BusinessTypeRoute>} />
+          <Route path="khayyat/stitchings/new" element={<Navigate to="/app/dashboard/khayyat" replace />} />
           <Route path="khayyat/stitchings/:id" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatStitchingForm /></BusinessTypeRoute>} />
           <Route path="khayyat/embroidery-designs" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatEmbroideryDesigns /></BusinessTypeRoute>} />
           <Route path="khayyat/fabrics" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatFabrics /></BusinessTypeRoute>} />
