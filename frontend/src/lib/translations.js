@@ -140,8 +140,25 @@ export const translations = {
     october: 'October',
     november: 'November',
     december: 'December',
+    
+    // Khayyat
+    'thawbTypes.saudi': 'Saudi',
+    'thawbTypes.qatari': 'Qatari',
+    'thawbTypes.emirati': 'Emirati',
+    'thawbTypes.kuwaiti': 'Kuwaiti',
+    'thawbTypes.omani': 'Omani',
+    'thawbTypes.bahraini': 'Bahraini',
+    'thawbTypes.noum': 'Sleepwear',
+    'thawbTypes.boy': 'Boy',
+    'measurementWorkspace.measurementImage': 'Measurement Snapshot',
+    'measurementWorkspace.measurementImageHint': 'Upload a snapshot or sketch',
+    'measurementWorkspace.customFabricPlaceholder': 'Custom fabric details...',
+    'tailorDashboard': 'Tailor Dashboard',
+    'tailorPOS': 'Tailor POS',
+    'orders': 'Orders',
+    'workers': 'Workers',
   },
-  
+
   ar: {
     // Navigation
     dashboard: 'لوحة التحكم',
@@ -283,6 +300,23 @@ export const translations = {
     october: 'أكتوبر',
     november: 'نوفمبر',
     december: 'ديسمبر',
+    
+    // Khayyat
+    'thawbTypes.saudi': 'سعودي',
+    'thawbTypes.qatari': 'قطري',
+    'thawbTypes.emirati': 'إماراتي',
+    'thawbTypes.kuwaiti': 'كويتي',
+    'thawbTypes.omani': 'عماني',
+    'thawbTypes.bahraini': 'بحريني',
+    'thawbTypes.noum': 'نوم',
+    'thawbTypes.boy': 'ولادي',
+    'measurementWorkspace.measurementImage': 'صورة المقاسات',
+    'measurementWorkspace.measurementImageHint': 'قم برفع صورة المقاسات أو المخطط',
+    'measurementWorkspace.customFabricPlaceholder': 'تفاصيل القماش الخاص...',
+    'tailorDashboard': 'لوحة الخياط',
+    'tailorPOS': 'نقاط البيع',
+    'orders': 'الطلبات',
+    'workers': 'العمال',
   }
 }
 

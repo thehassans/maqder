@@ -1438,7 +1438,7 @@ const StitchingForm = () => {
 
           setCreatedOrders(created);
           setCreatedOrder(created[0] || null);
-          toast.success('Orders created! You can print labels now.');
+          toast.success(t('ordersCreatedMultiple', { defaultValue: 'Orders created! You can print labels now.' }));
         } else {
           const data = {
             customerId: selectedCustomer?._id || null,
@@ -1469,7 +1469,7 @@ const StitchingForm = () => {
           if (response.data?.customer) setSelectedCustomer(response.data.customer);
           setCreatedOrders([]);
           setCreatedOrder(order);
-          toast.success('Order created! You can print the label now.');
+          toast.success(t('ordersCreatedSingle', { defaultValue: 'Order created! You can print the label now.' }));
         }
       }
     } catch (error) {
@@ -1696,12 +1696,12 @@ const StitchingForm = () => {
           <div className="space-y-3">
             {orders.length === 1 ? (
               <Button onClick={() => handlePrintLabel(orders[0])} icon={Printer} className="w-full">
-                Print Label (80mm)
+                {t('printLabel', { defaultValue: 'Print Label (80mm)' })}
               </Button>
             ) : (
               <div className="space-y-2">
                 <Button onClick={handlePrintFamilySummary} icon={Printer} className="w-full">
-                  Print Family Invoice
+                  {t('printFamilyInvoice', { defaultValue: 'Print Family Invoice' })}
                 </Button>
                 {orders.map((o) => (
                   <Button
@@ -1711,7 +1711,7 @@ const StitchingForm = () => {
                     icon={Printer}
                     className="w-full"
                   >
-                    Print {o.orderFor || o.relationName || 'Order'} #{o.receiptNumber || o._id?.slice(-6)}
+                    {t('printOrder', { defaultValue: 'Print' })} {o.orderFor || o.relationName || t('order', { defaultValue: 'Order' })} #{o.receiptNumber || o._id?.slice(-6)}
                   </Button>
                 ))}
               </div>
