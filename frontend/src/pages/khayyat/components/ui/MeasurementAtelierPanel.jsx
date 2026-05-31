@@ -354,6 +354,7 @@ const OptionArtwork = ({ groupKey, optionKey }) => {
 };
 
 const MeasurementCell = ({ field, value, onChange, disabled, palette, compact = false }) => {
+  const { language } = useSelector(state => state.ui) || { language: 'en' };
   
   return (
     <div className={`rounded-2xl border ${palette.tile} px-3 py-3 shadow-sm`}>
@@ -378,6 +379,7 @@ const MeasurementCell = ({ field, value, onChange, disabled, palette, compact = 
 };
 
 const PreviewGarment = ({ thawbType, thawbTypeLabel, selectedCollar, selectedPocket, variant = 'sheet' }) => {
+  const { language } = useSelector(state => state.ui) || { language: 'en' };
     const imageSrc = thawbImageMap[thawbType] || thawbImageMap.saudi;
   return (
     <div className={`relative mx-auto overflow-hidden rounded-[2rem] border border-black/5 dark:border-white/10 bg-gradient-to-b from-white to-stone-100 dark:from-slate-800 dark:to-slate-900 shadow-inner ${variant === 'board' ? 'w-full max-w-[300px] aspect-[4/5]' : 'w-full max-w-[240px] aspect-[4/5]'}`}>
@@ -408,6 +410,7 @@ const PreviewGarment = ({ thawbType, thawbTypeLabel, selectedCollar, selectedPoc
 };
 
 const DesignOptionsRow = ({ title, groupKey, options = [], value, onChange, disabled = false, palette, columns = 'grid-cols-2 sm:grid-cols-4' }) => {
+  const { language } = useSelector(state => state.ui) || { language: 'en' };
     if (!options.length) return null;
   const selectedOption = options.find((option) => option.value === value);
 
@@ -459,6 +462,7 @@ const DesignOptionsRow = ({ title, groupKey, options = [], value, onChange, disa
 };
 
 const ThawbTypeSelector = ({ options = [], value, onChange, disabled = false, vertical = false, palette }) => {
+  const { language } = useSelector(state => state.ui) || { language: 'en' };
     if (!options.length) return null;
 
   return (
@@ -505,6 +509,7 @@ const MaterialsPanel = ({
   loading = false,
   palette
 }) => {
+  const { language } = useSelector(state => state.ui) || { language: 'en' };
     const fabricChoices = [
     { value: '', label: (language === 'ar' ? 'غير محدد' : 'Not specified') },
     ...(fabricOptions || []).map((fabric) => ({
@@ -605,6 +610,7 @@ const MaterialsPanel = ({
 };
 
 const SnapshotPanel = ({ items = [], palette }) => {
+  const { language } = useSelector(state => state.ui) || { language: 'en' };
     const spotlight = useMemo(() => (items || []).filter((item) => item && item.value !== undefined && item.value !== null && String(item.value).trim() !== ''), [items]);
 
   return (
@@ -667,6 +673,7 @@ const MeasurementAtelierPanel = ({
   onMeasurementImageRemove,
   showMeasurementImageControl = true
 }) => {
+  const { language } = useSelector(state => state.ui) || { language: 'en' };
     const palette = toneMap[tone] || defaultTone;
   const normalizedStyleGroups = useMemo(() => (
     (styleGroups || [])
