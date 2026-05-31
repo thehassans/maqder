@@ -1551,10 +1551,10 @@ const StitchingForm = () => {
   });
 
   const fallbackStyleGroups = [
-    { key: 'collar', name: '', enabled: true, sortOrder: 0, options: [{ key: 'classic', name: '' }, { key: 'round', name: '' }, { key: 'mandarin', name: '' }, { key: 'open', name: '' }] },
-    { key: 'bain', name: '', enabled: true, sortOrder: 1, options: [{ key: 'hidden', name: '' }, { key: 'visible', name: '' }, { key: 'zip', name: '' }, { key: 'half', name: '' }] },
+    { key: 'collar', name: '', enabled: true, sortOrder: 0, options: [{ key: 'classic', name: '', image: '/thawbs/styles/collar_classic.png' }, { key: 'round', name: '', image: '/thawbs/styles/collar_round.png' }, { key: 'mandarin', name: '', image: '/thawbs/styles/collar_mandarin.png' }, { key: 'open', name: '', image: '/thawbs/styles/collar_open.png' }] },
+    { key: 'bain', name: '', enabled: true, sortOrder: 1, options: [{ key: 'hidden', name: '', image: '/thawbs/styles/bain_hidden.png' }, { key: 'visible', name: '', image: '/thawbs/styles/bain_visible.png' }, { key: 'zip', name: '' }, { key: 'half', name: '' }] },
     { key: 'cuff', name: '', enabled: true, sortOrder: 2, options: [{ key: 'single', name: '' }, { key: 'double', name: '' }, { key: 'round', name: '' }, { key: 'angled', name: '' }] },
-    { key: 'pocket', name: '', enabled: true, sortOrder: 3, options: [{ key: 'none', name: '' }, { key: 'chest', name: '' }, { key: 'side', name: '' }, { key: 'both', name: '' }] },
+    { key: 'pocket', name: '', enabled: true, sortOrder: 3, options: [{ key: 'none', name: '', image: '/thawbs/styles/pocket_none.png' }, { key: 'chest', name: '', image: '/thawbs/styles/pocket_chest.png' }, { key: 'side', name: '', image: '/thawbs/styles/pocket_side.png' }, { key: 'both', name: '', image: '/thawbs/styles/pocket_both.png' }] },
     { key: 'buttons', name: '', enabled: true, sortOrder: 4, options: [{ key: 'classic', name: '' }, { key: 'hidden', name: '' }, { key: 'snap', name: '' }, { key: 'premium', name: '' }] },
     { key: 'embroidery', name: '', enabled: true, sortOrder: 5, options: [{ key: 'none', name: '' }, { key: 'name', name: '' }, { key: 'logo', name: '' }, { key: 'premium', name: '' }] }
   ];
@@ -1574,12 +1574,12 @@ const StitchingForm = () => {
           .slice()
           .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
           .map((option, optionIdx) => {
-            const fallbackOptionKey = fallbackGroup.options?.[optionIdx]?.key;
-            const optionKey = option.key || fallbackOptionKey;
+            const fallbackOption = fallbackGroup.options?.[optionIdx] || {};
+            const optionKey = option.key || fallbackOption.key;
             return {
               value: optionKey,
               label: option.nameI18n?.[langKey] || t(`styleOptions.options.${groupKey}.${optionKey}`, { defaultValue: option.name || optionKey }),
-              imageSrc: option.image ? `${resolveUploadsUrl(option.image)}${option.imageUpdatedAt ? `?v=${option.imageUpdatedAt}` : ''}` : undefined
+              imageSrc: option.image ? `${resolveUploadsUrl(option.image)}${option.imageUpdatedAt ? `?v=${option.imageUpdatedAt}` : ''}` : fallbackOption.image
             };
           })
           .filter((option) => option.value)
