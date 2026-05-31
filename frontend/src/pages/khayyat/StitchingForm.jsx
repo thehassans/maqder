@@ -27,13 +27,13 @@ const ORDER_STATUSES = [
 ];
 
 const THAWB_TYPES = [
-  { value: 'saudi', label: 'Saudi', labelAr: 'سعودي', image: '/images/saudi.png' },
-  { value: 'qatari', label: 'Qatari', labelAr: 'قطري', image: '/images/qatari.png' },
-  { value: 'emirati', label: 'Emirati', labelAr: 'إماراتي', image: '/images/emirati.png' },
-  { value: 'kuwaiti', label: 'Kuwaiti', labelAr: 'كويتي', image: '/images/kuwati.png' },
-  { value: 'omani', label: 'Omani', labelAr: 'عماني', image: '/images/omani.png' },
-  { value: 'bahraini', label: 'Bahraini', labelAr: 'بحريني', image: '/images/Bahrini.png' },
-  { value: 'noum', label: 'Noum', labelAr: 'نوم', image: '/images/noum.png' }
+  { value: 'saudi', label: 'Saudi', labelAr: 'سعودي', image: '/thawbs/saudi.png' },
+  { value: 'qatari', label: 'Qatari', labelAr: 'قطري', image: '/thawbs/qatari.png' },
+  { value: 'emirati', label: 'Emirati', labelAr: 'إماراتي', image: '/thawbs/emirati.png' },
+  { value: 'kuwaiti', label: 'Kuwaiti', labelAr: 'كويتي', image: '/thawbs/kuwati.png' },
+  { value: 'omani', label: 'Omani', labelAr: 'عماني', image: '/thawbs/omani.png' },
+  { value: 'bahraini', label: 'Bahraini', labelAr: 'بحريني', image: '/thawbs/Bahrini.png' },
+  { value: 'noum', label: 'Noum', labelAr: 'نوم', image: '/thawbs/noum.png' }
 ];
 
 const RELATION_TYPES = [

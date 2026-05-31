@@ -141,6 +141,44 @@ export const translations = {
     november: 'November',
     december: 'December',
     
+    // Khayyat Styles
+    'styleOptions.collar': 'Collar',
+    'styleOptions.bain': 'Bain',
+    'styleOptions.cuff': 'Cuff',
+    'styleOptions.pocket': 'Pocket',
+    'styleOptions.buttons': 'Buttons',
+    'styleOptions.embroidery': 'Embroidery',
+    
+    'styleOptions.options.collar.classic': 'Classic',
+    'styleOptions.options.collar.round': 'Round',
+    'styleOptions.options.collar.mandarin': 'Mandarin',
+    'styleOptions.options.collar.open': 'Open',
+    
+    'styleOptions.options.bain.hidden': 'Hidden',
+    'styleOptions.options.bain.visible': 'Visible',
+    'styleOptions.options.bain.zip': 'Zip',
+    'styleOptions.options.bain.half': 'Half',
+    
+    'styleOptions.options.cuff.single': 'Single',
+    'styleOptions.options.cuff.double': 'Double',
+    'styleOptions.options.cuff.round': 'Round',
+    'styleOptions.options.cuff.angled': 'Angled',
+    
+    'styleOptions.options.pocket.none': 'None',
+    'styleOptions.options.pocket.chest': 'Chest',
+    'styleOptions.options.pocket.side': 'Side',
+    'styleOptions.options.pocket.both': 'Both',
+    
+    'styleOptions.options.buttons.classic': 'Classic',
+    'styleOptions.options.buttons.hidden': 'Hidden',
+    'styleOptions.options.buttons.snap': 'Snap',
+    'styleOptions.options.buttons.premium': 'Premium',
+    
+    'styleOptions.options.embroidery.none': 'None',
+    'styleOptions.options.embroidery.name': 'Name',
+    'styleOptions.options.embroidery.logo': 'Logo',
+    'styleOptions.options.embroidery.premium': 'Premium',
+
     // Khayyat
     'thawbTypes.saudi': 'Saudi',
     'thawbTypes.qatari': 'Qatari',
@@ -301,6 +339,44 @@ export const translations = {
     november: 'نوفمبر',
     december: 'ديسمبر',
     
+    // Khayyat Styles
+    'styleOptions.collar': 'الياقة',
+    'styleOptions.bain': 'القلاب',
+    'styleOptions.cuff': 'الكبك',
+    'styleOptions.pocket': 'الجيب',
+    'styleOptions.buttons': 'الأزرار',
+    'styleOptions.embroidery': 'التطريز',
+    
+    'styleOptions.options.collar.classic': 'كلاسيكي',
+    'styleOptions.options.collar.round': 'دائري',
+    'styleOptions.options.collar.mandarin': 'صيني',
+    'styleOptions.options.collar.open': 'مفتوح',
+    
+    'styleOptions.options.bain.hidden': 'مخفي',
+    'styleOptions.options.bain.visible': 'ظاهر',
+    'styleOptions.options.bain.zip': 'سحاب',
+    'styleOptions.options.bain.half': 'نصف',
+    
+    'styleOptions.options.cuff.single': 'مفرد',
+    'styleOptions.options.cuff.double': 'مزدوج',
+    'styleOptions.options.cuff.round': 'دائري',
+    'styleOptions.options.cuff.angled': 'مشطوف',
+    
+    'styleOptions.options.pocket.none': 'بدون',
+    'styleOptions.options.pocket.chest': 'صدر',
+    'styleOptions.options.pocket.side': 'جانبي',
+    'styleOptions.options.pocket.both': 'كلاهما',
+    
+    'styleOptions.options.buttons.classic': 'كلاسيكي',
+    'styleOptions.options.buttons.hidden': 'مخفي',
+    'styleOptions.options.buttons.snap': 'طقطق',
+    'styleOptions.options.buttons.premium': 'فاخر',
+    
+    'styleOptions.options.embroidery.none': 'بدون',
+    'styleOptions.options.embroidery.name': 'الاسم',
+    'styleOptions.options.embroidery.logo': 'الشعار',
+    'styleOptions.options.embroidery.premium': 'فاخر',
+
     // Khayyat
     'thawbTypes.saudi': 'سعودي',
     'thawbTypes.qatari': 'قطري',

@@ -543,7 +543,7 @@ const MaterialsPanel = ({
             value={customFabricName}
             onChange={(e) => onCustomFabricNameChange?.(e.target.value)}
             disabled={disabled}
-            placeholder={(language === 'ar' ? 'measurementWorkspace.customFabricPlaceholder' : 'measurementWorkspace.customFabricPlaceholder')}
+            placeholder={t('measurementWorkspace.customFabricPlaceholder', { defaultValue: 'Custom fabric details...' })}
             className={`mt-3 w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-stone-50/90 dark:bg-slate-950/80 px-4 py-3 text-sm font-semibold text-slate-900 dark:text-slate-100 outline-none transition-all ${palette.focus} ${disabled ? 'opacity-70 cursor-not-allowed' : ''}`}
           />
         </div>
@@ -738,8 +738,8 @@ const MeasurementAtelierPanel = ({
   const shouldShowMeasurementImage = showMeasurementImageControl && (typeof onMeasurementImageChange === 'function' || !!measurementImageSrc);
   const measurementImagePanel = shouldShowMeasurementImage ? (
     <MeasurementImageInput
-      label={(language === 'ar' ? 'measurementWorkspace.measurementImage' : 'measurementWorkspace.measurementImage')}
-      hint={(language === 'ar' ? 'measurementWorkspace.measurementImageHint' : 'measurementWorkspace.measurementImageHint')}
+      label={t('measurementWorkspace.measurementImage', { defaultValue: 'Measurement Snapshot' })}
+      hint={t('measurementWorkspace.measurementImageHint', { defaultValue: 'Upload a snapshot or sketch' })}
       previewSrc={measurementImageSrc}
       fileName={measurementImageName}
       onFileChange={onMeasurementImageChange}
