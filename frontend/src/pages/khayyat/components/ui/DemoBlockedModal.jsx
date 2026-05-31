@@ -1,3 +1,4 @@
+import { useTranslation } from '../../../../lib/translations.js';
 import { useSelector } from 'react-redux';
 import React from 'react';
 
@@ -6,6 +7,7 @@ import { PhoneCall } from 'lucide-react';
 
 const DemoBlockedModal = ({ isOpen, onClose, title, phone = '+966596775485' }) => {
   const { language } = useSelector(state => state.ui) || { language: 'en' };
+  const { t } = useTranslation(language);
   
   return (
     <Modal

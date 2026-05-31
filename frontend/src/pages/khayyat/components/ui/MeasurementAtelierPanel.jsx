@@ -1,3 +1,4 @@
+import { useTranslation } from '../../../../lib/translations.js';
 import { useSelector } from 'react-redux';
 import React, { useMemo } from 'react';
 import { Building2, CalendarDays, PencilRuler, Phone, Ruler, Shirt, Sparkles } from 'lucide-react';
@@ -54,6 +55,7 @@ const defaultTone = toneMap.slate;
 
 const formatValue = (value) => {
   const { language } = useSelector(state => state.ui) || { language: 'en' };
+  const { t } = useTranslation(language);
   if (value === undefined || value === null || value === '') return '—';
   const num = Number(value);
   if (!Number.isFinite(num)) return String(value);

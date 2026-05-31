@@ -1,3 +1,4 @@
+import { useTranslation } from '../../lib/translations.js';
 import React, { useState, useEffect, useRef } from 'react';
 
 import { useNavigate } from 'react-router-dom';
@@ -18,6 +19,7 @@ const UserDashboard = () => {
   
   const { user } = useSelector(state => state.auth);
   const { language } = useSelector(state => state.ui);
+  const { t } = useTranslation(language);
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);

@@ -1,3 +1,4 @@
+import { useTranslation } from '../../lib/translations.js';
 import React, { useCallback, useState, useEffect, useRef } from 'react';
 
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -49,6 +50,7 @@ const StitchingForm = () => {
   
   const { user } = useSelector(state => state.auth);
   const { language } = useSelector(state => state.ui);
+  const { t } = useTranslation(language);
   const navigate = useNavigate();
   const { id } = useParams();
   const [searchParams] = useSearchParams();

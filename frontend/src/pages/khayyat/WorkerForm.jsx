@@ -63,7 +63,7 @@ const WorkerForm = () => {
         setNameTranslating(true);
         const resp = await api.post('/khayyat/settings/translate', {
           entries: [{ id: 'name', text }],
-          targetLangs: ['en', 'ar', 'ur', 'hi', 'bn']
+          targetLangs: ['en', 'ar']
         });
         const tr = resp.data?.translations?.name || null;
         if (tr && typeof tr === 'object') {

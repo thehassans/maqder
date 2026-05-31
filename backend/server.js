@@ -68,6 +68,7 @@ import khayyatFabricRoutes from './routes/khayyat/fabric.js';
 import khayyatLaundryRoutes from './routes/khayyat/laundry.js';
 import khayyatStitchingRoutes from './routes/khayyat/stitching.js';
 import khayyatPaymentRoutes from './routes/khayyat/payment.js';
+import khayyatUserRoutes from './routes/khayyat/user.js';
 
 import { checkIqamaExpiry } from './jobs/iqamaChecker.js';
 import { processScheduledReports } from './jobs/reportScheduleJob.js';
@@ -374,6 +375,7 @@ app.use('/api/khayyat/fabrics', ensureDatabaseReady, khayyatFabricRoutes);
 app.use('/api/khayyat/laundry', ensureDatabaseReady, khayyatLaundryRoutes);
 app.use('/api/khayyat/stitchings', ensureDatabaseReady, khayyatStitchingRoutes);
 app.use('/api/khayyat/payments', ensureDatabaseReady, khayyatPaymentRoutes);
+app.use('/api/khayyat/user', ensureDatabaseReady, khayyatUserRoutes);
 
 // Serve static frontend files in production
 const resolveFrontendBuild = () => {
