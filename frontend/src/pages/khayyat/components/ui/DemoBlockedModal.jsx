@@ -1,3 +1,4 @@
+import { useSelector } from 'react-redux';
 import React from 'react';
 
 import { Modal } from './Modal';
