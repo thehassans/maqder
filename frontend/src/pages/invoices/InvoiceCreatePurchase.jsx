@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { useForm, useFieldArray } from 'react-hook-form'
@@ -12,6 +12,8 @@ import Money from '../../components/ui/Money'
 
 export default function InvoiceCreatePurchase() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const poId = searchParams.get('poId')
   const { language } = useSelector((state) => state.ui)
   const { t } = useTranslation(language)
   const [transactionType, setTransactionType] = useState('B2B')
@@ -44,6 +46,32 @@ export default function InvoiceCreatePurchase() {
     queryKey: ['suppliers-lookup'],
     queryFn: () => api.get('/suppliers', { params: { limit: 200 } }).then(res => res.data.suppliers)
   })
+
+  const { data: purchaseOrder } = useQuery({
+    queryKey: ['purchase-order', poId],
+    queryFn: () => api.get(`/purchase-orders/${poId}`).then(res => res.data),
+    enabled: !!poId,
+  })
+
+  useEffect(() => {
+    if (purchaseOrder) {
+      const items = (Array.isArray(purchaseOrder?.lineItems) ? purchaseOrder.lineItems : []).map((li) => ({
+        productId: li?.productId?._id || li?.productId || '',
+        productName: li?.productName || '',
+        productNameAr: li?.productNameAr || '',
+        unitCode: li?.unitCode || 'PCE',
+        quantity: li?.quantity ?? 1,
+        unitPrice: li?.unitPrice ?? 0,
+        taxRate: li?.taxRate ?? 15,
+      }))
+      replace(items.length ? items : [{ productId: '', productName: '', productNameAr: '', unitCode: 'PCE', quantity: 1, unitPrice: 0, taxRate: 15 }])
+
+      if (purchaseOrder.supplierId) {
+        setValue('supplierId', purchaseOrder.supplierId._id || purchaseOrder.supplierId)
+      }
+      toast.success(language === 'ar' ? 'تم استيراد بيانات طلب الشراء' : 'PO data imported')
+    }
+  }, [purchaseOrder, replace, setValue, language])
 
   const createMutation = useMutation({
     mutationFn: async (payload) => {
@@ -99,6 +127,7 @@ export default function InvoiceCreatePurchase() {
       flow: 'purchase',
       transactionType,
       invoiceTypeCode: transactionType === 'B2C' ? '0200000' : '0100000',
+      sourcePurchaseOrderId: poId || undefined,
       issueDate: new Date(),
       lineItems: (data.lineItems || []).map((line, i) => ({
         ...line,
@@ -125,6 +154,12 @@ export default function InvoiceCreatePurchase() {
           </p>
         </div>
       </div>
+
+      {poId && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 p-4 rounded-xl text-sm mb-6 border border-blue-100 dark:border-blue-900/50">
+          {language === 'ar' ? 'تم تعبئة البيانات تلقائياً من طلب الشراء' : 'Data pre-filled automatically from Purchase Order'} <strong>{purchaseOrder?.poNumber}</strong>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div className="card p-6">

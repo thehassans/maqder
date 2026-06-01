@@ -160,6 +160,15 @@ export default function Sidebar() {
       ]
     },
     {
+      title: language === 'ar' ? 'الموارد البشرية والعمالة' : 'Manpower & Labor Supply',
+      businessTypes: ['manpower'],
+      items: [
+        { path: '/app/dashboard/manpower', icon: LayoutDashboard, label: language === 'ar' ? 'لوحة التحكم' : 'Dashboard' },
+        { path: '/app/dashboard/manpower/workers', icon: Users, label: language === 'ar' ? 'العمالة' : 'Workers' },
+        { path: '/app/dashboard/manpower/assignments', icon: Briefcase, label: language === 'ar' ? 'العقود والتعيينات' : 'Assignments' },
+      ]
+    },
+    {
       title: language === 'ar' ? 'السفر' : 'Travel',
       businessTypes: ['travel_agency'],
       items: [

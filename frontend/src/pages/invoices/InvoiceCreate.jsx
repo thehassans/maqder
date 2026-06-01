@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { motion } from 'framer-motion'
-import { ArrowLeft, ShoppingCart, Package, Plane } from 'lucide-react'
+import { ArrowLeft, ShoppingCart, Package, Plane, FileClock } from 'lucide-react'
 import { useTranslation } from '../../lib/translations'
 import { getTenantBusinessTypes } from '../../lib/businessTypes'
 
@@ -13,6 +13,7 @@ export default function InvoiceCreate() {
 
   const businessTypes = getTenantBusinessTypes(tenant)
   const canCreatePurchase = businessTypes.some((type) => ['trading', 'construction', 'travel_agency'].includes(type))
+  const canCreateProforma = businessTypes.some((type) => ['trading', 'construction', 'manpower'].includes(type))
   const hasTravel = businessTypes.includes('travel_agency')
 
   return (
@@ -56,7 +57,7 @@ export default function InvoiceCreate() {
               {language === 'ar' ? 'توقيع ZATCA' : 'ZATCA Signing'}
             </span>
             <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 text-xs font-medium rounded-full">
-              {language === 'ar' ? 'معاينة مباشرة + قوالب' : 'Live Preview + Templates'}
+              {language === 'ar' ? 'معاينة مباشرة' : 'Live Preview'}
             </span>
             {hasTravel && (
               <span className="px-3 py-1 bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400 text-xs font-medium rounded-full inline-flex items-center gap-1">
@@ -99,6 +100,36 @@ export default function InvoiceCreate() {
             </div>
           </motion.button>
         )}
+
+        {canCreateProforma && (
+          <motion.button
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            onClick={() => navigate('/app/dashboard/invoices/new/sell?proforma=1')}
+            className="card p-8 text-start hover:shadow-lg transition-all hover:border-primary-500 border-2 border-transparent group"
+          >
+            <div className="w-16 h-16 rounded-2xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <FileClock className="w-8 h-8 text-indigo-600" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+              {language === 'ar' ? 'فاتورة مبدئية (Proforma)' : 'Proforma Invoice'}
+            </h2>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">
+              {language === 'ar'
+                ? 'إنشاء فاتورة مبدئية لعرض أسعار أو طلب. لا تخفض المخزون ولا تتطلب توقيع هيئة الزكاة. يمكن تحويلها لفاتورة لاحقاً.'
+                : 'Create a proforma invoice. Does not deduct inventory or require ZATCA signing. Can be converted to a real invoice later.'}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-xs font-medium rounded-full">
+                {language === 'ar' ? 'غير ملزمة للزكاة' : 'Non-ZATCA'}
+              </span>
+              <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-400 text-xs font-medium rounded-full">
+                {language === 'ar' ? 'قابلة للتحويل' : 'Convertible'}
+              </span>
+            </div>
+          </motion.button>
+        )}
       </div>
 
       <div className="card p-6 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
@@ -107,8 +138,8 @@ export default function InvoiceCreate() {
         </h3>
         <p className="text-sm text-blue-700 dark:text-blue-300">
           {language === 'ar'
-            ? 'يمكنك الآن اختيار القالب أثناء الإنشاء ومشاهدة معاينة مباشرة. عند تفعيل نشاط السفر ستتوفر فواتير السفر مع بيانات المسافر والجواز والطباعة.'
-            : 'You can now choose the template during creation and see a live preview. When travel business is enabled, travel invoices with passenger and passport details are available for printing.'}
+            ? 'عند تفعيل نشاط السفر ستتوفر فواتير السفر مع بيانات المسافر والجواز والطباعة.'
+            : 'When travel business is enabled, travel invoices with passenger and passport details are available for printing.'}
         </p>
       </div>
     </div>

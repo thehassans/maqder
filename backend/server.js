@@ -49,6 +49,7 @@ import webhookRoutes from './routes/webhook.routes.js';
 import fleetRoutes from './routes/fleet.routes.js';
 import contractRoutes from './routes/contract.routes.js';
 import landedCostRoutes from './routes/landedCost.routes.js';
+import manpowerRoutes from './routes/manpower.routes.js';
 import complianceRoutes from './routes/compliance.routes.js';
 import rentalCarRoutes from './routes/rentalCar.routes.js';
 import rentalCustomerRoutes from './routes/rentalCustomer.routes.js';
@@ -354,6 +355,7 @@ app.use('/api/restaurant/inventory', ensureDatabaseReady, restaurantInventoryRou
 app.use('/api/fleet', ensureDatabaseReady, fleetRoutes);
 app.use('/api/contracts', ensureDatabaseReady, contractRoutes);
 app.use('/api/landed-costs', ensureDatabaseReady, landedCostRoutes);
+app.use('/api/manpower', ensureDatabaseReady, manpowerRoutes);
 app.use('/api/compliance', ensureDatabaseReady, complianceRoutes);
 app.use('/api/rental/cars', ensureDatabaseReady, rentalCarRoutes);
 app.use('/api/rental/customers', ensureDatabaseReady, rentalCustomerRoutes);

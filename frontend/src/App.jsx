@@ -98,6 +98,11 @@ import IdentitySettings from './pages/super-admin/IdentitySettings'
 import GeminiSettings from './pages/super-admin/GeminiSettings'
 import EmailSettings from './pages/super-admin/EmailSettings'
 import WebsiteSettings from './pages/super-admin/WebsiteSettings'
+import ManpowerDashboard from './pages/manpower/ManpowerDashboard'
+import ManpowerWorkers from './pages/manpower/ManpowerWorkers'
+import ManpowerWorkerForm from './pages/manpower/ManpowerWorkerForm'
+import ManpowerAssignments from './pages/manpower/ManpowerAssignments'
+import ManpowerAssignmentForm from './pages/manpower/ManpowerAssignmentForm'
 import SystemSettings from './pages/super-admin/SystemSettings'
 import EmailCommunication from './pages/EmailCommunication'
 import FleetAssets from './pages/fleet/FleetAssets'
@@ -315,6 +320,16 @@ function App() {
         <Route path="customers/new" element={<CustomerForm />} />
         <Route path="customers/:id" element={<CustomerForm />} />
         <Route path="customers/:id/edit" element={<CustomerForm />} />
+
+        {/* Manpower Routes */}
+        <Route path="manpower" element={<BusinessTypeRoute allowedTypes={['manpower']}><ManpowerDashboard /></BusinessTypeRoute>} />
+        <Route path="manpower/workers" element={<BusinessTypeRoute allowedTypes={['manpower']}><ManpowerWorkers /></BusinessTypeRoute>} />
+        <Route path="manpower/workers/new" element={<BusinessTypeRoute allowedTypes={['manpower']}><ManpowerWorkerForm /></BusinessTypeRoute>} />
+        <Route path="manpower/workers/:id" element={<BusinessTypeRoute allowedTypes={['manpower']}><ManpowerWorkerForm /></BusinessTypeRoute>} />
+        <Route path="manpower/assignments" element={<BusinessTypeRoute allowedTypes={['manpower']}><ManpowerAssignments /></BusinessTypeRoute>} />
+        <Route path="manpower/assignments/new" element={<BusinessTypeRoute allowedTypes={['manpower']}><ManpowerAssignmentForm /></BusinessTypeRoute>} />
+        <Route path="manpower/assignments/:id" element={<BusinessTypeRoute allowedTypes={['manpower']}><ManpowerAssignmentForm /></BusinessTypeRoute>} />
+
         <Route path="travel-bookings" element={<BusinessTypeRoute allowedTypes={['travel_agency']}><TravelBookings /></BusinessTypeRoute>} />
         <Route path="travel-bookings/new" element={<BusinessTypeRoute allowedTypes={['travel_agency']}><TravelBookingForm /></BusinessTypeRoute>} />
         <Route path="travel-bookings/:id" element={<BusinessTypeRoute allowedTypes={['travel_agency']}><TravelBookingForm /></BusinessTypeRoute>} />

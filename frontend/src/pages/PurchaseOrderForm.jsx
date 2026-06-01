@@ -14,6 +14,7 @@ import {
   Trash2,
   CheckCircle2,
   XCircle,
+  FileText,
   Warehouse as WarehouseIcon,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -272,7 +273,23 @@ export default function PurchaseOrderForm() {
         </div>
 
         {isEdit && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <button
+              type="button"
+              onClick={() => navigate(`/app/dashboard/invoices/new/purchase?poId=${id}`)}
+              className="btn btn-secondary"
+            >
+              <FileText className="w-4 h-4" />
+              {language === 'ar' ? 'إنشاء فاتورة شراء' : 'Create Purchase Invoice'}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(`/app/dashboard/invoices/new/sell?poId=${id}`)}
+              className="btn btn-secondary"
+            >
+              <FileText className="w-4 h-4" />
+              {language === 'ar' ? 'إنشاء فاتورة بيع' : 'Create Sell Invoice'}
+            </button>
             <button
               type="button"
               onClick={() => approveMutation.mutate()}

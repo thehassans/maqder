@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { motion } from 'framer-motion'
-import { ArrowLeft, FileText, Download, Send, CheckCircle, Clock, QrCode, Printer, Mail, Edit } from 'lucide-react'
+import { ArrowLeft, FileText, Download, Send, CheckCircle, Clock, QrCode, Printer, Mail, Edit, RefreshCw } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
@@ -84,6 +84,18 @@ export default function InvoiceView() {
     },
     onError: (error) => {
       toast.error(error.response?.data?.error || 'Failed to sign invoice')
+    }
+  })
+
+  const convertProformaMutation = useMutation({
+    mutationFn: () => api.post(`/invoices/${id}/convert-proforma`),
+    onSuccess: (res) => {
+      toast.success(language === 'ar' ? 'تم تحويل الفاتورة المبدئية بنجاح' : 'Proforma converted to invoice successfully')
+      queryClient.invalidateQueries(['invoices'])
+      navigate(`/app/dashboard/invoices/${res.data._id}`)
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.error || 'Failed to convert proforma')
     }
   })
 
@@ -171,6 +183,21 @@ export default function InvoiceView() {
               {language === 'ar' ? 'تعديل' : 'Edit'}
             </button>
           )}
+          {invoice?.invoiceSubtype === 'proforma' && invoice?.status !== 'cancelled' && invoice?.status !== 'sent' && (
+            <button
+              type="button"
+              onClick={() => convertProformaMutation.mutate()}
+              disabled={convertProformaMutation.isPending}
+              className="btn btn-primary"
+            >
+              {convertProformaMutation.isPending ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
+              {language === 'ar' ? 'تحويل لفاتورة' : 'Convert to Invoice'}
+            </button>
+          )}
           <button
             type="button"
             onClick={async () => {
@@ -225,7 +252,7 @@ export default function InvoiceView() {
               {language === 'ar' ? 'إرسال بالبريد' : 'Send Email'}
             </button>
           )}
-          {['draft', 'pending'].includes(invoice?.status) && !invoice?.zatca?.signedXml && invoice?.flow !== 'purchase' && (
+          {['draft', 'pending'].includes(invoice?.status) && !invoice?.zatca?.signedXml && invoice?.flow !== 'purchase' && invoice?.invoiceSubtype !== 'proforma' && (
             <button
               onClick={() => signMutation.mutate()}
               disabled={signMutation.isPending}
@@ -283,17 +310,24 @@ export default function InvoiceView() {
                   )}
                 </div>
               </div>
-              <span className={`badge ${
-                zatcaStatusMeta.tone === 'success' ? 'badge-success' :
-                zatcaStatusMeta.tone === 'info' ? 'badge-info' :
-                zatcaStatusMeta.tone === 'danger' ? 'badge-danger' :
-                zatcaStatusMeta.tone === 'warning' ? 'badge-warning' :
-                'badge-neutral'
-              }`}>
-                {zatcaStatusMeta.tone === 'success' && <CheckCircle className="w-3 h-3 me-1" />}
-                {zatcaStatusMeta.tone !== 'success' && <Clock className="w-3 h-3 me-1" />}
-                {zatcaStatusMeta.label}
-              </span>
+              
+              {invoice?.invoiceSubtype === 'proforma' ? (
+                <span className="badge badge-info text-sm">
+                  {language === 'ar' ? 'فاتورة مبدئية (Proforma)' : 'Proforma Invoice'}
+                </span>
+              ) : (
+                <span className={`badge ${
+                  zatcaStatusMeta.tone === 'success' ? 'badge-success' :
+                  zatcaStatusMeta.tone === 'info' ? 'badge-info' :
+                  zatcaStatusMeta.tone === 'danger' ? 'badge-danger' :
+                  zatcaStatusMeta.tone === 'warning' ? 'badge-warning' :
+                  'badge-neutral'
+                }`}>
+                  {zatcaStatusMeta.tone === 'success' && <CheckCircle className="w-3 h-3 me-1" />}
+                  {zatcaStatusMeta.tone !== 'success' && <Clock className="w-3 h-3 me-1" />}
+                  {zatcaStatusMeta.label}
+                </span>
+              )}
             </div>
 
             <div ref={invoicePreviewRef}>
@@ -379,40 +413,42 @@ export default function InvoiceView() {
           )}
 
           {/* ZATCA Info */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="card p-6"
-          >
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              {language === 'ar' ? 'معلومات هيئة الزكاة' : 'ZATCA Information'}
-            </h3>
-            <div className="space-y-3">
-              <div>
-                <p className="text-xs text-gray-500">UUID</p>
-                <p className="text-sm font-mono break-all">{invoice?.zatca?.uuid || '-'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">{language === 'ar' ? 'رقم التسلسل' : 'Counter'}</p>
-                <p className="text-sm">{invoice?.zatca?.invoiceCounter || '-'}</p>
-              </div>
-              {invoice?.zatca?.submittedAt && (
+          {invoice?.invoiceSubtype !== 'proforma' && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="card p-6"
+            >
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                {language === 'ar' ? 'معلومات هيئة الزكاة' : 'ZATCA Information'}
+              </h3>
+              <div className="space-y-3">
                 <div>
-                  <p className="text-xs text-gray-500">{language === 'ar' ? 'تاريخ الإرسال' : 'Submitted At'}</p>
-                  <p className="text-sm">{new Date(invoice.zatca.submittedAt).toLocaleString()}</p>
+                  <p className="text-xs text-gray-500">UUID</p>
+                  <p className="text-sm font-mono break-all">{invoice?.zatca?.uuid || '-'}</p>
                 </div>
-              )}
-              {invoice?.zatca?.invoiceHash && (
                 <div>
-                  <p className="text-xs text-gray-500">{language === 'ar' ? 'تجزئة الفاتورة' : 'Invoice Hash'}</p>
-                  <p className="text-xs font-mono break-all bg-gray-50 dark:bg-dark-700 p-2 rounded">
-                    {invoice.zatca.invoiceHash}
-                  </p>
+                  <p className="text-xs text-gray-500">{language === 'ar' ? 'رقم التسلسل' : 'Counter'}</p>
+                  <p className="text-sm">{invoice?.zatca?.invoiceCounter || '-'}</p>
                 </div>
-              )}
-            </div>
-          </motion.div>
+                {invoice?.zatca?.submittedAt && (
+                  <div>
+                    <p className="text-xs text-gray-500">{language === 'ar' ? 'تاريخ الإرسال' : 'Submitted At'}</p>
+                    <p className="text-sm">{new Date(invoice.zatca.submittedAt).toLocaleString()}</p>
+                  </div>
+                )}
+                {invoice?.zatca?.invoiceHash && (
+                  <div>
+                    <p className="text-xs text-gray-500">{language === 'ar' ? 'تجزئة الفاتورة' : 'Invoice Hash'}</p>
+                    <p className="text-xs font-mono break-all bg-gray-50 dark:bg-dark-700 p-2 rounded">
+                      {invoice.zatca.invoiceHash}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
         </div>
       </div>
     </div>

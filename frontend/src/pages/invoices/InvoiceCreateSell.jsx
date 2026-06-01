@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { useForm, useFieldArray } from 'react-hook-form'
@@ -12,6 +12,9 @@ import Money from '../../components/ui/Money'
 
 export default function InvoiceCreateSell() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const isProforma = searchParams.get('proforma') === '1'
+  const poId = searchParams.get('poId')
   const { language } = useSelector((state) => state.ui)
   const { tenant } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
@@ -61,6 +64,36 @@ export default function InvoiceCreateSell() {
     setValue('travelBookingId', '')
     setValue('contractNumber', '')
   }, [businessType, setValue])
+
+  const { data: purchaseOrder } = useQuery({
+    queryKey: ['purchase-order', poId],
+    queryFn: () => api.get(`/purchase-orders/${poId}`).then(res => res.data),
+    enabled: !!poId,
+  })
+
+  useEffect(() => {
+    if (purchaseOrder) {
+      // Pre-fill from PO
+      const items = (Array.isArray(purchaseOrder?.lineItems) ? purchaseOrder.lineItems : []).map((li) => ({
+        productId: li?.productId?._id || li?.productId || '',
+        productName: li?.productName || '',
+        productNameAr: li?.productNameAr || '',
+        unitCode: li?.unitCode || 'PCE',
+        quantity: li?.quantity ?? 1,
+        unitPrice: li?.unitPrice ?? 0,
+        taxRate: li?.taxRate ?? 15,
+      }))
+      replace(items.length ? items : [{ productId: '', productName: '', productNameAr: '', unitCode: 'PCE', quantity: 1, unitPrice: 0, taxRate: 15 }])
+
+      if (purchaseOrder.supplierId) {
+        setValue('buyer.name', purchaseOrder.supplierId.nameEn || purchaseOrder.supplierId.nameAr || 'Supplier')
+        setValue('buyer.nameAr', purchaseOrder.supplierId.nameAr || purchaseOrder.supplierId.nameEn)
+        setValue('buyer.vatNumber', purchaseOrder.supplierId.vatNumber || '')
+      }
+      
+      toast.success(language === 'ar' ? 'تم استيراد بيانات طلب الشراء' : 'PO data imported')
+    }
+  }, [purchaseOrder, replace, setValue, language])
 
   const { data: restaurantOrders } = useQuery({
     queryKey: ['restaurant-orders-lookup'],
@@ -213,6 +246,8 @@ export default function InvoiceCreateSell() {
       flow: 'sell',
       transactionType: invoiceType,
       invoiceTypeCode: invoiceType === 'B2C' ? '0200000' : '0100000',
+      invoiceSubtype: isProforma ? 'proforma' : 'standard',
+      sourcePurchaseOrderId: poId || undefined,
       issueDate: new Date(),
       lineItems: data.lineItems.map((line, i) => ({
         ...line,
@@ -242,14 +277,29 @@ export default function InvoiceCreateSell() {
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            {language === 'ar' ? 'فاتورة بيع جديدة' : 'New Sell Invoice'}
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {isProforma 
+                ? (language === 'ar' ? 'فاتورة مبدئية جديدة' : 'New Proforma Invoice') 
+                : (language === 'ar' ? 'فاتورة بيع جديدة' : 'New Sell Invoice')}
+            </h1>
+            {isProforma && (
+              <span className="badge badge-info">{language === 'ar' ? 'مبدئية' : 'Proforma'}</span>
+            )}
+          </div>
           <p className="text-gray-500 dark:text-gray-400 mt-1">
-            {language === 'ar' ? 'إنشاء فاتورة مبيعات مع تخفيض المخزون عند التوقيع' : 'Create a sales invoice (inventory decreases on signing)'}
+            {isProforma
+              ? (language === 'ar' ? 'الفاتورة المبدئية لا تخفض المخزون ولا ترفع للزكاة' : 'Proforma invoices do not deduct inventory or require ZATCA signing')
+              : (language === 'ar' ? 'إنشاء فاتورة مبيعات مع تخفيض المخزون عند التوقيع' : 'Create a sales invoice (inventory decreases on signing)')}
           </p>
         </div>
       </div>
+
+      {poId && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 p-4 rounded-xl text-sm mb-6 border border-blue-100 dark:border-blue-900/50">
+          {language === 'ar' ? 'تم تعبئة البيانات تلقائياً من طلب الشراء' : 'Data pre-filled automatically from Purchase Order'} <strong>{purchaseOrder?.poNumber}</strong>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {(businessType === 'restaurant' || businessType === 'travel_agency') && (

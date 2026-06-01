@@ -112,14 +112,14 @@ const invoiceSchema = new mongoose.Schema({
   tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
 
   flow: { type: String, enum: ['sell', 'purchase'], default: 'sell', index: true },
-  businessContext: { type: String, enum: ['trading', 'construction', 'travel_agency', 'restaurant'], default: 'trading', index: true },
+  businessContext: { type: String, enum: ['trading', 'construction', 'travel_agency', 'restaurant', 'manpower'], default: 'trading', index: true },
   warehouseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Warehouse', index: true },
   supplierId: { type: mongoose.Schema.Types.ObjectId, ref: 'Supplier', index: true },
   
   // Invoice Identification
   invoiceNumber: { type: String, required: true },
   invoiceType: { type: String, enum: ['388', '381', '383'], default: '388' },
-  invoiceSubtype: { type: String, enum: ['standard', 'travel_ticket'], default: 'standard' },
+  invoiceSubtype: { type: String, enum: ['standard', 'travel_ticket', 'proforma'], default: 'standard' },
   pdfTemplateId: { type: Number, min: 1, max: 6 },
   invoiceTypeCode: {
     type: String,
@@ -165,8 +165,10 @@ const invoiceSchema = new mongoose.Schema({
   
   // Reference
   purchaseOrderNumber: { type: String },
+  sourcePurchaseOrderId: { type: mongoose.Schema.Types.ObjectId, ref: 'PurchaseOrder', index: true },
   contractNumber: { type: String },
   originalInvoiceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Invoice' },
+  proformaSourceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Invoice' },
   sourceQuotationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Quotation', index: true },
 
   restaurantOrderId: { type: mongoose.Schema.Types.ObjectId, ref: 'RestaurantOrder', index: true },

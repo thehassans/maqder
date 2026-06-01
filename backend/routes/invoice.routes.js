@@ -815,8 +815,8 @@ router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) =>
 
     const transactionType = req.body.transactionType === 'B2B' ? 'B2B' : 'B2C';
     const invoiceSubtype = businessContext === 'travel_agency'
-      ? 'travel_ticket'
-      : (req.body.invoiceSubtype === 'travel_ticket' ? 'travel_ticket' : 'standard');
+      ? (req.body.invoiceSubtype === 'proforma' ? 'proforma' : 'travel_ticket')
+      : (req.body.invoiceSubtype === 'travel_ticket' ? 'travel_ticket' : (req.body.invoiceSubtype === 'proforma' ? 'proforma' : 'standard'));
     const invoiceTypeCode = req.body.invoiceTypeCode || (transactionType === 'B2C' ? '0200000' : '0100000');
     const issueDate = req.body.issueDate ? new Date(req.body.issueDate) : new Date();
     const pdfTemplateId = resolvePdfTemplateId(req.body?.pdfTemplateId, tenant, businessContext);
@@ -848,6 +848,7 @@ router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) =>
       invoiceNumber,
       transactionType,
       invoiceSubtype,
+      sourcePurchaseOrderId: req.body.sourcePurchaseOrderId || undefined,
       pdfTemplateId,
       invoiceTypeCode,
       issueDate,
@@ -1495,6 +1496,56 @@ router.post('/:id/credit-note', checkPermission('invoicing', 'create'), async (r
     }
     
     res.status(201).json(creditNote);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   POST /api/invoices/:id/convert-proforma
+// @desc    Convert a proforma invoice to a standard invoice
+router.post('/:id/convert-proforma', checkPermission('invoicing', 'create'), async (req, res) => {
+  try {
+    const proforma = await Invoice.findOne({ _id: req.params.id, ...req.tenantFilter });
+    
+    if (!proforma) return res.status(404).json({ error: 'Proforma invoice not found' });
+    if (proforma.invoiceSubtype !== 'proforma') return res.status(400).json({ error: 'Invoice is not a proforma' });
+    if (proforma.status === 'cancelled') return res.status(400).json({ error: 'Cannot convert a cancelled proforma' });
+
+    const tenant = await Tenant.findById(req.user.tenantId);
+    
+    const lastInvoice = await Invoice.findOne({ tenantId: req.user.tenantId, invoiceSubtype: { $ne: 'proforma' } })
+      .sort({ createdAt: -1 })
+      .select('invoiceNumber');
+
+    const invoiceCount = lastInvoice
+      ? parseInt(lastInvoice.invoiceNumber.split('-').pop()) + 1
+      : 1;
+
+    const invoiceNumber = `INV-${new Date().getFullYear()}-${String(invoiceCount).padStart(6, '0')}`;
+
+    // Create a deep copy of the invoice data to make a new real invoice
+    const invoiceData = proforma.toObject();
+    delete invoiceData._id;
+    delete invoiceData.createdAt;
+    delete invoiceData.updatedAt;
+    delete invoiceData.__v;
+    delete invoiceData.zatca;
+    
+    // Switch subtype and link back
+    invoiceData.invoiceSubtype = invoiceData.businessContext === 'travel_agency' ? 'travel_ticket' : 'standard';
+    invoiceData.proformaSourceId = proforma._id;
+    invoiceData.invoiceNumber = invoiceNumber;
+    invoiceData.issueDate = new Date();
+    invoiceData.status = 'draft';
+
+    const createdInvoice = await Invoice.create(invoiceData);
+    const invoice = await attachDraftQr(createdInvoice, tenant.business);
+
+    // Update proforma status to avoid double conversion
+    proforma.status = 'sent';
+    await proforma.save();
+
+    res.json(invoice);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
