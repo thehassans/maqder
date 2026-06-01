@@ -96,13 +96,71 @@ function TagBadge({ tag }) {
   )
 }
 
+// ─── Smart Record Search ──────────────────────────────────────────────────────
+
+const SEARCHABLE_TAG_TYPES = ['invoice', 'project', 'order', 'task']
+
+function useRecordSearch(tagType, query) {
+  return useQuery({
+    queryKey: ['communicate-ref-search', tagType, query],
+    queryFn: async () => {
+      if (!query || query.length < 2) return []
+      const q = encodeURIComponent(query)
+      if (tagType === 'invoice') {
+        const res = await api.get(`/invoices?search=${q}&limit=8`)
+        return (res.data?.invoices || []).map(inv => ({
+          id: inv.invoiceNumber,
+          label: inv.invoiceNumber,
+          sub: `${inv.buyer?.name || 'Cash Customer'} · ${inv.buyer?.contactPhone || ''}`.trim().replace(/\s·\s$/, ''),
+          detail: `${inv.grandTotal?.toLocaleString() || 0} SAR · ${inv.status}`,
+          _id: inv._id,
+        }))
+      }
+      if (tagType === 'project') {
+        const res = await api.get(`/projects?search=${q}&limit=8`)
+        return (res.data?.projects || res.data || []).map(p => ({
+          id: p._id,
+          label: p.name || p.title,
+          sub: p.clientName || p.description || '',
+          detail: p.status || '',
+          _id: p._id,
+        }))
+      }
+      if (tagType === 'task') {
+        const res = await api.get(`/tasks?search=${q}&limit=8`)
+        return (res.data?.tasks || res.data || []).map(t => ({
+          id: t._id,
+          label: t.title || t.name,
+          sub: t.assignee?.name || t.projectName || '',
+          detail: t.status || t.priority || '',
+          _id: t._id,
+        }))
+      }
+      if (tagType === 'order') {
+        const res = await api.get(`/customers?search=${q}&limit=8`)
+        return (res.data?.customers || res.data || []).map(c => ({
+          id: c._id,
+          label: c.name,
+          sub: c.phone || c.email || '',
+          detail: c.type || '',
+          _id: c._id,
+        }))
+      }
+      return []
+    },
+    enabled: !!query && query.length >= 2 && tagType !== 'general',
+    staleTime: 10000,
+  })
+}
+
 // ─── New Message Modal ────────────────────────────────────────────────────────
 
 function NewMessageModal({ users, onClose, isAr, currentUser }) {
   const [recipient, setRecipient] = useState('')
   const [body, setBody] = useState('')
   const [tagType, setTagType] = useState('general')
-  const [refId, setRefId] = useState('')
+  const [refQuery, setRefQuery] = useState('')
+  const [selectedRef, setSelectedRef] = useState(null)
   const [userSearch, setUserSearch] = useState('')
   const [step, setStep] = useState(1) // 1=pick user, 2=write
   const qc = useQueryClient()
@@ -116,6 +174,16 @@ function NewMessageModal({ users, onClose, isAr, currentUser }) {
 
   const selectedRecipient = (users || []).find(u => u._id === recipient)
 
+  // Smart search for linked record
+  const { data: refResults = [], isFetching: refSearching } = useRecordSearch(tagType, refQuery)
+
+  // Reset ref when tag type changes
+  const handleTagChange = (type) => {
+    setTagType(type)
+    setRefQuery('')
+    setSelectedRef(null)
+  }
+
   const { mutate: sendMsg, isPending } = useMutation({
     mutationFn: (data) => api.post('/communicate', data),
     onSuccess: () => {
@@ -128,11 +196,21 @@ function NewMessageModal({ users, onClose, isAr, currentUser }) {
 
   const handleSend = () => {
     if (!recipient || !body.trim()) return toast.error(isAr ? 'يرجى التحديد والكتابة' : 'Select recipient and write a message')
+    const refId = selectedRef?.id || refQuery.trim() || undefined
     sendMsg({
       toUser: recipient,
       body: body.trim(),
-      tags: isAdmin && tagType !== 'general' ? [{ type: tagType, refId: refId.trim() || undefined }] : []
+      tags: isAdmin && tagType !== 'general' ? [{ type: tagType, refId }] : []
     })
+  }
+
+  // Placeholder text per tag type
+  const refPlaceholder = {
+    invoice: isAr ? 'ابحث بالرقم أو الهاتف أو اسم العميل...' : 'Search by invoice #, phone or customer name...',
+    project: isAr ? 'ابحث باسم المشروع...' : 'Search by project name...',
+    task: isAr ? 'ابحث باسم المهمة...' : 'Search by task title...',
+    order: isAr ? 'ابحث باسم العميل أو الهاتف...' : 'Search by customer name or phone...',
+    general: '',
   }
 
   return (
@@ -143,7 +221,7 @@ function NewMessageModal({ users, onClose, isAr, currentUser }) {
     >
       <motion.div
         initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}
-        className="bg-white dark:bg-dark-900 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-100 dark:border-dark-700"
+        className="bg-white dark:bg-dark-900 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-100 dark:border-dark-700"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-dark-800">
@@ -199,7 +277,7 @@ function NewMessageModal({ users, onClose, isAr, currentUser }) {
             </div>
           </div>
         ) : (
-          <div className="p-5 space-y-4">
+          <div className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
             {/* To */}
             <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-dark-800 rounded-xl">
               <Avatar name={selectedRecipient?.name} size="sm" />
@@ -209,44 +287,116 @@ function NewMessageModal({ users, onClose, isAr, currentUser }) {
               </div>
             </div>
 
-            {/* Tag picker (admin only) */}
+            {/* Tag type picker (admin only) */}
             {isAdmin && (
-              <div className="flex gap-2 flex-wrap">
-                {TAG_TYPES.map(tag => (
-                  <button
-                    key={tag.value}
-                    onClick={() => setTagType(tag.value)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                      tagType === tag.value
-                        ? `${TAG_COLOR_MAP[tag.value]} ring-2 ring-offset-1 ring-current`
-                        : 'bg-gray-100 dark:bg-dark-700 text-gray-500 hover:bg-gray-200'
-                    }`}
-                  >
-                    <tag.icon className="w-3 h-3" />
-                    {isAr ? tag.labelAr : tag.label}
-                  </button>
-                ))}
+              <div>
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
+                  {isAr ? 'نوع الرسالة' : 'Message Type'}
+                </p>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {TAG_TYPES.map(tag => (
+                    <button
+                      key={tag.value}
+                      onClick={() => handleTagChange(tag.value)}
+                      className={`flex flex-col items-center gap-1 py-2.5 px-2 rounded-xl text-[11px] font-medium transition-all border ${
+                        tagType === tag.value
+                          ? `${TAG_COLOR_MAP[tag.value]} border-current shadow-sm`
+                          : 'bg-gray-50 dark:bg-dark-800 text-gray-500 border-transparent hover:bg-gray-100 dark:hover:bg-dark-700'
+                      }`}
+                    >
+                      <tag.icon className="w-4 h-4" />
+                      {isAr ? tag.labelAr : tag.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
+
+            {/* Smart record search — only when not "general" */}
             {isAdmin && tagType !== 'general' && (
-              <input
-                className="w-full px-3 py-2 bg-gray-50 dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-xl text-sm focus:outline-none focus:border-primary-400"
-                placeholder={isAr ? '# رقم المرجع (اختياري)' : '# Ref ID (optional)'}
-                value={refId}
-                onChange={e => setRefId(e.target.value)}
-              />
+              <div>
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
+                  {isAr ? 'ربط بسجل' : 'Link a Record'} <span className="text-gray-400 normal-case font-normal">({isAr ? 'اختياري' : 'optional'})</span>
+                </p>
+
+                {selectedRef ? (
+                  /* Selected record chip */
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-dark-800 rounded-xl border border-gray-200 dark:border-dark-700">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{selectedRef.label}</p>
+                      {selectedRef.sub && <p className="text-xs text-gray-400 truncate">{selectedRef.sub}</p>}
+                    </div>
+                    <button
+                      onClick={() => { setSelectedRef(null); setRefQuery('') }}
+                      className="p-1.5 hover:bg-gray-200 dark:hover:bg-dark-600 rounded-lg text-gray-400 transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    {refSearching && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
+                    )}
+                    <input
+                      type="text"
+                      placeholder={refPlaceholder[tagType]}
+                      value={refQuery}
+                      onChange={e => setRefQuery(e.target.value)}
+                      className="w-full pl-9 pr-9 py-2.5 bg-gray-50 dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-xl text-sm focus:outline-none focus:border-primary-400 transition-colors"
+                    />
+
+                    {/* Results dropdown */}
+                    {refResults.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-xl shadow-lg z-10 overflow-hidden max-h-52 overflow-y-auto">
+                        {refResults.map(rec => (
+                          <button
+                            key={rec._id || rec.id}
+                            onClick={() => { setSelectedRef(rec); setRefQuery('') }}
+                            className="w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors text-left border-b border-gray-50 dark:border-dark-700 last:border-0"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{rec.label}</p>
+                              {rec.sub && <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{rec.sub}</p>}
+                            </div>
+                            {rec.detail && (
+                              <span className="text-[10px] text-gray-400 flex-shrink-0 mt-0.5">{rec.detail}</span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* No results */}
+                    {refQuery.length >= 2 && !refSearching && refResults.length === 0 && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-xl shadow-lg z-10 px-4 py-3 text-sm text-gray-400">
+                        {isAr ? 'لا توجد نتائج' : 'No results found'}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
 
+            {/* Divider */}
+            <div className="border-t border-gray-100 dark:border-dark-800" />
+
             {/* Message area */}
-            <textarea
-              autoFocus
-              rows={5}
-              className="w-full px-4 py-3 bg-gray-50 dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-xl text-sm focus:outline-none focus:border-primary-400 resize-none placeholder-gray-400"
-              placeholder={isAr ? 'اكتب رسالتك...' : 'Write your message...'}
-              value={body}
-              onChange={e => setBody(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey) handleSend() }}
-            />
+            <div>
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wide">
+                {isAr ? 'الرسالة' : 'Message'}
+              </p>
+              <textarea
+                autoFocus
+                rows={4}
+                className="w-full px-4 py-3 bg-gray-50 dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-xl text-sm focus:outline-none focus:border-primary-400 resize-none placeholder-gray-400"
+                placeholder={isAr ? 'اكتب رسالتك...' : 'Write your message...'}
+                value={body}
+                onChange={e => setBody(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && e.ctrlKey) handleSend() }}
+              />
+            </div>
 
             <button
               onClick={handleSend}
