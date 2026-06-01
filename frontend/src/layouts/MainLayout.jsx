@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux'
 import Sidebar from '../components/layout/Sidebar'
 import Header from '../components/layout/Header'
 import OfflineBanner from '../components/ui/OfflineBanner'
-import TerminationBanner, { TerminationBlocker, isTenantTerminated } from '../components/ui/TerminationBanner'
+import TerminationBanner, { TerminationBlocker, InactiveBlocker, isTenantTerminated, isTenantInactive } from '../components/ui/TerminationBanner'
 import { getTenantBusinessTypes } from '../lib/businessTypes'
 
 export default function MainLayout() {
@@ -15,6 +15,10 @@ export default function MainLayout() {
 
   if (isTenantTerminated(tenant)) {
     return <TerminationBlocker />
+  }
+
+  if (isTenantInactive(tenant)) {
+    return <InactiveBlocker />
   }
 
   return (
