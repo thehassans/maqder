@@ -38,13 +38,15 @@ export const protect = async (req, res, next) => {
     // Check if tenant is active (for non-super admins).
     if (user.role !== 'super_admin' && user.tenantId) {
       const tenant = await Tenant.findById(user.tenantId).lean();
-      if (!tenant || !tenant.isActive) {
+      if (!tenant) {
         return res.status(401).json({ error: 'Tenant account is inactive' });
       }
-      if (tenant.subscription?.status !== 'active') {
+      // If tenant is inactive, still attach it so /auth/me can return isActive:false.
+      // The frontend InactiveBlocker in MainLayout will handle the UI lockout.
+      req.tenant = tenant;
+      if (tenant.isActive && tenant.subscription?.status !== 'active') {
         return res.status(403).json({ error: 'Subscription expired or inactive' });
       }
-      req.tenant = tenant;
     }
 
     req.user = user;

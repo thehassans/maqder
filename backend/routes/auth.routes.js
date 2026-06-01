@@ -134,9 +134,8 @@ router.post('/login', async (req, res) => {
       if (!tenant) {
         return res.status(401).json({ error: 'Invalid tenant code' });
       }
-      if (!tenant.isActive) {
-        return res.status(401).json({ error: 'Tenant account is inactive' });
-      }
+      // Always set tenantId for user lookup regardless of active status.
+      // If inactive, we still issue a token — the frontend InactiveBlocker handles it.
       query.tenantId = tenant._id;
     } else {
       const matchingUsers = await withQueryTimeout(User.find({ email: normalizedEmail }).select('+password'));
@@ -192,9 +191,10 @@ router.post('/login', async (req, res) => {
 
     if (user.tenantId) {
       tenant = tenant || await withQueryTimeout(Tenant.findById(user.tenantId).select(authTenantSelect));
-      if (!tenant || !tenant.isActive) {
+      if (!tenant) {
         return res.status(401).json({ error: 'Tenant account is inactive' });
       }
+      // If tenant is inactive, we still issue the token — the frontend InactiveBlocker handles it
     }
 
     // If a previous lock has expired, clear it so the user isn't immediately re-locked
