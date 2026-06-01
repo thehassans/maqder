@@ -51,9 +51,11 @@ api.interceptors.response.use(
       || requestUrl.includes('/auth/register')
 
     if (error.response?.status === 401 && !isAuthEntryRequest) {
-      if (error.response?.data?.error === 'Tenant account is inactive' || error.response?.data?.error === 'Account is deactivated') {
-        localStorage.removeItem('token')
-        window.location.href = '/inactive'
+      const errMsg = error.response?.data?.error || ''
+      if (errMsg === 'Tenant account is inactive') {
+        // Don't log out — fire an event so the Redux store marks the tenant inactive
+        // and the InactiveBlocker screen is shown without clearing the session
+        window.dispatchEvent(new CustomEvent('tenant-inactive'))
       } else {
         localStorage.removeItem('token')
         window.location.href = '/login'

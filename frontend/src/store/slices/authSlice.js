@@ -90,9 +90,15 @@ export const getMe = createAsyncThunk(
       persistAuthSnapshot(data)
       return data
     } catch (error) {
+      const errMsg = error.response?.data?.error || ''
+      // If tenant is inactive, keep the token — don't log out
+      // The InactiveBlocker in MainLayout will show based on tenant.isActive
+      if (errMsg === 'Tenant account is inactive') {
+        return rejectWithValue({ tenantInactive: true })
+      }
       localStorage.removeItem('token')
       clearAuthSnapshot()
-      return rejectWithValue(error.userMessage || error.response?.data?.error || 'Session expired')
+      return rejectWithValue(error.userMessage || errMsg || 'Session expired')
     }
   }
 )
@@ -117,6 +123,13 @@ const authSlice = createSlice({
     updateTenant: (state, action) => {
       state.tenant = action.payload
       persistAuthSnapshot({ user: state.user, tenant: state.tenant })
+    },
+    setTenantInactive: (state) => {
+      if (state.tenant) {
+        state.tenant = { ...state.tenant, isActive: false }
+        // Update localStorage so it persists across refreshes
+        try { localStorage.setItem('auth_tenant', JSON.stringify(state.tenant)) } catch {}
+      }
     },
   },
   extraReducers: (builder) => {
@@ -160,8 +173,13 @@ const authSlice = createSlice({
         state.user = action.payload.user
         state.tenant = action.payload.tenant
       })
-      .addCase(getMe.rejected, (state) => {
+      .addCase(getMe.rejected, (state, action) => {
         state.isLoading = false
+        // If tenant-inactive, keep user authenticated — InactiveBlocker handles it
+        if (action.payload?.tenantInactive) {
+          if (state.tenant) state.tenant = { ...state.tenant, isActive: false }
+          return
+        }
         state.isAuthenticated = false
         state.user = null
         state.tenant = null
@@ -176,5 +194,5 @@ const authSlice = createSlice({
   },
 })
 
-export const { clearError, updateUser, updateTenant } = authSlice.actions
+export const { clearError, updateUser, updateTenant, setTenantInactive } = authSlice.actions
 export default authSlice.reducer

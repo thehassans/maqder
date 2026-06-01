@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { getMe } from './store/slices/authSlice'
+import { getMe, setTenantInactive } from './store/slices/authSlice'
 import { setLanguage, setTheme } from './store/slices/uiSlice'
 import { applyTenantBranding } from './lib/branding'
 import { getTenantBusinessTypes } from './lib/businessTypes'
@@ -190,6 +190,12 @@ function App() {
       dispatch(getMe())
     }
   }, [dispatch, token, user])
+
+  useEffect(() => {
+    const handler = () => dispatch(setTenantInactive())
+    window.addEventListener('tenant-inactive', handler)
+    return () => window.removeEventListener('tenant-inactive', handler)
+  }, [dispatch])
 
   useEffect(() => {
     dispatch(setLanguage(language))
