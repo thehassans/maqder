@@ -1,6 +1,5 @@
 import express from 'express';
 import { protect, authorize, requireBusinessType, tenantFilter, checkPermission } from '../middleware/auth.js';
-import { withQueryTimeout } from '../utils/dbHelpers.js';
 import ManpowerWorker from '../models/ManpowerWorker.js';
 import ManpowerAssignment from '../models/ManpowerAssignment.js';
 import Customer from '../models/Customer.js';
@@ -30,12 +29,10 @@ router.get('/workers', async (req, res) => {
       ];
     }
 
-    const workers = await withQueryTimeout(
-      ManpowerWorker.find(query)
+    const workers = await ManpowerWorker.find(query)
         .populate('currentAssignment')
         .populate('clientId', 'name nameAr')
-        .sort({ createdAt: -1 })
-    );
+        .sort({ createdAt: -1 });
 
     res.json(workers);
   } catch (error) {
@@ -46,10 +43,8 @@ router.get('/workers', async (req, res) => {
 // @route   POST /api/manpower/workers
 router.post('/workers', checkPermission('canCreateWorker'), async (req, res) => {
   try {
-    const lastWorker = await withQueryTimeout(
-      ManpowerWorker.findOne({ tenantId: req.tenant._id })
-        .sort({ workerNumber: -1 })
-    );
+    const lastWorker = await ManpowerWorker.findOne({ tenantId: req.tenant._id })
+        .sort({ workerNumber: -1 });
     
     let nextNum = 1;
     if (lastWorker && lastWorker.workerNumber) {
@@ -74,11 +69,9 @@ router.post('/workers', checkPermission('canCreateWorker'), async (req, res) => 
 // @route   GET /api/manpower/workers/:id
 router.get('/workers/:id', async (req, res) => {
   try {
-    const worker = await withQueryTimeout(
-      ManpowerWorker.findOne({ _id: req.params.id, tenantId: req.tenant._id })
+    const worker = await ManpowerWorker.findOne({ _id: req.params.id, tenantId: req.tenant._id })
         .populate('currentAssignment')
-        .populate('clientId', 'name nameAr')
-    );
+        .populate('clientId', 'name nameAr');
     
     if (!worker) return res.status(404).json({ error: 'Worker not found' });
     res.json(worker);
@@ -115,12 +108,10 @@ router.get('/assignments', async (req, res) => {
     if (status) query.status = status;
     if (clientId) query.clientId = clientId;
 
-    const assignments = await withQueryTimeout(
-      ManpowerAssignment.find(query)
+    const assignments = await ManpowerAssignment.find(query)
         .populate('clientId', 'name nameAr')
         .populate('workers.workerId', 'name workerNumber trade')
-        .sort({ createdAt: -1 })
-    );
+        .sort({ createdAt: -1 });
 
     res.json(assignments);
   } catch (error) {
@@ -131,10 +122,8 @@ router.get('/assignments', async (req, res) => {
 // @route   POST /api/manpower/assignments
 router.post('/assignments', checkPermission('canCreateAssignment'), async (req, res) => {
   try {
-    const lastAssignment = await withQueryTimeout(
-      ManpowerAssignment.findOne({ tenantId: req.tenant._id })
-        .sort({ assignmentNumber: -1 })
-    );
+    const lastAssignment = await ManpowerAssignment.findOne({ tenantId: req.tenant._id })
+        .sort({ assignmentNumber: -1 });
     
     let nextNum = 1;
     if (lastAssignment && lastAssignment.assignmentNumber) {
@@ -174,12 +163,10 @@ router.post('/assignments', checkPermission('canCreateAssignment'), async (req, 
 // @route   GET /api/manpower/assignments/:id
 router.get('/assignments/:id', async (req, res) => {
   try {
-    const assignment = await withQueryTimeout(
-      ManpowerAssignment.findOne({ _id: req.params.id, tenantId: req.tenant._id })
+    const assignment = await ManpowerAssignment.findOne({ _id: req.params.id, tenantId: req.tenant._id })
         .populate('clientId', 'name nameAr vatNumber')
         .populate('workers.workerId', 'name workerNumber trade dailyRate')
-        .populate('invoiceIds')
-    );
+        .populate('invoiceIds');
     
     if (!assignment) return res.status(404).json({ error: 'Assignment not found' });
     res.json(assignment);
