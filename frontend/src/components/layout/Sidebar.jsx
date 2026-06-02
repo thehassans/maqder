@@ -168,6 +168,7 @@ export default function Sidebar() {
         { path: '/app/dashboard/manpower/assignments', icon: Briefcase, label: language === 'ar' ? 'تعيينات العمالة' : 'Assignments' },
         { path: '/app/dashboard/contracts', icon: FileSignature, label: language === 'ar' ? 'العقود' : 'Contracts' },
         { path: '/app/dashboard/projects', icon: FolderKanban, label: language === 'ar' ? 'المشاريع' : 'Projects' },
+        { path: '/app/dashboard/tasks', icon: ClipboardList, label: language === 'ar' ? 'المهام' : 'Tasks' },
       ]
     },
     {
@@ -186,13 +187,7 @@ export default function Sidebar() {
         { path: '/app/dashboard/payroll/calculators', icon: Calculator, label: 'GOSI/EOSB', perm: { module: 'payroll', action: 'read' } },
       ]
     },
-    {
-      title: language === 'ar' ? 'إدارة المشاريع' : 'Project Management',
-      businessTypes: ['trading', 'construction'],
-      items: [
-        { path: '/app/dashboard/tasks', icon: ClipboardList, label: language === 'ar' ? 'المهام' : 'Tasks', perm: { module: 'project_management', action: 'read' } },
-      ]
-    },
+
     {
       title: language === 'ar' ? 'التواصل' : 'Communication',
       items: [

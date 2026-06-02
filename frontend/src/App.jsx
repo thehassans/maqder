@@ -381,9 +381,9 @@ function App() {
         <Route path="projects" element={<Projects />} />
         <Route path="projects/new" element={<ProjectForm />} />
         <Route path="projects/:id" element={<ProjectForm />} />
-        <Route path="tasks" element={<BusinessTypeRoute allowedTypes={['trading']}><Tasks /></BusinessTypeRoute>} />
-        <Route path="tasks/new" element={<BusinessTypeRoute allowedTypes={['trading']}><TaskForm /></BusinessTypeRoute>} />
-        <Route path="tasks/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><TaskForm /></BusinessTypeRoute>} />
+        <Route path="tasks" element={<Tasks />} />
+        <Route path="tasks/new" element={<TaskForm />} />
+        <Route path="tasks/:id" element={<TaskForm />} />
         <Route path="iot" element={<BusinessTypeRoute allowedTypes={['trading']}><IoT /></BusinessTypeRoute>} />
         <Route path="iot/devices/new" element={<BusinessTypeRoute allowedTypes={['trading']}><IoTDeviceForm /></BusinessTypeRoute>} />
         <Route path="iot/devices/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><IoTDeviceForm /></BusinessTypeRoute>} />
