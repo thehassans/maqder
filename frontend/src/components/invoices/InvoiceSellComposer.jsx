@@ -72,6 +72,7 @@ const buildSellInvoiceFormValues = ({ invoice, tenant, defaultBusinessContext, h
   warehouseId: invoice?.warehouseId || '',
   restaurantOrderId: invoice?.restaurantOrderId || '',
   travelBookingId: invoice?.travelBookingId || '',
+  manpowerAssignmentId: invoice?.manpowerAssignmentId || '',
   contractNumber: invoice?.contractNumber || '',
   notes: invoice?.notes || '',
   invoiceDiscount: Math.max(0, toNumber(invoice?.invoiceDiscount, 0)),
@@ -129,6 +130,7 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
   const isTradingContext = businessContext === 'trading'
   const isTravelContext = businessContext === 'travel_agency'
   const isRestaurantContext = businessContext === 'restaurant'
+  const isManpowerContext = businessContext === 'manpower'
   const [sourceId, setSourceId] = useState('')
   const skipBusinessContextResetRef = useRef(false)
 
@@ -211,6 +213,12 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
     enabled: tenantBusinessTypes.includes('travel_agency') && isTravelContext,
   })
 
+  const { data: manpowerAssignments } = useQuery({
+    queryKey: ['manpower-assignments-lookup'],
+    queryFn: () => api.get('/manpower/assignments', { params: { limit: 200 } }).then((res) => res.data || []),
+    enabled: tenantBusinessTypes.includes('manpower') && isManpowerContext,
+  })
+
   const importSourceMutation = useMutation({
     mutationFn: async () => {
       if (!sourceId) throw new Error('Missing sourceId')
@@ -219,6 +227,9 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
       }
       if (isTravelContext) {
         return api.get(`/travel-bookings/${sourceId}`).then((res) => ({ type: 'travel', data: res.data }))
+      }
+      if (isManpowerContext) {
+        return api.get(`/manpower/assignments/${sourceId}`).then((res) => ({ type: 'manpower', data: res.data }))
       }
       throw new Error('Unsupported business context')
     },
@@ -242,9 +253,34 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
         setValue('buyer.contactPhone', data?.customerPhone || '')
         setValue('restaurantOrderId', data?._id || '')
         setValue('travelBookingId', '')
+        setValue('manpowerAssignmentId', '')
         setValue('contractNumber', data?.orderNumber || '')
         setValue('paymentMethod', data?.paymentMethod === 'transfer' ? 'bank_transfer' : data?.paymentMethod === 'card' ? 'card' : 'cash')
         toast.success(language === 'ar' ? 'تم استيراد الطلب' : 'Order imported')
+        return
+      }
+
+      if (type === 'manpower') {
+        const items = (Array.isArray(data?.workers) ? data.workers : []).map((w) => {
+          const workerData = w.workerId || {}
+          return {
+            ...emptyLine,
+            productName: `Manpower: ${workerData.name || w.workerName || ''} - ${workerData.trade || w.workerTrade || ''}`,
+            productNameAr: `عمالة: ${workerData.nameAr || workerData.name || w.workerName || ''} - ${workerData.trade || w.workerTrade || ''}`,
+            quantity: 1,
+            unitPrice: Math.max(Number(w.monthlyRate || workerData.monthlyRate || 0), Number(w.dailyRate || workerData.dailyRate || 0)),
+            taxRate: 15,
+          }
+        })
+        replace(items.length ? items : [emptyLine])
+        if (data?.clientId?._id) {
+            onSelectCustomer(data.clientId._id)
+        }
+        setValue('manpowerAssignmentId', data?._id || '')
+        setValue('restaurantOrderId', '')
+        setValue('travelBookingId', '')
+        setValue('contractNumber', data?.assignmentNumber || '')
+        toast.success(language === 'ar' ? 'تم استيراد العمالة' : 'Workers imported')
         return
       }
 
@@ -258,6 +294,7 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
       setValue('buyer.contactPhone', data?.customerPhone || '')
       setValue('travelBookingId', data?._id || '')
       setValue('restaurantOrderId', '')
+      setValue('manpowerAssignmentId', '')
       setValue('contractNumber', data?.bookingNumber || '')
       setValue('travelDetails.travelerName', data?.travelerName || data?.customerName || '')
       setValue('travelDetails.passportNumber', data?.passportNumber || '')
@@ -296,6 +333,7 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
       queryClient.invalidateQueries(['dashboard-revenue'])
       queryClient.invalidateQueries(['travel-bookings'])
       queryClient.invalidateQueries(['travel-bookings-lookup'])
+      queryClient.invalidateQueries(['manpower-assignments-lookup'])
       queryClient.invalidateQueries(['customers'])
       queryClient.invalidateQueries(['customers-lookup'])
       navigate(`/app/dashboard/invoices/${res.data?._id || invoiceId}`)
@@ -394,6 +432,7 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
 
     if (!payload.restaurantOrderId) delete payload.restaurantOrderId
     if (!payload.travelBookingId) delete payload.travelBookingId
+    if (!payload.manpowerAssignmentId) delete payload.manpowerAssignmentId
     if (!payload.contractNumber) delete payload.contractNumber
     if (!isTradingContext) delete payload.warehouseId
     if (isTravelContext || invoiceSubtype === 'travel_ticket') {
@@ -493,7 +532,7 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
             <input type="hidden" {...register('businessContext')} />
           </div>
 
-          {(isRestaurantContext || isTravelContext) && (
+          {(isRestaurantContext || isTravelContext || isManpowerContext) && (
             <div className="card p-6">
               <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'مصدر الفاتورة' : 'Invoice Source'}</h3>
               {isRestaurantContext && (
@@ -528,8 +567,25 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
                   </div>
                 </div>
               )}
+              {isManpowerContext && (
+                <div className="grid grid-cols-1 items-end gap-4 md:grid-cols-12">
+                  <div className="md:col-span-9">
+                    <label className="label">{language === 'ar' ? 'تعيين عمالة' : 'Manpower Assignment'}</label>
+                    <select value={sourceId} onChange={(e) => setSourceId(e.target.value)} className="select">
+                      <option value="">{language === 'ar' ? 'اختر تعيين' : 'Select assignment'}</option>
+                      {(manpowerAssignments || []).map((item) => <option key={item._id} value={item._id}>{item.assignmentNumber} - {item.clientId?.name || 'Customer'}</option>)}
+                    </select>
+                  </div>
+                  <div className="md:col-span-3">
+                    <button type="button" className="btn btn-secondary w-full" disabled={!sourceId || importSourceMutation.isPending} onClick={() => importSourceMutation.mutate()}>
+                      {importSourceMutation.isPending ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-600 border-t-transparent" /> : (language === 'ar' ? 'استيراد العمالة' : 'Import Workers')}
+                    </button>
+                  </div>
+                </div>
+              )}
               <input type="hidden" {...register('restaurantOrderId')} />
               <input type="hidden" {...register('travelBookingId')} />
+              <input type="hidden" {...register('manpowerAssignmentId')} />
               <input type="hidden" {...register('contractNumber')} />
             </div>
           )}
