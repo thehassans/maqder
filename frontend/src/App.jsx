@@ -376,9 +376,9 @@ function App() {
         <Route path="shipments" element={<BusinessTypeRoute allowedTypes={['trading']}><Shipments /></BusinessTypeRoute>} />
         <Route path="shipments/new" element={<BusinessTypeRoute allowedTypes={['trading']}><ShipmentForm /></BusinessTypeRoute>} />
         <Route path="shipments/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><ShipmentForm /></BusinessTypeRoute>} />
-        <Route path="projects" element={<BusinessTypeRoute allowedTypes={['trading']}><Projects /></BusinessTypeRoute>} />
-        <Route path="projects/new" element={<BusinessTypeRoute allowedTypes={['trading']}><ProjectForm /></BusinessTypeRoute>} />
-        <Route path="projects/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><ProjectForm /></BusinessTypeRoute>} />
+        <Route path="projects" element={<Projects />} />
+        <Route path="projects/new" element={<ProjectForm />} />
+        <Route path="projects/:id" element={<ProjectForm />} />
         <Route path="tasks" element={<BusinessTypeRoute allowedTypes={['trading']}><Tasks /></BusinessTypeRoute>} />
         <Route path="tasks/new" element={<BusinessTypeRoute allowedTypes={['trading']}><TaskForm /></BusinessTypeRoute>} />
         <Route path="tasks/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><TaskForm /></BusinessTypeRoute>} />
@@ -404,9 +404,9 @@ function App() {
         <Route path="fleet/maintenance-alerts" element={<BusinessTypeRoute allowedTypes={['construction','trading']}><MaintenanceAlerts /></BusinessTypeRoute>} />
         <Route path="fleet/:id" element={<BusinessTypeRoute allowedTypes={['construction','trading']}><FleetAssetForm /></BusinessTypeRoute>} />
         {/* Contract Management */}
-        <Route path="contracts" element={<BusinessTypeRoute allowedTypes={['construction']}><Contracts /></BusinessTypeRoute>} />
-        <Route path="contracts/new" element={<BusinessTypeRoute allowedTypes={['construction']}><ContractForm /></BusinessTypeRoute>} />
-        <Route path="contracts/:id" element={<BusinessTypeRoute allowedTypes={['construction']}><ContractForm /></BusinessTypeRoute>} />
+        <Route path="contracts" element={<Contracts />} />
+        <Route path="contracts/new" element={<ContractForm />} />
+        <Route path="contracts/:id" element={<ContractForm />} />
         {/* Landed Costs */}
         <Route path="landed-costs" element={<BusinessTypeRoute allowedTypes={['trading']}><LandedCosts /></BusinessTypeRoute>} />
         <Route path="landed-costs/new" element={<BusinessTypeRoute allowedTypes={['trading']}><LandedCostForm /></BusinessTypeRoute>} />

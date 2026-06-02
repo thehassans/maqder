@@ -165,7 +165,9 @@ export default function Sidebar() {
       businessTypes: ['manpower'],
       items: [
         { path: '/app/dashboard/manpower/workers', icon: Users, label: language === 'ar' ? 'العمالة' : 'Workers' },
-        { path: '/app/dashboard/manpower/assignments', icon: Briefcase, label: language === 'ar' ? 'العقود والتعيينات' : 'Assignments' },
+        { path: '/app/dashboard/manpower/assignments', icon: Briefcase, label: language === 'ar' ? 'تعيينات العمالة' : 'Assignments' },
+        { path: '/app/dashboard/contracts', icon: FileSignature, label: language === 'ar' ? 'العقود' : 'Contracts', perm: { module: 'contracts', action: 'read' } },
+        { path: '/app/dashboard/projects', icon: FolderKanban, label: language === 'ar' ? 'المشاريع' : 'Projects', perm: { module: 'project_management', action: 'read' } },
       ]
     },
     {
@@ -186,9 +188,8 @@ export default function Sidebar() {
     },
     {
       title: language === 'ar' ? 'إدارة المشاريع' : 'Project Management',
-      businessTypes: ['trading'],
+      businessTypes: ['trading', 'construction'],
       items: [
-        { path: '/app/dashboard/projects', icon: FolderKanban, label: language === 'ar' ? 'المشاريع' : 'Projects', perm: { module: 'project_management', action: 'read' } },
         { path: '/app/dashboard/tasks', icon: ClipboardList, label: language === 'ar' ? 'المهام' : 'Tasks', perm: { module: 'project_management', action: 'read' } },
       ]
     },
@@ -239,13 +240,7 @@ export default function Sidebar() {
         { path: '/app/dashboard/fleet/maintenance-alerts', icon: AlertCircle, label: language === 'ar' ? 'تنبيهات الصيانة' : 'Maintenance Alerts', perm: { module: 'fleet', action: 'read' } },
       ]
     },
-    {
-      title: language === 'ar' ? 'إدارة العقود' : 'Contracts',
-      businessTypes: ['construction'],
-      items: [
-        { path: '/app/dashboard/contracts', icon: FileSignature, label: language === 'ar' ? 'العقود' : 'Contracts', perm: { module: 'contracts', action: 'read' } },
-      ]
-    },
+
     {
       title: language === 'ar' ? 'التكاليف المرسية' : 'Landed Costs',
       businessTypes: ['trading'],
