@@ -275,13 +275,20 @@ export default function TenantForm() {
               </div>
               <input type="hidden" {...register('businessTypes')} />
             </div>
+
             <div>
-              <label className="label">{language === 'ar' ? 'النشاط الافتراضي' : 'Primary Business Type'}</label>
+              <label className="label">{language === 'ar' ? 'النشاط الأساسي (الواجهة الافتراضية)' : 'Primary Context (Default Dashboard)'}</label>
               <select {...register('businessType')} className="select">
-                {businessTypeOptions.map((option) => (
-                  <option key={option.id} value={option.id}>{option.label}</option>
-                ))}
+                {watchedBusinessTypes.map((typeId) => {
+                  const opt = businessTypeOptions.find((o) => o.id === typeId)
+                  return (
+                    <option key={typeId} value={typeId}>
+                      {opt?.label}
+                    </option>
+                  )
+                })}
               </select>
+              <p className="text-xs text-gray-500 mt-2">{language === 'ar' ? 'جميع الأنشطة المحددة أعلاه ستكون فعالة. هذا الخيار يحدد الواجهة الافتراضية فقط.' : 'All selected types above will be active. This only sets the default dashboard.'}</p>
             </div>
             <div>
               <label className="label">{language === 'ar' ? 'الاسم القانوني (EN)' : 'Legal Name (EN)'} *</label>
