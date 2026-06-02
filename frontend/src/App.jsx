@@ -370,9 +370,9 @@ function App() {
         <Route path="suppliers" element={<BusinessTypeRoute allowedTypes={['trading']}><Suppliers /></BusinessTypeRoute>} />
         <Route path="suppliers/new" element={<BusinessTypeRoute allowedTypes={['trading']}><SupplierForm /></BusinessTypeRoute>} />
         <Route path="suppliers/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><SupplierForm /></BusinessTypeRoute>} />
-        <Route path="purchase-orders" element={<BusinessTypeRoute allowedTypes={['trading']}><PurchaseOrders /></BusinessTypeRoute>} />
-        <Route path="purchase-orders/new" element={<BusinessTypeRoute allowedTypes={['trading']}><PurchaseOrderForm /></BusinessTypeRoute>} />
-        <Route path="purchase-orders/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><PurchaseOrderForm /></BusinessTypeRoute>} />
+        <Route path="purchase-orders" element={<PurchaseOrders />} />
+        <Route path="purchase-orders/new" element={<PurchaseOrderForm />} />
+        <Route path="purchase-orders/:id" element={<PurchaseOrderForm />} />
         <Route path="shipments" element={<BusinessTypeRoute allowedTypes={['trading']}><Shipments /></BusinessTypeRoute>} />
         <Route path="shipments/new" element={<BusinessTypeRoute allowedTypes={['trading']}><ShipmentForm /></BusinessTypeRoute>} />
         <Route path="shipments/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><ShipmentForm /></BusinessTypeRoute>} />
