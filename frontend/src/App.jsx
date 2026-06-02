@@ -136,6 +136,7 @@ import SaloonLayout from './layouts/SaloonLayout'
 import SaloonPOS from './pages/saloon/SaloonPOS'
 import SaloonServices from './pages/saloon/SaloonServices'
 import SaloonOrders from './pages/saloon/SaloonOrders'
+import Letterhead from './pages/Letterhead'
 
 import LoadingScreen from './components/ui/LoadingScreen'
 
@@ -320,6 +321,8 @@ function App() {
         <Route path="customers/new" element={<CustomerForm />} />
         <Route path="customers/:id" element={<CustomerForm />} />
         <Route path="customers/:id/edit" element={<CustomerForm />} />
+        
+        <Route path="letterhead" element={<Letterhead />} />
 
         {/* Manpower Routes */}
         <Route path="manpower" element={<BusinessTypeRoute allowedTypes={['manpower']}><ManpowerDashboard /></BusinessTypeRoute>} />
