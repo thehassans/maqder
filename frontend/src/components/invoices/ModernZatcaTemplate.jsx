@@ -81,10 +81,18 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
             
             <div className="mt-4 space-y-1 text-sm">
               {(invoice?.seller?.address?.street || invoice?.seller?.address?.city) && (
-                <p className="flex items-start gap-2">
-                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-gray-500" />
-                  <span>{[invoice.seller.address.street, invoice.seller.address.district, invoice.seller.address.city, invoice.seller.address.country].filter(Boolean).join(', ')}</span>
-                </p>
+                <div className="flex flex-col gap-1">
+                  <p className="flex items-start gap-2">
+                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-gray-500" />
+                    <span>{[invoice.seller.address.street, invoice.seller.address.district, invoice.seller.address.city, invoice.seller.address.country].filter(Boolean).join(', ')}</span>
+                  </p>
+                  {bilingual && (invoice?.seller?.address?.streetAr || invoice?.seller?.address?.districtAr || invoice?.seller?.address?.cityAr) && (
+                    <p className="flex items-start gap-2 text-gray-500" dir="rtl">
+                      <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
+                      <span>{[invoice.seller.address.streetAr, invoice.seller.address.districtAr, invoice.seller.address.cityAr, invoice.seller.address.country].filter(Boolean).join('، ')}</span>
+                    </p>
+                  )}
+                </div>
               )}
               {invoice?.seller?.contactPhone && (
                 <p className="flex items-center gap-2">
@@ -149,7 +157,12 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
               
               <div className="mt-3 space-y-2">
                 {(invoice?.buyer?.address?.street || invoice?.buyer?.address?.city) && (
-                  <p>{[invoice.buyer.address.street, invoice.buyer.address.district, invoice.buyer.address.city, invoice.buyer.address.country].filter(Boolean).join(', ')}</p>
+                  <div className="flex flex-col gap-1">
+                    <p>{[invoice.buyer.address.street, invoice.buyer.address.district, invoice.buyer.address.city, invoice.buyer.address.country].filter(Boolean).join(', ')}</p>
+                    {bilingual && (invoice?.buyer?.address?.streetAr || invoice?.buyer?.address?.districtAr || invoice?.buyer?.address?.cityAr) && (
+                      <p className="text-gray-500" dir="rtl">{[invoice.buyer.address.streetAr, invoice.buyer.address.districtAr, invoice.buyer.address.cityAr, invoice.buyer.address.country].filter(Boolean).join('، ')}</p>
+                    )}
+                  </div>
                 )}
                 {invoice?.buyer?.contactPhone && (
                   <p className="flex items-center gap-2">

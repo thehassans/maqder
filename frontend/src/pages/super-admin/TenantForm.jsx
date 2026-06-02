@@ -304,12 +304,24 @@ export default function TenantForm() {
               <input {...register('business.address.city')} className="input" />
             </div>
             <div>
+              <label className="label">{language === 'ar' ? 'المدينة (AR)' : 'City (AR)'}</label>
+              <input {...register('business.address.cityAr')} className="input" dir="rtl" />
+            </div>
+            <div>
               <label className="label">{language === 'ar' ? 'الحي' : 'District'}</label>
               <input {...register('business.address.district')} className="input" />
             </div>
             <div>
+              <label className="label">{language === 'ar' ? 'الحي (AR)' : 'District (AR)'}</label>
+              <input {...register('business.address.districtAr')} className="input" dir="rtl" />
+            </div>
+            <div>
               <label className="label">{language === 'ar' ? 'الشارع' : 'Street'}</label>
               <input {...register('business.address.street')} className="input" />
+            </div>
+            <div>
+              <label className="label">{language === 'ar' ? 'الشارع (AR)' : 'Street (AR)'}</label>
+              <input {...register('business.address.streetAr')} className="input" dir="rtl" />
             </div>
             <div>
               <label className="label">{language === 'ar' ? 'الرمز البريدي' : 'Postal Code'}</label>

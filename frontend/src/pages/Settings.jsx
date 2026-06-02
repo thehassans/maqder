@@ -148,7 +148,15 @@ export default function Settings() {
       crNumber: tenant.business?.crNumber || '',
       address: {
         city: tenant.business?.address?.city || '',
-        district: tenant.business?.address?.district || ''
+        cityAr: tenant.business?.address?.cityAr || '',
+        district: tenant.business?.address?.district || '',
+        districtAr: tenant.business?.address?.districtAr || '',
+        street: tenant.business?.address?.street || '',
+        streetAr: tenant.business?.address?.streetAr || '',
+        postalCode: tenant.business?.address?.postalCode || '',
+        buildingNumber: tenant.business?.address?.buildingNumber || '',
+        additionalNumber: tenant.business?.address?.additionalNumber || '',
+        country: tenant.business?.address?.country || 'SA'
       },
       contactEmail: tenant.business?.contactEmail || '',
       contactPhone: tenant.business?.contactPhone || ''
@@ -333,8 +341,40 @@ export default function Settings() {
                     <input {...register('address.city')} className="input" />
                   </div>
                   <div>
+                    <label className="label">{language === 'ar' ? 'المدينة (AR)' : 'City (AR)'}</label>
+                    <input {...register('address.cityAr')} className="input" dir="rtl" />
+                  </div>
+                  <div>
                     <label className="label">{language === 'ar' ? 'الحي' : 'District'}</label>
                     <input {...register('address.district')} className="input" />
+                  </div>
+                  <div>
+                    <label className="label">{language === 'ar' ? 'الحي (AR)' : 'District (AR)'}</label>
+                    <input {...register('address.districtAr')} className="input" dir="rtl" />
+                  </div>
+                  <div>
+                    <label className="label">{language === 'ar' ? 'الشارع' : 'Street'}</label>
+                    <input {...register('address.street')} className="input" />
+                  </div>
+                  <div>
+                    <label className="label">{language === 'ar' ? 'الشارع (AR)' : 'Street (AR)'}</label>
+                    <input {...register('address.streetAr')} className="input" dir="rtl" />
+                  </div>
+                  <div>
+                    <label className="label">{language === 'ar' ? 'الرمز البريدي' : 'Postal Code'}</label>
+                    <input {...register('address.postalCode')} className="input" />
+                  </div>
+                  <div>
+                    <label className="label">{language === 'ar' ? 'رقم المبنى' : 'Building Number'}</label>
+                    <input {...register('address.buildingNumber')} className="input" />
+                  </div>
+                  <div>
+                    <label className="label">{language === 'ar' ? 'الرقم الإضافي' : 'Additional Number'}</label>
+                    <input {...register('address.additionalNumber')} className="input" />
+                  </div>
+                  <div>
+                    <label className="label">{language === 'ar' ? 'الدولة' : 'Country'}</label>
+                    <input {...register('address.country')} className="input" placeholder="SA" />
                   </div>
                   <div>
                     <label className="label">{language === 'ar' ? 'البريد الإلكتروني' : 'Email'}</label>
