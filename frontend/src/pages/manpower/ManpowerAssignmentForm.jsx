@@ -110,11 +110,19 @@ export default function ManpowerAssignmentForm() {
           </div>
         </div>
 
-        {isEdit && assignment?.status === 'active' && (
-          <Link to={`/app/dashboard/invoices/new/sell?proforma=1`} className="btn btn-secondary">
-            <FileText className="w-4 h-4" />
-            {language === 'ar' ? 'إصدار فاتورة مبدئية' : 'Create Proforma'}
-          </Link>
+        {isEdit && (
+          <div className="flex items-center gap-3">
+            <Link to={`/app/dashboard/manpower/assignments/${id}/print`} target="_blank" className="btn btn-secondary">
+              <FileText className="w-4 h-4" />
+              {language === 'ar' ? 'طباعة العقد' : 'Print Contract'}
+            </Link>
+            {assignment?.status === 'active' && (
+              <Link to={`/app/dashboard/invoices/new/sell?proforma=1`} className="btn btn-secondary">
+                <FileText className="w-4 h-4" />
+                {language === 'ar' ? 'إصدار فاتورة مبدئية' : 'Create Proforma'}
+              </Link>
+            )}
+          </div>
         )}
       </div>
 

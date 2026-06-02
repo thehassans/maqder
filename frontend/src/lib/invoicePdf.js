@@ -680,6 +680,9 @@ const getInvoiceEyebrow = (invoice, language = 'en') => {
     if (invoice?.businessContext === 'restaurant') {
       return language === 'ar' ? 'عرض سعر مطعم' : 'Restaurant Quotation'
     }
+    if (invoice?.businessContext === 'manpower') {
+      return language === 'ar' ? 'عرض سعر توريد عمالة' : 'Manpower Supply Quotation'
+    }
     return language === 'ar' ? 'عرض سعر' : 'Quotation'
   }
 
@@ -693,6 +696,10 @@ const getInvoiceEyebrow = (invoice, language = 'en') => {
 
   if (invoice?.businessContext === 'restaurant') {
     return language === 'ar' ? 'فاتورة مطعم' : 'Restaurant Invoice'
+  }
+
+  if (invoice?.businessContext === 'manpower') {
+    return language === 'ar' ? 'فاتورة توريد عمالة' : 'Manpower Supply Invoice'
   }
 
   return language === 'ar' ? 'فاتورة تجارة' : 'Trading Invoice'
@@ -709,6 +716,9 @@ const getInvoiceTitle = (invoice, language = 'en') => {
     if (invoice?.businessContext === 'restaurant') {
       return language === 'ar' ? 'عرض سعر للمطعم' : 'Restaurant Quotation'
     }
+    if (invoice?.businessContext === 'manpower') {
+      return language === 'ar' ? 'عرض سعر توريد عمالة' : 'Manpower Supply Quotation'
+    }
     return language === 'ar' ? 'عرض سعر' : 'Quotation'
   }
 
@@ -722,6 +732,10 @@ const getInvoiceTitle = (invoice, language = 'en') => {
 
   if (invoice?.businessContext === 'trading') {
     return language === 'ar' ? 'فاتورة ضريبية للتجارة' : 'Trading Tax Invoice'
+  }
+
+  if (invoice?.businessContext === 'manpower') {
+    return language === 'ar' ? 'فاتورة ضريبية لتوريد العمالة' : 'Manpower Supply Tax Invoice'
   }
 
   return language === 'ar' ? 'فاتورة ضريبية' : 'Tax Invoice'

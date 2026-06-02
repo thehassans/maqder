@@ -103,6 +103,7 @@ import ManpowerWorkers from './pages/manpower/ManpowerWorkers'
 import ManpowerWorkerForm from './pages/manpower/ManpowerWorkerForm'
 import ManpowerAssignments from './pages/manpower/ManpowerAssignments'
 import ManpowerAssignmentForm from './pages/manpower/ManpowerAssignmentForm'
+import ManpowerContractPrint from './pages/manpower/ManpowerContractPrint'
 import SystemSettings from './pages/super-admin/SystemSettings'
 import EmailCommunication from './pages/EmailCommunication'
 import FleetAssets from './pages/fleet/FleetAssets'
@@ -332,6 +333,7 @@ function App() {
         <Route path="manpower/assignments" element={<BusinessTypeRoute allowedTypes={['manpower']}><ManpowerAssignments /></BusinessTypeRoute>} />
         <Route path="manpower/assignments/new" element={<BusinessTypeRoute allowedTypes={['manpower']}><ManpowerAssignmentForm /></BusinessTypeRoute>} />
         <Route path="manpower/assignments/:id" element={<BusinessTypeRoute allowedTypes={['manpower']}><ManpowerAssignmentForm /></BusinessTypeRoute>} />
+        <Route path="manpower/assignments/:id/print" element={<BusinessTypeRoute allowedTypes={['manpower']}><ManpowerContractPrint /></BusinessTypeRoute>} />
 
         <Route path="travel-bookings" element={<BusinessTypeRoute allowedTypes={['travel_agency']}><TravelBookings /></BusinessTypeRoute>} />
         <Route path="travel-bookings/new" element={<BusinessTypeRoute allowedTypes={['travel_agency']}><TravelBookingForm /></BusinessTypeRoute>} />

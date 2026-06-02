@@ -17,7 +17,7 @@ import InvoiceTemplateSelector from './InvoiceTemplateSelector'
 import TravelInvoiceFields from './TravelInvoiceFields'
 
 const emptyLine = { productId: '', productName: '', productNameAr: '', unitCode: 'PCE', quantity: 1, unitPrice: '', customerPrice: '', taxRate: 15, agencyPrice: '', isTravelMargin: false }
-const selectableContexts = ['trading', 'construction', 'travel_agency', 'restaurant']
+const selectableContexts = ['trading', 'construction', 'travel_agency', 'restaurant', 'manpower']
 
 const sanitizeTravelDetails = (travelDetails = {}) => ({
   passengerTitle: ['mr', 'mrs', 'ms'].includes(travelDetails?.passengerTitle) ? travelDetails.passengerTitle : 'mr',
@@ -476,6 +476,7 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
                   construction: language === 'ar' ? 'مقاولات' : 'Construction',
                   travel_agency: language === 'ar' ? 'سفر' : 'Travel Agency',
                   restaurant: language === 'ar' ? 'مطعم' : 'Restaurant',
+                  manpower: language === 'ar' ? 'عمالة' : 'Manpower',
                 }
                 return (
                   <button
