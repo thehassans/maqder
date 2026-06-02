@@ -65,6 +65,46 @@ router.post('/workers', checkPermission('canCreateWorker'), async (req, res) => 
     res.status(500).json({ error: error.message });
   }
 });
+// @route   POST /api/manpower/workers/bulk
+router.post('/workers/bulk', checkPermission('canCreateWorker'), async (req, res) => {
+  try {
+    const { workers } = req.body;
+    if (!Array.isArray(workers) || workers.length === 0) {
+      return res.status(400).json({ error: 'No workers provided' });
+    }
+
+    const lastWorker = await ManpowerWorker.findOne({ tenantId: req.tenant._id })
+        .sort({ workerNumber: -1 });
+    
+    let nextNum = 1;
+    if (lastWorker && lastWorker.workerNumber) {
+      const match = lastWorker.workerNumber.match(/\d+$/);
+      if (match) nextNum = parseInt(match[0], 10) + 1;
+    }
+
+    const year = new Date().getFullYear();
+    const ops = workers.map((w, index) => {
+      const workerNumber = `WKR-${year}-${(nextNum + index).toString().padStart(4, '0')}`;
+      return {
+        insertOne: {
+          document: {
+            ...w,
+            tenantId: req.tenant._id,
+            workerNumber,
+            createdBy: req.user._id,
+            status: 'available'
+          }
+        }
+      };
+    });
+
+    const result = await ManpowerWorker.bulkWrite(ops, { ordered: false });
+    res.status(201).json({ success: true, count: result.insertedCount });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 
 // @route   GET /api/manpower/workers/:id
 router.get('/workers/:id', async (req, res) => {

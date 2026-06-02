@@ -101,6 +101,7 @@ import WebsiteSettings from './pages/super-admin/WebsiteSettings'
 import ManpowerDashboard from './pages/manpower/ManpowerDashboard'
 import ManpowerWorkers from './pages/manpower/ManpowerWorkers'
 import ManpowerWorkerForm from './pages/manpower/ManpowerWorkerForm'
+import ManpowerWorkersBulk from './pages/manpower/ManpowerWorkersBulk'
 import ManpowerAssignments from './pages/manpower/ManpowerAssignments'
 import ManpowerAssignmentForm from './pages/manpower/ManpowerAssignmentForm'
 import ManpowerContractPrint from './pages/manpower/ManpowerContractPrint'
@@ -329,6 +330,7 @@ function App() {
         <Route path="manpower" element={<BusinessTypeRoute allowedTypes={['manpower']}><ManpowerDashboard /></BusinessTypeRoute>} />
         <Route path="manpower/workers" element={<BusinessTypeRoute allowedTypes={['manpower']}><ManpowerWorkers /></BusinessTypeRoute>} />
         <Route path="manpower/workers/new" element={<BusinessTypeRoute allowedTypes={['manpower']}><ManpowerWorkerForm /></BusinessTypeRoute>} />
+        <Route path="manpower/workers/bulk" element={<BusinessTypeRoute allowedTypes={['manpower']}><ManpowerWorkersBulk /></BusinessTypeRoute>} />
         <Route path="manpower/workers/:id" element={<BusinessTypeRoute allowedTypes={['manpower']}><ManpowerWorkerForm /></BusinessTypeRoute>} />
         <Route path="manpower/assignments" element={<BusinessTypeRoute allowedTypes={['manpower']}><ManpowerAssignments /></BusinessTypeRoute>} />
         <Route path="manpower/assignments/new" element={<BusinessTypeRoute allowedTypes={['manpower']}><ManpowerAssignmentForm /></BusinessTypeRoute>} />

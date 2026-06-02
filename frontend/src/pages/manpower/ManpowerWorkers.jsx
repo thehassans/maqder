@@ -72,11 +72,16 @@ export default function ManpowerWorkers() {
             {language === 'ar' ? 'إدارة العمال والموظفين' : 'Manage workers and personnel'}
           </p>
         </div>
-        <Link to="/app/dashboard/manpower/workers/new" className="btn btn-primary">
-          <Plus className="w-4 h-4" />
-          {language === 'ar' ? 'إضافة عامل' : 'Add Worker'}
-        </Link>
-      </div>
+        <div className="flex items-center gap-3">
+          <Link to="/app/dashboard/manpower/workers/bulk" className="btn btn-secondary">
+            <Users className="w-4 h-4" />
+            {language === 'ar' ? 'إضافة متعددة' : 'Bulk Add'}
+          </Link>
+          <Link to="/app/dashboard/manpower/workers/new" className="btn btn-primary">
+            <Plus className="w-4 h-4" />
+            {language === 'ar' ? 'إضافة عامل' : 'Add Worker'}
+          </Link>
+        </div>
 
       <div className="card p-4">
         <div className="flex flex-col lg:flex-row gap-4">
