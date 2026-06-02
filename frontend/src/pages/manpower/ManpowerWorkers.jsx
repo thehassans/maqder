@@ -82,6 +82,7 @@ export default function ManpowerWorkers() {
             {language === 'ar' ? 'إضافة عامل' : 'Add Worker'}
           </Link>
         </div>
+      </div>
 
       <div className="card p-4">
         <div className="flex flex-col lg:flex-row gap-4">
