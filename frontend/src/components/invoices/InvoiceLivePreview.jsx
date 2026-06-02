@@ -501,7 +501,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
     })
   }
 
-  if (Number(templateId || invoiceBranding.templateId || 1) === 1 && !isTravelInvoice) {
+  if (!isTravelInvoice) {
     return <ModernZatcaTemplate invoice={invoice} tenant={tenant} language={language} bilingual={bilingual} documentType={documentType} />
   }
 

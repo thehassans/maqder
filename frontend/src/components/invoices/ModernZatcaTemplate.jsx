@@ -3,7 +3,7 @@ import { generateZatcaQrValue } from '../../lib/zatcaQr'
 import { calculateInvoiceSummary, toNumber } from '../../lib/invoiceDocument'
 import { getInvoiceBranding } from '../../lib/invoiceBranding'
 import { formatCurrency, formatCurrencyAmount, isSarCurrency } from '../../lib/currency'
-import { Building2, Calendar, Hash, User, Phone, MapPin, CreditCard, FileText } from 'lucide-react'
+import { Building2, Calendar, Hash, User, Phone, MapPin, CreditCard, FileText, Mail } from 'lucide-react'
 import { getAmountInWords } from '../../lib/amountInWords'
 
 const hasArabicText = (value = '') => /[\u0600-\u06FF]/.test(String(value || ''))
