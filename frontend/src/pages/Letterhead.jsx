@@ -38,6 +38,12 @@ export default function Letterhead() {
 
   return (
     <div className="space-y-6">
+      <style>{`
+        @media print {
+          @page { margin: 0; size: auto; }
+          body { margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+      `}</style>
       {/* Controls (Hidden when printing) */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 print:hidden">
         <div>
@@ -101,7 +107,7 @@ export default function Letterhead() {
                 <img
                   src={logoUrl}
                   alt="Logo"
-                  className="h-20 w-auto object-contain"
+                  className="h-32 w-auto object-contain"
                 />
               ) : (
                 <div className="h-16 w-16 rounded-lg bg-primary-100 flex items-center justify-center">
@@ -284,12 +290,6 @@ export default function Letterhead() {
                 </div>
               )}
             </div>
-            {(addressEn || addressAr) && (
-              <div className="text-xs text-gray-400 print:text-gray-600 text-center">
-                <p>{addressEn}</p>
-                <p dir="rtl">{addressAr}</p>
-              </div>
-            )}
           </div>
         </div>
 

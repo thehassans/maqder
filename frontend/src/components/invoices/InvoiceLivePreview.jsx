@@ -7,6 +7,7 @@ import { getAmountInWords } from '../../lib/amountInWords'
 import { formatCurrency, formatCurrencyAmount, isSarCurrency } from '../../lib/currency'
 import { getTravelInvoiceLabelMeta, isTravelAgencyInvoice } from '../../lib/travelInvoiceStatus'
 import SarIcon from '../ui/SarIcon'
+import ModernZatcaTemplate from './ModernZatcaTemplate'
 
 const joinClasses = (...classes) => classes.filter(Boolean).join(' ')
 
@@ -498,6 +499,10 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
       className: options.className || '',
       position: effectiveCurrencyPosition,
     })
+  }
+
+  if (Number(templateId || invoiceBranding.templateId || 1) === 1 && !isTravelInvoice) {
+    return <ModernZatcaTemplate invoice={invoice} tenant={tenant} language={language} bilingual={bilingual} documentType={documentType} />
   }
 
   return (
