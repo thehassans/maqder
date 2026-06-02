@@ -7,6 +7,7 @@ import { Building2, Calendar, Hash, User, Phone, MapPin, CreditCard, FileText, M
 import { getAmountInWords } from '../../lib/amountInWords'
 
 const hasArabicText = (value = '') => /[\u0600-\u06FF]/.test(String(value || ''))
+const toEasternArabicNumerals = (str) => String(str || '').replace(/[0-9]/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d])
 
 export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', bilingual = false, documentType = 'invoice' }) {
   const currency = invoice?.currency || tenant?.settings?.currency || 'SAR'
@@ -108,15 +109,15 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
             
             <div className="mt-2 space-y-1 text-sm text-gray-600 md:text-right">
               {(invoice?.seller?.vatNumber || tenant?.business?.vatNumber) && (
-                <div className="flex flex-col md:items-end gap-1">
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center justify-end gap-2">
                     <span className="font-semibold text-gray-900">VAT No:</span>
                     <span className="font-mono">{invoice?.seller?.vatNumber || tenant?.business?.vatNumber}</span>
                   </div>
                   {bilingual && (
-                    <div className="flex items-center gap-2" dir="rtl">
-                      <span className="font-mono">{invoice?.seller?.vatNumber || tenant?.business?.vatNumber}</span>
-                      <span className="font-semibold text-gray-900">:الرقم الضريبي</span>
+                    <div className="flex items-center justify-end gap-2" dir="rtl">
+                      <span className="font-semibold text-gray-900">الرقم الضريبي:</span>
+                      <span className="font-sans">{toEasternArabicNumerals(invoice?.seller?.vatNumber || tenant?.business?.vatNumber)}</span>
                     </div>
                   )}
                 </div>
@@ -157,10 +158,18 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
                   </p>
                 )}
                 {invoice?.buyer?.vatNumber && (
-                  <p className="mt-2">
-                    <span className="font-semibold text-gray-900">VAT No:</span>{" "}
-                    <span className="font-mono">{invoice.buyer.vatNumber}</span>
-                  </p>
+                  <div className="mt-2 flex flex-col gap-1">
+                    <p>
+                      <span className="font-semibold text-gray-900">VAT No:</span>{" "}
+                      <span className="font-mono">{invoice.buyer.vatNumber}</span>
+                    </p>
+                    {bilingual && (
+                      <p className="flex gap-2" dir="rtl">
+                        <span className="font-semibold text-gray-900">الرقم الضريبي:</span>
+                        <span className="font-sans">{toEasternArabicNumerals(invoice.buyer.vatNumber)}</span>
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
             </div>

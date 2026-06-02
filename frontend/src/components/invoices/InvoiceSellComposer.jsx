@@ -556,11 +556,7 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
             <input type="hidden" {...register('invoiceSubtype')} />
           </div>
 
-          <div className="card p-6">
-            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'قالب ومعاينة' : 'Template & Preview'}</h3>
-            <InvoiceTemplateSelector language={language} value={selectedTemplateId} onChange={(id) => setValue('pdfTemplateId', id)} />
-            <input type="hidden" {...register('pdfTemplateId')} />
-          </div>
+          <input type="hidden" {...register('pdfTemplateId')} />
 
           {isTradingContext && (
             <div className="card p-6">
