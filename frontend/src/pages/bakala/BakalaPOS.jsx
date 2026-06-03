@@ -2,14 +2,17 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useCartEngine } from '../../hooks/useCartEngine';
 import { useBakalaSync } from '../../hooks/useBakalaSync';
 import { getProductByBarcode, saveOfflineInvoice } from '../../lib/bakalaDb';
-import { ShoppingCart, CreditCard, Wallet, Send, RefreshCw, Server, WifiOff } from 'lucide-react';
+import { ShoppingCart, CreditCard, Wallet, Send, RefreshCw, Server, WifiOff, ArrowLeft } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
+import { useNavigate } from 'react-router-dom';
 
 export default function BakalaPOS() {
+  const navigate = useNavigate();
   const { cartItems, addItem, updateQuantity, removeItem, clearCart, totals } = useCartEngine();
-  const { isOnline, pendingCount } = useBakalaSync();
+  const { isOnline, pendingCount, syncOfflineData } = useBakalaSync();
   const barcodeInputRef = useRef(null);
   const [scannerValue, setScannerValue] = useState('');
+  const [fastItems, setFastItems] = useState([]);
 
   // Keep focus on scanner input globally
   useEffect(() => {
@@ -23,6 +26,18 @@ export default function BakalaPOS() {
     focusScanner();
     return () => document.removeEventListener('click', focusScanner);
   }, []);
+
+  // Load products from IndexedDB
+  useEffect(() => {
+    const loadProducts = async () => {
+      // Run sync to fetch newest products, then load
+      await syncOfflineData();
+      const { getAllProducts } = await import('../../lib/bakalaDb');
+      const products = await getAllProducts();
+      setFastItems(products.slice(0, 16)); // Load first 16 as fast menu for now
+    };
+    loadProducts();
+  }, [syncOfflineData]);
 
   // Handle Barcode Scans
   const handleScannerSubmit = async (e) => {
@@ -93,14 +108,6 @@ export default function BakalaPOS() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [cartItems, totals]);
 
-  // Fast Menu dummy items
-  const fastItems = [
-    { _id: 'f1', name: 'Samoon Bread', retailPrice: 1.5, taxRate: 0, primaryBarcode: 'samoon' },
-    { _id: 'f2', name: 'Local Water Refill', retailPrice: 2.0, taxRate: 15, primaryBarcode: 'water_refill' },
-    { _id: 'f3', name: 'Loose Mint', retailPrice: 1.0, taxRate: 15, primaryBarcode: 'mint' },
-    { _id: 'f4', name: 'Fresh Milk 1L', retailPrice: 5.5, taxRate: 15, primaryBarcode: 'milk_1l' },
-  ];
-
   return (
     <div className="flex h-screen bg-zinc-950 text-white overflow-hidden">
       
@@ -119,9 +126,17 @@ export default function BakalaPOS() {
       <div className="w-[60%] flex flex-col border-r border-zinc-900 bg-zinc-950">
         {/* Header */}
         <div className="p-4 border-b border-zinc-900 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <ShoppingCart className="w-5 h-5 text-zinc-400" />
-            <h1 className="text-xl font-bold tracking-tight">Checkout</h1>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => navigate('/app/dashboard/bakala/dashboard')}
+              className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-2">
+              <ShoppingCart className="w-5 h-5 text-zinc-400" />
+              <h1 className="text-xl font-bold tracking-tight">Checkout</h1>
+            </div>
           </div>
           <div className="flex items-center gap-4 text-xs font-medium text-zinc-500">
             {isOnline ? (
@@ -179,20 +194,26 @@ export default function BakalaPOS() {
       <div className="w-[40%] flex flex-col bg-zinc-900/30">
         
         {/* Fast Grid Menu */}
-        <div className="flex-1 p-6">
+        <div className="flex-1 p-6 overflow-y-auto">
           <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4">Fast Menu</h2>
-          <div className="grid grid-cols-2 gap-3">
-            {fastItems.map(item => (
-              <button 
-                key={item._id}
-                onClick={() => addItem(item)}
-                className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 hover:border-zinc-700 transition-all text-left active:scale-95 flex flex-col gap-2"
-              >
-                <span className="font-medium text-zinc-200">{item.name}</span>
-                <span className="text-zinc-500 text-sm">SAR {item.retailPrice.toFixed(2)}</span>
-              </button>
-            ))}
-          </div>
+          {fastItems.length === 0 ? (
+            <div className="text-zinc-500 text-sm text-center py-10 border border-dashed border-zinc-800 rounded-xl">
+              No products found. Add products to Bakala or click Online to sync.
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+              {fastItems.map(item => (
+                <button 
+                  key={item._id}
+                  onClick={() => addItem(item)}
+                  className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 hover:border-zinc-700 transition-all text-left active:scale-95 flex flex-col gap-2"
+                >
+                  <span className="font-medium text-zinc-200 line-clamp-2 leading-tight">{item.name}</span>
+                  <span className="text-zinc-500 text-sm font-semibold text-emerald-400">SAR {item.retailPrice.toFixed(2)}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Summary Card */}

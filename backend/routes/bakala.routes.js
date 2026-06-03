@@ -4,8 +4,25 @@ import Invoice from '../models/Invoice.js';
 import Tenant from '../models/Tenant.js';
 import ZatcaService from '../utils/zatca/ZatcaService.js';
 import mongoose from 'mongoose';
+import BakalaProduct from '../models/BakalaProduct.js';
 
 const router = express.Router();
+
+/**
+ * Get all Bakala products for offline sync
+ * GET /api/bakala/products
+ */
+router.get('/products', protect, async (req, res) => {
+  try {
+    const products = await BakalaProduct.find({ tenantId: req.user.tenantId, isActive: true })
+      .select('name nameAr primaryBarcode retailPrice taxRate unit')
+      .lean();
+    res.json({ success: true, products });
+  } catch (error) {
+    console.error('Fetch Bakala Products Error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 
 /**
  * Sync offline Bakala invoices to the server

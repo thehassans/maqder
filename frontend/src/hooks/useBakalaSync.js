@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { getOfflineInvoices, removeOfflineInvoice } from '../lib/bakalaDb';
+import { getOfflineInvoices, removeOfflineInvoice, saveProductsCache } from '../lib/bakalaDb';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
 
@@ -18,23 +18,36 @@ export const useBakalaSync = () => {
     
     try {
       setSyncing(true);
-      const invoices = await getOfflineInvoices();
-      if (invoices.length === 0) return;
 
-      const response = await api.post('/bakala/sync', { invoices });
-      if (response.data.success) {
-        // Remove synced invoices from IndexedDB
-        for (const synced of response.data.syncedInvoices) {
-          await removeOfflineInvoice(synced.offlineId);
+      // 1. Fetch latest products from server and cache them
+      try {
+        const prodRes = await api.get('/bakala/products');
+        if (prodRes.data.success && prodRes.data.products) {
+          await saveProductsCache(prodRes.data.products);
         }
-        
-        if (response.data.syncedInvoices.length > 0) {
-          toast.success(`Synced ${response.data.syncedInvoices.length} offline invoices`);
-        }
-        if (response.data.errors && response.data.errors.length > 0) {
-          toast.error(`Failed to sync ${response.data.errors.length} invoices`);
+      } catch (err) {
+        console.error('Failed to sync products', err);
+      }
+
+      // 2. Sync offline invoices to server
+      const invoices = await getOfflineInvoices();
+      if (invoices.length > 0) {
+        const response = await api.post('/bakala/sync', { invoices });
+        if (response.data.success) {
+          // Remove synced invoices from IndexedDB
+          for (const synced of response.data.syncedInvoices) {
+            await removeOfflineInvoice(synced.offlineId);
+          }
+          
+          if (response.data.syncedInvoices.length > 0) {
+            toast.success(`Synced ${response.data.syncedInvoices.length} offline invoices`);
+          }
+          if (response.data.errors && response.data.errors.length > 0) {
+            toast.error(`Failed to sync ${response.data.errors.length} invoices`);
+          }
         }
       }
+      
       await checkPending();
     } catch (error) {
       console.error('Offline sync failed', error);

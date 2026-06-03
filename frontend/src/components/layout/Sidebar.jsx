@@ -176,7 +176,7 @@ export default function Sidebar() {
       title: language === 'ar' ? 'البقالة' : 'Bakala',
       businessTypes: ['bakala'],
       items: [
-        { path: '/app/dashboard/bakala/pos', icon: ShoppingCart, label: language === 'ar' ? 'نقطة البيع' : 'POS Checkout' },
+        { path: '/app/bakala/pos', icon: ShoppingCart, label: language === 'ar' ? 'نقطة البيع' : 'POS Checkout' },
         { path: '/app/dashboard/bakala/dashboard', icon: ShieldCheck, label: language === 'ar' ? 'لوحة التحكم' : 'Administration' },
       ]
     },

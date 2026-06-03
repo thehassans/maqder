@@ -261,6 +261,15 @@ function App() {
       <Route path="/reports/*" element={<LegacyModuleRedirect module="reports" />} />
       <Route path="/settings/*" element={<LegacyModuleRedirect module="settings" />} />
 
+      {/* Bakala Standalone POS */}
+      <Route path="/app/bakala/pos" element={
+        <PrivateRoute redirectSuperAdmin>
+          <BusinessTypeRoute allowedTypes={['bakala']}>
+            <BakalaPOS />
+          </BusinessTypeRoute>
+        </PrivateRoute>
+      } />
+
       {/* Super Admin Routes */}
       <Route
         path="/super-admin"
@@ -388,7 +397,6 @@ function App() {
         <Route path="tasks/:id" element={<TaskForm />} />
         
         {/* Bakala Routes */}
-        <Route path="bakala/pos" element={<BusinessTypeRoute allowedTypes={['bakala']}><BakalaPOS /></BusinessTypeRoute>} />
         <Route path="bakala/dashboard" element={<BusinessTypeRoute allowedTypes={['bakala']}><BakalaDashboard /></BusinessTypeRoute>} />
 
         <Route path="iot" element={<BusinessTypeRoute allowedTypes={['trading']}><IoT /></BusinessTypeRoute>} />
