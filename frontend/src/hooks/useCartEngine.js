@@ -9,7 +9,7 @@ export const useCartEngine = () => {
       if (existing) {
         return prev.map(item => 
           item.productId === product._id || item.primaryBarcode === product.primaryBarcode
-            ? { ...item, quantity: item.quantity + 1, lineTotal: (item.quantity + 1) * item.retailPrice }
+            ? { ...item, quantity: item.quantity + 1, lineTotal: (item.quantity + 1) * item.unitPrice }
             : item
         );
       }

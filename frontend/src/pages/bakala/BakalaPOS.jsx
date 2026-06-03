@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useCartEngine } from '../../hooks/useCartEngine';
 import { useBakalaSync } from '../../hooks/useBakalaSync';
 import { getProductByBarcode, saveOfflineInvoice } from '../../lib/bakalaDb';
-import { ShoppingCart, CreditCard, Wallet, Send, RefreshCw, Server, WifiOff, ArrowLeft } from 'lucide-react';
+import { ShoppingCart, CreditCard, Wallet, Send, RefreshCw, Server, WifiOff, ArrowLeft, Search, Plus, Minus, Trash2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useNavigate } from 'react-router-dom';
 
@@ -11,53 +11,80 @@ export default function BakalaPOS() {
   const { cartItems, addItem, updateQuantity, removeItem, clearCart, totals } = useCartEngine();
   const { isOnline, pendingCount, syncOfflineData } = useBakalaSync();
   const barcodeInputRef = useRef(null);
-  const [scannerValue, setScannerValue] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [allProducts, setAllProducts] = useState([]);
   const [fastItems, setFastItems] = useState([]);
 
-  // Keep focus on scanner input globally
+  // Focus search input automatically if typing letters/numbers outside of an input
   useEffect(() => {
-    const focusScanner = () => {
-      if (document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
-        barcodeInputRef.current?.focus();
+    const handleGlobalKeydown = (e) => {
+      // If pressing a printable character and not currently focused on an input
+      if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        if (document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+          barcodeInputRef.current?.focus();
+        }
       }
     };
     
-    document.addEventListener('click', focusScanner);
-    focusScanner();
-    return () => document.removeEventListener('click', focusScanner);
+    document.addEventListener('keydown', handleGlobalKeydown);
+    return () => document.removeEventListener('keydown', handleGlobalKeydown);
   }, []);
 
   // Load products from IndexedDB
   useEffect(() => {
     const loadProducts = async () => {
-      // Run sync to fetch newest products, then load
       await syncOfflineData();
       const { getAllProducts } = await import('../../lib/bakalaDb');
       const products = await getAllProducts();
-      setFastItems(products.slice(0, 16)); // Load first 16 as fast menu for now
+      setAllProducts(products);
+      setFastItems(products.slice(0, 24)); // Load first 24 as default
     };
     loadProducts();
   }, [syncOfflineData]);
 
-  // Handle Barcode Scans
+  // Handle Search Filtering
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFastItems(allProducts.slice(0, 24));
+      return;
+    }
+    const lower = searchTerm.toLowerCase();
+    const filtered = allProducts.filter(p => 
+      p.name.toLowerCase().includes(lower) || 
+      p.primaryBarcode?.includes(lower) ||
+      p.barcodes?.some(b => b.includes(lower))
+    );
+    setFastItems(filtered.slice(0, 24));
+  }, [searchTerm, allProducts]);
+
+  // Handle Barcode Scans via Enter key in search
   const handleScannerSubmit = async (e) => {
     e.preventDefault();
-    if (!scannerValue.trim()) return;
+    if (!searchTerm.trim()) return;
     
-    const product = await getProductByBarcode(scannerValue.trim());
-    if (product) {
-      addItem(product);
+    // Check if the exact search term matches a barcode in the filtered items
+    const exactMatch = allProducts.find(p => p.primaryBarcode === searchTerm.trim() || p.barcodes?.includes(searchTerm.trim()));
+    
+    if (exactMatch) {
+      addItem(exactMatch);
+      setSearchTerm('');
     } else {
-      // For demo or manual testing if DB doesn't have it
-      addItem({
-        _id: uuidv4(),
-        name: `Item ${scannerValue}`,
-        primaryBarcode: scannerValue,
-        retailPrice: 15.0,
-        taxRate: 15
-      });
+      // If no exact match but there's only 1 item in the filtered list, add that one
+      if (fastItems.length === 1) {
+        addItem(fastItems[0]);
+        setSearchTerm('');
+      } else {
+        // Fallback for manual test item
+        addItem({
+          _id: uuidv4(),
+          name: `Item ${searchTerm}`,
+          primaryBarcode: searchTerm,
+          retailPrice: 15.0,
+          taxRate: 15
+        });
+        setSearchTerm('');
+      }
     }
-    setScannerValue('');
   };
 
   // Checkout handling
@@ -109,36 +136,22 @@ export default function BakalaPOS() {
   }, [cartItems, totals]);
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] bg-white text-gray-900 overflow-hidden">
+    <div className="flex h-[calc(100vh-4rem)] bg-[#F8F9FA] text-gray-900 overflow-hidden font-sans">
       
-      {/* Hidden Scanner Input */}
-      <form onSubmit={handleScannerSubmit} className="opacity-0 absolute -top-10">
-        <input 
-          ref={barcodeInputRef}
-          type="text" 
-          value={scannerValue}
-          onChange={(e) => setScannerValue(e.target.value)}
-          autoFocus
-        />
-      </form>
-
-      {/* LEFT PANEL: Cart View (65%) */}
-      <div className="w-[65%] flex flex-col border-r border-gray-200 bg-white">
+      {/* LEFT PANEL: Cart View (60%) */}
+      <div className="w-[60%] flex flex-col border-r border-gray-100 bg-white shadow-[2px_0_10px_rgba(0,0,0,0.02)] z-10 relative">
         {/* Header */}
-        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-          <div className="flex items-center gap-4">
+        <div className="px-6 py-5 border-b border-gray-50 flex justify-between items-center bg-white">
+          <div className="flex items-center gap-3">
             <button 
               onClick={() => navigate('/app/dashboard/bakala/dashboard')}
-              className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 -ml-2 text-gray-400 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <div className="flex items-center gap-2">
-              <ShoppingCart className="w-5 h-5 text-gray-400" />
-              <h1 className="text-xl font-bold tracking-tight">Checkout</h1>
-            </div>
+            <h1 className="text-2xl font-bold tracking-tight text-gray-800">Current Order</h1>
           </div>
-          <div className="flex items-center gap-4 text-xs font-medium text-gray-500">
+          <div className="flex items-center gap-4 text-xs font-medium text-gray-400">
             {isOnline ? (
               <span className="flex items-center gap-1 text-emerald-500"><Server className="w-4 h-4"/> Online</span>
             ) : (
@@ -149,55 +162,65 @@ export default function BakalaPOS() {
         </div>
 
         {/* Cart Table */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+        <div className="flex-1 overflow-y-auto px-6 py-4">
           {cartItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-400">
-              <ShoppingCart className="w-16 h-16 mb-4 opacity-20" />
-              <p className="text-lg">Scan item to begin</p>
+            <div className="flex flex-col items-center justify-center h-full text-gray-300">
+              <ShoppingCart className="w-20 h-20 mb-6 opacity-20" strokeWidth={1} />
+              <p className="text-xl tracking-tight text-gray-400 font-light">Scan a product to begin</p>
             </div>
           ) : (
-            <table className="w-full text-left text-sm">
-              <thead className="text-gray-500 border-b border-gray-100">
-                <tr>
-                  <th className="pb-3 font-medium">Item</th>
-                  <th className="pb-3 font-medium text-center">Qty</th>
-                  <th className="pb-3 font-medium text-right">Price</th>
-                  <th className="pb-3 font-medium text-right">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {cartItems.map((item, index) => (
-                  <tr key={index} className="border-b border-gray-50 group">
-                    <td className="py-4">
-                      <p className="font-semibold text-gray-900">{item.productName}</p>
-                      <p className="text-xs text-gray-500">{item.primaryBarcode}</p>
-                    </td>
-                    <td className="py-4">
-                      <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => updateQuantity(index, item.quantity - 1)} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700">-</button>
-                        <span className="w-8 text-center font-medium">{item.quantity}</span>
-                        <button onClick={() => updateQuantity(index, item.quantity + 1)} className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-gray-700">+</button>
-                      </div>
-                      <div className="text-center group-hover:hidden font-medium">{item.quantity}</div>
-                    </td>
-                    <td className="py-4 text-right text-gray-500">SAR {item.unitPrice.toFixed(2)}</td>
-                    <td className="py-4 text-right font-medium text-gray-900">SAR {item.lineTotal.toFixed(2)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="space-y-3">
+              {cartItems.map((item, index) => (
+                <div key={index} className="flex items-center p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow group">
+                  <div className="flex-1 min-w-0 pr-4">
+                    <p className="font-semibold text-gray-800 truncate text-lg">{item.productName}</p>
+                    <p className="text-sm text-gray-400 font-medium">{item.primaryBarcode}</p>
+                  </div>
+                  
+                  <div className="flex items-center gap-4 mr-6 bg-gray-50 rounded-xl p-1">
+                    <button onClick={() => updateQuantity(index, item.quantity - 1)} className="w-10 h-10 flex items-center justify-center bg-white hover:bg-gray-100 rounded-lg text-gray-600 shadow-sm transition-colors">
+                      {item.quantity === 1 ? <Trash2 className="w-4 h-4 text-rose-400" /> : <Minus className="w-4 h-4" />}
+                    </button>
+                    <span className="w-8 text-center font-bold text-lg">{item.quantity}</span>
+                    <button onClick={() => updateQuantity(index, item.quantity + 1)} className="w-10 h-10 flex items-center justify-center bg-white hover:bg-gray-100 rounded-lg text-gray-600 shadow-sm transition-colors">
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="text-right w-24">
+                    <p className="font-bold text-gray-900 text-lg">{(item.lineTotal || 0).toFixed(2)}</p>
+                    <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold">SAR</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </div>
 
-      {/* RIGHT PANEL: Actions & Fast Menu (35%) */}
-      <div className="w-[35%] flex flex-col bg-gray-50/50">
+      {/* RIGHT PANEL: Actions & Fast Menu (40%) */}
+      <div className="w-[40%] flex flex-col bg-[#F8F9FA]">
+        
+        {/* Search Bar */}
+        <div className="px-6 pt-6 pb-2">
+          <form onSubmit={handleScannerSubmit} className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input 
+              ref={barcodeInputRef}
+              type="text" 
+              placeholder="Search by name or scan barcode..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-12 pr-4 py-4 bg-white border border-gray-100 rounded-2xl shadow-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none text-base font-medium transition-all"
+              autoFocus
+            />
+          </form>
+        </div>
         
         {/* Fast Grid Menu */}
-        <div className="flex-1 p-6 overflow-y-auto">
-          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">Fast Menu</h2>
+        <div className="flex-1 px-6 pb-6 pt-2 overflow-y-auto">
           {fastItems.length === 0 ? (
-            <div className="text-gray-400 text-sm text-center py-10 border border-dashed border-gray-200 rounded-xl bg-white">
+            <div className="text-gray-400 text-sm text-center py-10 rounded-2xl bg-white border border-gray-100">
               No products found. Add products to Bakala or click Online to sync.
             </div>
           ) : (
@@ -205,11 +228,15 @@ export default function BakalaPOS() {
               {fastItems.map(item => (
                 <button 
                   key={item._id}
-                  onClick={() => addItem(item)}
-                  className="p-4 rounded-xl border border-gray-200 bg-white hover:border-emerald-500 hover:shadow-sm transition-all text-left active:scale-95 flex flex-col gap-2"
+                  onClick={() => {
+                    addItem(item);
+                    setSearchTerm('');
+                    barcodeInputRef.current?.focus();
+                  }}
+                  className="p-4 rounded-2xl border border-gray-100 bg-white hover:border-emerald-400 hover:shadow-md transition-all text-left active:scale-95 flex flex-col justify-between min-h-[110px]"
                 >
-                  <span className="font-medium text-gray-800 line-clamp-2 leading-tight">{item.name}</span>
-                  <span className="text-gray-500 text-sm font-semibold text-emerald-600">SAR {item.retailPrice.toFixed(2)}</span>
+                  <span className="font-semibold text-gray-700 line-clamp-2 leading-snug">{item.name}</span>
+                  <span className="text-sm font-bold text-emerald-600 mt-2">SAR {(item.retailPrice || 0).toFixed(2)}</span>
                 </button>
               ))}
             </div>
@@ -217,35 +244,36 @@ export default function BakalaPOS() {
         </div>
 
         {/* Summary Card */}
-        <div className="p-6 bg-white border-t border-gray-200 shadow-sm z-10">
-          <div className="space-y-2 mb-6">
-            <div className="flex justify-between text-gray-500">
+        <div className="p-6 bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.02)] z-10 rounded-tl-3xl">
+          <div className="space-y-3 mb-6">
+            <div className="flex justify-between text-gray-500 font-medium">
               <span>Subtotal</span>
-              <span>SAR {totals.subtotal.toFixed(2)}</span>
+              <span className="text-gray-700">SAR {(totals.subtotal || 0).toFixed(2)}</span>
             </div>
-            <div className="flex justify-between text-gray-500">
+            <div className="flex justify-between text-gray-500 font-medium">
               <span>VAT (15%)</span>
-              <span>SAR {totals.taxAmount.toFixed(2)}</span>
+              <span className="text-gray-700">SAR {(totals.taxAmount || 0).toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-end mt-4 pt-4 border-t border-gray-100">
-              <span className="text-gray-600 font-medium">Total</span>
-              <span className="text-5xl font-bold tracking-tighter text-emerald-600">SAR {totals.grandTotal.toFixed(2)}</span>
+              <span className="text-gray-400 font-bold uppercase tracking-widest text-sm">Total</span>
+              <div className="flex items-baseline gap-1">
+                <span className="text-lg font-bold text-emerald-600">SAR</span>
+                <span className="text-5xl font-black tracking-tighter text-emerald-600">{(totals.grandTotal || 0).toFixed(2)}</span>
+              </div>
             </div>
           </div>
 
           {/* Action Drawer */}
           <div className="grid grid-cols-2 gap-3">
-            <button onClick={() => handleCheckout('cash')} className="flex items-center justify-center gap-2 p-4 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl font-bold transition-colors active:scale-95 border border-emerald-200">
-              <Wallet className="w-5 h-5" /> Cash [F1]
+            <button onClick={() => handleCheckout('cash')} className="flex flex-col items-center justify-center gap-1 p-4 bg-emerald-500 text-white hover:bg-emerald-600 rounded-2xl font-bold transition-colors active:scale-95 shadow-sm shadow-emerald-200">
+              <Wallet className="w-6 h-6 mb-1" /> 
+              <span>Pay Cash</span>
+              <span className="text-[10px] font-normal opacity-75">[F1]</span>
             </button>
-            <button onClick={() => handleCheckout('mada')} className="flex items-center justify-center gap-2 p-4 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl font-bold transition-colors active:scale-95 border border-blue-200">
-              <CreditCard className="w-5 h-5" /> Mada [F2]
-            </button>
-            <button onClick={() => handleCheckout('apple_pay')} className="flex items-center justify-center gap-2 p-4 bg-gray-50 text-gray-900 hover:bg-gray-100 rounded-xl font-bold transition-colors active:scale-95 border border-gray-200">
-              Apple Pay [F3]
-            </button>
-            <button className="flex items-center justify-center gap-2 p-4 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-xl font-bold transition-colors active:scale-95 border border-indigo-200">
-              <Send className="w-5 h-5" /> Daftar [F4]
+            <button onClick={() => handleCheckout('mada')} className="flex flex-col items-center justify-center gap-1 p-4 bg-[#0A2540] text-white hover:bg-gray-900 rounded-2xl font-bold transition-colors active:scale-95 shadow-sm">
+              <CreditCard className="w-6 h-6 mb-1" /> 
+              <span>Mada / Visa</span>
+              <span className="text-[10px] font-normal opacity-75">[F2]</span>
             </button>
           </div>
         </div>
