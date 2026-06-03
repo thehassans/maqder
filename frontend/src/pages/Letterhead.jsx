@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { Building2, Mail, Phone, Globe, MapPin, Printer } from 'lucide-react';
+import debounce from 'lodash.debounce';
+import api from '../lib/api';
 
 export default function Letterhead() {
   const { tenant } = useSelector((state) => state.auth);
   const uiLanguage = useSelector((state) => state.ui.language);
   
-  const [outputLang, setOutputLang] = useState('en'); // 'en', 'ar', 'both'
+  const [outputLang, setOutputLang] = useState('both'); // 'en', 'ar', 'both'
   const [contentEn, setContentEn] = useState('');
   const [contentAr, setContentAr] = useState('');
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
@@ -21,6 +23,33 @@ export default function Letterhead() {
   const [senderNameAr, setSenderNameAr] = useState('');
   const [senderTitleEn, setSenderTitleEn] = useState('');
   const [senderTitleAr, setSenderTitleAr] = useState('');
+
+  const translateText = async (text, targetLanguage) => {
+    if (!text.trim()) return '';
+    try {
+      const res = await api.post('/ai/translate', { text, targetLanguage });
+      return res.data.translatedText;
+    } catch (e) {
+      console.error('Translation error', e);
+      return '';
+    }
+  };
+
+  const translateEnToAr = useCallback(
+    debounce(async (text, setter) => {
+      const translated = await translateText(text, 'Arabic');
+      if (translated) setter(translated);
+    }, 1000),
+    []
+  );
+
+  const translateArToEn = useCallback(
+    debounce(async (text, setter) => {
+      const translated = await translateText(text, 'English');
+      if (translated) setter(translated);
+    }, 1000),
+    []
+  );
 
   const companyNameEn = tenant?.business?.legalNameEn || 'Company Name';
   const companyNameAr = tenant?.business?.legalNameAr || 'اسم الشركة';
@@ -175,8 +204,14 @@ export default function Letterhead() {
               <div className="space-y-6" dir="ltr">
                 <div className="space-y-3">
                   <div className="print:hidden">
-                    <input type="text" value={recipientEn} onChange={e => setRecipientEn(e.target.value)} placeholder="Recipient Name" className="input bg-transparent font-bold text-lg" />
-                    <input type="text" value={recipientTitleEn} onChange={e => setRecipientTitleEn(e.target.value)} placeholder="Recipient Title / Company" className="input bg-transparent" />
+                    <input type="text" value={recipientEn} onChange={e => {
+                      setRecipientEn(e.target.value);
+                      translateEnToAr(e.target.value, setRecipientAr);
+                    }} placeholder="Recipient Name" className="input bg-transparent font-bold text-lg" />
+                    <input type="text" value={recipientTitleEn} onChange={e => {
+                      setRecipientTitleEn(e.target.value);
+                      translateEnToAr(e.target.value, setRecipientTitleAr);
+                    }} placeholder="Recipient Title / Company" className="input bg-transparent" />
                   </div>
                   <div className="hidden print:block">
                     <div className="font-bold text-lg">{recipientEn}</div>
@@ -185,7 +220,10 @@ export default function Letterhead() {
                 </div>
 
                 <div className="print:hidden">
-                  <input type="text" value={subjectEn} onChange={e => setSubjectEn(e.target.value)} placeholder="Subject Line" className="input bg-transparent font-bold underline" />
+                  <input type="text" value={subjectEn} onChange={e => {
+                    setSubjectEn(e.target.value);
+                    translateEnToAr(e.target.value, setSubjectAr);
+                  }} placeholder="Subject Line" className="input bg-transparent font-bold underline" />
                 </div>
                 <div className="hidden print:block font-bold underline">
                   {subjectEn ? `Subject: ${subjectEn}` : ''}
@@ -194,7 +232,10 @@ export default function Letterhead() {
                 <div className="print:hidden">
                   <textarea
                     value={contentEn}
-                    onChange={e => setContentEn(e.target.value)}
+                    onChange={e => {
+                      setContentEn(e.target.value);
+                      translateEnToAr(e.target.value, setContentAr);
+                    }}
                     placeholder="Type your letter content here..."
                     className="w-full min-h-[300px] p-4 rounded-lg border border-gray-200 bg-transparent resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                   />
@@ -206,8 +247,14 @@ export default function Letterhead() {
                 <div className="space-y-3 pt-8">
                   <p className="print:block hidden mb-8">Sincerely,</p>
                   <div className="print:hidden">
-                    <input type="text" value={senderNameEn} onChange={e => setSenderNameEn(e.target.value)} placeholder="Your Name" className="input bg-transparent font-bold" />
-                    <input type="text" value={senderTitleEn} onChange={e => setSenderTitleEn(e.target.value)} placeholder="Your Title" className="input bg-transparent" />
+                    <input type="text" value={senderNameEn} onChange={e => {
+                      setSenderNameEn(e.target.value);
+                      translateEnToAr(e.target.value, setSenderNameAr);
+                    }} placeholder="Your Name" className="input bg-transparent font-bold" />
+                    <input type="text" value={senderTitleEn} onChange={e => {
+                      setSenderTitleEn(e.target.value);
+                      translateEnToAr(e.target.value, setSenderTitleAr);
+                    }} placeholder="Your Title" className="input bg-transparent" />
                   </div>
                   <div className="hidden print:block">
                     <div className="font-bold">{senderNameEn}</div>
@@ -222,8 +269,14 @@ export default function Letterhead() {
               <div className="space-y-6" dir="rtl">
                 <div className="space-y-3">
                   <div className="print:hidden">
-                    <input type="text" value={recipientAr} onChange={e => setRecipientAr(e.target.value)} placeholder="اسم المستلم" className="input bg-transparent font-bold text-lg" />
-                    <input type="text" value={recipientTitleAr} onChange={e => setRecipientTitleAr(e.target.value)} placeholder="المنصب / الجهة" className="input bg-transparent" />
+                    <input type="text" value={recipientAr} onChange={e => {
+                      setRecipientAr(e.target.value);
+                      translateArToEn(e.target.value, setRecipientEn);
+                    }} placeholder="اسم المستلم" className="input bg-transparent font-bold text-lg" />
+                    <input type="text" value={recipientTitleAr} onChange={e => {
+                      setRecipientTitleAr(e.target.value);
+                      translateArToEn(e.target.value, setRecipientTitleEn);
+                    }} placeholder="المنصب / الجهة" className="input bg-transparent" />
                   </div>
                   <div className="hidden print:block">
                     <div className="font-bold text-lg">{recipientAr}</div>
@@ -232,7 +285,10 @@ export default function Letterhead() {
                 </div>
 
                 <div className="print:hidden">
-                  <input type="text" value={subjectAr} onChange={e => setSubjectAr(e.target.value)} placeholder="الموضوع" className="input bg-transparent font-bold underline" />
+                  <input type="text" value={subjectAr} onChange={e => {
+                    setSubjectAr(e.target.value);
+                    translateArToEn(e.target.value, setSubjectEn);
+                  }} placeholder="الموضوع" className="input bg-transparent font-bold underline" />
                 </div>
                 <div className="hidden print:block font-bold underline">
                   {subjectAr ? `الموضوع: ${subjectAr}` : ''}
@@ -241,7 +297,10 @@ export default function Letterhead() {
                 <div className="print:hidden">
                   <textarea
                     value={contentAr}
-                    onChange={e => setContentAr(e.target.value)}
+                    onChange={e => {
+                      setContentAr(e.target.value);
+                      translateArToEn(e.target.value, setContentEn);
+                    }}
                     placeholder="اكتب محتوى الخطاب هنا..."
                     className="w-full min-h-[300px] p-4 rounded-lg border border-gray-200 bg-transparent resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                   />
@@ -253,8 +312,14 @@ export default function Letterhead() {
                 <div className="space-y-3 pt-8">
                   <p className="print:block hidden mb-8">وتفضلوا بقبول فائق الاحترام،</p>
                   <div className="print:hidden">
-                    <input type="text" value={senderNameAr} onChange={e => setSenderNameAr(e.target.value)} placeholder="الاسم" className="input bg-transparent font-bold" />
-                    <input type="text" value={senderTitleAr} onChange={e => setSenderTitleAr(e.target.value)} placeholder="المنصب" className="input bg-transparent" />
+                    <input type="text" value={senderNameAr} onChange={e => {
+                      setSenderNameAr(e.target.value);
+                      translateArToEn(e.target.value, setSenderNameEn);
+                    }} placeholder="الاسم" className="input bg-transparent font-bold" />
+                    <input type="text" value={senderTitleAr} onChange={e => {
+                      setSenderTitleAr(e.target.value);
+                      translateArToEn(e.target.value, setSenderTitleEn);
+                    }} placeholder="المنصب" className="input bg-transparent" />
                   </div>
                   <div className="hidden print:block">
                     <div className="font-bold">{senderNameAr}</div>

@@ -1,6 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import { GoogleGenAI } from '@google/genai';
+import OpenAI from 'openai';
 import Tenant from '../models/Tenant.js';
 import User from '../models/User.js';
 import Invoice from '../models/Invoice.js';
@@ -683,6 +684,7 @@ router.post('/settings/ai/test', async (req, res) => {
       if (provider === 'gemini') activeKey = settings.gemini?.apiKey;
       if (provider === 'openai') activeKey = settings.openai?.apiKey;
       if (provider === 'grok') activeKey = settings.grok?.apiKey;
+      if (provider === 'groq') activeKey = settings.groq?.apiKey;
     }
 
     if (!activeKey) {
@@ -712,6 +714,15 @@ router.post('/settings/ai/test', async (req, res) => {
     } else if (provider === 'grok') {
       model = settings.grok?.model || 'grok-2-latest';
       const client = new OpenAI({ apiKey: activeKey, baseURL: "https://api.x.ai/v1" });
+      const response = await client.chat.completions.create({
+        model,
+        messages: [{ role: 'user', content: "Explain how AI works in a few words" }],
+        max_tokens: 50,
+      });
+      text = response.choices?.[0]?.message?.content || '';
+    } else if (provider === 'groq') {
+      model = settings.groq?.model || 'llama3-8b-8192';
+      const client = new OpenAI({ apiKey: activeKey, baseURL: "https://api.groq.com/openai/v1" });
       const response = await client.chat.completions.create({
         model,
         messages: [{ role: 'user', content: "Explain how AI works in a few words" }],
