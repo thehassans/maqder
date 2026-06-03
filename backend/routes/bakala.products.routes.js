@@ -4,6 +4,7 @@ import BakalaProduct from '../models/BakalaProduct.js';
 import BakalaCategory from '../models/BakalaCategory.js';
 import BakalaBrand from '../models/BakalaBrand.js';
 import BakalaUnit from '../models/BakalaUnit.js';
+import Tenant from '../models/Tenant.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -19,6 +20,13 @@ const router = express.Router();
 // Temporary route to trigger CSV import
 router.get('/trigger-import', protect, async (req, res) => {
   try {
+    let targetTenantId = req.user.tenantId;
+    if (!targetTenantId && req.user.role === 'super_admin') {
+      const tenant = await Tenant.findOne({ businessTypes: 'bakala' });
+      if (!tenant) return res.status(400).json({ error: 'No Bakala tenant found to import products into.' });
+      targetTenantId = tenant._id;
+    }
+
     const csvFilePath = path.join(__dirname, '../scripts/bakala_products.csv');
     if (!fs.existsSync(csvFilePath)) {
       return res.status(404).json({ error: 'CSV file not found at ' + csvFilePath });
@@ -43,9 +51,9 @@ router.get('/trigger-import', protect, async (req, res) => {
 
           try {
             await BakalaProduct.findOneAndUpdate(
-              { tenantId: req.user.tenantId, primaryBarcode: barcode },
+              { tenantId: targetTenantId, primaryBarcode: barcode },
               {
-                tenantId: req.user.tenantId,
+                tenantId: targetTenantId,
                 name,
                 nameAr,
                 primaryBarcode: barcode,
@@ -71,9 +79,20 @@ router.get('/trigger-import', protect, async (req, res) => {
   }
 });
 
+const getTargetTenantId = async (user) => {
+  if (user.tenantId) return user.tenantId;
+  if (user.role === 'super_admin') {
+    const tenant = await Tenant.findOne({ businessTypes: 'bakala' });
+    return tenant ? tenant._id : null;
+  }
+  return null;
+};
+
 router.get('/', protect, async (req, res) => {
   try {
-    const products = await BakalaProduct.find({ tenantId: req.user.tenantId }).sort('-createdAt');
+    const tenantId = await getTargetTenantId(req.user);
+    const filter = tenantId ? { tenantId } : {};
+    const products = await BakalaProduct.find(filter).sort('-createdAt');
     res.json(products);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -82,7 +101,10 @@ router.get('/', protect, async (req, res) => {
 
 router.post('/', protect, async (req, res) => {
   try {
-    const product = new BakalaProduct({ ...req.body, tenantId: req.user.tenantId, createdBy: req.user._id });
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found for this user.' });
+    
+    const product = new BakalaProduct({ ...req.body, tenantId, createdBy: req.user._id });
     await product.save();
     res.status(201).json(product);
   } catch (error) {
@@ -92,8 +114,9 @@ router.post('/', protect, async (req, res) => {
 
 router.put('/:id', protect, async (req, res) => {
   try {
+    const tenantId = await getTargetTenantId(req.user);
     const product = await BakalaProduct.findOneAndUpdate(
-      { _id: req.params.id, tenantId: req.user.tenantId },
+      { _id: req.params.id, ...(tenantId ? { tenantId } : {}) },
       req.body,
       { new: true, runValidators: true }
     );
@@ -106,7 +129,8 @@ router.put('/:id', protect, async (req, res) => {
 
 router.delete('/:id', protect, async (req, res) => {
   try {
-    const product = await BakalaProduct.findOneAndDelete({ _id: req.params.id, tenantId: req.user.tenantId });
+    const tenantId = await getTargetTenantId(req.user);
+    const product = await BakalaProduct.findOneAndDelete({ _id: req.params.id, ...(tenantId ? { tenantId } : {}) });
     if (!product) return res.status(404).json({ error: 'Product not found' });
     res.json({ success: true });
   } catch (error) {
@@ -117,7 +141,9 @@ router.delete('/:id', protect, async (req, res) => {
 // --- CATEGORIES ---
 router.get('/categories', protect, async (req, res) => {
   try {
-    const categories = await BakalaCategory.find({ tenantId: req.user.tenantId }).sort('name');
+    const tenantId = await getTargetTenantId(req.user);
+    const filter = tenantId ? { tenantId } : {};
+    const categories = await BakalaCategory.find(filter).sort('name');
     res.json(categories);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -126,7 +152,9 @@ router.get('/categories', protect, async (req, res) => {
 
 router.post('/categories', protect, async (req, res) => {
   try {
-    const category = new BakalaCategory({ ...req.body, tenantId: req.user.tenantId });
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found for this user.' });
+    const category = new BakalaCategory({ ...req.body, tenantId });
     await category.save();
     res.status(201).json(category);
   } catch (error) {
@@ -136,7 +164,8 @@ router.post('/categories', protect, async (req, res) => {
 
 router.delete('/categories/:id', protect, async (req, res) => {
   try {
-    await BakalaCategory.findOneAndDelete({ _id: req.params.id, tenantId: req.user.tenantId });
+    const tenantId = await getTargetTenantId(req.user);
+    await BakalaCategory.findOneAndDelete({ _id: req.params.id, ...(tenantId ? { tenantId } : {}) });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -146,7 +175,9 @@ router.delete('/categories/:id', protect, async (req, res) => {
 // --- BRANDS ---
 router.get('/brands', protect, async (req, res) => {
   try {
-    const brands = await BakalaBrand.find({ tenantId: req.user.tenantId }).sort('name');
+    const tenantId = await getTargetTenantId(req.user);
+    const filter = tenantId ? { tenantId } : {};
+    const brands = await BakalaBrand.find(filter).sort('name');
     res.json(brands);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -155,7 +186,9 @@ router.get('/brands', protect, async (req, res) => {
 
 router.post('/brands', protect, async (req, res) => {
   try {
-    const brand = new BakalaBrand({ ...req.body, tenantId: req.user.tenantId });
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found for this user.' });
+    const brand = new BakalaBrand({ ...req.body, tenantId });
     await brand.save();
     res.status(201).json(brand);
   } catch (error) {
@@ -165,7 +198,8 @@ router.post('/brands', protect, async (req, res) => {
 
 router.delete('/brands/:id', protect, async (req, res) => {
   try {
-    await BakalaBrand.findOneAndDelete({ _id: req.params.id, tenantId: req.user.tenantId });
+    const tenantId = await getTargetTenantId(req.user);
+    await BakalaBrand.findOneAndDelete({ _id: req.params.id, ...(tenantId ? { tenantId } : {}) });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -175,7 +209,9 @@ router.delete('/brands/:id', protect, async (req, res) => {
 // --- UNITS ---
 router.get('/units', protect, async (req, res) => {
   try {
-    const units = await BakalaUnit.find({ tenantId: req.user.tenantId }).sort('name');
+    const tenantId = await getTargetTenantId(req.user);
+    const filter = tenantId ? { tenantId } : {};
+    const units = await BakalaUnit.find(filter).sort('name');
     res.json(units);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -184,7 +220,9 @@ router.get('/units', protect, async (req, res) => {
 
 router.post('/units', protect, async (req, res) => {
   try {
-    const unit = new BakalaUnit({ ...req.body, tenantId: req.user.tenantId });
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found for this user.' });
+    const unit = new BakalaUnit({ ...req.body, tenantId });
     await unit.save();
     res.status(201).json(unit);
   } catch (error) {
@@ -194,7 +232,8 @@ router.post('/units', protect, async (req, res) => {
 
 router.delete('/units/:id', protect, async (req, res) => {
   try {
-    await BakalaUnit.findOneAndDelete({ _id: req.params.id, tenantId: req.user.tenantId });
+    const tenantId = await getTargetTenantId(req.user);
+    await BakalaUnit.findOneAndDelete({ _id: req.params.id, ...(tenantId ? { tenantId } : {}) });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });

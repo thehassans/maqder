@@ -116,13 +116,13 @@ export default function ProductList() {
           <button 
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
             onClick={async () => {
-              const toastId = toast.loading('Importing from CSV on server...');
+              const toastId = toast.loading('Importing from CSV on server... This may take up to a minute.');
               try {
-                const res = await api.get('/bakala-products/trigger-import');
+                const res = await api.get('/bakala-products/trigger-import', { timeout: 120000 });
                 toast.success(res.data.message, { id: toastId });
                 fetchItems();
               } catch (err) {
-                toast.error(err.response?.data?.error || 'Import failed', { id: toastId });
+                toast.error(err.response?.data?.error || 'Import failed. If it timed out, check back in a minute to see if they imported in the background.', { id: toastId });
               }
             }}
           >
