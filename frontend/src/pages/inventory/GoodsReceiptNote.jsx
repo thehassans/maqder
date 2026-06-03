@@ -29,12 +29,12 @@ export default function GoodsReceiptNote() {
     try {
       const [grnRes, suppRes, poRes, prodRes] = await Promise.all([
         api.get('/grn'),
-        api.get('/contacts?type=Supplier'),
+        api.get('/contacts?types=supplier'),
         api.get('/purchase-orders'),
         api.get('/bakala-products')
       ]);
       setGrns(grnRes.data);
-      setSuppliers(suppRes.data);
+      setSuppliers(suppRes.data?.contacts || []);
       setPurchaseOrders(poRes.data.filter(po => po.status !== 'fulfilled'));
       setAllProducts(prodRes.data);
     } catch (err) {
@@ -123,7 +123,7 @@ export default function GoodsReceiptNote() {
             <label className="block text-sm font-semibold text-gray-700 mb-2">Supplier *</label>
             <select value={selectedSupplier} onChange={(e) => setSelectedSupplier(e.target.value)} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500">
               <option value="">Select Supplier</option>
-              {suppliers.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
+              {suppliers.map(s => <option key={s.entityId || s._id} value={s.entityId || s._id}>{s.displayName || s.name}</option>)}
             </select>
           </div>
           <div>

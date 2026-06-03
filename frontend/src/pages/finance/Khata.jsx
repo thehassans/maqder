@@ -28,10 +28,10 @@ export default function Khata() {
     try {
       const [accRes, custRes] = await Promise.all([
         api.get('/khata'),
-        api.get('/contacts?type=Customer')
+        api.get('/contacts?types=customer')
       ]);
       setAccounts(accRes.data);
-      setCustomers(custRes.data);
+      setCustomers(custRes.data?.contacts || []);
     } catch (error) {
       toast.error('Failed to load Khata accounts');
     } finally {
@@ -215,7 +215,7 @@ export default function Khata() {
                   className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
                 >
                   <option value="">-- Choose Customer --</option>
-                  {customers.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
+                  {customers.map(c => <option key={c.entityId || c._id} value={c.entityId || c._id}>{c.displayName || c.name}</option>)}
                 </select>
               </div>
               <button type="submit" className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-colors">Create Ledger</button>
