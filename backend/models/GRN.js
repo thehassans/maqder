@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const grnSchema = new mongoose.Schema({
   tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
   purchaseOrderId: { type: mongoose.Schema.Types.ObjectId, ref: 'PurchaseOrder' }, // Optional, can be received without PO
-  supplierId: { type: mongoose.Schema.Types.ObjectId, ref: 'Contact', required: true },
+  supplierId: { type: mongoose.Schema.Types.ObjectId, ref: 'Supplier', required: true },
   grnNumber: { type: String, required: true },
   referenceNumber: { type: String }, // Supplier Invoice or Delivery Note number
   dateReceived: { type: Date, default: Date.now },

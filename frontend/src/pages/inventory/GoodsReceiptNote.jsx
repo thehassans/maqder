@@ -233,7 +233,7 @@ export default function GoodsReceiptNote() {
               <tr key={grn._id} className="hover:bg-gray-50/50">
                 <td className="px-6 py-4 font-bold text-gray-900">{grn.grnNumber}</td>
                 <td className="px-6 py-4 text-gray-500">{new Date(grn.dateReceived).toLocaleString()}</td>
-                <td className="px-6 py-4 font-medium text-gray-900">{grn.supplierId?.name}</td>
+                <td className="px-6 py-4 font-medium text-gray-900">{grn.supplierId?.nameEn || grn.supplierId?.nameAr}</td>
                 <td className="px-6 py-4 text-sm">
                   {grn.referenceNumber && <span className="block text-gray-900">Ref: {grn.referenceNumber}</span>}
                   {grn.purchaseOrderId && <span className="block text-emerald-600">PO: {grn.purchaseOrderId.poNumber}</span>}

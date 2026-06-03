@@ -16,7 +16,7 @@ const generateGrnNumber = async (tenantId) => {
 router.get('/', protect, async (req, res) => {
   try {
     const grns = await GRN.find({ tenantId: req.user.tenantId })
-      .populate('supplierId', 'name')
+      .populate('supplierId', 'nameEn nameAr')
       .populate('purchaseOrderId', 'poNumber')
       .sort('-createdAt');
     res.json(grns);
@@ -87,7 +87,7 @@ router.post('/', protect, async (req, res) => {
 router.get('/:id', protect, async (req, res) => {
   try {
     const grn = await GRN.findOne({ _id: req.params.id, tenantId: req.user.tenantId })
-      .populate('supplierId', 'name email phone')
+      .populate('supplierId', 'nameEn nameAr email phone')
       .populate('purchaseOrderId', 'poNumber')
       .populate('receivedBy', 'name');
     
