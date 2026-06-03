@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Search, Loader } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, Loader, Download } from 'lucide-react';
 import api from '../../../lib/api';
 import toast from 'react-hot-toast';
 
@@ -112,19 +112,36 @@ export default function ProductList() {
             className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-sm"
           />
         </div>
-        <button 
-          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium"
-          onClick={() => {
-            setFormData({
-              name: '', nameAr: '', primaryBarcode: '', category: '', brand: '', 
-              unit: 'PCS', costPrice: 0, retailPrice: 0, minimumStockAlertLevel: 10, isActive: true
-            });
-            setEditingId(null);
-            setIsModalOpen(true);
-          }}
-        >
-          <Plus className="w-4 h-4" /> Add Product
-        </button>
+        <div className="flex gap-2">
+          <button 
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+            onClick={async () => {
+              const toastId = toast.loading('Importing from CSV on server...');
+              try {
+                const res = await api.get('/bakala-products/trigger-import');
+                toast.success(res.data.message, { id: toastId });
+                fetchItems();
+              } catch (err) {
+                toast.error(err.response?.data?.error || 'Import failed', { id: toastId });
+              }
+            }}
+          >
+            <Download className="w-4 h-4" /> Import CSV
+          </button>
+          <button 
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium"
+            onClick={() => {
+              setFormData({
+                name: '', nameAr: '', primaryBarcode: '', category: '', brand: '', 
+                unit: 'PCS', costPrice: 0, retailPrice: 0, minimumStockAlertLevel: 10, isActive: true
+              });
+              setEditingId(null);
+              setIsModalOpen(true);
+            }}
+          >
+            <Plus className="w-4 h-4" /> Add Product
+          </button>
+        </div>
       </div>
 
       <div className="bg-white border border-gray-200 rounded-lg overflow-x-auto">

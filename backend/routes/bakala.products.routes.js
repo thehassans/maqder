@@ -4,10 +4,73 @@ import BakalaProduct from '../models/BakalaProduct.js';
 import BakalaCategory from '../models/BakalaCategory.js';
 import BakalaBrand from '../models/BakalaBrand.js';
 import BakalaUnit from '../models/BakalaUnit.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import csv from 'csv-parser';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
 // --- PRODUCTS ---
+
+// Temporary route to trigger CSV import
+router.get('/trigger-import', protect, async (req, res) => {
+  try {
+    const csvFilePath = path.join(__dirname, '../scripts/bakala_products.csv');
+    if (!fs.existsSync(csvFilePath)) {
+      return res.status(404).json({ error: 'CSV file not found at ' + csvFilePath });
+    }
+
+    const results = [];
+    fs.createReadStream(csvFilePath)
+      .pipe(csv())
+      .on('data', (data) => results.push(data))
+      .on('end', async () => {
+        let count = 0;
+        for (const row of results) {
+          const name = row['english items'] || row['english_items'] || 'Unknown Item';
+          const nameAr = row['arabic items'] || row['arabic_items'] || '';
+          const barcode = row['bracode'] || row['barcode'];
+          const costPrice = parseFloat(row['purchase_price']) || 0;
+          const retailPrice = parseFloat(row['sale_price']) || 0;
+          const minimumStockAlertLevel = parseInt(row['alert_quantity']) || 0;
+          const isActive = row['active'] === '1' || row['active'] === 'true' || row['active'] === '';
+
+          if (!barcode) continue;
+
+          try {
+            await BakalaProduct.findOneAndUpdate(
+              { tenantId: req.user.tenantId, primaryBarcode: barcode },
+              {
+                tenantId: req.user.tenantId,
+                name,
+                nameAr,
+                primaryBarcode: barcode,
+                barcodes: [barcode],
+                costPrice,
+                retailPrice,
+                minimumStockAlertLevel,
+                isActive,
+                taxRate: 15,
+                createdBy: req.user._id
+              },
+              { upsert: true, new: true }
+            );
+            count++;
+          } catch (err) {
+            console.error('Import error:', err);
+          }
+        }
+        res.json({ success: true, message: `Successfully imported/updated ${count} products!` });
+      });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.get('/', protect, async (req, res) => {
   try {
     const products = await BakalaProduct.find({ tenantId: req.user.tenantId }).sort('-createdAt');
