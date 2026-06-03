@@ -9,7 +9,6 @@ const router = express.Router();
 
 router.use(protect);
 router.use(tenantFilter);
-router.use(requireBusinessType('trading'));
 
 function toNumber(value, fallback = 0) {
   const n = Number(value);
