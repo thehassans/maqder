@@ -263,11 +263,11 @@ function App() {
 
       {/* Bakala Standalone POS */}
       <Route path="/app/bakala/pos" element={
-        <PrivateRoute redirectSuperAdmin>
+        <ProtectedRoute redirectSuperAdmin>
           <BusinessTypeRoute allowedTypes={['bakala']}>
             <BakalaPOS />
           </BusinessTypeRoute>
-        </PrivateRoute>
+        </ProtectedRoute>
       } />
 
       {/* Super Admin Routes */}
