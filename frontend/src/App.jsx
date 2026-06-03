@@ -78,6 +78,7 @@ import Tasks from './pages/Tasks'
 import TaskForm from './pages/TaskForm'
 import BakalaPOS from './pages/bakala/BakalaPOS'
 import BakalaDashboard from './pages/bakala/BakalaDashboard'
+import BakalaProducts from './pages/bakala/BakalaProducts'
 import IoT from './pages/IoT'
 import IoTDeviceForm from './pages/IoTDeviceForm'
 import Finance from './pages/Finance'
@@ -261,14 +262,6 @@ function App() {
       <Route path="/reports/*" element={<LegacyModuleRedirect module="reports" />} />
       <Route path="/settings/*" element={<LegacyModuleRedirect module="settings" />} />
 
-      {/* Bakala Standalone POS */}
-      <Route path="/app/bakala/pos" element={
-        <ProtectedRoute redirectSuperAdmin>
-          <BusinessTypeRoute allowedTypes={['bakala']}>
-            <BakalaPOS />
-          </BusinessTypeRoute>
-        </ProtectedRoute>
-      } />
 
       {/* Super Admin Routes */}
       <Route
@@ -397,7 +390,9 @@ function App() {
         <Route path="tasks/:id" element={<TaskForm />} />
         
         {/* Bakala Routes */}
+        <Route path="bakala/pos" element={<BusinessTypeRoute allowedTypes={['bakala']}><BakalaPOS /></BusinessTypeRoute>} />
         <Route path="bakala/dashboard" element={<BusinessTypeRoute allowedTypes={['bakala']}><BakalaDashboard /></BusinessTypeRoute>} />
+        <Route path="bakala/products/*" element={<BusinessTypeRoute allowedTypes={['bakala']}><BakalaProducts /></BusinessTypeRoute>} />
 
         <Route path="iot" element={<BusinessTypeRoute allowedTypes={['trading']}><IoT /></BusinessTypeRoute>} />
         <Route path="iot/devices/new" element={<BusinessTypeRoute allowedTypes={['trading']}><IoTDeviceForm /></BusinessTypeRoute>} />
