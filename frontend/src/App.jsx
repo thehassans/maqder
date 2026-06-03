@@ -76,6 +76,8 @@ import Projects from './pages/Projects'
 import ProjectForm from './pages/ProjectForm'
 import Tasks from './pages/Tasks'
 import TaskForm from './pages/TaskForm'
+import BakalaPOS from './pages/bakala/BakalaPOS'
+import BakalaDashboard from './pages/bakala/BakalaDashboard'
 import IoT from './pages/IoT'
 import IoTDeviceForm from './pages/IoTDeviceForm'
 import Finance from './pages/Finance'
@@ -384,6 +386,11 @@ function App() {
         <Route path="tasks" element={<Tasks />} />
         <Route path="tasks/new" element={<TaskForm />} />
         <Route path="tasks/:id" element={<TaskForm />} />
+        
+        {/* Bakala Routes */}
+        <Route path="bakala/pos" element={<BusinessTypeRoute allowedTypes={['bakala']}><BakalaPOS /></BusinessTypeRoute>} />
+        <Route path="bakala/dashboard" element={<BusinessTypeRoute allowedTypes={['bakala']}><BakalaDashboard /></BusinessTypeRoute>} />
+
         <Route path="iot" element={<BusinessTypeRoute allowedTypes={['trading']}><IoT /></BusinessTypeRoute>} />
         <Route path="iot/devices/new" element={<BusinessTypeRoute allowedTypes={['trading']}><IoTDeviceForm /></BusinessTypeRoute>} />
         <Route path="iot/devices/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><IoTDeviceForm /></BusinessTypeRoute>} />

@@ -54,6 +54,7 @@ import complianceRoutes from './routes/compliance.routes.js';
 import rentalCarRoutes from './routes/rentalCar.routes.js';
 import rentalCustomerRoutes from './routes/rentalCustomer.routes.js';
 import rentalContractRoutes from './routes/rentalContract.routes.js';
+import bakalaRoutes from './routes/bakala.routes.js';
 
 import laundryServiceRoutes from './routes/laundryService.routes.js';
 import laundryCustomerRoutes from './routes/laundryCustomer.routes.js';
@@ -360,6 +361,7 @@ app.use('/api/compliance', ensureDatabaseReady, complianceRoutes);
 app.use('/api/rental/cars', ensureDatabaseReady, rentalCarRoutes);
 app.use('/api/rental/customers', ensureDatabaseReady, rentalCustomerRoutes);
 app.use('/api/rental/contracts', ensureDatabaseReady, rentalContractRoutes);
+app.use('/api/bakala', ensureDatabaseReady, bakalaRoutes);
 
 app.use('/api/laundry/services', ensureDatabaseReady, laundryServiceRoutes);
 app.use('/api/laundry/customers', ensureDatabaseReady, laundryCustomerRoutes);
