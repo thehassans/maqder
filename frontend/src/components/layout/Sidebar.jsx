@@ -44,7 +44,8 @@ import {
   PlusCircle,
   Wrench,
   Ban,
-  TrendingUp
+  TrendingUp,
+  PackageMinus
 } from 'lucide-react'
 import { toggleSidebarCollapse, setMobileMenuOpen } from '../../store/slices/uiSlice'
 import { useTranslation } from '../../lib/translations'
@@ -155,9 +156,11 @@ export default function Sidebar() {
     },
     {
       title: language === 'ar' ? 'سلسلة التوريد' : 'Supply Chain',
-      businessTypes: ['trading'],
+      businessTypes: ['trading', 'bakala'],
       items: [
         { path: '/app/dashboard/suppliers', icon: Building, label: language === 'ar' ? 'الموردين' : 'Suppliers', perm: { module: 'supply_chain', action: 'read' } },
+        { path: '/app/dashboard/grn', icon: Truck, label: language === 'ar' ? 'استلام البضائع' : 'Goods Receipt', perm: { module: 'supply_chain', action: 'read' } },
+        { path: '/app/dashboard/purchase-returns', icon: PackageMinus, label: language === 'ar' ? 'مرتجعات المشتريات' : 'Purchase Returns', perm: { module: 'supply_chain', action: 'read' } },
         { path: '/app/dashboard/shipments', icon: Truck, label: language === 'ar' ? 'الشحنات' : 'Shipments', perm: { module: 'supply_chain', action: 'read' } },
       ]
     },

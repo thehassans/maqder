@@ -59,6 +59,8 @@ import Suppliers from './pages/Suppliers'
 import SupplierForm from './pages/SupplierForm'
 import PurchaseOrders from './pages/PurchaseOrders'
 import PurchaseOrderForm from './pages/PurchaseOrderForm'
+import GoodsReceiptNote from './pages/inventory/GoodsReceiptNote'
+import PurchaseReturns from './pages/inventory/PurchaseReturns'
 import Shipments from './pages/Shipments'
 import ShipmentForm from './pages/ShipmentForm'
 import TravelBookings from './pages/travel/TravelBookings'
@@ -380,6 +382,8 @@ function App() {
         <Route path="purchase-orders" element={<PurchaseOrders />} />
         <Route path="purchase-orders/new" element={<PurchaseOrderForm />} />
         <Route path="purchase-orders/:id" element={<PurchaseOrderForm />} />
+        <Route path="grn" element={<GoodsReceiptNote />} />
+        <Route path="purchase-returns" element={<PurchaseReturns />} />
         <Route path="shipments" element={<BusinessTypeRoute allowedTypes={['trading']}><Shipments /></BusinessTypeRoute>} />
         <Route path="shipments/new" element={<BusinessTypeRoute allowedTypes={['trading']}><ShipmentForm /></BusinessTypeRoute>} />
         <Route path="shipments/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><ShipmentForm /></BusinessTypeRoute>} />

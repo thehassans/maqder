@@ -1,0 +1,75 @@
+import express from 'express';
+import { protect } from '../middleware/auth.js';
+import PurchaseReturn from '../models/PurchaseReturn.js';
+import BakalaProduct from '../models/BakalaProduct.js';
+
+const router = express.Router();
+
+// Generate Return Number
+const generateReturnNumber = async (tenantId) => {
+  const count = await PurchaseReturn.countDocuments({ tenantId });
+  return `PR-${new Date().getFullYear()}-${String(count + 1).padStart(4, '0')}`;
+};
+
+// Get all Purchase Returns
+router.get('/', protect, async (req, res) => {
+  try {
+    const returns = await PurchaseReturn.find({ tenantId: req.user.tenantId })
+      .populate('supplierId', 'name')
+      .sort('-createdAt');
+    res.json(returns);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create Purchase Return and update stock
+router.post('/', protect, async (req, res) => {
+  try {
+    const { supplierId, referenceNumber, lines, notes } = req.body;
+
+    const returnNumber = await generateReturnNumber(req.user.tenantId);
+
+    const purchaseReturn = new PurchaseReturn({
+      tenantId: req.user.tenantId,
+      returnNumber,
+      supplierId,
+      referenceNumber,
+      notes,
+      returnedBy: req.user._id,
+      lines: lines || []
+    });
+
+    await purchaseReturn.save();
+
+    // Update Inventory (Decrease Stock)
+    for (const line of purchaseReturn.lines) {
+      if (line.productId) {
+        await BakalaProduct.findOneAndUpdate(
+          { _id: line.productId, tenantId: req.user.tenantId },
+          { $inc: { stockQuantity: -line.quantityReturned } }
+        );
+      }
+    }
+
+    res.status(201).json(purchaseReturn);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get Single Purchase Return
+router.get('/:id', protect, async (req, res) => {
+  try {
+    const purchaseReturn = await PurchaseReturn.findOne({ _id: req.params.id, tenantId: req.user.tenantId })
+      .populate('supplierId', 'name email phone')
+      .populate('returnedBy', 'name');
+    
+    if (!purchaseReturn) return res.status(404).json({ error: 'Purchase Return not found' });
+    res.json(purchaseReturn);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+export default router;

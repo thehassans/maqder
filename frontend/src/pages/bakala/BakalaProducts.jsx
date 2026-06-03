@@ -7,7 +7,8 @@ import UnitList from './tabs/UnitList';
 import PrintBarcode from './tabs/PrintBarcode';
 import StockCount from './tabs/StockCount';
 import ExpiryTracker from './tabs/ExpiryTracker';
-import { CalendarDays } from 'lucide-react';
+import Adjustments from './tabs/Adjustments';
+import { CalendarDays, SlidersHorizontal } from 'lucide-react';
 
 export default function BakalaProducts() {
   const [activeTab, setActiveTab] = useState('products');
@@ -19,6 +20,7 @@ export default function BakalaProducts() {
     { id: 'brands', label: 'Brand', icon: Target },
     { id: 'print', label: 'Print Barcode', icon: Printer },
     { id: 'stock', label: 'Stock Count', icon: BarChart2 },
+    { id: 'adjustments', label: 'Adjustments', icon: SlidersHorizontal },
     { id: 'expiry', label: 'Expiry Tracker', icon: CalendarDays },
   ];
 
@@ -60,6 +62,7 @@ export default function BakalaProducts() {
           {activeTab === 'brands' && <BrandList />}
           { activeTab === 'print' && <PrintBarcode /> }
           { activeTab === 'stock' && <StockCount /> }
+          { activeTab === 'adjustments' && <Adjustments /> }
           { activeTab === 'expiry' && <ExpiryTracker /> }
         </div>
       </div>
