@@ -21,7 +21,7 @@ export default function GeminiSettings() {
       grokModel: 'grok-2-latest',
       grokKey: '',
       grokEnabled: true,
-      groqModel: 'llama3-8b-8192',
+      groqModel: 'llama-3.1-8b-instant',
       groqKey: '',
       groqEnabled: true,
     },
@@ -41,7 +41,7 @@ export default function GeminiSettings() {
         grokModel: d?.grok?.model || 'grok-2-latest',
         grokKey: '',
         grokEnabled: d?.grok?.enabled !== false,
-        groqModel: d?.groq?.model || 'llama3-8b-8192',
+        groqModel: d?.groq?.model || 'llama-3.1-8b-instant',
         groqKey: '',
         groqEnabled: d?.groq?.enabled !== false,
       })
@@ -64,7 +64,7 @@ export default function GeminiSettings() {
         grokModel: d?.grok?.model || 'grok-2-latest',
         grokKey: '',
         grokEnabled: d?.grok?.enabled !== false,
-        groqModel: d?.groq?.model || 'llama3-8b-8192',
+        groqModel: d?.groq?.model || 'llama-3.1-8b-instant',
         groqKey: '',
         groqEnabled: d?.groq?.enabled !== false,
       })
@@ -101,7 +101,7 @@ export default function GeminiSettings() {
         enabled: formData.grokEnabled
       },
       groq: {
-        model: String(formData.groqModel || 'llama3-8b-8192').trim(),
+        model: String(formData.groqModel || 'llama-3.1-8b-instant').trim(),
         enabled: formData.groqEnabled
       }
     }
@@ -222,7 +222,7 @@ export default function GeminiSettings() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="label">{language === 'ar' ? 'الموديل' : 'Model'}</label>
-                <input {...register('groqModel')} className="input" placeholder="llama3-8b-8192" />
+                <input {...register('groqModel')} className="input" placeholder="llama-3.1-8b-instant" />
               </div>
               <div>
                 <label className="label">{language === 'ar' ? 'مفتاح API' : 'API Key'}</label>

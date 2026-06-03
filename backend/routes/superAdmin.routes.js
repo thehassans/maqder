@@ -569,7 +569,7 @@ router.get('/settings/ai', async (req, res) => {
       },
       groq: {
         enabled: settings.groq?.enabled !== false,
-        model: settings.groq?.model || 'llama3-8b-8192',
+        model: settings.groq?.model || 'llama-3.1-8b-instant',
         hasApiKey: !!settings.groq?.apiKey,
         apiKeyMasked: maskApiKey(settings.groq?.apiKey)
       }
@@ -627,7 +627,7 @@ router.put('/settings/ai', async (req, res) => {
     if (groq) {
       const nextGroq = {
         ...(settings.groq?.toObject?.() || settings.groq || {}),
-        model: (groq.model || settings.groq?.model || 'llama3-8b-8192').trim(),
+        model: (groq.model || settings.groq?.model || 'llama-3.1-8b-instant').trim(),
         enabled: groq.enabled !== undefined ? groq.enabled : settings.groq?.enabled
       };
       if (groq.apiKey !== undefined) {
@@ -664,7 +664,7 @@ router.put('/settings/ai', async (req, res) => {
       },
       groq: {
         enabled: settings.groq?.enabled !== false,
-        model: settings.groq?.model || 'llama3-8b-8192',
+        model: settings.groq?.model || 'llama-3.1-8b-instant',
         hasApiKey: !!settings.groq?.apiKey,
         apiKeyMasked: maskApiKey(settings.groq?.apiKey)
       }
@@ -721,7 +721,7 @@ router.post('/settings/ai/test', async (req, res) => {
       });
       text = response.choices?.[0]?.message?.content || '';
     } else if (provider === 'groq') {
-      model = settings.groq?.model || 'llama3-8b-8192';
+      model = settings.groq?.model || 'llama-3.1-8b-instant';
       const client = new OpenAI({ apiKey: activeKey, baseURL: "https://api.groq.com/openai/v1" });
       const response = await client.chat.completions.create({
         model,

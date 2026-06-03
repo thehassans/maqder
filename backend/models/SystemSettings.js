@@ -20,7 +20,7 @@ const systemSettingsSchema = new mongoose.Schema({
   groq: {
     enabled: { type: Boolean, default: false },
     apiKey: { type: String },
-    model: { type: String, default: 'llama3-8b-8192' }
+    model: { type: String, default: 'llama-3.1-8b-instant' }
   },
   identity: {
     enabled: { type: Boolean, default: false },

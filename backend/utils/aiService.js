@@ -53,7 +53,7 @@ export const translateWithFallback = async ({ text, targetLanguage }) => {
     try {
       const client = new OpenAI({ apiKey: settings.groq.apiKey, baseURL: "https://api.groq.com/openai/v1" });
       const response = await client.chat.completions.create({
-        model: settings.groq.model || 'llama3-8b-8192',
+        model: settings.groq.model || 'llama-3.1-8b-instant',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.1,
       });
