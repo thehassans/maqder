@@ -2,7 +2,6 @@ import express from 'express';
 import { protect } from '../middleware/auth.js';
 import KhataAccount from '../models/KhataAccount.js';
 import KhataTransaction from '../models/KhataTransaction.js';
-import Contact from '../models/Contact.js';
 
 const router = express.Router();
 
