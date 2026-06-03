@@ -2,9 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useCartEngine } from '../../hooks/useCartEngine';
 import { useBakalaSync } from '../../hooks/useBakalaSync';
 import { getProductByBarcode, saveOfflineInvoice } from '../../lib/bakalaDb';
-import { ShoppingCart, CreditCard, Wallet, Send, RefreshCw, Server, WifiOff, ArrowLeft, Search, Plus, Minus, Trash2 } from 'lucide-react';
+import { ShoppingCart, CreditCard, Wallet, Send, RefreshCw, Server, WifiOff, ArrowLeft, Search, Plus, Minus, Trash2, LogOut } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useNavigate } from 'react-router-dom';
+import PosSessions from './PosSessions';
+import api from '../../lib/api';
+import toast from 'react-hot-toast';
 
 export default function BakalaPOS() {
   const navigate = useNavigate();
@@ -14,6 +17,7 @@ export default function BakalaPOS() {
   const [searchTerm, setSearchTerm] = useState('');
   const [allProducts, setAllProducts] = useState([]);
   const [fastItems, setFastItems] = useState([]);
+  const [activeSession, setActiveSession] = useState(null);
 
   // Focus search input automatically if typing letters/numbers outside of an input
   useEffect(() => {
@@ -135,9 +139,27 @@ export default function BakalaPOS() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [cartItems, totals]);
 
+  const handleCloseSession = async () => {
+    if (!activeSession) return;
+    const actualClosing = window.prompt("Enter actual cash in till for End of Day:");
+    if (actualClosing === null) return;
+
+    try {
+      await api.post(`/pos-sessions/${activeSession._id}/close`, {
+        actualClosingBalance: Number(actualClosing)
+      });
+      toast.success("Till closed successfully");
+      setActiveSession(null);
+    } catch (error) {
+      toast.error(error.response?.data?.error || "Failed to close till");
+    }
+  };
+
   return (
     <div className="flex h-[calc(100vh-4rem)] bg-[#F8F9FA] text-gray-900 overflow-hidden font-sans">
       
+      {!activeSession && <PosSessions onSessionVerified={setActiveSession} />}
+
       {/* LEFT PANEL: Cart View (60%) */}
       <div className="w-[60%] flex flex-col border-r border-gray-100 bg-white shadow-[2px_0_10px_rgba(0,0,0,0.02)] z-10 relative">
         {/* Header */}
@@ -158,6 +180,15 @@ export default function BakalaPOS() {
               <span className="flex items-center gap-1 text-rose-500"><WifiOff className="w-4 h-4"/> Offline Sync Mode</span>
             )}
             {pendingCount > 0 && <span className="text-amber-500">{pendingCount} Pending</span>}
+            
+            {activeSession && (
+              <button 
+                onClick={handleCloseSession}
+                className="ml-4 flex items-center gap-1 px-3 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg font-bold transition-colors"
+              >
+                <LogOut className="w-4 h-4" /> End of Day
+              </button>
+            )}
           </div>
         </div>
 

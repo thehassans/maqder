@@ -82,6 +82,7 @@ import BakalaProducts from './pages/bakala/BakalaProducts'
 import IoT from './pages/IoT'
 import IoTDeviceForm from './pages/IoTDeviceForm'
 import Finance from './pages/Finance'
+import Khata from './pages/finance/Khata'
 import JobCosting from './pages/JobCosting'
 import JobCostingForm from './pages/JobCostingForm'
 import MRP from './pages/MRP'
@@ -398,7 +399,8 @@ function App() {
         <Route path="iot/devices/new" element={<BusinessTypeRoute allowedTypes={['trading']}><IoTDeviceForm /></BusinessTypeRoute>} />
         <Route path="iot/devices/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><IoTDeviceForm /></BusinessTypeRoute>} />
         <Route path="finance" element={<Finance />} />
-        <Route path="job-costing" element={<BusinessTypeRoute allowedTypes={['trading']}><JobCosting /></BusinessTypeRoute>} />
+        <Route path="khata" element={<Khata />} />
+        <Route path="job-costing" element={<BusinessTypeRoute allowedTypes={['construction']}><JobCosting /></BusinessTypeRoute>} />
         <Route path="job-costing/new" element={<BusinessTypeRoute allowedTypes={['trading']}><JobCostingForm /></BusinessTypeRoute>} />
         <Route path="job-costing/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><JobCostingForm /></BusinessTypeRoute>} />
         <Route path="mrp" element={<BusinessTypeRoute allowedTypes={['trading']}><MRP /></BusinessTypeRoute>} />

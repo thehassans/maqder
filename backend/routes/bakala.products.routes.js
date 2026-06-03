@@ -99,6 +99,24 @@ router.get('/', protect, async (req, res) => {
   }
 });
 
+// GET Expiry Report (for Balady/Municipality compliance)
+router.get('/expiry-report', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    
+    // Find products that have an expiryDate
+    const products = await BakalaProduct.find({ 
+      tenantId, 
+      expiryDate: { $exists: true, $ne: null } 
+    }).sort('expiryDate');
+
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.post('/', protect, async (req, res) => {
   try {
     const tenantId = await getTargetTenantId(req.user);

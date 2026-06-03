@@ -56,6 +56,8 @@ import rentalCustomerRoutes from './routes/rentalCustomer.routes.js';
 import rentalContractRoutes from './routes/rentalContract.routes.js';
 import bakalaRoutes from './routes/bakala.routes.js';
 import bakalaProductsRoutes from './routes/bakala.products.routes.js';
+import posSessionsRoutes from './routes/posSessions.routes.js';
+import khataRoutes from './routes/khata.routes.js';
 
 import laundryServiceRoutes from './routes/laundryService.routes.js';
 import laundryCustomerRoutes from './routes/laundryCustomer.routes.js';
@@ -364,6 +366,8 @@ app.use('/api/rental/customers', ensureDatabaseReady, rentalCustomerRoutes);
 app.use('/api/rental/contracts', ensureDatabaseReady, rentalContractRoutes);
 app.use('/api/bakala', ensureDatabaseReady, bakalaRoutes);
 app.use('/api/bakala-products', ensureDatabaseReady, bakalaProductsRoutes);
+app.use('/api/pos-sessions', ensureDatabaseReady, posSessionsRoutes);
+app.use('/api/khata', ensureDatabaseReady, khataRoutes);
 
 app.use('/api/laundry/services', ensureDatabaseReady, laundryServiceRoutes);
 app.use('/api/laundry/customers', ensureDatabaseReady, laundryCustomerRoutes);
