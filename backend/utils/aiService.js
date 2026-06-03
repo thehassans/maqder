@@ -23,7 +23,7 @@ export const translateWithFallback = async ({ text, targetLanguage }) => {
       const response = await client.models.generateContent({
         model: settings.gemini.model || 'gemini-2.5-flash',
         contents: prompt,
-        config: { temperature: 0.1, maxOutputTokens: 256 }
+        config: { temperature: 0.1 }
       });
       if (response?.text) return response.text.trim();
     } catch (e) {

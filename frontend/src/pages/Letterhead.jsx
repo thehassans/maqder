@@ -55,7 +55,7 @@ export default function Letterhead() {
   const companyNameAr = tenant?.business?.legalNameAr || 'اسم الشركة';
   const addressObj = tenant?.business?.address || {};
   const addressEn = [addressObj.buildingNumber, addressObj.street, addressObj.district, addressObj.city].filter(Boolean).join(', ') || 'Address not provided';
-  const addressAr = [addressObj.buildingNumber, addressObj.street, addressObj.district, addressObj.city].filter(Boolean).join('، ') || 'العنوان غير متوفر';
+  const addressAr = [addressObj.buildingNumber, addressObj.streetAr || addressObj.street, addressObj.districtAr || addressObj.district, addressObj.cityAr || addressObj.city].filter(Boolean).join('، ') || 'العنوان غير متوفر';
   const phone = tenant?.business?.contactPhone || '';
   const email = tenant?.business?.contactEmail || '';
   const website = tenant?.business?.website || '';
@@ -182,7 +182,7 @@ export default function Letterhead() {
                   <input type="date" value={date} onChange={e => setDate(e.target.value)} className="input bg-transparent" />
                 </div>
               )}
-              <div className="hidden print:block font-medium">Date: {date}</div>
+              <div className="hidden print:block font-medium border border-gray-200 rounded-lg p-3">Date: {date}</div>
             </div>
             
             <div className="w-1/3 text-right" dir="rtl">
@@ -192,7 +192,7 @@ export default function Letterhead() {
                   <input type="date" value={date} onChange={e => setDate(e.target.value)} className="input bg-transparent" />
                 </div>
               )}
-              <div className="hidden print:block font-medium">التاريخ: {date}</div>
+              <div className="hidden print:block font-medium border border-gray-200 rounded-lg p-3">التاريخ: {date}</div>
             </div>
           </div>
 
@@ -213,9 +213,9 @@ export default function Letterhead() {
                       translateEnToAr(e.target.value, setRecipientTitleAr);
                     }} placeholder="Recipient Title / Company" className="input bg-transparent" />
                   </div>
-                  <div className="hidden print:block">
-                    <div className="font-bold text-lg">{recipientEn}</div>
-                    <div>{recipientTitleEn}</div>
+                  <div className="hidden print:block space-y-3">
+                    <div className="border border-gray-200 rounded-lg p-3 font-bold text-lg min-h-[48px] flex items-center">{recipientEn}</div>
+                    <div className="border border-gray-200 rounded-lg p-3 min-h-[48px] flex items-center">{recipientTitleEn}</div>
                   </div>
                 </div>
 
@@ -225,7 +225,7 @@ export default function Letterhead() {
                     translateEnToAr(e.target.value, setSubjectAr);
                   }} placeholder="Subject Line" className="input bg-transparent font-bold underline" />
                 </div>
-                <div className="hidden print:block font-bold underline">
+                <div className="hidden print:block font-bold underline border border-gray-200 rounded-lg p-3 min-h-[48px] flex items-center">
                   {subjectEn ? `Subject: ${subjectEn}` : ''}
                 </div>
                 
@@ -240,7 +240,7 @@ export default function Letterhead() {
                     className="w-full min-h-[300px] p-4 rounded-lg border border-gray-200 bg-transparent resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                   />
                 </div>
-                <div className="hidden print:block whitespace-pre-wrap min-h-[200px]">
+                <div className="hidden print:block whitespace-pre-wrap border border-gray-200 rounded-lg p-4 min-h-[300px]">
                   {contentEn}
                 </div>
 
@@ -256,9 +256,9 @@ export default function Letterhead() {
                       translateEnToAr(e.target.value, setSenderTitleAr);
                     }} placeholder="Your Title" className="input bg-transparent" />
                   </div>
-                  <div className="hidden print:block">
-                    <div className="font-bold">{senderNameEn}</div>
-                    <div>{senderTitleEn}</div>
+                  <div className="hidden print:block space-y-3">
+                    <div className="border border-gray-200 rounded-lg p-3 font-bold min-h-[48px] flex items-center">{senderNameEn}</div>
+                    <div className="border border-gray-200 rounded-lg p-3 min-h-[48px] flex items-center">{senderTitleEn}</div>
                   </div>
                 </div>
               </div>
@@ -278,9 +278,9 @@ export default function Letterhead() {
                       translateArToEn(e.target.value, setRecipientTitleEn);
                     }} placeholder="المنصب / الجهة" className="input bg-transparent" />
                   </div>
-                  <div className="hidden print:block">
-                    <div className="font-bold text-lg">{recipientAr}</div>
-                    <div>{recipientTitleAr}</div>
+                  <div className="hidden print:block space-y-3">
+                    <div className="border border-gray-200 rounded-lg p-3 font-bold text-lg min-h-[48px] flex items-center">{recipientAr}</div>
+                    <div className="border border-gray-200 rounded-lg p-3 min-h-[48px] flex items-center">{recipientTitleAr}</div>
                   </div>
                 </div>
 
@@ -290,7 +290,7 @@ export default function Letterhead() {
                     translateArToEn(e.target.value, setSubjectEn);
                   }} placeholder="الموضوع" className="input bg-transparent font-bold underline" />
                 </div>
-                <div className="hidden print:block font-bold underline">
+                <div className="hidden print:block font-bold underline border border-gray-200 rounded-lg p-3 min-h-[48px] flex items-center">
                   {subjectAr ? `الموضوع: ${subjectAr}` : ''}
                 </div>
                 
@@ -305,7 +305,7 @@ export default function Letterhead() {
                     className="w-full min-h-[300px] p-4 rounded-lg border border-gray-200 bg-transparent resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/20"
                   />
                 </div>
-                <div className="hidden print:block whitespace-pre-wrap min-h-[200px]">
+                <div className="hidden print:block whitespace-pre-wrap border border-gray-200 rounded-lg p-4 min-h-[300px]">
                   {contentAr}
                 </div>
 
@@ -321,9 +321,9 @@ export default function Letterhead() {
                       translateArToEn(e.target.value, setSenderTitleEn);
                     }} placeholder="المنصب" className="input bg-transparent" />
                   </div>
-                  <div className="hidden print:block">
-                    <div className="font-bold">{senderNameAr}</div>
-                    <div>{senderTitleAr}</div>
+                  <div className="hidden print:block space-y-3">
+                    <div className="border border-gray-200 rounded-lg p-3 font-bold min-h-[48px] flex items-center">{senderNameAr}</div>
+                    <div className="border border-gray-200 rounded-lg p-3 min-h-[48px] flex items-center">{senderTitleAr}</div>
                   </div>
                 </div>
               </div>
