@@ -70,8 +70,17 @@ router.post('/sync', protect, async (req, res) => {
 
         // Generate Invoice Number if missing
         if (!newInvoice.invoiceNumber) {
-          const count = await Invoice.countDocuments({ tenantId });
-          newInvoice.invoiceNumber = `BAKALA-${count + 1}`;
+          const lastInvoice = await Invoice.findOne({ tenantId, invoiceNumber: { $regex: '^BAKALA-' } })
+            .sort({ createdAt: -1 })
+            .select('invoiceNumber');
+          
+          let seq = 1;
+          if (lastInvoice && lastInvoice.invoiceNumber) {
+            const parts = lastInvoice.invoiceNumber.split('-');
+            const lastSeq = parseInt(parts[1], 10);
+            if (!isNaN(lastSeq)) seq = lastSeq + 1;
+          }
+          newInvoice.invoiceNumber = `BAKALA-${seq}`;
         }
 
         // Apply ZATCA processing
@@ -96,6 +105,7 @@ router.post('/sync', protect, async (req, res) => {
         syncedInvoices.push({ offlineId: offlineInvoice.offlineId, uuid: newInvoice.zatca?.uuid || newInvoice._id });
         
       } catch (err) {
+        console.error('Invoice Sync Error for offlineId', offlineInvoice.offlineId, ':', err);
         errors.push({ offlineId: offlineInvoice.offlineId, error: err.message });
       }
     }
