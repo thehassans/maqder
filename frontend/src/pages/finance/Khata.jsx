@@ -20,6 +20,11 @@ export default function Khata() {
   const [transactionAmount, setTransactionAmount] = useState('');
   const [transactionNotes, setTransactionNotes] = useState('');
 
+  // Quick Add Customer States
+  const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
+  const [newCustomerName, setNewCustomerName] = useState('');
+  const [newCustomerPhone, setNewCustomerPhone] = useState('');
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -56,9 +61,23 @@ export default function Khata() {
   const handleCreateAccount = async (e) => {
     e.preventDefault();
     try {
-      await api.post('/khata', { customerId: newAccountId });
+      let customerId = newAccountId;
+      
+      if (showNewCustomerForm) {
+        const custRes = await api.post('/customers', {
+          name: newCustomerName,
+          phone: newCustomerPhone,
+          type: 'individual'
+        });
+        customerId = custRes.data._id;
+      }
+
+      await api.post('/khata', { customerId });
       toast.success('Account created');
       setShowAddModal(false);
+      setShowNewCustomerForm(false);
+      setNewCustomerName('');
+      setNewCustomerPhone('');
       fetchData();
     } catch (error) {
       toast.error(error.response?.data?.error || 'Failed to create account');
@@ -203,20 +222,40 @@ export default function Khata() {
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
             <div className="flex justify-between items-center p-6 border-b border-gray-100">
               <h2 className="text-xl font-bold">New Khata Account</h2>
-              <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600"><X className="w-6 h-6"/></button>
+              <button onClick={() => {
+                setShowAddModal(false);
+                setShowNewCustomerForm(false);
+              }} className="text-gray-400 hover:text-gray-600"><X className="w-6 h-6"/></button>
             </div>
             <form onSubmit={handleCreateAccount} className="p-6">
               <div className="mb-6">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Select Customer</label>
-                <select 
-                  required
-                  value={newAccountId}
-                  onChange={(e) => setNewAccountId(e.target.value)}
-                  className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
-                >
-                  <option value="">-- Choose Customer --</option>
-                  {customers.map(c => <option key={c.entityId || c._id} value={c.entityId || c._id}>{c.displayName || c.name}</option>)}
-                </select>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-sm font-semibold text-gray-700">Select Customer</label>
+                  {!showNewCustomerForm && (
+                    <button type="button" onClick={() => setShowNewCustomerForm(true)} className="text-emerald-600 text-sm font-bold flex items-center gap-1 hover:text-emerald-700">
+                      <Plus className="w-4 h-4"/> New Customer
+                    </button>
+                  )}
+                </div>
+                {!showNewCustomerForm ? (
+                  <select 
+                    required
+                    value={newAccountId}
+                    onChange={(e) => setNewAccountId(e.target.value)}
+                    className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                  >
+                    <option value="">-- Choose Customer --</option>
+                    {customers.map(c => <option key={c.entityId || c._id} value={c.entityId || c._id}>{c.displayName || c.name}</option>)}
+                  </select>
+                ) : (
+                  <div className="space-y-3">
+                    <input type="text" required value={newCustomerName} onChange={e => setNewCustomerName(e.target.value)} placeholder="Customer Name *" className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"/>
+                    <input type="text" value={newCustomerPhone} onChange={e => setNewCustomerPhone(e.target.value)} placeholder="Phone Number (Optional)" className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"/>
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => setShowNewCustomerForm(false)} className="flex-1 p-2 text-gray-500 font-bold hover:bg-gray-100 rounded-xl transition-colors">Cancel</button>
+                    </div>
+                  </div>
+                )}
               </div>
               <button type="submit" className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-colors">Create Ledger</button>
             </form>
