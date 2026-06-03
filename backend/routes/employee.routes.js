@@ -449,6 +449,65 @@ router.post('/lookup-saudi-id-images', checkPermission('hr', 'read'), async (req
   }
 });
 
+// @route   GET /api/employees/compliance/alerts
+router.get('/compliance/alerts', checkPermission('hr', 'read'), async (req, res) => {
+  try {
+    const employees = await Employee.find({ ...req.tenantFilter, isActive: true })
+      .select('firstNameEn lastNameEn firstNameAr lastNameAr employeeId nationalIdType nationalIdExpiry documents');
+    
+    const alerts = [];
+    const today = new Date();
+    const thresholdDays = 60;
+    const thresholdDate = new Date();
+    thresholdDate.setDate(today.getDate() + thresholdDays);
+
+    employees.forEach(emp => {
+      // Check Iqama Expiry
+      if (emp.nationalIdType === 'iqama' && emp.nationalIdExpiry) {
+        const expiryDate = new Date(emp.nationalIdExpiry);
+        if (expiryDate <= thresholdDate) {
+          alerts.push({
+            employeeId: emp._id,
+            employeeCode: emp.employeeId,
+            name: `${emp.firstNameEn} ${emp.lastNameEn}`,
+            documentType: 'Iqama',
+            expiryDate: emp.nationalIdExpiry,
+            daysRemaining: Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24)),
+            isExpired: expiryDate < today
+          });
+        }
+      }
+      
+      // Check Other Documents
+      if (emp.documents && emp.documents.length > 0) {
+        emp.documents.forEach(doc => {
+          if (doc.expiryDate) {
+            const expiryDate = new Date(doc.expiryDate);
+            if (expiryDate <= thresholdDate) {
+              alerts.push({
+                employeeId: emp._id,
+                employeeCode: emp.employeeId,
+                name: `${emp.firstNameEn} ${emp.lastNameEn}`,
+                documentType: doc.type === 'balady_certificate' ? 'Balady Certificate' : doc.type.replace('_', ' '),
+                documentNumber: doc.number,
+                expiryDate: doc.expiryDate,
+                daysRemaining: Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24)),
+                isExpired: expiryDate < today
+              });
+            }
+          }
+        });
+      }
+    });
+
+    alerts.sort((a, b) => a.daysRemaining - b.daysRemaining);
+
+    res.json(alerts);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // @route   GET /api/employees/:id
 router.get('/:id', checkPermission('hr', 'read'), async (req, res) => {
   try {

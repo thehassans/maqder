@@ -89,6 +89,10 @@ router.put('/current', authorize('admin'), async (req, res) => {
           ...(currentSettings.posTerminal || {}),
           ...(settings.posTerminal || {}),
         },
+        hardwareSettings: {
+          ...(currentSettings.hardwareSettings || {}),
+          ...(settings.hardwareSettings || {}),
+        },
       };
     }
     

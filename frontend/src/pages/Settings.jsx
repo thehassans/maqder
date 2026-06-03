@@ -13,6 +13,7 @@ import { useLiveTranslation } from '../lib/liveTranslation'
 import { getInvoiceBrandingProfile, getInvoiceTemplateId, getInvoiceTypography, INVOICE_FONT_OPTIONS } from '../lib/invoiceBranding'
 import { invoiceTemplateOptions } from '../lib/invoiceTemplates'
 import PosTerminalSettings from '../components/settings/PosTerminalSettings'
+import HardwareSettings from '../components/settings/HardwareSettings'
 
 const invoiceBrandingContexts = [
   { key: 'trading', labelEn: 'Trading Invoice', labelAr: 'فاتورة تجارة' },
@@ -250,7 +251,8 @@ export default function Settings() {
     { id: 'zatca', label: t('zatcaSettings'), icon: Shield },
     { id: 'saudi', label: language === 'ar' ? 'التكاملات السعودية' : 'Saudi Integrations', icon: Key },
     { id: 'preferences', label: language === 'ar' ? 'التفضيلات' : 'Preferences', icon: Palette },
-    { id: 'setupMachine', label: language === 'ar' ? 'إعداد الجهاز' : 'Setup Machine', icon: Terminal },
+    { id: 'setupMachine', label: language === 'ar' ? 'إعداد الدفع الإلكتروني' : 'Payment Terminal', icon: CreditCard },
+    { id: 'hardware', label: language === 'ar' ? 'الأجهزة والطباعة' : 'Hardware & Printers', icon: Terminal },
     { id: 'backup', label: language === 'ar' ? 'النسخ الاحتياطي' : 'Backup', icon: Database },
   ]
 
@@ -1239,6 +1241,17 @@ export default function Settings() {
               onSave={(posSettings) =>
                 updateMutation.mutate({ settings: { posTerminal: posSettings } })
               }
+            />
+          )}
+
+          {activeTab === 'hardware' && (
+            <HardwareSettings
+              tenant={tenant}
+              language={language}
+              onSave={(hardwareSettings) =>
+                updateMutation.mutate({ settings: { hardwareSettings } })
+              }
+              isSaving={updateMutation.isPending}
             />
           )}
 

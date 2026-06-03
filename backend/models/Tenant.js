@@ -199,6 +199,15 @@ const tenantSchema = new mongoose.Schema({
       autoProceedOnApproval: { type: Boolean, default: true },
       lastTestedAt: { type: Date },
       lastTestStatus: { type: String, default: '' }
+    },
+    hardwareSettings: {
+      receiptPrinterType: { type: String, enum: ['usb', 'network', 'bluetooth', 'none'], default: 'none' },
+      printerIpAddress: { type: String, default: '192.168.1.100' },
+      printerPort: { type: Number, default: 9100 },
+      cashDrawerKickCode: { type: String, default: '27,112,0,50,250' }, // ESC p 0 50 250
+      barcodeScannerPrefix: { type: String, default: '' },
+      barcodeScannerSuffix: { type: String, default: 'Enter' },
+      scaleType: { type: String, enum: ['none', 'serial', 'network'], default: 'none' },
     }
   },
   branding: {

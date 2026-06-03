@@ -47,6 +47,7 @@ import Employees from './pages/hr/Employees'
 import EmployeeForm from './pages/hr/EmployeeForm'
 import Payroll from './pages/hr/Payroll'
 import PayrollCalculators from './pages/hr/PayrollCalculators'
+import HRCompliance from './pages/hr/HRCompliance'
 import Attendance from './pages/hr/Attendance'
 import Products from './pages/inventory/Products'
 import ProductForm from './pages/inventory/ProductForm'
@@ -61,6 +62,7 @@ import PurchaseOrders from './pages/PurchaseOrders'
 import PurchaseOrderForm from './pages/PurchaseOrderForm'
 import GoodsReceiptNote from './pages/inventory/GoodsReceiptNote'
 import PurchaseReturns from './pages/inventory/PurchaseReturns'
+import ZatcaLogs from './pages/finance/ZatcaLogs'
 import Shipments from './pages/Shipments'
 import ShipmentForm from './pages/ShipmentForm'
 import TravelBookings from './pages/travel/TravelBookings'
@@ -369,7 +371,8 @@ function App() {
         <Route path="employees/:id" element={<EmployeeForm />} />
         <Route path="payroll" element={<Payroll />} />
         <Route path="payroll/calculators" element={<PayrollCalculators />} />
-        <Route path="attendance" element={<Attendance />} />
+        <Route path="hr/attendance" element={<Attendance />} />
+        <Route path="hr/compliance" element={<HRCompliance />} />
         <Route path="products" element={<BusinessTypeRoute allowedTypes={['trading']}><Products /></BusinessTypeRoute>} />
         <Route path="products/new" element={<BusinessTypeRoute allowedTypes={['trading']}><ProductForm /></BusinessTypeRoute>} />
         <Route path="products/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><ProductForm /></BusinessTypeRoute>} />
@@ -416,6 +419,7 @@ function App() {
         <Route path="saudi-compliance" element={<ErrorBoundary><SaudiCompliance /></ErrorBoundary>} />
         <Route path="users" element={<Users />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="finance/zatca-logs" element={<ZatcaLogs />} />
         {/* Fleet & Machinery */}
         <Route path="fleet" element={<BusinessTypeRoute allowedTypes={['construction','trading']}><FleetAssets /></BusinessTypeRoute>} />
         <Route path="fleet/new" element={<BusinessTypeRoute allowedTypes={['construction','trading']}><FleetAssetForm /></BusinessTypeRoute>} />

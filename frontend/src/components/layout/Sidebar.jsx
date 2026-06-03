@@ -195,7 +195,8 @@ export default function Sidebar() {
       title: language === 'ar' ? 'الموارد البشرية' : 'Human Resources',
       items: [
         { path: '/app/dashboard/employees', icon: Users, label: t('employees'), perm: { module: 'hr', action: 'read' } },
-        { path: '/app/dashboard/attendance', icon: Fingerprint, label: language === 'ar' ? 'الحضور والبيومتري' : 'Attendance & Biometrics', perm: { module: 'hr', action: 'read' } },
+        { path: '/app/dashboard/hr/attendance', icon: Fingerprint, label: language === 'ar' ? 'الحضور والبيومتري' : 'Attendance & Biometrics', perm: { module: 'hr', action: 'read' } },
+        { path: '/app/dashboard/hr/compliance', icon: ShieldCheck, label: language === 'ar' ? 'الامتثال (بلدي وإقامة)' : 'Compliance (Balady/Iqama)', perm: { module: 'hr', action: 'read' } },
         { path: '/app/dashboard/payroll', icon: Wallet, label: t('payroll'), perm: { module: 'payroll', action: 'read' } },
         { path: '/app/dashboard/payroll/calculators', icon: Calculator, label: 'GOSI/EOSB', perm: { module: 'payroll', action: 'read' } },
       ]
@@ -223,6 +224,7 @@ export default function Sidebar() {
         { path: '/app/dashboard/khata', icon: Users, label: language === 'ar' ? 'العملاء (خاتا)' : 'Khata', perm: { module: 'finance', action: 'read' } },
         { path: '/app/dashboard/expenses', icon: Receipt, label: language === 'ar' ? 'المصروفات' : 'Expenses', perm: { module: 'finance', action: 'read' } },
         { path: '/app/dashboard/vat-returns', icon: Calculator, label: language === 'ar' ? 'إقرارات القيمة المضافة' : 'VAT Returns', perm: { module: 'finance', action: 'read' } },
+        { path: '/app/dashboard/finance/zatca-logs', icon: Shield, label: language === 'ar' ? 'سجل زاتكا' : 'ZATCA Logs', perm: { module: 'finance', action: 'read' } },
       ]
     },
     {

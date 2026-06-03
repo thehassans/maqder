@@ -5,7 +5,7 @@ import { normalizeSaudiId, getSaudiIdType, validateSaudiIdChecksum } from '../ut
 const documentSchema = new mongoose.Schema({
   type: {
     type: String,
-    enum: ['iqama', 'passport', 'national_id', 'driving_license', 'work_permit', 'medical_insurance', 'contract', 'other'],
+    enum: ['iqama', 'passport', 'national_id', 'driving_license', 'work_permit', 'medical_insurance', 'contract', 'balady_certificate', 'other'],
     required: true
   },
   number: { type: String, required: true },
