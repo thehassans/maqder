@@ -7,6 +7,15 @@ export default function ProductList() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [formData, setFormData] = useState({
+    name: '', nameAr: '', primaryBarcode: '', category: '', brand: '', 
+    unit: 'PCS', costPrice: 0, retailPrice: 0, minimumStockAlertLevel: 10, isActive: true
+  });
+  const [categories, setCategories] = useState([]);
+  const [brands, setBrands] = useState([]);
+  const [units, setUnits] = useState([]);
 
   const fetchItems = async () => {
     try {
@@ -20,9 +29,59 @@ export default function ProductList() {
     }
   };
 
+  const fetchDropdownData = async () => {
+    try {
+      const [catRes, brandRes, unitRes] = await Promise.all([
+        api.get('/bakala-products/categories'),
+        api.get('/bakala-products/brands'),
+        api.get('/bakala-products/units')
+      ]);
+      setCategories(catRes.data);
+      setBrands(brandRes.data);
+      setUnits(unitRes.data);
+    } catch (err) {
+      console.error('Failed to load dropdowns');
+    }
+  };
+
   useEffect(() => {
     fetchItems();
+    fetchDropdownData();
   }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingId) {
+        await api.put(`/bakala-products/${editingId}`, formData);
+        toast.success('Product updated');
+      } else {
+        await api.post('/bakala-products', formData);
+        toast.success('Product created');
+      }
+      setIsModalOpen(false);
+      fetchItems();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to save product');
+    }
+  };
+
+  const handleEdit = (product) => {
+    setFormData({
+      name: product.name || '',
+      nameAr: product.nameAr || '',
+      primaryBarcode: product.primaryBarcode || '',
+      category: product.category || '',
+      brand: product.brand || '',
+      unit: product.unit || 'PCS',
+      costPrice: product.costPrice || 0,
+      retailPrice: product.retailPrice || 0,
+      minimumStockAlertLevel: product.minimumStockAlertLevel || 10,
+      isActive: product.isActive ?? true
+    });
+    setEditingId(product._id);
+    setIsModalOpen(true);
+  };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this product?')) return;
@@ -55,7 +114,14 @@ export default function ProductList() {
         </div>
         <button 
           className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium"
-          onClick={() => toast('Add Product form is under construction. Please use the CSV import tool for now.', { icon: '🚧' })}
+          onClick={() => {
+            setFormData({
+              name: '', nameAr: '', primaryBarcode: '', category: '', brand: '', 
+              unit: 'PCS', costPrice: 0, retailPrice: 0, minimumStockAlertLevel: 10, isActive: true
+            });
+            setEditingId(null);
+            setIsModalOpen(true);
+          }}
         >
           <Plus className="w-4 h-4" /> Add Product
         </button>
@@ -103,6 +169,9 @@ export default function ProductList() {
                     <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">{item.unit || 'PCS'}</span>
                   </td>
                   <td className="px-6 py-3 text-right">
+                    <button onClick={() => handleEdit(item)} className="p-1 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded mr-2">
+                      <Edit2 className="w-4 h-4" />
+                    </button>
                     <button onClick={() => handleDelete(item._id)} className="p-1 text-red-500 hover:bg-red-50 rounded">
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -113,6 +182,66 @@ export default function ProductList() {
           </tbody>
         </table>
       </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
+              <h3 className="text-lg font-bold text-gray-900">{editingId ? 'Edit' : 'Add'} Product</h3>
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600">&times;</button>
+            </div>
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Name (English) *</label>
+                  <input type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Name (Arabic)</label>
+                  <input type="text" value={formData.nameAr} onChange={e => setFormData({...formData, nameAr: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 outline-none text-right" dir="rtl" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Barcode *</label>
+                  <input type="text" required value={formData.primaryBarcode} onChange={e => setFormData({...formData, primaryBarcode: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 outline-none font-mono" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
+                  <select value={formData.unit} onChange={e => setFormData({...formData, unit: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 outline-none">
+                    <option value="PCS">PCS</option>
+                    {units.map(u => <option key={u._id} value={u.name}>{u.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                  <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 outline-none">
+                    <option value="">None</option>
+                    {categories.map(c => <option key={c._id} value={c.name}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
+                  <select value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 outline-none">
+                    <option value="">None</option>
+                    {brands.map(b => <option key={b._id} value={b.name}>{b.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Cost Price (SAR)</label>
+                  <input type="number" step="0.01" min="0" value={formData.costPrice} onChange={e => setFormData({...formData, costPrice: parseFloat(e.target.value) || 0})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Retail Price (SAR) *</label>
+                  <input type="number" step="0.01" min="0" required value={formData.retailPrice} onChange={e => setFormData({...formData, retailPrice: parseFloat(e.target.value) || 0})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 outline-none" />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">Cancel</button>
+                <button type="submit" className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Save Product</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
