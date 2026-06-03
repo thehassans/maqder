@@ -1,5 +1,5 @@
 import express from 'express';
-import { auth } from '../middleware/auth.js';
+import { protect } from '../middleware/auth.js';
 import Invoice from '../models/Invoice.js';
 import Tenant from '../models/Tenant.js';
 import ZatcaService from '../utils/zatca/ZatcaService.js';
@@ -11,7 +11,7 @@ const router = express.Router();
  * Sync offline Bakala invoices to the server
  * POST /api/bakala/sync
  */
-router.post('/sync', auth, async (req, res) => {
+router.post('/sync', protect, async (req, res) => {
   try {
     const { invoices } = req.body; // Array of offline invoices
     const tenantId = req.user.tenantId;
