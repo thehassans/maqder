@@ -1,4 +1,4 @@
-export const BUSINESS_TYPES = ['trading', 'construction', 'travel_agency', 'restaurant', 'car_rental', 'laundry', 'saloon', 'khayyat', 'manpower']
+export const BUSINESS_TYPES = ['trading', 'construction', 'travel_agency', 'restaurant', 'car_rental', 'laundry', 'saloon', 'khayyat', 'manpower', 'bakala']
 
 export const getBusinessTypeOptions = (language = 'en') => [
   {
@@ -45,6 +45,11 @@ export const getBusinessTypeOptions = (language = 'en') => [
     id: 'manpower',
     label: language === 'ar' ? 'الموارد البشرية والعمالة' : 'Manpower & Labor Supply',
     description: language === 'ar' ? 'إدارة عقود العمالة والمشاريع والفواتير' : 'Labor contracts, assignments, and billing',
+  },
+  {
+    id: 'bakala',
+    label: language === 'ar' ? 'البقالة والسوبر ماركت' : 'Bakala / Supermarket',
+    description: language === 'ar' ? 'نقطة بيع سريعة للمواد الغذائية الاستهلاكية والتجزئة' : 'Fast-paced POS for grocery and retail',
   },
 ]
 
