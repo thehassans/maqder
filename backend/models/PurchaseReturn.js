@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const purchaseReturnSchema = new mongoose.Schema({
   tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
-  supplierId: { type: mongoose.Schema.Types.ObjectId, ref: 'Contact', required: true },
+  supplierId: { type: mongoose.Schema.Types.ObjectId, ref: 'Supplier', required: true },
   returnNumber: { type: String, required: true },
   referenceNumber: { type: String }, // Original supplier invoice or GRN number
   dateReturned: { type: Date, default: Date.now },

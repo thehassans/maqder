@@ -210,7 +210,7 @@ export default function PurchaseReturns() {
               <tr key={ret._id} className="hover:bg-gray-50/50">
                 <td className="px-6 py-4 font-bold text-gray-900">{ret.returnNumber}</td>
                 <td className="px-6 py-4 text-gray-500">{new Date(ret.dateReturned).toLocaleString()}</td>
-                <td className="px-6 py-4 font-medium text-gray-900">{ret.supplierId?.name}</td>
+                <td className="px-6 py-4 font-medium text-gray-900">{ret.supplierId?.nameEn || ret.supplierId?.nameAr}</td>
                 <td className="px-6 py-4 text-sm text-gray-500">{ret.referenceNumber || '-'}</td>
                 <td className="px-6 py-4 text-gray-500">{ret.lines?.length || 0} Lines</td>
                 <td className="px-6 py-4">

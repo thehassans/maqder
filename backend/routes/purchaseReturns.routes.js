@@ -15,7 +15,7 @@ const generateReturnNumber = async (tenantId) => {
 router.get('/', protect, async (req, res) => {
   try {
     const returns = await PurchaseReturn.find({ tenantId: req.user.tenantId })
-      .populate('supplierId', 'name')
+      .populate('supplierId', 'nameEn nameAr')
       .sort('-createdAt');
     res.json(returns);
   } catch (error) {
@@ -62,7 +62,7 @@ router.post('/', protect, async (req, res) => {
 router.get('/:id', protect, async (req, res) => {
   try {
     const purchaseReturn = await PurchaseReturn.findOne({ _id: req.params.id, tenantId: req.user.tenantId })
-      .populate('supplierId', 'name email phone')
+      .populate('supplierId', 'nameEn nameAr email phone')
       .populate('returnedBy', 'name');
     
     if (!purchaseReturn) return res.status(404).json({ error: 'Purchase Return not found' });
