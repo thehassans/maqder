@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { motion } from 'framer-motion'
-import { ClipboardList, RefreshCw, Receipt, CheckCircle, Clock } from 'lucide-react'
+import { ClipboardList, RefreshCw, Receipt, CheckCircle, Clock, Printer } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
@@ -51,6 +51,8 @@ export default function RestaurantKitchen() {
   const { t } = useTranslation(language)
 
   const [statuses, setStatuses] = useState(['new', 'preparing', 'ready'])
+  const [autoPrint, setAutoPrint] = useState(() => localStorage.getItem('kitchenAutoPrint') === 'true')
+  const [printingIds, setPrintingIds] = useState(new Set())
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['restaurant-kitchen', statuses],
@@ -77,6 +79,39 @@ export default function RestaurantKitchen() {
     },
     onError: (err) => toast.error(err.response?.data?.error || 'Error'),
   })
+
+  useEffect(() => {
+    localStorage.setItem('kitchenAutoPrint', autoPrint)
+  }, [autoPrint])
+
+  useEffect(() => {
+    if (!autoPrint) return
+    const unprinted = orders.filter(o => o.kitchenStatus === 'new' && !o.kitchenPrintedAt && !printingIds.has(o._id))
+    if (unprinted.length > 0) {
+      unprinted.forEach(o => {
+        setPrintingIds(prev => new Set([...prev, o._id]))
+        try {
+          printHtml(buildKitchenTicketHtml(o))
+          markPrintedMutation.mutate(o._id, {
+            onSettled: () => {
+              setPrintingIds(prev => {
+                const next = new Set(prev)
+                next.delete(o._id)
+                return next
+              })
+            }
+          })
+        } catch (err) {
+          console.error('Auto print error', err)
+          setPrintingIds(prev => {
+            const next = new Set(prev)
+            next.delete(o._id)
+            return next
+          })
+        }
+      })
+    }
+  }, [orders, autoPrint, printingIds])
 
   const statusOptions = useMemo(
     () => [
@@ -239,6 +274,14 @@ th{font-size:12px; text-align:start; border-bottom:1px solid #ddd; padding-botto
         </div>
 
         <div className="flex gap-3">
+          <button 
+            type="button" 
+            onClick={() => setAutoPrint(!autoPrint)} 
+            className={`btn ${autoPrint ? 'btn-primary' : 'btn-secondary'} hidden sm:flex`}
+          >
+            <Printer className="w-4 h-4" />
+            {isRtl ? 'طباعة تلقائية' : 'Auto Print'}
+          </button>
           <button type="button" onClick={() => refetch()} disabled={isFetching} className="btn btn-secondary">
             <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
             {language === 'ar' ? 'تحديث' : 'Refresh'}
