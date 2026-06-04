@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken'
 import Tenant from '../models/Tenant.js'
 import User from '../models/User.js'
 import SystemSettings from '../models/SystemSettings.js'
+import RestaurantMenuItem from '../models/RestaurantMenuItem.js'
 
 const router = express.Router()
 const parsedDatabaseQueryTimeoutMs = Number(process.env.MONGODB_QUERY_TIMEOUT_MS || 10000)
@@ -244,6 +245,33 @@ router.post('/demo-login', async (req, res) => {
         branding: tenant.branding,
         subscription: tenant.subscription
       },
+    })
+  } catch (error) {
+    sendRouteError(res, error)
+  }
+})
+
+router.get('/tenant/:id/menu', async (req, res) => {
+  try {
+    const tenant = await withQueryTimeout(
+      Tenant.findById(req.params.id).select('name slug business branding isActive')
+    )
+
+    if (!tenant || !tenant.isActive) {
+      return res.status(404).json({ error: 'Restaurant not found or inactive' })
+    }
+
+    const items = await withQueryTimeout(
+      RestaurantMenuItem.find({ tenantId: tenant._id, isActive: true }).select('-costPrice -supplier -supplierId').sort({ category: 1, nameEn: 1 })
+    )
+
+    res.json({
+      tenant: {
+        name: tenant.name,
+        business: tenant.business,
+        branding: tenant.branding,
+      },
+      items
     })
   } catch (error) {
     sendRouteError(res, error)

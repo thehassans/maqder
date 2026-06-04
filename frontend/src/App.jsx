@@ -149,6 +149,7 @@ import SaloonPOS from './pages/saloon/SaloonPOS'
 import SaloonServices from './pages/saloon/SaloonServices'
 import SaloonOrders from './pages/saloon/SaloonOrders'
 import Letterhead from './pages/Letterhead'
+import PublicMenu from './pages/public/PublicMenu'
 
 import LoadingScreen from './components/ui/LoadingScreen'
 
@@ -237,6 +238,9 @@ function App() {
         <Route path="privacy" element={<MarketingPrivacy />} />
         <Route path="terms" element={<MarketingTerms />} />
       </Route>
+
+      {/* Public Application Routes */}
+      <Route path="/public/menu" element={<PublicMenu />} />
 
       {/* Auth Routes */}
       <Route element={<AuthLayout />}>
