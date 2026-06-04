@@ -1,4 +1,4 @@
-import { useSelector } from 'react'
+import { useSelector } from 'react-redux'
 import { QRCodeSVG } from 'qrcode.react'
 import { useTranslation } from '../../lib/translations'
 import { Printer, Download, UtensilsCrossed } from 'lucide-react'
