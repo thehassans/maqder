@@ -196,13 +196,13 @@ export default function Letterhead() {
             </div>
           </div>
 
-          {/* Grid Layout for Body */}
-          <div className={`grid gap-8 ${outputLang === 'both' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+          {/* Grid Layout for Body (Row Based for Alignment) */}
+          <div className="space-y-6">
             
-            {/* English Column */}
-            {(outputLang === 'en' || outputLang === 'both') && (
-              <div className="space-y-6" dir="ltr">
-                <div className="space-y-3">
+            {/* Recipient Row */}
+            <div className={`grid gap-8 ${outputLang === 'both' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              {(outputLang === 'en' || outputLang === 'both') && (
+                <div className="space-y-3" dir="ltr">
                   <div className="print:hidden">
                     <input type="text" value={recipientEn} onChange={e => {
                       setRecipientEn(e.target.value);
@@ -218,56 +218,9 @@ export default function Letterhead() {
                     <div className="border border-gray-200 rounded-lg p-3 min-h-[48px] flex items-center">{recipientTitleEn}</div>
                   </div>
                 </div>
-
-                <div className="print:hidden">
-                  <input type="text" value={subjectEn} onChange={e => {
-                    setSubjectEn(e.target.value);
-                    translateEnToAr(e.target.value, setSubjectAr);
-                  }} placeholder="Subject Line" className="input bg-transparent font-bold underline" />
-                </div>
-                <div className="hidden print:block font-bold underline border border-gray-200 rounded-lg p-3 min-h-[48px] flex items-center">
-                  {subjectEn ? `Subject: ${subjectEn}` : ''}
-                </div>
-                
-                <div className="print:hidden">
-                  <textarea
-                    value={contentEn}
-                    onChange={e => {
-                      setContentEn(e.target.value);
-                      translateEnToAr(e.target.value, setContentAr);
-                    }}
-                    placeholder="Type your letter content here..."
-                    className="w-full min-h-[300px] p-4 rounded-lg border border-gray-200 bg-transparent resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                  />
-                </div>
-                <div className="hidden print:block whitespace-pre-wrap border border-gray-200 rounded-lg p-4 min-h-[300px]">
-                  {contentEn}
-                </div>
-
-                <div className="space-y-3 pt-8">
-                  <p className="print:block hidden mb-8">Sincerely,</p>
-                  <div className="print:hidden">
-                    <input type="text" value={senderNameEn} onChange={e => {
-                      setSenderNameEn(e.target.value);
-                      translateEnToAr(e.target.value, setSenderNameAr);
-                    }} placeholder="Your Name" className="input bg-transparent font-bold" />
-                    <input type="text" value={senderTitleEn} onChange={e => {
-                      setSenderTitleEn(e.target.value);
-                      translateEnToAr(e.target.value, setSenderTitleAr);
-                    }} placeholder="Your Title" className="input bg-transparent" />
-                  </div>
-                  <div className="hidden print:block space-y-3">
-                    <div className="border border-gray-200 rounded-lg p-3 font-bold min-h-[48px] flex items-center">{senderNameEn}</div>
-                    <div className="border border-gray-200 rounded-lg p-3 min-h-[48px] flex items-center">{senderTitleEn}</div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Arabic Column */}
-            {(outputLang === 'ar' || outputLang === 'both') && (
-              <div className="space-y-6" dir="rtl">
-                <div className="space-y-3">
+              )}
+              {(outputLang === 'ar' || outputLang === 'both') && (
+                <div className="space-y-3" dir="rtl">
                   <div className="print:hidden">
                     <input type="text" value={recipientAr} onChange={e => {
                       setRecipientAr(e.target.value);
@@ -283,34 +236,103 @@ export default function Letterhead() {
                     <div className="border border-gray-200 rounded-lg p-3 min-h-[48px] flex items-center">{recipientTitleAr}</div>
                   </div>
                 </div>
+              )}
+            </div>
 
-                <div className="print:hidden">
-                  <input type="text" value={subjectAr} onChange={e => {
-                    setSubjectAr(e.target.value);
-                    translateArToEn(e.target.value, setSubjectEn);
-                  }} placeholder="الموضوع" className="input bg-transparent font-bold underline" />
+            {/* Subject Row */}
+            <div className={`grid gap-8 ${outputLang === 'both' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              {(outputLang === 'en' || outputLang === 'both') && (
+                <div dir="ltr">
+                  <div className="print:hidden">
+                    <input type="text" value={subjectEn} onChange={e => {
+                      setSubjectEn(e.target.value);
+                      translateEnToAr(e.target.value, setSubjectAr);
+                    }} placeholder="Subject Line" className="input bg-transparent font-bold underline" />
+                  </div>
+                  <div className="hidden print:block font-bold underline border border-gray-200 rounded-lg p-3 min-h-[48px] flex items-center">
+                    {subjectEn ? `Subject: ${subjectEn}` : ''}
+                  </div>
                 </div>
-                <div className="hidden print:block font-bold underline border border-gray-200 rounded-lg p-3 min-h-[48px] flex items-center">
-                  {subjectAr ? `الموضوع: ${subjectAr}` : ''}
+              )}
+              {(outputLang === 'ar' || outputLang === 'both') && (
+                <div dir="rtl">
+                  <div className="print:hidden">
+                    <input type="text" value={subjectAr} onChange={e => {
+                      setSubjectAr(e.target.value);
+                      translateArToEn(e.target.value, setSubjectEn);
+                    }} placeholder="الموضوع" className="input bg-transparent font-bold underline" />
+                  </div>
+                  <div className="hidden print:block font-bold underline border border-gray-200 rounded-lg p-3 min-h-[48px] flex items-center">
+                    {subjectAr ? `الموضوع: ${subjectAr}` : ''}
+                  </div>
                 </div>
-                
-                <div className="print:hidden">
-                  <textarea
-                    value={contentAr}
-                    onChange={e => {
-                      setContentAr(e.target.value);
-                      translateArToEn(e.target.value, setContentEn);
-                    }}
-                    placeholder="اكتب محتوى الخطاب هنا..."
-                    className="w-full min-h-[300px] p-4 rounded-lg border border-gray-200 bg-transparent resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                  />
-                </div>
-                <div className="hidden print:block whitespace-pre-wrap border border-gray-200 rounded-lg p-4 min-h-[300px]">
-                  {contentAr}
-                </div>
+              )}
+            </div>
 
-                <div className="space-y-3 pt-8">
-                  <p className="print:block hidden mb-8">وتفضلوا بقبول فائق الاحترام،</p>
+            {/* Content Row */}
+            <div className={`grid gap-8 ${outputLang === 'both' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              {(outputLang === 'en' || outputLang === 'both') && (
+                <div dir="ltr">
+                  <div className="print:hidden">
+                    <textarea
+                      value={contentEn}
+                      onChange={e => {
+                        setContentEn(e.target.value);
+                        translateEnToAr(e.target.value, setContentAr);
+                      }}
+                      placeholder="Type your letter content here..."
+                      className="w-full min-h-[200px] p-4 rounded-lg border border-gray-200 bg-transparent resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                    />
+                  </div>
+                  <div className="hidden print:block whitespace-pre-wrap border border-gray-200 rounded-lg p-4 min-h-[200px]">
+                    {contentEn}
+                  </div>
+                </div>
+              )}
+              {(outputLang === 'ar' || outputLang === 'both') && (
+                <div dir="rtl">
+                  <div className="print:hidden">
+                    <textarea
+                      value={contentAr}
+                      onChange={e => {
+                        setContentAr(e.target.value);
+                        translateArToEn(e.target.value, setContentEn);
+                      }}
+                      placeholder="اكتب محتوى الخطاب هنا..."
+                      className="w-full min-h-[200px] p-4 rounded-lg border border-gray-200 bg-transparent resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                    />
+                  </div>
+                  <div className="hidden print:block whitespace-pre-wrap border border-gray-200 rounded-lg p-4 min-h-[200px]">
+                    {contentAr}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Sender Row */}
+            <div className={`grid gap-8 pt-4 ${outputLang === 'both' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              {(outputLang === 'en' || outputLang === 'both') && (
+                <div className="space-y-3" dir="ltr">
+                  <p className="print:block hidden mb-4">Sincerely,</p>
+                  <div className="print:hidden">
+                    <input type="text" value={senderNameEn} onChange={e => {
+                      setSenderNameEn(e.target.value);
+                      translateEnToAr(e.target.value, setSenderNameAr);
+                    }} placeholder="Your Name" className="input bg-transparent font-bold" />
+                    <input type="text" value={senderTitleEn} onChange={e => {
+                      setSenderTitleEn(e.target.value);
+                      translateEnToAr(e.target.value, setSenderTitleAr);
+                    }} placeholder="Your Title" className="input bg-transparent" />
+                  </div>
+                  <div className="hidden print:block space-y-3">
+                    <div className="border border-gray-200 rounded-lg p-3 font-bold min-h-[48px] flex items-center">{senderNameEn}</div>
+                    <div className="border border-gray-200 rounded-lg p-3 min-h-[48px] flex items-center">{senderTitleEn}</div>
+                  </div>
+                </div>
+              )}
+              {(outputLang === 'ar' || outputLang === 'both') && (
+                <div className="space-y-3" dir="rtl">
+                  <p className="print:block hidden mb-4">وتفضلوا بقبول فائق الاحترام،</p>
                   <div className="print:hidden">
                     <input type="text" value={senderNameAr} onChange={e => {
                       setSenderNameAr(e.target.value);
@@ -326,8 +348,8 @@ export default function Letterhead() {
                     <div className="border border-gray-200 rounded-lg p-3 min-h-[48px] flex items-center">{senderTitleAr}</div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
             
           </div>
         </div>

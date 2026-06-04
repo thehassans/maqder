@@ -151,6 +151,20 @@ const ThermalReceipt = forwardRef(({ order, type = 'laundry' }, ref) => {
             </span>
           </div>
         )}
+        {order.customerPhone && (
+          <div className="flex justify-between">
+            <span className="text-gray-600">Phone / رقم الهاتف:</span>
+            <span className="font-semibold">{order.customerPhone}</span>
+          </div>
+        )}
+        {type === 'restaurant' && order.orderType && (
+          <div className="flex justify-between">
+            <span className="text-gray-600">Type / نوع الطلب:</span>
+            <span className="font-bold">
+              {order.orderType === 'dine_in' ? 'Dine In | محلي' : order.orderType === 'takeaway' ? 'Takeaway | سفري' : 'Delivery | توصيل'}
+            </span>
+          </div>
+        )}
         {type === 'restaurant' && order.tableNumber && (
           <div className="flex justify-between">
             <span className="text-gray-600">Table / الطاولة:</span>

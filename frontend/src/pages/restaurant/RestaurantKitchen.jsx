@@ -102,6 +102,14 @@ export default function RestaurantKitchen() {
     const tableLabel = isAr ? 'الطاولة' : 'Table'
     const orderLabel = isAr ? 'الطلب' : 'Order'
     const timeLabel = isAr ? 'الوقت' : 'Time'
+    const typeLabel = isAr ? 'النوع' : 'Type'
+    const customerLabel = isAr ? 'العميل' : 'Customer'
+
+    const typeDisplay = {
+      dine_in: isAr ? 'محلي' : 'Dine In',
+      takeaway: isAr ? 'سفري' : 'Takeaway',
+      delivery: isAr ? 'توصيل' : 'Delivery'
+    }[order?.orderType] || order?.orderType
 
     return `<!doctype html>
 <html>
@@ -122,7 +130,9 @@ th{font-size:12px; text-align:start; border-bottom:1px solid #ddd; padding-botto
     <div class="k">${title}</div>
     <div class="meta">
       <div>${orderLabel}: ${order?.orderNumber || ''}</div>
-      <div>${tableLabel}: ${order?.tableNumber || '-'}</div>
+      <div>${typeLabel}: ${typeDisplay}</div>
+      ${order?.orderType === 'dine_in' ? `<div>${tableLabel}: ${order?.tableNumber || '-'}</div>` : ''}
+      ${order?.customerName ? `<div>${customerLabel}: ${order?.customerName} ${order?.customerPhone ? '(' + order?.customerPhone + ')' : ''}</div>` : ''}
       <div>${timeLabel}: ${formatTime(order?.createdAt)}</div>
     </div>
   </div>
@@ -281,6 +291,7 @@ th{font-size:12px; text-align:start; border-bottom:1px solid #ddd; padding-botto
               <thead>
                 <tr>
                   <th>{language === 'ar' ? 'الطلب' : 'Order'}</th>
+                  <th>{language === 'ar' ? 'النوع/العميل' : 'Type/Customer'}</th>
                   <th>{language === 'ar' ? 'الطاولة' : 'Table'}</th>
                   <th>{language === 'ar' ? 'الوقت' : 'Time'}</th>
                   <th>{language === 'ar' ? 'الحالة' : 'Status'}</th>
@@ -292,7 +303,16 @@ th{font-size:12px; text-align:start; border-bottom:1px solid #ddd; padding-botto
                 {orders.map((o) => (
                   <tr key={o._id}>
                     <td className="font-mono text-sm">{o.orderNumber}</td>
-                    <td>{o.tableNumber || '-'}</td>
+                    <td>
+                      <div className="font-semibold capitalize text-sm">
+                        {o.orderType === 'dine_in' ? (language === 'ar' ? 'محلي' : 'Dine In') : 
+                         o.orderType === 'takeaway' ? (language === 'ar' ? 'سفري' : 'Takeaway') : 
+                         (language === 'ar' ? 'توصيل' : 'Delivery')}
+                      </div>
+                      {o.customerName && <div className="text-xs text-gray-500 mt-1">{o.customerName}</div>}
+                      {o.customerPhone && <div className="text-xs text-gray-500">{o.customerPhone}</div>}
+                    </td>
+                    <td>{o.orderType === 'dine_in' ? o.tableNumber || '-' : '-'}</td>
                     <td className="text-gray-500">{formatTime(o.createdAt)}</td>
                     <td>
                       <span className="badge badge-neutral capitalize inline-flex items-center gap-1">

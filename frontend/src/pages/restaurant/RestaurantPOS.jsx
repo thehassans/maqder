@@ -138,16 +138,16 @@ export default function RestaurantPOS() {
     await submitOrder()
   }
 
-  const submitOrder = async () => {
+  const submitOrder = async (targetStatus = 'paid') => {
     setIsProcessing(true)
     try {
       const payload = {
-        status: 'paid', // Instant checkout
+        status: targetStatus,
         kitchenStatus: 'new', // Send to kitchen
         orderType,
         customerName: customerName.trim(),
         customerPhone: customerPhone.trim(),
-        paymentMethod,
+        paymentMethod: targetStatus === 'paid' ? paymentMethod : undefined,
         lineItems: cart.map(item => ({
           menuItemId: item.menuItem._id,
           name: item.nameEn,
@@ -179,6 +179,13 @@ export default function RestaurantPOS() {
     } finally {
       setIsProcessing(false)
     }
+  }
+
+  const handleSendToKitchen = async () => {
+    if (cart.length === 0) return toast.error('Cart is empty')
+    if (orderType === 'dine_in' && !selectedTable) return toast.error(isRtl ? 'الرجاء اختيار الطاولة' : 'Please select a table')
+    
+    await submitOrder('open')
   }
 
   const handleCardApproved = async (posPayment) => {
@@ -468,18 +475,33 @@ export default function RestaurantPOS() {
             <span>SAR {cartTotal.toFixed(2)}</span>
           </div>
           
-          <button
-            onClick={handleCheckout}
-            disabled={cart.length === 0 || isProcessing}
-            className="w-full mt-4 bg-amber-600 hover:bg-amber-700 text-white py-3.5 px-4 rounded-xl font-bold text-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            {isProcessing ? (isRtl ? 'جاري المعالجة...' : 'Processing...') : (
-              <>
-                <CreditCard className="w-5 h-5" />
-                {isRtl ? 'إصدار الفاتورة' : 'Checkout & Print'}
-              </>
-            )}
-          </button>
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={handleSendToKitchen}
+              disabled={cart.length === 0 || isProcessing}
+              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3.5 px-2 rounded-xl font-bold text-sm lg:text-base transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+            >
+              {isProcessing ? (isRtl ? '...' : '...') : (
+                <>
+                  <UtensilsCrossed className="w-5 h-5 hidden sm:block" />
+                  {isRtl ? 'للمطبخ' : 'To Kitchen'}
+                </>
+              )}
+            </button>
+            
+            <button
+              onClick={handleCheckout}
+              disabled={cart.length === 0 || isProcessing}
+              className="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-3.5 px-2 rounded-xl font-bold text-sm lg:text-base transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+            >
+              {isProcessing ? (isRtl ? '...' : '...') : (
+                <>
+                  <CreditCard className="w-5 h-5 hidden sm:block" />
+                  {isRtl ? 'دفع' : 'Pay'}
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 

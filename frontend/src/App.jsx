@@ -76,6 +76,8 @@ import RestaurantPOS from './pages/restaurant/RestaurantPOS'
 import RestaurantTables from './pages/restaurant/Tables'
 import RestaurantInventory from './pages/restaurant/Inventory'
 import RestaurantBranches from './pages/restaurant/Branches'
+import CashierPanel from './pages/restaurant/CashierPanel'
+import QRMenu from './pages/restaurant/QRMenu'
 import Projects from './pages/Projects'
 import ProjectForm from './pages/ProjectForm'
 import Tasks from './pages/Tasks'
@@ -359,6 +361,13 @@ function App() {
         <Route path="restaurant/orders" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantOrders /></BusinessTypeRoute>} />
         <Route path="restaurant/orders/new" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantOrderForm /></BusinessTypeRoute>} />
         <Route path="restaurant/orders/:id" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantOrderForm /></BusinessTypeRoute>} />
+        
+        {/* New Restaurant Features */}
+        <Route path="restaurant/cashier" element={<BusinessTypeRoute allowedTypes={['restaurant']}><CashierPanel /></BusinessTypeRoute>} />
+        <Route path="restaurant/qr-menu" element={<BusinessTypeRoute allowedTypes={['restaurant']}><QRMenu /></BusinessTypeRoute>} />
+        
+        {/* Legacy / Alternate paths */}
+        <Route path="restaurant/kitchen" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantKitchen /></BusinessTypeRoute>} />
         <Route path="laundry/pos" element={<BusinessTypeRoute allowedTypes={['laundry']}><LaundryPOS /></BusinessTypeRoute>} />
         <Route path="laundry/services" element={<BusinessTypeRoute allowedTypes={['laundry']}><LaundryServices /></BusinessTypeRoute>} />
         <Route path="laundry/orders" element={<BusinessTypeRoute allowedTypes={['laundry']}><LaundryKanban /></BusinessTypeRoute>} />
