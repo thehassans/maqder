@@ -3,8 +3,8 @@ import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from '../../lib/translations'
 import api from '../../lib/api'
 import LoadingScreen from '../../components/ui/LoadingScreen'
-import { motion } from 'framer-motion'
-import { UtensilsCrossed } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { UtensilsCrossed, Globe, Search, ChevronRight, Info } from 'lucide-react'
 
 export default function PublicMenu() {
   const [searchParams] = useSearchParams()
@@ -12,8 +12,9 @@ export default function PublicMenu() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [data, setData] = useState(null)
+  const [activeCategory, setActiveCategory] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   
-  // default to Arabic for Saudi menus, can add a language toggle
   const [language, setLanguage] = useState('ar')
   const { t } = useTranslation(language)
   const isRtl = language === 'ar'
@@ -28,9 +29,14 @@ export default function PublicMenu() {
     api.get(`/public/tenant/${tenantId}/menu`)
       .then(res => {
         setData(res.data)
+        const defaultLang = res.data?.tenant?.settings?.restaurant?.qrMenu?.defaultLanguage || 'ar'
+        setLanguage(defaultLang)
         setLoading(false)
-        if (res.data?.tenant?.business?.language) {
-          setLanguage(res.data.tenant.business.language)
+        
+        // set active category initially
+        if (res.data?.items?.length) {
+          const cats = [...new Set(res.data.items.map(item => item.category))].filter(Boolean).sort()
+          if (cats.length) setActiveCategory(cats[0])
         }
       })
       .catch(err => {
@@ -45,135 +51,202 @@ export default function PublicMenu() {
     return cats.sort()
   }, [data])
 
+  const filteredItems = useMemo(() => {
+    if (!data?.items) return []
+    return data.items.filter(item => {
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase()
+        return (item.nameEn?.toLowerCase().includes(q) || item.nameAr?.toLowerCase().includes(q) || item.category?.toLowerCase().includes(q))
+      }
+      return item.category === activeCategory
+    })
+  }, [data, activeCategory, searchQuery])
+
   if (loading) return <LoadingScreen />
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <UtensilsCrossed className="w-8 h-8" />
+      <div className="min-h-screen flex items-center justify-center bg-[#F9FAFB] p-4">
+        <div className="text-center bg-white p-8 rounded-3xl shadow-xl max-w-sm w-full">
+          <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <UtensilsCrossed className="w-10 h-10" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{isRtl ? 'خطأ' : 'Error'}</h1>
-          <p className="text-gray-500 dark:text-gray-400">{error}</p>
+          <h1 className="text-2xl font-black text-gray-900 mb-2">{isRtl ? 'عذراً' : 'Oops'}</h1>
+          <p className="text-gray-500 font-medium">{error}</p>
         </div>
       </div>
     )
   }
 
-  const { tenant, items } = data
+  const { tenant } = data
   const businessName = isRtl ? (tenant.business?.legalNameAr || tenant.name) : (tenant.business?.legalNameEn || tenant.name)
+  const heroImage = tenant.settings?.restaurant?.qrMenu?.heroImage
+  const primaryColor = tenant.branding?.primaryColor || '#D97706' // amber-600 default
 
   return (
-    <div dir={isRtl ? 'rtl' : 'ltr'} className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+    <div dir={isRtl ? 'rtl' : 'ltr'} className="min-h-screen bg-[#FDFDFD] font-sans selection:bg-amber-100 selection:text-amber-900 pb-24">
+      
+      {/* Hero Section */}
+      <div className="relative h-[40vh] min-h-[300px] max-h-[500px] w-full bg-gray-900 overflow-hidden">
+        {heroImage ? (
+          <img src={heroImage} alt="Hero" className="absolute inset-0 w-full h-full object-cover" />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-600 to-orange-900" />
+        )}
+        
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/10" />
+        
+        {/* Top Actions */}
+        <div className="absolute top-0 inset-x-0 p-4 flex justify-between items-start z-10">
+          <div className="bg-black/20 backdrop-blur-md rounded-full px-4 py-2 flex items-center gap-2 border border-white/10">
             {tenant.branding?.logoUrl ? (
-              <img src={tenant.branding.logoUrl} alt={businessName} className="h-10 w-10 object-contain rounded-md" />
+              <img src={tenant.branding.logoUrl} alt="Logo" className="h-6 w-auto object-contain" />
             ) : (
-              <div className="w-10 h-10 bg-amber-100 text-amber-600 rounded-md flex items-center justify-center">
-                <UtensilsCrossed className="w-6 h-6" />
-              </div>
+              <UtensilsCrossed className="w-5 h-5 text-white" />
             )}
-            <h1 className="text-lg font-bold text-gray-900 dark:text-white truncate">{businessName}</h1>
+            <span className="text-white font-bold text-sm truncate max-w-[120px]">{businessName}</span>
           </div>
+          
           <button 
             onClick={() => setLanguage(lang => lang === 'ar' ? 'en' : 'ar')}
-            className="text-sm font-medium text-amber-600 hover:text-amber-700 bg-amber-50 px-3 py-1.5 rounded-full"
+            className="bg-black/20 backdrop-blur-md border border-white/10 text-white p-2.5 rounded-full hover:bg-white/20 transition-all"
           >
-            {isRtl ? 'English' : 'عربي'}
+            <Globe className="w-5 h-5" />
           </button>
         </div>
-        
-        {/* Categories Nav */}
-        <div className="max-w-3xl mx-auto px-4 overflow-x-auto no-scrollbar border-t border-gray-100 dark:border-gray-700">
-          <div className="flex gap-4 py-3">
-            {categories.map(cat => (
-              <a 
-                key={cat}
-                href={`#cat-${cat}`}
-                className="whitespace-nowrap text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-amber-600 dark:hover:text-amber-500"
-              >
-                {cat}
-              </a>
-            ))}
-          </div>
+
+        {/* Hero Content */}
+        <div className="absolute bottom-0 inset-x-0 p-6 z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-3xl mx-auto"
+          >
+            <h1 className="text-4xl md:text-5xl font-black text-white mb-2 drop-shadow-lg tracking-tight">
+              {businessName}
+            </h1>
+            <p className="text-white/80 font-medium text-lg max-w-lg">
+              {isRtl ? 'اكتشف قائمتنا المميزة واستمتع بأشهى المأكولات.' : 'Discover our exquisite menu and enjoy the finest culinary experience.'}
+            </p>
+          </motion.div>
         </div>
       </div>
 
-      {/* Menu Items */}
-      <div className="max-w-3xl mx-auto px-4 py-6 space-y-8">
-        {categories.length === 0 ? (
-          <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-            {isRtl ? 'لا يوجد أصناف في القائمة' : 'No items in the menu'}
+      <div className="max-w-3xl mx-auto">
+        {/* Search & Categories Bar (Sticky) */}
+        <div className="sticky top-0 z-20 bg-[#FDFDFD]/80 backdrop-blur-xl border-b border-gray-100 shadow-sm">
+          <div className="px-4 pt-4 pb-2">
+            <div className="relative">
+              <Search className={`absolute ${isRtl ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400`} />
+              <input 
+                type="text" 
+                placeholder={isRtl ? 'ابحث في القائمة...' : 'Search the menu...'}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={`w-full bg-gray-100/80 border-none rounded-2xl py-3.5 ${isRtl ? 'pr-12 pl-4' : 'pl-12 pr-4'} focus:ring-2 focus:ring-amber-500 font-medium text-gray-900 placeholder-gray-500 transition-all`}
+              />
+            </div>
           </div>
-        ) : (
-          categories.map(cat => {
-            const catItems = items.filter(i => i.category === cat)
-            return (
-              <div key={cat} id={`cat-${cat}`} className="scroll-mt-32">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                  <span className="w-8 h-1 bg-amber-500 rounded-full inline-block"></span>
+          
+          {!searchQuery && (
+            <div className="px-4 py-3 overflow-x-auto no-scrollbar flex gap-2">
+              {categories.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`whitespace-nowrap px-6 py-2.5 rounded-full font-bold text-sm transition-all duration-300 ${
+                    activeCategory === cat 
+                      ? 'bg-gray-900 text-white shadow-md scale-105'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
                   {cat}
-                </h2>
-                
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {catItems.map(item => (
-                    <motion.div 
-                      key={item._id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 flex gap-4"
-                    >
-                      <div className="flex-1">
-                        <div className="flex justify-between items-start mb-1">
-                          <h3 className="font-bold text-gray-900 dark:text-white text-base">
-                            {isRtl ? (item.nameAr || item.nameEn) : (item.nameEn || item.nameAr)}
-                          </h3>
-                          <span className="font-black text-amber-600 whitespace-nowrap ml-2">
-                            {item.sellingPrice} {isRtl ? 'ر.س' : 'SAR'}
-                          </span>
-                        </div>
-                        
-                        {(item.descriptionAr || item.descriptionEn) && (
-                          <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mt-1">
-                            {isRtl ? (item.descriptionAr || item.descriptionEn) : (item.descriptionEn || item.descriptionAr)}
-                          </p>
-                        )}
-                        
-                        {item.calories && (
-                          <div className="mt-2 text-xs font-medium text-orange-500 bg-orange-50 inline-block px-2 py-0.5 rounded-full">
-                            {item.calories} {isRtl ? 'سعرة' : 'Cal'}
-                          </div>
-                        )}
-                      </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Menu Items Grid */}
+        <div className="p-4 sm:p-6 mt-2">
+          {searchQuery && (
+            <div className="mb-6">
+              <h2 className="text-lg font-bold text-gray-900">
+                {isRtl ? 'نتائج البحث' : 'Search Results'} ({filteredItems.length})
+              </h2>
+            </div>
+          )}
+
+          <div className="grid gap-5 sm:grid-cols-2">
+            <AnimatePresence mode="popLayout">
+              {filteredItems.map(item => (
+                <motion.div 
+                  key={item._id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                  className="group bg-white rounded-3xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-gray-100 transition-all flex gap-4 overflow-hidden relative cursor-pointer"
+                >
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-gray-900 text-lg leading-tight mb-1 group-hover:text-amber-600 transition-colors">
+                      {isRtl ? (item.nameAr || item.nameEn) : (item.nameEn || item.nameAr)}
+                    </h3>
+                    
+                    {(item.descriptionAr || item.descriptionEn) && (
+                      <p className="text-sm text-gray-500 line-clamp-2 mt-1 mb-3">
+                        {isRtl ? (item.descriptionAr || item.descriptionEn) : (item.descriptionEn || item.descriptionAr)}
+                      </p>
+                    )}
+                    
+                    <div className="flex items-center gap-3 mt-auto pt-2">
+                      <span className="font-black text-lg text-gray-900">
+                        {item.sellingPrice} <span className="text-sm font-bold text-amber-600">{isRtl ? 'ر.س' : 'SAR'}</span>
+                      </span>
                       
-                      {item.imageUrl && (
-                        <div className="w-24 h-24 flex-shrink-0 bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden">
-                          <img 
-                            src={item.imageUrl} 
-                            alt={item.nameEn} 
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                          />
+                      {item.calories && (
+                        <div className="flex items-center gap-1 text-[11px] font-bold text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full">
+                          {item.calories} {isRtl ? 'سعرة' : 'Cal'}
                         </div>
                       )}
-                    </motion.div>
-                  ))}
+                    </div>
+                  </div>
+                  
+                  {item.imageUrl && (
+                    <div className="w-28 h-28 flex-shrink-0 rounded-2xl overflow-hidden bg-gray-50 relative shadow-inner">
+                      <img 
+                        src={item.imageUrl} 
+                        alt={item.nameEn} 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        loading="lazy"
+                      />
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+
+            {filteredItems.length === 0 && (
+              <div className="col-span-full py-20 text-center">
+                <div className="w-16 h-16 bg-gray-100 text-gray-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Info className="w-8 h-8" />
                 </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-1">{isRtl ? 'لا توجد نتائج' : 'No Results Found'}</h3>
+                <p className="text-gray-500">{isRtl ? 'حاول البحث بكلمات أخرى' : 'Try searching with different keywords'}</p>
               </div>
-            )
-          })
-        )}
+            )}
+          </div>
+        </div>
       </div>
       
       {/* Footer Powered By */}
-      <div className="text-center py-6 mt-8">
-        <p className="text-xs text-gray-400">
-          {isRtl ? 'مشغل بواسطة' : 'Powered by'} <span className="font-bold text-gray-600 dark:text-gray-300">Maqder</span>
-        </p>
+      <div className="text-center py-8">
+        <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full border border-gray-200">
+          <span className="text-xs font-medium text-gray-500">{isRtl ? 'مشغل بواسطة' : 'Powered by'}</span>
+          <span className="font-black text-gray-900 tracking-tight text-sm">Maqder</span>
+        </div>
       </div>
     </div>
   )

@@ -254,7 +254,7 @@ router.post('/demo-login', async (req, res) => {
 router.get('/tenant/:id/menu', async (req, res) => {
   try {
     const tenant = await withQueryTimeout(
-      Tenant.findById(req.params.id).select('name slug business branding isActive')
+      Tenant.findById(req.params.id).select('name slug business branding settings isActive')
     )
 
     if (!tenant || !tenant.isActive) {
@@ -270,6 +270,11 @@ router.get('/tenant/:id/menu', async (req, res) => {
         name: tenant.name,
         business: tenant.business,
         branding: tenant.branding,
+        settings: {
+          restaurant: {
+            qrMenu: tenant.settings?.restaurant?.qrMenu || { defaultLanguage: 'ar' }
+          }
+        }
       },
       items
     })

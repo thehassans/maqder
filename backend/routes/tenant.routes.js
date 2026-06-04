@@ -3,6 +3,10 @@ import Tenant from '../models/Tenant.js';
 import { protect, authorize } from '../middleware/auth.js';
 import ZatcaService from '../utils/zatca/ZatcaService.js';
 import zlib from 'zlib';
+import multer from 'multer';
+import sharp from 'sharp';
+import path from 'path';
+import fs from 'fs';
 import Customer from '../models/Customer.js';
 import Employee from '../models/Employee.js';
 import Expense from '../models/Expense.js';
@@ -65,6 +69,14 @@ router.put('/current', authorize('admin'), async (req, res) => {
       tenant.settings = {
         ...currentSettings,
         ...settings,
+        restaurant: {
+          ...(currentSettings.restaurant || {}),
+          ...(settings.restaurant || {}),
+          qrMenu: {
+            ...(currentSettings.restaurant?.qrMenu || {}),
+            ...(settings.restaurant?.qrMenu || {}),
+          }
+        },
         communication: {
           ...(currentSettings.communication || {}),
           ...(settings.communication || {}),
@@ -118,6 +130,40 @@ router.put('/current', authorize('admin'), async (req, res) => {
     res.json(tenant);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+const upload = multer({ storage: multer.memoryStorage() });
+
+// @route   POST /api/tenants/upload-qr-hero
+router.post('/upload-qr-hero', authorize('admin'), upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image uploaded' });
+    }
+
+    const tenantIdStr = req.user.tenantId.toString();
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'restaurant', tenantIdStr);
+    
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    const filename = `qrhero-${Date.now()}-${Math.round(Math.random() * 1E9)}.webp`;
+    const filepath = path.join(uploadsDir, filename);
+
+    // Convert to webp
+    await sharp(req.file.buffer)
+      .resize({ width: 1200, withoutEnlargement: true }) // Hero images are larger
+      .webp({ quality: 80 })
+      .toFile(filepath);
+
+    const imageUrl = `/uploads/restaurant/${tenantIdStr}/${filename}`;
+    
+    res.json({ imageUrl });
+  } catch (error) {
+    console.error('Image processing error:', error);
+    res.status(500).json({ error: 'Failed to process image' });
   }
 });
 

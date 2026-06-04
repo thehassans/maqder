@@ -208,6 +208,12 @@ const tenantSchema = new mongoose.Schema({
       barcodeScannerPrefix: { type: String, default: '' },
       barcodeScannerSuffix: { type: String, default: 'Enter' },
       scaleType: { type: String, enum: ['none', 'serial', 'network'], default: 'none' },
+    },
+    restaurant: {
+      qrMenu: {
+        heroImage: { type: String },
+        defaultLanguage: { type: String, enum: ['en', 'ar'], default: 'ar' }
+      }
     }
   },
   branding: {
