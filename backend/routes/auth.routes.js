@@ -38,7 +38,7 @@ const generateToken = (id) => {
   });
 };
 
-const authTenantSelect = 'name slug businessType businessTypes business settings branding subscription isActive terminationNotice';
+const authTenantSelect = 'name slug businessType businessTypes business settings branding subscription isActive terminationNotice zatca';
 
 const serializeAuthTenant = (tenant) => {
   if (!tenant) return null;
@@ -56,6 +56,7 @@ const serializeAuthTenant = (tenant) => {
     branding: source.branding,
     subscription: source.subscription,
     terminationNotice: source.terminationNotice,
+    zatca: source.zatca,
   };
 };
 
