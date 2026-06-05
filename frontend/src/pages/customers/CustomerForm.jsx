@@ -30,6 +30,7 @@ export default function CustomerForm() {
   const { register, handleSubmit, reset, watch, formState: { errors, isSubmitting } } = useForm({
     defaultValues: {
       type: 'business',
+      customerCode: '',
       name: '',
       nameAr: '',
       email: '',
@@ -203,6 +204,18 @@ export default function CustomerForm() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {language === 'ar' ? 'رقم العميل (اختياري)' : 'Customer ID (Optional)'}
+              </label>
+              <input
+                type="text"
+                {...register('customerCode')}
+                className="input"
+                placeholder="1001"
+              />
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {language === 'ar' ? 'الاسم (بالإنجليزية)' : 'Name (English)'} *

@@ -837,7 +837,7 @@ router.get('/tenants/:id', async (req, res) => {
 // @route   POST /api/super-admin/tenants
 router.post('/tenants', async (req, res) => {
   try {
-    const { name, slug, businessType, businessTypes, business, subscription, adminUser, branding, settings } = req.body;
+    const { name, slug, businessType, businessTypes, business, subscription, adminUser, branding, settings, zatca } = req.body;
 
     const nextBusinessTypes = normalizeBusinessTypes(businessTypes || businessType);
     const primaryBusinessType = businessType && nextBusinessTypes.includes(businessType)
@@ -853,6 +853,7 @@ router.post('/tenants', async (req, res) => {
       business,
       ...(settings ? { settings: mergeTenantEmailSettings({ existingTenant: { settings: {}, slug }, incomingSettings: settings }) } : {}),
       ...(branding ? { branding } : {}),
+      ...(zatca ? { zatca: { phase: zatca.phase || 1 } } : {}),
       subscription: {
         ...subscription,
         startDate: new Date(),
@@ -923,12 +924,20 @@ router.put('/tenants/:id', async (req, res) => {
       ? mergeTenantEmailSettings({ existingTenant, incomingSettings: req.body.settings })
       : undefined;
 
+    const nextZatca = req.body?.zatca
+      ? {
+          ...(existingTenant.zatca?.toObject?.() || existingTenant.zatca || {}),
+          ...(req.body.zatca || {}),
+        }
+      : undefined;
+
     const tenant = await Tenant.findByIdAndUpdate(
       req.params.id,
       {
         ...req.body,
         ...(nextSettings ? { settings: nextSettings } : {}),
         ...(nextSubscription ? { subscription: nextSubscription } : {}),
+        ...(nextZatca ? { zatca: nextZatca } : {}),
         businessType: primaryBusinessType,
         businessTypes: nextBusinessTypes,
       },

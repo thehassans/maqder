@@ -456,7 +456,7 @@ export default function InvoiceCreateSell() {
                 <option value="">{language === 'ar' ? 'اختياري: اختر عميل' : 'Optional: Select customer'}</option>
                 {(customers || []).map((c) => (
                   <option key={c._id} value={c._id}>
-                    {language === 'ar' ? (c.nameAr || c.name) : c.name} {c.vatNumber ? `(${c.vatNumber})` : ''}
+                    {c.customerCode ? `[${c.customerCode}] ` : ''}{language === 'ar' ? (c.nameAr || c.name) : c.name} {c.vatNumber ? `(${c.vatNumber})` : ''}
                   </option>
                 ))}
               </select>

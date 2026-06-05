@@ -17,6 +17,7 @@ router.get('/', checkPermission('invoicing', 'read'), async (req, res) => {
     
     if (search) {
       query.$or = [
+        { customerCode: { $regex: search, $options: 'i' } },
         { name: { $regex: search, $options: 'i' } },
         { nameAr: { $regex: search, $options: 'i' } },
         { email: { $regex: search, $options: 'i' } },
@@ -71,12 +72,13 @@ router.get('/search', checkPermission('invoicing', 'read'), async (req, res) => 
       ...req.tenantFilter,
       isActive: true,
       $or: [
+        { customerCode: { $regex: q, $options: 'i' } },
         { name: { $regex: q, $options: 'i' } },
         { nameAr: { $regex: q, $options: 'i' } },
         { vatNumber: { $regex: q, $options: 'i' } }
       ]
     })
-      .select('name nameAr email phone vatNumber type address')
+      .select('customerCode name nameAr email phone vatNumber type address')
       .limit(10);
     
     res.json(customers);
@@ -160,6 +162,12 @@ router.post('/', checkPermission('invoicing', 'create'), async (req, res) => {
       }
     }
     
+    if (!customerData.customerCode) {
+      // Auto-generate a 4 digit customer code
+      const count = await Customer.countDocuments({ tenantId: req.user.tenantId });
+      customerData.customerCode = (1000 + count).toString();
+    }
+
     const customer = new Customer(customerData);
     await customer.save();
     

@@ -254,6 +254,14 @@ export default function TenantForm() {
               <label className="label">{language === 'ar' ? 'الرمز (Slug)' : 'Slug'} *</label>
               <input {...register('slug', { required: true })} className="input" placeholder="company-name" />
             </div>
+            
+            <div>
+              <label className="label">{language === 'ar' ? 'مرحلة زاتكا (ZATCA)' : 'ZATCA Phase'} *</label>
+              <select {...register('zatca.phase', { valueAsNumber: true })} className="select">
+                <option value={1}>{language === 'ar' ? 'المرحلة الأولى' : 'Phase 1'}</option>
+                <option value={2}>{language === 'ar' ? 'المرحلة الثانية' : 'Phase 2'}</option>
+              </select>
+            </div>
 
             <div>
               <label className="label">{language === 'ar' ? 'نوع النشاط' : 'Business Type'}</label>

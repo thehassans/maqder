@@ -43,6 +43,10 @@ const customerSchema = new mongoose.Schema({
     trim: true,
     lowercase: true
   },
+  customerCode: {
+    type: String,
+    trim: true
+  },
   phone: {
     type: String,
     trim: true

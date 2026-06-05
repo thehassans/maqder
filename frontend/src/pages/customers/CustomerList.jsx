@@ -61,6 +61,11 @@ export default function CustomerList() {
 
   const exportColumns = [
     {
+      key: 'customerCode',
+      label: language === 'ar' ? 'رقم العميل' : 'Customer ID',
+      value: (r) => r?.customerCode || ''
+    },
+    {
       key: 'name',
       label: language === 'ar' ? 'العميل' : 'Customer',
       value: (r) => (language === 'ar' ? r?.nameAr || r?.name : r?.name || r?.nameAr) || ''
@@ -334,9 +339,16 @@ export default function CustomerList() {
                             }
                           </div>
                           <div>
-                            <p className="font-medium text-gray-900 dark:text-white">
-                              {language === 'ar' && customer.nameAr ? customer.nameAr : customer.name}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium text-gray-900 dark:text-white">
+                                {language === 'ar' && customer.nameAr ? customer.nameAr : customer.name}
+                              </p>
+                              {customer.customerCode && (
+                                <span className="text-xs font-mono bg-gray-100 dark:bg-dark-600 px-2 py-0.5 rounded text-gray-500 dark:text-gray-400">
+                                  #{customer.customerCode}
+                                </span>
+                              )}
+                            </div>
                             {customer.address?.city && (
                               <p className="text-xs text-gray-500 dark:text-gray-400">
                                 {customer.address.city}
