@@ -302,14 +302,22 @@ export default function Sidebar() {
     <>
       {/* Logo */}
       <div className="flex items-center justify-between px-4 h-16 bg-[#1a3d28]">
-        <div className="flex items-center justify-start flex-1 overflow-hidden">
-          <div className={`bg-white rounded-xl p-1 shadow-lg flex items-center justify-center flex-shrink-0 overflow-hidden transition-all duration-300 ${sidebarCollapsed ? 'w-10 h-10' : 'h-11 w-48'}`}>
-            {tenant?.branding?.logo ? (
-              <img src={tenant.branding.logo} alt="" className="w-full h-full object-contain" />
-            ) : (
-              <img src="/maqder-logo.png" alt="Maqder" className="w-full h-full object-contain" />
-            )}
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-white rounded-xl p-1 shadow-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <img src="/maqder-logo.png" alt="Maqder" className="w-full h-full object-contain" />
           </div>
+          {!sidebarCollapsed && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <span className="font-bold text-lg text-white truncate block max-w-[150px]">
+                Maqder ERP
+              </span>
+            </motion.div>
+          )}
         </div>
         
         {/* Mobile close button */}
@@ -324,16 +332,23 @@ export default function Sidebar() {
       {/* Tenant Info */}
       {!sidebarCollapsed && tenant && (
         <div className="px-4 py-4 border-b border-gray-200 dark:border-dark-700">
-          <div className="p-3 bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-xl">
-            <p className="text-xs text-primary-600 dark:text-primary-400 font-medium mb-1">
-              {language === 'ar' ? 'الشركة' : 'Company'}
-            </p>
-            <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">
-              {language === 'ar' ? tenant.business?.legalNameAr : tenant.business?.legalNameEn}
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              VAT: {tenant.business?.vatNumber}
-            </p>
+          <div className="relative p-3 bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 rounded-xl overflow-hidden">
+            {tenant?.branding?.logo && (
+              <div className="absolute right-0 top-0 bottom-0 w-24 opacity-10 pointer-events-none">
+                <img src={tenant.branding.logo} alt="" className="w-full h-full object-contain object-right" />
+              </div>
+            )}
+            <div className="relative z-10">
+              <p className="text-xs text-primary-600 dark:text-primary-400 font-medium mb-1">
+                {language === 'ar' ? 'الشركة' : 'Company'}
+              </p>
+              <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">
+                {language === 'ar' ? tenant.business?.legalNameAr : tenant.business?.legalNameEn}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                VAT: {tenant.business?.vatNumber}
+              </p>
+            </div>
           </div>
         </div>
       )}
