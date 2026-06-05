@@ -11,6 +11,7 @@ export default function InvoiceEditPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { language } = useSelector((state) => state.ui)
+  const { tenant } = useSelector((state) => state.auth)
 
   const { data: invoice, isLoading, error } = useQuery({
     queryKey: ['invoice', id],
@@ -42,7 +43,7 @@ export default function InvoiceEditPage() {
     )
   }
 
-  if (!isEditableInvoice(invoice)) {
+  if (!isEditableInvoice(invoice, tenant?.zatca?.phase || 2)) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">

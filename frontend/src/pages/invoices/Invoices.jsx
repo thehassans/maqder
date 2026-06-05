@@ -559,7 +559,7 @@ export default function Invoices() {
                               <Send className="w-4 h-4 text-primary-600" />
                             </button>
                           )}
-                          {isEditableInvoice(invoice) && (
+                          {isEditableInvoice(invoice, tenant?.zatca?.phase || 2) && (
                             <Link
                               to={`/app/dashboard/invoices/${invoice._id}/edit`}
                               className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors"

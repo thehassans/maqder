@@ -63,7 +63,7 @@ export default function InvoiceView() {
 
   const templateId = getInvoiceTemplateId(tenant, invoice?.businessContext, invoice?.pdfTemplateId)
   const invoiceTypeLabel = invoice?.transactionType === 'B2B' ? t('b2bInvoice') : t('b2cInvoice')
-  const zatcaStatusMeta = getZatcaStatusMeta(invoice, language)
+  const zatcaStatusMeta = getZatcaStatusMeta(invoice, language, tenant?.zatca?.phase || 2)
   const travelInvoiceLabelMeta = isTravelAgencyInvoice(invoice) ? getTravelInvoiceLabelMeta(invoice, language) : null
   const isBilingualInvoice = invoice?.invoiceSubtype === 'travel_ticket' || ['travel_agency', 'trading', 'construction'].includes(invoice?.businessContext)
   const hasEmailAddon = tenant?.subscription?.hasEmailAddon === true || (Array.isArray(tenant?.subscription?.features) && tenant.subscription.features.includes('email_automation'))
@@ -173,7 +173,7 @@ export default function InvoiceView() {
           </div>
         </div>
         <div className="flex gap-3">
-          {isEditableInvoice(invoice) && (
+          {isEditableInvoice(invoice, tenant?.zatca?.phase || 2) && (
             <button
               type="button"
               onClick={() => navigate(`/app/dashboard/invoices/${id}/edit`)}
