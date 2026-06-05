@@ -8,7 +8,24 @@ import Tenant from './models/Tenant.js';
 import moment from 'moment'; // assume moment is installed, or just use JS Date
 
 const MONGODB_URI = "mongodb+srv://hussainqadeer5050_db_user:J3QrTrKg5R8e2g@maqder.y0e2lgm.mongodb.net/?appName=MAQDER";
-const DATA_DIR = 'C:\\Users\\kjh\\Desktop\\Brilliantlines';
+const BASE_DIR_ABSOLUTE = 'C:\\Users\\kjh\\Desktop\\Brilliantlines';
+const BASE_DIR_RELATIVE = path.join(process.cwd(), 'Brilliantlines');
+
+let BASE_DIR = BASE_DIR_ABSOLUTE;
+if (!fs.existsSync(BASE_DIR)) {
+  BASE_DIR = BASE_DIR_RELATIVE;
+  if (!fs.existsSync(BASE_DIR)) {
+    console.error(`Please place the CSV files in ${BASE_DIR_ABSOLUTE} or upload them to ${BASE_DIR_RELATIVE} on your server.`);
+  }
+}
+
+const csvFiles = {
+  customers: path.join(BASE_DIR, 'Customer.csv'),
+  sales: path.join(BASE_DIR, 'sales.csv'),
+  salesReturns: path.join(BASE_DIR, 'e.Sale Return Report.csv'),
+  purchases: path.join(BASE_DIR, 'e.Purchase.csv')
+};
+
 const TENANT_VAT = '312781372800003';
 const TENANT_NAME = 'ALKHTOT ALRAEAH EST';
 
@@ -73,7 +90,7 @@ async function run() {
     }
 
     // 2. Migrate Customers
-    const customersData = await readCSV(path.join(DATA_DIR, 'Customer.csv'));
+    const customersData = await readCSV(path.join(BASE_DIR, 'Customer.csv'));
     const customerMap = {}; // mapping by VAT or Name to ObjectId
 
     for (const row of customersData) {
@@ -168,17 +185,17 @@ async function run() {
     };
 
     // 3. Migrate Sales
-    const salesData = await readCSV(path.join(DATA_DIR, 'sales.csv'));
+    const salesData = await readCSV(path.join(BASE_DIR, 'sales.csv'));
     const salesCount = await processInvoices(salesData, 'sell', '388');
     console.log(`Migrated ${salesCount} Sales`);
 
     // 4. Migrate Sales Returns
-    const returnsData = await readCSV(path.join(DATA_DIR, 'e.Sale Return Report.csv'));
+    const returnsData = await readCSV(path.join(BASE_DIR, 'e.Sale Return Report.csv'));
     const returnsCount = await processInvoices(returnsData, 'sell', '381');
     console.log(`Migrated ${returnsCount} Sales Returns`);
 
     // 5. Migrate Purchases
-    const purchaseData = await readCSV(path.join(DATA_DIR, 'e.Purchase.csv'));
+    const purchaseData = await readCSV(path.join(BASE_DIR, 'e.Purchase.csv'));
     const purchaseCount = await processInvoices(purchaseData, 'purchase', '388');
     console.log(`Migrated ${purchaseCount} Purchases`);
 
