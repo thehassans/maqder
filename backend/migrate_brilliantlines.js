@@ -160,8 +160,8 @@ async function run() {
             issueDate,
             customerId: flow === 'sell' ? customerId : null,
             supplierId: flow === 'purchase' ? customerId : null, // Not strictly correct since supplier map is different, but for this demo ok
-            seller: flow === 'sell' ? tenant.business : { name: customerName, vatNumber: customerVat },
-            buyer: flow === 'sell' ? { name: customerName, vatNumber: customerVat } : tenant.business,
+            seller: flow === 'sell' ? { name: tenant.business.legalNameEn || tenant.name, vatNumber: tenant.business.vatNumber } : { name: customerName || 'Supplier', vatNumber: customerVat },
+            buyer: flow === 'sell' ? { name: customerName || 'Walk-in Customer', vatNumber: customerVat } : { name: tenant.business.legalNameEn || tenant.name, vatNumber: tenant.business.vatNumber },
             subtotal: amount,
             taxableAmount: amount,
             totalTax: vat,
