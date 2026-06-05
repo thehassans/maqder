@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
-import { useTranslation } from '../../lib/translations';
+import { useTranslation } from '../lib/translations';
 import { Download, Database, ShieldCheck, AlertTriangle } from 'lucide-react';
-import api from '../../lib/api';
+import api from '../lib/api';
 import toast from 'react-hot-toast';
 
 export default function Backup() {
