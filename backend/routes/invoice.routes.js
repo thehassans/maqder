@@ -1262,7 +1262,7 @@ router.post('/:id/sign', checkPermission('invoicing', 'approve'), async (req, re
       signedXml: zatcaResult.xml
     };
     
-    invoice.status = 'pending';
+    invoice.status = tenant.zatca?.phase === 1 ? 'approved' : 'pending';
     await invoice.save();
     
     // Update tenant's invoice counter and hash
@@ -1272,7 +1272,7 @@ router.post('/:id/sign', checkPermission('invoicing', 'approve'), async (req, re
     });
     
     // For B2B, immediately submit for clearance
-    if (!isB2C && tenant.zatca.isOnboarded) {
+    if (!isB2C && tenant.zatca.isOnboarded && tenant.zatca?.phase !== 1) {
       const clearanceResult = await zatcaService.submitForClearance(
         zatcaResult.xml,
         zatcaResult.invoiceHash,
@@ -1294,7 +1294,7 @@ router.post('/:id/sign', checkPermission('invoicing', 'approve'), async (req, re
       await invoice.save();
     }
 
-    if (isB2C && tenant.zatca.isOnboarded) {
+    if (isB2C && tenant.zatca.isOnboarded && tenant.zatca?.phase !== 1) {
       const reportingResult = await zatcaService.submitForReporting(
         zatcaResult.xml,
         zatcaResult.invoiceHash,

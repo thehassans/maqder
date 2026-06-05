@@ -23,10 +23,10 @@ export const resolveZatcaStatus = (invoice) => {
   return submissionStatus || 'not_started'
 }
 
-export const getZatcaStatusMeta = (invoice, language = 'en') => {
+export const getZatcaStatusMeta = (invoice, language = 'en', phase = 2) => {
   const status = resolveZatcaStatus(invoice)
 
-  const labels = {
+  const labelsPhase2 = {
     cleared: language === 'ar' ? 'تمت التصفية' : 'Cleared',
     reported: language === 'ar' ? 'تم الإبلاغ' : 'Reported',
     submitted: language === 'ar' ? 'تم الإرسال' : 'Submitted',
@@ -37,6 +37,14 @@ export const getZatcaStatusMeta = (invoice, language = 'en') => {
     not_started: language === 'ar' ? 'غير مرسلة' : 'Not Submitted',
     pending: language === 'ar' ? 'قيد المعالجة' : 'Processing',
   }
+
+  const labelsPhase1 = {
+    ...labelsPhase2,
+    generated: language === 'ar' ? 'مكتملة' : 'Finalized',
+    not_started: language === 'ar' ? 'غير مكتملة' : 'Not Finalized',
+  }
+
+  const labels = phase === 1 ? labelsPhase1 : labelsPhase2
 
   const tones = {
     cleared: 'success',

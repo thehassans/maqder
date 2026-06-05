@@ -53,6 +53,7 @@ const businessDetailsSchema = new mongoose.Schema({
 });
 
 const zatcaConfigSchema = new mongoose.Schema({
+  phase: { type: Number, enum: [1, 2], default: 1 },
   isOnboarded: { type: Boolean, default: false },
   complianceCsid: { type: String },
   productionCsid: { type: String },

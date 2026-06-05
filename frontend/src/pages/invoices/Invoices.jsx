@@ -152,7 +152,8 @@ export default function Invoices() {
   })
 
   const getStatusBadge = (invoice) => {
-    const meta = getZatcaStatusMeta(invoice, language)
+    const phase = tenant?.zatca?.phase || 1
+    const meta = getZatcaStatusMeta(invoice, language, phase)
     const badgeClass = meta.tone === 'success'
       ? 'badge-success'
       : meta.tone === 'info'
@@ -211,8 +212,8 @@ export default function Invoices() {
     },
     {
       key: 'zatcaStatus',
-      label: t('zatcaStatus'),
-      value: (r) => getZatcaStatusMeta(r, language).label
+      label: tenant?.zatca?.phase === 1 ? (language === 'ar' ? 'حالة التجهيز' : 'Status') : t('zatcaStatus'),
+      value: (r) => getZatcaStatusMeta(r, language, tenant?.zatca?.phase || 1).label
     },
   ]
 
@@ -314,9 +315,9 @@ export default function Invoices() {
                   </div>
                 </div>
                 <p className="text-xs text-gray-400 text-center">
-                  {language === 'ar'
-                    ? 'سيتم توقيع الفاتورة وإرسالها إلى هيئة الزكاة والضريبة والجمارك'
-                    : 'The invoice will be cryptographically signed and submitted to ZATCA'}
+                  {tenant?.zatca?.phase === 1
+                    ? (language === 'ar' ? 'سيتم تجهيز الفاتورة وإنشاء رمز الاستجابة السريعة (QR) بصيغة نهائية' : 'The invoice will be finalized and the QR code will be generated')
+                    : (language === 'ar' ? 'سيتم توقيع الفاتورة وإرسالها إلى هيئة الزكاة والضريبة والجمارك' : 'The invoice will be cryptographically signed and submitted to ZATCA')}
                 </p>
               </div>
               <div className="flex gap-3 p-5 pt-0">
@@ -339,7 +340,9 @@ export default function Invoices() {
                   ) : (
                     <Send className="w-4 h-4" />
                   )}
-                  {language === 'ar' ? 'توقيع وإرسال' : 'Sign & Submit'}
+                  {tenant?.zatca?.phase === 1
+                    ? (language === 'ar' ? 'تجهيز' : 'Finalize')
+                    : (language === 'ar' ? 'توقيع وإرسال' : 'Sign & Submit')}
                 </button>
               </div>
             </motion.div>
@@ -421,6 +424,7 @@ export default function Invoices() {
           </select>
         </div>
         {/* ZATCA status quick-filter chips */}
+        {tenant?.zatca?.phase !== 1 && (
         <div className="flex flex-wrap gap-2">
           {zatcaFilterOptions.map((opt) => (
             <button
@@ -443,6 +447,7 @@ export default function Invoices() {
             </span>
           )}
         </div>
+        )}
       </div>
 
       {/* Table */}
@@ -469,7 +474,7 @@ export default function Invoices() {
                     <th>{language === 'ar' ? 'سعر العميل' : 'Customer Price'}</th>
                     <th>{t('total')}</th>
                     <th>{language === 'ar' ? 'ضريبة القيمة المضافة' : 'VAT'}</th>
-                    <th>{t('zatcaStatus')}</th>
+                    <th>{tenant?.zatca?.phase === 1 ? (language === 'ar' ? 'حالة التجهيز' : 'Status') : t('zatcaStatus')}</th>
                     <th>{t('actions')}</th>
                   </tr>
                 </thead>
@@ -549,7 +554,7 @@ export default function Invoices() {
                               type="button"
                               onClick={() => setSignModalInvoice(invoice)}
                               className="p-2 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
-                              title={language === 'ar' ? 'توقيع وإرسال' : 'Sign & Submit'}
+                              title={tenant?.zatca?.phase === 1 ? (language === 'ar' ? 'تجهيز الفاتورة' : 'Finalize') : (language === 'ar' ? 'توقيع وإرسال' : 'Sign & Submit')}
                             >
                               <Send className="w-4 h-4 text-primary-600" />
                             </button>

@@ -263,7 +263,7 @@ export default function InvoiceView() {
               ) : (
                 <>
                   <Send className="w-4 h-4" />
-                  {t('signInvoice')}
+                  {tenant?.zatca?.phase === 1 ? (language === 'ar' ? 'تجهيز الفاتورة' : 'Finalize') : t('signInvoice')}
                 </>
               )}
             </button>
@@ -421,7 +421,7 @@ export default function InvoiceView() {
               className="card p-6"
             >
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                {language === 'ar' ? 'معلومات هيئة الزكاة' : 'ZATCA Information'}
+                {tenant?.zatca?.phase === 1 ? (language === 'ar' ? 'معلومات الفاتورة الإلكترونية' : 'E-Invoice Information') : (language === 'ar' ? 'معلومات هيئة الزكاة' : 'ZATCA Information')}
               </h3>
               <div className="space-y-3">
                 <div>
