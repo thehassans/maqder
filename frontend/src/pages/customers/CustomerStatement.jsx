@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import { motion } from 'framer-motion';
-import api from '../../../lib/api';
-import { useTranslation } from '../../../lib/translations';
-import Money from '../../../components/ui/Money';
+import api from '../../lib/api';
+import { useTranslation } from '../../lib/translations';
+import Money from '../../components/ui/Money';
 import { FileText, Printer } from 'lucide-react';
 
 export default function CustomerStatement() {

@@ -2,10 +2,10 @@ import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
-import api from '../../../lib/api';
-import { useTranslation } from '../../../lib/translations';
+import api from '../../lib/api';
+import { useTranslation } from '../../lib/translations';
 import { Plus, Search, Filter, Receipt, FileText, ArrowUpRight, ArrowDownRight, Edit, Trash2, Calendar } from 'lucide-react';
-import Money from '../../../components/ui/Money';
+import Money from '../../components/ui/Money';
 import toast from 'react-hot-toast';
 
 export default function Vouchers() {
