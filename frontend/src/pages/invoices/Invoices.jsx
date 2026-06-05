@@ -474,7 +474,7 @@ export default function Invoices() {
                     <th>{language === 'ar' ? 'سعر العميل' : 'Customer Price'}</th>
                     <th>{t('total')}</th>
                     <th>{language === 'ar' ? 'ضريبة القيمة المضافة' : 'VAT'}</th>
-                    <th>{tenant?.zatca?.phase === 1 ? (language === 'ar' ? 'حالة التجهيز' : 'Status') : t('zatcaStatus')}</th>
+                    <th>{tenant?.zatca?.phase === 1 ? (language === 'ar' ? 'الحالة' : 'Status') : t('zatcaStatus')}</th>
                     <th>{t('actions')}</th>
                   </tr>
                 </thead>

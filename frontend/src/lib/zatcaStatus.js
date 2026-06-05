@@ -41,7 +41,7 @@ export const getZatcaStatusMeta = (invoice, language = 'en', phase = 2) => {
   const labelsPhase1 = {
     ...labelsPhase2,
     generated: language === 'ar' ? 'مكتملة' : 'Finalized',
-    not_started: language === 'ar' ? 'غير مكتملة' : 'Not Finalized',
+    not_started: language === 'ar' ? 'مسودة' : 'Draft',
   }
 
   const labels = phase === 1 ? labelsPhase1 : labelsPhase2

@@ -315,8 +315,11 @@ export default function Sidebar() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              className="overflow-hidden"
             >
-              <span className="font-bold text-lg text-white">Maqder ERP</span>
+              <span className="font-bold text-lg text-white truncate block max-w-[150px]">
+                {tenant?.name || (language === 'ar' ? tenant?.business?.legalNameAr : tenant?.business?.legalNameEn) || 'Maqder ERP'}
+              </span>
             </motion.div>
           )}
         </div>
