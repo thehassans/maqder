@@ -77,6 +77,14 @@ router.put('/current', authorize('admin'), async (req, res) => {
             ...(settings.restaurant?.qrMenu || {}),
           }
         },
+        saloon: {
+          ...(currentSettings.saloon || {}),
+          ...(settings.saloon || {}),
+          qrServices: {
+            ...(currentSettings.saloon?.qrServices || {}),
+            ...(settings.saloon?.qrServices || {}),
+          }
+        },
         communication: {
           ...(currentSettings.communication || {}),
           ...(settings.communication || {}),

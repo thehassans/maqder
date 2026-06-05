@@ -214,6 +214,12 @@ const tenantSchema = new mongoose.Schema({
         heroImage: { type: String },
         defaultLanguage: { type: String, enum: ['en', 'ar'], default: 'ar' }
       }
+    },
+    saloon: {
+      qrServices: {
+        heroImage: { type: String },
+        defaultLanguage: { type: String, enum: ['en', 'ar'], default: 'ar' }
+      }
     }
   },
   branding: {

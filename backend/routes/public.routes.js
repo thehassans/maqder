@@ -4,6 +4,7 @@ import Tenant from '../models/Tenant.js'
 import User from '../models/User.js'
 import SystemSettings from '../models/SystemSettings.js'
 import RestaurantMenuItem from '../models/RestaurantMenuItem.js'
+import SaloonService from '../models/SaloonService.js'
 
 const router = express.Router()
 const parsedDatabaseQueryTimeoutMs = Number(process.env.MONGODB_QUERY_TIMEOUT_MS || 10000)
@@ -277,6 +278,38 @@ router.get('/tenant/:id/menu', async (req, res) => {
         }
       },
       items
+    })
+  } catch (error) {
+    sendRouteError(res, error)
+  }
+})
+
+router.get('/tenant/:id/services', async (req, res) => {
+  try {
+    const tenant = await withQueryTimeout(
+      Tenant.findById(req.params.id).select('name slug business branding settings isActive')
+    )
+
+    if (!tenant || !tenant.isActive) {
+      return res.status(404).json({ error: 'Saloon not found or inactive' })
+    }
+
+    const services = await withQueryTimeout(
+      SaloonService.find({ tenantId: tenant._id, isActive: true }).sort({ category: 1, nameEn: 1 })
+    )
+
+    res.json({
+      tenant: {
+        name: tenant.name,
+        business: tenant.business,
+        branding: tenant.branding,
+        settings: {
+          saloon: {
+            qrServices: tenant.settings?.saloon?.qrServices || { defaultLanguage: 'ar' }
+          }
+        }
+      },
+      services
     })
   } catch (error) {
     sendRouteError(res, error)

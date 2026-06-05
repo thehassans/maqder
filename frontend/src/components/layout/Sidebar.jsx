@@ -122,6 +122,7 @@ export default function Sidebar() {
         { path: '/app/saloon/pos', icon: ShoppingCart, label: language === 'ar' ? 'نقطة البيع (صالون)' : 'Saloon POS', perm: { module: 'saloon', action: 'create' } },
         { path: '/app/saloon/orders', icon: ListOrdered, label: language === 'ar' ? 'الطلبات النشطة' : 'Active Orders', perm: { module: 'saloon', action: 'read' } },
         { path: '/app/saloon/services', icon: Package, label: language === 'ar' ? 'قائمة الخدمات' : 'Services Catalog', perm: { module: 'saloon', action: 'read' } },
+        { path: '/app/saloon/qr', icon: QrCode, label: language === 'ar' ? 'كتالوج QR' : 'QR Catalog', perm: { module: 'saloon', action: 'read' } },
       ]
     },
     {

@@ -148,8 +148,10 @@ import SaloonLayout from './layouts/SaloonLayout'
 import SaloonPOS from './pages/saloon/SaloonPOS'
 import SaloonServices from './pages/saloon/SaloonServices'
 import SaloonOrders from './pages/saloon/SaloonOrders'
+import QRServices from './pages/saloon/QRServices'
 import Letterhead from './pages/Letterhead'
 import PublicMenu from './pages/public/PublicMenu'
+import PublicServices from './pages/public/PublicServices'
 
 import LoadingScreen from './components/ui/LoadingScreen'
 
@@ -241,6 +243,7 @@ function App() {
 
       {/* Public Application Routes */}
       <Route path="/public/menu" element={<PublicMenu />} />
+      <Route path="/public/services" element={<PublicServices />} />
 
       {/* Auth Routes */}
       <Route element={<AuthLayout />}>
@@ -410,6 +413,12 @@ function App() {
         <Route path="tasks/new" element={<TaskForm />} />
         <Route path="tasks/:id" element={<TaskForm />} />
         
+        {/* Saloon System */}
+        <Route path="saloon/pos" element={<BusinessTypeRoute allowedTypes={['saloon']}><SaloonPOS /></BusinessTypeRoute>} />
+        <Route path="saloon/services" element={<BusinessTypeRoute allowedTypes={['saloon']}><SaloonServices /></BusinessTypeRoute>} />
+        <Route path="saloon/orders" element={<BusinessTypeRoute allowedTypes={['saloon']}><SaloonOrders /></BusinessTypeRoute>} />
+        <Route path="saloon/qr" element={<BusinessTypeRoute allowedTypes={['saloon']}><QRServices /></BusinessTypeRoute>} />
+
         {/* Bakala Routes */}
         <Route path="bakala/pos" element={<BusinessTypeRoute allowedTypes={['bakala']}><BakalaPOS /></BusinessTypeRoute>} />
         <Route path="bakala/dashboard" element={<BusinessTypeRoute allowedTypes={['bakala']}><BakalaDashboard /></BusinessTypeRoute>} />
