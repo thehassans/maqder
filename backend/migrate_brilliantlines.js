@@ -43,7 +43,7 @@ async function readCSV(filePath) {
         // Strip BOM from keys
         const cleanData = {};
         for (let key in data) {
-          let cleanKey = key.replace(/^\uFEFF/, '').trim();
+          let cleanKey = key.replace(/^\uFEFF/, '').replace(/^"|"$/g, '').trim();
           cleanData[cleanKey] = data[key];
         }
         results.push(cleanData);
@@ -127,8 +127,12 @@ async function run() {
     // Helper to process invoices
     const processInvoices = async (data, flow, invoiceType) => {
       let count = 0;
+      if (data.length > 0) {
+        console.log(`First row headers:`, Object.keys(data[0]));
+        console.log(`First row data:`, data[0]);
+      }
       for (const row of data) {
-        if (!row['Invoice No'] || row['Invoice No'] === 'Total') continue;
+        if (!row['Invoice No'] || row['Invoice No'] === 'Total' || row['Invoice No'] === 'Total ') continue;
 
         const customerName = row['Customer Name'] || row['Supplier Name'] || '';
         const customerVat = row['Customer VAT NO'] || row['Supplier VAT NO'] || '';
