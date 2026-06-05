@@ -183,8 +183,12 @@ async function run() {
           });
           await invoice.save();
           count++;
+          if (count % 50 === 0) {
+            process.stdout.write('.'); // progress indicator
+          }
         }
       }
+      console.log(''); // newline after progress dots
       return count;
     };
 
