@@ -47,7 +47,8 @@ import {
   TrendingUp,
   PackageMinus,
   QrCode,
-  MonitorPlay
+  MonitorPlay,
+  Database
 } from 'lucide-react'
 import { toggleSidebarCollapse, setMobileMenuOpen } from '../../store/slices/uiSlice'
 import { useTranslation } from '../../lib/translations'
