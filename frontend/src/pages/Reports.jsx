@@ -182,7 +182,7 @@ export default function Reports() {
     queryKey: ['reports', reportType, startDate, endDate],
     queryFn: () =>
       api
-        .get(reportType === 'business' ? '/reports/business-summary' : '/reports/vat-return', { params: { startDate, endDate } })
+        .get(reportType === 'business' ? '/reports/business-summary' : reportType === 'daily' ? '/reports/daily-invoices' : reportType === 'sales' ? '/reports/customer-sales' : '/reports/vat-return', { params: { startDate, endDate } })
         .then((res) => res.data)
     ,
     enabled: !!startDate && !!endDate && !hasInvalidRange,
@@ -342,6 +342,8 @@ export default function Reports() {
             {[
               { value: 'vat', label: 'VAT' },
               { value: 'business', label: language === 'ar' ? 'الأعمال' : 'Business' },
+              { value: 'daily', label: language === 'ar' ? 'اليومية' : 'Daily' },
+              { value: 'sales', label: language === 'ar' ? 'مبيعات العملاء' : 'Customer Sales' },
             ].map(({ value, label }) => (
               <button
                 key={value}
@@ -904,8 +906,64 @@ export default function Reports() {
                 </div>
               </motion.div>
 
-              {/* ── Business Report ──────────────────────────────────────── */}
-              {reportType === 'business' ? (
+              {/* ── Daily Invoices Report ─────────────────────────────────── */}
+              {reportType === 'daily' ? (
+                <div className="bg-white dark:bg-dark-800 rounded-xl border border-gray-100 dark:border-dark-700 shadow-sm overflow-hidden">
+                  <div className="px-6 py-5 border-b border-gray-100 dark:border-dark-700 flex items-center gap-3">
+                    <Calendar className="w-5 h-5 text-primary-500" />
+                    <h3 className="text-lg font-bold">{language === 'ar' ? 'تقرير المبيعات اليومية' : 'Daily Invoices Report'}</h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left rtl:text-right">
+                      <thead className="text-xs text-gray-500 uppercase bg-gray-50 dark:bg-dark-700/50">
+                        <tr>
+                          <th className="px-6 py-4">{language === 'ar' ? 'التاريخ' : 'Date'}</th>
+                          <th className="px-6 py-4">{language === 'ar' ? 'عدد الفواتير' : 'Invoices Count'}</th>
+                          <th className="px-6 py-4">{language === 'ar' ? 'إجمالي الضريبة' : 'Total Tax'}</th>
+                          <th className="px-6 py-4">{language === 'ar' ? 'الإجمالي' : 'Total Amount'}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 dark:divide-dark-700">
+                        {Array.isArray(data) && data.length > 0 ? data.map(row => (
+                          <tr key={row._id} className="hover:bg-gray-50 dark:hover:bg-dark-700/50">
+                            <td className="px-6 py-4 font-medium">{row._id}</td>
+                            <td className="px-6 py-4">{row.invoiceCount}</td>
+                            <td className="px-6 py-4"><Money value={row.totalTax} /></td>
+                            <td className="px-6 py-4 font-bold text-primary-600"><Money value={row.totalAmount} /></td>
+                          </tr>
+                        )) : <tr><td colSpan="4" className="p-8 text-center text-gray-500">{language === 'ar' ? 'لا توجد بيانات' : 'No data found'}</td></tr>}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : reportType === 'sales' ? (
+                <div className="bg-white dark:bg-dark-800 rounded-xl border border-gray-100 dark:border-dark-700 shadow-sm overflow-hidden">
+                  <div className="px-6 py-5 border-b border-gray-100 dark:border-dark-700 flex items-center gap-3">
+                    <Users className="w-5 h-5 text-primary-500" />
+                    <h3 className="text-lg font-bold">{language === 'ar' ? 'تقرير مبيعات العملاء' : 'Customer Sales Report'}</h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left rtl:text-right">
+                      <thead className="text-xs text-gray-500 uppercase bg-gray-50 dark:bg-dark-700/50">
+                        <tr>
+                          <th className="px-6 py-4">{language === 'ar' ? 'العميل' : 'Customer'}</th>
+                          <th className="px-6 py-4">{language === 'ar' ? 'عدد الفواتير' : 'Invoices Count'}</th>
+                          <th className="px-6 py-4">{language === 'ar' ? 'إجمالي المبيعات' : 'Total Sales'}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 dark:divide-dark-700">
+                        {Array.isArray(data) && data.length > 0 ? data.map(row => (
+                          <tr key={row._id} className="hover:bg-gray-50 dark:hover:bg-dark-700/50">
+                            <td className="px-6 py-4 font-medium">{row.customerName || 'Walk-in Customer'}</td>
+                            <td className="px-6 py-4">{row.invoiceCount}</td>
+                            <td className="px-6 py-4 font-bold text-emerald-600"><Money value={row.totalAmount} /></td>
+                          </tr>
+                        )) : <tr><td colSpan="3" className="p-8 text-center text-gray-500">{language === 'ar' ? 'لا توجد بيانات' : 'No data found'}</td></tr>}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : reportType === 'business' ? (
                 <>
                   {/* ── Travel Agency mode ──────────────────────────────── */}
                   {totals?.travelMargin?.isTravelAgency ? (

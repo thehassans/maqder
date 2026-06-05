@@ -863,4 +863,83 @@ router.get('/business-summary', async (req, res) => {
   }
 });
 
+router.get('/daily-invoices', async (req, res) => {
+  try {
+    const { startDate, endDate } = resolvePeriod(req);
+    const invoices = await Invoice.aggregate([
+      { $match: { ...req.tenantFilter, flow: 'sell', issueDate: { $gte: startDate, $lte: endDate }, status: { $nin: ['draft', 'cancelled'] } } },
+      { $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$issueDate' } },
+          invoiceCount: { $sum: 1 },
+          totalAmount: { $sum: '$grandTotal' },
+          totalTax: { $sum: '$totalTax' }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+    res.json(invoices);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/customer-sales', async (req, res) => {
+  try {
+    const { startDate, endDate } = resolvePeriod(req);
+    const sales = await Invoice.aggregate([
+      { $match: { ...req.tenantFilter, flow: 'sell', issueDate: { $gte: startDate, $lte: endDate }, status: { $nin: ['draft', 'cancelled'] } } },
+      { $group: {
+          _id: '$customerId',
+          customerName: { $first: '$buyer.name' },
+          invoiceCount: { $sum: 1 },
+          totalAmount: { $sum: '$grandTotal' }
+        }
+      },
+      { $sort: { totalAmount: -1 } }
+    ]);
+    res.json(sales);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/customer-statement', async (req, res) => {
+  try {
+    const { customerId } = req.query;
+    if (!customerId) return res.status(400).json({ error: 'customerId required' });
+    const { startDate, endDate } = resolvePeriod(req);
+    
+    const mongoose = (await import('mongoose')).default;
+    const Voucher = mongoose.model('Voucher');
+    
+    const invoices = await Invoice.find({ 
+      ...req.tenantFilter, customerId, flow: 'sell', issueDate: { $gte: startDate, $lte: endDate }, status: { $nin: ['draft', 'cancelled'] }
+    }).select('invoiceNumber issueDate grandTotal paymentStatus').lean();
+    
+    let receipts = [];
+    try {
+      receipts = await Voucher.find({
+        ...req.tenantFilter, partyId: customerId, type: 'receive', date: { $gte: startDate, $lte: endDate }
+      }).select('voucherNumber date amount description').lean();
+    } catch(e) {
+      console.log('Voucher collection missing or error:', e.message);
+    }
+
+    const transactions = [
+      ...invoices.map(i => ({ type: 'invoice', id: i.invoiceNumber, date: i.issueDate, debit: i.grandTotal, credit: 0, desc: 'Invoice' })),
+      ...receipts.map(r => ({ type: 'receipt', id: r.voucherNumber, date: r.date, debit: 0, credit: r.amount, desc: r.description }))
+    ].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    let balance = 0;
+    const statement = transactions.map(t => {
+      balance += t.debit - t.credit;
+      return { ...t, balance };
+    });
+
+    res.json({ statement, totalBalance: balance });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

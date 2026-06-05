@@ -56,6 +56,9 @@ import WarehouseForm from './pages/inventory/WarehouseForm'
 import Settings from './pages/Settings'
 import Reports from './pages/Reports'
 import VatReturns from './pages/VatReturns'
+import Vouchers from './pages/finance/Vouchers'
+import Finance from './pages/Finance'
+import Backup from './pages/Backup'
 import Suppliers from './pages/Suppliers'
 import SupplierForm from './pages/SupplierForm'
 import PurchaseOrders from './pages/PurchaseOrders'
@@ -87,7 +90,6 @@ import BakalaDashboard from './pages/bakala/BakalaDashboard'
 import BakalaProducts from './pages/bakala/BakalaProducts'
 import IoT from './pages/IoT'
 import IoTDeviceForm from './pages/IoTDeviceForm'
-import Finance from './pages/Finance'
 import Khata from './pages/finance/Khata'
 import JobCosting from './pages/JobCosting'
 import JobCostingForm from './pages/JobCostingForm'
@@ -98,6 +100,7 @@ import Expenses from './pages/Expenses'
 import ExpenseForm from './pages/ExpenseForm'
 import CustomerList from './pages/customers/CustomerList'
 import CustomerForm from './pages/customers/CustomerForm'
+import CustomerStatement from './pages/customers/CustomerStatement'
 import Users from './pages/Users'
 import SuperAdminDashboard from './pages/super-admin/SuperAdminDashboard'
 import TenantManagement from './pages/super-admin/TenantManagement'
@@ -340,6 +343,7 @@ function App() {
         <Route path="customers" element={<CustomerList />} />
         <Route path="customers/new" element={<CustomerForm />} />
         <Route path="customers/:id" element={<CustomerForm />} />
+        <Route path="customers/statement" element={<CustomerStatement />} />
         <Route path="customers/:id/edit" element={<CustomerForm />} />
         
         <Route path="letterhead" element={<Letterhead />} />
@@ -428,7 +432,12 @@ function App() {
         <Route path="iot/devices/new" element={<BusinessTypeRoute allowedTypes={['trading']}><IoTDeviceForm /></BusinessTypeRoute>} />
         <Route path="iot/devices/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><IoTDeviceForm /></BusinessTypeRoute>} />
         <Route path="finance" element={<Finance />} />
+        <Route path="vouchers" element={<Vouchers />} />
         <Route path="khata" element={<Khata />} />
+        <Route path="users" element={<Users />} />
+        <Route path="settings" element={<Settings />} />
+        <Route path="backup" element={<Backup />} />
+        <Route path="super-admin" element={<BusinessTypeRoute allowedTypes={['super_admin']}><SuperAdminDashboard /></BusinessTypeRoute>} />
         <Route path="job-costing" element={<BusinessTypeRoute allowedTypes={['construction']}><JobCosting /></BusinessTypeRoute>} />
         <Route path="job-costing/new" element={<BusinessTypeRoute allowedTypes={['trading']}><JobCostingForm /></BusinessTypeRoute>} />
         <Route path="job-costing/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><JobCostingForm /></BusinessTypeRoute>} />

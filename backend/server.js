@@ -62,6 +62,8 @@ import khataRoutes from './routes/khata.routes.js';
 import grnRoutes from './routes/grn.routes.js';
 import purchaseReturnsRoutes from './routes/purchaseReturns.routes.js';
 import inventoryAdjustmentsRoutes from './routes/inventoryAdjustments.routes.js';
+import voucherRoutes from './routes/voucher.routes.js';
+import backupRoutes from './routes/backup.routes.js';
 
 import laundryServiceRoutes from './routes/laundryService.routes.js';
 import laundryCustomerRoutes from './routes/laundryCustomer.routes.js';
@@ -375,6 +377,8 @@ app.use('/api/pos-sessions', ensureDatabaseReady, posSessionsRoutes);
 app.use('/api/khata', ensureDatabaseReady, khataRoutes);
 app.use('/api/grn', ensureDatabaseReady, grnRoutes);
 app.use('/api/purchase-returns', ensureDatabaseReady, purchaseReturnsRoutes);
+app.use('/api/vouchers', ensureDatabaseReady, voucherRoutes);
+app.use('/api/backup', ensureDatabaseReady, backupRoutes);
 app.use('/api/inventory-adjustments', ensureDatabaseReady, inventoryAdjustmentsRoutes);
 
 app.use('/api/laundry/services', ensureDatabaseReady, laundryServiceRoutes);
