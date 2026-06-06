@@ -32,6 +32,7 @@ import KhayyatEmbroideryDesigns from './pages/khayyat/EmbroideryDesigns'
 import KhayyatFabrics from './pages/khayyat/Fabrics'
 import KhayyatLaundry from './pages/khayyat/Laundry'
 import KhayyatLoyalty from './pages/khayyat/Loyalty'
+import KhayyatQuickInvoice from './pages/khayyat/QuickInvoice'
 import Dashboard from './pages/Dashboard'
 import Invoices from './pages/invoices/Invoices'
 import InvoiceCreate from './pages/invoices/InvoiceCreate'
@@ -329,6 +330,7 @@ function App() {
           <Route path="khayyat/fabrics" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatFabrics /></BusinessTypeRoute>} />
           <Route path="khayyat/laundry" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatLaundry /></BusinessTypeRoute>} />
           <Route path="khayyat/loyalty" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatLoyalty /></BusinessTypeRoute>} />
+          <Route path="khayyat/quick-invoice" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatQuickInvoice /></BusinessTypeRoute>} />
         <Route path="invoices" element={<Invoices />} />
         <Route path="invoices/new" element={<InvoiceCreate />} />
         <Route path="invoices/new/sell" element={<InvoiceCreateSell />} />

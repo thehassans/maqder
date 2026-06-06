@@ -353,7 +353,7 @@ const UserDashboard = () => {
           </Button>
           <Button
             variant="outline"
-            onClick={() => (isDemo ? setDemoBlockedOpen(true) : navigate('/app/dashboard/invoices/new'))}
+            onClick={() => (isDemo ? setDemoBlockedOpen(true) : navigate('/app/dashboard/khayyat/quick-invoice'))}
             icon={FileText}
             className="rounded-2xl px-5 py-3"
             disabled={isDemo}
