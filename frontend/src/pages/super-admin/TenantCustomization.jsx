@@ -43,7 +43,7 @@ export default function TenantCustomization() {
     const tenantBusinessTypes = getTenantBusinessTypes(tenant)
     const isRestaurant = tenantBusinessTypes.includes('restaurant')
     const isLaundry = tenantBusinessTypes.includes('laundry')
-    const isTailoring = tenantBusinessTypes.includes('tailoring')
+    const isTailoring = tenantBusinessTypes.includes('khayyat')
 
     return [
       { id: 'menu-items', label: language === 'ar' ? 'قائمة الطعام' : 'Menu Items', icon: UtensilsCrossed, component: RestaurantMenuItems, show: isRestaurant },
