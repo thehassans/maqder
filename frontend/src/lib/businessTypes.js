@@ -56,7 +56,10 @@ export const getBusinessTypeOptions = (language = 'en') => [
 export const normalizeBusinessTypes = (input, fallback = 'trading') => {
   const values = Array.isArray(input) ? input : [input]
   const normalized = values
-    .map((value) => String(value || '').trim().toLowerCase())
+    .map((value) => {
+      const val = String(value || '').trim().toLowerCase();
+      return val === 'tailoring' ? 'khayyat' : val;
+    })
     .filter((value) => BUSINESS_TYPES.includes(value))
 
   if (normalized.length === 0) {
