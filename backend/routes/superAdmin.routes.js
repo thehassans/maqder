@@ -1630,15 +1630,28 @@ router.post('/tenants/:id/seed-khayyat', async (req, res) => {
     const styles = ['Modern', 'Classic', 'Geometric', 'Floral', 'Islamic', 'Bespoke', 'Elaborate', 'Minimalist', 'Royal', 'Vintage'];
     const parts = ['Collar', 'Cuff', 'Placket', 'Pocket', 'Chest', 'Shoulder', 'Sleeve', 'Back', 'Hem', 'Neckline'];
 
-    const embroideryImages = [...baseImages];
+    const colorsAr = ['أبيض', 'أسود', 'كحلي', 'عنابي', 'فضي', 'ذهبي', 'برونزي', 'زمردي', 'بيج', 'فحمي'];
+    const stylesAr = ['حديث', 'كلاسيكي', 'هندسي', 'مورد', 'إسلامي', 'مخصص', 'مفصل', 'بسيط', 'ملكي', 'عتيق'];
+    const partsAr = ['ياقة', 'كم', 'مرد', 'جيب', 'صدر', 'كتف', 'ساعد', 'ظهر', 'حاشية', 'ياقة'];
+
+    const embroideryImages = [...baseImages.map(img => ({
+      ...img,
+      nameI18n: { en: img.name, ar: img.name } // Base images keep their original names, could translate later
+    }))];
     
-    // Generate 40 more to make 50
+    // Generate 40 more to make 50 with Arabic
     for (let i = 0; i < 40; i++) {
       const color = colors[i % colors.length];
       const style = styles[Math.floor(i / colors.length) % styles.length];
       const part = parts[Math.floor(i / (colors.length * styles.length)) % parts.length];
+      
+      const colorAr = colorsAr[i % colors.length];
+      const styleAr = stylesAr[Math.floor(i / colors.length) % styles.length];
+      const partAr = partsAr[Math.floor(i / (colors.length * styles.length)) % parts.length];
+
       embroideryImages.push({
         name: `${color} ${style} ${part} ${i + 1}`,
+        nameI18n: { en: `${color} ${style} ${part} ${i + 1}`, ar: `${colorAr} ${styleAr} ${partAr} ${i + 1}` },
         image: baseImages[i % baseImages.length].image
       });
     }
@@ -1701,10 +1714,17 @@ router.post('/tenants/:id/seed-khayyat', async (req, res) => {
         existing = new KhayyatEmbroideryDesign({
           tenantId,
           name: design.name,
+          nameI18n: design.nameI18n,
           image: design.image,
           price: 15,
           isActive: true
         });
+        await existing.save();
+      } else {
+        existing.nameI18n = design.nameI18n;
+        if (!existing.image || existing.image.includes('picsum.photos')) {
+          existing.image = design.image;
+        }
         await existing.save();
       }
     }));
