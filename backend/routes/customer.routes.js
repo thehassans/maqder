@@ -9,11 +9,17 @@ const router = express.Router();
 // @desc    Recover VAT numbers dropped during migration and deduplicate customers
 // Publicly accessible for one-time fix
 router.get('/recover-vat', async (req, res) => {
+  // Return immediately so Cloudflare doesn't timeout
+  res.json({
+    message: 'Cleanup & VAT Recovery has started in the background! Please wait 60 seconds and then refresh your Customers panel.',
+    status: 'processing'
+  });
+
   try {
     const db = mongoose.connection.db;
     const customersCollection = db.collection('customers');
     
-    // 1. Deduplicate customers (keep the best one, delete others, reassign invoices)
+    // 1. Deduplicate customers
     const allCustomers = await Customer.find({});
     const nameGroups = {};
     
@@ -24,35 +30,42 @@ router.get('/recover-vat', async (req, res) => {
       nameGroups[key].push(c);
     }
     
-    let deletedDups = 0;
-    let reassignedInvoices = 0;
+    const invoiceUpdates = [];
+    const customerDeletes = [];
 
     for (const key in nameGroups) {
       if (nameGroups[key].length > 1) {
         const group = nameGroups[key];
-        // Sort by quality: prefer ones with vatNumber, phone, and more invoices
         group.sort((a, b) => {
            const scoreA = (a.vatNumber ? 10 : 0) + (a.phone ? 5 : 0) + (a.totalInvoices || 0);
            const scoreB = (b.vatNumber ? 10 : 0) + (b.phone ? 5 : 0) + (b.totalInvoices || 0);
-           return scoreB - scoreA; // descending
+           return scoreB - scoreA;
         });
         
         const kept = group[0];
         const toDelete = group.slice(1);
         
         for (const dup of toDelete) {
-          // Reassign any invoices pointing to the duplicate
-          const result = await mongoose.model('Invoice').updateMany(
-            { customerId: dup._id },
-            { $set: { customerId: kept._id } }
-          );
-          reassignedInvoices += result.modifiedCount || 0;
-          
-          // Delete duplicate
-          await Customer.deleteOne({ _id: dup._id });
-          deletedDups++;
+          invoiceUpdates.push({
+            updateMany: {
+              filter: { customerId: dup._id },
+              update: { $set: { customerId: kept._id } }
+            }
+          });
+          customerDeletes.push({
+            deleteOne: {
+              filter: { _id: dup._id }
+            }
+          });
         }
       }
+    }
+
+    if (invoiceUpdates.length > 0) {
+      await mongoose.model('Invoice').bulkWrite(invoiceUpdates);
+    }
+    if (customerDeletes.length > 0) {
+      await Customer.bulkWrite(customerDeletes);
     }
 
     // 2. Recover VAT from hidden 'taxNumber'
@@ -65,18 +78,19 @@ router.get('/recover-vat', async (req, res) => {
       ]
     }).toArray();
 
-    let directFixedCount = 0;
-    for (const c of customersWithTaxNum) {
-      await customersCollection.updateOne(
-        { _id: c._id },
-        { $set: { vatNumber: c.taxNumber } }
-      );
-      directFixedCount++;
+    if (customersWithTaxNum.length > 0) {
+      const taxUpdates = customersWithTaxNum.map(c => ({
+        updateOne: {
+          filter: { _id: c._id },
+          update: { $set: { vatNumber: c.taxNumber } }
+        }
+      }));
+      await customersCollection.bulkWrite(taxUpdates);
     }
 
     // 3. Fallback to invoice data
     const customersToFix = await Customer.find({ vatNumber: { $in: [null, '', undefined] } });
-    let fallbackFixedCount = 0;
+    const invoiceFallbackUpdates = [];
 
     for (const customer of customersToFix) {
       const invoice = await mongoose.model('Invoice').findOne({
@@ -85,22 +99,22 @@ router.get('/recover-vat', async (req, res) => {
       }).select('buyer.vatNumber');
 
       if (invoice && invoice.buyer && invoice.buyer.vatNumber) {
-        customer.vatNumber = invoice.buyer.vatNumber;
-        await customer.save();
-        fallbackFixedCount++;
+        invoiceFallbackUpdates.push({
+          updateOne: {
+            filter: { _id: customer._id },
+            update: { $set: { vatNumber: invoice.buyer.vatNumber } }
+          }
+        });
       }
     }
 
-    res.json({
-      message: 'Cleanup & VAT Recovery Complete',
-      duplicatesDeleted: deletedDups,
-      invoicesReassigned: reassignedInvoices,
-      recoveredFromHiddenField: directFixedCount,
-      recoveredFromInvoices: fallbackFixedCount,
-      totalVATRecovered: directFixedCount + fallbackFixedCount
-    });
+    if (invoiceFallbackUpdates.length > 0) {
+      await Customer.bulkWrite(invoiceFallbackUpdates);
+    }
+
+    console.log('VAT Recovery Background Task Completed Successfully');
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('VAT Recovery Error:', error);
   }
 });
 
