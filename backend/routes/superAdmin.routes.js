@@ -1747,15 +1747,15 @@ router.post('/tenants/:id/seed-saloon', async (req, res) => {
       { nameEn: 'Haircut', nameAr: 'حلاقة شعر', category: 'Hair', durationMinutes: 30, price: 35, taxRate: 15, imageUrl: 'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=400&q=80' },
       { nameEn: 'Beard Trim', nameAr: 'تحديد لحية', category: 'Beard', durationMinutes: 15, price: 20, taxRate: 15, imageUrl: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&w=400&q=80' },
       { nameEn: 'Hair & Beard', nameAr: 'حلاقة شعر ولحية', category: 'Hair', durationMinutes: 45, price: 50, taxRate: 15, imageUrl: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=400&q=80' },
-      { nameEn: 'Kids Haircut', nameAr: 'حلاقة أطفال', category: 'Hair', durationMinutes: 30, price: 25, taxRate: 15, imageUrl: 'https://images.unsplash.com/photo-1588686616010-09600e5728a4?auto=format&fit=crop&w=400&q=80' },
-      { nameEn: 'Hair Wash', nameAr: 'غسيل شعر', category: 'Care', durationMinutes: 10, price: 10, taxRate: 15, imageUrl: 'https://images.unsplash.com/photo-1516975080661-422fc996d1f9?auto=format&fit=crop&w=400&q=80' },
-      { nameEn: 'Facial Scrub', nameAr: 'سنفرة للوجه', category: 'Skin', durationMinutes: 20, price: 40, taxRate: 15, imageUrl: 'https://images.unsplash.com/photo-1615397323136-1e0e9721fbce?auto=format&fit=crop&w=400&q=80' },
+      { nameEn: 'Kids Haircut', nameAr: 'حلاقة أطفال', category: 'Hair', durationMinutes: 30, price: 25, taxRate: 15, imageUrl: 'https://images.unsplash.com/photo-1595475884562-073c30d45670?auto=format&fit=crop&w=400&q=80' },
+      { nameEn: 'Hair Wash', nameAr: 'غسيل شعر', category: 'Care', durationMinutes: 10, price: 10, taxRate: 15, imageUrl: 'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&w=400&q=80' },
+      { nameEn: 'Facial Scrub', nameAr: 'سنفرة للوجه', category: 'Skin', durationMinutes: 20, price: 40, taxRate: 15, imageUrl: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?auto=format&fit=crop&w=400&q=80' },
       { nameEn: 'Face Mask', nameAr: 'ماسك للوجه', category: 'Skin', durationMinutes: 15, price: 30, taxRate: 15, imageUrl: 'https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?auto=format&fit=crop&w=400&q=80' },
-      { nameEn: 'Hair Dye', nameAr: 'صبغة شعر', category: 'Color', durationMinutes: 45, price: 80, taxRate: 15, imageUrl: 'https://images.unsplash.com/photo-1600948836101-f9ff5a0eb3c4?auto=format&fit=crop&w=400&q=80' },
+      { nameEn: 'Hair Dye', nameAr: 'صبغة شعر', category: 'Color', durationMinutes: 45, price: 80, taxRate: 15, imageUrl: 'https://images.unsplash.com/photo-1605980776566-0486c3ac7617?auto=format&fit=crop&w=400&q=80' },
       { nameEn: 'Beard Dye', nameAr: 'صبغة لحية', category: 'Color', durationMinutes: 30, price: 40, taxRate: 15, imageUrl: 'https://images.unsplash.com/photo-1504703395950-b89145a5425b?auto=format&fit=crop&w=400&q=80' },
       { nameEn: 'Protein Treatment', nameAr: 'بروتين للشعر', category: 'Care', durationMinutes: 60, price: 150, taxRate: 15, imageUrl: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=400&q=80' },
       { nameEn: 'Keratin Treatment', nameAr: 'كيراتين', category: 'Care', durationMinutes: 60, price: 200, taxRate: 15, imageUrl: 'https://images.unsplash.com/photo-1522337660859-02fbefca4702?auto=format&fit=crop&w=400&q=80' },
-      { nameEn: 'Blow Dry', nameAr: 'استشوار', category: 'Styling', durationMinutes: 15, price: 20, taxRate: 15, imageUrl: 'https://images.unsplash.com/photo-1521017430209-f620e14a1622?auto=format&fit=crop&w=400&q=80' }
+      { nameEn: 'Blow Dry', nameAr: 'استشوار', category: 'Styling', durationMinutes: 15, price: 20, taxRate: 15, imageUrl: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=400&q=80' }
     ];
 
     const { default: SaloonService } = await import('../models/SaloonService.js');

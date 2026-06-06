@@ -37,9 +37,12 @@ export default function SaloonOrders() {
     >
       <div className="flex justify-between items-start mb-3">
         <div>
-          <h3 className="font-bold text-gray-900 dark:text-white">
-            #{order.orderNumber}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-bold text-gray-900 dark:text-white">
+              {order.queueNumber ? `Q-${order.queueNumber}` : `#${order.orderNumber.split('-')[1].slice(-4)}`}
+            </h3>
+            {order.queueNumber && <span className="text-xs text-gray-400">#{order.orderNumber.split('-')[1].slice(-4)}</span>}
+          </div>
           <p className="text-sm text-gray-500">
             {order.customerName || (isRtl ? 'عميل' : 'Walk-in Customer')}
           </p>

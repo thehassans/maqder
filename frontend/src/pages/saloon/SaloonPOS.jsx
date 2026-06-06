@@ -276,30 +276,14 @@ export default function SaloonPOS() {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 gap-2">
             <button 
               onClick={() => handleCheckout('none')}
               disabled={checkoutMutation.isPending || cart.length === 0}
-              className="btn bg-gray-100 dark:bg-dark-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-dark-600 flex flex-col items-center justify-center gap-1 py-3 h-auto"
+              className="btn bg-amber-500 hover:bg-amber-600 text-white flex flex-col items-center justify-center gap-1 py-4 h-auto"
             >
-              <CheckCircle className="w-5 h-5" />
-              <span className="text-xs">{isRtl ? 'تذكرة انتظار' : 'Queue Ticket'}</span>
-            </button>
-            <button 
-              onClick={() => handleCheckout('cash')}
-              disabled={checkoutMutation.isPending || cart.length === 0}
-              className="btn bg-emerald-500 hover:bg-emerald-600 text-white flex flex-col items-center justify-center gap-1 py-3 h-auto"
-            >
-              <Banknote className="w-5 h-5" />
-              <span className="text-xs">{isRtl ? 'كاش' : 'Cash'}</span>
-            </button>
-            <button 
-              onClick={() => handleCheckout('card')}
-              disabled={checkoutMutation.isPending || cart.length === 0}
-              className="btn bg-blue-500 hover:bg-blue-600 text-white flex flex-col items-center justify-center gap-1 py-3 h-auto"
-            >
-              <CreditCard className="w-5 h-5" />
-              <span className="text-xs">{isRtl ? 'بطاقة' : 'Card'}</span>
+              <CheckCircle className="w-6 h-6" />
+              <span className="text-base font-medium">{isRtl ? 'إنشاء الطلب' : 'Create Order'}</span>
             </button>
           </div>
         </div>

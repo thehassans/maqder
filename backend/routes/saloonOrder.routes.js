@@ -91,7 +91,19 @@ router.post('/checkout', checkPermission('saloon', 'create'), async (req, res) =
       };
     });
     
-    // Generate Order Number
+    // Generate Queue Number (Daily sequence)
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const todayOrdersCount = await SaloonOrder.countDocuments({
+      tenantId: req.user.tenantId,
+      createdAt: { $gte: startOfDay, $lte: endOfDay }
+    }).session(session);
+
+    const queueNumber = String(todayOrdersCount + 1).padStart(3, '0');
+    
     let paymentStatus = 'unpaid';
     if (amountPaid >= grandTotal) paymentStatus = 'paid';
     else if (amountPaid > 0) paymentStatus = 'partial';
@@ -103,6 +115,7 @@ router.post('/checkout', checkPermission('saloon', 'create'), async (req, res) =
     const order = new SaloonOrder({
       tenantId: req.user.tenantId,
       orderNumber: `SLN-${Date.now()}`,
+      queueNumber,
       customerName,
       customerPhone,
       items: orderItems,

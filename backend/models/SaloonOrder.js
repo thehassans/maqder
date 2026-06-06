@@ -17,6 +17,7 @@ const saloonOrderItemSchema = new mongoose.Schema({
 const saloonOrderSchema = new mongoose.Schema({
   tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
   orderNumber: { type: String },
+  queueNumber: { type: String },
   customerName: { type: String },
   customerPhone: { type: String },
   
