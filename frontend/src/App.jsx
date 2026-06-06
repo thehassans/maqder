@@ -152,7 +152,7 @@ import LaundryInventory from './pages/laundry/LaundryInventory'
 import SaloonLayout from './layouts/SaloonLayout'
 import SaloonPOS from './pages/saloon/SaloonPOS'
 import SaloonServices from './pages/saloon/SaloonServices'
-import SaloonOrders from './pages/saloon/SaloonOrders'
+import SaloonBarbers from './pages/saloon/SaloonBarbers'
 import QRServices from './pages/saloon/QRServices'
 import SaloonQueue from './pages/saloon/SaloonQueue'
 import Letterhead from './pages/Letterhead'
@@ -423,7 +423,7 @@ function App() {
         
         {/* Saloon System */}
         <Route path="saloon/services" element={<BusinessTypeRoute allowedTypes={['saloon']}><SaloonServices /></BusinessTypeRoute>} />
-        <Route path="saloon/orders" element={<BusinessTypeRoute allowedTypes={['saloon']}><SaloonOrders /></BusinessTypeRoute>} />
+        <Route path="saloon/barbers" element={<BusinessTypeRoute allowedTypes={['saloon']}><SaloonBarbers /></BusinessTypeRoute>} />
 
         {/* Bakala Routes */}
         <Route path="bakala/pos" element={<BusinessTypeRoute allowedTypes={['bakala']}><BakalaPOS /></BusinessTypeRoute>} />
@@ -532,7 +532,7 @@ function App() {
         <Route path="dashboard" element={<SaloonDashboard />} />
         <Route path="pos" element={<SaloonPOS />} />
         <Route path="services" element={<SaloonServices />} />
-        <Route path="orders" element={<SaloonOrders />} />
+        <Route path="barbers" element={<SaloonBarbers />} />
         <Route path="qr" element={<QRServices />} />
         <Route path="queue" element={<SaloonQueue />} />
       </Route>
