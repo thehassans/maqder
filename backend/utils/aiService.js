@@ -82,3 +82,60 @@ export const translateWithFallback = async ({ text, targetLanguage }) => {
 
   throw lastError || new Error('No AI provider configured or all providers failed');
 };
+
+export const extractKhayyatMeasurements = async ({ base64Image, mimeType }) => {
+  const settings = await getAISettings();
+  let lastError = null;
+  
+  const systemPrompt = `You are an expert AI for a tailoring (khayyat) shop. Extract tailoring measurements from hand-written sketches or measurement sheets. Return a JSON object with a "measurements" object containing the extracted fields (e.g., length, shoulderWidth, chest, waist, hips, bottom, sleeveLength, armhole, bicep, forearm, wrist, cuffWidth, neck, expansion). All values should be numbers (centimeters) or null if not found. Also extract any additional notes into a "notes" string field. Return only valid JSON.`;
+
+  // 1. Try Gemini
+  if (settings?.gemini?.enabled !== false && settings?.gemini?.apiKey) {
+    try {
+      const client = new GoogleGenAI({ apiKey: settings.gemini.apiKey });
+      const response = await client.models.generateContent({
+        model: settings.gemini.model || 'gemini-2.5-flash',
+        contents: [
+          { role: 'user', parts: [
+              { text: systemPrompt + '\n\nExtract tailoring measurements from this image. Return structured JSON.' },
+              { inlineData: { data: base64Image, mimeType } }
+            ]
+          }
+        ],
+        config: { temperature: 0.1, responseMimeType: 'application/json' }
+      });
+      if (response?.text) return JSON.parse(response.text.trim());
+    } catch (e) {
+      lastError = e;
+      console.warn('[OCR] Gemini failed, falling back...', e.message);
+    }
+  }
+
+  // 2. Try OpenAI
+  if (settings?.openai?.enabled !== false && settings?.openai?.apiKey) {
+    try {
+      const client = new OpenAI({ apiKey: settings.openai.apiKey });
+      const response = await client.chat.completions.create({
+        model: settings.openai.model || 'gpt-4o',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: [
+              { type: 'text', text: 'Extract tailoring measurements from this image. Return structured JSON.' },
+              { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64Image}` } }
+            ]
+          }
+        ],
+        temperature: 0.1,
+        response_format: { type: 'json_object' }
+      });
+      if (response.choices?.[0]?.message?.content) {
+        return JSON.parse(response.choices[0].message.content.trim());
+      }
+    } catch (e) {
+      lastError = e;
+      console.warn('[OCR] OpenAI failed...', e.message);
+    }
+  }
+
+  throw lastError || new Error('No AI provider configured for OCR or all providers failed');
+};
