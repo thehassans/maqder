@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, UtensilsCrossed, Grid2X2, Shirt, Building2 } from 'lucide-react'
+import { ArrowLeft, UtensilsCrossed, Grid2X2, Shirt, Building2, Scissors } from 'lucide-react'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import { getTenantBusinessTypes } from '../../lib/businessTypes'
@@ -12,6 +12,7 @@ import RestaurantMenuItems from '../restaurant/RestaurantMenuItems'
 import Tables from '../restaurant/Tables'
 import LaundryServices from '../laundry/LaundryServices'
 import KhayyatSeeder from './KhayyatSeeder'
+import SaloonSeeder from './SaloonSeeder'
 import { Outlet, useLocation } from 'react-router-dom'
 
 export default function TenantCustomization() {
@@ -44,12 +45,14 @@ export default function TenantCustomization() {
     const isRestaurant = tenantBusinessTypes.includes('restaurant')
     const isLaundry = tenantBusinessTypes.includes('laundry')
     const isTailoring = tenantBusinessTypes.includes('khayyat')
+    const isSaloon = tenantBusinessTypes.includes('saloon')
 
     return [
       { id: 'menu-items', label: language === 'ar' ? 'قائمة الطعام' : 'Menu Items', icon: UtensilsCrossed, component: RestaurantMenuItems, show: isRestaurant },
       { id: 'tables', label: language === 'ar' ? 'الطاولات' : 'Tables', icon: Grid2X2, component: Tables, show: isRestaurant },
       { id: 'laundry', label: language === 'ar' ? 'خدمات المغسلة' : 'Laundry Services', icon: Shirt, component: LaundryServices, show: isLaundry },
-      { id: 'khayyat', label: language === 'ar' ? 'الخياط' : 'Tailoring', icon: Shirt, component: KhayyatSeeder, show: true },
+      { id: 'khayyat', label: language === 'ar' ? 'الخياط' : 'Tailoring', icon: Shirt, component: KhayyatSeeder, show: isTailoring },
+      { id: 'saloon', label: language === 'ar' ? 'الصالون' : 'Saloon', icon: Scissors, component: SaloonSeeder, show: isSaloon },
     ].filter(t => t.show)
   }, [tenant, language])
 

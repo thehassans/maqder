@@ -124,6 +124,7 @@ import EmailCommunication from './pages/EmailCommunication'
 import FleetAssets from './pages/fleet/FleetAssets'
 import FleetAssetForm from './pages/fleet/FleetAssetForm'
 import MaintenanceAlerts from './pages/fleet/MaintenanceAlerts'
+import SaloonDashboard from './pages/saloon/SaloonDashboard'
 import Contracts from './pages/contracts/Contracts'
 import ContractForm from './pages/contracts/ContractForm'
 import LandedCosts from './pages/landed-costs/LandedCosts'
@@ -420,6 +421,7 @@ function App() {
         <Route path="tasks/:id" element={<TaskForm />} />
         
         {/* Saloon System */}
+        <Route path="saloon/dashboard" element={<BusinessTypeRoute allowedTypes={['saloon']}><SaloonDashboard /></BusinessTypeRoute>} />
         <Route path="saloon/pos" element={<BusinessTypeRoute allowedTypes={['saloon']}><SaloonPOS /></BusinessTypeRoute>} />
         <Route path="saloon/services" element={<BusinessTypeRoute allowedTypes={['saloon']}><SaloonServices /></BusinessTypeRoute>} />
         <Route path="saloon/orders" element={<BusinessTypeRoute allowedTypes={['saloon']}><SaloonOrders /></BusinessTypeRoute>} />

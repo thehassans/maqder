@@ -1735,4 +1735,46 @@ router.post('/tenants/:id/seed-khayyat', async (req, res) => {
   }
 });
 
+// Seed Saloon Data
+router.post('/:id/seed-saloon', authenticate, requireSuperAdmin, async (req, res) => {
+  try {
+    const tenantId = req.params.id;
+    const { default: Tenant } = await import('../models/Tenant.js');
+    const tenant = await Tenant.findById(tenantId);
+    if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+
+    const saloonServices = [
+      { nameEn: 'Haircut', nameAr: 'حلاقة شعر', category: 'Hair', durationMinutes: 30, price: 35, taxRate: 15 },
+      { nameEn: 'Beard Trim', nameAr: 'تحديد لحية', category: 'Beard', durationMinutes: 15, price: 20, taxRate: 15 },
+      { nameEn: 'Hair & Beard', nameAr: 'حلاقة شعر ولحية', category: 'Hair', durationMinutes: 45, price: 50, taxRate: 15 },
+      { nameEn: 'Kids Haircut', nameAr: 'حلاقة أطفال', category: 'Hair', durationMinutes: 30, price: 25, taxRate: 15 },
+      { nameEn: 'Hair Wash', nameAr: 'غسيل شعر', category: 'Care', durationMinutes: 10, price: 10, taxRate: 15 },
+      { nameEn: 'Facial Scrub', nameAr: 'سنفرة للوجه', category: 'Skin', durationMinutes: 20, price: 40, taxRate: 15 },
+      { nameEn: 'Face Mask', nameAr: 'ماسك للوجه', category: 'Skin', durationMinutes: 15, price: 30, taxRate: 15 },
+      { nameEn: 'Hair Dye', nameAr: 'صبغة شعر', category: 'Color', durationMinutes: 45, price: 80, taxRate: 15 },
+      { nameEn: 'Beard Dye', nameAr: 'صبغة لحية', category: 'Color', durationMinutes: 30, price: 40, taxRate: 15 },
+      { nameEn: 'Protein Treatment', nameAr: 'بروتين للشعر', category: 'Care', durationMinutes: 60, price: 150, taxRate: 15 },
+      { nameEn: 'Keratin Treatment', nameAr: 'كيراتين', category: 'Care', durationMinutes: 60, price: 200, taxRate: 15 },
+      { nameEn: 'Blow Dry', nameAr: 'استشوار', category: 'Styling', durationMinutes: 15, price: 20, taxRate: 15 }
+    ];
+
+    const { default: SaloonService } = await import('../models/SaloonService.js');
+    await Promise.all(saloonServices.map(async (svc) => {
+      let existing = await SaloonService.findOne({ tenantId, nameEn: svc.nameEn });
+      if (!existing) {
+        existing = new SaloonService({
+          tenantId,
+          ...svc,
+          isActive: true
+        });
+        await existing.save();
+      }
+    }));
+    
+    res.json({ message: 'Saloon data seeded successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
