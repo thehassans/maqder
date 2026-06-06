@@ -1639,7 +1639,7 @@ router.post('/tenants/:id/seed-khayyat', async (req, res) => {
       const part = parts[Math.floor(i / (colors.length * styles.length)) % parts.length];
       embroideryImages.push({
         name: `${color} ${style} ${part} ${i + 1}`,
-        image: `https://picsum.photos/seed/embroidery_${i}/400/400`
+        image: baseImages[i % baseImages.length].image
       });
     }
 
