@@ -331,30 +331,33 @@ export default function Sidebar() {
       {/* Tenant Info */}
       {!sidebarCollapsed && tenant && (
         <div className="px-4 py-4 border-b border-gray-100 dark:border-dark-700">
-          <div className="relative p-3.5 bg-gradient-to-br from-white to-primary-50/50 dark:from-dark-800 dark:to-primary-900/10 border border-gray-100 dark:border-dark-700 rounded-2xl overflow-hidden shadow-sm transition-all hover:shadow-md">
-            {tenant?.branding?.logo && (
-              <div className="absolute inset-0 opacity-10 dark:opacity-20 pointer-events-none flex items-center justify-center p-2">
-                <img src={tenant.branding.logo} alt="" className="w-full h-full object-contain" />
+          <div className="relative p-4 bg-gradient-to-b from-white to-slate-50/80 dark:from-dark-800 dark:to-dark-900/50 border border-slate-100 dark:border-dark-700 rounded-2xl overflow-hidden shadow-sm transition-all hover:shadow-md flex flex-col items-center text-center group">
+            
+            {/* Glossy overlay effect */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/40 to-white/0 dark:from-white/0 dark:via-white/5 dark:to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+
+            {tenant?.branding?.logo ? (
+              <div className="w-16 h-16 rounded-2xl bg-white dark:bg-dark-900 p-2 shadow-sm border border-slate-100 dark:border-dark-700 mb-3 relative z-10 group-hover:scale-105 transition-transform duration-300">
+                <img src={tenant.branding.logo} alt="Company Logo" className="w-full h-full object-contain" />
+              </div>
+            ) : (
+              <div className="w-16 h-16 rounded-2xl bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 flex items-center justify-center font-bold text-xl mb-3 relative z-10 shadow-sm border border-primary-100 dark:border-primary-800/30 group-hover:scale-105 transition-transform duration-300">
+                {tenant.business?.legalNameEn?.charAt(0) || tenant.name?.charAt(0) || 'M'}
               </div>
             )}
-            <div className="relative z-10 flex items-start gap-3">
-              {tenant?.branding?.logo && (
-                <div className="w-10 h-10 rounded-xl bg-white dark:bg-dark-900 p-1.5 shadow-sm border border-gray-100 dark:border-dark-700 flex-shrink-0 flex items-center justify-center">
-                  <img src={tenant.branding.logo} alt="" className="w-full h-full object-contain" />
-                </div>
-              )}
-              <div className="flex-1 min-w-0 py-0.5">
-                <p className="text-[10px] uppercase tracking-wider text-primary-600/80 dark:text-primary-400/80 font-bold mb-0.5">
-                  {language === 'ar' ? 'الشركة' : 'Company'}
-                </p>
-                <p className="font-bold text-gray-900 dark:text-white text-[13px] truncate leading-tight">
-                  {language === 'ar' ? tenant.business?.legalNameAr : tenant.business?.legalNameEn}
-                </p>
-                <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 font-medium">
-                  VAT: <span className="font-mono">{tenant.business?.vatNumber}</span>
-                </p>
+            
+            <div className="relative z-10 w-full px-1">
+              <p className="text-[9px] uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 font-extrabold mb-1">
+                {language === 'ar' ? 'الشركة' : 'COMPANY'}
+              </p>
+              <h3 className="font-black text-slate-900 dark:text-white text-[14px] leading-tight mb-1 line-clamp-2">
+                {language === 'ar' ? tenant.business?.legalNameAr : tenant.business?.legalNameEn}
+              </h3>
+              <div className="inline-flex items-center justify-center px-2 py-0.5 mt-1 bg-slate-100 dark:bg-dark-700 rounded text-[10px] text-slate-500 dark:text-slate-400 font-medium border border-slate-200 dark:border-dark-600">
+                VAT: <span className="font-mono ml-1 font-bold">{tenant.business?.vatNumber}</span>
               </div>
             </div>
+
           </div>
         </div>
       )}
