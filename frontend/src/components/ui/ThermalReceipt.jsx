@@ -251,7 +251,7 @@ const ThermalReceipt = forwardRef(({ order, type = 'laundry' }, ref) => {
       <div className="border-t border-dashed border-gray-400 pt-2 text-[9px] space-y-1">
         <div className="flex justify-between">
           <span className="text-gray-600">Subtotal / المجموع الفرعي:</span>
-          <span>SAR {(Number(order.subtotal)).toFixed(2)}</span>
+          <span>SAR {(Number(order.subtotal || order.price || 0)).toFixed(2)}</span>
         </div>
         {order.isUrgent && (
           <div className="flex justify-between font-semibold text-amber-700">
@@ -265,42 +265,44 @@ const ThermalReceipt = forwardRef(({ order, type = 'laundry' }, ref) => {
         </div>
         <div className="flex justify-between mt-2 pt-2 border-t border-dashed border-gray-300 font-extrabold text-sm text-gray-900">
           <span>Total / الإجمالي النهائي:</span>
-          <span>SAR {(Number(order.grandTotal || order.total || 0)).toFixed(2)}</span>
+          <span>SAR {(Number(order.grandTotal || order.total || order.price || 0)).toFixed(2)}</span>
         </div>
       </div>
 
-      {/* ZATCA QR Code Section */}
-      {zatcaQrPayload && (
-        <div className="my-5 flex flex-col items-center justify-center text-center">
-          <div className="text-[8px] text-gray-500 mb-1.5 font-bold">
-            SCAN TO VERIFY | امسح للتحقق من الفاتورة
+      {/* QR Codes Section */}
+      <div className="my-5 flex flex-row items-center justify-center gap-4">
+        {zatcaQrPayload && (
+          <div className="flex flex-col items-center justify-center text-center">
+            <div className="text-[7px] text-gray-500 mb-1 font-bold whitespace-nowrap">
+              ZATCA | هيئة الزكاة
+            </div>
+            <div className="bg-white p-1 border border-gray-200 rounded-lg">
+              <QRCodeSVG 
+                value={zatcaQrPayload} 
+                size={80} 
+                level="M" 
+                includeMargin={false}
+              />
+            </div>
           </div>
-          <div className="bg-white p-1.5 border border-gray-200 rounded-lg">
-            <QRCodeSVG 
-              value={zatcaQrPayload} 
-              size={95} 
-              level="M" 
-              includeMargin={false}
-            />
-          </div>
-        </div>
-      )}
+        )}
 
-      {type === 'khayyat' && order._id && (
-        <div className="my-5 flex flex-col items-center justify-center text-center">
-          <div className="text-[8px] text-gray-500 mb-1.5 font-bold">
-            TRACK ORDER | تتبع الطلب
+        {type === 'khayyat' && order._id && (
+          <div className="flex flex-col items-center justify-center text-center">
+            <div className="text-[7px] text-gray-500 mb-1 font-bold whitespace-nowrap">
+              TRACK | تتبع الطلب
+            </div>
+            <div className="bg-white p-1 border border-gray-200 rounded-lg">
+              <QRCodeSVG 
+                value={`${window.location.origin}/track-order?id=${order._id}`}
+                size={80} 
+                level="M" 
+                includeMargin={false}
+              />
+            </div>
           </div>
-          <div className="bg-white p-1.5 border border-gray-200 rounded-lg">
-            <QRCodeSVG 
-              value={`${window.location.origin}/track-order?id=${order._id}`}
-              size={85} 
-              level="M" 
-              includeMargin={false}
-            />
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Footer message */}
       <div className="text-center text-[9px] mt-4 pt-3 border-t border-dashed border-gray-400 text-gray-600 space-y-0.5">

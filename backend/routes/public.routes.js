@@ -316,4 +316,24 @@ router.get('/tenant/:id/services', async (req, res) => {
   }
 })
 
+import KhayyatStitching from '../models/khayyat/KhayyatStitching.js'
+
+router.get('/track/khayyat/:id', async (req, res) => {
+  try {
+    const order = await withQueryTimeout(
+      KhayyatStitching.findById(req.params.id)
+        .populate('tenantId', 'name business branding')
+        .lean()
+    )
+
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' })
+    }
+
+    res.json(order)
+  } catch (error) {
+    sendRouteError(res, error)
+  }
+})
+
 export default router
