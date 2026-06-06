@@ -89,12 +89,15 @@ export const extractKhayyatMeasurements = async ({ base64Image, mimeType }) => {
   
   const systemPrompt = `You are an expert AI for a tailoring (khayyat) shop. Extract tailoring measurements from hand-written sketches or measurement sheets. Return a JSON object with a "measurements" object containing the extracted fields (e.g., length, shoulderWidth, chest, waist, hips, bottom, sleeveLength, armhole, bicep, forearm, wrist, cuffWidth, neck, expansion). All values should be numbers (centimeters) or null if not found. Also extract any additional notes into a "notes" string field. Return only valid JSON.`;
 
+  const geminiKey = settings?.gemini?.apiKey || process.env.GEMINI_API_KEY;
+  const openaiKey = settings?.openai?.apiKey || process.env.OPENAI_API_KEY;
+
   // 1. Try Gemini
-  if (settings?.gemini?.enabled !== false && settings?.gemini?.apiKey) {
+  if (settings?.gemini?.enabled !== false && geminiKey) {
     try {
-      const client = new GoogleGenAI({ apiKey: settings.gemini.apiKey });
+      const client = new GoogleGenAI({ apiKey: geminiKey });
       const response = await client.models.generateContent({
-        model: settings.gemini.model || 'gemini-2.5-flash',
+        model: settings?.gemini?.model || 'gemini-2.5-flash',
         contents: [
           { role: 'user', parts: [
               { text: systemPrompt + '\n\nExtract tailoring measurements from this image. Return structured JSON.' },
@@ -112,11 +115,11 @@ export const extractKhayyatMeasurements = async ({ base64Image, mimeType }) => {
   }
 
   // 2. Try OpenAI
-  if (settings?.openai?.enabled !== false && settings?.openai?.apiKey) {
+  if (settings?.openai?.enabled !== false && openaiKey) {
     try {
-      const client = new OpenAI({ apiKey: settings.openai.apiKey });
+      const client = new OpenAI({ apiKey: openaiKey });
       const response = await client.chat.completions.create({
-        model: settings.openai.model || 'gpt-4o',
+        model: settings?.openai?.model || 'gpt-4o',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: [
@@ -137,5 +140,5 @@ export const extractKhayyatMeasurements = async ({ base64Image, mimeType }) => {
     }
   }
 
-  throw lastError || new Error('No AI provider configured for OCR or all providers failed');
+  throw lastError || new Error('No AI provider configured for OCR or all providers failed. Please set your API key in System Settings.');
 };
