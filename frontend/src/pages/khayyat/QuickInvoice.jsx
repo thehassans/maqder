@@ -18,6 +18,7 @@ export default function KhayyatQuickInvoice() {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [notes, setNotes] = useState('');
+  const [customSubtotal, setCustomSubtotal] = useState('');
   const [discount, setDiscount] = useState('');
   const [paidAmount, setPaidAmount] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -61,15 +62,23 @@ export default function KhayyatQuickInvoice() {
     setItems(newItems);
   };
 
-  const calculateSubtotal = () => {
+  const calculateAutoSubtotal = () => {
     return items.reduce((sum, item) => sum + (parseFloat(item.price || 0) * (item.quantity || 1)), 0);
   };
 
-  const subtotal = calculateSubtotal();
+  const autoSubtotal = calculateAutoSubtotal();
+  const subtotal = customSubtotal !== '' ? parseFloat(customSubtotal || 0) : autoSubtotal;
   const discountVal = parseFloat(discount || 0);
   const grandTotal = Math.max(0, subtotal - discountVal);
   const paidVal = parseFloat(paidAmount || 0);
   const pendingVal = Math.max(0, grandTotal - paidVal);
+
+  // Sync custom subtotal placeholder
+  useEffect(() => {
+    if (customSubtotal === '' && autoSubtotal > 0) {
+      // We don't automatically set it so the placeholder shows the auto calculation
+    }
+  }, [autoSubtotal]);
 
   const handleSave = async () => {
     if (!customerName.trim() && !customerPhone.trim()) {
@@ -77,7 +86,7 @@ export default function KhayyatQuickInvoice() {
       return;
     }
 
-    const validItems = items.filter(i => i.name.trim() && parseFloat(i.price || 0) > 0);
+    const validItems = items.filter(i => i.name.trim() && (parseFloat(i.price || 0) > 0 || subtotal > 0));
     if (validItems.length === 0) {
       toast.error(language === 'ar' ? 'أضف فرد واحد على الأقل' : 'Add at least one member');
       return;
@@ -102,14 +111,11 @@ export default function KhayyatQuickInvoice() {
 
         const itemTotal = parseFloat(item.price || 0) * (item.quantity || 1);
         
-        // Distribute discount proportionally or just take from first items
-        let itemDiscount = 0;
-        if (remainingDiscount > 0) {
-          itemDiscount = Math.min(itemTotal, remainingDiscount);
-          remainingDiscount -= itemDiscount;
-        }
-        
-        const finalItemPrice = itemTotal - itemDiscount;
+        // Distribute subtotal and discount proportionally
+        let itemProportion = autoSubtotal > 0 ? (itemTotal / autoSubtotal) : (1 / validItems.length);
+        let finalItemPrice = (subtotal * itemProportion) - (discountVal * itemProportion);
+        finalItemPrice = Math.max(0, finalItemPrice);
+
         formData.append('price', finalItemPrice);
 
         // Distribute paid amount
@@ -333,7 +339,15 @@ export default function KhayyatQuickInvoice() {
 
               <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400 pt-4">
                 <span>{language === 'ar' ? 'المجموع' : 'Subtotal'}</span>
-                <span><Money value={subtotal} /></span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder={autoSubtotal.toFixed(2)}
+                  className="w-24 bg-gray-50 dark:bg-slate-800 border-none rounded-lg text-sm p-2 text-end text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-200 dark:focus:ring-slate-700 font-bold"
+                  value={customSubtotal}
+                  onChange={e => setCustomSubtotal(e.target.value)}
+                />
               </div>
               <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
                 <span>{language === 'ar' ? 'الخصم' : 'Discount'}</span>
