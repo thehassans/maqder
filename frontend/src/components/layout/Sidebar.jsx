@@ -81,8 +81,8 @@ export default function Sidebar() {
         title: language === 'ar' ? 'الخياطة' : 'Tailoring',
         businessTypes: ['khayyat'],
         items: [
-          { path: '/app/dashboard/khayyat', icon: LayoutDashboard, label: language === 'ar' ? 'نقطة البيع (الخياط)' : 'Tailor POS', end: true },
-          { path: '/app/dashboard/khayyat/analytics', icon: TrendingUp, label: language === 'ar' ? 'الإحصائيات' : 'Analytics' },
+          { path: '/app/dashboard/khayyat/analytics', icon: LayoutDashboard, label: language === 'ar' ? 'لوحة التحكم' : 'Dashboard' },
+          { path: '/app/dashboard/khayyat', icon: ShoppingCart, label: language === 'ar' ? 'نقطة البيع (الخياط)' : 'Tailor POS', end: true },
           { path: '/app/dashboard/khayyat/stitchings', icon: FileSignature, label: t('orders') },
           { path: '/app/dashboard/khayyat/workers', icon: Users, label: t('workers') },
           { path: '/app/dashboard/khayyat/worker-amounts', icon: Wallet, label: language === 'ar' ? 'أرباح العمال' : 'Worker Amounts' },

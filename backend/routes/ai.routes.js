@@ -66,6 +66,46 @@ router.post('/extract-document', checkAI, upload.single('document'), async (req,
   }
 });
 
+// @route   POST /api/ai/khayyat-ocr
+router.post('/khayyat-ocr', checkAI, upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image uploaded' });
+    }
+    
+    const base64Image = req.file.buffer.toString('base64');
+    const mimeType = req.file.mimetype;
+    
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        {
+          role: 'system',
+          content: `You are an expert AI for a tailoring (khayyat) shop. Extract tailoring measurements from hand-written sketches or measurement sheets. Return a JSON object with a "measurements" object containing the extracted fields (e.g., length, shoulderWidth, chest, waist, hips, bottom, sleeveLength, armhole, bicep, forearm, wrist, cuffWidth, neck, expansion). All values should be numbers (centimeters) or null if not found. Also extract any additional notes into a "notes" string field.`
+        },
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: 'Extract tailoring measurements from this image. Return structured JSON.' },
+            { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64Image}` } }
+          ]
+        }
+      ],
+      max_tokens: 1000,
+      response_format: { type: 'json_object' }
+    });
+    
+    const extractedData = JSON.parse(response.choices[0].message.content);
+    
+    res.json({
+      success: true,
+      ...extractedData
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.post('/translate', async (req, res) => {
   try {
     const { text, sourceLang = 'en', targetLang = 'ar' } = req.body || {};

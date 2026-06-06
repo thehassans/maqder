@@ -9,14 +9,19 @@ import { Card } from './components/ui/Card';
 import { Button } from './components/ui/Button';
 import { StatusBadge } from './components/ui/Badge';
 import { Modal } from './components/ui/Modal';
+
+import { Card } from './components/ui/Card';
+import { Button } from './components/ui/Button';
+import { StatusBadge } from './components/ui/Badge';
+import { Modal } from './components/ui/Modal';
 import { ConfirmModal } from './components/ui/ConfirmModal';
 import DemoBlockedModal from './components/ui/DemoBlockedModal';
 import { Table, Thead, Tbody, Tr, Th, Td } from './components/ui/Table';
-import { Plus, Search, UserPlus, Trash2, Printer } from 'lucide-react';
+import { Plus, Search, UserPlus, Trash2, Printer, X } from 'lucide-react';
 import SARIcon from './components/ui/SARIcon';
 import toast from 'react-hot-toast';
-import printStitchingInvoice from './utils/printStitchingInvoice';
 import { formatSaudiRiyal } from './utils/saudi';
+import ThermalReceipt from '../../components/ui/ThermalReceipt';
 
 const Stitchings = () => {
   
@@ -37,6 +42,8 @@ const Stitchings = () => {
   const tutorialInvoiceOpenedRef = React.useRef(false);
   const searchDebounceRef = useRef(null);
   const fetchRequestIdRef = useRef(0);
+  const printRef = useRef(null);
+  const [printOrder, setPrintOrder] = useState(null);
 
   const isDemo = !!user?.isDemoSession;
   const langKey = (language || 'en').split('-')[0];
@@ -215,7 +222,7 @@ const Stitchings = () => {
   };
 
   const handlePrintLabel = async (stitch) => {
-    await printStitchingInvoice({ stitch, user, resolveUploadsUrl });
+    setPrintOrder(stitch);
   };
 
   return (
@@ -572,12 +579,39 @@ const Stitchings = () => {
         title="Live Demo"
         phone="+966596775485"
       />
+
+      {/* Print Modal for ThermalReceipt */}
+      {printOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 print:bg-white print:static print:inset-auto">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-[400px] max-h-[90vh] overflow-y-auto print:shadow-none print:p-0 print:w-auto print:max-h-none print:overflow-visible">
+            <div className="flex justify-between items-center mb-4 print:hidden">
+              <h3 className="text-lg font-bold">{(language === 'ar' ? 'إيصال الطلب' : 'Order Receipt')}</h3>
+              <button onClick={() => setPrintOrder(null)} className="text-gray-500 hover:text-gray-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="border border-gray-200 rounded-lg p-2 print:border-none print:p-0 flex justify-center">
+              <ThermalReceipt ref={printRef} order={printOrder} type="khayyat" />
+            </div>
+
+            <div className="mt-6 flex gap-3 print:hidden">
+              <button onClick={() => setPrintOrder(null)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-gray-100 dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-slate-200 flex-1">
+                {(language === 'ar' ? 'إغلاق' : 'Close')}
+              </button>
+              <button onClick={() => {
+                if (printRef.current) {
+                  window.print();
+                }
+              }} className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white flex-1">
+                {(language === 'ar' ? 'طباعة' : 'Print Receipt')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default Stitchings;
-
-
-
-

@@ -1,5 +1,7 @@
-import React, { useRef } from 'react';
-import { Camera, Image as ImageIcon, Trash2, Upload } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Camera, Image as ImageIcon, Trash2, Upload, Loader2, Sparkles } from 'lucide-react';
+import api from '../../../../utils/api';
+import toast from 'react-hot-toast';
 
 const MeasurementImageInput = ({
   label = 'Measurement Image',
@@ -9,14 +11,42 @@ const MeasurementImageInput = ({
   onFileChange,
   onRemove,
   disabled = false,
-  className = ''
+  className = '',
+  onExtractedData
 }) => {
   const uploadInputRef = useRef(null);
   const cameraInputRef = useRef(null);
+  const [isExtracting, setIsExtracting] = useState(false);
 
-  const handleSelectFile = (event) => {
+  const handleSelectFile = async (event) => {
     const file = event.target.files?.[0] || null;
+    if (!file) return;
+
     onFileChange?.(file);
+    
+    // Auto-extract measurements
+    if (onExtractedData) {
+      try {
+        setIsExtracting(true);
+        const formData = new FormData();
+        formData.append('image', file);
+
+        const { data } = await api.post('/api/ai/khayyat-ocr', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+
+        if (data?.success && data?.measurements) {
+          onExtractedData(data.measurements, data.notes);
+          toast.success('Measurements extracted successfully!');
+        }
+      } catch (error) {
+        console.error('Failed to extract measurements:', error);
+        toast.error('Failed to auto-extract measurements from the image.');
+      } finally {
+        setIsExtracting(false);
+      }
+    }
+    
     event.target.value = '';
   };
 
@@ -57,8 +87,16 @@ const MeasurementImageInput = ({
       />
 
       {previewSrc ? (
-        <div className="mt-4 overflow-hidden rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-950/70">
+        <div className="mt-4 relative overflow-hidden rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-950/70">
           <img src={previewSrc} alt="Measurement reference" className="h-56 w-full object-cover" />
+          {isExtracting && (
+            <div className="absolute inset-0 bg-white/60 dark:bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center">
+              <Loader2 className="w-8 h-8 text-primary-600 animate-spin" />
+              <div className="mt-3 text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-amber-500" /> Extracting measurements...
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="mt-4 flex h-56 flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 dark:border-slate-700 bg-gray-50/80 dark:bg-slate-950/50 text-center">

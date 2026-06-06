@@ -17,6 +17,7 @@ import SARIcon from './components/ui/SARIcon';
 import toast from 'react-hot-toast';
 import QRCode from 'qrcode';
 import { canonicalSaudiMobile, normalizeSaudiPhone } from './utils/saudi';
+import ThermalReceipt from '../../components/ui/ThermalReceipt';
 
 const ORDER_STATUSES = [
   { value: 'pending', label: 'Pending / قيد الانتظار', color: 'gray' },
@@ -61,6 +62,16 @@ const StitchingForm = () => {
 
   const isDemo = !!user?.isDemoSession;
   const [demoBlockedOpen, setDemoBlockedOpen] = useState(false);
+  const navigate = useNavigate();
+  const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const isEdit = !!id;
+  const printRef = useRef();
+
+  const langKey = (language || 'en').split('-')[0];
+
+  const isDemo = !!user?.isDemoSession;
+  const [demoBlockedOpen, setDemoBlockedOpen] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [allCustomers, setAllCustomers] = useState([]);
@@ -73,6 +84,7 @@ const StitchingForm = () => {
   const selectedRelationIdRef = useRef(null);
   const [createdOrder, setCreatedOrder] = useState(null);
   const [createdOrders, setCreatedOrders] = useState([]);
+  const [printOrder, setPrintOrder] = useState(null);
   const [customerDetailsLoading, setCustomerDetailsLoading] = useState(false);
   const [customerMeasurementsOpen, setCustomerMeasurementsOpen] = useState(true);
   const [orderForMeasurementsOpen, setOrderForMeasurementsOpen] = useState(false);
@@ -973,330 +985,32 @@ const StitchingForm = () => {
   const handlePrintLabel = async (orderToPrint) => {
     const order = orderToPrint || createdOrder || createdOrders?.[0];
     if (!order) return;
-    
-    const logoSrc = user?.logo && user.logo !== 'null' && user.logo !== 'undefined' ? resolveUploadsUrl(user.logo) : '';
-    const trackUrl = `${window.location.origin}/track-order?id=${order._id}`;
-    const labelLang = user?.labelLanguage || 'both';
-    
-    // Generate QR codes
-    let qrCodeUrl = '';
-    let zatcaQrUrl = '';
-    const zatcaEnabled = user?.zatcaSettings?.enabled && user?.zatcaSettings?.showOnInvoice;
-    
-    try {
-      qrCodeUrl = await QRCode.toDataURL(trackUrl, { width: 100, margin: 1 });
-      
-      if (zatcaEnabled && user?.zatcaSettings?.vatNumber) {
-        const vatRate = 0.15;
-        const total = parseFloat(order.price) || 0;
-        const vatAmount = (total * vatRate / (1 + vatRate)).toFixed(2);
-        const timestamp = new Date().toISOString();
-        
-        const generateTLV = (fields) => {
-          let result = [];
-          fields.forEach(f => {
-            const value = String(f.value);
-            const valueBytes = new TextEncoder().encode(value);
-            result.push(f.tag, valueBytes.length, ...valueBytes);
-          });
-          return btoa(String.fromCharCode(...result));
-        };
-        
-        const tlvData = generateTLV([
-          { tag: 1, value: user?.businessName || '' },
-          { tag: 2, value: user?.zatcaSettings?.vatNumber || '' },
-          { tag: 3, value: timestamp },
-          { tag: 4, value: total.toFixed(2) },
-          { tag: 5, value: vatAmount }
-        ]);
-        zatcaQrUrl = await QRCode.toDataURL(tlvData, { width: 100, margin: 1 });
-      }
-    } catch (err) {
-      console.error('QR generation error:', err);
-    }
-    
-    // Bilingual labels
-    const labels = {
-      customer: { en: 'Customer', ar: 'العميل' },
-      orderFor: { en: 'Order For', ar: 'الطلب لـ' },
-      relationType: { en: 'Relation', ar: 'الصلة' },
-      phone: { en: 'Phone', ar: 'الهاتف' },
-      quantity: { en: 'Quantity', ar: 'الكمية' },
-      price: { en: 'Price', ar: 'السعر' },
-      paid: { en: 'Paid', ar: 'المدفوع' },
-      balance: { en: 'Pending', ar: 'المتبقي' },
-      dueDate: { en: 'Due Date', ar: 'تاريخ التسليم' },
-      status: { en: 'Status', ar: 'الحالة' },
-      thawbType: { en: 'Thawb', ar: 'الثوب' },
-      fabric: { en: 'Fabric', ar: 'القماش' },
-      rollsUsed: { en: 'Rolls Used', ar: 'الرولات المستخدمة' },
-      scanToTrack: { en: 'Scan to track order', ar: 'امسح لتتبع الطلب' }
-    };
-    
-    const getLabel = (key) => {
-      if (labelLang === 'en') return labels[key].en;
-      if (labelLang === 'ar') return labels[key].ar;
-      return `${labels[key].en} / ${labels[key].ar}`;
-    };
-    
-    const statusLabels = {
-      pending: { en: 'Pending', ar: 'قيد الانتظار' },
-      stitching: { en: 'Stitching', ar: 'الخياطة' },
-      finishing: { en: 'Finishing', ar: 'التشطيب' },
-      laundry: { en: 'Laundry', ar: 'الغسيل' },
-      done: { en: 'Done', ar: 'جاهز' }
-    };
-    
-    const getStatus = () => {
-      const status = order.status || formData.status || 'pending';
-      const s = statusLabels[status] || statusLabels.pending;
-      if (labelLang === 'en') return s.en;
-      if (labelLang === 'ar') return s.ar;
-      return `${s.en} / ${s.ar}`;
-    };
-    
-    // SAR Icon SVG - Official Saudi Riyal Symbol
-    const sarSvg = `<svg viewBox="0 0 1124.14 1256.39" width="14" height="14" style="display:inline;vertical-align:middle;margin:0 2px;" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z" /><path d="M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.33v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.27V66.13c-50.67,28.45-95.67,66.32-132.25,110.99v403.35l-132.25,28.11V0c-50.67,28.44-95.67,66.32-132.25,110.99v525.69l-295.91,62.88c-20.06,44.47-33.33,92.75-38.42,143.37l334.33-71.05v170.26l-358.3,76.14c-20.06,44.47-33.32,92.75-38.4,143.37l375.04-79.7c30.53-6.35,56.77-24.4,73.83-49.24l68.78-101.97v-.02c7.14-10.55,11.3-23.27,11.3-36.97v-149.98l132.25-28.11v270.4l424.53-90.28Z" /></svg>`;
-    
-    const isRTL = labelLang === 'ar';
-
-    const customerNameEn = selectedCustomer?.nameI18n?.en || selectedCustomer?.name || '-';
-    const customerNameAr = selectedCustomer?.nameI18n?.ar || selectedCustomer?.name || '-';
-    const customerDisplay = labelLang === 'en' ? customerNameEn : labelLang === 'ar' ? customerNameAr : `${customerNameEn} / ${customerNameAr}`;
-
-    const orderForNameEn = order?.relationId?.nameI18n?.en || order?.relationName || customerNameEn;
-    const orderForNameAr = order?.relationId?.nameI18n?.ar || order?.relationName || customerNameAr;
-    const orderForDisplay = labelLang === 'en' ? orderForNameEn : labelLang === 'ar' ? orderForNameAr : `${orderForNameEn} / ${orderForNameAr}`;
-
-    const relTypeValue = order?.relationType ? `${String(order.relationType).charAt(0).toUpperCase()}${String(order.relationType).slice(1)}` : '';
-    const fabricDisplay = order?.fabricId?.name ? `${order.fabricId.name}` : (order?.customFabricName || '-');
-    const rollsUsedDisplay = (order?.rollsUsed !== undefined && order?.rollsUsed !== null) ? String(order.rollsUsed) : '0';
-    const thawbTypeDisplay = order?.thawbType || formData.thawbType || '-';
-    const dueDateDisplay = order?.dueDate ? new Date(order.dueDate).toLocaleDateString() : (formData.dueDate || '-');
-    const measurementImageSrc = buildUploadedImageSrc(order?.measurementImage, order?.measurementImageUpdatedAt);
-    
-    const printWindow = window.open('', '_blank', 'width=320,height=650');
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html dir="${isRTL ? 'rtl' : 'ltr'}">
-      <head>
-        <title>Order Label</title>
-        <style>
-          @page { size: 80mm auto; margin: 2mm; }
-          * { margin: 0; padding: 0; box-sizing: border-box; font-weight: bold !important; }
-          body { font-family: Arial, sans-serif; width: 76mm; padding: 3mm; font-size: 11px; direction: ${isRTL ? 'rtl' : 'ltr'}; font-weight: bold !important; word-break: break-word; overflow-wrap: break-word; }
-          .header { text-align: center; margin-bottom: 8px; border-bottom: 2px dashed #333; padding-bottom: 10px; }
-          .logo { width: 60px; height: 60px; object-fit: contain; margin: 0 auto 8px; display: block; border-radius: 8px; }
-          .shop-name { font-size: 14px; font-weight: bold !important; margin-bottom: 2px; }
-          .shop-name-ar { font-size: 13px; font-weight: bold !important; direction: rtl; color: #333; }
-          .shop-address { font-size: 9px; color: #333; font-weight: bold !important; margin-top: 4px; word-break: break-word; overflow-wrap: break-word; }
-          .receipt-no { font-size: 16px; font-weight: bold !important; text-align: center; margin: 8px 0; }
-          .row { display: flex; justify-content: space-between; align-items: flex-start; gap: 4px; padding: 4px 0; border-bottom: 1px dotted #ccc; }
-          .label { color: #333; font-size: 10px; font-weight: bold !important; }
-          .value { font-weight: bold !important; word-break: break-word; overflow-wrap: break-word; }
-          .status { text-align: center; padding: 6px; background: #f0f0f0; border-radius: 4px; margin: 8px 0; font-weight: bold; }
-          .no-logo { width: 60px; height: 60px; background: #e5e7eb; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #6b7280; font-size: 24px; margin: 0 auto 8px; }
-          .qr-container { display: flex; justify-content: center; gap: 16px; margin-top: 12px; padding-top: 12px; border-top: 2px dashed #333; }
-          .qr-box { flex: 1; text-align: center; max-width: 100px; }
-          .qr-box img { width: 70px; height: 70px; border: 2px solid #e5e7eb; border-radius: 8px; padding: 4px; background: #fff; }
-          .qr-label { font-size: 8px; color: #374151; margin-top: 6px; font-weight: bold; line-height: 1.2; }
-          .qr-sublabel { font-size: 7px; color: #333; font-weight: bold; margin-top: 2px; }
-          .single-qr { text-align: center; margin-top: 12px; padding-top: 12px; border-top: 2px dashed #333; }
-          .single-qr img { width: 80px; height: 80px; border: 2px solid #e5e7eb; border-radius: 8px; padding: 4px; background: #fff; }
-          .measurement-photo { margin-top: 12px; padding-top: 12px; border-top: 2px dashed #333; }
-          .measurement-photo img { width: 100%; max-height: 220px; object-fit: cover; border: 2px solid #e5e7eb; border-radius: 10px; display: block; }
-          .measurement-photo-label { font-size: 9px; color: #333; margin-bottom: 6px; font-weight: bold !important; text-align: center; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          ${logoSrc ? `<img src="${logoSrc}" class="logo" onerror="this.outerHTML='<div class=no-logo>${(user?.businessName || 'T').charAt(0)}</div>'" />` : `<div class="no-logo">${(user?.businessName || 'T').charAt(0)}</div>`}
-          <div class="shop-name">${user?.businessName || 'Tailor Shop'}</div>
-          ${user?.businessNameAr ? `<div class="shop-name-ar">${user.businessNameAr}</div>` : ''}
-          ${user?.businessAddress ? `<div class="shop-address">${user.businessAddress}</div>` : ''}
-        </div>
-        <div class="receipt-no">#${order.receiptNumber || order._id?.slice(-6)}</div>
-        <div class="row"><span class="label">${getLabel('customer')}:</span><span class="value">${customerDisplay}</span></div>
-        <div class="row"><span class="label">${getLabel('orderFor')}:</span><span class="value">${orderForDisplay}</span></div>
-        ${relTypeValue ? `<div class="row"><span class="label">${getLabel('relationType')}:</span><span class="value">${relTypeValue}</span></div>` : ''}
-        <div class="row"><span class="label">${getLabel('phone')}:</span><span class="value">${selectedCustomer?.phone || '-'}</span></div>
-        <div class="row"><span class="label">${getLabel('thawbType')}:</span><span class="value">${thawbTypeDisplay}</span></div>
-        <div class="row"><span class="label">${getLabel('fabric')}:</span><span class="value">${fabricDisplay}</span></div>
-        <div class="row"><span class="label">${getLabel('rollsUsed')}:</span><span class="value">${rollsUsedDisplay}</span></div>
-        <div class="row"><span class="label">${getLabel('quantity')}:</span><span class="value">${order.quantity || 1}</span></div>
-        <div class="row"><span class="label">${getLabel('price')}:</span><span class="value">${order.price || 0} ${sarSvg}</span></div>
-        <div class="row"><span class="label">${getLabel('paid')}:</span><span class="value">${order.paidAmount || 0} ${sarSvg}</span></div>
-        <div class="row"><span class="label">${getLabel('balance')}:</span><span class="value">${(Number(order.price) || 0) - (Number(order.paidAmount) || 0)} ${sarSvg}</span></div>
-        <div class="row"><span class="label">${getLabel('dueDate')}:</span><span class="value">${dueDateDisplay}</span></div>
-        <div class="status">${getLabel('status')}: ${getStatus()}</div>
-        ${measurementImageSrc ? `<div class="measurement-photo"><div class="measurement-photo-label">Measurement Image</div><img src="${measurementImageSrc}" alt="Measurement" /></div>` : ''}
-        ${zatcaQrUrl && qrCodeUrl ? `
-        <div class="qr-container">
-          <div class="qr-box">
-            <img src="${zatcaQrUrl}" alt="ZATCA QR" />
-            <div class="qr-label">ZATCA</div>
-            <div class="qr-sublabel">فاتورة إلكترونية</div>
-          </div>
-          <div class="qr-box">
-            <img src="${qrCodeUrl}" alt="Track QR" />
-            <div class="qr-label">Track Order</div>
-            <div class="qr-sublabel">تتبع الطلب</div>
-          </div>
-        </div>
-        ` : qrCodeUrl ? `
-        <div class="single-qr">
-          <img src="${qrCodeUrl}" alt="QR Code" />
-          <div class="qr-label" style="font-size: 9px; margin-top: 6px;">${getLabel('scanToTrack')}</div>
-        </div>
-        ` : ''}
-      </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.onload = () => {
-      printWindow.print();
-    };
+    setPrintOrder(order);
   };
 
   const handlePrintFamilySummary = async () => {
     const orders = (createdOrders && createdOrders.length > 0) ? createdOrders : [];
     if (orders.length === 0 || !selectedCustomer) return;
 
-    const logoSrc = user?.logo && user.logo !== 'null' && user.logo !== 'undefined' ? user.logo : '';
-    const labelLang = user?.labelLanguage || 'both';
-    const zatcaEnabled = user?.zatcaSettings?.enabled && user?.zatcaSettings?.showOnInvoice;
-
-    const totalQty = orders.reduce((s, o) => s + (Number(o?.quantity) || 0), 0);
-    const totalPrice = orders.reduce((s, o) => s + (Number(o?.price) || 0), 0);
-    const totalPaid = orders.reduce((s, o) => s + (Number(o?.paidAmount) || 0), 0);
-
-    const customerNameEn = selectedCustomer?.nameI18n?.en || selectedCustomer?.name || '-';
-    const customerNameAr = selectedCustomer?.nameI18n?.ar || selectedCustomer?.name || '-';
-    const customerDisplay = labelLang === 'en' ? customerNameEn : labelLang === 'ar' ? customerNameAr : `${customerNameEn} / ${customerNameAr}`;
-
-    const labels = {
-      customer: { en: 'Customer', ar: 'العميل' },
-      phone: { en: 'Phone', ar: 'الهاتف' },
-      quantity: { en: 'Quantity', ar: 'الكمية' },
-      price: { en: 'Price', ar: 'السعر' },
-      paid: { en: 'Paid', ar: 'المدفوع' },
-      balance: { en: 'Pending', ar: 'المتبقي' },
-      member: { en: 'Member', ar: 'الفرد' },
-      familyInvoice: { en: 'Family Invoice', ar: 'فاتورة العائلة' }
+    const aggregatedOrder = {
+      _id: orders[0]._id, // for barcode
+      createdAt: orders[0].createdAt,
+      receiptNumber: orders[0].receiptNumber || orders[0].orderNumber || orders[0]._id.slice(-8),
+      customerName: selectedCustomer.nameI18n?.[langKey] || selectedCustomer.name || orders[0].customerName,
+      customerPhone: selectedCustomer.phone || orders[0].customerPhone,
+      price: orders.reduce((s, o) => s + (Number(o?.price) || 0), 0),
+      paidAmount: orders.reduce((s, o) => s + (Number(o?.paidAmount) || 0), 0),
+      quantity: orders.reduce((s, o) => s + (Number(o?.quantity) || 0), 0),
+      items: orders.map(o => ({
+        nameEn: `Tailoring Order (${o.orderFor || 'Member'})`,
+        nameAr: `طلب خياطة (${o.orderFor || 'الفرد'})`,
+        quantity: o.quantity || 1,
+        unitPrice: o.price || 0,
+        total: o.price || 0
+      }))
     };
-
-    const getLabel = (key) => {
-      if (labelLang === 'en') return labels[key].en;
-      if (labelLang === 'ar') return labels[key].ar;
-      return `${labels[key].en} / ${labels[key].ar}`;
-    };
-
-    let zatcaQrUrl = '';
-    if (zatcaEnabled && user?.zatcaSettings?.vatNumber) {
-      try {
-        const vatRate = 0.15;
-        const vatAmount = (totalPrice * vatRate / (1 + vatRate)).toFixed(2);
-        const timestamp = new Date().toISOString();
-
-        const generateTLV = (fields) => {
-          let result = [];
-          fields.forEach(f => {
-            const value = String(f.value);
-            const valueBytes = new TextEncoder().encode(value);
-            result.push(f.tag, valueBytes.length, ...valueBytes);
-          });
-          return btoa(String.fromCharCode(...result));
-        };
-
-        const tlvData = generateTLV([
-          { tag: 1, value: user?.businessName || '' },
-          { tag: 2, value: user?.zatcaSettings?.vatNumber || '' },
-          { tag: 3, value: timestamp },
-          { tag: 4, value: Number(totalPrice || 0).toFixed(2) },
-          { tag: 5, value: vatAmount }
-        ]);
-        zatcaQrUrl = await QRCode.toDataURL(tlvData, { width: 110, margin: 1 });
-      } catch (e) {
-        zatcaQrUrl = '';
-      }
-    }
-
-    const sarSvg = `<svg viewBox="0 0 1124.14 1256.39" width="14" height="14" style="display:inline;vertical-align:middle;margin:0 2px;" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z" /><path d="M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.33v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.27V66.13c-50.67,28.45-95.67,66.32-132.25,110.99v403.35l-132.25,28.11V0c-50.67,28.44-95.67,66.32-132.25,110.99v525.69l-295.91,62.88c-20.06,44.47-33.33,92.75-38.42,143.37l334.33-71.05v170.26l-358.3,76.14c-20.06,44.47-33.32,92.75-38.4,143.37l375.04-79.7c30.53-6.35,56.77-24.4,73.83-49.24l68.78-101.97v-.02c7.14-10.55,11.3-23.27,11.3-36.97v-149.98l132.25-28.11v270.4l424.53-90.28Z" /></svg>`;
-
-    const isRTL = labelLang === 'ar';
-
-    const rowsHtml = orders.map((o) => {
-      const name = o.orderFor || o.relationName || '-';
-      const q = Number(o.quantity) || 0;
-      const p = Number(o.price) || 0;
-      const paid = Number(o.paidAmount) || 0;
-      return `
-        <div class="item-row">
-          <div class="item-name">${name}</div>
-          <div class="item-meta">${getLabel('quantity')}: ${q} · ${getLabel('price')}: ${p} ${sarSvg} · ${getLabel('paid')}: ${paid} ${sarSvg}</div>
-        </div>
-      `;
-    }).join('');
-
-    const printWindow = window.open('', '_blank', 'width=340,height=720');
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html dir="${isRTL ? 'rtl' : 'ltr'}">
-      <head>
-        <title>Family Invoice</title>
-        <style>
-          @page { size: 80mm auto; margin: 2mm; }
-          * { margin: 0; padding: 0; box-sizing: border-box; font-weight: bold !important; }
-          body { font-family: Arial, sans-serif; width: 76mm; padding: 3mm; font-size: 11px; direction: ${isRTL ? 'rtl' : 'ltr'}; font-weight: bold !important; word-break: break-word; overflow-wrap: break-word; }
-          .header { text-align: center; margin-bottom: 8px; border-bottom: 2px dashed #333; padding-bottom: 10px; }
-          .logo { width: 60px; height: 60px; object-fit: contain; margin: 0 auto 8px; display: block; border-radius: 8px; }
-          .no-logo { width: 60px; height: 60px; background: #e5e7eb; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold !important; color: #6b7280; font-size: 24px; margin: 0 auto 8px; }
-          .shop-name { font-size: 14px; font-weight: bold !important; margin-bottom: 2px; }
-          .shop-name-ar { font-size: 13px; font-weight: bold !important; direction: rtl; color: #333; }
-          .receipt-title { font-size: 14px; font-weight: bold !important; text-align: center; margin: 8px 0; }
-          .row { display: flex; justify-content: space-between; align-items: flex-start; gap: 4px; padding: 4px 0; border-bottom: 1px dotted #ccc; }
-          .label { color: #333; font-size: 10px; font-weight: bold !important; }
-          .value { font-weight: bold !important; word-break: break-word; overflow-wrap: break-word; }
-          .items { margin-top: 10px; }
-          .item-row { padding: 6px 0; border-bottom: 1px dotted #ddd; word-break: break-word; overflow-wrap: break-word; }
-          .item-name { font-weight: bold !important; font-size: 11px; word-break: break-word; overflow-wrap: break-word; }
-          .item-meta { margin-top: 2px; font-size: 9px; color: #333; font-weight: bold !important; line-height: 1.2; word-break: break-word; overflow-wrap: break-word; }
-          .qr { text-align: center; margin-top: 10px; padding-top: 10px; border-top: 2px dashed #333; }
-          .qr img { width: 90px; height: 90px; border: 2px solid #e5e7eb; border-radius: 10px; padding: 4px; background: #fff; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          ${logoSrc ? `<img src="${logoSrc}" class="logo" onerror="this.outerHTML='<div class=no-logo>${(user?.businessName || 'T').charAt(0)}</div>'" />` : `<div class="no-logo">${(user?.businessName || 'T').charAt(0)}</div>`}
-          <div class="shop-name">${user?.businessName || 'Tailor Shop'}</div>
-          ${user?.businessNameAr ? `<div class="shop-name-ar">${user.businessNameAr}</div>` : ''}
-        </div>
-
-        <div class="receipt-title">${getLabel('familyInvoice')}</div>
-
-        <div class="row"><span class="label">${getLabel('customer')}:</span><span class="value">${customerDisplay}</span></div>
-        <div class="row"><span class="label">${getLabel('phone')}:</span><span class="value">${selectedCustomer?.phone || '-'}</span></div>
-
-        <div class="items">${rowsHtml}</div>
-
-        <div class="row"><span class="label">${getLabel('quantity')}:</span><span class="value">${totalQty}</span></div>
-        <div class="row"><span class="label">${getLabel('price')}:</span><span class="value">${Number(totalPrice || 0).toFixed(2)} ${sarSvg}</span></div>
-        <div class="row"><span class="label">${getLabel('paid')}:</span><span class="value">${Number(totalPaid || 0).toFixed(2)} ${sarSvg}</span></div>
-        <div class="row"><span class="label">${getLabel('balance')}:</span><span class="value">${Number((totalPrice || 0) - (totalPaid || 0)).toFixed(2)} ${sarSvg}</span></div>
-
-        ${zatcaQrUrl ? `
-          <div class="qr">
-            <img src="${zatcaQrUrl}" alt="ZATCA QR" />
-          </div>
-        ` : ''}
-      </body>
-      </html>
-    `);
-
-    printWindow.document.close();
-    printWindow.onload = () => {
-      printWindow.print();
-    };
+    
+    setPrintOrder(aggregatedOrder);
   };
 
   const handleMeasurementChange = (field, value) => {
@@ -1688,7 +1402,7 @@ const StitchingForm = () => {
   const measurementVariant = measurementVariantMap[measurementUi] || 'sheet';
   const measurementLogoSrc = user?.logo ? resolveUploadsUrl(user.logo) : null;
 
-  const renderMeasurementInputs = ({ title, subtitle, values, onChange, disabled = false, loading = false, badges = [], tone = 'slate', showDesignControls = false, measurementImageSrc = '', measurementImageName = '', onMeasurementImageChange: onMeasurementImageFileChange, onMeasurementImageRemove: onMeasurementImageDelete, showMeasurementImageControl = true }) => (
+  const renderMeasurementInputs = ({ title, subtitle, values, onChange, disabled = false, loading = false, badges = [], tone = 'slate', showDesignControls = false, measurementImageSrc = '', measurementImageName = '', onMeasurementImageChange: onMeasurementImageFileChange, onMeasurementImageRemove: onMeasurementImageDelete, showMeasurementImageControl = true, onExtractedData }) => (
     <div className="mt-4">
       <MeasurementAtelierPanel
         variant={measurementVariant}
@@ -1727,6 +1441,7 @@ const StitchingForm = () => {
         onMeasurementImageChange={onMeasurementImageFileChange}
         onMeasurementImageRemove={onMeasurementImageDelete}
         showMeasurementImageControl={showMeasurementImageControl}
+        onExtractedData={onExtractedData}
       />
     </div>
   );
@@ -2027,7 +1742,14 @@ const StitchingForm = () => {
                       measurementImageName: !selectedRelation ? (formData.measurementImageFile?.name || '') : '',
                       onMeasurementImageChange: !selectedRelation ? handleMeasurementImageChange : undefined,
                       onMeasurementImageRemove: !selectedRelation ? handleMeasurementImageRemove : undefined,
-                      showMeasurementImageControl: !selectedRelation
+                      showMeasurementImageControl: !selectedRelation,
+                      onExtractedData: !selectedRelation ? (measurements, notes) => {
+                        setFormData(prev => ({
+                          ...prev,
+                          measurements: { ...(prev.measurements || {}), ...measurements },
+                          description: notes ? `${prev.description ? prev.description + '\n' : ''}${notes}` : prev.description
+                        }));
+                      } : undefined
                     })
                   ) : null}
                 </div>
@@ -2575,12 +2297,39 @@ const StitchingForm = () => {
           </form>
         </CardBody>
       </Card>
+
+      {/* Print Modal for ThermalReceipt */}
+      {printOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 print:bg-white print:static print:inset-auto">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-[400px] max-h-[90vh] overflow-y-auto print:shadow-none print:p-0 print:w-auto print:max-h-none print:overflow-visible">
+            <div className="flex justify-between items-center mb-4 print:hidden">
+              <h3 className="text-lg font-bold">{(language === 'ar' ? 'إيصال الطلب' : 'Order Receipt')}</h3>
+              <button onClick={() => setPrintOrder(null)} className="text-gray-500 hover:text-gray-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="border border-gray-200 rounded-lg p-2 print:border-none print:p-0 flex justify-center">
+              <ThermalReceipt ref={printRef} order={printOrder} type="khayyat" />
+            </div>
+
+            <div className="mt-6 flex gap-3 print:hidden">
+              <button onClick={() => setPrintOrder(null)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-gray-100 dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-slate-200 flex-1">
+                {(language === 'ar' ? 'إغلاق' : 'Close')}
+              </button>
+              <button onClick={() => {
+                if (printRef.current) {
+                  window.print();
+                }
+              }} className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white flex-1">
+                {(language === 'ar' ? 'طباعة' : 'Print Receipt')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default StitchingForm;
-
-
-
-

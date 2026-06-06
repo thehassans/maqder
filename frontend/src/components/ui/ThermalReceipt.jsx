@@ -16,10 +16,19 @@ const ThermalReceipt = forwardRef(({ order, type = 'laundry' }, ref) => {
   const crNumber = tenant?.business?.crNumber || '1010000000'
 
   const dateStr = new Date(order.createdAt || Date.now()).toLocaleString(isRtl ? 'ar-SA' : 'en-US')
-  const orderNumber = order.orderNumber || order._id?.slice(-8) || 'N/A'
-  const customerName = order.customerName || order.customer?.fullName || (isRtl ? 'عميل نقدي' : 'Cash Customer')
+  const orderNumber = order.receiptNumber || order.orderNumber || order._id?.slice(-8) || 'N/A'
+  const customerName = order.customerName || order.customer?.fullName || order.customerId?.name || (isRtl ? 'عميل نقدي' : 'Cash Customer')
 
-  const items = order.items || order.lineItems || []
+  let items = order.items || order.lineItems || []
+  if (type === 'khayyat') {
+    items = [{
+      nameEn: `Tailoring Order${order.orderFor ? ` (${order.orderFor})` : ''}`,
+      nameAr: `طلب خياطة${order.orderFor ? ` (${order.orderFor})` : ''}`,
+      quantity: order.quantity || 1,
+      unitPrice: order.price || 0,
+      total: order.price || 0
+    }]
+  }
 
   // Safe address formatting function to prevent minified react error #31
   const formatAddress = (address) => {
@@ -171,6 +180,24 @@ const ThermalReceipt = forwardRef(({ order, type = 'laundry' }, ref) => {
             <span className="font-bold">{order.tableNumber}</span>
           </div>
         )}
+        {type === 'khayyat' && (
+          <>
+            {order.dueDate && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">Due / تاريخ التسليم:</span>
+                <span className="font-bold">{new Date(order.dueDate).toLocaleDateString(isRtl ? 'ar-SA' : 'en-US')}</span>
+              </div>
+            )}
+            <div className="flex justify-between mt-1 pt-1 border-t border-dashed border-gray-300">
+              <span className="text-gray-600">Paid / المدفوع:</span>
+              <span className="font-bold">SAR {(Number(order.paidAmount || 0)).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Balance / المتبقي:</span>
+              <span className="font-bold text-red-600">SAR {(Math.max(0, Number(order.price || 0) - Number(order.paidAmount || 0))).toFixed(2)}</span>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Items Table */}
@@ -252,6 +279,22 @@ const ThermalReceipt = forwardRef(({ order, type = 'laundry' }, ref) => {
             <QRCodeSVG 
               value={zatcaQrPayload} 
               size={95} 
+              level="M" 
+              includeMargin={false}
+            />
+          </div>
+        </div>
+      )}
+
+      {type === 'khayyat' && order._id && (
+        <div className="my-5 flex flex-col items-center justify-center text-center">
+          <div className="text-[8px] text-gray-500 mb-1.5 font-bold">
+            TRACK ORDER | تتبع الطلب
+          </div>
+          <div className="bg-white p-1.5 border border-gray-200 rounded-lg">
+            <QRCodeSVG 
+              value={`${window.location.origin}/track-order?id=${order._id}`}
+              size={85} 
               level="M" 
               includeMargin={false}
             />

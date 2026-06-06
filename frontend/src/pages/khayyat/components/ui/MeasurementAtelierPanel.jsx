@@ -671,7 +671,8 @@ const MeasurementAtelierPanel = ({
   measurementImageName = '',
   onMeasurementImageChange,
   onMeasurementImageRemove,
-  showMeasurementImageControl = true
+  showMeasurementImageControl = true,
+  onExtractedData
 }) => {
   const { language } = useSelector(state => state.ui) || { language: 'en' };
   const { t } = useTranslation(language);
@@ -745,6 +746,7 @@ const MeasurementAtelierPanel = ({
       fileName={measurementImageName}
       onFileChange={onMeasurementImageChange}
       onRemove={onMeasurementImageRemove}
+      onExtractedData={onExtractedData}
       disabled={disabled}
       className="border-slate-200 dark:border-slate-700 bg-white/85 dark:bg-slate-900/60"
     />
