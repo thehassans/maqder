@@ -768,8 +768,10 @@ const StitchingForm = () => {
   };
 
   const handleMeasurementImageChange = (file) => {
+    const currentPreview = formData.measurementImagePreview;
+    if (currentPreview) revokeObjectUrl(currentPreview);
+    
     setFormData((prev) => {
-      revokeObjectUrl(prev.measurementImagePreview);
       if (!file) {
         return {
           ...prev,
@@ -788,8 +790,10 @@ const StitchingForm = () => {
   };
 
   const handleMeasurementImageRemove = () => {
+    const currentPreview = formData.measurementImagePreview;
+    if (currentPreview) revokeObjectUrl(currentPreview);
+    
     setFormData((prev) => {
-      revokeObjectUrl(prev.measurementImagePreview);
       return {
         ...prev,
         measurementImageFile: null,
@@ -804,7 +808,7 @@ const StitchingForm = () => {
   const updateOrderItemMeasurementImage = (id, file) => {
     setOrderItems((prev) => prev.map((x) => {
       if (x.id !== id) return x;
-      revokeObjectUrl(x.measurementImagePreview);
+      if (x.measurementImagePreview) revokeObjectUrl(x.measurementImagePreview);
       if (!file) {
         return {
           ...x,
@@ -825,7 +829,7 @@ const StitchingForm = () => {
   const removeOrderItemMeasurementImage = (id) => {
     setOrderItems((prev) => prev.map((x) => {
       if (x.id !== id) return x;
-      revokeObjectUrl(x.measurementImagePreview);
+      if (x.measurementImagePreview) revokeObjectUrl(x.measurementImagePreview);
       return {
         ...x,
         measurementImageFile: null,

@@ -6,6 +6,13 @@ import User from '../../models/User.js';
 import KhayyatEmbroideryDesign from '../../models/khayyat/KhayyatEmbroideryDesign.js';
 import KhayyatFabric from '../../models/khayyat/KhayyatFabric.js';
 import { protect } from '../../middleware/auth.js';
+import multer from 'multer';
+import sharp from 'sharp';
+import path from 'path';
+import fs from 'fs';
+
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+
 
 const router = express.Router();
 
@@ -70,9 +77,9 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', upload.single('measurementImage'), async (req, res) => {
   try {
-    const { 
+    let { 
       customerId, 
       customerName,
       customerPhone,
@@ -90,6 +97,13 @@ router.post('/', async (req, res) => {
       measurements,
       styleOptions
     } = req.body;
+
+    if (typeof measurements === 'string') {
+      try { measurements = JSON.parse(measurements); } catch (e) {}
+    }
+    if (typeof styleOptions === 'string') {
+      try { styleOptions = JSON.parse(styleOptions); } catch (e) {}
+    }
 
     let customer;
     if (customerId) {
@@ -132,6 +146,22 @@ router.post('/', async (req, res) => {
       dueDate: dueDate || null
     });
 
+    if (req.file) {
+      const tenantIdStr = req.user.tenantId.toString();
+      const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'khayyat', tenantIdStr, 'measurements');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      const filename = `measurement-${Date.now()}-${Math.round(Math.random() * 1E9)}.webp`;
+      const filepath = path.join(uploadsDir, filename);
+      await sharp(req.file.buffer)
+        .resize({ width: 1200, withoutEnlargement: true })
+        .webp({ quality: 80 })
+        .toFile(filepath);
+      stitching.measurementImage = `/uploads/khayyat/${tenantIdStr}/measurements/${filename}`;
+      stitching.measurementImageUpdatedAt = Date.now();
+    }
+
     await stitching.save();
     res.status(201).json({ message: 'Stitching created successfully', stitching });
   } catch (error) {
@@ -139,7 +169,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', upload.single('measurementImage'), async (req, res) => {
   try {
     const stitching = await KhayyatStitching.findOne({ 
       _id: req.params.id, 
@@ -150,12 +180,40 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Stitching not found' });
     }
 
-    const { status, workerId, measurements, styleOptions } = req.body;
+    let { status, workerId, measurements, styleOptions, removeMeasurementImage } = req.body;
+
+    if (typeof measurements === 'string') {
+      try { measurements = JSON.parse(measurements); } catch (e) {}
+    }
+    if (typeof styleOptions === 'string') {
+      try { styleOptions = JSON.parse(styleOptions); } catch (e) {}
+    }
 
     if (status) stitching.status = status;
     if (workerId !== undefined) stitching.workerId = workerId || null;
     if (measurements) stitching.measurements = measurements;
     if (styleOptions) stitching.styleOptions = styleOptions;
+
+    if (removeMeasurementImage === 'true') {
+      stitching.measurementImage = '';
+      stitching.measurementImageUpdatedAt = Date.now();
+    }
+
+    if (req.file) {
+      const tenantIdStr = req.user.tenantId.toString();
+      const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'khayyat', tenantIdStr, 'measurements');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      const filename = `measurement-${Date.now()}-${Math.round(Math.random() * 1E9)}.webp`;
+      const filepath = path.join(uploadsDir, filename);
+      await sharp(req.file.buffer)
+        .resize({ width: 1200, withoutEnlargement: true })
+        .webp({ quality: 80 })
+        .toFile(filepath);
+      stitching.measurementImage = `/uploads/khayyat/${tenantIdStr}/measurements/${filename}`;
+      stitching.measurementImageUpdatedAt = Date.now();
+    }
 
     await stitching.save();
     res.json({ message: 'Stitching updated successfully', stitching });
