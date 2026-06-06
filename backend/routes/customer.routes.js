@@ -5,6 +5,105 @@ import { protect, tenantFilter, checkPermission } from '../middleware/auth.js';
 
 const router = express.Router();
 
+// @route   GET /api/customers/recover-vat
+// @desc    Recover VAT numbers dropped during migration and deduplicate customers
+// Publicly accessible for one-time fix
+router.get('/recover-vat', async (req, res) => {
+  try {
+    const db = mongoose.connection.db;
+    const customersCollection = db.collection('customers');
+    
+    // 1. Deduplicate customers (keep the best one, delete others, reassign invoices)
+    const allCustomers = await Customer.find({});
+    const nameGroups = {};
+    
+    for (const c of allCustomers) {
+      if (!c.name) continue;
+      const key = c.name.trim().toLowerCase();
+      if (!nameGroups[key]) nameGroups[key] = [];
+      nameGroups[key].push(c);
+    }
+    
+    let deletedDups = 0;
+    let reassignedInvoices = 0;
+
+    for (const key in nameGroups) {
+      if (nameGroups[key].length > 1) {
+        const group = nameGroups[key];
+        // Sort by quality: prefer ones with vatNumber, phone, and more invoices
+        group.sort((a, b) => {
+           const scoreA = (a.vatNumber ? 10 : 0) + (a.phone ? 5 : 0) + (a.totalInvoices || 0);
+           const scoreB = (b.vatNumber ? 10 : 0) + (b.phone ? 5 : 0) + (b.totalInvoices || 0);
+           return scoreB - scoreA; // descending
+        });
+        
+        const kept = group[0];
+        const toDelete = group.slice(1);
+        
+        for (const dup of toDelete) {
+          // Reassign any invoices pointing to the duplicate
+          const result = await mongoose.model('Invoice').updateMany(
+            { customerId: dup._id },
+            { $set: { customerId: kept._id } }
+          );
+          reassignedInvoices += result.modifiedCount || 0;
+          
+          // Delete duplicate
+          await Customer.deleteOne({ _id: dup._id });
+          deletedDups++;
+        }
+      }
+    }
+
+    // 2. Recover VAT from hidden 'taxNumber'
+    const customersWithTaxNum = await customersCollection.find({
+      taxNumber: { $exists: true, $ne: '' },
+      $or: [
+        { vatNumber: { $exists: false } },
+        { vatNumber: '' },
+        { vatNumber: null }
+      ]
+    }).toArray();
+
+    let directFixedCount = 0;
+    for (const c of customersWithTaxNum) {
+      await customersCollection.updateOne(
+        { _id: c._id },
+        { $set: { vatNumber: c.taxNumber } }
+      );
+      directFixedCount++;
+    }
+
+    // 3. Fallback to invoice data
+    const customersToFix = await Customer.find({ vatNumber: { $in: [null, '', undefined] } });
+    let fallbackFixedCount = 0;
+
+    for (const customer of customersToFix) {
+      const invoice = await mongoose.model('Invoice').findOne({
+        customerId: customer._id,
+        'buyer.vatNumber': { $exists: true, $ne: '' }
+      }).select('buyer.vatNumber');
+
+      if (invoice && invoice.buyer && invoice.buyer.vatNumber) {
+        customer.vatNumber = invoice.buyer.vatNumber;
+        await customer.save();
+        fallbackFixedCount++;
+      }
+    }
+
+    res.json({
+      message: 'Cleanup & VAT Recovery Complete',
+      duplicatesDeleted: deletedDups,
+      invoicesReassigned: reassignedInvoices,
+      recoveredFromHiddenField: directFixedCount,
+      recoveredFromInvoices: fallbackFixedCount,
+      totalVATRecovered: directFixedCount + fallbackFixedCount
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.use(protect);
 router.use(tenantFilter);
 
@@ -143,57 +242,6 @@ router.get('/:id', checkPermission('invoicing', 'read'), async (req, res) => {
   }
 });
 
-// @route   GET /api/customers/recover-vat
-// @desc    Recover VAT numbers dropped during migration
-router.get('/recover-vat', async (req, res) => {
-  try {
-    const db = mongoose.connection.db;
-    const customersCollection = db.collection('customers');
-    
-    const customersWithTaxNum = await customersCollection.find({
-      taxNumber: { $exists: true, $ne: '' },
-      $or: [
-        { vatNumber: { $exists: false } },
-        { vatNumber: '' },
-        { vatNumber: null }
-      ]
-    }).toArray();
-
-    let directFixedCount = 0;
-    for (const c of customersWithTaxNum) {
-      await customersCollection.updateOne(
-        { _id: c._id },
-        { $set: { vatNumber: c.taxNumber } }
-      );
-      directFixedCount++;
-    }
-
-    const customers = await Customer.find({ vatNumber: { $in: [null, '', undefined] } });
-    let fallbackFixedCount = 0;
-
-    for (const customer of customers) {
-      const invoice = await mongoose.model('Invoice').findOne({
-        customerId: customer._id,
-        'buyer.vatNumber': { $exists: true, $ne: '' }
-      }).select('buyer.vatNumber');
-
-      if (invoice && invoice.buyer && invoice.buyer.vatNumber) {
-        customer.vatNumber = invoice.buyer.vatNumber;
-        await customer.save();
-        fallbackFixedCount++;
-      }
-    }
-
-    res.json({
-      message: 'VAT Recovery Complete',
-      recoveredFromHiddenField: directFixedCount,
-      recoveredFromInvoices: fallbackFixedCount,
-      totalRecovered: directFixedCount + fallbackFixedCount
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
 
 // @route   POST /api/customers
 // @desc    Create new customer
