@@ -6,6 +6,7 @@ import { Search, Plus, Minus, Trash2, CreditCard, Banknote, Scissors, CheckCircl
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import SarIcon from '../../components/ui/SarIcon'
+import ThermalReceipt from '../../components/ui/ThermalReceipt'
 import CardPaymentModal from '../../components/pos/CardPaymentModal'
 
 export default function SaloonPOS() {
@@ -18,6 +19,7 @@ export default function SaloonPOS() {
   const [pendingCardOrder, setPendingCardOrder] = useState(null)
   const queryClient = useQueryClient()
   
+  const [cart, setCart] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
@@ -111,7 +113,6 @@ export default function SaloonPOS() {
   })
 
   const submitCheckout = (paymentMethod) => {
-    // For MVP we assume they pay full if cash/card, or 0 if "none" (walking in to wait)
     const amountPaid = paymentMethod === 'none' ? 0 : grandTotal
 
     const finalCart = cart.map(item => ({
@@ -135,9 +136,7 @@ export default function SaloonPOS() {
       return
     }
 
-    // Route card payments through the physical terminal when configured.
     if (paymentMethod === 'card' && cardTerminalEnabled) {
-      // Pre-create the order so we have an ID for the PATCH after approval
       checkoutMutation.mutate(
         { items: cart, customerName, customerPhone, paymentMethod: 'pending_card', amountPaid: 0 },
         {
@@ -358,7 +357,6 @@ export default function SaloonPOS() {
               })
             }
           } catch {
-            // order was already submitted as pending_card, ignore patch error
           }
           setShowCardModal(false)
           setPendingCardOrder(null)
@@ -399,35 +397,8 @@ export default function SaloonPOS() {
       )}
 
       {/* Hidden Print Content */}
-      <div className="hidden print:block print:absolute print:inset-0 print:bg-white text-black p-4 w-[80mm] mx-auto text-center" dir="ltr">
-        {printedOrder && (
-          <div className="font-mono">
-            <h1 className="text-2xl font-bold mb-2">{tenant?.business?.legalNameEn || 'Saloon POS'}</h1>
-            <p className="text-xs text-gray-500 mb-6">{new Date(printedOrder.createdAt).toLocaleString()}</p>
-            
-            <div className="text-7xl font-black mb-6 py-6 border-y-2 border-black border-dashed">
-              {printedOrder.queueNumber ? `Q-${printedOrder.queueNumber}` : '---'}
-            </div>
-
-            <div className="text-left text-sm mb-4 space-y-2">
-              {printedOrder.items.map((item, i) => (
-                <div key={i} className="flex justify-between">
-                  <span>{item.quantity}x {item.nameEn}</span>
-                  <span>{item.total?.toFixed(2)} SAR</span>
-                </div>
-              ))}
-            </div>
-            
-            <div className="text-left text-base border-t-2 border-black border-dashed pt-2 font-bold flex justify-between mt-4">
-              <span>TOTAL:</span>
-              <span>{printedOrder.grandTotal?.toFixed(2)} SAR</span>
-            </div>
-
-            <div className="mt-8 pt-4 border-t border-gray-200 text-sm text-center font-medium">
-              Please wait for your number.<br/>Thank you!
-            </div>
-          </div>
-        )}
+      <div className="hidden print:block">
+        {printedOrder && <ThermalReceipt order={printedOrder} type="saloon" />}
       </div>
 
       {/* Add Staff Modal */}
