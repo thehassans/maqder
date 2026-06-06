@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Camera, Image as ImageIcon, Trash2, Upload, Loader2, Sparkles } from 'lucide-react';
-import api from '../../../../utils/api';
+import api from '../../../../lib/api';
 import toast from 'react-hot-toast';
 
 const MeasurementImageInput = ({

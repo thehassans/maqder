@@ -62,16 +62,6 @@ const StitchingForm = () => {
 
   const isDemo = !!user?.isDemoSession;
   const [demoBlockedOpen, setDemoBlockedOpen] = useState(false);
-  const navigate = useNavigate();
-  const { id } = useParams();
-  const [searchParams] = useSearchParams();
-  const isEdit = !!id;
-  const printRef = useRef();
-
-  const langKey = (language || 'en').split('-')[0];
-
-  const isDemo = !!user?.isDemoSession;
-  const [demoBlockedOpen, setDemoBlockedOpen] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [allCustomers, setAllCustomers] = useState([]);

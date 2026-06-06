@@ -9,11 +9,6 @@ import { Card } from './components/ui/Card';
 import { Button } from './components/ui/Button';
 import { StatusBadge } from './components/ui/Badge';
 import { Modal } from './components/ui/Modal';
-
-import { Card } from './components/ui/Card';
-import { Button } from './components/ui/Button';
-import { StatusBadge } from './components/ui/Badge';
-import { Modal } from './components/ui/Modal';
 import { ConfirmModal } from './components/ui/ConfirmModal';
 import DemoBlockedModal from './components/ui/DemoBlockedModal';
 import { Table, Thead, Tbody, Tr, Th, Td } from './components/ui/Table';
