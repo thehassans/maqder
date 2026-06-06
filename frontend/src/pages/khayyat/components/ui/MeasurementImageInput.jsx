@@ -31,7 +31,7 @@ const MeasurementImageInput = ({
         const formData = new FormData();
         formData.append('image', file);
 
-        const { data } = await api.post('/api/ai/khayyat-ocr', formData, {
+        const { data } = await api.post('/ai/khayyat-ocr', formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
 
