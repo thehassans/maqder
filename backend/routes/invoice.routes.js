@@ -659,11 +659,20 @@ router.post('/', checkPermission('invoicing', 'create'), async (req, res) => {
       .sort({ createdAt: -1 })
       .select('invoiceNumber');
     
-    const invoiceCount = lastInvoice 
-      ? parseInt(lastInvoice.invoiceNumber.split('-').pop()) + 1 
-      : 1;
+    let invoiceNumber = '';
+    if (lastInvoice && lastInvoice.invoiceNumber) {
+      const parts = lastInvoice.invoiceNumber.split('-');
+      const lastPart = parts.pop();
+      if (lastPart && !isNaN(parseInt(lastPart))) {
+        const nextNum = parseInt(lastPart) + 1;
+        const paddedNextNum = String(nextNum).padStart(lastPart.length, '0');
+        invoiceNumber = parts.length > 0 ? `${parts.join('-')}-${paddedNextNum}` : paddedNextNum;
+      }
+    }
     
-    const invoiceNumber = `INV-${new Date().getFullYear()}-${String(invoiceCount).padStart(6, '0')}`;
+    if (!invoiceNumber) {
+      invoiceNumber = `INV-${new Date().getFullYear()}-${String(1).padStart(6, '0')}`;
+    }
 
     const transactionType = req.body.transactionType || 'B2C';
     const invoiceTypeCode = req.body.invoiceTypeCode || (transactionType === 'B2C' ? '0200000' : '0100000');
@@ -807,11 +816,20 @@ router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) =>
       .sort({ createdAt: -1 })
       .select('invoiceNumber');
 
-    const invoiceCount = lastInvoice
-      ? parseInt(lastInvoice.invoiceNumber.split('-').pop()) + 1
-      : 1;
-
-    const invoiceNumber = `INV-${new Date().getFullYear()}-${String(invoiceCount).padStart(6, '0')}`;
+    let invoiceNumber = '';
+    if (lastInvoice && lastInvoice.invoiceNumber) {
+      const parts = lastInvoice.invoiceNumber.split('-');
+      const lastPart = parts.pop();
+      if (lastPart && !isNaN(parseInt(lastPart))) {
+        const nextNum = parseInt(lastPart) + 1;
+        const paddedNextNum = String(nextNum).padStart(lastPart.length, '0');
+        invoiceNumber = parts.length > 0 ? `${parts.join('-')}-${paddedNextNum}` : paddedNextNum;
+      }
+    }
+    
+    if (!invoiceNumber) {
+      invoiceNumber = `INV-${new Date().getFullYear()}-${String(1).padStart(6, '0')}`;
+    }
 
     const transactionType = req.body.transactionType === 'B2B' ? 'B2B' : 'B2C';
     const invoiceSubtype = businessContext === 'travel_agency'

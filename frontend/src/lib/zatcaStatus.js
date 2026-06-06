@@ -4,7 +4,7 @@ export const resolveZatcaStatus = (invoice, phase = 2) => {
 
   if (submissionStatus && submissionStatus !== 'pending') return submissionStatus
 
-  if (invoiceStatus === 'draft' && !invoice?.zatca?.signedXml && !(Number(phase) === 1 && invoice?.zatca?.qrCodeData)) {
+  if (invoiceStatus === 'draft' && !invoice?.zatca?.signedXml) {
     return 'draft'
   }
 
@@ -12,7 +12,7 @@ export const resolveZatcaStatus = (invoice, phase = 2) => {
     return invoice?.transactionType === 'B2C' ? 'reported' : 'submitted'
   }
 
-  if (invoice?.zatca?.signedXml || invoice?.zatca?.invoiceHash || (Number(phase) === 1 && invoice?.zatca?.qrCodeData)) {
+  if (invoice?.zatca?.signedXml || invoice?.zatca?.invoiceHash || (Number(phase) === 1 && invoiceStatus === 'approved')) {
     return submissionStatus === 'pending' ? 'generated' : (submissionStatus || 'generated')
   }
 
@@ -76,7 +76,7 @@ export const hasGeneratedEInvoice = (invoice, phase = 2) => {
     || invoice?.zatca?.invoiceHash
     || invoice?.zatca?.uuid
     || invoice?.zatca?.submittedAt
-    || (Number(phase) === 1 && invoice?.zatca?.qrCodeData)
+    || (Number(phase) === 1 && String(invoice?.status || '').trim().toLowerCase() === 'approved')
   )
 }
 
