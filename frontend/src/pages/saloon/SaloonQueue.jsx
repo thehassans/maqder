@@ -33,18 +33,18 @@ export default function SaloonQueue() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-white text-2xl font-light tracking-widest">LOADING...</div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-gray-900 text-2xl font-light tracking-widest">LOADING...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col font-sans selection:bg-white selection:text-black">
+    <div className="min-h-screen bg-white text-gray-900 flex flex-col font-sans selection:bg-black selection:text-white">
       {/* Ultra Minimal Header */}
-      <header className="px-12 py-8 flex items-center justify-between border-b border-white/10">
-        <h1 className="text-4xl font-light tracking-[0.2em] uppercase">Queue</h1>
-        <div className="text-2xl font-light tracking-wider opacity-60">
+      <header className="px-12 py-8 flex items-center justify-between border-b border-gray-200">
+        <h1 className="text-4xl font-light tracking-[0.2em] uppercase text-gray-900">Queue</h1>
+        <div className="text-2xl font-light tracking-wider text-gray-400">
           {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </div>
       </header>
@@ -53,8 +53,8 @@ export default function SaloonQueue() {
       <main className="flex-1 flex">
         
         {/* Now Serving Column */}
-        <section className="flex-[2] flex flex-col border-r border-white/10">
-          <div className="px-12 py-8 border-b border-white/10">
+        <section className="flex-[2] flex flex-col border-r border-gray-200">
+          <div className="px-12 py-8 border-b border-gray-200">
             <h2 className="text-xl font-medium tracking-[0.3em] uppercase text-gray-400">Now Serving</h2>
           </div>
           <div className="flex-1 p-12 flex flex-col gap-8">
@@ -62,10 +62,10 @@ export default function SaloonQueue() {
               nowServing.map((order, idx) => (
                 <div 
                   key={order._id} 
-                  className={`flex items-center justify-between border-b border-white/5 pb-8 ${idx === 0 ? 'opacity-100' : 'opacity-60'} transition-opacity`}
+                  className={`flex items-center justify-between border-b border-gray-100 pb-8 ${idx === 0 ? 'opacity-100' : 'opacity-40'} transition-opacity`}
                 >
                   <div className="flex items-baseline gap-8">
-                    <div className="text-8xl md:text-[120px] font-medium leading-none tabular-nums tracking-tighter">
+                    <div className="text-8xl md:text-[120px] font-medium leading-none tabular-nums tracking-tighter text-gray-900">
                       {order.queueNumber || '---'}
                     </div>
                     {order.customerName && (
@@ -74,13 +74,13 @@ export default function SaloonQueue() {
                       </div>
                     )}
                   </div>
-                  <div className="text-2xl font-light tracking-widest uppercase border border-white/20 px-6 py-3 rounded-full">
+                  <div className="text-2xl font-light tracking-widest uppercase border border-gray-200 text-gray-500 px-6 py-3 rounded-full">
                     Station 1
                   </div>
                 </div>
               ))
             ) : (
-              <div className="flex-1 flex items-center justify-center text-4xl text-white/20 font-light tracking-widest">
+              <div className="flex-1 flex items-center justify-center text-4xl text-gray-300 font-light tracking-widest">
                 WAITING FOR CUSTOMERS
               </div>
             )}
@@ -88,8 +88,8 @@ export default function SaloonQueue() {
         </section>
 
         {/* Please Wait Column */}
-        <section className="flex-1 flex flex-col bg-white/5">
-          <div className="px-12 py-8 border-b border-white/10">
+        <section className="flex-1 flex flex-col bg-gray-50/50">
+          <div className="px-12 py-8 border-b border-gray-200">
             <h2 className="text-xl font-medium tracking-[0.3em] uppercase text-gray-400">Please Wait</h2>
           </div>
           <div className="flex-1 p-12">
@@ -98,17 +98,17 @@ export default function SaloonQueue() {
                 {waiting.map(order => (
                   <div 
                     key={order._id} 
-                    className="flex items-center gap-4 border-b border-white/10 pb-4"
+                    className="flex items-center gap-4 border-b border-gray-200 pb-4"
                   >
-                    <span className="text-5xl font-light tabular-nums tracking-tight">
+                    <span className="text-5xl font-light tabular-nums tracking-tight text-gray-600">
                       {order.queueNumber || '---'}
                     </span>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="h-full flex items-center justify-center text-xl text-white/20 font-light tracking-widest">
-                NO ONE IN QUEUE
+              <div className="h-full flex items-center justify-center text-xl text-gray-300 font-light tracking-widest uppercase">
+                No one in queue
               </div>
             )}
           </div>
