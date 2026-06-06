@@ -198,7 +198,7 @@ export default function KhayyatQuickInvoice() {
                 </label>
                 <input
                   type="text"
-                  placeholder={language === 'ar' ? 'نقدي' : 'Cash'}
+                  placeholder={language === 'ar' ? 'محمد' : 'Mohammed'}
                   className="w-full bg-gray-50 dark:bg-slate-800 border-none rounded-xl text-sm font-medium text-gray-900 dark:text-white focus:ring-2 p-3 focus:ring-gray-200"
                   value={customerName}
                   onChange={e => setCustomerName(e.target.value)}
@@ -249,7 +249,7 @@ export default function KhayyatQuickInvoice() {
                     <div className="pr-8">
                       <input
                         type="text"
-                        placeholder={language === 'ar' ? 'اسم الفرد (مثل: محمد)' : 'Member Name (e.g. John)'}
+                        placeholder={language === 'ar' ? 'أحمد' : 'Ahmed'}
                         className="w-full bg-white dark:bg-slate-900 border-none rounded-xl text-sm font-medium p-3 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-200 dark:focus:ring-slate-700"
                         value={item.name}
                         onChange={e => {
@@ -288,7 +288,7 @@ export default function KhayyatQuickInvoice() {
                         type="number"
                         min="1"
                         placeholder="Qty"
-                        className="w-16 bg-white dark:bg-slate-900 border-none rounded-xl text-sm p-3 text-center text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-200"
+                        className="w-16 bg-white dark:bg-slate-900 border-none rounded-xl text-sm p-3 text-center text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         value={item.quantity}
                         onChange={e => {
                           const newItems = [...items];
@@ -299,9 +299,9 @@ export default function KhayyatQuickInvoice() {
                       <input
                         type="number"
                         min="0"
-                        step="0.01"
+                        step="any"
                         placeholder="Price"
-                        className="w-24 bg-white dark:bg-slate-900 border-none rounded-xl text-sm p-3 text-end text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-200"
+                        className="w-24 bg-white dark:bg-slate-900 border-none rounded-xl text-sm p-3 text-end text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         value={item.price}
                         onChange={e => {
                           const newItems = [...items];
@@ -342,9 +342,9 @@ export default function KhayyatQuickInvoice() {
                 <input
                   type="number"
                   min="0"
-                  step="0.01"
-                  placeholder={autoSubtotal.toFixed(2)}
-                  className="w-24 bg-gray-50 dark:bg-slate-800 border-none rounded-lg text-sm p-2 text-end text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-200 dark:focus:ring-slate-700 font-bold"
+                  step="any"
+                  placeholder={autoSubtotal.toString()}
+                  className="w-24 bg-gray-50 dark:bg-slate-800 border-none rounded-lg text-sm p-2 text-end text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-200 dark:focus:ring-slate-700 font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   value={customSubtotal}
                   onChange={e => setCustomSubtotal(e.target.value)}
                 />
@@ -354,9 +354,9 @@ export default function KhayyatQuickInvoice() {
                 <input
                   type="number"
                   min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  className="w-24 bg-gray-50 dark:bg-slate-800 border-none rounded-lg text-sm p-2 text-end text-rose-500 focus:ring-2 focus:ring-gray-200 dark:focus:ring-slate-700"
+                  step="any"
+                  placeholder="0"
+                  className="w-24 bg-gray-50 dark:bg-slate-800 border-none rounded-lg text-sm p-2 text-end text-rose-500 focus:ring-2 focus:ring-gray-200 dark:focus:ring-slate-700 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   value={discount}
                   onChange={e => setDiscount(e.target.value)}
                 />
@@ -372,9 +372,9 @@ export default function KhayyatQuickInvoice() {
                 <input
                   type="number"
                   min="0"
-                  step="0.01"
-                  placeholder="0.00"
-                  className="w-28 bg-emerald-50 dark:bg-emerald-900/20 border-none rounded-lg font-bold text-sm p-2 text-end text-emerald-600 dark:text-emerald-400 focus:ring-2 focus:ring-emerald-200"
+                  step="any"
+                  placeholder="0"
+                  className="w-28 bg-emerald-50 dark:bg-emerald-900/20 border-none rounded-lg font-bold text-sm p-2 text-end text-emerald-600 dark:text-emerald-400 focus:ring-2 focus:ring-emerald-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                   value={paidAmount}
                   onChange={e => setPaidAmount(e.target.value)}
                 />

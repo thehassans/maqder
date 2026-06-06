@@ -95,7 +95,6 @@ export default function Sidebar() {
     {
       title: language === 'ar' ? 'الرئيسية' : 'Main',
       items: [
-        { path: '/app/dashboard', icon: LayoutDashboard, label: t('dashboard'), end: true },
         { path: '/app/dashboard/invoices', icon: FileText, label: t('invoices'), perm: { module: 'invoicing', action: 'read' }, excludeBusinessTypes: ['khayyat'] },
         { path: '/app/dashboard/customers', icon: Users, label: language === 'ar' ? 'العملاء' : 'Customers', perm: { module: 'sales', action: 'read' } },
         { path: '/app/dashboard/customers/statement', icon: FileText, label: language === 'ar' ? 'كشف حساب' : 'Customer Statement', perm: { module: 'sales', action: 'read' } },
