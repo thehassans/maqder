@@ -36,7 +36,7 @@ export default function TenantCustomization() {
   // Fetch tenant info for header
   const { data: tenant, isLoading } = useQuery({
     queryKey: ['tenant', id],
-    queryFn: () => api.get(`/super-admin/tenants/${id}`).then(res => res.data),
+    queryFn: () => api.get(`/super-admin/tenants/${id}`).then(res => res.data.tenant),
   })
 
   const tabs = useMemo(() => {
