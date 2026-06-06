@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Search, Plus, Minus, Trash2, CreditCard, Banknote, Scissors, CheckCircle, Package } from 'lucide-react'
+import { Search, Plus, Minus, Trash2, CreditCard, Banknote, Scissors, CheckCircle, Package, Printer } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import SarIcon from '../../components/ui/SarIcon'
@@ -22,6 +22,9 @@ export default function SaloonPOS() {
   const [cart, setCart] = useState([])
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
+  const [globalStaff, setGlobalStaff] = useState('')
+  const [applyVat, setApplyVat] = useState(true)
+  const [printedOrder, setPrintedOrder] = useState(null)
   
   const { data: services = [], isLoading } = useQuery({
     queryKey: ['saloon-services-active'],
@@ -71,16 +74,18 @@ export default function SaloonPOS() {
   }
 
   const subtotal = cart.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0)
-  const totalTax = cart.reduce((sum, item) => sum + ((item.unitPrice * item.quantity) * (item.taxRate / 100)), 0)
+  const totalTax = applyVat ? cart.reduce((sum, item) => sum + ((item.unitPrice * item.quantity) * (item.taxRate / 100)), 0) : 0
   const grandTotal = subtotal + totalTax
 
   const checkoutMutation = useMutation({
     mutationFn: (payload) => api.post('/saloon/orders/checkout', payload),
-    onSuccess: () => {
+    onSuccess: (res) => {
       toast.success(isRtl ? 'تم إصدار التذكرة بنجاح' : 'Ticket issued successfully')
+      setPrintedOrder(res?.data)
       setCart([])
       setCustomerName('')
       setCustomerPhone('')
+      setGlobalStaff('')
       queryClient.invalidateQueries(['saloon-kanban'])
     },
     onError: (err) => {
@@ -92,8 +97,14 @@ export default function SaloonPOS() {
     // For MVP we assume they pay full if cash/card, or 0 if "none" (walking in to wait)
     const amountPaid = paymentMethod === 'none' ? 0 : grandTotal
 
+    const finalCart = cart.map(item => ({
+      ...item,
+      staff: item.staff || globalStaff,
+      taxRate: applyVat ? item.taxRate : 0
+    }))
+
     checkoutMutation.mutate({
-      items: cart,
+      items: finalCart,
       customerName,
       customerPhone,
       paymentMethod,
@@ -194,9 +205,9 @@ export default function SaloonPOS() {
             />
             <input
               type="text"
-              placeholder={isRtl ? 'رقم الهاتف (اختياري)' : 'Phone Number (Optional)'}
-              value={customerPhone}
-              onChange={(e) => setCustomerPhone(e.target.value)}
+              placeholder={isRtl ? 'اسم الحلاق (اختياري)' : 'Assign Barber (Optional)'}
+              value={globalStaff}
+              onChange={(e) => setGlobalStaff(e.target.value)}
               className="input text-sm"
             />
           </div>
@@ -264,8 +275,16 @@ export default function SaloonPOS() {
               <span>{isRtl ? 'المجموع الفرعي' : 'Subtotal'}</span>
               <span className="flex items-center gap-1">{subtotal.toFixed(2)} <SarIcon className="w-3 h-3" /></span>
             </div>
-            <div className="flex justify-between text-gray-500">
-              <span>{isRtl ? 'ضريبة القيمة المضافة' : 'VAT (15%)'}</span>
+            <div className="flex justify-between items-center text-gray-500">
+              <div className="flex items-center gap-2">
+                <span>{isRtl ? 'الضريبة' : 'VAT'}</span>
+                <button
+                  onClick={() => setApplyVat(!applyVat)}
+                  className={`text-xs px-2 py-0.5 rounded border ${applyVat ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:border-amber-500/30' : 'bg-gray-100 text-gray-500 border-gray-200 dark:bg-dark-700'}`}
+                >
+                  {applyVat ? '15%' : '0%'}
+                </button>
+              </div>
               <span className="flex items-center gap-1">{totalTax.toFixed(2)} <SarIcon className="w-3 h-3" /></span>
             </div>
             <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-100 dark:border-dark-700">
@@ -322,6 +341,62 @@ export default function SaloonPOS() {
         onExpired={() => { setShowCardModal(false); setPendingCardOrder(null) }}
         onClose={() => { setShowCardModal(false); setPendingCardOrder(null) }}
       />
+
+      {/* Print Ticket Modal */}
+      {printedOrder && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 print:hidden backdrop-blur-sm">
+          <div className="bg-white dark:bg-dark-800 rounded-2xl w-full max-w-sm p-8 text-center shadow-xl border border-gray-100 dark:border-dark-700 animate-in zoom-in-95 duration-200">
+            <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-8 h-8" />
+            </div>
+            <h3 className="text-3xl font-black text-gray-900 dark:text-white mb-2">
+              {printedOrder.queueNumber ? `Q-${printedOrder.queueNumber}` : `#${printedOrder.orderNumber.split('-')[1]?.slice(-4)}`}
+            </h3>
+            <p className="text-gray-500 mb-8">{isRtl ? 'تم إنشاء التذكرة بنجاح' : 'Ticket created successfully.'}</p>
+            <div className="flex gap-3">
+              <button onClick={() => window.print()} className="btn bg-amber-500 hover:bg-amber-600 text-white flex-1 flex items-center justify-center gap-2 py-3">
+                <Printer className="w-5 h-5" />
+                {isRtl ? 'طباعة' : 'Print'}
+              </button>
+              <button onClick={() => setPrintedOrder(null)} className="btn bg-gray-100 hover:bg-gray-200 dark:bg-dark-700 dark:hover:bg-dark-600 text-gray-700 dark:text-gray-200 flex-1 py-3">
+                {isRtl ? 'متابعة' : 'Continue'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden Print Content */}
+      <div className="hidden print:block print:absolute print:inset-0 print:bg-white text-black p-4 w-[80mm] mx-auto text-center" dir="ltr">
+        {printedOrder && (
+          <div className="font-mono">
+            <h1 className="text-2xl font-bold mb-2">{tenant?.business?.legalNameEn || 'Saloon POS'}</h1>
+            <p className="text-xs text-gray-500 mb-6">{new Date(printedOrder.createdAt).toLocaleString()}</p>
+            
+            <div className="text-7xl font-black mb-6 py-6 border-y-2 border-black border-dashed">
+              {printedOrder.queueNumber ? `Q-${printedOrder.queueNumber}` : '---'}
+            </div>
+
+            <div className="text-left text-sm mb-4 space-y-2">
+              {printedOrder.items.map((item, i) => (
+                <div key={i} className="flex justify-between">
+                  <span>{item.quantity}x {item.nameEn}</span>
+                  <span>{item.total?.toFixed(2)} SAR</span>
+                </div>
+              ))}
+            </div>
+            
+            <div className="text-left text-base border-t-2 border-black border-dashed pt-2 font-bold flex justify-between mt-4">
+              <span>TOTAL:</span>
+              <span>{printedOrder.grandTotal?.toFixed(2)} SAR</span>
+            </div>
+
+            <div className="mt-8 pt-4 border-t border-gray-200 text-sm text-center font-medium">
+              Please wait for your number.<br/>Thank you!
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
