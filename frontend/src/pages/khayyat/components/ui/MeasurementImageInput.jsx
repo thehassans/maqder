@@ -41,7 +41,7 @@ const MeasurementImageInput = ({
         }
       } catch (error) {
         console.error('Failed to extract measurements:', error);
-        toast.error('Failed to auto-extract measurements from the image.');
+        toast.error(error.response?.data?.error || 'Failed to auto-extract measurements from the image.');
       } finally {
         setIsExtracting(false);
       }
