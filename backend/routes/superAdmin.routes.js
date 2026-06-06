@@ -1634,9 +1634,9 @@ router.post('/tenants/:id/seed-khayyat', async (req, res) => {
     
     // Generate 40 more to make 50
     for (let i = 0; i < 40; i++) {
-      const color = colors[Math.floor(Math.random() * colors.length)];
-      const style = styles[Math.floor(Math.random() * styles.length)];
-      const part = parts[Math.floor(Math.random() * parts.length)];
+      const color = colors[i % colors.length];
+      const style = styles[Math.floor(i / colors.length) % styles.length];
+      const part = parts[Math.floor(i / (colors.length * styles.length)) % parts.length];
       embroideryImages.push({
         name: `${color} ${style} ${part} ${i + 1}`,
         image: `https://picsum.photos/seed/embroidery_${i}/400/400`
@@ -1689,7 +1689,7 @@ router.post('/tenants/:id/seed-khayyat', async (req, res) => {
 
     // Seed Embroidery Designs
     const { default: KhayyatEmbroideryDesign } = await import('../models/khayyat/KhayyatEmbroideryDesign.js');
-    for (const design of embroideryImages) {
+    await Promise.all(embroideryImages.map(async (design) => {
       let existing = await KhayyatEmbroideryDesign.findOne({ tenantId, name: design.name });
       if (!existing) {
         existing = new KhayyatEmbroideryDesign({
@@ -1701,7 +1701,7 @@ router.post('/tenants/:id/seed-khayyat', async (req, res) => {
         });
         await existing.save();
       }
-    }
+    }));
     
     res.json({ message: 'Khayyat data seeded successfully' });
   } catch (error) {
