@@ -1,7 +1,6 @@
 import express from 'express';
 import SaloonOrder from '../models/SaloonOrder.js';
 import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
-import { generateNextSequence } from '../utils/sequence.js';
 import mongoose from 'mongoose';
 
 const router = express.Router();
@@ -93,8 +92,6 @@ router.post('/checkout', checkPermission('saloon', 'create'), async (req, res) =
     });
     
     // Generate Order Number
-    const orderNumber = await generateNextSequence(req.user.tenantId, 'SLN', session);
-    
     let paymentStatus = 'unpaid';
     if (amountPaid >= grandTotal) paymentStatus = 'paid';
     else if (amountPaid > 0) paymentStatus = 'partial';
