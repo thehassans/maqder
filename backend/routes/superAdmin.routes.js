@@ -1148,6 +1148,7 @@ router.post('/tenants/:id/reset', async (req, res) => {
         try {
           const result = await Model.deleteMany(filter);
           return [key, result?.deletedCount || 0];
+        } catch (err) {
           return [key, { error: err.message }];
         }
       })
