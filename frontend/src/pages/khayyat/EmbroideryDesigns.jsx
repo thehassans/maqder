@@ -368,15 +368,15 @@ const EmbroideryDesigns = () => {
               >
                 <div className="relative w-full aspect-[4/5] bg-slate-100 dark:bg-slate-800 overflow-hidden cursor-pointer" onClick={() => openPreview(d, idx)}>
                   {imageSrc ? (
-                    <>
-                      <img src={imageSrc} alt={displayName} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
-                    </>
+                    <img src={imageSrc} alt={displayName} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900">
                       <ImageIcon className="w-12 h-12 text-slate-300 dark:text-slate-600" />
                     </div>
                   )}
+                  
+                  {/* Always show gradient overlay so white text is legible */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500 pointer-events-none" />
                   
                   <div className="absolute bottom-0 left-0 right-0 p-6 flex flex-col justify-end transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
                     <h3 className="text-white font-bold text-xl drop-shadow-md mb-2">{displayName}</h3>
