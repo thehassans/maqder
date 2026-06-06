@@ -140,5 +140,32 @@ export const extractKhayyatMeasurements = async ({ base64Image, mimeType }) => {
     }
   }
 
+  // 3. Try Grok (xAI)
+  const grokKey = settings?.grok?.apiKey || process.env.GROK_API_KEY;
+  if (settings?.grok?.enabled !== false && grokKey) {
+    try {
+      const client = new OpenAI({ apiKey: grokKey, baseURL: 'https://api.x.ai/v1' });
+      const response = await client.chat.completions.create({
+        model: settings?.grok?.model || 'grok-2-vision-latest',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: [
+              { type: 'text', text: 'Extract tailoring measurements from this image. Return structured JSON.' },
+              { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64Image}` } }
+            ]
+          }
+        ],
+        temperature: 0.1,
+        response_format: { type: 'json_object' }
+      });
+      if (response.choices?.[0]?.message?.content) {
+        return JSON.parse(response.choices[0].message.content.trim());
+      }
+    } catch (e) {
+      lastError = e;
+      console.warn('[OCR] Grok failed...', e.message);
+    }
+  }
+
   throw lastError || new Error('No AI provider configured for OCR or all providers failed. Please set your API key in System Settings.');
 };
