@@ -117,7 +117,14 @@ export default function TenantCustomization() {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2 }}
               >
-                {ActiveComponent && <ActiveComponent />}
+                {ActiveComponent ? <ActiveComponent /> : (
+                <div className="text-gray-500">
+                  <p>No customization tabs available for this business type.</p>
+                  <pre className="mt-4 p-4 bg-gray-100 rounded text-xs overflow-auto">
+                    {JSON.stringify(tenant, null, 2)}
+                  </pre>
+                </div>
+              )}
               </motion.div>
             </AnimatePresence>
           </div>
