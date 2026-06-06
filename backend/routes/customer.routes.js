@@ -16,13 +16,15 @@ router.get('/', checkPermission('invoicing', 'read'), async (req, res) => {
     const query = { ...req.tenantFilter };
     
     if (search) {
+      const cleanSearch = String(search).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { customerCode: { $regex: search, $options: 'i' } },
-        { name: { $regex: search, $options: 'i' } },
-        { nameAr: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
-        { phone: { $regex: search, $options: 'i' } },
-        { vatNumber: { $regex: search, $options: 'i' } }
+        { customerCode: { $regex: cleanSearch, $options: 'i' } },
+        { name: { $regex: cleanSearch, $options: 'i' } },
+        { nameAr: { $regex: cleanSearch, $options: 'i' } },
+        { email: { $regex: cleanSearch, $options: 'i' } },
+        { phone: { $regex: cleanSearch, $options: 'i' } },
+        { mobile: { $regex: cleanSearch, $options: 'i' } },
+        { vatNumber: { $regex: cleanSearch, $options: 'i' } }
       ];
     }
     
@@ -64,18 +66,21 @@ router.get('/search', checkPermission('invoicing', 'read'), async (req, res) => 
   try {
     const { q } = req.query;
     
-    if (!q || q.length < 2) {
+    if (!q || String(q).trim().length < 2) {
       return res.json([]);
     }
     
+    const cleanQ = String(q).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const customers = await Customer.find({
       ...req.tenantFilter,
       isActive: true,
       $or: [
-        { customerCode: { $regex: q, $options: 'i' } },
-        { name: { $regex: q, $options: 'i' } },
-        { nameAr: { $regex: q, $options: 'i' } },
-        { vatNumber: { $regex: q, $options: 'i' } }
+        { customerCode: { $regex: cleanQ, $options: 'i' } },
+        { name: { $regex: cleanQ, $options: 'i' } },
+        { nameAr: { $regex: cleanQ, $options: 'i' } },
+        { vatNumber: { $regex: cleanQ, $options: 'i' } },
+        { phone: { $regex: cleanQ, $options: 'i' } },
+        { mobile: { $regex: cleanQ, $options: 'i' } }
       ]
     })
       .select('customerCode name nameAr email phone vatNumber type address')

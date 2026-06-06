@@ -24,13 +24,15 @@ router.get('/', checkPermission('supply_chain', 'read'), async (req, res) => {
     }
 
     if (search) {
+      const cleanSearch = String(search).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { code: { $regex: search, $options: 'i' } },
-        { nameEn: { $regex: search, $options: 'i' } },
-        { nameAr: { $regex: search, $options: 'i' } },
-        { vatNumber: { $regex: search, $options: 'i' } },
-        { phone: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } }
+        { code: { $regex: cleanSearch, $options: 'i' } },
+        { nameEn: { $regex: cleanSearch, $options: 'i' } },
+        { nameAr: { $regex: cleanSearch, $options: 'i' } },
+        { vatNumber: { $regex: cleanSearch, $options: 'i' } },
+        { phone: { $regex: cleanSearch, $options: 'i' } },
+        { mobile: { $regex: cleanSearch, $options: 'i' } },
+        { email: { $regex: cleanSearch, $options: 'i' } }
       ];
     }
 
