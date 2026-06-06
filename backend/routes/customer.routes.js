@@ -18,8 +18,8 @@ router.get('/recover-vat', async (req, res) => {
     const nameGroups = {};
     
     for (const c of allCustomers) {
-      if (!c.name) continue;
-      const key = c.name.trim().toLowerCase();
+      if (!c.name || !c.tenantId) continue;
+      const key = `${c.tenantId}_${c.name.trim().toLowerCase()}`;
       if (!nameGroups[key]) nameGroups[key] = [];
       nameGroups[key].push(c);
     }
