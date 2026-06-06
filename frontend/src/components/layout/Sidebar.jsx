@@ -333,8 +333,8 @@ export default function Sidebar() {
         <div className="px-4 py-4 border-b border-gray-100 dark:border-dark-700">
           <div className="relative p-3.5 bg-gradient-to-br from-white to-primary-50/50 dark:from-dark-800 dark:to-primary-900/10 border border-gray-100 dark:border-dark-700 rounded-2xl overflow-hidden shadow-sm transition-all hover:shadow-md">
             {tenant?.branding?.logo && (
-              <div className="absolute -right-6 -bottom-6 w-32 h-32 opacity-[0.04] dark:opacity-[0.06] pointer-events-none transform -rotate-12">
-                <img src={tenant.branding.logo} alt="" className="w-full h-full object-contain filter grayscale" />
+              <div className="absolute inset-0 opacity-10 dark:opacity-20 pointer-events-none flex items-center justify-center p-2">
+                <img src={tenant.branding.logo} alt="" className="w-full h-full object-contain" />
               </div>
             )}
             <div className="relative z-10 flex items-start gap-3">

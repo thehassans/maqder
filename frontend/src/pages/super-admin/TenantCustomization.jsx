@@ -49,7 +49,7 @@ export default function TenantCustomization() {
       { id: 'menu-items', label: language === 'ar' ? 'قائمة الطعام' : 'Menu Items', icon: UtensilsCrossed, component: RestaurantMenuItems, show: isRestaurant },
       { id: 'tables', label: language === 'ar' ? 'الطاولات' : 'Tables', icon: Grid2X2, component: Tables, show: isRestaurant },
       { id: 'laundry', label: language === 'ar' ? 'خدمات المغسلة' : 'Laundry Services', icon: Shirt, component: LaundryServices, show: isLaundry },
-      { id: 'khayyat', label: language === 'ar' ? 'الخياط' : 'Tailoring', icon: Shirt, component: KhayyatSeeder, show: isTailoring },
+      { id: 'khayyat', label: language === 'ar' ? 'الخياط' : 'Tailoring', icon: Shirt, component: KhayyatSeeder, show: true },
     ].filter(t => t.show)
   }, [tenant, language])
 
