@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import api from '../../lib/api';
+import { motion, AnimatePresence } from 'framer-motion';
 const t = (key, opts) => opts?.defaultValue || key;
 
 import { Card, CardBody } from './components/ui/Card';
