@@ -1744,31 +1744,27 @@ router.post('/tenants/:id/seed-saloon', async (req, res) => {
     if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
 
     const saloonServices = [
-      { nameEn: 'Haircut', nameAr: 'حلاقة شعر', category: 'Hair', durationMinutes: 30, price: 35, taxRate: 15 },
-      { nameEn: 'Beard Trim', nameAr: 'تحديد لحية', category: 'Beard', durationMinutes: 15, price: 20, taxRate: 15 },
-      { nameEn: 'Hair & Beard', nameAr: 'حلاقة شعر ولحية', category: 'Hair', durationMinutes: 45, price: 50, taxRate: 15 },
-      { nameEn: 'Kids Haircut', nameAr: 'حلاقة أطفال', category: 'Hair', durationMinutes: 30, price: 25, taxRate: 15 },
-      { nameEn: 'Hair Wash', nameAr: 'غسيل شعر', category: 'Care', durationMinutes: 10, price: 10, taxRate: 15 },
-      { nameEn: 'Facial Scrub', nameAr: 'سنفرة للوجه', category: 'Skin', durationMinutes: 20, price: 40, taxRate: 15 },
-      { nameEn: 'Face Mask', nameAr: 'ماسك للوجه', category: 'Skin', durationMinutes: 15, price: 30, taxRate: 15 },
-      { nameEn: 'Hair Dye', nameAr: 'صبغة شعر', category: 'Color', durationMinutes: 45, price: 80, taxRate: 15 },
-      { nameEn: 'Beard Dye', nameAr: 'صبغة لحية', category: 'Color', durationMinutes: 30, price: 40, taxRate: 15 },
-      { nameEn: 'Protein Treatment', nameAr: 'بروتين للشعر', category: 'Care', durationMinutes: 60, price: 150, taxRate: 15 },
-      { nameEn: 'Keratin Treatment', nameAr: 'كيراتين', category: 'Care', durationMinutes: 60, price: 200, taxRate: 15 },
-      { nameEn: 'Blow Dry', nameAr: 'استشوار', category: 'Styling', durationMinutes: 15, price: 20, taxRate: 15 }
+      { nameEn: 'Haircut', nameAr: 'حلاقة شعر', category: 'Hair', durationMinutes: 30, price: 35, taxRate: 15, imageUrl: 'https://images.unsplash.com/photo-1599351431202-1e0f0137899a?auto=format&fit=crop&w=400&q=80' },
+      { nameEn: 'Beard Trim', nameAr: 'تحديد لحية', category: 'Beard', durationMinutes: 15, price: 20, taxRate: 15, imageUrl: 'https://images.unsplash.com/photo-1622286342621-4bd786c2447c?auto=format&fit=crop&w=400&q=80' },
+      { nameEn: 'Hair & Beard', nameAr: 'حلاقة شعر ولحية', category: 'Hair', durationMinutes: 45, price: 50, taxRate: 15, imageUrl: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&w=400&q=80' },
+      { nameEn: 'Kids Haircut', nameAr: 'حلاقة أطفال', category: 'Hair', durationMinutes: 30, price: 25, taxRate: 15, imageUrl: 'https://images.unsplash.com/photo-1588686616010-09600e5728a4?auto=format&fit=crop&w=400&q=80' },
+      { nameEn: 'Hair Wash', nameAr: 'غسيل شعر', category: 'Care', durationMinutes: 10, price: 10, taxRate: 15, imageUrl: 'https://images.unsplash.com/photo-1516975080661-422fc996d1f9?auto=format&fit=crop&w=400&q=80' },
+      { nameEn: 'Facial Scrub', nameAr: 'سنفرة للوجه', category: 'Skin', durationMinutes: 20, price: 40, taxRate: 15, imageUrl: 'https://images.unsplash.com/photo-1615397323136-1e0e9721fbce?auto=format&fit=crop&w=400&q=80' },
+      { nameEn: 'Face Mask', nameAr: 'ماسك للوجه', category: 'Skin', durationMinutes: 15, price: 30, taxRate: 15, imageUrl: 'https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?auto=format&fit=crop&w=400&q=80' },
+      { nameEn: 'Hair Dye', nameAr: 'صبغة شعر', category: 'Color', durationMinutes: 45, price: 80, taxRate: 15, imageUrl: 'https://images.unsplash.com/photo-1600948836101-f9ff5a0eb3c4?auto=format&fit=crop&w=400&q=80' },
+      { nameEn: 'Beard Dye', nameAr: 'صبغة لحية', category: 'Color', durationMinutes: 30, price: 40, taxRate: 15, imageUrl: 'https://images.unsplash.com/photo-1504703395950-b89145a5425b?auto=format&fit=crop&w=400&q=80' },
+      { nameEn: 'Protein Treatment', nameAr: 'بروتين للشعر', category: 'Care', durationMinutes: 60, price: 150, taxRate: 15, imageUrl: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=400&q=80' },
+      { nameEn: 'Keratin Treatment', nameAr: 'كيراتين', category: 'Care', durationMinutes: 60, price: 200, taxRate: 15, imageUrl: 'https://images.unsplash.com/photo-1522337660859-02fbefca4702?auto=format&fit=crop&w=400&q=80' },
+      { nameEn: 'Blow Dry', nameAr: 'استشوار', category: 'Styling', durationMinutes: 15, price: 20, taxRate: 15, imageUrl: 'https://images.unsplash.com/photo-1521017430209-f620e14a1622?auto=format&fit=crop&w=400&q=80' }
     ];
 
     const { default: SaloonService } = await import('../models/SaloonService.js');
     await Promise.all(saloonServices.map(async (svc) => {
-      let existing = await SaloonService.findOne({ tenantId, nameEn: svc.nameEn });
-      if (!existing) {
-        existing = new SaloonService({
-          tenantId,
-          ...svc,
-          isActive: true
-        });
-        await existing.save();
-      }
+      await SaloonService.findOneAndUpdate(
+        { tenantId, nameEn: svc.nameEn },
+        { $set: { ...svc, isActive: true } },
+        { upsert: true, new: true }
+      );
     }));
     
     res.json({ message: 'Saloon data seeded successfully' });

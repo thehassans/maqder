@@ -238,6 +238,15 @@ app.use(helmet({
   contentSecurityPolicy: {
     useDefaults: true,
     directives: {
+      'img-src': [
+        "'self'",
+        "data:",
+        "blob:",
+        "https://images.unsplash.com",
+        "https://plus.unsplash.com",
+        "https://picsum.photos",
+        "https://fastly.picsum.photos"
+      ],
       'script-src': [
         "'self'",
         ...(allowCloudflareInsights ? ['https://static.cloudflareinsights.com'] : []),

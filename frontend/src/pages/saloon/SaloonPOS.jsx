@@ -154,7 +154,7 @@ export default function SaloonPOS() {
               >
                 <div className="h-28 bg-gray-100 dark:bg-dark-700 relative overflow-hidden">
                   {service.imageUrl ? (
-                    <img src={api.defaults.baseURL.replace('/api', '') + service.imageUrl} alt={service.nameEn} className="w-full h-full object-cover" />
+                    <img src={service.imageUrl.startsWith('http') ? service.imageUrl : api.defaults.baseURL.replace('/api', '') + service.imageUrl} alt={service.nameEn} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-400">
                       <Scissors className="w-8 h-8" />
