@@ -342,70 +342,70 @@ const EmbroideryDesigns = () => {
           </CardBody>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <motion.div 
+          className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6"
+          initial="hidden" animate="show"
+          variants={{
+            hidden: { opacity: 0 },
+            show: { opacity: 1, transition: { staggerChildren: 0.1 } }
+          }}
+        >
           {sortedDesigns.map((d, idx) => {
             const imageUrl = d.image ? resolveUploadsUrl(d.image) : null;
             const imageSrc = imageUrl ? `${imageUrl}${d.imageUpdatedAt ? `?v=${d.imageUpdatedAt}` : ''}` : null;
             const displayName = d?.nameI18n?.[langKey] || d.name;
 
             return (
-              <div
+              <motion.div
                 key={d._id}
-                className="group relative rounded-3xl border border-gray-200/70 dark:border-slate-700/70 bg-gradient-to-br from-white via-white to-amber-50/30 dark:from-slate-900/50 dark:via-slate-900/25 dark:to-slate-900/10 overflow-hidden shadow-lg shadow-black/5 hover:shadow-2xl hover:shadow-amber-500/10 hover:scale-[1.01] transition-all duration-300"
+                variants={{
+                  hidden: { opacity: 0, y: 20 },
+                  show: { opacity: 1, y: 0 }
+                }}
+                className="group relative rounded-[2rem] border border-white/40 dark:border-white/10 bg-white/40 dark:bg-slate-900/40 backdrop-blur-3xl overflow-hidden shadow-xl shadow-slate-200/50 dark:shadow-black/50 hover:shadow-2xl hover:shadow-indigo-500/20 hover:-translate-y-1 transition-all duration-500 break-inside-avoid"
               >
-                <button
-                  type="button"
-                  onClick={() => openPreview(d, idx)}
-                  className="w-full text-left"
-                >
-                  <div className="relative h-64 bg-gradient-to-br from-gray-50 via-amber-50/30 to-gray-100 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900">
-                    {imageSrc ? (
-                      <>
-                        <img src={imageSrc} alt={d.name} className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-35 scale-110" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
-                        <div className="relative w-full h-full p-5 flex items-center justify-center">
-                          <img src={imageSrc} alt={d.name} className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl ring-1 ring-white/10" />
-                        </div>
-                      </>
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-300 dark:text-slate-600">
-                        <ImageIcon className="w-10 h-10" />
-                      </div>
+                <div className="relative w-full aspect-[4/5] bg-slate-100 dark:bg-slate-800 overflow-hidden cursor-pointer" onClick={() => openPreview(d, idx)}>
+                  {imageSrc ? (
+                    <>
+                      <img src={imageSrc} alt={displayName} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500" />
+                    </>
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900">
+                      <ImageIcon className="w-12 h-12 text-slate-300 dark:text-slate-600" />
+                    </div>
+                  )}
+                  
+                  <div className="absolute bottom-0 left-0 right-0 p-6 flex flex-col justify-end transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                    <h3 className="text-white font-bold text-xl drop-shadow-md mb-2">{displayName}</h3>
+                    {d?.note && (
+                      <p className="text-white/80 text-sm line-clamp-2 drop-shadow mb-4 opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100">
+                        {d.note}
+                      </p>
                     )}
-                    <div className="absolute top-4 left-4 right-4">
-                      <div className="inline-flex max-w-full px-3 py-2 rounded-2xl bg-black/35 backdrop-blur-xl border border-white/10">
-                        <div className="text-white font-semibold truncate">{displayName}</div>
-                      </div>
+                    
+                    <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-200">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); createOrderWithDesign(d); }}
+                        disabled={isDemo}
+                        className="flex-1 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white border border-white/30 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-lg shadow-black/20"
+                      >
+                        {(language === 'ar' ? 'إنشاء طلب' : 'Create Order')}
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); requestDelete(d); }}
+                        disabled={isDemo}
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-rose-500/80 hover:bg-rose-500 backdrop-blur-md text-white border border-rose-400/50 transition-all shadow-lg shadow-black/20"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
-                </button>
-
-                <div className="p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <Button variant="success" onClick={() => createOrderWithDesign(d)} className="rounded-2xl px-5 py-2.5" disabled={isDemo}>
-                      {(language === 'ar' ? 'إنشاء طلب' : 'Create Order')}
-                    </Button>
-                    <button
-                      type="button"
-                      onClick={() => requestDelete(d)}
-                      disabled={isDemo}
-                      className="p-2.5 rounded-2xl border border-rose-200 dark:border-rose-900/40 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
-                      title={(language === 'ar' ? 'حذف' : 'Delete')}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  {d?.note ? (
-                    <div className="mt-3 text-xs text-gray-500 dark:text-slate-400 leading-relaxed line-clamp-2">
-                      {d.note}
-                    </div>
-                  ) : null}
                 </div>
-              </div>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       )}
 
       <Modal

@@ -1613,7 +1613,7 @@ router.post('/tenants/:id/seed-khayyat', async (req, res) => {
     
     const tenantId = tenant._id;
     
-    const embroideryImages = [
+    const baseImages = [
       { name: 'Golden Collar Embroidery', image: '/thawbs/embroidery/embroidery_01_1780726341358.png' },
       { name: 'Silver Geometric Chest', image: '/thawbs/embroidery/embroidery_02_1780726352005.png' },
       { name: 'Navy Islamic Pattern Cuff', image: '/thawbs/embroidery/embroidery_03_1780726362907.png' },
@@ -1625,6 +1625,23 @@ router.post('/tenants/:id/seed-khayyat', async (req, res) => {
       { name: 'Silver Arabesque Cuff', image: '/thawbs/embroidery/embroidery_09_1780726437290.png' },
       { name: 'White Elaborate Placket', image: '/thawbs/embroidery/embroidery_10_1780726448519.png' }
     ];
+
+    const colors = ['White', 'Black', 'Navy', 'Maroon', 'Silver', 'Gold', 'Bronze', 'Emerald', 'Beige', 'Charcoal'];
+    const styles = ['Modern', 'Classic', 'Geometric', 'Floral', 'Islamic', 'Bespoke', 'Elaborate', 'Minimalist', 'Royal', 'Vintage'];
+    const parts = ['Collar', 'Cuff', 'Placket', 'Pocket', 'Chest', 'Shoulder', 'Sleeve', 'Back', 'Hem', 'Neckline'];
+
+    const embroideryImages = [...baseImages];
+    
+    // Generate 40 more to make 50
+    for (let i = 0; i < 40; i++) {
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      const style = styles[Math.floor(Math.random() * styles.length)];
+      const part = parts[Math.floor(Math.random() * parts.length)];
+      embroideryImages.push({
+        name: `${color} ${style} ${part} ${i + 1}`,
+        image: `https://picsum.photos/seed/embroidery_${i}/400/400`
+      });
+    }
 
     const fabricsData = [
       { name: 'Toyobo Premium', madeIn: 'Japan', pricePerRoll: 1200, rollsInStock: 20, stockMeters: 500, code: 'SUP-01' },
