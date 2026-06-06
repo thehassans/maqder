@@ -9,7 +9,9 @@ router.use(protect);
 
 router.get('/', async (req, res) => {
   try {
-    const fabrics = await KhayyatFabric.find({ tenantId: req.user.tenantId }).sort({ createdAt: -1 });
+    const fabrics = await KhayyatFabric.find({ tenantId: req.user.tenantId })
+      .populate('supplierId', 'nameEn nameAr code')
+      .sort({ createdAt: -1 });
     res.json({ fabrics });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
@@ -18,7 +20,7 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { name, madeIn, pricePerRoll, rollsInStock } = req.body;
+    const { name, madeIn, pricePerRoll, rollsInStock, stockMeters, supplierId } = req.body;
     if (!name) return res.status(400).json({ error: 'Fabric name is required' });
 
     const fabric = new KhayyatFabric({
@@ -26,7 +28,9 @@ router.post('/', async (req, res) => {
       name,
       madeIn: madeIn || '',
       pricePerRoll: pricePerRoll || 0,
-      rollsInStock: rollsInStock || 0
+      rollsInStock: rollsInStock || 0,
+      stockMeters: stockMeters || 0,
+      supplierId: supplierId || null
     });
 
     await fabric.save();
@@ -45,6 +49,8 @@ router.put('/:id', async (req, res) => {
     if (req.body.madeIn !== undefined) fabric.madeIn = req.body.madeIn;
     if (req.body.pricePerRoll !== undefined) fabric.pricePerRoll = req.body.pricePerRoll;
     if (req.body.rollsInStock !== undefined) fabric.rollsInStock = req.body.rollsInStock;
+    if (req.body.stockMeters !== undefined) fabric.stockMeters = req.body.stockMeters;
+    if (req.body.supplierId !== undefined) fabric.supplierId = req.body.supplierId || null;
 
     await fabric.save();
     res.json({ fabric });

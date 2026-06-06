@@ -26,6 +26,16 @@ const khayyatFabricSchema = new mongoose.Schema({
     default: 0,
     min: 0
   },
+  stockMeters: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  supplierId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Supplier',
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now
