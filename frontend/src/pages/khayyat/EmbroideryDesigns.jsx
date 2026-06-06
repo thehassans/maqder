@@ -352,7 +352,8 @@ const EmbroideryDesigns = () => {
           }}
         >
           {sortedDesigns.map((d, idx) => {
-            const imageUrl = d.image ? resolveUploadsUrl(d.image) : null;
+            const hasExternalImage = d.image && d.image.includes('picsum.photos');
+            const imageUrl = d.image && !hasExternalImage ? resolveUploadsUrl(d.image) : null;
             const imageSrc = imageUrl ? `${imageUrl}${d.imageUpdatedAt ? `?v=${d.imageUpdatedAt}` : ''}` : null;
             const displayName = d?.nameI18n?.[langKey] || d.name;
 

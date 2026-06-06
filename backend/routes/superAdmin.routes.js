@@ -1689,6 +1689,12 @@ router.post('/tenants/:id/seed-khayyat', async (req, res) => {
 
     // Seed Embroidery Designs
     const { default: KhayyatEmbroideryDesign } = await import('../models/khayyat/KhayyatEmbroideryDesign.js');
+    
+    // Cleanup any lingering external picsum images from previous partial seeds that break CSP
+    await KhayyatEmbroideryDesign.updateMany(
+      { tenantId, image: { $regex: 'picsum.photos' } },
+      { $set: { image: null } }
+    );
     await Promise.all(embroideryImages.map(async (design) => {
       let existing = await KhayyatEmbroideryDesign.findOne({ tenantId, name: design.name });
       if (!existing) {
