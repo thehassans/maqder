@@ -1736,7 +1736,7 @@ router.post('/tenants/:id/seed-khayyat', async (req, res) => {
 });
 
 // Seed Saloon Data
-router.post('/:id/seed-saloon', authenticate, requireSuperAdmin, async (req, res) => {
+router.post('/tenants/:id/seed-saloon', async (req, res) => {
   try {
     const tenantId = req.params.id;
     const { default: Tenant } = await import('../models/Tenant.js');
