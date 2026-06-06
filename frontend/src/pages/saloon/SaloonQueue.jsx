@@ -8,10 +8,9 @@ export default function SaloonQueue() {
 
   const fetchOrders = async () => {
     try {
-      const res = await api.get('/saloon/orders');
-      // Only get waiting and in-progress orders
-      const filtered = res.data.filter(o => o.status === 'waiting' || o.status === 'in-progress');
-      setActiveOrders(filtered);
+      const res = await api.get('/saloon/orders/kanban');
+      // The kanban endpoint returns an array of waiting and in_progress orders directly
+      setActiveOrders(res.data);
     } catch (error) {
       console.error('Error fetching queue:', error);
     } finally {

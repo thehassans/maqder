@@ -19,16 +19,33 @@ export default function SaloonPOS() {
   const queryClient = useQueryClient()
   
   const [searchTerm, setSearchTerm] = useState('')
-  const [cart, setCart] = useState([])
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
   const [globalStaff, setGlobalStaff] = useState('')
   const [applyVat, setApplyVat] = useState(true)
   const [printedOrder, setPrintedOrder] = useState(null)
   
+  const [showAddStaff, setShowAddStaff] = useState(false)
+  const [newStaffName, setNewStaffName] = useState('')
+  
   const { data: services = [], isLoading } = useQuery({
     queryKey: ['saloon-services-active'],
     queryFn: () => api.get('/saloon/services?isActive=true').then(res => res.data)
+  })
+
+  const { data: staffList = [] } = useQuery({
+    queryKey: ['saloon-staff'],
+    queryFn: () => api.get('/saloon/staff').then(res => res.data)
+  })
+
+  const createStaffMutation = useMutation({
+    mutationFn: (payload) => api.post('/saloon/staff', payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['saloon-staff'])
+      toast.success(isRtl ? 'تم إضافة الحلاق بنجاح' : 'Barber added successfully')
+      setShowAddStaff(false)
+      setNewStaffName('')
+    }
   })
   
   const filteredServices = services.filter(s => 
@@ -203,13 +220,25 @@ export default function SaloonPOS() {
               onChange={(e) => setCustomerName(e.target.value)}
               className="input text-sm"
             />
-            <input
-              type="text"
-              placeholder={isRtl ? 'اسم الحلاق (اختياري)' : 'Assign Barber (Optional)'}
-              value={globalStaff}
-              onChange={(e) => setGlobalStaff(e.target.value)}
-              className="input text-sm"
-            />
+            <div className="flex items-center gap-2">
+              <select
+                value={globalStaff}
+                onChange={(e) => setGlobalStaff(e.target.value)}
+                className="input text-sm flex-1"
+              >
+                <option value="">{isRtl ? 'تعيين حلاق (اختياري)' : 'Assign Barber (Optional)'}</option>
+                {staffList.map(s => (
+                  <option key={s._id} value={s.nameEn}>{isRtl && s.nameAr ? s.nameAr : s.nameEn}</option>
+                ))}
+              </select>
+              <button 
+                onClick={() => setShowAddStaff(true)}
+                className="p-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-dark-700 dark:hover:bg-dark-600 rounded-lg text-gray-600 dark:text-gray-300 transition-colors shrink-0"
+                title={isRtl ? 'إضافة حلاق جديد' : 'Add new barber'}
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -245,13 +274,16 @@ export default function SaloonPOS() {
                   </div>
                   
                   <div className="flex items-center justify-between gap-2 mt-3">
-                    <input 
-                      type="text"
-                      placeholder={isRtl ? 'اسم الحلاق (اختياري)' : 'Barber (optional)'}
+                    <select
                       value={item.staff}
                       onChange={(e) => updateStaff(item.serviceId, e.target.value)}
-                      className="input py-1 text-xs flex-1"
-                    />
+                      className="input py-1 px-2 text-xs flex-1 min-w-0"
+                    >
+                      <option value="">{isRtl ? 'حلاق' : 'Barber'}</option>
+                      {staffList.map(s => (
+                        <option key={s._id} value={s.nameEn}>{isRtl && s.nameAr ? s.nameAr : s.nameEn}</option>
+                      ))}
+                    </select>
                     
                     <div className="flex items-center bg-white dark:bg-dark-800 rounded-lg border border-gray-200 dark:border-dark-600">
                       <button onClick={() => updateQuantity(item.serviceId, -1)} className="p-1.5 hover:bg-gray-50 dark:hover:bg-dark-700 rounded-l-lg">
@@ -397,6 +429,45 @@ export default function SaloonPOS() {
           </div>
         )}
       </div>
+
+      {/* Add Staff Modal */}
+      {showAddStaff && (
+        <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white dark:bg-dark-800 rounded-2xl w-full max-w-sm p-6 shadow-xl border border-gray-100 dark:border-dark-700">
+            <h3 className="text-xl font-bold mb-4">{isRtl ? 'إضافة حلاق جديد' : 'Add New Barber'}</h3>
+            <div className="space-y-4">
+              <input
+                type="text"
+                placeholder={isRtl ? 'اسم الحلاق' : 'Barber Name'}
+                value={newStaffName}
+                onChange={(e) => setNewStaffName(e.target.value)}
+                className="input"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newStaffName) {
+                    createStaffMutation.mutate({ nameEn: newStaffName })
+                  }
+                }}
+              />
+              <div className="flex gap-3 mt-6">
+                <button 
+                  onClick={() => createStaffMutation.mutate({ nameEn: newStaffName })}
+                  disabled={!newStaffName || createStaffMutation.isPending}
+                  className="btn bg-amber-500 hover:bg-amber-600 text-white flex-1"
+                >
+                  {createStaffMutation.isPending ? '...' : (isRtl ? 'إضافة' : 'Add')}
+                </button>
+                <button 
+                  onClick={() => { setShowAddStaff(false); setNewStaffName('') }}
+                  className="btn bg-gray-100 hover:bg-gray-200 dark:bg-dark-700 dark:hover:bg-dark-600 text-gray-700 dark:text-gray-200 flex-1"
+                >
+                  {isRtl ? 'إلغاء' : 'Cancel'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

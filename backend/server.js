@@ -71,6 +71,7 @@ import laundryOrderRoutes from './routes/laundryOrder.routes.js';
 import laundryInventoryRoutes from './routes/laundryInventory.routes.js';
 import saloonServiceRoutes from './routes/saloonService.routes.js';
 import saloonOrderRoutes from './routes/saloonOrder.routes.js';
+import saloonStaffRoutes from './routes/saloonStaff.routes.js';
 import posPaymentRoutes from './routes/posPayment.routes.js';
 
 import khayyatWorkerRoutes from './routes/khayyat/worker.js';
@@ -397,6 +398,7 @@ app.use('/api/laundry/inventory', ensureDatabaseReady, laundryInventoryRoutes);
 
 app.use('/api/saloon/services', ensureDatabaseReady, saloonServiceRoutes);
 app.use('/api/saloon/orders', ensureDatabaseReady, saloonOrderRoutes);
+app.use('/api/saloon/staff', ensureDatabaseReady, saloonStaffRoutes);
 
 app.use('/api/pos', ensureDatabaseReady, posPaymentRoutes);
 
