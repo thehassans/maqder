@@ -22,6 +22,12 @@ const systemSettingsSchema = new mongoose.Schema({
     apiKey: { type: String },
     model: { type: String, default: 'llama-3.1-8b-instant' }
   },
+  glmOcr: {
+    enabled: { type: Boolean, default: false },
+    baseURL: { type: String, default: 'http://localhost:8000/v1' },
+    apiKey: { type: String, default: 'EMPTY' },
+    model: { type: String, default: 'glm-ocr' }
+  },
   identity: {
     enabled: { type: Boolean, default: false },
     provider: { type: String, default: 'custom_webhook' },

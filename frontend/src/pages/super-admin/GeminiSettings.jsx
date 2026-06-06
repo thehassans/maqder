@@ -24,6 +24,10 @@ export default function GeminiSettings() {
       groqModel: 'llama-3.1-8b-instant',
       groqKey: '',
       groqEnabled: true,
+      glmOcrModel: 'glm-ocr',
+      glmOcrBaseURL: 'http://localhost:8000/v1',
+      glmOcrKey: '',
+      glmOcrEnabled: false,
     },
   })
 
@@ -44,6 +48,10 @@ export default function GeminiSettings() {
         groqModel: d?.groq?.model || 'llama-3.1-8b-instant',
         groqKey: '',
         groqEnabled: d?.groq?.enabled !== false,
+        glmOcrModel: d?.glmOcr?.model || 'glm-ocr',
+        glmOcrBaseURL: d?.glmOcr?.baseURL || 'http://localhost:8000/v1',
+        glmOcrKey: '',
+        glmOcrEnabled: d?.glmOcr?.enabled !== false,
       })
     },
   })
@@ -67,6 +75,10 @@ export default function GeminiSettings() {
         groqModel: d?.groq?.model || 'llama-3.1-8b-instant',
         groqKey: '',
         groqEnabled: d?.groq?.enabled !== false,
+        glmOcrModel: d?.glmOcr?.model || 'glm-ocr',
+        glmOcrBaseURL: d?.glmOcr?.baseURL || 'http://localhost:8000/v1',
+        glmOcrKey: '',
+        glmOcrEnabled: d?.glmOcr?.enabled !== false,
       })
     },
     onError: (err) => toast.error(err.response?.data?.error || 'Error saving settings'),
@@ -103,6 +115,11 @@ export default function GeminiSettings() {
       groq: {
         model: String(formData.groqModel || 'llama-3.1-8b-instant').trim(),
         enabled: formData.groqEnabled
+      },
+      glmOcr: {
+        model: String(formData.glmOcrModel || 'glm-ocr').trim(),
+        baseURL: String(formData.glmOcrBaseURL || 'http://localhost:8000/v1').trim(),
+        enabled: formData.glmOcrEnabled
       }
     }
 
@@ -110,6 +127,7 @@ export default function GeminiSettings() {
     if (String(formData.openaiKey || '').trim()) payload.openai.apiKey = String(formData.openaiKey).trim()
     if (String(formData.grokKey || '').trim()) payload.grok.apiKey = String(formData.grokKey).trim()
     if (String(formData.groqKey || '').trim()) payload.groq.apiKey = String(formData.groqKey).trim()
+    if (String(formData.glmOcrKey || '').trim()) payload.glmOcr.apiKey = String(formData.glmOcrKey).trim()
 
     saveMutation.mutate(payload)
   }
@@ -232,6 +250,36 @@ export default function GeminiSettings() {
             <div className="flex justify-end">
               <button type="button" disabled={testMutation.isPending || !data?.groq?.hasApiKey} onClick={() => testMutation.mutate('groq')} className="btn btn-secondary btn-sm">
                 <PlugZap className="w-4 h-4" />{language === 'ar' ? 'اختبار Groq' : 'Test Groq'}
+              </button>
+            </div>
+          </div>
+
+          {/* GLM-OCR */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-gray-100 dark:border-dark-700 pb-2">
+              <h3 className="text-lg font-bold">Self-Hosted / GLM-OCR</h3>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" {...register('glmOcrEnabled')} className="checkbox" />
+                <span className="text-sm">{language === 'ar' ? 'مفعل' : 'Enabled'}</span>
+              </label>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="label">{language === 'ar' ? 'الرابط الأساسي' : 'Base URL'}</label>
+                <input {...register('glmOcrBaseURL')} className="input" placeholder="http://localhost:8000/v1" />
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'الموديل' : 'Model'}</label>
+                <input {...register('glmOcrModel')} className="input" placeholder="glm-ocr" />
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'مفتاح API (اختياري)' : 'API Key (Optional)'}</label>
+                <input type="password" {...register('glmOcrKey')} className="input" placeholder={data?.glmOcr?.hasApiKey ? `Saved: ${data.glmOcr.apiKeyMasked}` : 'Enter key'} />
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <button type="button" disabled={testMutation.isPending} onClick={() => testMutation.mutate('glmOcr')} className="btn btn-secondary btn-sm">
+                <PlugZap className="w-4 h-4" />{language === 'ar' ? 'اختبار GLM-OCR' : 'Test GLM-OCR'}
               </button>
             </div>
           </div>

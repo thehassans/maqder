@@ -572,6 +572,13 @@ router.get('/settings/ai', async (req, res) => {
         model: settings.groq?.model || 'llama-3.1-8b-instant',
         hasApiKey: !!settings.groq?.apiKey,
         apiKeyMasked: maskApiKey(settings.groq?.apiKey)
+      },
+      glmOcr: {
+        enabled: settings.glmOcr?.enabled !== false,
+        baseURL: settings.glmOcr?.baseURL || 'http://localhost:8000/v1',
+        model: settings.glmOcr?.model || 'glm-ocr',
+        hasApiKey: !!settings.glmOcr?.apiKey,
+        apiKeyMasked: maskApiKey(settings.glmOcr?.apiKey)
       }
     });
   } catch (error) {
@@ -581,7 +588,7 @@ router.get('/settings/ai', async (req, res) => {
 
 router.put('/settings/ai', async (req, res) => {
   try {
-    const { gemini, openai, grok, groq } = req.body || {};
+    const { gemini, openai, grok, groq, glmOcr } = req.body || {};
 
     const settings = await getGlobalSettings();
     
@@ -637,10 +644,25 @@ router.put('/settings/ai', async (req, res) => {
       settings.groq = nextGroq;
     }
 
+    if (glmOcr) {
+      const nextGlmOcr = {
+        ...(settings.glmOcr?.toObject?.() || settings.glmOcr || {}),
+        model: (glmOcr.model || settings.glmOcr?.model || 'glm-ocr').trim(),
+        baseURL: (glmOcr.baseURL || settings.glmOcr?.baseURL || 'http://localhost:8000/v1').trim(),
+        enabled: glmOcr.enabled !== undefined ? glmOcr.enabled : settings.glmOcr?.enabled
+      };
+      if (glmOcr.apiKey !== undefined) {
+        const trimmed = String(glmOcr.apiKey || '').trim();
+        if (trimmed) nextGlmOcr.apiKey = trimmed;
+      }
+      settings.glmOcr = nextGlmOcr;
+    }
+
     settings.markModified('gemini');
     settings.markModified('openai');
     settings.markModified('grok');
     settings.markModified('groq');
+    settings.markModified('glmOcr');
     await settings.save();
 
     res.json({
@@ -667,6 +689,13 @@ router.put('/settings/ai', async (req, res) => {
         model: settings.groq?.model || 'llama-3.1-8b-instant',
         hasApiKey: !!settings.groq?.apiKey,
         apiKeyMasked: maskApiKey(settings.groq?.apiKey)
+      },
+      glmOcr: {
+        enabled: settings.glmOcr?.enabled !== false,
+        model: settings.glmOcr?.model || 'glm-ocr',
+        baseURL: settings.glmOcr?.baseURL || 'http://localhost:8000/v1',
+        hasApiKey: !!settings.glmOcr?.apiKey,
+        apiKeyMasked: maskApiKey(settings.glmOcr?.apiKey)
       }
     });
   } catch (error) {
@@ -685,6 +714,7 @@ router.post('/settings/ai/test', async (req, res) => {
       if (provider === 'openai') activeKey = settings.openai?.apiKey;
       if (provider === 'grok') activeKey = settings.grok?.apiKey;
       if (provider === 'groq') activeKey = settings.groq?.apiKey;
+      if (provider === 'glmOcr') activeKey = settings.glmOcr?.apiKey || 'EMPTY';
     }
 
     if (!activeKey) {
@@ -723,6 +753,17 @@ router.post('/settings/ai/test', async (req, res) => {
     } else if (provider === 'groq') {
       model = settings.groq?.model || 'llama-3.1-8b-instant';
       const client = new OpenAI({ apiKey: activeKey, baseURL: "https://api.groq.com/openai/v1" });
+      const response = await client.chat.completions.create({
+        model,
+        messages: [{ role: 'user', content: "Explain how AI works in a few words" }],
+        max_tokens: 50,
+      });
+      text = response.choices?.[0]?.message?.content || '';
+    } else if (provider === 'glmOcr') {
+      model = settings.glmOcr?.model || 'glm-ocr';
+      const baseURL = settings.glmOcr?.baseURL || 'http://localhost:8000/v1';
+      // Local models might not require a real API key but the SDK requires a non-empty string.
+      const client = new OpenAI({ apiKey: activeKey || 'EMPTY', baseURL });
       const response = await client.chat.completions.create({
         model,
         messages: [{ role: 'user', content: "Explain how AI works in a few words" }],
