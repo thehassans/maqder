@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Customer from '../models/Customer.js';
 import { protect, tenantFilter, checkPermission } from '../middleware/auth.js';
 
@@ -137,6 +138,58 @@ router.get('/:id', checkPermission('invoicing', 'read'), async (req, res) => {
     }
     
     res.json(customer);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   GET /api/customers/recover-vat
+// @desc    Recover VAT numbers dropped during migration
+router.get('/recover-vat', async (req, res) => {
+  try {
+    const db = mongoose.connection.db;
+    const customersCollection = db.collection('customers');
+    
+    const customersWithTaxNum = await customersCollection.find({
+      taxNumber: { $exists: true, $ne: '' },
+      $or: [
+        { vatNumber: { $exists: false } },
+        { vatNumber: '' },
+        { vatNumber: null }
+      ]
+    }).toArray();
+
+    let directFixedCount = 0;
+    for (const c of customersWithTaxNum) {
+      await customersCollection.updateOne(
+        { _id: c._id },
+        { $set: { vatNumber: c.taxNumber } }
+      );
+      directFixedCount++;
+    }
+
+    const customers = await Customer.find({ vatNumber: { $in: [null, '', undefined] } });
+    let fallbackFixedCount = 0;
+
+    for (const customer of customers) {
+      const invoice = await mongoose.model('Invoice').findOne({
+        customerId: customer._id,
+        'buyer.vatNumber': { $exists: true, $ne: '' }
+      }).select('buyer.vatNumber');
+
+      if (invoice && invoice.buyer && invoice.buyer.vatNumber) {
+        customer.vatNumber = invoice.buyer.vatNumber;
+        await customer.save();
+        fallbackFixedCount++;
+      }
+    }
+
+    res.json({
+      message: 'VAT Recovery Complete',
+      recoveredFromHiddenField: directFixedCount,
+      recoveredFromInvoices: fallbackFixedCount,
+      totalRecovered: directFixedCount + fallbackFixedCount
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
