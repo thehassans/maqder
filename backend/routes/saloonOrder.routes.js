@@ -1,9 +1,14 @@
 import express from 'express';
 import SaloonOrder from '../models/SaloonOrder.js';
 import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
+import { generateNextSequence } from '../utils/sequence.js';
 import mongoose from 'mongoose';
 
 const router = express.Router();
+
+router.use(protect);
+router.use(tenantFilter);
+router.use(requireBusinessType('saloon'));
 
 // @route   GET /api/saloon/orders/kanban
 router.get('/kanban', checkPermission('saloon', 'read'), async (req, res) => {

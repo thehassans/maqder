@@ -31,7 +31,7 @@ export default function SaloonDashboard() {
       ]);
 
       const orders = ordersRes.data?.orders || [];
-      const services = servicesRes.data?.services || [];
+      const services = Array.isArray(servicesRes.data) ? servicesRes.data : (servicesRes.data?.services || []);
 
       // Calculate today's metrics
       const today = new Date();

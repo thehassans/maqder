@@ -1,9 +1,12 @@
 import express from 'express';
-import { checkPermission } from '../middleware/auth.js';
+import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
 import SaloonService from '../models/SaloonService.js';
 
-
 const router = express.Router();
+
+router.use(protect);
+router.use(tenantFilter);
+router.use(requireBusinessType('saloon'));
 
 // @route   GET /api/saloon/services
 router.get('/', checkPermission('saloon', 'read'), async (req, res) => {
