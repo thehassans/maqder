@@ -46,9 +46,9 @@ async function seed() {
     await mongoose.connect(MONGODB_URI);
     console.log('Connected to MongoDB');
 
-    const tenant = await Tenant.findOne();
+    const tenant = await Tenant.findOne({ businessType: 'tailoring' });
     if (!tenant) {
-      console.log('No tenant found. Cannot seed.');
+      console.log('No tailoring tenant found. Cannot seed.');
       process.exit(1);
     }
     const tenantId = tenant._id;
