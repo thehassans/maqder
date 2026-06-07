@@ -334,34 +334,22 @@ export default function Sidebar() {
 
       {/* Tenant Info */}
       {!sidebarCollapsed && tenant && (
-        <div className="px-4 py-4 border-b border-gray-100 dark:border-dark-700">
-          <div className="relative p-4 bg-gradient-to-b from-white to-slate-50/80 dark:from-dark-800 dark:to-dark-900/50 border border-slate-100 dark:border-dark-700 rounded-2xl overflow-hidden shadow-sm transition-all hover:shadow-md flex flex-col items-center text-center group">
-            
-            {/* Glossy overlay effect */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/40 to-white/0 dark:from-white/0 dark:via-white/5 dark:to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-
-            {tenant?.branding?.logo ? (
-              <div className="w-16 h-16 rounded-2xl bg-white dark:bg-dark-900 p-2 shadow-sm border border-slate-100 dark:border-dark-700 mb-3 relative z-10 group-hover:scale-105 transition-transform duration-300">
-                <img src={tenant.branding.logo} alt="Company Logo" className="w-full h-full object-contain" />
-              </div>
-            ) : (
-              <div className="w-16 h-16 rounded-2xl bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 flex items-center justify-center font-bold text-xl mb-3 relative z-10 shadow-sm border border-primary-100 dark:border-primary-800/30 group-hover:scale-105 transition-transform duration-300">
-                {tenant.business?.legalNameEn?.charAt(0) || tenant.name?.charAt(0) || 'M'}
-              </div>
-            )}
-            
-            <div className="relative z-10 w-full px-1">
-              <p className="text-[9px] uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 font-extrabold mb-1">
-                {language === 'ar' ? 'الشركة' : 'COMPANY'}
-              </p>
-              <h3 className="font-black text-slate-900 dark:text-white text-[14px] leading-tight mb-1 line-clamp-2">
-                {language === 'ar' ? tenant.business?.legalNameAr : tenant.business?.legalNameEn}
-              </h3>
-              <div className="inline-flex items-center justify-center px-2 py-0.5 mt-1 bg-slate-100 dark:bg-dark-700 rounded text-[10px] text-slate-500 dark:text-slate-400 font-medium border border-slate-200 dark:border-dark-600">
-                VAT: <span className="font-mono ml-1 font-bold">{tenant.business?.vatNumber}</span>
-              </div>
+        <div className="px-6 py-6 border-b border-gray-100 dark:border-dark-700 flex flex-col items-center text-center">
+          {tenant?.branding?.logo ? (
+            <div className="w-16 h-16 mb-4">
+              <img src={tenant.branding.logo} alt="Company Logo" className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal" />
             </div>
-
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-dark-700 text-gray-900 dark:text-white flex items-center justify-center font-light text-2xl mb-4">
+              {tenant.business?.legalNameEn?.charAt(0) || tenant.name?.charAt(0) || 'M'}
+            </div>
+          )}
+          
+          <h3 className="font-medium text-gray-900 dark:text-white text-sm leading-tight line-clamp-2 tracking-wide uppercase">
+            {language === 'ar' ? tenant.business?.legalNameAr : tenant.business?.legalNameEn}
+          </h3>
+          <div className="mt-2 text-[10px] text-gray-400 tracking-widest font-mono uppercase">
+            VAT {tenant.business?.vatNumber}
           </div>
         </div>
       )}
