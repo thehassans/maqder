@@ -13,7 +13,6 @@ const ThermalReceipt = forwardRef(({ order, type = 'laundry', isKitchen = false 
   const businessNameEn = tenant?.business?.legalNameEn || tenant?.name || 'Maqder POS'
   const businessNameAr = tenant?.business?.legalNameAr || tenant?.name || 'مقدر نقاط البيع'
   const vatNumber = tenant?.business?.vatNumber || '300000000000003'
-  const crNumber = tenant?.business?.crNumber || '1010000000'
 
   const dateStr = new Date(order.createdAt || Date.now()).toLocaleString(isRtl ? 'ar-SA' : 'en-US')
   const orderNumber = order.receiptNumber || order.orderNumber || order._id?.slice(-8) || 'N/A'
@@ -70,7 +69,7 @@ const ThermalReceipt = forwardRef(({ order, type = 'laundry', isKitchen = false 
     delivery: { en: 'Delivery', ar: 'توصيل للمنزل' }
   }
 
-  const logoSrc = tenant?.branding?.logoUrl || tenant?.settings?.invoiceBranding?.logo || '/maqder-logo.png'
+  const logoSrc = tenant?.branding?.logo || tenant?.branding?.logoUrl || tenant?.settings?.invoiceBranding?.logo
 
   // Generate ZATCA QR payload dynamically in the frontend if not present on order
   let zatcaQrPayload = order.zatcaQrCode
@@ -134,7 +133,6 @@ const ThermalReceipt = forwardRef(({ order, type = 'laundry', isKitchen = false 
           
           <div className="text-[9px] mt-1 text-gray-600">
             <div>VAT / الرقم الضريبي: <span className="font-bold">{vatNumber}</span></div>
-            {crNumber && <div>CR / السجل التجاري: <span className="font-bold">{crNumber}</span></div>}
             {addressText && <div className="mt-0.5 leading-tight">{addressText}</div>}
           </div>
         </div>

@@ -98,6 +98,7 @@ export default function KhayyatQuickInvoice() {
     let remainingDiscount = discountVal;
 
     try {
+      const createdOrders = [];
       for (let i = 0; i < validItems.length; i++) {
         const item = validItems[i];
         const formData = new FormData();
@@ -131,6 +132,7 @@ export default function KhayyatQuickInvoice() {
         // Put member name in description and notes
         const desc = `${item.name}`;
         formData.append('description', desc);
+        formData.append('orderFor', item.name);
         
         if (notes) formData.append('notes', notes);
         if (item.imageFile) formData.append('measurementImage', item.imageFile);
@@ -143,10 +145,29 @@ export default function KhayyatQuickInvoice() {
         if (!currentCustomerId && res.data.stitching.customerId) {
           currentCustomerId = res.data.stitching.customerId;
         }
+        createdOrders.push(res.data.stitching);
       }
 
+      const aggregatedOrder = {
+        _id: createdOrders[0]._id,
+        createdAt: createdOrders[0].createdAt,
+        receiptNumber: createdOrders[0].receiptNumber || createdOrders[0].orderNumber || createdOrders[0]._id.slice(-8),
+        customerName: createdOrders[0].customerName || customerName.trim(),
+        customerPhone: createdOrders[0].customerPhone || customerPhone.trim(),
+        price: createdOrders.reduce((s, o) => s + (Number(o?.price) || 0), 0),
+        paidAmount: createdOrders.reduce((s, o) => s + (Number(o?.paidAmount) || 0), 0),
+        quantity: createdOrders.reduce((s, o) => s + (Number(o?.quantity) || 0), 0),
+        items: createdOrders.map(o => ({
+          nameEn: `Tailoring Order (${o.orderFor || o.description || 'Member'})`,
+          nameAr: `طلب خياطة (${o.orderFor || o.description || 'الفرد'})`,
+          quantity: o.quantity || 1,
+          unitPrice: o.price || 0,
+          total: o.price || 0
+        }))
+      };
+
       toast.success(language === 'ar' ? 'تم إنشاء الطلبات بنجاح' : 'Orders created successfully');
-      navigate(`/app/dashboard/khayyat/stitchings`);
+      navigate(`/app/dashboard/khayyat/stitchings`, { state: { autoPrintOrder: aggregatedOrder } });
     } catch (error) {
       toast.error(error?.response?.data?.error || error?.message || 'Failed to create orders');
     } finally {

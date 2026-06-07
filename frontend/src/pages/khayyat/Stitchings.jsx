@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import api from '../../lib/api';
 const t = (key, opts) => opts?.defaultValue || key;
@@ -24,6 +24,7 @@ const Stitchings = () => {
   const { language } = useSelector(state => state.ui);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const [stitchings, setStitchings] = useState([]);
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -114,6 +115,18 @@ const Stitchings = () => {
 
     openInvoice();
   }, [api, searchParams]);
+
+  useEffect(() => {
+    if (location.state?.autoPrintOrder) {
+      setPrintOrder(location.state.autoPrintOrder);
+      window.history.replaceState({}, document.title);
+      setTimeout(() => {
+        if (printRef.current) {
+          window.print();
+        }
+      }, 500);
+    }
+  }, [location]);
 
   const fetchData = useCallback(async () => {
     const requestId = ++fetchRequestIdRef.current;
@@ -241,18 +254,29 @@ const Stitchings = () => {
               className="w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2.5 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg text-gray-900 dark:text-slate-100"
-          >
-            <option value="">All Status</option>
-            <option value="pending">{(language === 'ar' ? 'قيد الانتظار' : 'Pending')}</option>
-            <option value="assigned">{(language === 'ar' ? 'معين' : 'Assigned')}</option>
-            <option value="in_progress">{(language === 'ar' ? 'قيد التنفيذ' : 'In Progress')}</option>
-            <option value="completed">{(language === 'ar' ? 'مكتمل' : 'Completed')}</option>
-            <option value="delivered">{(language === 'ar' ? 'مُسلَّم' : 'Delivered')}</option>
-          </select>
+        </div>
+        
+        <div className="flex overflow-x-auto gap-2 pb-1 custom-scrollbar mt-4">
+          {[
+            { value: '', label: (language === 'ar' ? 'الكل' : 'All') },
+            { value: 'pending', label: (language === 'ar' ? 'قيد الانتظار' : 'Pending') },
+            { value: 'assigned', label: (language === 'ar' ? 'معين' : 'Assigned') },
+            { value: 'in_progress', label: (language === 'ar' ? 'قيد التنفيذ' : 'In Progress') },
+            { value: 'completed', label: (language === 'ar' ? 'مكتمل' : 'Completed') },
+            { value: 'delivered', label: (language === 'ar' ? 'مُسلَّم' : 'Delivered') }
+          ].map(tab => (
+            <button
+              key={tab.value}
+              onClick={() => setStatusFilter(tab.value)}
+              className={`whitespace-nowrap px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                statusFilter === tab.value
+                  ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                  : 'bg-gray-50 dark:bg-slate-800 text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
       </Card>
 
