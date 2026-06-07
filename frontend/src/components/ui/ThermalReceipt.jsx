@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux'
 import { QRCodeSVG } from 'qrcode.react'
 import { generateZatcaQrValue } from '../../lib/zatcaQr'
 
-const ThermalReceipt = forwardRef(({ order, type = 'laundry' }, ref) => {
+const ThermalReceipt = forwardRef(({ order, type = 'laundry', isKitchen = false }, ref) => {
   const { tenant } = useSelector(state => state.auth)
   const { language } = useSelector(state => state.ui)
   const isRtl = language === 'ar'
@@ -113,30 +113,38 @@ const ThermalReceipt = forwardRef(({ order, type = 'laundry' }, ref) => {
       </style>
 
       {/* Header Profile */}
-      <div className="text-center mb-4 flex flex-col items-center">
-        {logoSrc && (
-          <img 
-            src={logoSrc} 
-            alt="Logo" 
-            className="w-20 h-20 mb-2 object-contain filter grayscale" 
-            onError={(e) => { e.target.style.display = 'none' }}
-          />
-        )}
-        <h2 className="font-extrabold text-sm text-gray-900 leading-snug">{businessNameEn}</h2>
-        <h2 className="font-extrabold text-sm text-gray-900 leading-snug mt-0.5">{businessNameAr}</h2>
-        
-        <div className="border-t border-dashed border-gray-300 w-full my-2"></div>
-        
-        <div className="text-[10px] font-bold text-gray-700 tracking-wider">
-          SIMPLIFIED TAX INVOICE | فاتورة ضريبية مبسطة
+      {!isKitchen ? (
+        <div className="text-center mb-4 flex flex-col items-center">
+          {logoSrc && (
+            <img 
+              src={logoSrc} 
+              alt="Logo" 
+              className="w-20 h-20 mb-2 object-contain filter grayscale" 
+              onError={(e) => { e.target.style.display = 'none' }}
+            />
+          )}
+          <h2 className="font-extrabold text-sm text-gray-900 leading-snug">{businessNameEn}</h2>
+          <h2 className="font-extrabold text-sm text-gray-900 leading-snug mt-0.5">{businessNameAr}</h2>
+          
+          <div className="border-t border-dashed border-gray-300 w-full my-2"></div>
+          
+          <div className="text-[10px] font-bold text-gray-700 tracking-wider">
+            SIMPLIFIED TAX INVOICE | فاتورة ضريبية مبسطة
+          </div>
+          
+          <div className="text-[9px] mt-1 text-gray-600">
+            <div>VAT / الرقم الضريبي: <span className="font-bold">{vatNumber}</span></div>
+            {crNumber && <div>CR / السجل التجاري: <span className="font-bold">{crNumber}</span></div>}
+            {addressText && <div className="mt-0.5 leading-tight">{addressText}</div>}
+          </div>
         </div>
-        
-        <div className="text-[9px] mt-1 text-gray-600">
-          <div>VAT / الرقم الضريبي: <span className="font-bold">{vatNumber}</span></div>
-          {crNumber && <div>CR / السجل التجاري: <span className="font-bold">{crNumber}</span></div>}
-          {addressText && <div className="mt-0.5 leading-tight">{addressText}</div>}
+      ) : (
+        <div className="text-center mb-4 flex flex-col items-center">
+          <h2 className="font-extrabold text-xl text-gray-900 leading-snug">KITCHEN TICKET</h2>
+          <h2 className="font-extrabold text-xl text-gray-900 leading-snug mt-1">طلب مطبخ</h2>
+          <div className="border-t border-solid border-gray-900 border-[2px] w-full my-2"></div>
         </div>
-      </div>
+      )}
 
       {/* Metadata Section */}
       <div className="border-t border-b border-dashed border-gray-400 py-2 mb-3 text-[9px] space-y-1">
@@ -204,20 +212,20 @@ const ThermalReceipt = forwardRef(({ order, type = 'laundry' }, ref) => {
       <table className="w-full text-[9px] mb-3 border-collapse">
         <thead>
           <tr className="border-b border-dashed border-gray-400 text-gray-700">
-            <th className="text-left py-1 w-[55%]">Item / الصنف</th>
-            <th className="text-center py-1 w-[15%]">Qty / الكمية</th>
-            <th className="text-right py-1 w-[30%]">Total / المجموع</th>
+            <th className={`text-left py-1 ${isKitchen ? 'w-[80%]' : 'w-[55%]'}`}>Item / الصنف</th>
+            <th className={`text-center py-1 ${isKitchen ? 'w-[20%]' : 'w-[15%]'}`}>Qty / الكمية</th>
+            {!isKitchen && <th className="text-right py-1 w-[30%]">Total / المجموع</th>}
           </tr>
         </thead>
         <tbody>
           {items.map((item, idx) => (
-            <tr key={idx} className="border-b border-dashed border-gray-200 last:border-0">
+            <tr key={idx} className={`border-b border-dashed border-gray-200 last:border-0 ${isKitchen ? 'text-[11px]' : ''}`}>
               <td className="py-2 pr-1">
-                <div className="font-bold text-gray-900 leading-tight">
+                <div className={`${isKitchen ? 'font-black text-sm' : 'font-bold'} text-gray-900 leading-tight`}>
                   {item.nameEn || item.name}
                 </div>
                 {item.nameAr && item.nameAr !== item.nameEn && (
-                  <div className="text-gray-600 leading-tight mt-0.5">
+                  <div className={`${isKitchen ? 'text-gray-900 font-bold text-sm mt-1' : 'text-gray-600 mt-0.5'} leading-tight`}>
                     {item.nameAr}
                   </div>
                 )}
@@ -234,75 +242,83 @@ const ThermalReceipt = forwardRef(({ order, type = 'laundry' }, ref) => {
                   </div>
                 )}
                 
-                <div className="text-[8px] text-gray-400 mt-0.5">
-                  SAR {Number(item.unitPrice).toFixed(2)} x {item.quantity}
-                </div>
+                {!isKitchen && (
+                  <div className="text-[8px] text-gray-400 mt-0.5">
+                    SAR {Number(item.unitPrice).toFixed(2)} x {item.quantity}
+                  </div>
+                )}
               </td>
-              <td className="text-center py-2 align-top font-semibold text-gray-900">{item.quantity}</td>
-              <td className="text-right py-2 align-top font-bold text-gray-900">
-                SAR {(Number(item.total || item.lineTotal || (item.unitPrice * item.quantity))).toFixed(2)}
-              </td>
+              <td className={`text-center py-2 align-top font-bold text-gray-900 ${isKitchen ? 'text-lg' : ''}`}>{item.quantity}</td>
+              {!isKitchen && (
+                <td className="text-right py-2 align-top font-bold text-gray-900">
+                  SAR {(Number(item.total || item.lineTotal || (item.unitPrice * item.quantity))).toFixed(2)}
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
       </table>
 
-      {/* Totals Summary */}
-      <div className="border-t border-dashed border-gray-400 pt-2 text-[9px] space-y-1">
-        <div className="flex justify-between">
-          <span className="text-gray-600">Subtotal / المجموع الفرعي:</span>
-          <span>SAR {(Number(order.subtotal || order.price || 0)).toFixed(2)}</span>
-        </div>
-        {order.isUrgent && (
-          <div className="flex justify-between font-semibold text-amber-700">
-            <span>Urgent Fee / رسوم العاجل:</span>
-            <span>SAR {(Number(order.urgentFee || 0)).toFixed(2)}</span>
+      {!isKitchen && (
+        <>
+          {/* Totals Summary */}
+          <div className="border-t border-dashed border-gray-400 pt-2 text-[9px] space-y-1">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Subtotal / المجموع الفرعي:</span>
+              <span>SAR {(Number(order.subtotal || order.price || 0)).toFixed(2)}</span>
+            </div>
+            {order.isUrgent && (
+              <div className="flex justify-between font-semibold text-amber-700">
+                <span>Urgent Fee / رسوم العاجل:</span>
+                <span>SAR {(Number(order.urgentFee || 0)).toFixed(2)}</span>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <span className="text-gray-600">VAT (15%) / ضريبة القيمة المضافة:</span>
+              <span>SAR {(Number(order.totalVat || order.totalTax || 0)).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between mt-2 pt-2 border-t border-dashed border-gray-300 font-extrabold text-sm text-gray-900">
+              <span>Total / الإجمالي النهائي:</span>
+              <span>SAR {(Number(order.grandTotal || order.total || order.price || 0)).toFixed(2)}</span>
+            </div>
           </div>
-        )}
-        <div className="flex justify-between">
-          <span className="text-gray-600">VAT (15%) / ضريبة القيمة المضافة:</span>
-          <span>SAR {(Number(order.totalVat || order.totalTax || 0)).toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between mt-2 pt-2 border-t border-dashed border-gray-300 font-extrabold text-sm text-gray-900">
-          <span>Total / الإجمالي النهائي:</span>
-          <span>SAR {(Number(order.grandTotal || order.total || order.price || 0)).toFixed(2)}</span>
-        </div>
-      </div>
 
-      {/* QR Codes Section */}
-      <div className="my-5 flex flex-row items-center justify-center gap-4">
-        {zatcaQrPayload && (
-          <div className="flex flex-col items-center justify-center text-center">
-            <div className="text-[7px] text-gray-500 mb-1 font-bold whitespace-nowrap">
-              ZATCA | هيئة الزكاة
-            </div>
-            <div className="bg-white p-1 border border-gray-200 rounded-lg">
-              <QRCodeSVG 
-                value={zatcaQrPayload} 
-                size={80} 
-                level="M" 
-                includeMargin={false}
-              />
-            </div>
-          </div>
-        )}
+          {/* QR Codes Section */}
+          <div className="my-5 flex flex-row items-center justify-center gap-4">
+            {zatcaQrPayload && (
+              <div className="flex flex-col items-center justify-center text-center">
+                <div className="text-[7px] text-gray-500 mb-1 font-bold whitespace-nowrap">
+                  ZATCA | هيئة الزكاة
+                </div>
+                <div className="bg-white p-1 border border-gray-200 rounded-lg">
+                  <QRCodeSVG 
+                    value={zatcaQrPayload} 
+                    size={80} 
+                    level="M" 
+                    includeMargin={false}
+                  />
+                </div>
+              </div>
+            )}
 
-        {type === 'khayyat' && order._id && (
-          <div className="flex flex-col items-center justify-center text-center">
-            <div className="text-[7px] text-gray-500 mb-1 font-bold whitespace-nowrap">
-              TRACK | تتبع الطلب
-            </div>
-            <div className="bg-white p-1 border border-gray-200 rounded-lg">
-              <QRCodeSVG 
-                value={`${window.location.origin}/track-order?id=${order._id}`}
-                size={80} 
-                level="M" 
-                includeMargin={false}
-              />
-            </div>
+            {type === 'khayyat' && order._id && (
+              <div className="flex flex-col items-center justify-center text-center">
+                <div className="text-[7px] text-gray-500 mb-1 font-bold whitespace-nowrap">
+                  TRACK | تتبع الطلب
+                </div>
+                <div className="bg-white p-1 border border-gray-200 rounded-lg">
+                  <QRCodeSVG 
+                    value={`${window.location.origin}/track-order?id=${order._id}`}
+                    size={80} 
+                    level="M" 
+                    includeMargin={false}
+                  />
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
 
       {/* Footer message */}
       <div className="text-center text-[9px] mt-4 pt-3 border-t border-dashed border-gray-400 text-gray-600 space-y-0.5">

@@ -30,6 +30,7 @@ export default function RestaurantPOS() {
   // Checkout states
   const [isProcessing, setIsProcessing] = useState(false)
   const [completedOrder, setCompletedOrder] = useState(null)
+  const [receiptType, setReceiptType] = useState('customer') // 'customer' or 'kitchen'
   const [showCardModal, setShowCardModal] = useState(false)
   const receiptRef = useRef(null)
 
@@ -168,6 +169,7 @@ export default function RestaurantPOS() {
       
       const { data } = await api.post('/restaurant/orders', payload)
       toast.success(isRtl ? `تم إنشاء الطلب: ${data.orderNumber}` : `Order created: ${data.orderNumber}`)
+      setReceiptType('customer')
       setCompletedOrder(data)
       
       // Refresh tables if dine in to update status
@@ -185,7 +187,40 @@ export default function RestaurantPOS() {
     if (cart.length === 0) return toast.error('Cart is empty')
     if (orderType === 'dine_in' && !selectedTable) return toast.error(isRtl ? 'الرجاء اختيار الطاولة' : 'Please select a table')
     
-    await submitOrder('open')
+    setIsProcessing(true)
+    try {
+      const payload = {
+        status: 'open',
+        kitchenStatus: 'new', // Send to kitchen
+        orderType,
+        customerName: customerName.trim(),
+        customerPhone: customerPhone.trim(),
+        lineItems: cart.map(item => ({
+          menuItemId: item.menuItem._id,
+          name: item.nameEn,
+          nameAr: item.nameAr,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          taxRate: item.taxRate,
+        }))
+      }
+      if (orderType === 'dine_in') {
+        const table = tables.find(t => t._id === selectedTable)
+        if (table) { payload.tableId = table._id; payload.tableNumber = table.tableNumber }
+      }
+      
+      const { data } = await api.post('/restaurant/orders', payload)
+      toast.success(isRtl ? `تم الإرسال للمطبخ: ${data.orderNumber}` : `Sent to kitchen: ${data.orderNumber}`)
+      
+      setReceiptType('kitchen')
+      setCompletedOrder(data)
+      
+      if (orderType === 'dine_in') fetchData()
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Kitchen dispatch failed')
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   const handleCardApproved = async (posPayment) => {
@@ -225,6 +260,7 @@ export default function RestaurantPOS() {
         // ignore
       }
       toast.success(isRtl ? `تم إنشاء الطلب: ${data.orderNumber}` : `Order created: ${data.orderNumber}`)
+      setReceiptType('customer')
       setCompletedOrder(data)
       if (orderType === 'dine_in') fetchData()
     } catch (error) {
@@ -572,7 +608,7 @@ export default function RestaurantPOS() {
             </div>
             
             <div className="border border-gray-200 rounded-lg p-2 print:border-none print:p-0 flex justify-center">
-              <ThermalReceipt ref={receiptRef} order={completedOrder} type="restaurant" />
+              <ThermalReceipt ref={receiptRef} order={completedOrder} type="restaurant" isKitchen={receiptType === 'kitchen'} />
             </div>
 
             <div className="mt-6 flex gap-3 print:hidden">
