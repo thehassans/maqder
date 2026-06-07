@@ -156,7 +156,11 @@ export default function RestaurantKitchen() {
 <meta charset="utf-8" />
 <title>${title}</title>
 <style>
-body{font-family:Arial, sans-serif; margin:0; padding:14px;}
+@media print {
+  @page { margin: 0; size: 80mm auto; }
+  body { width: 80mm; margin: 0 auto; padding: 10px; }
+}
+body{font-family:Arial, sans-serif; margin:0; padding:14px; max-width:80mm; margin: 0 auto;}
 .header{text-align:center; margin-bottom:12px;}
 .logo{max-width:80px; max-height:80px; margin-bottom:8px; filter:grayscale(100%);}
 .order-block{border:2px solid #000; padding:8px; text-align:center; margin-bottom:12px; border-radius:4px;}
@@ -230,7 +234,11 @@ td{font-size:14px; padding:8px 0; font-weight:bold; border-bottom:1px dashed #dd
 <meta charset="utf-8" />
 <title>${title}</title>
 <style>
-body{font-family:Arial, sans-serif; margin:0; padding:14px;}
+@media print {
+  @page { margin: 0; size: 80mm auto; }
+  body { width: 80mm; margin: 0 auto; padding: 10px; }
+}
+body{font-family:Arial, sans-serif; margin:0; padding:14px; max-width:80mm; margin: 0 auto;}
 .header{text-align:center; margin-bottom:12px;}
 .logo{max-width:80px; max-height:80px; margin-bottom:8px; filter:grayscale(100%);}
 .k{font-size:18px; font-weight:700;}
