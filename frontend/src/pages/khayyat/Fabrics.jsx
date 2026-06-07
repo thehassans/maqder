@@ -13,7 +13,7 @@ import DemoBlockedModal from './components/ui/DemoBlockedModal';
 import { Input } from './components/ui/Input';
 import { Table, Thead, Tbody, Tr, Th, Td } from './components/ui/Table';
 import SARIcon from './components/ui/SARIcon';
-import { Layers, Plus, Minus, Edit, Trash2 } from 'lucide-react';
+import { Layers, Plus, Minus, Edit, Trash2, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const FabricRollar = () => {
@@ -123,6 +123,23 @@ const FabricRollar = () => {
     } catch (e) {
       toast.error(e?.response?.data?.error || (language === 'ar' ? 'حدث خطأ' : 'Error'));
     }
+  };
+
+  const [seeding, setSeeding] = useState(false);
+  const handleSeedFabrics = async () => {
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      return;
+    }
+    setSeeding(true);
+    try {
+      const res = await api.post('/khayyat/fabrics/seed');
+      toast.success(res.data.message || (language === 'ar' ? 'تمت الإضافة بنجاح' : 'Fabrics added successfully'));
+      fetchFabrics();
+    } catch (e) {
+      toast.error(e?.response?.data?.error || (language === 'ar' ? 'حدث خطأ' : 'Error'));
+    }
+    setSeeding(false);
   };
 
   const openEdit = (f) => {
@@ -270,9 +287,24 @@ const FabricRollar = () => {
             <div className="text-sm text-gray-500 dark:text-slate-400">{(language === 'ar' ? 'أنشئ الأقمشة وادِر سعر الرول وبلد الصنع والمخزون.' : 'Create fabrics, manage price per roll, made in, and stock.')}</div>
           </div>
         </div>
-        <Button data-tutorial="fabrics-create-button" onClick={openCreate} icon={Plus} className="rounded-2xl px-5 py-3">
-          {(language === 'ar' ? 'إضافة قماش' : 'Add Fabric')}
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button 
+            onClick={handleSeedFabrics} 
+            disabled={seeding || isDemo} 
+            variant="outline" 
+            icon={seeding ? null : Download} 
+            className="rounded-2xl px-5 py-3"
+          >
+            {seeding ? (
+              <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+            ) : (
+              language === 'ar' ? 'استيراد الأقمشة الشائعة' : 'Seed Popular Fabrics'
+            )}
+          </Button>
+          <Button data-tutorial="fabrics-create-button" onClick={openCreate} icon={Plus} className="rounded-2xl px-5 py-3">
+            {(language === 'ar' ? 'إضافة قماش' : 'Add Fabric')}
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

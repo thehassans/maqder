@@ -12,7 +12,7 @@ import { Modal } from './components/ui/Modal';
 import { ConfirmModal } from './components/ui/ConfirmModal';
 import DemoBlockedModal from './components/ui/DemoBlockedModal';
 import { Table, Thead, Tbody, Tr, Th, Td } from './components/ui/Table';
-import { Plus, Search, UserPlus, Trash2, Printer, X } from 'lucide-react';
+import { Plus, Search, UserPlus, Trash2, Printer, X, Eye } from 'lucide-react';
 import SARIcon from './components/ui/SARIcon';
 import toast from 'react-hot-toast';
 import { formatSaudiRiyal } from './utils/saudi';
@@ -488,22 +488,32 @@ const Stitchings = () => {
                         <span className="text-xs font-bold text-white tracking-wide">PAID</span>
                       </div>
                     ) : (parseFloat(stitch.paidAmount) || 0) > 0 ? (
-                      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 shadow-lg shadow-amber-500/30">
-                        <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
-                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 8v4m0 4h.01" />
-                          </svg>
+                      <div className="flex flex-col gap-1 items-start">
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 shadow-lg shadow-amber-500/30">
+                          <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
+                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 8v4m0 4h.01" />
+                            </svg>
+                          </div>
+                          <span className="text-xs font-bold text-white tracking-wide">PARTIAL</span>
                         </div>
-                        <span className="text-xs font-bold text-white tracking-wide">PARTIAL</span>
+                        <div className="text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                          Pending: {formatSaudiRiyal(Math.max(0, (parseFloat(stitch.price) || 0) - (parseFloat(stitch.paidAmount) || 0)))}
+                        </div>
                       </div>
                     ) : (
-                      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 shadow-lg shadow-rose-500/30">
-                        <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
-                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
+                      <div className="flex flex-col gap-1 items-start">
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-rose-500 to-pink-500 shadow-lg shadow-rose-500/30">
+                          <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center">
+                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </div>
+                          <span className="text-xs font-bold text-white tracking-wide">PENDING</span>
                         </div>
-                        <span className="text-xs font-bold text-white tracking-wide">PENDING</span>
+                        <div className="text-[10px] font-semibold text-rose-600 dark:text-rose-400">
+                          Pending: {formatSaudiRiyal(stitch.price || 0)}
+                        </div>
                       </div>
                     )}
                   </Td>
@@ -523,6 +533,19 @@ const Stitchings = () => {
                   </Td>
                   <Td>
                     <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => {
+                          if (stitch.measurementImage) {
+                            window.open(stitch.measurementImage, '_blank');
+                          } else {
+                            navigate(`/user/stitchings/${stitch._id}/edit`);
+                          }
+                        }}
+                        className="p-2 hover:bg-sky-50 dark:hover:bg-sky-900/20 text-sky-600 dark:text-sky-400 rounded-lg"
+                        title={(language === 'ar' ? 'عرض المقاسات' : 'View Measurement')}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
                       <button
                         onClick={() => handlePrintLabel(stitch)}
                         className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-600 dark:text-slate-300 rounded-lg"

@@ -18,6 +18,51 @@ router.get('/', async (req, res) => {
   }
 });
 
+router.post('/seed', async (req, res) => {
+  try {
+    const saudiFabrics = [
+      { name: 'Toyobo (تويوبو)', madeIn: 'Japan', pricePerRoll: 1200 },
+      { name: 'Shikibo (شيكيبو)', madeIn: 'Japan', pricePerRoll: 1100 },
+      { name: 'Kurabo (كورابو)', madeIn: 'Japan', pricePerRoll: 1150 },
+      { name: 'Rihab (رحاب)', madeIn: 'Japan', pricePerRoll: 1050 },
+      { name: 'Samiramis (سميراميس)', madeIn: 'Japan', pricePerRoll: 1300 },
+      { name: 'Richard (ريتشارد)', madeIn: 'England', pricePerRoll: 1500 },
+      { name: 'Lexuses (لكزس)', madeIn: 'Japan', pricePerRoll: 1250 },
+      { name: 'Rosary (روزاري)', madeIn: 'Japan', pricePerRoll: 1000 },
+      { name: 'Salbo (سالبو)', madeIn: 'Japan', pricePerRoll: 950 },
+      { name: 'Salik (سالك)', madeIn: 'Korea', pricePerRoll: 600 },
+      { name: 'Zibda (زبدة)', madeIn: 'Korea', pricePerRoll: 550 },
+      { name: 'Taffeta (تافيتا)', madeIn: 'Korea', pricePerRoll: 500 },
+      { name: 'Marino (مارينو)', madeIn: 'Italy', pricePerRoll: 1800 },
+      { name: 'Givenchy (جيفنشي)', madeIn: 'England', pricePerRoll: 2000 },
+      { name: 'Dunhill (دنهل)', madeIn: 'England', pricePerRoll: 1900 },
+      { name: 'Sultani (سلطاني)', madeIn: 'Japan', pricePerRoll: 1100 },
+      { name: 'Aseel (اصيل)', madeIn: 'Japan', pricePerRoll: 1000 }
+    ];
+
+    const inserted = [];
+    for (const fabric of saudiFabrics) {
+      const exists = await KhayyatFabric.findOne({ tenantId: req.user.tenantId, name: fabric.name });
+      if (!exists) {
+        const newFabric = new KhayyatFabric({
+          tenantId: req.user.tenantId,
+          name: fabric.name,
+          madeIn: fabric.madeIn,
+          pricePerRoll: fabric.pricePerRoll,
+          rollsInStock: 0,
+          stockMeters: 0,
+        });
+        await newFabric.save();
+        inserted.push(newFabric);
+      }
+    }
+    
+    res.json({ message: `${inserted.length} fabrics seeded successfully.`, inserted });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 router.post('/', async (req, res) => {
   try {
     const { name, madeIn, pricePerRoll, rollsInStock, stockMeters, supplierId } = req.body;

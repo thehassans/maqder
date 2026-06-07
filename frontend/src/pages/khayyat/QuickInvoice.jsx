@@ -6,7 +6,8 @@ import { Plus, Trash2, Printer, ArrowLeft, Upload, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../lib/api';
 import { useTranslation } from '../../lib/translations';
-import Money from '../../components/ui/Money';
+import { formatSaudiRiyal } from './utils/saudi';
+import SARIcon from './components/ui/SARIcon';
 
 export default function KhayyatQuickInvoice() {
   const navigate = useNavigate();
@@ -385,7 +386,7 @@ export default function KhayyatQuickInvoice() {
               
               <div className="flex justify-between items-center text-lg font-bold text-gray-900 dark:text-white pt-2 border-t border-dashed border-gray-200 dark:border-slate-700">
                 <span>{language === 'ar' ? 'الإجمالي' : 'Total'}</span>
-                <span><Money value={grandTotal} /></span>
+                <span><span className="flex items-center gap-1">{formatSaudiRiyal(grandTotal)} <SARIcon className="w-5 h-5" /></span></span>
               </div>
 
               <div className="flex justify-between items-center text-sm text-gray-600 dark:text-gray-300 pt-2">
@@ -403,7 +404,7 @@ export default function KhayyatQuickInvoice() {
               
               <div className="flex justify-between items-center text-sm text-gray-600 dark:text-gray-300">
                 <span className="font-medium">{language === 'ar' ? 'المتبقي' : 'Pending'}</span>
-                <span className="font-bold text-rose-500"><Money value={pendingVal} /></span>
+                <span className="font-bold text-rose-500 flex items-center gap-1">{formatSaudiRiyal(pendingVal)} <SARIcon className="w-5 h-5 text-rose-500" /></span>
               </div>
             </div>
 
