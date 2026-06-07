@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Car, User, FileText, CheckCircle, Search, ChevronRight, AlertTriangle, X } from 'lucide-react'
 import api from '../../lib/api'
+import DamageMatrix from './components/DamageMatrix'
 
 const STEPS = ['car', 'customer', 'terms', 'confirm']
 const FUEL_LEVELS = ['empty', 'quarter', 'half', 'three_quarters', 'full']
@@ -25,7 +26,7 @@ const StepIndicator = ({ step, isAr }) => {
         const active = i === current
         return (
           <div key={s.id} className="flex items-center">
-            <div className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition-all ${active ? 'bg-amber-500 text-white' : done ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400' : 'bg-gray-100 text-gray-400 dark:bg-dark-700 dark:text-gray-500'}`}>
+            <div className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition-all ${active ? 'bg-emerald-500 text-white' : done ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400' : 'bg-gray-100 text-gray-400 dark:bg-dark-700 dark:text-gray-500'}`}>
               <Icon className="w-4 h-4" />
               <span className="hidden sm:block">{s.label}</span>
             </div>
@@ -44,7 +45,7 @@ const InputField = ({ label, children, required }) => (
   </div>
 )
 const Input = (props) => (
-  <input {...props} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+  <input {...props} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
 )
 
 export default function CheckoutPOS() {
@@ -73,7 +74,7 @@ export default function CheckoutPOS() {
   })
 
   const [condition, setCondition] = useState({
-    odometerOut: '', fuelLevelOut: 'full', damageNotes: '',
+    odometerOut: '', fuelLevelOut: 'full', damageNotes: '', damagePins: []
   })
 
   // Pre-select car from URL param
@@ -177,17 +178,17 @@ export default function CheckoutPOS() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input value={carSearch} onChange={e => setCarSearch(e.target.value)} placeholder={t('Search by plate, make, model...', 'بحث بالسيارة أو اللوحة...')}
-                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-gray-50 dark:bg-dark-700 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 dark:text-white" />
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-gray-50 dark:bg-dark-700 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:text-white" />
             </div>
             {loading ? <div className="text-center py-8 text-gray-400">{t('Loading...', 'جاري التحميل...')}</div> : (
               <div className="grid gap-3 max-h-96 overflow-y-auto">
                 {cars.map(car => (
                   <button key={car._id} onClick={() => selectCar(car)}
-                    className="w-full text-start p-4 rounded-xl border border-gray-100 dark:border-dark-700 hover:border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/10 dark:hover:border-amber-700 transition-all group">
+                    className="w-full text-start p-4 rounded-xl border border-gray-100 dark:border-dark-700 hover:border-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/10 dark:hover:border-emerald-700 transition-all group">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/20 rounded-xl flex items-center justify-center">
-                          <Car className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                        <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/20 rounded-xl flex items-center justify-center">
+                          <Car className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                         </div>
                         <div>
                           <p className="font-bold text-gray-900 dark:text-white">{car.make} {car.model} <span className="text-gray-400 font-normal">{car.year}</span></p>
@@ -195,7 +196,7 @@ export default function CheckoutPOS() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-black text-amber-600 dark:text-amber-400">{car.dailyRateDefault?.toLocaleString()} <span className="text-xs font-normal">SAR/day</span></p>
+                        <p className="font-black text-emerald-600 dark:text-emerald-400">{car.dailyRateDefault?.toLocaleString()} <span className="text-xs font-normal">SAR/day</span></p>
                         <p className="text-xs text-gray-400">{car.allowedKmPerDayDefault} km/day</p>
                       </div>
                     </div>
@@ -212,13 +213,13 @@ export default function CheckoutPOS() {
           <motion.div key="customer" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
             className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 p-6 space-y-4">
             {selectedCar && (
-              <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800 flex items-center gap-3">
-                <Car className="w-5 h-5 text-amber-600 flex-shrink-0" />
+              <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800 flex items-center gap-3">
+                <Car className="w-5 h-5 text-emerald-600 flex-shrink-0" />
                 <div>
-                  <p className="font-semibold text-amber-800 dark:text-amber-300">{selectedCar.make} {selectedCar.model} · {selectedCar.plateNumber} {selectedCar.plateEnglishLetters}</p>
-                  <p className="text-xs text-amber-600 dark:text-amber-400">{selectedCar.dailyRateDefault} SAR/day · {selectedCar.allowedKmPerDayDefault} km/day</p>
+                  <p className="font-semibold text-emerald-800 dark:text-emerald-300">{selectedCar.make} {selectedCar.model} · {selectedCar.plateNumber} {selectedCar.plateEnglishLetters}</p>
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400">{selectedCar.dailyRateDefault} SAR/day · {selectedCar.allowedKmPerDayDefault} km/day</p>
                 </div>
-                <button onClick={() => { setSelectedCar(null); setStep('car') }} className="ml-auto text-amber-600 hover:text-amber-700 p-1"><X className="w-4 h-4" /></button>
+                <button onClick={() => { setSelectedCar(null); setStep('car') }} className="ml-auto text-emerald-600 hover:text-emerald-700 p-1"><X className="w-4 h-4" /></button>
               </div>
             )}
             <h2 className="font-bold text-gray-900 dark:text-white">{t('Find Customer', 'ابحث عن عميل')}</h2>
@@ -226,7 +227,7 @@ export default function CheckoutPOS() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input value={customerSearch} onChange={e => setCustomerSearch(e.target.value)}
                 placeholder={t('Search by name, mobile, ID number...', 'بحث بالاسم أو الجوال أو رقم الهوية...')}
-                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-gray-50 dark:bg-dark-700 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 dark:text-white" />
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-gray-50 dark:bg-dark-700 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:text-white" />
             </div>
             {customerResults.length > 0 && (
               <div className="border border-gray-100 dark:border-dark-700 rounded-xl overflow-hidden">
@@ -253,8 +254,8 @@ export default function CheckoutPOS() {
             )}
             <div className="flex gap-3">
               <button onClick={() => setStep('car')} className="px-4 py-2 rounded-xl border border-gray-200 dark:border-dark-600 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-700">{t('← Back', '→ رجوع')}</button>
-              <button onClick={() => navigate('/app/rental/customers/new')} className="px-4 py-2 rounded-xl border border-amber-300 dark:border-amber-700 text-sm font-medium text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20">{t('+ New Customer', '+ عميل جديد')}</button>
-              {selectedCustomer && <button onClick={() => setStep('terms')} className="ml-auto px-6 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold">{t('Next →', '← التالي')}</button>}
+              <button onClick={() => navigate('/app/rental/customers/new')} className="px-4 py-2 rounded-xl border border-emerald-300 dark:border-emerald-700 text-sm font-medium text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20">{t('+ New Customer', '+ عميل جديد')}</button>
+              {selectedCustomer && <button onClick={() => setStep('terms')} className="ml-auto px-6 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold">{t('Next →', '← التالي')}</button>}
             </div>
           </motion.div>
         )}
@@ -288,10 +289,10 @@ export default function CheckoutPOS() {
               </InputField>
             </div>
 
-            <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800">
-              <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">{t('Estimated Base Charge', 'الرسوم الأساسية المتوقعة')}</p>
-              <p className="text-3xl font-black text-amber-600 dark:text-amber-400">{estimatedBase.toLocaleString()} <span className="text-base font-medium">SAR</span></p>
-              <p className="text-xs text-amber-600/70 dark:text-amber-400/70 mt-1">{calcRentedDays()} {t('day(s)', 'يوم')} × {parseFloat(terms.dailyRate) || 0} SAR</p>
+            <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800">
+              <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">{t('Estimated Base Charge', 'الرسوم الأساسية المتوقعة')}</p>
+              <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400">{estimatedBase.toLocaleString()} <span className="text-base font-medium">SAR</span></p>
+              <p className="text-xs text-emerald-600/70 dark:text-emerald-400/70 mt-1">{calcRentedDays()} {t('day(s)', 'يوم')} × {parseFloat(terms.dailyRate) || 0} SAR</p>
             </div>
 
             <div className="border-t border-gray-100 dark:border-dark-700 pt-4 space-y-3">
@@ -302,20 +303,23 @@ export default function CheckoutPOS() {
                 </InputField>
                 <InputField label={t('Fuel Level Out', 'مستوى الوقود')}>
                   <select value={condition.fuelLevelOut} onChange={e => setCondition(c => ({ ...c, fuelLevelOut: e.target.value }))}
-                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     {FUEL_LEVELS.map(f => <option key={f} value={f}>{FUEL_ICONS[f]} {f.replace('_', ' ')}</option>)}
                   </select>
                 </InputField>
               </div>
               <InputField label={t('Pre-existing Damage Notes', 'ملاحظات الأضرار الموجودة')}>
-                <textarea value={condition.damageNotes} onChange={e => setCondition(c => ({ ...c, damageNotes: e.target.value }))} rows={2}
-                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none dark:text-white" />
+                <div className="border border-gray-200 dark:border-dark-600 rounded-xl p-4 mb-3 bg-gray-50 dark:bg-dark-700/50">
+                  <DamageMatrix initialPins={condition.damagePins} onPinsChange={pins => setCondition(c => ({...c, damagePins: pins}))} />
+                </div>
+                <textarea value={condition.damageNotes} onChange={e => setCondition(c => ({ ...c, damageNotes: e.target.value }))} rows={2} placeholder={t('Additional text notes...', 'ملاحظات نصية إضافية...')}
+                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none dark:text-white" />
               </InputField>
             </div>
 
             <div className="flex gap-3">
               <button onClick={() => setStep('customer')} className="px-4 py-2 rounded-xl border border-gray-200 dark:border-dark-600 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-700">{t('← Back', '→ رجوع')}</button>
-              <button onClick={() => setStep('confirm')} className="ml-auto px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold">{t('Review & Confirm →', '← مراجعة وتأكيد')}</button>
+              <button onClick={() => setStep('confirm')} className="ml-auto px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold">{t('Review & Confirm →', '← مراجعة وتأكيد')}</button>
             </div>
           </motion.div>
         )}
@@ -336,15 +340,15 @@ export default function CheckoutPOS() {
                 <div><p className="text-gray-500">{t('Odometer', 'العداد')}</p><p className="font-bold text-gray-900 dark:text-white">{condition.odometerOut} km</p></div>
                 <div><p className="text-gray-500">{t('Fuel Level', 'مستوى الوقود')}</p><p className="font-bold text-gray-900 dark:text-white">{condition.fuelLevelOut?.replace('_', ' ')}</p></div>
               </div>
-              <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800">
-                <p className="font-semibold text-amber-800 dark:text-amber-300">{t('Estimated Base (before penalties)', 'التقدير الأساسي (قبل الغرامات)')}</p>
-                <p className="text-2xl font-black text-amber-600 dark:text-amber-400">{estimatedBase.toLocaleString()} SAR</p>
+              <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800">
+                <p className="font-semibold text-emerald-800 dark:text-emerald-300">{t('Estimated Base (before penalties)', 'التقدير الأساسي (قبل الغرامات)')}</p>
+                <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{estimatedBase.toLocaleString()} SAR</p>
               </div>
             </div>
             <div className="flex gap-3">
               <button onClick={() => setStep('terms')} className="px-4 py-2 rounded-xl border border-gray-200 dark:border-dark-600 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-700">{t('← Back', '→ رجوع')}</button>
               <button onClick={handleCheckout} disabled={submitting}
-                className="flex-1 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-base disabled:opacity-60 shadow-xl shadow-amber-500/30 transition-all">
+                className="flex-1 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-base disabled:opacity-60 shadow-xl shadow-emerald-500/30 transition-all">
                 {submitting ? t('Processing...', 'جاري المعالجة...') : t('🚗 Confirm Checkout', '🚗 تأكيد التأجير')}
               </button>
             </div>

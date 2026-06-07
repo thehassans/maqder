@@ -19,6 +19,7 @@ const conditionSchema = new mongoose.Schema({
     default: 'full'
   },
   damageNotes: { type: String },
+  damagePins: [{ type: mongoose.Schema.Types.Mixed }], // 2D sketch damage coordinates
   photos: [{ type: String }], // URLs
   recordedAt: { type: Date, default: Date.now },
   recordedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }

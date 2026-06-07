@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux'
 import { motion } from 'framer-motion'
 import { AlertTriangle, CheckCircle, Car, DollarSign } from 'lucide-react'
 import api from '../../lib/api'
+import DamageMatrix from './components/DamageMatrix'
 
 const FUEL_LEVELS = ['empty', 'quarter', 'half', 'three_quarters', 'full']
 const FUEL_ICONS = { empty: '○○○○○', quarter: '●○○○○', half: '●●○○○', three_quarters: '●●●○○', full: '●●●●●' }
@@ -33,7 +34,7 @@ export default function CheckinPOS() {
   const [form, setForm] = useState({
     odometerIn: '', fuelLevelIn: 'full',
     actualReturnDateTime: new Date().toISOString().slice(0, 16),
-    damageNotes: '', damageCharge: 0,
+    damageNotes: '', damagePins: [], damageCharge: 0,
     discountAmount: 0, discountReason: '',
   })
 
@@ -142,7 +143,7 @@ export default function CheckinPOS() {
           <button onClick={() => navigate(`/app/rental/contracts/${contract._id}`)} className="flex-1 py-3 rounded-xl border border-gray-200 dark:border-dark-600 font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-700">
             {t('View Contract', 'عرض العقد')}
           </button>
-          <button onClick={() => navigate('/app/rental/active')} className="flex-1 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold shadow-lg shadow-amber-500/30">
+          <button onClick={() => navigate('/app/rental/active')} className="flex-1 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold shadow-lg shadow-emerald-500/30">
             {t('Back to Active Rentals', 'التأجيرات النشطة')}
           </button>
         </div>
@@ -160,8 +161,8 @@ export default function CheckinPOS() {
       {contract && (
         <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 p-4">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/20 rounded-xl flex items-center justify-center">
-              <Car className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+            <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/20 rounded-xl flex items-center justify-center">
+              <Car className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div>
               <p className="font-bold text-gray-900 dark:text-white">{contract.car?.make} {contract.car?.model} · {contract.car?.plateNumber}</p>
@@ -187,35 +188,38 @@ export default function CheckinPOS() {
           <div>
             <label className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide">{t('Actual Return Date/Time', 'وقت الإرجاع الفعلي')}</label>
             <input type="datetime-local" value={form.actualReturnDateTime} onChange={e => setForm(f => ({ ...f, actualReturnDateTime: e.target.value }))}
-              className="mt-1 w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+              className="mt-1 w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
           </div>
           <div>
             <label className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide">{t('Odometer In (km)', 'العداد عند الإرجاع')}</label>
             <input type="number" value={form.odometerIn} onChange={e => setForm(f => ({ ...f, odometerIn: e.target.value }))}
-              className="mt-1 w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+              className="mt-1 w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
           </div>
           <div>
             <label className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide">{t('Fuel Level In', 'مستوى الوقود')}</label>
             <select value={form.fuelLevelIn} onChange={e => setForm(f => ({ ...f, fuelLevelIn: e.target.value }))}
-              className="mt-1 w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+              className="mt-1 w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
               {FUEL_LEVELS.map(f => <option key={f} value={f}>{FUEL_ICONS[f]} {f.replace('_', ' ')}</option>)}
             </select>
           </div>
           <div>
             <label className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide">{t('New Damage Notes', 'ملاحظات الأضرار الجديدة')}</label>
-            <textarea value={form.damageNotes} onChange={e => setForm(f => ({ ...f, damageNotes: e.target.value }))} rows={2}
-              className="mt-1 w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none" />
+            <div className="mt-1 border border-gray-200 dark:border-dark-600 rounded-xl p-4 mb-2 bg-gray-50 dark:bg-dark-700/50">
+              <DamageMatrix initialPins={form.damagePins} onPinsChange={pins => setForm(f => ({...f, damagePins: pins}))} />
+            </div>
+            <textarea value={form.damageNotes} onChange={e => setForm(f => ({ ...f, damageNotes: e.target.value }))} rows={2} placeholder={t('Additional text notes...', 'ملاحظات نصية إضافية...')}
+              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide">{t('Damage Charge (SAR)', 'رسوم الأضرار')}</label>
               <input type="number" value={form.damageCharge} onChange={e => setForm(f => ({ ...f, damageCharge: e.target.value }))}
-                className="mt-1 w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                className="mt-1 w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
             </div>
             <div>
               <label className="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wide">{t('Discount (SAR)', 'خصم')}</label>
               <input type="number" value={form.discountAmount} onChange={e => setForm(f => ({ ...f, discountAmount: e.target.value }))}
-                className="mt-1 w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                className="mt-1 w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
             </div>
           </div>
         </div>
@@ -223,7 +227,7 @@ export default function CheckinPOS() {
         {/* Live preview */}
         <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 p-5 space-y-2">
           <h2 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <DollarSign className="w-4 h-4 text-amber-500" /> {t('Live Settlement Preview', 'معاينة التسوية')}
+            <DollarSign className="w-4 h-4 text-emerald-500" /> {t('Live Settlement Preview', 'معاينة التسوية')}
           </h2>
           {preview ? (
             <>
@@ -252,7 +256,7 @@ export default function CheckinPOS() {
       </div>
 
       <button onClick={handleCheckin} disabled={submitting || !form.odometerIn}
-        className="w-full py-4 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black text-lg disabled:opacity-60 shadow-xl shadow-amber-500/30 transition-all">
+        className="w-full py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-lg disabled:opacity-60 shadow-xl shadow-emerald-500/30 transition-all">
         {submitting ? t('Processing...', 'جاري المعالجة...') : t('✓ Complete Check-In', '✓ إتمام الإرجاع')}
       </button>
     </div>
