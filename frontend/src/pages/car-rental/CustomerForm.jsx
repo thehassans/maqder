@@ -19,9 +19,9 @@ const Select = ({ children, ...props }) => (
 )
 
 const INIT = {
-  fullName: '', fullNameAr: '', mobile: '', alternativeMobile: '', email: '',
+  fullName: '', fullNameAr: '', phoneNumber: '', alternativeMobile: '', email: '',
   nationality: 'SA', dateOfBirth: '',
-  idType: 'national_id', idNumber: '', idExpiry: '', idPhotoUrl: '', idPhotoBackUrl: '',
+  idType: 'national_id', iqamaId: '', idExpiry: '', idPhotoUrl: '', idPhotoBackUrl: '',
   licenseNumber: '', licenseExpiry: '', licensePhotoUrl: '', licenseIssuingCountry: 'SA',
   notes: '',
 }
@@ -48,10 +48,10 @@ export default function CustomerForm() {
       const { data } = await api.get(`/rental/customers/${id}`)
       setForm({
         fullName: data.fullName || '', fullNameAr: data.fullNameAr || '',
-        mobile: data.mobile || '', alternativeMobile: data.alternativeMobile || '',
+        phoneNumber: data.phoneNumber || '', alternativeMobile: data.alternativeMobile || '',
         email: data.email || '', nationality: data.nationality || 'SA',
         dateOfBirth: data.dateOfBirth?.split('T')[0] || '',
-        idType: data.idType || 'national_id', idNumber: data.idNumber || '',
+        idType: data.idType || 'national_id', iqamaId: data.iqamaId || '',
         idExpiry: data.idExpiry?.split('T')[0] || '', idPhotoUrl: data.idPhotoUrl || '', idPhotoBackUrl: data.idPhotoBackUrl || '',
         licenseNumber: data.licenseNumber || '', licenseExpiry: data.licenseExpiry?.split('T')[0] || '',
         licensePhotoUrl: data.licensePhotoUrl || '', licenseIssuingCountry: data.licenseIssuingCountry || 'SA',
@@ -66,7 +66,7 @@ export default function CustomerForm() {
   const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }))
 
   const handleSave = async () => {
-    if (!form.fullName || !form.mobile || !form.idNumber) {
+    if (!form.fullName || !form.phoneNumber || !form.iqamaId) {
       return setError(t('Full Name, Mobile, and ID Number are required', 'الاسم والجوال ورقم الهوية مطلوبة'))
     }
     try {
@@ -129,7 +129,7 @@ export default function CustomerForm() {
               }}
             />
           </Field>
-          <Field label={t('Mobile', 'الجوال')} required><Input type="tel" value={form.mobile} onChange={set('mobile')} placeholder="+966 5X XXX XXXX" /></Field>
+          <Field label={t('Mobile', 'الجوال')} required><Input type="tel" value={form.phoneNumber} onChange={set('phoneNumber')} placeholder="+966 5X XXX XXXX" /></Field>
           <Field label={t('Alt. Mobile', 'جوال بديل')}><Input type="tel" value={form.alternativeMobile} onChange={set('alternativeMobile')} /></Field>
           <Field label={t('Email', 'البريد الإلكتروني')}><Input type="email" value={form.email} onChange={set('email')} /></Field>
           <Field label={t('Nationality', 'الجنسية')}><Input value={form.nationality} onChange={set('nationality')} placeholder="SA" /></Field>
@@ -146,7 +146,7 @@ export default function CustomerForm() {
               <option value="gcc_id">{t('GCC ID', 'هوية خليجية')}</option>
             </Select>
           </Field>
-          <Field label={t('ID Number', 'رقم الهوية')} required><Input value={form.idNumber} onChange={set('idNumber')} /></Field>
+          <Field label={t('ID Number', 'رقم الهوية')} required><Input value={form.iqamaId} onChange={set('iqamaId')} /></Field>
           <Field label={t('ID Expiry', 'انتهاء الهوية')}><Input type="date" value={form.idExpiry} onChange={set('idExpiry')} /></Field>
           <Field label={t('ID Photo URL', 'رابط صورة الهوية')}><Input value={form.idPhotoUrl} onChange={set('idPhotoUrl')} placeholder="https://..." /></Field>
           <Field label={t('ID Back Photo URL', 'صورة الهوية (الخلفية)')}><Input value={form.idPhotoBackUrl} onChange={set('idPhotoBackUrl')} placeholder="https://..." /></Field>
