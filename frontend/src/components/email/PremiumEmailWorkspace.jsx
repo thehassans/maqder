@@ -83,7 +83,7 @@ export default function PremiumEmailWorkspace() {
   const [selectedMessageId, setSelectedMessageId] = useState('')
   const [composeState, setComposeState] = useState(null)
 
-  const salesPhone = websiteSettings?.contactPhone || '+966595930045'
+  const salesPhone = websiteSettings?.contactPhone || '+966596775485'
   const salesEmail = websiteSettings?.contactEmail || 'info@maqder.com'
   const contactSalesSubject = encodeURIComponent('Email Automation Add-on')
 

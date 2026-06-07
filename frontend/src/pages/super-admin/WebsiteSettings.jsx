@@ -30,7 +30,7 @@ export default function WebsiteSettings() {
     defaultValues: {
       brandName: 'Maqder ERP',
       domain: 'maqder.com',
-      contactPhone: '+966595930045',
+      contactPhone: '+966596775485',
       contactEmail: 'info@maqder.com',
       contactAddressEn: 'Riyadh, Saudi Arabia',
       contactAddressAr: 'الرياض، المملكة العربية السعودية',
@@ -57,7 +57,7 @@ export default function WebsiteSettings() {
       reset({
         brandName: website?.brandName || 'Maqder ERP',
         domain: website?.domain || 'maqder.com',
-        contactPhone: website?.contactPhone || '+966595930045',
+        contactPhone: website?.contactPhone || '+966596775485',
         contactEmail: website?.contactEmail || 'info@maqder.com',
         contactAddressEn: website?.contactAddressEn || 'Riyadh, Saudi Arabia',
         contactAddressAr: website?.contactAddressAr || 'الرياض، المملكة العربية السعودية',
@@ -171,7 +171,7 @@ export default function WebsiteSettings() {
               </div>
               <div>
                 <label className="label">{isArabic ? 'رقم التواصل' : 'Contact phone'}</label>
-                <input {...register('contactPhone')} className="input" placeholder="+966595930045" />
+                <input {...register('contactPhone')} className="input" placeholder="+966596775485" />
               </div>
               <div>
                 <label className="label">{isArabic ? 'البريد' : 'Contact email'}</label>

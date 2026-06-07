@@ -152,7 +152,7 @@ export default function WhatsApp() {
     config?.features?.autoInvoicing ||
     config?.addons?.autoInvoicing
   )
-  const salesPhone = websiteSettings?.contactPhone || '+966595930045'
+  const salesPhone = websiteSettings?.contactPhone || '+966596775485'
   const salesEmail = websiteSettings?.contactEmail || 'info@maqder.com'
   const contactSalesSubject = encodeURIComponent('WhatsApp Auto Invoicing Add-on')
 

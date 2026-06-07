@@ -7,7 +7,7 @@ export default function MarketingContact() {
   const { data } = usePublicWebsiteSettings()
   const isArabic = language === 'ar'
 
-  const phone = data?.contactPhone || '+966595930045'
+  const phone = data?.contactPhone || '+966596775485'
   const email = data?.contactEmail || 'info@maqder.com'
   const address = isArabic ? data?.contactAddressAr : data?.contactAddressEn
 

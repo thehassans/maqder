@@ -26,7 +26,7 @@ export default function MarketingLayout() {
     []
   )
 
-  const phone = data?.contactPhone || '+966595930045'
+  const phone = data?.contactPhone || '+966596775485'
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#f8faf7_0%,#f4f8f4_40%,#ffffff_100%)] text-slate-900" dir={isArabic ? 'rtl' : 'ltr'}>

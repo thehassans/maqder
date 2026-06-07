@@ -42,7 +42,7 @@ export default function MarketingHome() {
 
   const isArabic = language === 'ar'
 
-  const phone = data?.contactPhone || '+966595930045'
+  const phone = data?.contactPhone || '+966596775485'
 
   const heroSubtitle = isArabic ? data?.hero?.subtitleAr : data?.hero?.subtitleEn
 

@@ -126,7 +126,7 @@ export default function EmailWorkspace() {
     return () => clearTimeout(h)
   }, [search])
 
-  const salesPhone = websiteSettings?.contactPhone || '+966595930045'
+  const salesPhone = websiteSettings?.contactPhone || '+966596775485'
   const salesEmail = websiteSettings?.contactEmail || 'info@maqder.com'
   const contactSalesSubject = encodeURIComponent('Email Automation Add-on')
 

@@ -1270,7 +1270,7 @@ export default function Landing() {
               © 2024 Maqder ERP. {isArabic ? 'جميع الحقوق محفوظة.' : 'All rights reserved.'}
             </p>
             <p className="text-gray-500 text-sm">
-              {isArabic ? 'صنع بـ ❤️ بواسطة' : 'Built with ❤️ by'}{' '}
+              {isArabic ? 'صنع بواسطة Eastern Workforce Solutions Establishment' : 'built by Eastern Workforce Solutions Establishment'}{' '}
               <a href="#" className="text-primary-400 hover:text-primary-300">Hassan Sarwar</a>
             </p>
           </div>

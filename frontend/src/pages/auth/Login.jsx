@@ -27,7 +27,7 @@ export default function Login() {
   const [showContactOptions, setShowContactOptions] = useState(false)
   const { data: websiteSettings } = usePublicWebsiteSettings()
   const initialTenantSlug = String(searchParams.get('tenant') || searchParams.get('tenantSlug') || '').trim().toLowerCase()
-  const salesPhone = String(websiteSettings?.contactPhone || '+966595930045').trim()
+  const salesPhone = String(websiteSettings?.contactPhone || '+966596775485').trim()
   const salesEmail = String(websiteSettings?.contactEmail || 'info@maqder.com').trim()
   const whatsappNumber = salesPhone.replace(/\D/g, '')
   const contactSalesSubject = encodeURIComponent('Maqder ERP Sales Inquiry')
@@ -133,8 +133,8 @@ export default function Login() {
 
           {/* Footer */}
           <div className="text-white/50 text-sm">
-            2024 Maqder ERP. {language === 'ar' ? 'صُنع بـ ❤️ للشركات السعودية بواسطة' : 'Built with ❤️ for Saudi businesses by'}{' '}
-            <a href="tel:+966595930045" className="text-white/70 hover:text-white underline transition-colors">+966595930045</a>
+            2024 Maqder ERP. {language === 'ar' ? 'صنع بواسطة Eastern Workforce Solutions Establishment' : 'built by Eastern Workforce Solutions Establishment'}{' '}
+            <a href="tel:+966596775485" className="text-white/70 hover:text-white underline transition-colors">+966596775485</a>
           </div>
         </div>
       </div>
