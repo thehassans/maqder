@@ -1,0 +1,23 @@
+{
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "jsx": true
+    }
+  },
+  "env": {
+    "browser": true,
+    "es2021": true,
+    "node": true
+  },
+  "plugins": [
+    "react"
+  ],
+  "rules": {
+    "no-undef": "error"
+  },
+  "globals": {
+    "React": "readonly"
+  }
+}

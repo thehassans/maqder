@@ -149,11 +149,18 @@ const MeasurementIcons = {
   bottom: () => <MeasurementIcons.expansion />
 };
 
-const MeasurementCard = (props) => {
+const MeasurementCard = ({ 
+  measurementKey, 
+  label, 
+  value, 
+  onChange, 
+  imageSrc,
+  unit = 'cm', 
+  disabled = false 
+}) => {
   const { language } = useSelector(state => state.ui) || { language: 'en' };
   const { t } = useTranslation(language);
-  const { language } = useSelector(state => state.ui) || { language: 'en' };
-  const { t } = useTranslation(language);
+
   const IconComponent = MeasurementIcons[measurementKey] || MeasurementIcons.length;
 
   const base = useMemo(() => `/images/measurements/${measurementKey}`, [measurementKey]);
