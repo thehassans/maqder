@@ -85,7 +85,7 @@ export default function FleetList() {
           <p className="text-sm text-gray-500 dark:text-gray-400">{t('Manage all rental vehicles', 'إدارة جميع مركبات التأجير')}</p>
         </div>
         <button onClick={() => navigate('/app/rental/fleet/new')}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold transition-colors shadow-lg shadow-amber-500/30">
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold transition-colors shadow-lg shadow-emerald-600/30">
           <Plus className="w-4 h-4" /> {t('Add Car', 'إضافة سيارة')}
         </button>
       </div>
@@ -103,12 +103,12 @@ export default function FleetList() {
         <div className="relative flex-1 min-w-40">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('Search plate, make, model...', 'بحث...')}
-            className="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 dark:border-dark-600 bg-gray-50 dark:bg-dark-700 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 dark:text-white" />
+            className="w-full pl-9 pr-4 py-2 rounded-xl border border-gray-200 dark:border-dark-600 bg-gray-50 dark:bg-dark-700 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:text-white" />
         </div>
         <div className="flex gap-2 flex-wrap">
           {['', 'AVAILABLE', 'RENTED', 'MAINTENANCE', 'RESERVED'].map(s => (
             <button key={s} onClick={() => setSearchParams(s ? { status: s } : {})}
-              className={`px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${statusFilter === s ? 'bg-amber-500 text-white' : 'border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-dark-700'}`}>
+              className={`px-3 py-2 rounded-xl text-xs font-semibold transition-colors ${statusFilter === s ? 'bg-emerald-600 text-white' : 'border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-dark-700'}`}>
               {s ? (STATUS_CONFIG[s]?.[isAr ? 'ar' : 'label'] || s) : t('All', 'الكل')}
             </button>
           ))}
@@ -177,7 +177,7 @@ export default function FleetList() {
                         </button>
                         {car.status === 'AVAILABLE' && (
                           <button onClick={() => navigate(`/app/rental/checkout?carId=${car._id}`)}
-                            className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-xs font-semibold text-white transition-colors">
+                            className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-xs font-semibold text-white transition-colors">
                             {t('Rent', 'أجّر')}
                           </button>
                         )}
