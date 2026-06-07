@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector, useDispatch } from 'react-redux'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
-import { Building2, Shield, Globe, Palette, Bell, Save, Key, CheckCircle, Image, Database, Download, FileText, CreditCard, Terminal } from 'lucide-react'
+import { Building2, Shield, Globe, Palette, Bell, Save, Key, CheckCircle, Image, Database, Download, FileText, CreditCard, Terminal, Car } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
@@ -14,6 +14,7 @@ import { getInvoiceBrandingProfile, getInvoiceTemplateId, getInvoiceTypography, 
 import { invoiceTemplateOptions } from '../lib/invoiceTemplates'
 import PosTerminalSettings from '../components/settings/PosTerminalSettings'
 import HardwareSettings from '../components/settings/HardwareSettings'
+import CarRentalApiSettings from '../components/settings/CarRentalApiSettings'
 
 const invoiceBrandingContexts = [
   { key: 'trading', labelEn: 'Trading Invoice', labelAr: 'فاتورة تجارة' },
@@ -250,6 +251,7 @@ export default function Settings() {
     { id: 'company', label: t('companySettings'), icon: Building2 },
     { id: 'zatca', label: t('zatcaSettings'), icon: Shield },
     { id: 'saudi', label: language === 'ar' ? 'التكاملات السعودية' : 'Saudi Integrations', icon: Key },
+    { id: 'carRentalApis', label: language === 'ar' ? 'واجهات تأجير السيارات' : 'Car Rental APIs', icon: Car },
     { id: 'preferences', label: language === 'ar' ? 'التفضيلات' : 'Preferences', icon: Palette },
     { id: 'setupMachine', label: language === 'ar' ? 'إعداد الدفع الإلكتروني' : 'Payment Terminal', icon: CreditCard },
     { id: 'hardware', label: language === 'ar' ? 'الأجهزة والطباعة' : 'Hardware & Printers', icon: Terminal },
@@ -1253,6 +1255,12 @@ export default function Settings() {
               }
               isSaving={updateMutation.isPending}
             />
+          )}
+
+          {activeTab === 'carRentalApis' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card p-6">
+              <CarRentalApiSettings tenant={tenant} isAr={language === 'ar'} />
+            </motion.div>
           )}
 
           {activeTab === 'backup' && (

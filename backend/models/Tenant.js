@@ -221,7 +221,47 @@ const tenantSchema = new mongoose.Schema({
         heroImage: { type: String },
         defaultLanguage: { type: String, enum: ['en', 'ar'], default: 'ar' }
       }
-    }
+    },
+    carRentalIntegrations: {
+      // ── Tamm (Amakin) ─ Saudi rental traffic registry integration
+      tamm: {
+        enabled: { type: Boolean, default: false },
+        apiKey: { type: String, default: '' },
+        apiSecret: { type: String, default: '' },
+        companyLicenseNumber: { type: String, default: '' },
+        environment: { type: String, enum: ['sandbox', 'production'], default: 'sandbox' },
+        autoSyncContracts: { type: Boolean, default: false },
+        lastSyncAt: { type: Date },
+      },
+      // ── NAJM (Saudi Insurance) ─ accident/insurance verification
+      najm: {
+        enabled: { type: Boolean, default: false },
+        apiKey: { type: String, default: '' },
+        clientId: { type: String, default: '' },
+        clientSecret: { type: String, default: '' },
+        environment: { type: String, enum: ['sandbox', 'production'], default: 'sandbox' },
+        autoCheckOnCheckout: { type: Boolean, default: true },
+        lastSyncAt: { type: Date },
+      },
+      // ── Wathiq (SAFCSP) ─ identity & document verification
+      wathiq: {
+        enabled: { type: Boolean, default: false },
+        apiKey: { type: String, default: '' },
+        appId: { type: String, default: '' },
+        environment: { type: String, enum: ['sandbox', 'production'], default: 'sandbox' },
+        autoVerifyId: { type: Boolean, default: true },
+      },
+      // ── SMS Notification (Taqnyat / Unifonic)
+      smsNotifications: {
+        enabled: { type: Boolean, default: false },
+        provider: { type: String, enum: ['taqnyat', 'unifonic', 'msegat', 'custom'], default: 'taqnyat' },
+        apiKey: { type: String, default: '' },
+        senderId: { type: String, default: '' },
+        sendOnCheckout: { type: Boolean, default: true },
+        sendOnCheckin: { type: Boolean, default: true },
+        sendOnOverdue: { type: Boolean, default: true },
+      },
+    },
   },
   branding: {
     logo: { type: String },

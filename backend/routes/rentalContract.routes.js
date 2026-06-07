@@ -95,8 +95,8 @@ router.get('/', async (req, res) => {
         .sort({ createdAt: -1 })
         .skip((page - 1) * limit)
         .limit(parseInt(limit))
-        .populate('car', 'make model plateNumber plateEnglishLetters year color status')
-        .populate('customer', 'fullName fullNameAr mobile idNumber isBlacklisted'),
+        .populate('vehicleId', 'make model plateNumber plateEnglishLetters year color status')
+        .populate('customerId', 'fullName fullNameAr phoneNumber iqamaId isBlacklisted'),
       RentalContract.countDocuments(query)
     ]);
 
@@ -111,12 +111,19 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const contract = await RentalContract.findOne({ _id: req.params.id, tenantId: req.tenantFilter.tenantId })
-      .populate('car')
-      .populate('customer')
+      .populate('vehicleId')
+      .populate('customerId')
       .populate('createdBy', 'name email')
       .populate('closedBy', 'name email');
     if (!contract) return res.status(404).json({ error: 'Contract not found' });
-    res.json(contract);
+    // Flatten car/customer aliases for frontend compatibility
+    const doc = contract.toObject();
+    doc.car = doc.vehicleId;
+    doc.customer = doc.customerId;
+    doc.startDateTime = doc.rentPeriod?.start;
+    doc.expectedReturnDateTime = doc.rentPeriod?.end;
+    doc.securityDeposit = doc.depositAmount;
+    res.json(doc);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -201,20 +208,23 @@ router.post('/checkout', async (req, res) => {
     // ── 4. Build and save contract ────────────────────────────────────────────
     const contract = new RentalContract({
       tenantId: req.user.tenantId,
-      car: carId,
-      customer: customerId,
+      vehicleId: carId,
+      customerId: customerId,
       status: 'OPEN',
-      startDateTime: new Date(startDateTime),
-      expectedReturnDateTime: new Date(expectedReturnDateTime),
+      rentPeriod: {
+        start: new Date(startDateTime),
+        end: new Date(expectedReturnDateTime),
+      },
       dailyRate: Number(dailyRate) || car.dailyRateDefault,
       allowedKmPerDay: Number(allowedKmPerDay) ?? car.allowedKmPerDayDefault,
       perKmOverageRate: Number(perKmOverageRate) ?? car.perKmOverageRateDefault,
       hourlyLateRate: Number(hourlyLateRate) ?? car.hourlyLateRateDefault,
-      securityDeposit: Number(securityDeposit) ?? car.securityDepositDefault,
+      depositAmount: Number(securityDeposit) ?? car.securityDepositDefault,
       outboundCondition: {
         odometer: Number(odometerOut) || car.currentOdometer,
         fuelLevel: fuelLevelOut || 'full',
         damageNotes: damageNotes || '',
+        damagePins: req.body.damagePins || [],
         photos: photos || [],
         recordedBy: req.user._id,
       },
@@ -233,8 +243,8 @@ router.post('/checkout', async (req, res) => {
     await customer.save();
 
     await contract.populate([
-      { path: 'car', select: 'make model plateNumber plateEnglishLetters year color' },
-      { path: 'customer', select: 'fullName mobile idNumber' }
+      { path: 'vehicleId', select: 'make model plateNumber plateEnglishLetters year color' },
+      { path: 'customerId', select: 'fullName phoneNumber iqamaId' }
     ]);
 
     res.status(201).json({ message: 'Check-out successful', contract });
