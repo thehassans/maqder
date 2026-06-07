@@ -21,8 +21,8 @@ const rentalCarSchema = new mongoose.Schema({
   // Status
   status: {
     type: String,
-    enum: ['Available', 'Reserved', 'Rented', 'Pending_Inspection', 'Maintenance'],
-    default: 'Available',
+    enum: ['AVAILABLE', 'RESERVED', 'RENTED', 'PENDING_INSPECTION', 'MAINTENANCE'],
+    default: 'AVAILABLE',
     index: true
   },
 

@@ -11,10 +11,10 @@ const Field = ({ label, children, required }) => (
   </div>
 )
 const Input = (props) => (
-  <input {...props} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+  <input {...props} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
 )
 const Select = ({ children, ...props }) => (
-  <select {...props} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">{children}</select>
+  <select {...props} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">{children}</select>
 )
 
 const INITIAL_FORM = {
@@ -93,14 +93,14 @@ export default function CarForm() {
     const days = daysUntil(date)
     if (days == null) return null
     if (days <= 0) return <span className="text-xs text-red-600 dark:text-red-400 font-semibold flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> {t('Expired', 'منتهية')}</span>
-    if (days <= 30) return <span className="text-xs text-amber-600 dark:text-amber-400 font-semibold">{t(`Expires in ${days} days`, `تنتهي خلال ${days} يوم`)}</span>
+    if (days <= 30) return <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">{t(`Expires in ${days} days`, `تنتهي خلال ${days} يوم`)}</span>
     return null
   }
 
   if (loading) return <div className="animate-pulse space-y-4"><div className="h-8 bg-gray-200 dark:bg-dark-600 rounded w-56" /><div className="h-96 bg-gray-200 dark:bg-dark-600 rounded-2xl" /></div>
 
   const section = (title) => (
-    <div className="text-xs font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-4 mt-2 pb-1 border-b border-amber-100 dark:border-amber-900/30">{title}</div>
+    <div className="text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-4 mt-2 pb-1 border-b border-emerald-100 dark:border-emerald-900/30">{title}</div>
   )
 
   return (
@@ -111,7 +111,7 @@ export default function CarForm() {
           <button onClick={() => navigate('/app/rental/fleet')} className="px-4 py-2 rounded-xl border border-gray-200 dark:border-dark-600 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-700 flex items-center gap-2">
             <X className="w-4 h-4" /> {t('Cancel', 'إلغاء')}
           </button>
-          <button onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold flex items-center gap-2 disabled:opacity-60 shadow-lg shadow-amber-500/30">
+          <button onClick={handleSave} disabled={saving} className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold flex items-center gap-2 disabled:opacity-60 shadow-lg shadow-emerald-600/30">
             <Save className="w-4 h-4" /> {saving ? '...' : t('Save', 'حفظ')}
           </button>
         </div>
@@ -182,7 +182,7 @@ export default function CarForm() {
 
         {section(t('Notes', 'ملاحظات'))}
         <textarea value={form.notes} onChange={set('notes')} rows={3}
-          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none" />
+          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none" />
       </div>
     </div>
   )

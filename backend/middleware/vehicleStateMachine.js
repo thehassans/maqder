@@ -4,11 +4,11 @@ import RentalCar from '../models/RentalCar.js';
  * Valid transitions for a rental vehicle state machine.
  */
 const VALID_TRANSITIONS = {
-  'Available': ['Reserved', 'Rented', 'Maintenance'],
-  'Reserved': ['Available', 'Rented', 'Maintenance'],
-  'Rented': ['Pending_Inspection', 'Maintenance'],
-  'Pending_Inspection': ['Available', 'Maintenance'],
-  'Maintenance': ['Available']
+  'AVAILABLE': ['RESERVED', 'RENTED', 'MAINTENANCE'],
+  'RESERVED': ['AVAILABLE', 'RENTED', 'MAINTENANCE'],
+  'RENTED': ['PENDING_INSPECTION', 'MAINTENANCE'],
+  'PENDING_INSPECTION': ['AVAILABLE', 'MAINTENANCE'],
+  'MAINTENANCE': ['AVAILABLE']
 };
 
 /**
