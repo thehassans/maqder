@@ -48,6 +48,7 @@ function printHtml(html) {
 export default function RestaurantKitchen() {
   const queryClient = useQueryClient()
   const { language } = useSelector((state) => state.ui)
+  const { tenant } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
   const isRtl = language === 'ar'
 
@@ -147,6 +148,8 @@ export default function RestaurantKitchen() {
       delivery: isAr ? 'توصيل' : 'Delivery'
     }[order?.orderType] || order?.orderType
 
+    const logoSrc = tenant?.branding?.logoUrl || ''
+    
     return `<!doctype html>
 <html>
 <head>
@@ -154,23 +157,37 @@ export default function RestaurantKitchen() {
 <title>${title}</title>
 <style>
 body{font-family:Arial, sans-serif; margin:0; padding:14px;}
-.h{display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:10px;}
-.k{font-size:18px; font-weight:700;}
-.meta{font-size:12px; color:#111;}
-table{width:100%; border-collapse:collapse; margin-top:12px;}
-th{font-size:12px; text-align:start; border-bottom:1px solid #ddd; padding-bottom:6px;}
+.header{text-align:center; margin-bottom:12px;}
+.logo{max-width:80px; max-height:80px; margin-bottom:8px; filter:grayscale(100%);}
+.order-block{border:2px solid #000; padding:8px; text-align:center; margin-bottom:12px; border-radius:4px;}
+.order-num{font-size:24px; font-weight:900; margin:4px 0;}
+.order-label{font-size:12px; font-weight:bold; text-transform:uppercase;}
+.k{font-size:18px; font-weight:900; text-align:center; margin-bottom:8px;}
+.meta{font-size:12px; color:#111; margin-bottom:12px;}
+.meta-grid{display:grid; grid-template-columns:1fr 1fr; gap:6px;}
+table{width:100%; border-collapse:collapse; margin-top:8px;}
+th{font-size:14px; text-align:start; border-bottom:1px dashed #000; padding-bottom:6px; font-weight:bold;}
+td{font-size:14px; padding:8px 0; font-weight:bold; border-bottom:1px dashed #ddd;}
 </style>
 </head>
 <body dir="${isAr ? 'rtl' : 'ltr'}">
-  <div class="h">
+  <div class="header">
+    ${logoSrc ? `<img src="${logoSrc}" class="logo" />` : ''}
     <div class="k">${title}</div>
-    <div class="meta">
-      <div>${orderLabel}: ${order?.orderNumber || ''}</div>
-      <div>${typeLabel}: ${typeDisplay}</div>
-      ${order?.orderType === 'dine_in' ? `<div>${tableLabel}: ${order?.tableNumber || '-'}</div>` : ''}
-      ${order?.customerName ? `<div>${customerLabel}: ${order?.customerName} ${order?.customerPhone ? '(' + order?.customerPhone + ')' : ''}</div>` : ''}
-      <div>${timeLabel}: ${formatTime(order?.createdAt)}</div>
+  </div>
+  
+  <div class="order-block">
+    <div class="order-label">${orderLabel}</div>
+    <div class="order-num">${order?.orderNumber || ''}</div>
+  </div>
+
+  <div class="meta">
+    <div class="meta-grid">
+      <div><strong>${typeLabel}:</strong> ${typeDisplay}</div>
+      ${order?.orderType === 'dine_in' ? `<div><strong>${tableLabel}:</strong> ${order?.tableNumber || '-'}</div>` : ''}
     </div>
+    <div style="margin-top:6px;"><strong>${timeLabel}:</strong> ${formatTime(order?.createdAt)}</div>
+    ${order?.customerName ? `<div style="margin-top:6px;"><strong>${customerLabel}:</strong> ${order?.customerName} ${order?.customerPhone ? '(' + order?.customerPhone + ')' : ''}</div>` : ''}
   </div>
 
   <table>
@@ -205,6 +222,8 @@ th{font-size:12px; text-align:start; border-bottom:1px solid #ddd; padding-botto
 
     const title = isAr ? 'إيصال' : 'Receipt'
 
+    const logoSrc = tenant?.branding?.logoUrl || ''
+
     return `<!doctype html>
 <html>
 <head>
@@ -212,7 +231,8 @@ th{font-size:12px; text-align:start; border-bottom:1px solid #ddd; padding-botto
 <title>${title}</title>
 <style>
 body{font-family:Arial, sans-serif; margin:0; padding:14px;}
-.h{display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:10px;}
+.header{text-align:center; margin-bottom:12px;}
+.logo{max-width:80px; max-height:80px; margin-bottom:8px; filter:grayscale(100%);}
 .k{font-size:18px; font-weight:700;}
 .meta{font-size:12px; color:#111;}
 table{width:100%; border-collapse:collapse; margin-top:12px;}
@@ -224,13 +244,14 @@ th{font-size:12px; text-align:start; border-bottom:1px solid #ddd; padding-botto
 </style>
 </head>
 <body dir="${isAr ? 'rtl' : 'ltr'}">
-  <div class="h">
+  <div class="header">
+    ${logoSrc ? `<img src="${logoSrc}" class="logo" />` : ''}
     <div class="k">${title}</div>
-    <div class="meta">
-      <div>${isAr ? 'الطلب' : 'Order'}: ${order?.orderNumber || ''}</div>
-      <div>${isAr ? 'الطاولة' : 'Table'}: ${order?.tableNumber || '-'}</div>
-      <div>${isAr ? 'الوقت' : 'Time'}: ${formatTime(order?.createdAt)}</div>
-    </div>
+  </div>
+  <div class="meta">
+    <div>${isAr ? 'الطلب' : 'Order'}: <strong>${order?.orderNumber || ''}</strong></div>
+    ${order?.orderType === 'dine_in' ? `<div>${isAr ? 'الطاولة' : 'Table'}: <strong>${order?.tableNumber || '-'}</strong></div>` : ''}
+    <div>${isAr ? 'الوقت' : 'Time'}: ${formatTime(order?.createdAt)}</div>
   </div>
 
   <table>

@@ -26,6 +26,7 @@ export default function RestaurantPOS() {
   const [orderType, setOrderType] = useState('dine_in') // dine_in, takeaway, delivery
   const [selectedTable, setSelectedTable] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('cash')
+  const [applyVat, setApplyVat] = useState(true)
   
   // Checkout states
   const [isProcessing, setIsProcessing] = useState(false)
@@ -123,7 +124,7 @@ export default function RestaurantPOS() {
   }
 
   const cartSubtotal = cart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0)
-  const cartTax = cart.reduce((sum, item) => sum + (item.quantity * item.unitPrice * (item.taxRate / 100)), 0)
+  const cartTax = applyVat ? cart.reduce((sum, item) => sum + (item.quantity * item.unitPrice * (item.taxRate / 100)), 0) : 0
   const cartTotal = cartSubtotal + cartTax
 
   const handleCheckout = async () => {
@@ -155,7 +156,7 @@ export default function RestaurantPOS() {
           nameAr: item.nameAr,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
-          taxRate: item.taxRate,
+          taxRate: applyVat ? item.taxRate : 0,
         }))
       }
       
@@ -201,7 +202,7 @@ export default function RestaurantPOS() {
           nameAr: item.nameAr,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
-          taxRate: item.taxRate,
+          taxRate: applyVat ? item.taxRate : 0,
         }))
       }
       if (orderType === 'dine_in') {
@@ -241,7 +242,7 @@ export default function RestaurantPOS() {
           nameAr: item.nameAr,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
-          taxRate: item.taxRate,
+          taxRate: applyVat ? item.taxRate : 0,
         }))
       }
       if (orderType === 'dine_in') {
@@ -502,8 +503,16 @@ export default function RestaurantPOS() {
             <span>{isRtl ? 'المجموع الفرعي' : 'Subtotal'}</span>
             <span>SAR {cartSubtotal.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-            <span>{isRtl ? 'الضريبة' : 'VAT (15%)'}</span>
+          <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 items-center">
+            <div className="flex items-center gap-2">
+              <span>{isRtl ? 'الضريبة' : 'VAT'}</span>
+              <button
+                onClick={() => setApplyVat(!applyVat)}
+                className={`text-xs px-2 py-0.5 rounded border ${applyVat ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:border-amber-500/30' : 'bg-gray-100 text-gray-500 border-gray-200 dark:bg-dark-700'}`}
+              >
+                {applyVat ? '15%' : '0%'}
+              </button>
+            </div>
             <span>SAR {cartTax.toFixed(2)}</span>
           </div>
           <div className="flex justify-between text-xl font-black text-gray-900 dark:text-white pt-2 border-t border-gray-200 dark:border-dark-600">
