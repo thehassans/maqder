@@ -132,9 +132,21 @@ export default function Login() {
           </div>
 
           {/* Footer */}
-          <div className="text-white/50 text-sm">
-            2024 Maqder ERP. {language === 'ar' ? 'صنع بواسطة Eastern Workforce Solutions Establishment' : 'built by Eastern Workforce Solutions Establishment'}{' '}
-            <a href="tel:+966596775485" className="text-white/70 hover:text-white underline transition-colors">+966596775485</a>
+          <div className="text-white/50 text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              2024 Maqder ERP. {language === 'ar' ? 'صنع بواسطة Eastern Workforce Solutions Establishment' : 'Built by Eastern Workforce Solutions Establishment'}
+            </div>
+            <div className="flex items-center gap-4 text-white/70">
+              <a href="tel:+966596775485" title="Call Us" className="hover:text-white transition-colors">
+                <Phone className="w-4 h-4" />
+              </a>
+              <a href="https://wa.me/966596775485" target="_blank" rel="noreferrer" title="WhatsApp" className="hover:text-white transition-colors">
+                <MessageCircle className="w-4 h-4" />
+              </a>
+              <a href="mailto:support@maqder.com" title="Email Us" className="hover:text-white transition-colors">
+                <Mail className="w-4 h-4" />
+              </a>
+            </div>
           </div>
         </div>
       </div>
