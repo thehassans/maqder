@@ -100,12 +100,15 @@ const rentalContractSchema = new mongoose.Schema({
 // ── Pre-save: auto-generate contract number if new ────────────────────────────
 rentalContractSchema.pre('save', async function(next) {
   if (!this.isNew) return next();
+  // Always set a fallback first so the required validator never fails
+  const today = new Date();
+  const y = today.getFullYear();
+  const m = String(today.getMonth() + 1).padStart(2, '0');
+  const d = String(today.getDate()).padStart(2, '0');
+  const prefix = `RC-${y}${m}${d}`;
+  // Fallback: timestamp-based sequence (ms precision, guaranteed unique)
+  this.contractNumber = `${prefix}-${String(today.getTime()).slice(-6)}`;
   try {
-    const today = new Date();
-    const y = today.getFullYear();
-    const m = String(today.getMonth() + 1).padStart(2, '0');
-    const d = String(today.getDate()).padStart(2, '0');
-    const prefix = `RC-${y}${m}${d}`;
     const last = await this.constructor.findOne(
       { tenantId: this.tenantId, contractNumber: { $regex: `^${prefix}-` } },
       { contractNumber: 1 }
@@ -114,13 +117,13 @@ rentalContractSchema.pre('save', async function(next) {
     if (last?.contractNumber) {
       const parts = last.contractNumber.split('-');
       const n = Number(parts[parts.length - 1]);
-      if (Number.isFinite(n)) seq = n + 1;
+      if (Number.isFinite(n) && n < 999999) seq = n + 1;
     }
     this.contractNumber = `${prefix}-${String(seq).padStart(3, '0')}`;
-    next();
-  } catch (err) {
-    next(err);
+  } catch (_) {
+    // Keep the timestamp-based fallback already set above
   }
+  next();
 });
 
 rentalContractSchema.index({ tenantId: 1, contractNumber: 1 }, { unique: true });

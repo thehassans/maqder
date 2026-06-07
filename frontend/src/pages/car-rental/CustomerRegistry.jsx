@@ -125,7 +125,7 @@ export default function CustomerRegistry() {
                       className="hover:bg-gray-50 dark:hover:bg-dark-700/40 transition-colors">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0 ${c.isBlacklisted ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0 ${c.isBlacklisted ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'}`}>
                             {c.fullName?.[0]?.toUpperCase() || '?'}
                           </div>
                           <div>

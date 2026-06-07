@@ -2,6 +2,7 @@ import express from 'express';
 import RentalContract from '../models/RentalContract.js';
 import RentalCar from '../models/RentalCar.js';
 import RentalCustomer from '../models/RentalCustomer.js';
+import RentalInvoice from '../models/RentalInvoice.js';
 import { protect, tenantFilter, requireBusinessType } from '../middleware/auth.js';
 import { generateContractZatcaQr } from '../lib/zatcaQr.js';
 
@@ -378,9 +379,47 @@ router.post('/:id/checkin', async (req, res) => {
       $inc: { totalRevenue: grandTotal }
     });
 
+    // ── 13. Create RentalInvoice record ──────────────────────────────────────
+    let invoiceId = null;
+    let invoiceNumber = null;
+    try {
+      const invDate = today => {
+        const d = today || new Date();
+        return `RINv-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+      };
+      const now = new Date();
+      const invPrefix = invDate(now);
+      const lastInv = await RentalInvoice.findOne(
+        { tenantId: req.user.tenantId, invoiceNumber: { $regex: `^${invPrefix}-` } },
+        { invoiceNumber: 1 }
+      ).sort({ createdAt: -1 });
+      let invSeq = 1;
+      if (lastInv?.invoiceNumber) {
+        const parts = lastInv.invoiceNumber.split('-');
+        const n = Number(parts[parts.length - 1]);
+        if (Number.isFinite(n)) invSeq = n + 1;
+      }
+      invoiceNumber = `${invPrefix}-${String(invSeq).padStart(3, '0')}`;
+      const inv = await RentalInvoice.create({
+        tenantId: req.user.tenantId,
+        contractId: contract._id,
+        invoiceNumber,
+        zatcaQrCodeString: contract.zatcaQrCode || '',
+        subTotal: subtotal,
+        vatAmount: totalVat,
+        grandTotal,
+        createdBy: req.user._id,
+      });
+      invoiceId = inv._id;
+    } catch (_) {
+      // Non-fatal — contract is still closed
+    }
+
     res.json({
       message: 'Check-in successful',
       contract,
+      invoiceId,
+      invoiceNumber,
       settlement: {
         rentedDays,
         baseCharge,
