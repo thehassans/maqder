@@ -88,7 +88,7 @@ export default function CustomerList() {
     {
       key: 'vatNumber',
       label: language === 'ar' ? 'الرقم الضريبي' : 'VAT Number',
-      value: (r) => r?.vatNumber || ''
+      value: (r) => r?.vatNumber || r?.taxNumber || ''
     },
     {
       key: 'totalInvoices',
@@ -383,7 +383,7 @@ export default function CustomerList() {
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-sm text-gray-600 dark:text-gray-400">
-                          {customer.vatNumber || '-'}
+                          {customer.vatNumber || customer.taxNumber || '-'}
                         </span>
                       </td>
                       <td className="px-6 py-4">

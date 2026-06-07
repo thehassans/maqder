@@ -344,7 +344,7 @@ router.get('/search', checkPermission('invoicing', 'read'), async (req, res) => 
         { mobile: { $regex: cleanQ, $options: 'i' } }
       ]
     })
-      .select('customerCode name nameAr email phone vatNumber type address')
+      .select('customerCode name nameAr email phone vatNumber taxNumber type address')
       .limit(10);
     
     res.json(customers);
