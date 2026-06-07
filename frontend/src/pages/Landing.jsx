@@ -426,7 +426,23 @@ export default function Landing() {
                 <Globe className="w-4 h-4" />
                 {isArabic ? 'English' : 'العربية'}
               </button>
-              <div className="hidden xl:flex items-center gap-2 rounded-2xl border border-gray-200 bg-white/80 px-3 py-2">
+              
+              <div className="hidden xl:flex items-center gap-4 border-l border-gray-200 pl-4 ml-2">
+                <a href="tel:+966596775485" className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-primary-600 transition">
+                  <Phone className="w-4 h-4 text-primary-500" />
+                  <span dir="ltr">+966 59 677 5485</span>
+                </a>
+                <a href="mailto:support@maqder.com" className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-primary-600 transition">
+                  <Mail className="w-4 h-4 text-primary-500" />
+                  <span>support@maqder.com</span>
+                </a>
+                <a href="https://wa.me/966596775485" target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition bg-emerald-50 px-2 py-1 rounded-lg">
+                  <MessageCircle className="w-4 h-4" />
+                  <span>WhatsApp</span>
+                </a>
+              </div>
+
+              <div className="hidden 2xl:flex items-center gap-2 rounded-2xl border border-gray-200 bg-white/80 px-3 py-2 ml-4">
                 {complianceLogos.map((logo) => (
                   <div key={logo.alt} className="flex h-10 w-20 items-center justify-center rounded-xl bg-white px-2 py-1 shadow-sm">
                     <img src={logo.src} alt={logo.alt} className={`max-h-full max-w-full object-contain ${logo.imageClassName || ''}`} />
@@ -841,14 +857,24 @@ export default function Landing() {
                 transition={{ delay: index * 0.1, duration: 0.6 }}
                 className="group relative h-[420px] rounded-3xl overflow-hidden shadow-2xl bg-gray-800 cursor-pointer"
               >
-                {/* Background Image */}
-                <div className="absolute inset-0">
-                  <img 
-                    src={solution.image} 
-                    alt={solution.title} 
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-70 group-hover:opacity-100"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/60 to-transparent transition-opacity duration-500 group-hover:opacity-90" />
+                {/* Background Image inside a Mac Window to look like live tenant panel */}
+                <div className="absolute inset-0 p-4 transition-transform duration-700 group-hover:scale-[1.02]">
+                  <div className="w-full h-full bg-gray-900 rounded-2xl shadow-2xl overflow-hidden border border-gray-700 relative">
+                    {/* Mac Window Header */}
+                    <div className="h-6 bg-gray-800 border-b border-gray-700 flex items-center px-3 gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
+                      <div className="mx-auto text-[10px] text-gray-500 font-mono tracking-wider">maqder.com/app</div>
+                    </div>
+                    {/* Panel Screen */}
+                    <img 
+                      src={solution.image} 
+                      alt={solution.title} 
+                      className="w-full h-[calc(100%-1.5rem)] object-cover object-top opacity-50 group-hover:opacity-90 transition-opacity duration-500 filter blur-[1px] group-hover:blur-none"
+                    />
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/80 to-transparent transition-opacity duration-500 group-hover:opacity-95" />
                 </div>
                 
                 {/* Content Container */}
@@ -900,22 +926,45 @@ export default function Landing() {
                 <X className="w-6 h-6" />
               </button>
               
-              <div className="relative h-64 sm:h-80 w-full bg-gray-900">
-                <img src={selectedSolution.image} className="absolute inset-0 w-full h-full object-cover opacity-80" alt={selectedSolution.title} />
-                <div className={`absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/60 to-transparent`} />
-                <div className="absolute inset-0 bg-gradient-to-r from-gray-900/90 to-transparent" />
-                
-                <div className="absolute bottom-0 left-0 right-0 p-8">
-                  <div className={`w-16 h-16 bg-gradient-to-br ${selectedSolution.color} rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-black/30 backdrop-blur-md border border-white/20`}>
-                    <selectedSolution.icon className="w-8 h-8 text-white" />
+              <div className="relative h-72 sm:h-96 w-full bg-gray-900 p-4 sm:p-8 flex items-center justify-center overflow-hidden">
+                <div className="absolute inset-0">
+                  <img src={selectedSolution.image} className="w-full h-full object-cover opacity-20 blur-sm" alt={selectedSolution.title} />
+                  <div className={`absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/80 to-transparent`} />
+                </div>
+
+                {/* Live Display Mac Window */}
+                <div className="relative z-10 w-full max-w-2xl bg-gray-900 rounded-xl shadow-2xl border border-gray-700 overflow-hidden transform transition-transform hover:scale-105 duration-700">
+                  <div className="h-8 bg-gray-800 border-b border-gray-700 flex items-center px-4 gap-2">
+                    <div className="w-3 h-3 rounded-full bg-red-500" />
+                    <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                    <div className="w-3 h-3 rounded-full bg-green-500" />
+                    <div className="mx-auto flex items-center gap-2 px-4 py-1 bg-gray-900 rounded-md text-xs text-gray-400 font-mono">
+                      <Lock className="w-3 h-3 text-emerald-500" />
+                      maqder.com/app/tenant
+                    </div>
                   </div>
-                  <h2 className="text-3xl sm:text-5xl font-bold text-white mb-2">
-                    {isArabic ? selectedSolution.titleAr : selectedSolution.title}
-                  </h2>
+                  <div className="relative w-full h-48 sm:h-64 overflow-hidden group">
+                    <img 
+                      src={selectedSolution.image} 
+                      className="w-full h-auto object-cover object-top transition-transform duration-[3000ms] ease-linear group-hover:-translate-y-[20%]" 
+                      alt={selectedSolution.title} 
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="p-8">
+              <div className="p-8 relative">
+                <div className="absolute -top-12 left-8 right-8 flex justify-between items-end">
+                  <div className={`w-20 h-20 bg-gradient-to-br ${selectedSolution.color} rounded-2xl flex items-center justify-center shadow-2xl shadow-black/50 border-4 border-white`}>
+                    <selectedSolution.icon className="w-10 h-10 text-white" />
+                  </div>
+                </div>
+
+                <div className="mt-8">
+                  <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+                    {isArabic ? selectedSolution.titleAr : selectedSolution.title}
+                  </h2>
+                </div>
                 <p className="text-xl text-gray-700 leading-relaxed mb-10 font-light">
                   {isArabic ? selectedSolution.longDescriptionAr : selectedSolution.longDescription}
                 </p>
@@ -1101,8 +1150,11 @@ export default function Landing() {
                     <Phone className="w-6 h-6 text-primary-600" />
                   </div>
                   <div>
-                    <p className="text-gray-500 text-sm">{isArabic ? 'الهاتف' : 'Phone'}</p>
-                    <p className="text-gray-900 font-semibold">+966 50 000 0000</p>
+                    <p className="text-gray-500 text-sm">{isArabic ? 'الهاتف / واتساب' : 'Phone / WhatsApp'}</p>
+                    <a href="https://wa.me/966596775485" target="_blank" rel="noreferrer" className="flex items-center gap-2 text-gray-900 font-semibold hover:text-emerald-600 transition">
+                      <span dir="ltr">+966 59 677 5485</span>
+                      <MessageCircle className="w-4 h-4 text-emerald-500" />
+                    </a>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
@@ -1111,7 +1163,7 @@ export default function Landing() {
                   </div>
                   <div>
                     <p className="text-gray-500 text-sm">{isArabic ? 'البريد الإلكتروني' : 'Email'}</p>
-                    <p className="text-gray-900 font-semibold">info@maqder.com</p>
+                    <a href="mailto:support@maqder.com" className="text-gray-900 font-semibold hover:text-primary-600 transition">support@maqder.com</a>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
@@ -1269,13 +1321,28 @@ export default function Landing() {
             <p className="text-gray-500 text-sm">
               © 2024 Maqder ERP. {isArabic ? 'جميع الحقوق محفوظة.' : 'All rights reserved.'}
             </p>
-            <p className="text-gray-500 text-sm">
-              {isArabic ? 'صنع بواسطة Eastern Workforce Solutions Establishment' : 'Built by Eastern Workforce Solutions Establishment'}{' '}
-              <a href="#" className="text-primary-400 hover:text-primary-300">Hassan Sarwar</a>
-            </p>
+            <div className="flex flex-col gap-1">
+              <p className="text-gray-500 text-sm">
+                {isArabic ? 'صنع بواسطة مؤسسة حلول القوى العاملة الشرقية' : 'Built by Eastern Workforce Solutions Establishment'}
+              </p>
+              <p className="text-gray-500 text-sm opacity-70">
+                {isArabic ? 'Eastern Workforce Solutions Establishment' : 'مؤسسة حلول القوى العاملة الشرقية'}
+              </p>
+            </div>
           </div>
         </div>
       </footer>
+      
+      {/* Floating WhatsApp Button */}
+      <a 
+        href="https://wa.me/966596775485" 
+        target="_blank" 
+        rel="noreferrer"
+        className="fixed bottom-6 right-6 z-50 bg-emerald-500 text-white p-4 rounded-full shadow-lg shadow-emerald-500/30 hover:scale-110 hover:shadow-xl hover:shadow-emerald-500/40 transition-all flex items-center justify-center"
+        aria-label="Contact on WhatsApp"
+      >
+        <MessageCircle className="w-7 h-7" />
+      </a>
     </div>
   )
 }
