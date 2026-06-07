@@ -11,8 +11,9 @@ class WhatsAppService {
 
   getStatus(tenantId) {
     return {
-      status: this.status.get(tenantId) || 'DISCONNECTED',
+      status: this.status.get(tenantId)?.state || 'DISCONNECTED',
       qrCode: this.qrCodes.get(tenantId) || null,
+      error: this.status.get(tenantId)?.error || null,
     };
   }
 
@@ -21,7 +22,7 @@ class WhatsAppService {
       return this.getStatus(tenantId);
     }
 
-    this.status.set(tenantId, 'INITIALIZING');
+    this.status.set(tenantId, { state: 'INITIALIZING', error: null });
     
     // Use LocalAuth to persist session per tenant
     const client = new Client({
@@ -43,7 +44,7 @@ class WhatsAppService {
     this.clients.set(tenantId, client);
 
     client.on('qr', async (qr) => {
-      this.status.set(tenantId, 'QR_READY');
+      this.status.set(tenantId, { state: 'QR_READY', error: null });
       try {
         const qrDataUrl = await qrcode.toDataURL(qr);
         this.qrCodes.set(tenantId, qrDataUrl);
@@ -54,32 +55,32 @@ class WhatsAppService {
 
     client.on('ready', () => {
       console.log(`WhatsApp Client is ready for tenant ${tenantId}!`);
-      this.status.set(tenantId, 'READY');
+      this.status.set(tenantId, { state: 'READY', error: null });
       this.qrCodes.delete(tenantId);
     });
 
     client.on('authenticated', () => {
       console.log(`WhatsApp Authenticated for tenant ${tenantId}`);
-      this.status.set(tenantId, 'CONNECTED');
+      this.status.set(tenantId, { state: 'CONNECTED', error: null });
     });
 
     client.on('auth_failure', msg => {
       console.error(`WhatsApp Auth failure for tenant ${tenantId}:`, msg);
-      this.status.set(tenantId, 'DISCONNECTED');
+      this.status.set(tenantId, { state: 'DISCONNECTED', error: msg });
       this.qrCodes.delete(tenantId);
       this.clients.delete(tenantId);
     });
 
     client.on('disconnected', (reason) => {
       console.log(`WhatsApp Client was disconnected for tenant ${tenantId}:`, reason);
-      this.status.set(tenantId, 'DISCONNECTED');
+      this.status.set(tenantId, { state: 'DISCONNECTED', error: reason });
       this.qrCodes.delete(tenantId);
       this.clients.delete(tenantId);
     });
 
     client.initialize().catch(err => {
       console.error(`WhatsApp Client initialization error for tenant ${tenantId}:`, err);
-      this.status.set(tenantId, 'DISCONNECTED');
+      this.status.set(tenantId, { state: 'DISCONNECTED', error: err.message || err });
       this.clients.delete(tenantId);
     });
 
@@ -96,13 +97,13 @@ class WhatsAppService {
       }
       this.clients.delete(tenantId);
       this.qrCodes.delete(tenantId);
-      this.status.set(tenantId, 'DISCONNECTED');
+      this.status.set(tenantId, { state: 'DISCONNECTED', error: null });
     }
   }
 
   async sendPdf(tenantId, phoneNumber, pdfBuffer, fileName = 'Invoice.pdf', caption = '') {
     const client = this.clients.get(tenantId);
-    if (!client || this.status.get(tenantId) !== 'READY') {
+    if (!client || this.status.get(tenantId)?.state !== 'READY') {
       throw new Error('WhatsApp client is not ready. Please connect WhatsApp first.');
     }
 
@@ -118,7 +119,7 @@ class WhatsAppService {
 
   async sendText(tenantId, phoneNumber, text) {
     const client = this.clients.get(tenantId);
-    if (!client || this.status.get(tenantId) !== 'READY') {
+    if (!client || this.status.get(tenantId)?.state !== 'READY') {
       throw new Error('WhatsApp client is not ready. Please connect WhatsApp first.');
     }
 

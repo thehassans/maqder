@@ -29,6 +29,7 @@ export default function WhatsAppConnect() {
 
   const status = statusData?.status || 'DISCONNECTED';
   const qrCode = statusData?.qrCode;
+  const errorMsg = statusData?.error;
 
   return (
     <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-200 dark:border-dark-700 p-6 shadow-sm">
@@ -47,6 +48,13 @@ export default function WhatsAppConnect() {
           </p>
         </div>
       </div>
+
+      {errorMsg && (
+        <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 flex flex-col gap-2 text-red-700 text-sm">
+          <strong className="font-semibold">{language === 'ar' ? 'حدث خطأ أثناء التشغيل' : 'Initialization Error'}</strong>
+          <span className="font-mono text-xs break-all">{errorMsg}</span>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex justify-center p-8">
