@@ -31,8 +31,9 @@ const rentalContractSchema = new mongoose.Schema({
   contractNumber: { type: String, required: true },
 
   // References
-  car: { type: mongoose.Schema.Types.ObjectId, ref: 'RentalCar', required: true },
-  customer: { type: mongoose.Schema.Types.ObjectId, ref: 'RentalCustomer', required: true },
+  vehicleId: { type: mongoose.Schema.Types.ObjectId, ref: 'RentalCar', required: true },
+  customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'RentalCustomer', required: true },
+  tafweedId: { type: String, trim: true },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   closedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 
@@ -45,8 +46,10 @@ const rentalContractSchema = new mongoose.Schema({
   },
 
   // Timeline
-  startDateTime: { type: Date, required: true },
-  expectedReturnDateTime: { type: Date, required: true },
+  rentPeriod: {
+    start: { type: Date, required: true },
+    end: { type: Date, required: true }
+  },
   actualReturnDateTime: { type: Date },
 
   // Commercial terms (set at checkout, immutable after open)
@@ -54,7 +57,7 @@ const rentalContractSchema = new mongoose.Schema({
   allowedKmPerDay: { type: Number, required: true, min: 0, default: 200 },
   perKmOverageRate: { type: Number, default: 0, min: 0 },
   hourlyLateRate: { type: Number, default: 0, min: 0 },
-  securityDeposit: { type: Number, default: 0, min: 0 },
+  depositAmount: { type: Number, default: 0, min: 0 },
 
   // Conditions
   outboundCondition: conditionSchema,
@@ -80,7 +83,7 @@ const rentalContractSchema = new mongoose.Schema({
   subtotal: { type: Number, default: 0 },
   totalVat: { type: Number, default: 0 },         // always 15% (ZATCA)
   grandTotal: { type: Number, default: 0 },
-  finalBalance: { type: Number, default: 0 },     // grandTotal - securityDeposit (negative = refund)
+  finalBalance: { type: Number, default: 0 },     // grandTotal - depositAmount (negative = refund)
 
   // ZATCA
   vatRate: { type: Number, default: 0.15 },
@@ -121,10 +124,10 @@ rentalContractSchema.pre('save', async function(next) {
 
 rentalContractSchema.index({ tenantId: 1, contractNumber: 1 }, { unique: true });
 rentalContractSchema.index({ tenantId: 1, status: 1 });
-rentalContractSchema.index({ tenantId: 1, car: 1 });
-rentalContractSchema.index({ tenantId: 1, customer: 1 });
-rentalContractSchema.index({ tenantId: 1, startDateTime: -1 });
-rentalContractSchema.index({ tenantId: 1, expectedReturnDateTime: 1 });
+rentalContractSchema.index({ tenantId: 1, vehicleId: 1 });
+rentalContractSchema.index({ tenantId: 1, customerId: 1 });
+rentalContractSchema.index({ tenantId: 1, 'rentPeriod.start': -1 });
+rentalContractSchema.index({ tenantId: 1, 'rentPeriod.end': 1 });
 
 const RentalContract = mongoose.model('RentalContract', rentalContractSchema);
 export default RentalContract;

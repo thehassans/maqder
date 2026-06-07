@@ -6,7 +6,7 @@ const rentalCustomerSchema = new mongoose.Schema({
   // Identity
   fullName: { type: String, required: true, trim: true },
   fullNameAr: { type: String, trim: true },
-  mobile: { type: String, required: true, trim: true },
+  phoneNumber: { type: String, required: true, trim: true },
   alternativeMobile: { type: String, trim: true },
   nationality: { type: String, trim: true, default: 'SA' },
   dateOfBirth: { type: Date },
@@ -18,7 +18,12 @@ const rentalCustomerSchema = new mongoose.Schema({
     enum: ['national_id', 'iqama', 'passport', 'gcc_id'],
     default: 'national_id'
   },
-  idNumber: { type: String, required: true, trim: true },
+  iqamaId: { 
+    type: String, 
+    required: true, 
+    trim: true,
+    match: [/^[12]\d{9}$/, 'Must be a valid 10-digit Saudi National ID or Iqama starting with 1 or 2']
+  },
   idExpiry: { type: Date },
   idPhotoUrl: { type: String },
 
@@ -29,10 +34,11 @@ const rentalCustomerSchema = new mongoose.Schema({
   licenseIssuingCountry: { type: String, default: 'SA' },
 
   // Compliance
-  isBlacklisted: { type: Boolean, default: false },
-  blacklistReason: { type: String },
-  blacklistedAt: { type: Date },
-  blacklistedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  isYakeenVerified: { type: Boolean, default: false },
+  isBlocked: { type: Boolean, default: false },
+  blocklistReason: { type: String },
+  blockedAt: { type: Date },
+  blockedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 
   // Stats (updated on contract events)
   totalRentals: { type: Number, default: 0 },
@@ -47,9 +53,9 @@ const rentalCustomerSchema = new mongoose.Schema({
 });
 
 // Compound unique: one record per tenant per national ID
-rentalCustomerSchema.index({ tenantId: 1, idNumber: 1 }, { unique: true });
-rentalCustomerSchema.index({ tenantId: 1, mobile: 1 });
-rentalCustomerSchema.index({ tenantId: 1, isBlacklisted: 1 });
+rentalCustomerSchema.index({ tenantId: 1, iqamaId: 1 }, { unique: true });
+rentalCustomerSchema.index({ tenantId: 1, phoneNumber: 1 });
+rentalCustomerSchema.index({ tenantId: 1, isBlocked: 1 });
 rentalCustomerSchema.index({ tenantId: 1, isActive: 1 });
 
 const RentalCustomer = mongoose.model('RentalCustomer', rentalCustomerSchema);

@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 
 const rentalCarSchema = new mongoose.Schema({
   tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
+  branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', index: true },
 
   // Identity
   make: { type: String, required: true, trim: true },
@@ -9,18 +10,19 @@ const rentalCarSchema = new mongoose.Schema({
   year: { type: Number, required: true },
   color: { type: String, trim: true },
   colorAr: { type: String, trim: true },
-  vin: { type: String, trim: true, uppercase: true },
+  vin: { type: String, trim: true, uppercase: true, unique: true },
 
   // Saudi Plate
   plateNumber: { type: String, required: true, trim: true },
   plateArabicLetters: { type: String, trim: true },   // e.g. "أ ب ج"
   plateEnglishLetters: { type: String, trim: true },  // e.g. "A B C"
+  sequenceNumber: { type: String, trim: true },       // Tamm Sequence Number
 
   // Status
   status: {
     type: String,
-    enum: ['AVAILABLE', 'RESERVED', 'RENTED', 'MAINTENANCE'],
-    default: 'AVAILABLE',
+    enum: ['Available', 'Reserved', 'Rented', 'Pending_Inspection', 'Maintenance'],
+    default: 'Available',
     index: true
   },
 
@@ -31,7 +33,7 @@ const rentalCarSchema = new mongoose.Schema({
   // Compliance dates (Saudi)
   insuranceExpiry: { type: Date },
   fahasExpiry: { type: Date },     // Fahas = Saudi vehicle inspection
-  licenseExpiry: { type: Date },   // Registration/Istimara
+  istimaraExpiry: { type: Date },  // Registration/Istimara
 
   // Pricing defaults
   dailyRateDefault: { type: Number, default: 0, min: 0 },
@@ -59,6 +61,7 @@ const rentalCarSchema = new mongoose.Schema({
 
 rentalCarSchema.index({ tenantId: 1, plateNumber: 1 }, { unique: true });
 rentalCarSchema.index({ tenantId: 1, status: 1 });
+rentalCarSchema.index({ branchId: 1, status: 1 });
 rentalCarSchema.index({ tenantId: 1, isActive: 1 });
 
 const RentalCar = mongoose.model('RentalCar', rentalCarSchema);
