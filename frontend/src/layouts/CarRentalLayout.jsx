@@ -13,7 +13,7 @@ export default function CarRentalLayout() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-900">
-      <CarRentalSidebar />
+      <Sidebar />
       <div
         className={`transition-all duration-300 ${
           sidebarCollapsed ? 'lg:ms-20' : 'lg:ms-72'
