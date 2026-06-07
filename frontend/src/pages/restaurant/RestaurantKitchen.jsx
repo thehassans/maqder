@@ -49,6 +49,7 @@ export default function RestaurantKitchen() {
   const queryClient = useQueryClient()
   const { language } = useSelector((state) => state.ui)
   const { t } = useTranslation(language)
+  const isRtl = language === 'ar'
 
   const [statuses, setStatuses] = useState(['new', 'preparing', 'ready'])
   const [autoPrint, setAutoPrint] = useState(() => localStorage.getItem('kitchenAutoPrint') === 'true')
