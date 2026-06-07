@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useSelector } from 'react-redux'
-import { Save, X, AlertTriangle } from 'lucide-react'
+import { Save, X, AlertTriangle, RefreshCw } from 'lucide-react'
 import api from '../../lib/api'
+import { useAutoTranslate } from '../../hooks/useAutoTranslate'
 
 const Field = ({ label, children, required }) => (
   <div className="space-y-1">
@@ -40,6 +41,8 @@ export default function CarForm() {
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+
+  const { translate, isTranslating } = useAutoTranslate()
 
   const fetchCar = useCallback(async () => {
     if (!isEdit) return
@@ -121,12 +124,38 @@ export default function CarForm() {
 
       <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 p-6 space-y-5">
         {section(t('Vehicle Information', 'معلومات المركبة'))}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 relative">
+          {isTranslating && <div className="absolute top-0 right-0 -mt-6 text-emerald-600 flex items-center gap-1 text-xs"><RefreshCw className="w-3 h-3 animate-spin" /> {t('Translating...', 'جاري الترجمة...')}</div>}
           <Field label={t('Make', 'المصنّع')} required><Input value={form.make} onChange={set('make')} placeholder="Toyota" /></Field>
           <Field label={t('Model', 'الموديل')} required><Input value={form.model} onChange={set('model')} placeholder="Camry" /></Field>
           <Field label={t('Year', 'السنة')}><Input type="number" value={form.year} onChange={set('year')} min="1990" max="2030" /></Field>
-          <Field label={t('Color (EN)', 'اللون (إنج)')}><Input value={form.color} onChange={set('color')} placeholder="White" /></Field>
-          <Field label={t('Color (AR)', 'اللون (ع)')}><Input value={form.colorAr} onChange={set('colorAr')} placeholder="أبيض" dir="rtl" /></Field>
+          <Field label={t('Color (EN)', 'اللون (إنج)')}>
+            <Input 
+              value={form.color} 
+              onChange={set('color')} 
+              placeholder="White" 
+              onBlur={async () => {
+                if (form.color && !form.colorAr) {
+                  const translated = await translate(form.color, 'en', 'ar');
+                  if (translated) setForm(f => ({ ...f, colorAr: translated }));
+                }
+              }}
+            />
+          </Field>
+          <Field label={t('Color (AR)', 'اللون (ع)')}>
+            <Input 
+              value={form.colorAr} 
+              onChange={set('colorAr')} 
+              placeholder="أبيض" 
+              dir="rtl" 
+              onBlur={async () => {
+                if (form.colorAr && !form.color) {
+                  const translated = await translate(form.colorAr, 'ar', 'en');
+                  if (translated) setForm(f => ({ ...f, color: translated }));
+                }
+              }}
+            />
+          </Field>
           <Field label={t('Category', 'الفئة')}>
             <Select value={form.category} onChange={set('category')}>
               {['economy','compact','midsize','fullsize','suv','luxury','van','truck'].map(c => <option key={c} value={c}>{c}</option>)}

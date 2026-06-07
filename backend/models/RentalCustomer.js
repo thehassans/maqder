@@ -26,6 +26,7 @@ const rentalCustomerSchema = new mongoose.Schema({
   },
   idExpiry: { type: Date },
   idPhotoUrl: { type: String },
+  idPhotoBackUrl: { type: String },
 
   // Driving License
   licenseNumber: { type: String, trim: true },
