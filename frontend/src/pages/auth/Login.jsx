@@ -8,6 +8,7 @@ import { login, clearError } from '../../store/slices/authSlice'
 import { setLanguage } from '../../store/slices/uiSlice'
 import { useTranslation } from '../../lib/translations'
 import { usePublicWebsiteSettings } from '../../lib/website'
+import DailyAyat from '../../components/ui/DailyAyat'
 
 const complianceLogos = [
   { src: '/ZATCA_Logo.svg', alt: 'ZATCA', cardClassName: 'w-48', imageClassName: 'scale-[1.35]' },
@@ -122,6 +123,11 @@ export default function Login() {
                   <span className="font-medium">{feature.text}</span>
                 </motion.div>
               ))}
+            </div>
+
+            {/* Daily Ayat */}
+            <div className="mt-8">
+              <DailyAyat variant="dark" />
             </div>
           </div>
 
