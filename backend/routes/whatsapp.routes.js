@@ -10,6 +10,9 @@ import {
   QuickReply,
   Broadcast
 } from '../models/WhatsApp.js';
+import whatsappService from '../services/whatsappService.js';
+import multer from 'multer';
+const upload = multer({ storage: multer.memoryStorage() });
 
 const router = express.Router();
 
@@ -208,6 +211,56 @@ router.use(protect);
 router.use(tenantFilter);
 
 // ============== CONFIG ROUTES ==============
+
+// ============== UNOFFICIAL API ROUTES ==============
+
+router.get('/client/status', async (req, res) => {
+  try {
+    const status = whatsappService.getStatus(req.user.tenantId);
+    res.json(status);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/client/init', async (req, res) => {
+  try {
+    const status = await whatsappService.initClient(req.user.tenantId);
+    res.json(status);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/client/logout', async (req, res) => {
+  try {
+    await whatsappService.logout(req.user.tenantId);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/client/send-pdf', upload.single('pdf'), async (req, res) => {
+  try {
+    const { phoneNumber, fileName, caption } = req.body;
+    if (!req.file || !phoneNumber) {
+      return res.status(400).json({ error: 'Phone number and PDF file are required' });
+    }
+
+    const response = await whatsappService.sendPdf(
+      req.user.tenantId,
+      phoneNumber,
+      req.file.buffer,
+      fileName || 'Invoice.pdf',
+      caption || 'Here is your invoice.'
+    );
+
+    res.json({ success: true, messageId: response.id?._serialized });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Get WhatsApp config
 router.get('/config', checkPermission('settings', 'read'), async (req, res) => {

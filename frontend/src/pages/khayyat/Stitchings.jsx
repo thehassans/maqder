@@ -12,7 +12,9 @@ import { Modal } from './components/ui/Modal';
 import { ConfirmModal } from './components/ui/ConfirmModal';
 import DemoBlockedModal from './components/ui/DemoBlockedModal';
 import { Table, Thead, Tbody, Tr, Th, Td } from './components/ui/Table';
-import { Plus, Search, UserPlus, Trash2, Printer, X, Eye } from 'lucide-react';
+import { Plus, Search, UserPlus, Trash2, Printer, X, Eye, Send } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import SARIcon from './components/ui/SARIcon';
 import toast from 'react-hot-toast';
 import { formatSaudiRiyal } from './utils/saudi';
@@ -231,6 +233,45 @@ const Stitchings = () => {
 
   const handlePrintLabel = async (stitch) => {
     setPrintOrder(stitch);
+  };
+
+  const [sendingWa, setSendingWa] = useState(false);
+  const handleSendWhatsApp = async () => {
+    if (!printOrder || !printRef.current) return;
+    const phone = printOrder.customerId?.phone;
+    if (!phone) {
+      toast.error(language === 'ar' ? 'رقم هاتف العميل غير موجود' : 'Customer phone number missing');
+      return;
+    }
+    
+    setSendingWa(true);
+    try {
+      const element = printRef.current;
+      const canvas = await html2canvas(element, { scale: 2 });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'px',
+        format: [canvas.width, canvas.height]
+      });
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+      const pdfBlob = pdf.output('blob');
+      
+      const formData = new FormData();
+      formData.append('pdf', pdfBlob, `Invoice-${printOrder.orderNumber}.pdf`);
+      formData.append('phoneNumber', phone);
+      formData.append('caption', language === 'ar' ? `مرحباً، مرفق فاتورتك رقم ${printOrder.orderNumber}` : `Hello, attached is your invoice #${printOrder.orderNumber}`);
+      
+      await api.post('/whatsapp/client/send-pdf', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      toast.success(language === 'ar' ? 'تم الإرسال بنجاح' : 'Sent successfully');
+    } catch (e) {
+      console.error(e);
+      toast.error(e?.response?.data?.error || (language === 'ar' ? 'حدث خطأ' : 'Error sending'));
+    }
+    setSendingWa(false);
   };
 
   return (
@@ -640,6 +681,18 @@ const Stitchings = () => {
             <div className="mt-6 flex gap-3 print:hidden">
               <button onClick={() => setPrintOrder(null)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-gray-100 dark:bg-slate-800 px-4 py-2.5 text-sm font-semibold text-gray-700 dark:text-slate-200 flex-1">
                 {(language === 'ar' ? 'إغلاق' : 'Close')}
+              </button>
+              <button 
+                onClick={handleSendWhatsApp}
+                disabled={sendingWa}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white flex-1 disabled:opacity-50"
+              >
+                {sendingWa ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
+                {(language === 'ar' ? 'إرسال واتساب' : 'Send WhatsApp')}
               </button>
               <button onClick={() => {
                 if (printRef.current) {
