@@ -499,7 +499,7 @@ export default function Landing() {
             >
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary-50 rounded-full text-primary-700 font-medium text-sm mb-6">
                 <Sparkles className="w-4 h-4" />
-                {isArabic ? 'متوافق مع هيئة الزكاة والضريبة والجمارك' : 'ZATCA Phase 2 Compliant'}
+                {isArabic ? 'مزود خدمات الفوترة الإلكترونية المعتمد - متوافق مع هيئة الزكاة والضريبة والجمارك' : 'Certified E-Invoicing Services Provider - ZATCA Phase 2 Compliant'}
               </div>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
                 {isArabic ? (
@@ -516,8 +516,8 @@ export default function Landing() {
               </h1>
               <p className="text-xl text-gray-600 mb-8 leading-relaxed">
                 {isArabic
-                  ? 'الفوترة الإلكترونية، الموارد البشرية، الرواتب، المخزون، المشتريات، وأكثر - كل ما تحتاجه لإدارة أعمالك في منصة واحدة متكاملة.'
-                  : 'E-Invoicing, HR, Payroll, Inventory, Procurement, and more — everything you need to run your business in one integrated platform.'}
+                  ? 'تقديم خدمات الفوترة الإلكترونية، الموارد البشرية، الرواتب، المخزون، المشتريات، وأكثر - كل ما تحتاجه لإدارة أعمالك في منصة واحدة متكاملة.'
+                  : 'Providing E-Invoicing Services, HR, Payroll, Inventory, Procurement, and more — everything you need to run your business in one integrated platform.'}
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link
@@ -753,13 +753,13 @@ export default function Landing() {
               </div>
               <h2 className="text-3xl sm:text-4xl font-bold mb-6">
                 {isArabic
-                  ? 'متوافق 100% مع متطلبات هيئة الزكاة والضريبة والجمارك'
-                  : '100% ZATCA Phase 2 Compliant'}
+                  ? 'مزود خدمات الفوترة الإلكترونية - متوافق 100% مع متطلبات ZATCA'
+                  : 'Provision of E-Invoicing Services - 100% ZATCA Phase 2 Compliant'}
               </h2>
               <p className="text-xl text-gray-300 mb-8 leading-relaxed">
                 {isArabic
-                  ? 'فواتير إلكترونية موقعة رقمياً مع رموز QR وتكامل مباشر مع بوابة ZATCA'
-                  : 'Digitally signed e-invoices with QR codes and direct integration with ZATCA gateway'}
+                  ? 'تقديم خدمات الفوترة الإلكترونية مع فواتير موقعة رقمياً ورموز QR وتكامل مباشر مع بوابة ZATCA'
+                  : 'Providing E-Invoicing Services with digitally signed e-invoices, QR codes, and direct ZATCA gateway integration'}
               </p>
               <ul className="space-y-4">
                 {[
@@ -1289,8 +1289,8 @@ export default function Landing() {
               </div>
               <p className="text-gray-500 leading-relaxed">
                 {isArabic
-                  ? 'نظام ERP متكامل للشركات السعودية مع امتثال كامل لهيئة الزكاة والضريبة والجمارك'
-                  : 'Complete ERP system for Saudi businesses with full ZATCA compliance'}
+                  ? 'مزود خدمات الفوترة الإلكترونية ونظام ERP متكامل للشركات السعودية مع امتثال كامل لهيئة الزكاة والضريبة والجمارك'
+                  : 'E-Invoicing Services Provider and complete ERP system for Saudi businesses with full ZATCA compliance'}
               </p>
             </div>
             <div>
