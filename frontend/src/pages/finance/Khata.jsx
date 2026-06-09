@@ -35,8 +35,14 @@ export default function Khata() {
         api.get('/khata'),
         api.get('/contacts?types=customer')
       ]);
-      setAccounts(accRes.data);
+      const newAccounts = accRes.data;
+      setAccounts(newAccounts);
       setCustomers(custRes.data?.contacts || []);
+
+      if (selectedAccount) {
+        const updated = newAccounts.find(a => a._id === selectedAccount._id);
+        if (updated) setSelectedAccount(updated);
+      }
     } catch (error) {
       toast.error('Failed to load Khata accounts');
     } finally {
@@ -108,110 +114,158 @@ export default function Khata() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div className="flex h-[calc(100vh-8rem)] bg-[#FAFAFA] rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 overflow-hidden">
       
       {/* LEFT PANEL: Accounts List */}
-      <div className="w-1/3 border-r border-gray-100 flex flex-col bg-gray-50/30">
-        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-white">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
-              <Users className="w-5 h-5" />
-            </div>
-            <h2 className="text-xl font-bold text-gray-800">Khata Ledgers</h2>
+      <div className="w-[320px] lg:w-[380px] border-r border-gray-100/80 flex flex-col bg-white z-10 shadow-[4px_0_24px_rgb(0,0,0,0.02)]">
+        <div className="px-6 py-8 border-b border-gray-100/50 flex justify-between items-center bg-white">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight text-gray-900 mb-1">Daftar</h2>
+            <p className="text-xs font-medium text-gray-400 uppercase tracking-widest">Customer Ledgers</p>
           </div>
           <button 
             onClick={() => setShowAddModal(true)}
-            className="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
+            className="w-10 h-10 flex items-center justify-center bg-black text-white rounded-full hover:scale-105 hover:bg-gray-800 transition-all shadow-md"
           >
             <Plus className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+        <div className="flex-1 overflow-y-auto px-4 py-6 space-y-3 custom-scrollbar">
           {accounts.map(acc => (
             <button
               key={acc._id}
               onClick={() => handleSelectAccount(acc)}
-              className={`w-full text-left p-4 rounded-xl border transition-all ${selectedAccount?._id === acc._id ? 'border-emerald-500 bg-emerald-50/50 shadow-sm' : 'border-gray-100 bg-white hover:border-gray-300'}`}
+              className={`group w-full text-left p-5 rounded-2xl transition-all duration-300 relative overflow-hidden ${
+                selectedAccount?._id === acc._id 
+                  ? 'bg-black text-white shadow-xl shadow-black/10 scale-[1.02]' 
+                  : 'bg-gray-50/50 hover:bg-gray-100/80 hover:scale-[1.01]'
+              }`}
             >
-              <div className="flex justify-between items-start mb-2">
-                <span className="font-semibold text-gray-900">{acc.customerId?.name || 'Unknown'}</span>
-                <ChevronRight className={`w-4 h-4 ${selectedAccount?._id === acc._id ? 'text-emerald-500' : 'text-gray-400'}`} />
-              </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-500 flex items-center gap-1"><Clock className="w-3 h-3"/> {new Date(acc.updatedAt).toLocaleDateString()}</span>
-                <span className={`font-bold ${acc.balance > 0 ? 'text-rose-500' : 'text-emerald-600'}`}>
-                  SAR {acc.balance.toFixed(2)}
-                </span>
+              {selectedAccount?._id === acc._id && (
+                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
+              )}
+              <div className="relative z-10">
+                <div className="flex justify-between items-start mb-3">
+                  <span className={`font-semibold tracking-tight ${selectedAccount?._id === acc._id ? 'text-white' : 'text-gray-900'}`}>
+                    {acc.customerId?.name || 'Unknown'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-end">
+                  <span className={`text-xs flex items-center gap-1.5 ${selectedAccount?._id === acc._id ? 'text-gray-300' : 'text-gray-400'}`}>
+                    <Clock className="w-3.5 h-3.5"/> 
+                    {new Date(acc.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                  </span>
+                  <div className="flex flex-col items-end">
+                    <span className={`text-[10px] uppercase tracking-wider font-bold mb-0.5 ${selectedAccount?._id === acc._id ? 'text-gray-400' : 'text-gray-400'}`}>Balance</span>
+                    <span className={`font-bold tracking-tight ${
+                      selectedAccount?._id === acc._id 
+                        ? 'text-white' 
+                        : acc.balance > 0 ? 'text-rose-500' : 'text-emerald-500'
+                    }`}>
+                      SAR {Math.abs(acc.balance).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
               </div>
             </button>
           ))}
           {accounts.length === 0 && (
-            <div className="text-center py-10 text-gray-400 text-sm">
-              No active Khata accounts.
+            <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+              <Users className="w-12 h-12 mb-3 opacity-20" />
+              <p className="text-sm font-medium">No ledgers found</p>
             </div>
           )}
         </div>
       </div>
 
       {/* RIGHT PANEL: Account Details & Ledger */}
-      <div className="flex-1 flex flex-col bg-white">
+      <div className="flex-1 flex flex-col bg-[#FAFAFA] relative">
         {selectedAccount ? (
           <>
-            <div className="p-8 border-b border-gray-100 flex justify-between items-center">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">{selectedAccount.customerId?.name}</h2>
-                <p className="text-gray-500">{selectedAccount.customerId?.phone || 'No phone number'}</p>
+            {/* Header */}
+            <div className="px-10 py-8 border-b border-gray-100/80 bg-white/50 backdrop-blur-xl sticky top-0 z-10 flex justify-between items-center">
+              <div className="flex items-center gap-5">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-xl font-bold text-gray-700 shadow-inner">
+                  {selectedAccount.customerId?.name?.charAt(0)?.toUpperCase()}
+                </div>
+                <div>
+                  <h2 className="text-3xl font-bold tracking-tight text-gray-900 mb-1">{selectedAccount.customerId?.name}</h2>
+                  <p className="text-sm font-medium text-gray-400 tracking-wide">{selectedAccount.customerId?.phone || 'No phone number'}</p>
+                </div>
               </div>
               
-              <div className="flex gap-4 items-center">
+              <div className="flex items-center gap-8">
                 <div className="text-right">
-                  <p className="text-sm text-gray-500 font-medium">Outstanding Balance</p>
-                  <p className={`text-3xl font-bold ${selectedAccount.balance > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                    SAR {selectedAccount.balance.toFixed(2)}
+                  <p className="text-xs uppercase tracking-widest font-bold text-gray-400 mb-1">Outstanding Balance</p>
+                  <p className={`text-4xl font-black tracking-tighter ${selectedAccount.balance > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
+                    SAR {Math.abs(selectedAccount.balance).toFixed(2)}
                   </p>
                 </div>
+                <div className="w-px h-12 bg-gray-200"></div>
                 <button 
                   onClick={() => setShowTransactionModal(true)}
-                  className="ml-6 px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl shadow-sm hover:bg-emerald-700 transition-colors flex items-center gap-2"
+                  className="group relative px-6 py-3.5 bg-black text-white rounded-full font-bold shadow-[0_8px_20px_rgb(0,0,0,0.15)] hover:shadow-[0_8px_25px_rgb(0,0,0,0.25)] hover:-translate-y-0.5 transition-all flex items-center gap-2 overflow-hidden"
                 >
-                  <Receipt className="w-5 h-5" /> Add Transaction
+                  <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
+                  <Receipt className="w-5 h-5 relative z-10" /> 
+                  <span className="relative z-10">Record</span>
                 </button>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-8">
-              <h3 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-gray-400" /> Ledger History
-              </h3>
-              
-              <div className="space-y-4">
-                {transactions.map(tx => (
-                  <div key={tx._id} className="flex justify-between items-center p-4 border border-gray-100 rounded-xl hover:shadow-sm transition-shadow">
-                    <div className="flex items-center gap-4">
-                      <div className={`p-3 rounded-full ${tx.type === 'credit' ? 'bg-rose-50 text-rose-500' : 'bg-emerald-50 text-emerald-500'}`}>
-                        {tx.type === 'credit' ? <Plus className="w-5 h-5" /> : <CreditCard className="w-5 h-5" />}
+            {/* Ledger */}
+            <div className="flex-1 overflow-y-auto p-10 custom-scrollbar">
+              <div className="max-w-4xl mx-auto">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="h-px bg-gray-200 flex-1"></div>
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Transaction History</span>
+                  <div className="h-px bg-gray-200 flex-1"></div>
+                </div>
+                
+                <div className="space-y-4">
+                  {transactions.map(tx => (
+                    <div key={tx._id} className="group flex justify-between items-center p-5 bg-white rounded-2xl border border-gray-100 hover:border-gray-200 hover:shadow-lg hover:shadow-gray-100/50 transition-all duration-300">
+                      <div className="flex items-center gap-5">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-inner ${
+                          tx.type === 'credit' 
+                            ? 'bg-rose-50 text-rose-500' 
+                            : 'bg-emerald-50 text-emerald-500'
+                        }`}>
+                          {tx.type === 'credit' ? <Plus className="w-5 h-5" /> : <CreditCard className="w-5 h-5" />}
+                        </div>
+                        <div>
+                          <p className="font-bold text-gray-900 tracking-tight">{tx.type === 'credit' ? 'Purchased on Credit' : 'Payment Received'}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-xs font-medium text-gray-400 bg-gray-50 px-2 py-0.5 rounded-md">
+                              {new Date(tx.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            {tx.notes && <span className="text-sm text-gray-500">- {tx.notes}</span>}
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-semibold text-gray-900">{tx.type === 'credit' ? 'Purchased on Credit' : 'Payment Received'}</p>
-                        <p className="text-sm text-gray-500">{new Date(tx.date).toLocaleString()} {tx.notes && `- ${tx.notes}`}</p>
+                      <div className={`text-xl font-black tracking-tighter ${tx.type === 'credit' ? 'text-rose-500' : 'text-emerald-500'}`}>
+                        {tx.type === 'credit' ? '+' : '-'} SAR {tx.amount.toFixed(2)}
                       </div>
                     </div>
-                    <div className={`font-bold text-lg ${tx.type === 'credit' ? 'text-rose-600' : 'text-emerald-600'}`}>
-                      {tx.type === 'credit' ? '+' : '-'} SAR {tx.amount.toFixed(2)}
+                  ))}
+                  {transactions.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-20 text-gray-300">
+                      <FileText className="w-16 h-16 mb-4 opacity-20" />
+                      <p className="text-base font-medium">No transactions recorded yet.</p>
                     </div>
-                  </div>
-                ))}
-                {transactions.length === 0 && (
-                  <div className="text-center py-10 text-gray-400">No transactions recorded yet.</div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           </>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full text-gray-300">
-            <Users className="w-24 h-24 mb-6 opacity-20" />
-            <h2 className="text-2xl font-light tracking-tight text-gray-400">Select an account to view ledger</h2>
+          <div className="flex flex-col items-center justify-center h-full text-gray-300 bg-gradient-to-br from-[#FAFAFA] to-gray-50">
+            <div className="w-32 h-32 mb-8 rounded-full bg-white shadow-sm flex items-center justify-center border border-gray-100">
+              <Users className="w-12 h-12 text-gray-300" />
+            </div>
+            <h2 className="text-2xl font-bold tracking-tight text-gray-400">Select a ledger to view</h2>
+            <p className="text-sm font-medium text-gray-400 mt-2">Manage customer credit and payments seamlessly</p>
           </div>
         )}
       </div>
