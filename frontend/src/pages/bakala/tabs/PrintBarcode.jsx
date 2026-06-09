@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, Printer, Download, Scan } from 'lucide-react';
+import Barcode from 'react-barcode';
 import api from '../../../lib/api';
 import toast from 'react-hot-toast';
 
@@ -8,6 +9,7 @@ export default function PrintBarcode() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItems, setSelectedItems] = useState([]);
+  const printRef = useRef(null);
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -43,9 +45,34 @@ export default function PrintBarcode() {
 
   const handlePrint = () => {
     if (selectedItems.length === 0) return toast.error('Please select items to print');
-    // Implement actual printing logic, e.g., opening a new window with a printable layout
-    toast.success('Sending to printer...');
-    window.print();
+    
+    const printContent = printRef.current;
+    if (!printContent) return;
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Print Labels</title>
+          <style>
+            @page { size: 38mm 25mm; margin: 0; }
+            body { font-family: 'Inter', sans-serif; margin: 0; padding: 2px; width: 38mm; text-align: center; color: #000; }
+            .label-page { page-break-after: always; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 25mm; overflow: hidden; }
+            .name { font-weight: 900; font-size: 10px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; max-width: 100%; }
+            .price { font-size: 9px; font-weight: bold; margin-bottom: 1px; }
+            .barcode { display: flex; justify-content: center; }
+            .barcode svg { width: 100%; height: auto; max-height: 15px; }
+          </style>
+        </head>
+        <body>
+          ${printContent.innerHTML}
+          <script>
+            window.onload = () => { window.print(); window.close(); };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   const filteredProducts = products.filter(p => 
@@ -125,6 +152,36 @@ export default function PrintBarcode() {
               ))}
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Hidden printable area */}
+      <div className="hidden">
+        <div ref={printRef}>
+          {selectedItems.map(item => {
+            const labels = [];
+            for (let i = 0; i < item.printQty; i++) {
+              labels.push(
+                <div key={`${item._id}-${i}`} className="label-page">
+                  <div className="name">{item.name}</div>
+                  <div className="price">SAR {item.retailPrice?.toFixed(2)}</div>
+                  <div className="barcode">
+                    <Barcode 
+                      value={item.primaryBarcode || '00000'} 
+                      format={item.primaryBarcode?.length === 13 ? "EAN13" : "CODE128"}
+                      width={1.2} 
+                      height={20} 
+                      fontSize={8} 
+                      margin={0} 
+                      displayValue={true} 
+                      valid={() => {}}
+                    />
+                  </div>
+                </div>
+              );
+            }
+            return labels;
+          })}
         </div>
       </div>
     </div>

@@ -117,17 +117,12 @@ export default function WeightScale() {
     printWindow.document.close();
   };
 
-  // Prepare options for react-select, filtered for fruits/veg/weighed items
-  const productOptions = products
-    .filter(p => {
-      const cat = (p.category || '').toLowerCase();
-      return cat.includes('fruit') || cat.includes('veg') || cat.includes('produce') || p.unit === 'KG';
-    })
-    .map(p => ({
-      value: p._id,
-      label: `${p.name} - SAR ${p.retailPrice?.toFixed(2)}/${p.unit || 'KG'}`,
-      product: p
-    }));
+  // Prepare options for react-select, showing all products so user can weigh anything if needed
+  const productOptions = products.map(p => ({
+    value: p._id,
+    label: `${p.name} - SAR ${p.retailPrice?.toFixed(2)}/${p.unit || 'KG'}`,
+    product: p
+  }));
 
   const customSelectStyles = {
     control: (base, state) => ({
