@@ -28,7 +28,7 @@ import {
   PlugIcon,
 } from 'lucide-react';
 
-export function Header3() {
+export function Header3({ isArabic, setIsArabic }) {
   const [open, setOpen] = React.useState(false);
   const scrolled = useScroll(10);
 
@@ -56,65 +56,37 @@ export function Header3() {
             <WordmarkIcon className="h-4" />
           </a>
           <NavigationMenu className="hidden md:flex">
-            <NavigationMenuList>
-              <NavigationMenuItem>
-                <NavigationMenuTrigger className="bg-transparent">Product</NavigationMenuTrigger>
-                <NavigationMenuContent className="bg-background p-1 pr-1.5">
-                  <ul className="bg-popover grid w-lg grid-cols-2 gap-2 rounded-md border p-2 shadow">
-                    {productLinks.map((item, i) => (
-                      <li key={i}>
-                        <ListItem {...item} />
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="p-2">
-                    <p className="text-muted-foreground text-sm">
-                      Interested?{' '}
-                      <a href="#" className="text-foreground font-medium hover:underline">
-                        Schedule a demo
-                      </a>
-                    </p>
-                  </div>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <NavigationMenuTrigger className="bg-transparent">Company</NavigationMenuTrigger>
-                <NavigationMenuContent className="bg-background p-1 pr-1.5 pb-1.5">
-                  <div className="grid w-lg grid-cols-2 gap-2">
-                    <ul className="bg-popover space-y-2 rounded-md border p-2 shadow">
-                      {companyLinks.map((item, i) => (
-                        <li key={i}>
-                          <ListItem {...item} />
-                        </li>
-                      ))}
-                    </ul>
-                    <ul className="space-y-2 p-3">
-                      {companyLinks2.map((item, i) => (
-                        <li key={i}>
-                          <NavigationMenuLink
-                            href={item.href}
-                            className="flex p-2 hover:bg-accent flex-row rounded-md items-center gap-x-2"
-                          >
-                            <item.icon className="text-foreground size-4" />
-                            <span className="font-medium">{item.title}</span>
-                          </NavigationMenuLink>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-              <NavigationMenuLink className="px-4" asChild>
-                <a href="#" className="hover:bg-accent rounded-md p-2">
-                  Pricing
-                </a>
-              </NavigationMenuLink>
+            <NavigationMenuList className="gap-2">
+              {[
+                { href: '#', label: isArabic ? 'الرئيسية' : 'Home' },
+                { href: '#features', label: isArabic ? 'المميزات' : 'Features' },
+                { href: '#modules', label: isArabic ? 'الوحدات' : 'Modules' },
+                { href: '#pricing', label: isArabic ? 'الأسعار' : 'Pricing' },
+                { href: '#contact', label: isArabic ? 'اتصل بنا' : 'Contact' },
+              ].map((link) => (
+                <NavigationMenuItem key={link.label}>
+                  <NavigationMenuLink href={link.href} className="px-4 py-2 hover:bg-accent hover:text-accent-foreground rounded-md text-sm font-medium transition-colors">
+                    {link.label}
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+              ))}
             </NavigationMenuList>
           </NavigationMenu>
         </div>
         <div className="hidden items-center gap-2 md:flex">
-          <Button variant="outline">Sign In</Button>
-          <Button>Get Started</Button>
+          <button
+            onClick={() => setIsArabic?.(!isArabic)}
+            className="flex items-center gap-2 px-3 py-2 rounded-full border border-gray-200 text-sm font-medium hover:bg-gray-50 transition-colors"
+          >
+            <GlobeIcon className="w-4 h-4" />
+            {isArabic ? 'English' : 'عربي'}
+          </button>
+          <Button variant="outline" asChild>
+            <a href="/login">{isArabic ? 'تسجيل الدخول' : 'Sign In'}</a>
+          </Button>
+          <Button asChild>
+            <a href="/login">{isArabic ? 'ابدأ الآن' : 'Get Started'}</a>
+          </Button>
         </div>
         <Button
           size="icon"
@@ -129,26 +101,34 @@ export function Header3() {
         </Button>
       </nav>
       <MobileMenu open={open} className="flex flex-col justify-between gap-2 overflow-y-auto">
-        <NavigationMenu className="max-w-full">
-          <div className="flex w-full flex-col gap-y-2">
-            <span className="text-sm">Product</span>
-            {productLinks.map((link) => (
-              <ListItem key={link.title} {...link} />
-            ))}
-            <span className="text-sm">Company</span>
-            {companyLinks.map((link) => (
-              <ListItem key={link.title} {...link} />
-            ))}
-            {companyLinks2.map((link) => (
-              <ListItem key={link.title} {...link} />
-            ))}
-          </div>
-        </NavigationMenu>
-        <div className="flex flex-col gap-2">
-          <Button variant="outline" className="w-full bg-transparent">
-            Sign In
+        <div className="flex flex-col gap-4 mt-8">
+          {[
+            { href: '#', label: isArabic ? 'الرئيسية' : 'Home' },
+            { href: '#features', label: isArabic ? 'المميزات' : 'Features' },
+            { href: '#modules', label: isArabic ? 'الوحدات' : 'Modules' },
+            { href: '#pricing', label: isArabic ? 'الأسعار' : 'Pricing' },
+            { href: '#contact', label: isArabic ? 'اتصل بنا' : 'Contact' },
+          ].map((link) => (
+            <a key={link.label} href={link.href} className="text-lg font-medium p-2 hover:bg-accent rounded-md" onClick={() => setOpen(false)}>
+              {link.label}
+            </a>
+          ))}
+          <div className="h-px bg-border my-2" />
+          <button
+            onClick={() => { setIsArabic?.(!isArabic); setOpen(false); }}
+            className="flex justify-center items-center gap-2 px-4 py-3 rounded-md border border-gray-200 font-medium hover:bg-gray-50 transition-colors"
+          >
+            <GlobeIcon className="w-5 h-5" />
+            {isArabic ? 'Switch to English' : 'التبديل للعربية'}
+          </button>
+        </div>
+        <div className="flex flex-col gap-2 mt-auto pb-4">
+          <Button variant="outline" className="w-full bg-transparent" asChild>
+            <a href="/login">{isArabic ? 'تسجيل الدخول' : 'Sign In'}</a>
           </Button>
-          <Button className="w-full">Get Started</Button>
+          <Button className="w-full" asChild>
+            <a href="/login">{isArabic ? 'ابدأ الآن' : 'Get Started'}</a>
+          </Button>
         </div>
       </MobileMenu>
     </header>
