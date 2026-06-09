@@ -157,7 +157,7 @@ export default function BakalaProduce() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right font-black text-gray-900">SAR {item.retailPrice?.toFixed(2)}</td>
-                    <td className="px-6 py-4 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+                    <td className="px-6 py-4 text-right">
                       <button onClick={() => handleEdit(item)} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl mr-2 transition-colors">
                         <Edit2 className="w-4 h-4" />
                       </button>
