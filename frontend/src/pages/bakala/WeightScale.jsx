@@ -1,15 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Scale, Printer, Search, RefreshCw, X, Hash } from 'lucide-react';
+import { ArrowLeft, Scale, Printer, Search, RefreshCw, X, Hash, Minus, Plus } from 'lucide-react';
 import Barcode from 'react-barcode';
+import Select from 'react-select';
 import { getAllProducts } from '../../lib/bakalaDb';
 
 export default function WeightScale() {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
+  
+  // Inputs
   const [weightKg, setWeightKg] = useState('1.000');
+  const [quantity, setQuantity] = useState(1);
+  
   const [barcodeValue, setBarcodeValue] = useState(null);
   const printRef = useRef(null);
 
@@ -21,11 +25,6 @@ export default function WeightScale() {
     loadProducts();
   }, []);
 
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    p.primaryBarcode?.includes(searchTerm)
-  ).slice(0, 50);
-
   const calculateChecksum = (str12) => {
     let sum = 0;
     for (let i = 0; i < 12; i++) {
@@ -34,18 +33,30 @@ export default function WeightScale() {
     return (10 - (sum % 10)) % 10;
   };
 
+  const isWeightBased = selectedProduct?.unit === 'KG' || !selectedProduct?.unit; // default to KG if missing
+
   const handleWeightChange = (e) => {
     let val = e.target.value;
-    // Allow numbers and decimal point
     if (/^\d*\.?\d*$/.test(val)) {
       setWeightKg(val);
     }
   };
 
+  const handleQuantityChange = (delta) => {
+    setQuantity(prev => Math.max(1, prev + delta));
+  };
+
   const generateBarcode = () => {
     if (!selectedProduct) return;
-    const weight = parseFloat(weightKg) || 0;
-    const totalPrice = (selectedProduct.retailPrice * weight);
+    
+    let totalPrice = 0;
+    if (isWeightBased) {
+      const weight = parseFloat(weightKg) || 0;
+      totalPrice = (selectedProduct.retailPrice * weight);
+    } else {
+      totalPrice = (selectedProduct.retailPrice * quantity);
+    }
+
     const priceHalalas = Math.round(totalPrice * 100);
     
     // Ensure item code is 5 digits
@@ -64,12 +75,12 @@ export default function WeightScale() {
   };
 
   useEffect(() => {
-    if (selectedProduct && weightKg) {
+    if (selectedProduct) {
       generateBarcode();
     } else {
       setBarcodeValue(null);
     }
-  }, [selectedProduct, weightKg]);
+  }, [selectedProduct, weightKg, quantity]);
 
   const handlePrint = () => {
     const printContent = printRef.current;
@@ -82,12 +93,14 @@ export default function WeightScale() {
           <title>Print Label</title>
           <style>
             @page { size: 58mm 40mm; margin: 0; }
-            body { font-family: sans-serif; margin: 0; padding: 10px; width: 58mm; text-align: center; }
-            .name { font-weight: bold; font-size: 14px; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-            .details { font-size: 12px; margin-bottom: 5px; display: flex; justify-content: space-between; }
-            .price { font-weight: bold; font-size: 16px; margin-bottom: 5px; }
-            .barcode { display: flex; justify-content: center; }
-            .barcode svg { width: 100%; height: auto; max-height: 40px; }
+            body { font-family: 'Inter', sans-serif; margin: 0; padding: 8px; width: 58mm; text-align: center; color: #000; }
+            .name { font-weight: 900; font-size: 13px; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; }
+            .details { font-size: 10px; margin-bottom: 4px; display: flex; justify-content: space-between; font-weight: 600; border-bottom: 1px dashed #ccc; padding-bottom: 2px; }
+            .price-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px; }
+            .price-label { font-size: 9px; font-weight: bold; color: #555; }
+            .price { font-weight: 900; font-size: 16px; }
+            .barcode { display: flex; justify-content: center; margin-top: 2px; }
+            .barcode svg { width: 100%; height: auto; max-height: 35px; }
           </style>
         </head>
         <body>
@@ -101,10 +114,54 @@ export default function WeightScale() {
     printWindow.document.close();
   };
 
+  // Prepare options for react-select
+  const productOptions = products.map(p => ({
+    value: p._id,
+    label: `${p.name} - SAR ${p.retailPrice?.toFixed(2)}/${p.unit || 'KG'}`,
+    product: p
+  }));
+
+  const customSelectStyles = {
+    control: (base, state) => ({
+      ...base,
+      background: '#fff',
+      borderColor: state.isFocused ? '#10B981' : '#E5E7EB',
+      borderRadius: '1rem',
+      padding: '0.5rem',
+      boxShadow: state.isFocused ? '0 0 0 2px rgba(16, 185, 129, 0.2)' : 'none',
+      '&:hover': {
+        borderColor: '#10B981'
+      }
+    }),
+    option: (base, state) => ({
+      ...base,
+      backgroundColor: state.isSelected ? '#10B981' : state.isFocused ? '#D1FAE5' : 'white',
+      color: state.isSelected ? 'white' : '#1F2937',
+      fontWeight: '500',
+      padding: '1rem',
+      cursor: 'pointer'
+    }),
+    menu: (base) => ({
+      ...base,
+      borderRadius: '1rem',
+      overflow: 'hidden',
+      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)'
+    })
+  };
+
+  let totalPrice = 0;
+  if (selectedProduct) {
+    if (isWeightBased) {
+      totalPrice = (parseFloat(weightKg) || 0) * selectedProduct.retailPrice;
+    } else {
+      totalPrice = quantity * selectedProduct.retailPrice;
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-[#F8F9FA] flex flex-col font-sans">
+    <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
       {/* Header */}
-      <div className="bg-white px-8 py-6 border-b border-gray-100 shadow-sm flex items-center justify-between z-10">
+      <div className="bg-white px-8 py-6 border-b border-gray-100 shadow-sm flex items-center justify-between z-20 sticky top-0">
         <div className="flex items-center gap-4">
           <button 
             onClick={() => navigate('/app/dashboard/bakala/dashboard')}
@@ -115,162 +172,177 @@ export default function WeightScale() {
           <div>
             <h1 className="text-2xl font-black tracking-tight text-gray-900 flex items-center gap-2">
               <Scale className="w-7 h-7 text-emerald-500" />
-              Weight Scale Station
+              Smart Scale & Labelling
             </h1>
-            <p className="text-sm text-gray-500 mt-1 font-medium">Add-on service for Bakala Supermarket</p>
+            <p className="text-sm text-gray-500 mt-1 font-medium">Fruits, Vegetables, and Weighed Products</p>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Panel: Product Selection */}
-        <div className="w-1/2 flex flex-col border-r border-gray-100 bg-white shadow-sm">
-          <div className="p-6 border-b border-gray-50">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input 
-                type="text" 
-                placeholder="Search products to weigh..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 bg-[#F8F9FA] border border-gray-100 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none text-base font-medium transition-all"
+      <div className="flex-1 flex justify-center items-start pt-12 px-4 overflow-y-auto pb-20">
+        <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-[1fr_400px] gap-8 items-start">
+          
+          {/* Left Column: Product Selection & Input */}
+          <div className="space-y-6">
+            <div className="bg-white rounded-3xl p-8 shadow-xl shadow-gray-200/50 border border-gray-100 relative z-10">
+              <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <Search className="w-5 h-5 text-gray-400" />
+                Select Product
+              </h2>
+              
+              <Select
+                options={productOptions}
+                styles={customSelectStyles}
+                placeholder="Search for fruits, vegetables, or nuts..."
+                isClearable
+                onChange={(selected) => {
+                  if (selected) {
+                    setSelectedProduct(selected.product);
+                    setWeightKg('1.000');
+                    setQuantity(1);
+                  } else {
+                    setSelectedProduct(null);
+                  }
+                }}
               />
             </div>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto p-6">
-            <div className="grid grid-cols-2 gap-4">
-              {filteredProducts.map(product => (
-                <button
-                  key={product._id}
-                  onClick={() => setSelectedProduct(product)}
-                  className={`p-4 rounded-2xl border text-left flex flex-col justify-between min-h-[120px] transition-all duration-200 ${
-                    selectedProduct?._id === product._id 
-                      ? 'border-emerald-500 bg-emerald-50 shadow-md shadow-emerald-500/10 ring-1 ring-emerald-500' 
-                      : 'border-gray-100 bg-white hover:border-emerald-300 hover:shadow-sm'
-                  }`}
-                >
-                  <span className="font-bold text-gray-800 line-clamp-2 leading-snug">{product.name}</span>
-                  <div className="mt-3 flex justify-between items-end w-full">
-                    <span className="text-xs text-gray-400 font-mono flex items-center gap-1">
-                      <Hash className="w-3 h-3" />
-                      {product.primaryBarcode?.slice(0, 5) || '00000'}
-                    </span>
-                    <span className="text-sm font-black text-emerald-600 bg-emerald-100/50 px-2 py-1 rounded-lg">
-                      SAR {product.retailPrice?.toFixed(2)}/kg
-                    </span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
 
-        {/* Right Panel: Digital Scale & Print */}
-        <div className="w-1/2 bg-[#F8F9FA] flex flex-col items-center justify-center p-12">
-          {selectedProduct ? (
-            <div className="w-full max-w-md">
-              {/* Digital Scale Display */}
-              <div className="bg-gray-900 rounded-[2rem] p-8 shadow-2xl mb-8 relative overflow-hidden border-4 border-gray-800">
+            {selectedProduct && (
+              <div className="bg-gray-900 rounded-[2.5rem] p-10 shadow-2xl relative overflow-hidden border-4 border-gray-800">
                 <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
-                <div className="flex justify-between items-center mb-6">
+                <div className="flex justify-between items-center mb-8">
                   <span className="text-emerald-400 font-mono font-bold tracking-widest text-sm flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                     SCALE ACTIVE
                   </span>
-                  <button onClick={() => setSelectedProduct(null)} className="text-gray-500 hover:text-white transition-colors">
-                    <X className="w-6 h-6" />
-                  </button>
-                </div>
-                
-                <h3 className="text-white text-xl font-bold mb-8 line-clamp-1 opacity-90">{selectedProduct.name}</h3>
-                
-                <div className="bg-[#1A222C] rounded-2xl p-6 border border-gray-700 shadow-inner mb-6">
-                  <div className="flex justify-between items-baseline mb-2">
-                    <span className="text-gray-400 font-medium text-sm">WEIGHT (KG)</span>
-                  </div>
-                  <div className="flex items-center">
-                    <input 
-                      type="text" 
-                      value={weightKg}
-                      onChange={handleWeightChange}
-                      className="bg-transparent text-5xl font-black text-emerald-400 w-full outline-none font-mono tracking-tighter"
-                      placeholder="0.000"
-                    />
-                    <span className="text-emerald-400/50 text-2xl font-bold font-mono">kg</span>
+                  <div className="bg-gray-800 text-gray-300 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase">
+                    UNIT: {selectedProduct.unit || 'KG'}
                   </div>
                 </div>
+                
+                <h3 className="text-white text-2xl font-bold mb-8 opacity-90">{selectedProduct.name}</h3>
+                
+                {isWeightBased ? (
+                  <div className="bg-[#1A222C] rounded-[2rem] p-8 border border-gray-700 shadow-inner mb-8">
+                    <div className="flex justify-between items-baseline mb-2">
+                      <span className="text-gray-400 font-medium text-sm">LIVE WEIGHT (KG)</span>
+                    </div>
+                    <div className="flex items-center">
+                      <input 
+                        type="text" 
+                        value={weightKg}
+                        onChange={handleWeightChange}
+                        className="bg-transparent text-6xl md:text-7xl font-black text-emerald-400 w-full outline-none font-mono tracking-tighter"
+                        placeholder="0.000"
+                      />
+                      <span className="text-emerald-400/50 text-3xl font-bold font-mono">kg</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-[#1A222C] rounded-[2rem] p-8 border border-gray-700 shadow-inner mb-8 flex flex-col items-center justify-center">
+                    <span className="text-gray-400 font-medium text-sm mb-6 uppercase tracking-wider">Quantity ({selectedProduct.unit})</span>
+                    <div className="flex items-center gap-8">
+                      <button 
+                        onClick={() => handleQuantityChange(-1)}
+                        className="w-16 h-16 rounded-2xl bg-gray-800 text-white flex items-center justify-center hover:bg-gray-700 transition-colors active:scale-95 shadow-lg"
+                      >
+                        <Minus className="w-8 h-8" />
+                      </button>
+                      <span className="text-6xl font-black text-emerald-400 font-mono w-24 text-center">
+                        {quantity}
+                      </span>
+                      <button 
+                        onClick={() => handleQuantityChange(1)}
+                        className="w-16 h-16 rounded-2xl bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-400 transition-colors active:scale-95 shadow-lg shadow-emerald-500/20"
+                      >
+                        <Plus className="w-8 h-8" />
+                      </button>
+                    </div>
+                  </div>
+                )}
 
-                <div className="flex justify-between items-center px-2">
+                <div className="flex justify-between items-end px-2">
                   <div>
-                    <p className="text-gray-500 text-xs font-bold mb-1">UNIT PRICE</p>
-                    <p className="text-white font-mono text-lg">SAR {selectedProduct.retailPrice?.toFixed(2)}</p>
+                    <p className="text-gray-500 text-xs font-bold mb-1 tracking-wider">UNIT PRICE</p>
+                    <p className="text-white font-mono text-xl">SAR {selectedProduct.retailPrice?.toFixed(2)}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-gray-500 text-xs font-bold mb-1">TOTAL PRICE</p>
-                    <p className="text-white font-mono text-3xl font-bold text-amber-400">
-                      SAR {((parseFloat(weightKg) || 0) * selectedProduct.retailPrice).toFixed(2)}
+                    <p className="text-gray-500 text-xs font-bold mb-1 tracking-wider">NET PRICE</p>
+                    <p className="text-white font-mono text-4xl font-bold text-amber-400">
+                      SAR {totalPrice.toFixed(2)}
                     </p>
                   </div>
                 </div>
               </div>
+            )}
+          </div>
 
-              {/* Barcode Preview & Print Action */}
-              <div className="bg-white rounded-[2rem] p-8 shadow-xl border border-gray-100 flex flex-col items-center">
-                <div className="w-full flex justify-between items-center mb-6">
-                  <h4 className="font-bold text-gray-800 text-lg">Label Preview</h4>
-                  {barcodeValue && (
-                    <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-lg uppercase tracking-wider">
-                      Ready to Print
-                    </span>
-                  )}
+          {/* Right Column: Label Preview & Action */}
+          <div className="bg-white rounded-[2.5rem] p-8 shadow-xl border border-gray-100 flex flex-col items-center sticky top-28">
+            <div className="w-full flex justify-between items-center mb-8">
+              <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                <Printer className="w-5 h-5 text-gray-400" />
+                Label Preview
+              </h4>
+              {barcodeValue && (
+                <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-lg uppercase tracking-wider">
+                  Ready
+                </span>
+              )}
+            </div>
+
+            {selectedProduct && barcodeValue ? (
+              <div className="w-full flex flex-col items-center">
+                {/* Hidden printable area */}
+                <div className="hidden">
+                  <div ref={printRef} className="label-content">
+                    <div className="name">{selectedProduct.name}</div>
+                    <div className="details">
+                      <span>{isWeightBased ? `${parseFloat(weightKg).toFixed(3)} kg` : `${quantity} ${selectedProduct.unit}`}</span>
+                      <span>@ ${selectedProduct.retailPrice.toFixed(2)}/${selectedProduct.unit}</span>
+                    </div>
+                    <div className="price-row">
+                      <span className="price-label">NET PRICE</span>
+                      <span className="price">SAR ${totalPrice.toFixed(2)}</span>
+                    </div>
+                    <div className="barcode">
+                      <Barcode value={barcodeValue} format="EAN13" width={1.6} height={40} fontSize={10} margin={0} displayValue={true} />
+                    </div>
+                  </div>
                 </div>
 
-                {barcodeValue ? (
-                  <>
-                    {/* Hidden printable area */}
-                    <div className="hidden">
-                      <div ref={printRef} className="label-content">
-                        <div className="name">{selectedProduct.name}</div>
-                        <div className="details">
-                          <span>${parseFloat(weightKg).toFixed(3)}kg</span>
-                          <span>@ ${selectedProduct.retailPrice.toFixed(2)}/kg</span>
-                        </div>
-                        <div className="price">SAR ${((parseFloat(weightKg) || 0) * selectedProduct.retailPrice).toFixed(2)}</div>
-                        <div className="barcode">
-                          <Barcode value={barcodeValue} format="EAN13" width={1.5} height={40} fontSize={12} margin={0} displayValue={true} />
-                        </div>
-                      </div>
+                {/* Visible Preview */}
+                <div className="bg-[#F8F9FA] p-8 rounded-3xl w-full flex flex-col items-center mb-8 border border-gray-200 shadow-inner">
+                  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 w-full mb-6">
+                    <div className="font-black text-gray-800 text-lg mb-2 text-center uppercase tracking-wide border-b border-gray-100 pb-2">{selectedProduct.name}</div>
+                    <div className="flex justify-between text-sm text-gray-500 font-medium mb-3">
+                      <span>{isWeightBased ? `${parseFloat(weightKg).toFixed(3)} kg` : `${quantity} ${selectedProduct.unit}`}</span>
+                      <span>SAR {selectedProduct.retailPrice.toFixed(2)} / {selectedProduct.unit}</span>
                     </div>
-
-                    {/* Visible Preview */}
-                    <div className="bg-gray-50 p-6 rounded-2xl w-full flex flex-col items-center mb-8 border border-gray-200">
-                      <Barcode value={barcodeValue} format="EAN13" width={1.8} height={60} fontSize={14} margin={10} background="#F9FAFB" />
+                    <div className="flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-100">
+                      <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Net Price</span>
+                      <span className="font-black text-xl text-gray-900">SAR {totalPrice.toFixed(2)}</span>
                     </div>
-
-                    <button 
-                      onClick={handlePrint}
-                      className="w-full py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl font-bold text-lg shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 transition-all hover:-translate-y-0.5 flex items-center justify-center gap-2"
-                    >
-                      <Printer className="w-6 h-6" />
-                      Print Barcode Label
-                    </button>
-                  </>
-                ) : (
-                  <div className="text-gray-400 py-10 flex flex-col items-center">
-                    <RefreshCw className="w-8 h-8 mb-3 opacity-20 animate-spin-slow" />
-                    <p>Enter weight to generate barcode</p>
                   </div>
-                )}
+                  <Barcode value={barcodeValue} format="EAN13" width={1.8} height={60} fontSize={14} margin={0} background="#F8F9FA" />
+                </div>
+
+                <button 
+                  onClick={handlePrint}
+                  className="w-full py-5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl font-black text-lg shadow-xl shadow-emerald-500/20 hover:shadow-2xl hover:shadow-emerald-500/30 transition-all hover:-translate-y-1 flex items-center justify-center gap-3"
+                >
+                  <Printer className="w-6 h-6" />
+                  Print Label Now
+                </button>
               </div>
-            </div>
-          ) : (
-            <div className="text-center opacity-40">
-              <Scale className="w-32 h-32 mx-auto mb-6 text-gray-300" />
-              <h2 className="text-2xl font-bold text-gray-400">Select a product to weigh</h2>
-              <p className="text-gray-400 mt-2">Search and click on a product from the left panel</p>
-            </div>
-          )}
+            ) : (
+              <div className="text-gray-400 py-16 flex flex-col items-center text-center">
+                <Scale className="w-16 h-16 mb-4 opacity-20" />
+                <p className="font-medium text-gray-500">No product selected</p>
+                <p className="text-sm mt-2 opacity-70">Search for a product to generate a printable barcode label.</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

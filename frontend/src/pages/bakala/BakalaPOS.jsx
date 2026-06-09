@@ -81,10 +81,11 @@ export default function BakalaPOS() {
       );
 
       if (scaleMatch) {
+        const isWeightBased = scaleMatch.unit === 'KG' || !scaleMatch.unit;
         const scaledItem = {
           ...scaleMatch,
           retailPrice: priceSAR,
-          name: `${scaleMatch.name} (Weighed)`
+          name: `${scaleMatch.name} (${isWeightBased ? 'Weighed' : 'Counted'})`
         };
         addItem(scaledItem);
         setSearchTerm('');
