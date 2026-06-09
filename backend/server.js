@@ -94,8 +94,8 @@ dotenv.config();
 mongoose.set('bufferCommands', false);
 
 const app = express();
-const parsedApiRateLimitMax = Number(process.env.API_RATE_LIMIT_MAX || 600);
-const apiRateLimitMax = Number.isFinite(parsedApiRateLimitMax) && parsedApiRateLimitMax > 0 ? parsedApiRateLimitMax : 600;
+const parsedApiRateLimitMax = Number(process.env.API_RATE_LIMIT_MAX || 2000);
+const apiRateLimitMax = Number.isFinite(parsedApiRateLimitMax) && parsedApiRateLimitMax > 0 ? parsedApiRateLimitMax : 2000;
 const parsedTrustProxyHops = Number(process.env.TRUST_PROXY_HOPS || 1);
 const trustProxyHops = Number.isFinite(parsedTrustProxyHops) && parsedTrustProxyHops >= 0 ? parsedTrustProxyHops : 1;
 const parsedMongoServerSelectionTimeoutMs = Number(process.env.MONGODB_SERVER_SELECTION_TIMEOUT_MS || 5000);
