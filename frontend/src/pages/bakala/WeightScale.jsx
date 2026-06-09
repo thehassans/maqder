@@ -3,12 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Scale, Printer, Plug, Info, Unplug } from 'lucide-react';
 import Barcode from 'react-barcode';
 import Select from 'react-select';
+import { useSelector } from 'react-redux';
 import { getAllProducts } from '../../lib/bakalaDb';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 
 export default function WeightScale() {
   const navigate = useNavigate();
+  const { tenant } = useSelector(state => state.auth);
+  const scalePrefix = (tenant?.settings?.hardwareSettings?.scaleBarcodePrefix || '21').substring(0, 2).padEnd(2, '0');
+
   const [products, setProducts] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   
@@ -55,8 +59,8 @@ export default function WeightScale() {
     const itemCode = selectedProduct.primaryBarcode?.padStart(5, '0').slice(0, 5) || '00000';
     const priceInHalalas = Math.round(totalPrice * 100).toString().padStart(5, '0');
     
-    // Barcode Format: 21 + ItemCode(5) + PriceInHalalas(5) + Checksum(1)
-    const baseBarcode = `21${itemCode}${priceInHalalas}`;
+    // Barcode Format: Prefix(2) + ItemCode(5) + PriceInHalalas(5) + Checksum(1)
+    const baseBarcode = `${scalePrefix}${itemCode}${priceInHalalas}`;
     
     // Calculate EAN-13 Checksum
     let sum = 0;
@@ -100,11 +104,13 @@ export default function WeightScale() {
     printWindow.document.close();
   };
 
-  const productOptions = products.map(p => ({
-    value: p._id,
-    label: `${p.name} - SAR ${p.retailPrice?.toFixed(2)}/${p.unit || 'KG'}`,
-    product: p
-  }));
+  const productOptions = products
+    .filter(p => p.category === 'Fruits & Vegetables')
+    .map(p => ({
+      value: p._id,
+      label: `${p.name} - SAR ${p.retailPrice?.toFixed(2)}/${p.unit || 'KG'}`,
+      product: p
+    }));
 
   const customSelectStyles = {
     control: (base, state) => ({

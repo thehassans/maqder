@@ -5,12 +5,16 @@ import { getProductByBarcode, saveOfflineInvoice } from '../../lib/bakalaDb';
 import { ShoppingCart, CreditCard, Wallet, Send, RefreshCw, Server, WifiOff, ArrowLeft, Search, Plus, Minus, Trash2, LogOut } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import PosSessions from './PosSessions';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 
 export default function BakalaPOS() {
   const navigate = useNavigate();
+  const { tenant } = useSelector(state => state.auth);
+  const scalePrefix = (tenant?.settings?.hardwareSettings?.scaleBarcodePrefix || '21').substring(0, 2).padEnd(2, '0');
+  
   const { cartItems, addItem, updateQuantity, removeItem, clearCart, totals } = useCartEngine();
   const { isOnline, pendingCount, syncOfflineData } = useBakalaSync();
   const barcodeInputRef = useRef(null);
@@ -67,8 +71,8 @@ export default function BakalaPOS() {
     const term = searchTerm.trim();
     if (!term) return;
 
-    // 1. Check for Scale Barcode (EAN-13 starting with 21)
-    if (term.length === 13 && term.startsWith('21')) {
+    // 1. Check for Scale Barcode (EAN-13 starting with scalePrefix)
+    if (term.length === 13 && term.startsWith(scalePrefix)) {
       const itemCode = term.substring(2, 7);
       const priceHalalas = parseInt(term.substring(7, 12), 10);
       const priceSAR = priceHalalas / 100;

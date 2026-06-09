@@ -210,6 +210,7 @@ const tenantSchema = new mongoose.Schema({
       cashDrawerKickCode: { type: String, default: '27,112,0,50,250' }, // ESC p 0 50 250
       barcodeScannerPrefix: { type: String, default: '' },
       barcodeScannerSuffix: { type: String, default: 'Enter' },
+      scaleBarcodePrefix: { type: String, default: '21' },
       scaleType: { type: String, enum: ['none', 'serial', 'network'], default: 'none' },
     },
     restaurant: {

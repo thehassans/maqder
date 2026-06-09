@@ -12,6 +12,7 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
     cashDrawerKickCode: '27,112,0,50,250',
     barcodeScannerPrefix: '',
     barcodeScannerSuffix: 'Enter',
+    scaleBarcodePrefix: '21',
     scaleType: 'none',
   });
 
@@ -95,6 +96,10 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
           <div>
             <label className="label">{language === 'ar' ? 'لاحقة الباركود' : 'Scanner Suffix'}</label>
             <input type="text" name="barcodeScannerSuffix" value={hardware.barcodeScannerSuffix} onChange={handleChange} className="input" placeholder="Enter" />
+          </div>
+          <div>
+            <label className="label">{language === 'ar' ? 'بادئة باركود الميزان' : 'Scale Barcode Prefix'}</label>
+            <input type="text" name="scaleBarcodePrefix" value={hardware.scaleBarcodePrefix || '21'} onChange={handleChange} className="input" placeholder="21" />
           </div>
           <div>
             <label className="label">{language === 'ar' ? 'تكامل الميزان' : 'Scale Integration'}</label>
