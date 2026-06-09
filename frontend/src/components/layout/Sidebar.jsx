@@ -316,9 +316,9 @@ export default function Sidebar() {
     <>
       {/* Logo */}
       <div className="flex items-center justify-between px-4 h-16 bg-[#1a3d28]">
-        <div className="flex items-center gap-3">
-          <div className="w-auto h-10 flex items-center justify-center flex-shrink-0 overflow-hidden">
-            <img src="/maqdernewlogo.png" alt="Maqder" className="h-full w-auto object-contain" />
+        <div className="flex items-center gap-3 h-full">
+          <div className="w-full h-14 flex items-center justify-start flex-shrink-0">
+            <img src="/maqdernewlogo.png" alt="Maqder" className="h-full w-auto object-contain object-left scale-[1.4] origin-left ml-4" />
           </div>
         </div>
         
