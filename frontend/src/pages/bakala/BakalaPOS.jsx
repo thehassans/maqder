@@ -565,10 +565,6 @@ export default function BakalaPOS() {
       )}
 
       {/* Recall Bill Modal */}
-        </div>
-      )}
-
-      {/* Recall Bill Modal */}
       {showRecallModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
