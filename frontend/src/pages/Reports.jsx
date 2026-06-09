@@ -8,7 +8,7 @@ import Money from '../components/ui/Money'
 import ExportMenu from '../components/ui/ExportMenu'
 import { downloadBusinessReportPdf } from '../lib/businessReportPdf'
 import { downloadVatReturnReportPdf } from '../lib/vatReturnReportPdf'
-import { Clock3, Download, Mail, Trash2, TrendingUp, ShoppingCart, Receipt, Tag, BarChart3, FileText, AlertCircle, Calendar, ChevronDown, ChevronUp, ToggleLeft, ToggleRight } from 'lucide-react'
+import { Clock3, Download, Mail, Trash2, TrendingUp, ShoppingCart, Receipt, Tag, BarChart3, FileText, AlertCircle, Calendar, ChevronDown, ChevronUp, ToggleLeft, ToggleRight, Users } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const formatInputDate = (value) => {
