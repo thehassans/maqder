@@ -315,9 +315,9 @@ export default function Sidebar() {
   const SidebarContent = () => (
     <>
       {/* Logo */}
-      <div className="flex items-center justify-center px-4 h-16 bg-[#1a3d28] relative">
+      <div className="flex items-center justify-center px-4 h-16 bg-[#1a3d28] relative overflow-hidden">
         <div className="w-full h-12 flex items-center justify-center flex-shrink-0">
-          <img src="/maqdernewlogo.png" alt="Maqder" className="h-full w-auto object-contain" />
+          <img src="/maqdernewlogo.png" alt="Maqder" className="h-full w-auto object-contain scale-[2] origin-center" />
         </div>
         
         {/* Mobile close button */}
