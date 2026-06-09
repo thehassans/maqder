@@ -141,6 +141,11 @@ const ThermalReceipt = forwardRef(({ order, type = 'laundry', isKitchen = false 
           <h2 className="font-extrabold text-xl text-gray-900 leading-snug">KITCHEN TICKET</h2>
           <h2 className="font-extrabold text-xl text-gray-900 leading-snug mt-1">طلب مطبخ</h2>
           <div className="border-t border-solid border-gray-900 border-[2px] w-full my-2"></div>
+          {order.kitchenNote && (
+            <div className="border border-black p-2 my-2 w-full text-center font-bold text-lg border-dashed">
+              {order.kitchenNote}
+            </div>
+          )}
         </div>
       )}
 

@@ -3,8 +3,10 @@ import { useQuery } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Search, Receipt, Edit } from 'lucide-react'
+import { Plus, Search, Receipt, Edit, Printer, Utensils } from 'lucide-react'
+import { useRef } from 'react'
 import api from '../../lib/api'
+import ThermalReceipt from '../../components/ui/ThermalReceipt'
 import { useTranslation } from '../../lib/translations'
 import Money from '../../components/ui/Money'
 
@@ -15,6 +17,14 @@ export default function RestaurantOrders() {
   const [search, setSearch] = useState('')
   const [filters, setFilters] = useState({ status: '' })
   const [page, setPage] = useState(1)
+  const [printOrder, setPrintOrder] = useState(null)
+  const [receiptType, setReceiptType] = useState('customer')
+  const [kitchenNote, setKitchenNote] = useState('')
+  const receiptRef = useRef(null)
+
+  const handlePrint = () => {
+    if (receiptRef.current) window.print()
+  }
 
   const { data, isLoading } = useQuery({
     queryKey: ['restaurant-orders', page, search, filters],
@@ -116,6 +126,20 @@ export default function RestaurantOrders() {
                     </td>
                     <td>
                       <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => { setPrintOrder(o); setReceiptType('customer'); setKitchenNote(''); }}
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg text-amber-600"
+                          title={language === 'ar' ? 'طباعة إيصال' : 'Print Receipt'}
+                        >
+                          <Printer className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => { setPrintOrder(o); setReceiptType('kitchen'); setKitchenNote(''); }}
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg text-indigo-600"
+                          title={language === 'ar' ? 'طباعة للمطبخ' : 'Print for Kitchen'}
+                        >
+                          <Utensils className="w-4 h-4" />
+                        </button>
                         <Link
                           to={`/app/dashboard/restaurant/orders/${o._id}`}
                           className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg"
@@ -154,6 +178,56 @@ export default function RestaurantOrders() {
           >
             {language === 'ar' ? 'التالي' : 'Next'}
           </button>
+        </div>
+      )}
+
+      {printOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 print:bg-white print:static print:inset-auto">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-[400px] max-h-[90vh] overflow-y-auto print:shadow-none print:p-0 print:w-auto print:max-h-none print:overflow-visible">
+            <div className="flex justify-between items-center mb-4 print:hidden">
+              <h3 className="text-lg font-bold">
+                {receiptType === 'kitchen' 
+                  ? (language === 'ar' ? 'إيصال المطبخ' : 'Kitchen Receipt')
+                  : (language === 'ar' ? 'إيصال الطلب' : 'Order Receipt')}
+              </h3>
+              <button onClick={() => setPrintOrder(null)} className="text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-full w-8 h-8 flex items-center justify-center">
+                ×
+              </button>
+            </div>
+            
+            {receiptType === 'kitchen' && (
+              <div className="mb-4 print:hidden">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {language === 'ar' ? 'ملاحظة مخصصة للمطبخ' : 'Custom Kitchen Note'}
+                </label>
+                <input 
+                  type="text" 
+                  value={kitchenNote}
+                  onChange={e => setKitchenNote(e.target.value)}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-amber-500 outline-none"
+                  placeholder={language === 'ar' ? 'مثال: بدون بصل' : 'e.g. No onions'}
+                />
+              </div>
+            )}
+            
+            <div className="border border-gray-200 rounded-lg p-2 print:border-none print:p-0 flex justify-center">
+              <ThermalReceipt 
+                ref={receiptRef} 
+                order={receiptType === 'kitchen' && kitchenNote ? { ...printOrder, kitchenNote } : printOrder} 
+                type="restaurant" 
+                isKitchen={receiptType === 'kitchen'} 
+              />
+            </div>
+
+            <div className="mt-6 flex gap-3 print:hidden">
+              <button onClick={() => setPrintOrder(null)} className="flex-1 py-3 rounded-xl border border-gray-200 font-bold hover:bg-gray-50 text-gray-700">
+                {language === 'ar' ? 'إغلاق' : 'Close'}
+              </button>
+              <button onClick={handlePrint} className="flex-1 py-3 rounded-xl bg-amber-600 text-white font-bold hover:bg-amber-700">
+                {language === 'ar' ? 'طباعة' : 'Print'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

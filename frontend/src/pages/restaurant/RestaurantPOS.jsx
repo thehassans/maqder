@@ -216,6 +216,11 @@ export default function RestaurantPOS() {
       setReceiptType('kitchen')
       setCompletedOrder(data)
       
+      // Auto-print kitchen receipt
+      setTimeout(() => {
+        if (receiptRef.current) window.print()
+      }, 500)
+      
       if (orderType === 'dine_in') fetchData()
     } catch (error) {
       toast.error(error.response?.data?.error || 'Kitchen dispatch failed')
