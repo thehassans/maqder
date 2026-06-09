@@ -1,35 +1,64 @@
-import React, { useState } from 'react';
-import { Search, FileText, Send, ShieldAlert, ShieldCheck, AlertCircle, Scale, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, FileText, Send, ShieldAlert, ShieldCheck, AlertCircle, Scale, ArrowRight, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import api from '../../lib/api';
 
 export default function BakalaDashboard() {
   const { tenant } = useSelector((state) => state.auth);
   const [phoneNumber, setPhoneNumber] = useState('');
+  
+  const [khataAccounts, setKhataAccounts] = useState([]);
+  const [selectedKhata, setSelectedKhata] = useState(null);
+  const [khataTransactions, setKhataTransactions] = useState([]);
+  const [alerts, setAlerts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Dummy state to mock the API response for Daftar
-  const daftarAccount = {
-    customerName: 'Ahmad Al-Ghamdi',
-    phoneNumber: '0551234567',
-    creditLimit: 500,
-    currentBalance: 320,
-    transactions: [
-      { date: '2026-06-01', type: 'CHARGE', amount: 45.5, balanceAfter: 320 },
-      { date: '2026-05-28', type: 'PAYMENT', amount: 100, balanceAfter: 274.5 },
-      { date: '2026-05-25', type: 'CHARGE', amount: 120, balanceAfter: 374.5 },
-    ]
-  };
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [khataRes, alertsRes] = await Promise.all([
+          api.get('/khata').catch(() => ({ data: [] })),
+          api.get('/employees/compliance/alerts').catch(() => ({ data: [] }))
+        ]);
+        setKhataAccounts(khataRes.data || []);
+        setAlerts(alertsRes.data || []);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
-  // Dummy state for Balady Compliance
-  const complianceData = {
-    cr: { status: 'VALID', expiry: '2027-01-15' },
-    baladyLicense: { status: 'EXPIRING_SOON', expiry: '2026-06-25' }, // < 30 days
-    civilDefense: { status: 'VALID', expiry: '2026-11-10' },
-    workers: [
-      { name: 'Mohammed Ali', certNo: 'WHC-1029', status: 'VALID', expiry: '2026-10-01' },
-      { name: 'Saeed Khan', certNo: 'WHC-1030', status: 'EXPIRED', expiry: '2026-05-15' },
-    ]
-  };
+  useEffect(() => {
+    if (khataAccounts.length > 0) {
+      const matched = phoneNumber 
+        ? khataAccounts.find(acc => acc.customerId?.phone?.includes(phoneNumber) || acc.customerId?.mobile?.includes(phoneNumber))
+        : khataAccounts[0];
+      
+      setSelectedKhata(matched || null);
+    } else {
+      setSelectedKhata(null);
+    }
+  }, [phoneNumber, khataAccounts]);
+
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      if (selectedKhata) {
+        try {
+          const res = await api.get(`/khata/${selectedKhata._id}/transactions`);
+          setKhataTransactions(res.data || []);
+        } catch (error) {
+          console.error(error);
+        }
+      } else {
+        setKhataTransactions([]);
+      }
+    };
+    fetchTransactions();
+  }, [selectedKhata]);
 
   const getStatusColor = (status) => {
     switch(status) {
@@ -84,46 +113,61 @@ export default function BakalaDashboard() {
             />
           </div>
 
-          <div className="border border-gray-200 dark:border-dark-600 rounded-xl p-5 bg-gray-50 dark:bg-dark-800">
-            <div className="flex justify-between items-start mb-6">
-              <div>
-                <h3 className="font-bold text-lg text-gray-900 dark:text-white">{daftarAccount.customerName}</h3>
-                <p className="text-sm text-gray-500">{daftarAccount.phoneNumber}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-500">Current Balance</p>
-                <p className="text-2xl font-bold text-rose-500">SAR {daftarAccount.currentBalance.toFixed(2)}</p>
-                <p className="text-xs text-gray-400 mt-1">Limit: SAR {daftarAccount.creditLimit.toFixed(2)}</p>
-              </div>
-            </div>
-
-            <div className="flex gap-3 mb-6">
-              <button className="flex-1 btn btn-secondary flex items-center justify-center gap-2">
-                <FileText className="w-4 h-4" /> PDF Statement
-              </button>
-              <button className="flex-1 btn btn-primary flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 border-none text-white">
-                <Send className="w-4 h-4" /> WhatsApp Link
-              </button>
-            </div>
-
-            <h4 className="font-semibold text-sm text-gray-900 dark:text-white mb-3">Recent Transactions</h4>
-            <div className="space-y-2">
-              {daftarAccount.transactions.map((tx, idx) => (
-                <div key={idx} className="flex justify-between items-center text-sm p-2 bg-white dark:bg-dark-900 rounded-lg border border-gray-100 dark:border-dark-700">
-                  <div className="flex flex-col">
-                    <span className="font-medium text-gray-900 dark:text-white">{tx.type}</span>
-                    <span className="text-xs text-gray-500">{tx.date}</span>
-                  </div>
-                  <div className="text-right">
-                    <span className={`font-semibold ${tx.type === 'PAYMENT' ? 'text-emerald-500' : 'text-gray-900 dark:text-white'}`}>
-                      {tx.type === 'PAYMENT' ? '+' : '-'} SAR {tx.amount.toFixed(2)}
-                    </span>
-                    <p className="text-xs text-gray-500">Bal: {tx.balanceAfter}</p>
-                  </div>
+          {loading ? (
+            <div className="flex justify-center py-10"><Loader2 className="w-8 h-8 animate-spin text-emerald-500" /></div>
+          ) : !selectedKhata ? (
+            <div className="text-center py-10 text-gray-500">No Khata account found</div>
+          ) : (
+            <div className="border border-gray-200 dark:border-dark-600 rounded-xl p-5 bg-gray-50 dark:bg-dark-800">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h3 className="font-bold text-lg text-gray-900 dark:text-white">{selectedKhata.customerId?.name}</h3>
+                  <p className="text-sm text-gray-500">{selectedKhata.customerId?.phone || selectedKhata.customerId?.mobile || 'N/A'}</p>
                 </div>
-              ))}
+                <div className="text-right">
+                  <p className="text-sm text-gray-500">Current Balance</p>
+                  <p className={`text-2xl font-bold ${selectedKhata.balance > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
+                    SAR {Math.abs(selectedKhata.balance || 0).toFixed(2)}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">Limit: SAR {(selectedKhata.creditLimit || 0).toFixed(2)}</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mb-6">
+                <button className="flex-1 btn btn-secondary flex items-center justify-center gap-2">
+                  <FileText className="w-4 h-4" /> PDF Statement
+                </button>
+                <button className="flex-1 btn btn-primary flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 border-none text-white"
+                  onClick={() => {
+                    const phone = selectedKhata.customerId?.phone || selectedKhata.customerId?.mobile;
+                    if (phone) window.open(`https://wa.me/${phone.replace(/\D/g, '')}`, '_blank');
+                  }}>
+                  <Send className="w-4 h-4" /> WhatsApp Link
+                </button>
+              </div>
+
+              <h4 className="font-semibold text-sm text-gray-900 dark:text-white mb-3">Recent Transactions</h4>
+              <div className="space-y-2">
+                {khataTransactions.length === 0 ? (
+                  <p className="text-sm text-gray-500">No recent transactions</p>
+                ) : (
+                  khataTransactions.slice(0, 5).map((tx, idx) => (
+                    <div key={idx} className="flex justify-between items-center text-sm p-2 bg-white dark:bg-dark-900 rounded-lg border border-gray-100 dark:border-dark-700">
+                      <div className="flex flex-col">
+                        <span className="font-medium text-gray-900 dark:text-white text-xs uppercase">{tx.type}</span>
+                        <span className="text-xs text-gray-500">{new Date(tx.date).toLocaleDateString()}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className={`font-semibold ${tx.type === 'payment' ? 'text-emerald-500' : 'text-gray-900 dark:text-white'}`}>
+                          {tx.type === 'payment' ? '+' : '-'} SAR {tx.amount.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* RIGHT: Balady Regulatory Health */}
@@ -133,50 +177,39 @@ export default function BakalaDashboard() {
             <div className="badge badge-success text-xs">Live Monitoring</div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className={`p-4 rounded-xl border flex flex-col gap-2 ${getStatusColor(complianceData.cr.status)}`}>
-              <div className="flex justify-between items-start">
-                <span className="text-sm font-semibold">Commercial Reg (CR)</span>
-                {getStatusIcon(complianceData.cr.status)}
-              </div>
-              <span className="text-xs font-medium">Exp: {complianceData.cr.expiry}</span>
-            </div>
-            
-            <div className={`p-4 rounded-xl border flex flex-col gap-2 ${getStatusColor(complianceData.baladyLicense.status)}`}>
-              <div className="flex justify-between items-start">
-                <span className="text-sm font-semibold">Balady License</span>
-                {getStatusIcon(complianceData.baladyLicense.status)}
-              </div>
-              <span className="text-xs font-medium">Exp: {complianceData.baladyLicense.expiry}</span>
-            </div>
-
-            <div className={`p-4 rounded-xl border flex flex-col gap-2 col-span-2 ${getStatusColor(complianceData.civilDefense.status)}`}>
-              <div className="flex justify-between items-start">
-                <span className="text-sm font-semibold">Civil Defense Permit</span>
-                {getStatusIcon(complianceData.civilDefense.status)}
-              </div>
-              <span className="text-xs font-medium">Exp: {complianceData.civilDefense.expiry}</span>
-            </div>
-          </div>
-
           <div>
             <h3 className="font-semibold text-sm text-gray-900 dark:text-white mb-3 flex items-center gap-2">
               <ShieldAlert className="w-4 h-4 text-gray-400" />
-              Worker Health Certificates (Balady)
+              Compliance Alerts (Expiring Soon)
             </h3>
-            <div className="space-y-2">
-              {complianceData.workers.map((worker, idx) => (
-                <div key={idx} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-dark-800 rounded-lg border border-gray-200 dark:border-dark-600">
-                  <div>
-                    <p className="font-medium text-sm text-gray-900 dark:text-white">{worker.name}</p>
-                    <p className="text-xs text-gray-500">{worker.certNo}</p>
-                  </div>
-                  <div className={`px-2 py-1 rounded text-xs font-semibold border ${getStatusColor(worker.status)}`}>
-                    {worker.status === 'VALID' ? worker.expiry : worker.status.replace('_', ' ')}
-                  </div>
+            {loading ? (
+              <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-emerald-500" /></div>
+            ) : alerts.length === 0 ? (
+              <div className="p-4 bg-emerald-50 text-emerald-600 rounded-xl border border-emerald-100 flex items-center gap-3">
+                <ShieldCheck className="w-6 h-6" />
+                <div>
+                  <p className="font-bold">All Good!</p>
+                  <p className="text-sm">No documents are expiring within 60 days.</p>
                 </div>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {alerts.slice(0, 5).map((alert, idx) => (
+                  <div key={idx} className={`flex justify-between items-center p-3 rounded-lg border ${alert.isExpired ? 'bg-rose-50 border-rose-200' : 'bg-amber-50 border-amber-200'}`}>
+                    <div>
+                      <p className={`font-bold text-sm ${alert.isExpired ? 'text-rose-700' : 'text-amber-700'}`}>{alert.documentType}</p>
+                      <p className="text-xs text-gray-600">{alert.name} {alert.documentNumber ? `(${alert.documentNumber})` : ''}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className={`text-xs font-bold ${alert.isExpired ? 'text-rose-600' : 'text-amber-600'}`}>
+                        {alert.isExpired ? 'EXPIRED' : `${alert.daysRemaining} days left`}
+                      </p>
+                      <p className="text-[10px] text-gray-500">{new Date(alert.expiryDate).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
         </div>
