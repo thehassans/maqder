@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { getOfflineInvoices, removeOfflineInvoice, saveProductsCache } from '../lib/bakalaDb';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 export const useBakalaSync = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [syncing, setSyncing] = useState(false);
+  const syncingRef = useRef(false);
   const [pendingCount, setPendingCount] = useState(0);
 
   const checkPending = useCallback(async () => {
@@ -14,9 +15,10 @@ export const useBakalaSync = () => {
   }, []);
 
   const syncOfflineData = useCallback(async () => {
-    if (!navigator.onLine || syncing) return;
+    if (!navigator.onLine || syncingRef.current) return;
     
     try {
+      syncingRef.current = true;
       setSyncing(true);
 
       // 1. Fetch latest products from server and cache them
@@ -52,9 +54,10 @@ export const useBakalaSync = () => {
     } catch (error) {
       console.error('Offline sync failed', error);
     } finally {
+      syncingRef.current = false;
       setSyncing(false);
     }
-  }, [syncing, checkPending]);
+  }, [checkPending]);
 
   useEffect(() => {
     checkPending();

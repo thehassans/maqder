@@ -26,6 +26,7 @@ export default function BakalaPOS() {
   const [splitCash, setSplitCash] = useState('');
   const [splitCard, setSplitCard] = useState('');
   const [scannerConnected, setScannerConnected] = useState(false);
+  const [showRecallModal, setShowRecallModal] = useState(false);
   const heldBills = getHeldBills();
 
   // Focus search input automatically if typing letters/numbers outside of an input
@@ -280,6 +281,7 @@ export default function BakalaPOS() {
               </div>
             ) : (
               <button 
+                type="button"
                 onClick={async () => {
                   try {
                     if ('serial' in navigator) {
@@ -374,8 +376,11 @@ export default function BakalaPOS() {
             </button>
             <button 
               onClick={() => {
-                const bill = heldBills[0];
-                if(bill) recallBill(bill.id);
+                if (heldBills.length === 1) {
+                  recallBill(heldBills[0].id);
+                } else if (heldBills.length > 1) {
+                  setShowRecallModal(true);
+                }
               }}
               disabled={heldBills.length === 0}
               className="flex items-center justify-center gap-2 p-3 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-xl font-bold transition-colors disabled:opacity-50 relative"
@@ -491,6 +496,44 @@ export default function BakalaPOS() {
                   Confirm Split Payment
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Recall Bill Modal */}
+      {showRecallModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                Recall Held Bill
+              </h2>
+              <button onClick={() => setShowRecallModal(false)} className="p-2 text-gray-400 hover:text-gray-900 bg-white rounded-full shadow-sm hover:shadow transition-all">
+                &times;
+              </button>
+            </div>
+            <div className="p-6 max-h-[60vh] overflow-y-auto space-y-3">
+              {heldBills.map((bill, index) => (
+                <div key={bill.id} className="flex justify-between items-center p-4 border border-gray-100 rounded-2xl hover:border-indigo-400 hover:shadow-md transition-all cursor-pointer bg-white"
+                  onClick={() => {
+                    recallBill(bill.id);
+                    setShowRecallModal(false);
+                  }}
+                >
+                  <div>
+                    <h3 className="font-bold text-gray-800">Bill #{heldBills.length - index}</h3>
+                    <p className="text-xs text-gray-500">{new Date(bill.createdAt).toLocaleTimeString()}</p>
+                    <p className="text-sm text-gray-600 mt-1">{bill.items.length} items</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-black text-emerald-600 text-xl">SAR {bill.totals.grandTotal.toFixed(2)}</p>
+                    <button className="mt-2 px-4 py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-xl text-sm font-bold transition-colors">
+                      Recall
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
