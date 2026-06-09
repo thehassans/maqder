@@ -57,8 +57,19 @@ router.post('/sync', protect, async (req, res) => {
     for (const offlineInvoice of invoices) {
       try {
         // Prepare Invoice document
-        const newInvoice = new Invoice({
+        const cleanedInvoice = {
           ...offlineInvoice,
+          lineItems: offlineInvoice.lineItems?.map(line => {
+            const l = { ...line };
+            if (l.productId && !mongoose.Types.ObjectId.isValid(l.productId)) {
+              delete l.productId;
+            }
+            return l;
+          }) || []
+        };
+
+        const newInvoice = new Invoice({
+          ...cleanedInvoice,
           tenantId,
           flow: 'sell',
           businessContext: 'bakala',

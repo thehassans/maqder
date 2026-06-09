@@ -43,7 +43,7 @@ export const useBakalaSync = () => {
             toast.success(`Synced ${response.data.syncedInvoices.length} offline invoices`);
           }
           if (response.data.errors && response.data.errors.length > 0) {
-            toast.error(`Failed to sync ${response.data.errors.length} invoices`);
+            toast.error(`Failed to sync: ${response.data.errors[0].error}`);
           }
         }
       }
