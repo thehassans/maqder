@@ -315,17 +315,15 @@ export default function Sidebar() {
   const SidebarContent = () => (
     <>
       {/* Logo */}
-      <div className="flex items-center justify-between px-4 h-16 bg-[#1a3d28]">
-        <div className="flex items-center gap-3 h-full">
-          <div className="w-full h-14 flex items-center justify-start flex-shrink-0">
-            <img src="/maqdernewlogo.png" alt="Maqder" className="h-full w-auto object-contain object-left scale-[1.4] origin-left ml-4" />
-          </div>
+      <div className="flex items-center justify-center px-4 h-16 bg-[#1a3d28] relative">
+        <div className="w-full h-12 flex items-center justify-center flex-shrink-0">
+          <img src="/maqdernewlogo.png" alt="Maqder" className="h-full w-auto object-contain" />
         </div>
         
         {/* Mobile close button */}
         <button
           onClick={() => dispatch(setMobileMenuOpen(false))}
-          className="lg:hidden p-2 rounded-lg hover:bg-white/10 text-white"
+          className="lg:hidden absolute right-4 p-2 rounded-lg hover:bg-white/10 text-white"
         >
           <X className="w-5 h-5" />
         </button>

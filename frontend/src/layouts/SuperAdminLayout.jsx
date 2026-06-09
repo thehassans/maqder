@@ -38,8 +38,8 @@ export default function SuperAdminLayout() {
         <div className="flex items-center justify-between px-6 h-16">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-full h-14 flex items-center justify-start flex-shrink-0">
-                <img src="/maqdernewlogo.png" alt="Maqder" className="h-full w-auto object-contain object-left scale-[1.4] origin-left ml-4" />
+              <div className="w-full h-12 flex items-center justify-center flex-shrink-0">
+                <img src="/maqdernewlogo.png" alt="Maqder" className="h-full w-auto object-contain" />
               </div>
               <div>
                 <span className="text-xs bg-white/20 text-white px-2 py-0.5 rounded-full">

@@ -33,7 +33,7 @@ export function Header({ isArabic, setLanguage }) {
         <div className="flex items-center justify-between h-14">
           <div className="flex items-center gap-12">
             <Link to="/" className="flex items-center">
-              <img src="/maqder-logo.png" alt="Maqder" className="h-14 w-auto object-contain scale-[1.3] origin-left ml-4" />
+              <img src="/maqder-logo.png" alt="Maqder" className="h-12 w-auto object-contain" />
             </Link>
 
             {/* Desktop Navigation */}
