@@ -13,6 +13,8 @@ import { getInvoiceTemplateId } from '../../lib/invoiceBranding'
 import { buildInvoicePdfBlob, downloadInvoicePdf, printInvoiceSnapshot } from '../../lib/invoicePdf'
 import { getZatcaStatusMeta, isEditableInvoice } from '../../lib/zatcaStatus'
 import { getTravelInvoiceLabelMeta, isTravelAgencyInvoice } from '../../lib/travelInvoiceStatus'
+import ThermalReceipt from '../../components/ui/ThermalReceipt'
+import { getTenantBusinessTypes } from '../../lib/businessTypes'
 
 const blobToBase64 = (blob) => new Promise((resolve, reject) => {
   const reader = new FileReader()
@@ -67,6 +69,10 @@ export default function InvoiceView() {
   const travelInvoiceLabelMeta = isTravelAgencyInvoice(invoice) ? getTravelInvoiceLabelMeta(invoice, language) : null
   const isBilingualInvoice = invoice?.invoiceSubtype === 'travel_ticket' || ['travel_agency', 'trading', 'construction'].includes(invoice?.businessContext)
   const hasEmailAddon = tenant?.subscription?.hasEmailAddon === true || (Array.isArray(tenant?.subscription?.features) && tenant.subscription.features.includes('email_automation'))
+  
+  const tenantBusinessTypes = getTenantBusinessTypes(tenant)
+  const posTenants = ['bakala', 'super market', 'khayyat', 'saloon', 'laundry', 'restaurant']
+  const isPosTenant = tenantBusinessTypes.some(t => posTenants.includes(t))
 
   const signMutation = useMutation({
     mutationFn: () => api.post(`/invoices/${id}/sign`, undefined, { timeout: 120000 }),
@@ -201,6 +207,10 @@ export default function InvoiceView() {
           <button
             type="button"
             onClick={async () => {
+              if (isPosTenant) {
+                window.print()
+                return
+              }
               try {
                 const printed = await printInvoiceSnapshot({ invoice, language, tenant, sourceElement: invoicePreviewRef.current })
                 if (!printed) {
@@ -330,15 +340,38 @@ export default function InvoiceView() {
               )}
             </div>
 
-            <div ref={invoicePreviewRef}>
-              <InvoiceLivePreview
-                invoice={invoice}
-                tenant={tenant}
-                language={language}
-                templateId={templateId}
-                bilingual={isBilingualInvoice}
-                currencyRenderMode="icon"
-              />
+            <div ref={invoicePreviewRef} className={isPosTenant ? 'flex justify-center bg-gray-50 p-6 rounded-2xl border border-gray-100' : ''}>
+              {isPosTenant ? (
+                <ThermalReceipt
+                  order={{
+                    ...invoice,
+                    receiptNumber: invoice.invoiceNumber,
+                    customerName: invoice.buyer?.name || invoice.buyer?.nameAr,
+                    customerPhone: invoice.buyer?.phone,
+                    grandTotal: invoice.grandTotal,
+                    totalVat: invoice.totalTax,
+                    subtotal: invoice.subTotal || (invoice.grandTotal - invoice.totalTax),
+                    zatcaQrCode: invoice.zatca?.qrCodeData,
+                    items: invoice.lineItems?.map(item => ({
+                      nameEn: item.name,
+                      nameAr: item.nameAr,
+                      quantity: item.quantity,
+                      unitPrice: item.unitPrice,
+                      total: item.taxableAmount || (item.quantity * item.unitPrice)
+                    }))
+                  }}
+                  type={tenantBusinessTypes[0] || 'bakala'}
+                />
+              ) : (
+                <InvoiceLivePreview
+                  invoice={invoice}
+                  tenant={tenant}
+                  language={language}
+                  templateId={templateId}
+                  bilingual={isBilingualInvoice}
+                  currencyRenderMode="icon"
+                />
+              )}
             </div>
           </motion.div>
 

@@ -91,7 +91,8 @@ export default function Invoices() {
   const [signModalInvoice, setSignModalInvoice] = useState(null)
   const tenantBusinessTypes = getTenantBusinessTypes(tenant)
   const hasTravel = tenantBusinessTypes.includes('travel_agency')
-  const showNewInvoiceBtn = !tenantBusinessTypes.every(t => ['laundry', 'restaurant', 'saloon'].includes(t))
+  const posTenants = ['bakala', 'super market', 'khayyat', 'saloon', 'laundry', 'restaurant']
+  const showNewInvoiceBtn = !tenantBusinessTypes.some(t => posTenants.includes(t))
 
   useEffect(() => {
     const handle = setTimeout(() => setDebouncedSearch(search), 300)
