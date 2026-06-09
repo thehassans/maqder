@@ -59,6 +59,7 @@ router.post('/sync', protect, async (req, res) => {
         // Prepare Invoice document
         const cleanedInvoice = {
           ...offlineInvoice,
+          paymentMethod: ['mada', 'apple_pay'].includes(offlineInvoice.paymentMethod) ? 'card' : (offlineInvoice.paymentMethod || 'cash'),
           lineItems: offlineInvoice.lineItems?.map(line => {
             const l = { ...line };
             if (l.productId && !mongoose.Types.ObjectId.isValid(l.productId)) {

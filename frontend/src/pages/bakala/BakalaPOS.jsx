@@ -159,8 +159,8 @@ export default function BakalaPOS() {
     const handleKeyDown = (e) => {
       switch(e.key) {
         case 'F1': e.preventDefault(); handleCheckout('cash'); break;
-        case 'F2': e.preventDefault(); handleCheckout('mada'); break;
-        case 'F3': e.preventDefault(); handleCheckout('apple_pay'); break;
+        case 'F2': e.preventDefault(); handleCheckout('card'); break;
+        case 'F3': e.preventDefault(); handleCheckout('card'); break;
         case 'F4': e.preventDefault(); /* Open Daftar Modal */ break;
         case 'Escape': e.preventDefault(); clearCart(); break;
         default: break;
@@ -332,7 +332,11 @@ export default function BakalaPOS() {
               <span>Pay Cash</span>
               <span className="text-[10px] font-normal opacity-75">[F1]</span>
             </button>
-            <button onClick={() => handleCheckout('mada')} className="flex flex-col items-center justify-center gap-1 p-4 bg-[#0A2540] text-white hover:bg-gray-900 rounded-2xl font-bold transition-colors active:scale-95 shadow-sm">
+            <button 
+              onClick={() => handleCheckout('card')}
+              disabled={cartItems.length === 0}
+              className="flex flex-col items-center justify-center gap-1 p-4 bg-[#0a192f] text-white hover:bg-[#112240] rounded-2xl font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            >  
               <CreditCard className="w-6 h-6 mb-1" /> 
               <span>Mada / Visa</span>
               <span className="text-[10px] font-normal opacity-75">[F2]</span>
