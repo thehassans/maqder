@@ -389,36 +389,36 @@ export default function Landing() {
   const isArabic = language === 'ar'
 
   return (
-    <div className={`min-h-screen bg-white ${isArabic ? 'rtl' : 'ltr'}`} dir={isArabic ? 'rtl' : 'ltr'}>
+    <div className={`min-h-screen bg-[#07130b] ${isArabic ? 'rtl' : 'ltr'}`} dir={isArabic ? 'rtl' : 'ltr'}>
       <Header isArabic={isArabic} setLanguage={setLanguage} />
       <HeroSection isArabic={isArabic} />
 
       {/* Stats Section */}
-      <section className="py-16 bg-white border-b border-gray-100">
+      <section className="py-16 bg-[#07130b] border-b border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center">
               <p className="text-4xl md:text-5xl font-bold text-[#0c1811] mb-3">500+</p>
-              <p className="text-gray-500 font-medium text-sm sm:text-base">{isArabic ? 'الشركات تثق بنا' : 'Companies trust us'}</p>
+              <p className="text-gray-400 font-medium text-sm sm:text-base">{isArabic ? 'الشركات تثق بنا' : 'Companies trust us'}</p>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }} className="text-center">
               <p className="text-4xl md:text-5xl font-bold text-[#0c1811] mb-3">50K+</p>
-              <p className="text-gray-500 font-medium text-sm sm:text-base">{isArabic ? 'فاتورة تعالج يومياً' : 'Invoices processed daily'}</p>
+              <p className="text-gray-400 font-medium text-sm sm:text-base">{isArabic ? 'فاتورة تعالج يومياً' : 'Invoices processed daily'}</p>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }} className="text-center">
               <p className="text-4xl md:text-5xl font-bold text-[#0c1811] mb-3">99.9%</p>
-              <p className="text-gray-500 font-medium text-sm sm:text-base">{isArabic ? 'وقت تشغيل المنصة' : 'Platform uptime'}</p>
+              <p className="text-gray-400 font-medium text-sm sm:text-base">{isArabic ? 'وقت تشغيل المنصة' : 'Platform uptime'}</p>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.3 }} className="text-center">
               <p className="text-4xl md:text-5xl font-bold text-[#0c1811] mb-3">24/7</p>
-              <p className="text-gray-500 font-medium text-sm sm:text-base">{isArabic ? 'دعم العملاء' : 'Customer support'}</p>
+              <p className="text-gray-400 font-medium text-sm sm:text-base">{isArabic ? 'دعم العملاء' : 'Customer support'}</p>
             </motion.div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-24 bg-gray-50">
+      <section id="features" className="py-24 bg-[#0a1810]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -426,10 +426,10 @@ export default function Landing() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
               {isArabic ? 'كل ما تحتاجه لإدارة أعمالك' : 'Everything You Need to Run Your Business'}
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-400 max-w-3xl mx-auto">
               {isArabic
                 ? 'منصة متكاملة تجمع جميع أدوات إدارة الأعمال في مكان واحد'
                 : 'A unified platform that brings all your business management tools together'}
@@ -447,15 +447,15 @@ export default function Landing() {
               <motion.div
                 key={index}
                 variants={fadeInUp}
-                className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 group"
+                className="bg-[#112418]/50 backdrop-blur-xl rounded-2xl border border-gray-800 p-6 shadow-sm hover:shadow-2xl hover:shadow-emerald-900/20 transition-all duration-300 border border-gray-800 group"
               >
-                <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <div className="w-12 h-12 bg-gradient-to-br from-[#1a3d28] to-[#112418] rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                   <feature.icon className="w-6 h-6 text-white" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                <h3 className="text-xl font-bold text-white mb-2">
                   {isArabic ? feature.titleAr : feature.title}
                 </h3>
-                <p className="text-gray-600 leading-relaxed">
+                <p className="text-gray-400 leading-relaxed">
                   {isArabic ? feature.descriptionAr : feature.description}
                 </p>
               </motion.div>
@@ -473,10 +473,10 @@ export default function Landing() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
               {isArabic ? 'وحدات النظام' : 'System Modules'}
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-400 max-w-3xl mx-auto">
               {isArabic
                 ? 'اختر الوحدات التي تناسب احتياجات عملك'
                 : 'Choose the modules that fit your business needs'}
@@ -493,13 +493,13 @@ export default function Landing() {
                 transition={{ delay: index * 0.05 }}
                 className="group cursor-pointer"
               >
-                <div className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 text-center">
+                <div className="bg-[#112418]/50 backdrop-blur-xl rounded-2xl border border-gray-800 p-6 shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-800 text-center">
                   <div
                     className={`w-14 h-14 mx-auto bg-gradient-to-br ${module.color} rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-lg`}
                   >
                     <module.icon className="w-7 h-7 text-white" />
                   </div>
-                  <p className="font-semibold text-gray-900 text-sm">
+                  <p className="font-semibold text-white text-sm">
                     {isArabic ? module.nameAr : module.name}
                   </p>
                 </div>
@@ -557,7 +557,7 @@ export default function Landing() {
               viewport={{ once: true }}
               className="relative"
             >
-              <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10">
+              <div className="bg-[#07130b]/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10">
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center">
                     <FileCheck className="w-8 h-8 text-white" />
@@ -594,7 +594,7 @@ export default function Landing() {
       </section>
 
       {/* Solutions Showcase Section */}
-      <section id="solutions" className="py-24 bg-gray-900 relative overflow-hidden">
+      <section id="solutions" className="py-24 bg-[#0a1810] border-t border-gray-800 relative overflow-hidden">
         <div className="absolute inset-0">
           <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-primary-900/40 to-transparent" />
           <div className="absolute bottom-0 left-0 w-1/2 h-full bg-gradient-to-t from-emerald-900/30 to-transparent" />
@@ -607,7 +607,7 @@ export default function Landing() {
             viewport={{ once: true }}
             className="text-center mb-20"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md text-white rounded-full font-medium text-sm mb-6 border border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#07130b]/10 backdrop-blur-md text-white rounded-full font-medium text-sm mb-6 border border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.1)]">
               <Sparkles className="w-4 h-4 text-primary-400" />
               {isArabic ? 'حلول مصممة لنشاطك' : 'Tailored Solutions'}
             </div>
@@ -634,13 +634,13 @@ export default function Landing() {
               >
                 {/* Background Image inside a Mac Window to look like live tenant panel */}
                 <div className="absolute inset-0 p-4 transition-transform duration-700 group-hover:scale-[1.02]">
-                  <div className="w-full h-full bg-gray-900 rounded-2xl shadow-2xl overflow-hidden border border-gray-700 relative">
+                  <div className="w-full h-full bg-[#0a1810] border-t border-gray-800 rounded-2xl shadow-2xl overflow-hidden border border-gray-700 relative">
                     {/* Mac Window Header */}
                     <div className="h-6 bg-gray-800 border-b border-gray-700 flex items-center px-3 gap-1.5">
                       <div className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
                       <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/80" />
                       <div className="w-2.5 h-2.5 rounded-full bg-green-500/80" />
-                      <div className="mx-auto text-[10px] text-gray-500 font-mono tracking-wider">maqder.com/app</div>
+                      <div className="mx-auto text-[10px] text-gray-400 font-mono tracking-wider">maqder.com/app</div>
                     </div>
                     {/* Panel Screen */}
                     <img 
@@ -666,7 +666,7 @@ export default function Landing() {
                     {isArabic ? solution.descriptionAr : solution.description}
                   </p>
                   
-                  <div className="inline-flex items-center justify-between w-full p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/10 backdrop-blur-lg text-white font-medium transition-all duration-300 transform group-hover:-translate-y-1">
+                  <div className="inline-flex items-center justify-between w-full p-4 rounded-2xl bg-[#07130b]/10 hover:bg-[#07130b]/20 border border-white/10 backdrop-blur-lg text-white font-medium transition-all duration-300 transform group-hover:-translate-y-1">
                     <span>{isArabic ? 'عرض التفاصيل' : 'View Details'}</span>
                     <ArrowRight className={`w-5 h-5 ${isArabic ? 'rotate-180' : ''}`} />
                   </div>
@@ -686,13 +686,13 @@ export default function Landing() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setSelectedSolution(null)}
-              className="absolute inset-0 bg-gray-900/80 backdrop-blur-sm"
+              className="absolute inset-0 bg-[#0a1810] border-t border-gray-800/80 backdrop-blur-sm"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-white rounded-3xl shadow-2xl overflow-hidden custom-scrollbar"
+              className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-[#07130b] rounded-3xl shadow-2xl overflow-hidden custom-scrollbar"
             >
               <button 
                 onClick={() => setSelectedSolution(null)}
@@ -701,19 +701,19 @@ export default function Landing() {
                 <X className="w-6 h-6" />
               </button>
               
-              <div className="relative h-72 sm:h-96 w-full bg-gray-900 p-4 sm:p-8 flex items-center justify-center overflow-hidden">
+              <div className="relative h-72 sm:h-96 w-full bg-[#0a1810] border-t border-gray-800 p-4 sm:p-8 flex items-center justify-center overflow-hidden">
                 <div className="absolute inset-0">
                   <img src={selectedSolution.image} className="w-full h-full object-cover opacity-20 blur-sm" alt={selectedSolution.title} />
                   <div className={`absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/80 to-transparent`} />
                 </div>
 
                 {/* Live Display Mac Window */}
-                <div className="relative z-10 w-full max-w-2xl bg-gray-900 rounded-xl shadow-2xl border border-gray-700 overflow-hidden transform transition-transform hover:scale-105 duration-700">
+                <div className="relative z-10 w-full max-w-2xl bg-[#0a1810] border-t border-gray-800 rounded-xl shadow-2xl border border-gray-700 overflow-hidden transform transition-transform hover:scale-105 duration-700">
                   <div className="h-8 bg-gray-800 border-b border-gray-700 flex items-center px-4 gap-2">
                     <div className="w-3 h-3 rounded-full bg-red-500" />
                     <div className="w-3 h-3 rounded-full bg-yellow-500" />
                     <div className="w-3 h-3 rounded-full bg-green-500" />
-                    <div className="mx-auto flex items-center gap-2 px-4 py-1 bg-gray-900 rounded-md text-xs text-gray-400 font-mono">
+                    <div className="mx-auto flex items-center gap-2 px-4 py-1 bg-[#0a1810] border-t border-gray-800 rounded-md text-xs text-gray-400 font-mono">
                       <Lock className="w-3 h-3 text-emerald-500" />
                       maqder.com/app/tenant
                     </div>
@@ -736,7 +736,7 @@ export default function Landing() {
                 </div>
 
                 <div className="mt-8">
-                  <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+                  <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
                     {isArabic ? selectedSolution.titleAr : selectedSolution.title}
                   </h2>
                 </div>
@@ -744,13 +744,13 @@ export default function Landing() {
                   {isArabic ? selectedSolution.longDescriptionAr : selectedSolution.longDescription}
                 </p>
 
-                <h3 className="text-lg font-bold text-gray-900 mb-6 uppercase tracking-wider text-sm">
+                <h3 className="text-lg font-bold text-white mb-6 uppercase tracking-wider text-sm">
                   {isArabic ? 'المميزات الرئيسية' : 'Key Features'}
                 </h3>
                 
                 <div className="grid sm:grid-cols-2 gap-4 mb-10">
                   {(isArabic ? selectedSolution.featuresAr : selectedSolution.features).map((feature, idx) => (
-                    <div key={idx} className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                    <div key={idx} className="flex items-center gap-3 p-4 bg-[#0a1810] rounded-2xl border border-gray-800">
                       <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
                         <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                       </div>
@@ -759,7 +759,7 @@ export default function Landing() {
                   ))}
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-100">
+                <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-800">
                   <Link
                     to="/login"
                     state={{ email: selectedSolution.email, password: 'password123' }}
@@ -771,7 +771,7 @@ export default function Landing() {
                   <a
                     href="#contact"
                     onClick={() => setSelectedSolution(null)}
-                    className="flex-1 inline-flex items-center justify-center gap-2 py-4 rounded-xl text-gray-700 bg-gray-100 hover:bg-gray-200 font-semibold transition-colors"
+                    className="flex-1 inline-flex items-center justify-center gap-2 py-4 rounded-xl text-gray-700 bg-gray-800 hover:bg-gray-200 font-semibold transition-colors"
                   >
                     <Headphones className="w-5 h-5" />
                     <span>{isArabic ? 'تواصل مع المبيعات' : 'Contact Sales'}</span>
@@ -784,7 +784,7 @@ export default function Landing() {
       </AnimatePresence>
 
       {/* Testimonials */}
-      <section className="py-24 bg-gray-50">
+      <section className="py-24 bg-[#0a1810]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -792,7 +792,7 @@ export default function Landing() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
               {isArabic ? 'ماذا يقول عملاؤنا' : 'What Our Customers Say'}
             </h2>
           </motion.div>
@@ -805,25 +805,25 @@ export default function Landing() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100"
+                className="bg-[#112418]/50 backdrop-blur-xl rounded-2xl border border-gray-800 p-8 shadow-sm border border-gray-800"
               >
                 <div className="flex gap-1 mb-4">
                   {[...Array(testimonial.rating)].map((_, i) => (
                     <Star key={i} className="w-5 h-5 text-yellow-400 fill-yellow-400" />
                   ))}
                 </div>
-                <p className="text-gray-600 mb-6 leading-relaxed">
+                <p className="text-gray-400 mb-6 leading-relaxed">
                   "{isArabic ? testimonial.contentAr : testimonial.content}"
                 </p>
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center text-white font-bold">
+                  <div className="w-12 h-12 bg-gradient-to-br from-[#1a3d28] to-[#112418] rounded-full flex items-center justify-center text-white font-bold">
                     {(isArabic ? testimonial.nameAr : testimonial.name).charAt(0)}
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">
+                    <p className="font-semibold text-white">
                       {isArabic ? testimonial.nameAr : testimonial.name}
                     </p>
-                    <p className="text-gray-500 text-sm">
+                    <p className="text-gray-400 text-sm">
                       {isArabic ? testimonial.roleAr : testimonial.role}
                     </p>
                   </div>
@@ -843,10 +843,10 @@ export default function Landing() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
               {isArabic ? 'خطط الأسعار' : 'Pricing Plans'}
             </h2>
-            <p className="text-xl text-gray-600">
+            <p className="text-xl text-gray-400">
               {isArabic ? 'اختر الخطة المناسبة لحجم أعمالك' : 'Choose the plan that fits your business size'}
             </p>
           </motion.div>
@@ -859,22 +859,22 @@ export default function Landing() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                className={`relative bg-white rounded-3xl p-8 ${
+                className={`relative bg-[#07130b] rounded-3xl p-8 ${
                   plan.popular
                     ? 'border-2 border-primary-500 shadow-xl shadow-primary-500/20'
                     : 'border border-gray-200 shadow-sm'
                 }`}
               >
                 {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-primary-600 to-primary-700 text-white text-sm font-semibold rounded-full">
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-[#07130b] border-t border-b border-gray-800 text-white text-sm font-semibold rounded-full">
                     {isArabic ? 'الأكثر شيوعاً' : 'Most Popular'}
                   </div>
                 )}
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                <h3 className="text-2xl font-bold text-white mb-2">
                   {isArabic ? plan.nameAr : plan.name}
                 </h3>
                 <div className="mb-6 flex flex-col justify-center items-center">
-                  <span className="flex items-center gap-1.5 text-4xl font-bold text-gray-900">
+                  <span className="flex items-center gap-1.5 text-4xl font-bold text-white">
                     {plan.price === 'Custom' ? (isArabic ? plan.priceAr : plan.price) : (
                       <>
                         <SarIcon className="w-8 h-8 text-emerald-600 mb-0.5" />
@@ -882,21 +882,21 @@ export default function Landing() {
                       </>
                     )}
                   </span>
-                  <span className="text-gray-500 mt-1">{isArabic ? plan.periodAr : plan.period}</span>
+                  <span className="text-gray-400 mt-1">{isArabic ? plan.periodAr : plan.period}</span>
                 </div>
                 <ul className="space-y-4 mb-8">
                   {(isArabic ? plan.featuresAr : plan.features).map((feature, i) => (
                     <li key={i} className="flex items-center gap-3">
                       <CheckCircle2 className="w-5 h-5 text-primary-600 flex-shrink-0" />
-                      <span className="text-gray-600">{feature}</span>
+                      <span className="text-gray-400">{feature}</span>
                     </li>
                   ))}
                 </ul>
                 <button
                   className={`w-full py-3 rounded-xl font-semibold transition ${
                     plan.popular
-                      ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white shadow-lg shadow-primary-500/30 hover:shadow-xl'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ? 'bg-[#07130b] border-t border-b border-gray-800 text-white shadow-lg shadow-primary-500/30 hover:shadow-2xl hover:shadow-emerald-900/20'
+                      : 'bg-gray-800 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
                   {isArabic ? 'ابدأ الآن' : 'Get Started'}
@@ -908,7 +908,7 @@ export default function Landing() {
       </section>
 
       {/* Contact Section */}
-      <section id="contact" className="py-24 bg-gray-50">
+      <section id="contact" className="py-24 bg-[#0a1810]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12">
             <motion.div
@@ -916,10 +916,10 @@ export default function Landing() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
                 {isArabic ? 'تواصل معنا' : 'Get in Touch'}
               </h2>
-              <p className="text-xl text-gray-600 mb-8">
+              <p className="text-xl text-gray-400 mb-8">
                 {isArabic
                   ? 'فريقنا جاهز لمساعدتك في البدء مع Maqder ERP'
                   : 'Our team is ready to help you get started with Maqder ERP'}
@@ -930,8 +930,8 @@ export default function Landing() {
                     <Phone className="w-6 h-6 text-primary-600" />
                   </div>
                   <div>
-                    <p className="text-gray-500 text-sm">{isArabic ? 'الهاتف / واتساب' : 'Phone / WhatsApp'}</p>
-                    <a href="https://wa.me/966596775485" target="_blank" rel="noreferrer" className="flex items-center gap-2 text-gray-900 font-semibold hover:text-emerald-600 transition">
+                    <p className="text-gray-400 text-sm">{isArabic ? 'الهاتف / واتساب' : 'Phone / WhatsApp'}</p>
+                    <a href="https://wa.me/966596775485" target="_blank" rel="noreferrer" className="flex items-center gap-2 text-white font-semibold hover:text-emerald-600 transition">
                       <span dir="ltr">+966 59 677 5485</span>
                       <MessageCircle className="w-4 h-4 text-emerald-500" />
                     </a>
@@ -942,8 +942,8 @@ export default function Landing() {
                     <Mail className="w-6 h-6 text-primary-600" />
                   </div>
                   <div>
-                    <p className="text-gray-500 text-sm">{isArabic ? 'البريد الإلكتروني' : 'Email'}</p>
-                    <a href="mailto:support@maqder.com" className="text-gray-900 font-semibold hover:text-primary-600 transition">support@maqder.com</a>
+                    <p className="text-gray-400 text-sm">{isArabic ? 'البريد الإلكتروني' : 'Email'}</p>
+                    <a href="mailto:support@maqder.com" className="text-white font-semibold hover:text-primary-600 transition">support@maqder.com</a>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
@@ -951,8 +951,8 @@ export default function Landing() {
                     <MapPin className="w-6 h-6 text-primary-600" />
                   </div>
                   <div>
-                    <p className="text-gray-500 text-sm">{isArabic ? 'الموقع' : 'Location'}</p>
-                    <p className="text-gray-900 font-semibold">{isArabic ? 'الرياض، المملكة العربية السعودية' : 'Riyadh, Saudi Arabia'}</p>
+                    <p className="text-gray-400 text-sm">{isArabic ? 'الموقع' : 'Location'}</p>
+                    <p className="text-white font-semibold">{isArabic ? 'الرياض، المملكة العربية السعودية' : 'Riyadh, Saudi Arabia'}</p>
                   </div>
                 </div>
               </div>
@@ -963,7 +963,7 @@ export default function Landing() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
             >
-              <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
+              <div className="bg-[#07130b] rounded-3xl p-8 shadow-sm border border-gray-800">
                 <form className="space-y-6">
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
@@ -1009,7 +1009,7 @@ export default function Landing() {
                   </div>
                   <button
                     type="submit"
-                    className="w-full py-4 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-semibold shadow-lg shadow-primary-500/30 hover:shadow-xl transition"
+                    className="w-full py-4 bg-[#07130b] border-t border-b border-gray-800 text-white rounded-xl font-semibold shadow-lg shadow-primary-500/30 hover:shadow-2xl hover:shadow-emerald-900/20 transition"
                   >
                     {isArabic ? 'إرسال الرسالة' : 'Send Message'}
                   </button>
@@ -1021,7 +1021,7 @@ export default function Landing() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 bg-gradient-to-r from-primary-600 to-primary-700">
+      <section className="py-24 bg-[#07130b] border-t border-b border-gray-800">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -1031,7 +1031,7 @@ export default function Landing() {
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6">
               {isArabic ? 'ابدأ رحلتك مع Maqder ERP اليوم' : 'Start Your Journey with Maqder ERP Today'}
             </h2>
-            <p className="text-xl text-primary-100 mb-8">
+            <p className="text-xl text-emerald-500 mb-8">
               {isArabic
                 ? 'انضم إلى أكثر من 500 شركة سعودية تثق في Maqder ERP'
                 : 'Join 500+ Saudi companies that trust Maqder ERP'}
@@ -1039,14 +1039,14 @@ export default function Landing() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 to="/login"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-primary-700 rounded-2xl font-semibold text-lg shadow-xl hover:shadow-2xl transition-all hover:-translate-y-0.5"
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#07130b] text-primary-700 rounded-2xl font-semibold text-lg shadow-xl hover:shadow-2xl transition-all hover:-translate-y-0.5"
               >
                 {isArabic ? 'ابدأ مجاناً' : 'Start Free Trial'}
                 <ArrowRight className="w-5 h-5" />
               </Link>
               <a
                 href="#contact"
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 text-white rounded-2xl font-semibold text-lg hover:bg-white/20 transition border border-white/20"
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#07130b]/10 text-white rounded-2xl font-semibold text-lg hover:bg-[#07130b]/20 transition border border-white/20"
               >
                 <Headphones className="w-5 h-5" />
                 {isArabic ? 'تحدث مع المبيعات' : 'Talk to Sales'}
@@ -1057,7 +1057,7 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-16">
+      <footer className="bg-[#0a1810] border-t border-gray-800 text-gray-400 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-4 gap-12 mb-12">
             <div>
@@ -1066,7 +1066,7 @@ export default function Landing() {
                   <img src="/maqdernewlogo.png" alt="Maqder" className="h-full w-auto object-contain" />
                 </div>
               </div>
-              <p className="text-gray-500 leading-relaxed">
+              <p className="text-gray-400 leading-relaxed">
                 {isArabic
                   ? 'مزود خدمات الفوترة الإلكترونية ونظام ERP متكامل للشركات السعودية مع امتثال كامل لهيئة الزكاة والضريبة والجمارك'
                   : 'E-Invoicing Services Provider and complete ERP system for Saudi businesses with full ZATCA compliance'}
@@ -1097,14 +1097,14 @@ export default function Landing() {
             </div>
           </div>
           <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-gray-500 text-sm">
+            <p className="text-gray-400 text-sm">
               © 2024 Maqder ERP. {isArabic ? 'جميع الحقوق محفوظة.' : 'All rights reserved.'}
             </p>
             <div className="flex flex-col gap-1">
-              <p className="text-gray-500 text-sm">
+              <p className="text-gray-400 text-sm">
                 {isArabic ? 'صنع بواسطة مؤسسة حلول القوى العاملة الشرقية' : 'Built by Eastern Workforce Solutions Establishment'}
               </p>
-              <p className="text-gray-500 text-sm opacity-70">
+              <p className="text-gray-400 text-sm opacity-70">
                 {isArabic ? 'Eastern Workforce Solutions Establishment' : 'مؤسسة حلول القوى العاملة الشرقية'}
               </p>
             </div>
@@ -1117,7 +1117,7 @@ export default function Landing() {
         href="https://wa.me/966596775485" 
         target="_blank" 
         rel="noreferrer"
-        className="fixed bottom-6 right-6 z-50 bg-emerald-500 text-white p-4 rounded-full shadow-lg shadow-emerald-500/30 hover:scale-110 hover:shadow-xl hover:shadow-emerald-500/40 transition-all flex items-center justify-center"
+        className="fixed bottom-6 right-6 z-50 bg-emerald-500 text-white p-4 rounded-full shadow-lg shadow-emerald-500/30 hover:scale-110 hover:shadow-2xl hover:shadow-emerald-900/20 hover:shadow-emerald-500/40 transition-all flex items-center justify-center"
         aria-label="Contact on WhatsApp"
       >
         <MessageCircle className="w-7 h-7" />

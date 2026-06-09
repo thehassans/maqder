@@ -5,8 +5,6 @@ import { ArrowRight, Play, CheckCircle2, ShieldCheck, Phone } from "lucide-react
 export function HeroSection({ isArabic }) {
   return (
     <section className="relative pt-32 pb-32 px-4 sm:px-6 lg:px-8 overflow-hidden min-h-[90vh] flex flex-col justify-center bg-[#07130b]">
-      {/* Background Fade to White at bottom */}
-      <div className="absolute bottom-0 left-0 right-0 h-64 bg-gradient-to-b from-transparent to-white pointer-events-none z-10" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-900/20 via-[#07130b] to-[#07130b] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto relative z-20 w-full">
