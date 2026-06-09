@@ -196,11 +196,11 @@ export default function Invoices() {
       label: t('date'),
       value: (r) => (r?.issueDate ? new Date(r.issueDate).toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US') : '')
     },
-    {
+    ...(hasTravel ? [{
       key: 'customerPriceTotal',
       label: language === 'ar' ? 'سعر العميل' : 'Customer Price',
       value: (r) => isTravelAgencyInvoice(r) ? (r?.customerPriceTotal ?? '') : ''
-    },
+    }] : []),
     {
       key: 'grandTotal',
       label: t('total'),
@@ -472,7 +472,7 @@ export default function Invoices() {
                     <th>{language === 'ar' ? 'النوع' : 'Type'}</th>
                     <th>{t('date')}</th>
                     <th>{language === 'ar' ? 'تم الإنشاء بواسطة' : 'Created By'}</th>
-                    <th>{language === 'ar' ? 'سعر العميل' : 'Customer Price'}</th>
+                    {hasTravel && <th>{language === 'ar' ? 'سعر العميل' : 'Customer Price'}</th>}
                     <th>{t('total')}</th>
                     <th>{language === 'ar' ? 'ضريبة القيمة المضافة' : 'VAT'}</th>
                     <th>{tenant?.zatca?.phase === 1 ? (language === 'ar' ? 'الحالة' : 'Status') : t('zatcaStatus')}</th>
@@ -536,11 +536,13 @@ export default function Invoices() {
                             : (invoice.createdByName || en || invoice.createdByNameAr || ar)) || '—'
                         })()}
                       </td>
-                      <td className="font-medium text-gray-700 dark:text-gray-300">
-                        {isTravelAgencyInvoice(invoice) && invoice.customerPriceTotal > 0
-                          ? <Money value={invoice.customerPriceTotal} />
-                          : '—'}
-                      </td>
+                      {hasTravel && (
+                        <td className="font-medium text-gray-700 dark:text-gray-300">
+                          {isTravelAgencyInvoice(invoice) && invoice.customerPriceTotal > 0
+                            ? <Money value={invoice.customerPriceTotal} />
+                            : '—'}
+                        </td>
+                      )}
                       <td className="font-semibold"><Money value={invoice.grandTotal} /></td>
                       <td className="text-gray-600 dark:text-gray-400">
                         {getInvoiceVatAmount(invoice) > 0
