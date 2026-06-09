@@ -34,12 +34,8 @@ export default function MarketingLayout() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="h-16 flex items-center justify-between gap-3">
             <Link to="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
-                <img src="/maqder-logo.png" alt="Maqder" className="w-full h-full object-contain" />
-              </div>
-              <div className="leading-tight">
-                <div className="font-bold text-lg">{data?.brandName || 'Maqder ERP'}</div>
-                <div className="text-xs text-slate-500">{isArabic ? 'نظام ERP للشركات السعودية' : 'Saudi-ready ERP platform'}</div>
+              <div className="w-auto h-10 flex items-center justify-center">
+                <img src="/maqdernewlogo.png" alt="Maqder" className="h-full w-auto object-contain" />
               </div>
             </Link>
 
@@ -129,7 +125,9 @@ export default function MarketingLayout() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <div className="font-bold text-lg">{data?.brandName || 'Maqder ERP'}</div>
+              <div className="w-auto h-10 flex items-center justify-start">
+                <img src="/maqdernewlogo.png" alt="Maqder" className="h-full w-auto object-contain" />
+              </div>
               <p className="mt-2 text-sm leading-relaxed text-slate-500">
                 {isArabic
                   ? 'منصة ERP متكاملة للشركات السعودية مع امتثال كامل لهيئة الزكاة والضريبة والجمارك.'

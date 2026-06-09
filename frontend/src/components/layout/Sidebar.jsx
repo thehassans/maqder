@@ -317,21 +317,9 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="flex items-center justify-between px-4 h-16 bg-[#1a3d28]">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white rounded-xl p-1 shadow-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
-            <img src="/maqder-logo.png" alt="Maqder" className="w-full h-full object-contain" />
+          <div className="w-auto h-10 bg-white rounded-xl p-1 shadow-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <img src="/maqdernewlogo.png" alt="Maqder" className="h-full w-auto object-contain" />
           </div>
-          {!sidebarCollapsed && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="overflow-hidden"
-            >
-              <span className="font-bold text-lg text-white truncate block max-w-[150px]">
-                Maqder ERP
-              </span>
-            </motion.div>
-          )}
         </div>
         
         {/* Mobile close button */}

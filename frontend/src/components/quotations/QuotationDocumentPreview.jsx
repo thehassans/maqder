@@ -53,7 +53,7 @@ const getStatusTone = (status) => {
 
 export default function QuotationDocumentPreview({ quotation, tenant, language = 'en' }) {
   const branding = getInvoiceBranding(tenant, language, quotation?.businessContext || 'trading')
-  const logoSrc = branding?.logoSrc || tenant?.business?.logoUrl || tenant?.branding?.logo || '/maqder-logo.png'
+  const logoSrc = branding?.logoSrc || tenant?.business?.logoUrl || tenant?.branding?.logo || '/maqdernewlogo.png'
 
   const companyName = language === 'ar'
     ? pickLocalizedText(tenant?.business?.legalNameAr, tenant?.business?.legalNameEn)

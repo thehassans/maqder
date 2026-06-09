@@ -84,10 +84,9 @@ export default function Login() {
         <div className="relative z-10 flex flex-col justify-between p-12 text-white">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-white rounded-xl p-1 shadow-lg">
-              <img src="/maqder-logo.png" alt="Maqder" className="w-full h-full object-contain" />
+            <div className="w-auto h-12 bg-white rounded-xl p-1 shadow-lg flex items-center justify-center">
+              <img src="/maqdernewlogo.png" alt="Maqder" className="h-full w-auto object-contain" />
             </div>
-            <span className="text-2xl font-bold tracking-tight">Maqder ERP</span>
           </div>
 
           {/* Hero */}
@@ -172,8 +171,7 @@ export default function Login() {
 
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-            <img src="/maqder-logo.png" alt="Maqder" className="w-14 h-14 object-contain" />
-            <span className="text-2xl font-bold text-gray-900">Maqder ERP</span>
+            <img src="/maqdernewlogo.png" alt="Maqder" className="h-14 w-auto object-contain" />
           </div>
 
           {/* Header */}

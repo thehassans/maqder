@@ -58,7 +58,7 @@ const getRecipientCompany = (shipment = {}, language = 'en') => {
 export default function ShipmentDocumentPreview({ shipment, tenant, language = 'en', documentType = 'delivery-note' }) {
   const isLabel = documentType === 'shipping-label'
   const branding = getInvoiceBranding(tenant, language, 'trading')
-  const logoSrc = branding?.logoSrc || tenant?.business?.logoUrl || tenant?.branding?.logo || '/maqder-logo.png'
+  const logoSrc = branding?.logoSrc || tenant?.business?.logoUrl || tenant?.branding?.logo || '/maqdernewlogo.png'
   const companyName = resolveCompanyName(tenant, language)
   const companyNameEn = tenant?.business?.legalNameEn || tenant?.business?.legalNameAr || '—'
   const companyNameAr = tenant?.business?.legalNameAr || tenant?.business?.legalNameEn || '—'

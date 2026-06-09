@@ -38,12 +38,11 @@ export default function SuperAdminLayout() {
         <div className="flex items-center justify-between px-6 h-16">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white rounded-xl p-1 shadow-lg">
-                <img src="/maqder-logo.png" alt="Maqder" className="w-full h-full object-contain" />
+              <div className="w-auto h-10 bg-white rounded-xl p-1 shadow-lg flex items-center justify-center">
+                <img src="/maqdernewlogo.png" alt="Maqder" className="h-full w-auto object-contain" />
               </div>
               <div>
-                <span className="font-bold text-lg">Maqder ERP</span>
-                <span className="ms-2 text-xs bg-white/20 text-white px-2 py-0.5 rounded-full">
+                <span className="text-xs bg-white/20 text-white px-2 py-0.5 rounded-full">
                   Super Admin
                 </span>
               </div>

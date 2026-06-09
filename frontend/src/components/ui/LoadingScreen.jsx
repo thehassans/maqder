@@ -35,7 +35,9 @@ export default function LoadingScreen() {
             />
           </svg>
         </motion.div>
-        <h2 className="text-2xl font-bold text-white mb-2">Maqder ERP</h2>
+        <div className="w-auto h-16 bg-white rounded-2xl p-2 shadow-xl flex items-center justify-center mb-6 mx-auto">
+          <img src="/maqdernewlogo.png" alt="Maqder" className="h-full w-auto object-contain" />
+        </div>
         <p className="text-primary-200">Loading your workspace...</p>
       </motion.div>
     </div>

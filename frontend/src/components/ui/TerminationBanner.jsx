@@ -113,14 +113,13 @@ export function TerminationBlocker() {
         
         {/* Logo Section */}
         <div className="mb-8 flex flex-col items-center">
-          <div className="w-16 h-16 bg-[#1a3d28] rounded-2xl p-2 shadow-xl flex items-center justify-center mb-4">
+          <div className="w-auto h-16 bg-white rounded-2xl p-2 shadow-xl flex items-center justify-center mb-4">
             {tenant?.branding?.logo ? (
               <img src={tenant.branding.logo} alt="Logo" className="w-full h-full object-contain rounded-xl bg-white" />
             ) : (
-              <img src="/maqder-logo.png" alt="Maqder" className="w-full h-full object-contain" />
+              <img src="/maqdernewlogo.png" alt="Maqder" className="h-full w-auto object-contain" />
             )}
           </div>
-          <span className="font-extrabold text-2xl text-gray-900 dark:text-white tracking-tight">Maqder ERP</span>
         </div>
 
         <div className="w-16 h-16 rounded-full bg-rose-50 dark:bg-rose-900/20 text-rose-600 flex items-center justify-center mb-6">

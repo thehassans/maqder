@@ -140,7 +140,7 @@ export const getInvoiceBranding = (tenant, language = 'en', businessContext = 't
     businessContext: context,
     templateId: getInvoiceTemplateId(tenant, context),
     companyName: pickLocalizedText(business?.legalNameEn, business?.legalNameAr, language),
-    logoSrc: contextProfile.logo || invoiceBranding?.logo || tenant?.branding?.logo || '/maqder-logo.png',
+    logoSrc: contextProfile.logo || invoiceBranding?.logo || tenant?.branding?.logo || '/maqdernewlogo.png',
     headerText: pickLocalizedText(
       sanitizeLegacyTravelHeaderText(pickFirstText(contextProfile.headerTextEn, invoiceBranding?.headerTextEn), context) || buildDefaultHeaderText(context, 'en'),
       sanitizeLegacyTravelHeaderText(pickFirstText(contextProfile.headerTextAr, invoiceBranding?.headerTextAr), context) || buildDefaultHeaderText(context, 'ar'),
