@@ -17,6 +17,8 @@ const subscriptionSchema = new mongoose.Schema({
   maxUsers: { type: Number, default: 5 },
   maxInvoices: { type: Number, default: 100 },
   hasEmailAddon: { type: Boolean, default: false },
+  hasIotAddon: { type: Boolean, default: false },
+  hasWeightScaleAddon: { type: Boolean, default: false },
   features: [{
     type: String,
     enum: ['hr', 'payroll', 'invoicing', 'inventory', 'ai', 'api_access', 'multi_warehouse', 'advanced_reports', 'email_automation']
