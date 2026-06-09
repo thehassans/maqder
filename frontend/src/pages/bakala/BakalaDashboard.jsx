@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Search, FileText, Send, ShieldAlert, ShieldCheck, AlertCircle, Scale, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 
 export default function BakalaDashboard() {
+  const { tenant } = useSelector((state) => state.auth);
   const [phoneNumber, setPhoneNumber] = useState('');
 
   // Dummy state to mock the API response for Daftar
@@ -51,14 +53,16 @@ export default function BakalaDashboard() {
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Bakala Administration</h1>
-        <Link 
-          to="/app/dashboard/bakala/weight-scale" 
-          className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-2 rounded-xl font-semibold shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30 transition-all hover:-translate-y-0.5"
-        >
-          <Scale className="w-5 h-5" />
-          Weight Scale Station
-          <ArrowRight className="w-4 h-4 ml-1" />
-        </Link>
+        {tenant?.subscription?.hasWeightScaleAddon && (
+          <Link 
+            to="/app/dashboard/bakala/weight-scale" 
+            className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-2 rounded-xl font-semibold shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30 transition-all hover:-translate-y-0.5"
+          >
+            <Scale className="w-5 h-5" />
+            Weight Scale Station
+            <ArrowRight className="w-4 h-4 ml-1" />
+          </Link>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -593,6 +593,16 @@ export default function TenantForm() {
               </div>
               <input type="checkbox" {...register('subscription.hasIotAddon')} className="h-4 w-4 accent-cyan-500" />
             </label>
+            <label className="md:col-span-3 rounded-2xl border border-teal-200 bg-teal-50/70 p-4 dark:border-teal-900/40 dark:bg-teal-950/20 flex items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'إضافة الميزان الذكي (Bakala)' : 'Weight Scale Add-on (Bakala)'}</p>
+                  <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[10px] font-bold uppercase">Premium</span>
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{language === 'ar' ? 'يمكّن المستأجر من استخدام الميزان لطباعة ملصقات الباركود للمنتجات الموزونة (خاص بالسوبرماركت).' : 'Enables the smart weight scale feature to print and read weight barcodes for supermarket items.'}</p>
+              </div>
+              <input type="checkbox" {...register('subscription.hasWeightScaleAddon')} className="h-4 w-4 accent-teal-500" />
+            </label>
           </div>
         </motion.div>
 
