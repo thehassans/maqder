@@ -29,6 +29,15 @@ export default function BakalaPOS() {
   const [showRecallModal, setShowRecallModal] = useState(false);
   const heldBills = getHeldBills();
 
+  const getBillTotal = (bill) => {
+    if (bill.totals && typeof bill.totals.grandTotal === 'number') {
+      return bill.totals.grandTotal;
+    }
+    return bill.items.reduce((acc, item) => {
+       return acc + (item.quantity * (item.unitPrice || item.retailPrice || 0));
+    }, 0);
+  };
+
   // Focus search input automatically if typing letters/numbers outside of an input
   useEffect(() => {
     const handleGlobalKeydown = (e) => {
@@ -527,7 +536,7 @@ export default function BakalaPOS() {
                     <p className="text-sm text-gray-600 mt-1">{bill.items.length} items</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-black text-emerald-600 text-xl">SAR {(bill.totals?.grandTotal || 0).toFixed(2)}</p>
+                    <p className="font-black text-emerald-600 text-xl">SAR {getBillTotal(bill).toFixed(2)}</p>
                     <button className="mt-2 px-4 py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-xl text-sm font-bold transition-colors">
                       Recall
                     </button>
