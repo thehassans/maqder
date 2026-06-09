@@ -49,7 +49,8 @@ import {
   QrCode,
   MonitorPlay,
   Database,
-  Monitor
+  Monitor,
+  Scale
 } from 'lucide-react'
 import { toggleSidebarCollapse, setMobileMenuOpen } from '../../store/slices/uiSlice'
 import { useTranslation } from '../../lib/translations'
@@ -192,6 +193,7 @@ export default function Sidebar() {
       items: [
         { path: '/app/dashboard/bakala/pos', icon: ShoppingCart, label: language === 'ar' ? 'نقطة البيع' : 'POS Checkout' },
         { path: '/app/dashboard/bakala/products', icon: Package, label: language === 'ar' ? 'المنتجات' : 'Products' },
+        { path: '/app/dashboard/bakala/weight-scale', icon: Scale, label: language === 'ar' ? 'الميزان' : 'Weight Scale', requireAddon: 'hasWeightScaleAddon' },
         { path: '/app/dashboard/bakala/dashboard', icon: ShieldCheck, label: language === 'ar' ? 'لوحة التحكم' : 'Administration' },
       ]
     },
@@ -292,6 +294,9 @@ export default function Sidebar() {
           return false
         }
         if (Array.isArray(item?.excludeBusinessTypes) && item.excludeBusinessTypes.some((type) => businessTypes.includes(type))) {
+          return false
+        }
+        if (item.requireAddon && !tenant?.subscription?.[item.requireAddon]) {
           return false
         }
         if (!item?.perm) return true
