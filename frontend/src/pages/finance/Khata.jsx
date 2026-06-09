@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
-import { Users, Plus, CreditCard, Clock, FileText, ChevronRight, RefreshCw, X, Receipt } from 'lucide-react';
+import { Users, Plus, CreditCard, Clock, FileText, ChevronRight, RefreshCw, X, Receipt, Trash2 } from 'lucide-react';
 
 export default function Khata() {
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showTransactionModal, setShowTransactionModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Selection
   const [selectedAccount, setSelectedAccount] = useState(null);
@@ -109,6 +112,27 @@ export default function Khata() {
     }
   };
 
+  const handleDeleteAccount = async (e) => {
+    e.preventDefault();
+    if (!deletePassword) {
+      toast.error('Please enter your password');
+      return;
+    }
+    setIsDeleting(true);
+    try {
+      await api.delete(`/khata/${selectedAccount._id}`, { data: { password: deletePassword } });
+      toast.success('Account deleted');
+      setShowDeleteModal(false);
+      setDeletePassword('');
+      setSelectedAccount(null);
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.error || 'Failed to delete account');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (loading) {
     return <div className="flex justify-center p-12"><RefreshCw className="w-8 h-8 animate-spin text-gray-400" /></div>;
   }
@@ -203,6 +227,13 @@ export default function Khata() {
                   </p>
                 </div>
                 <div className="w-px h-12 bg-gray-200"></div>
+                <button 
+                  onClick={() => setShowDeleteModal(true)}
+                  className="group relative w-12 h-12 bg-red-50 text-red-500 rounded-full font-bold hover:bg-red-100 hover:text-red-600 transition-all flex items-center justify-center shadow-sm"
+                  title="Delete Account"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </button>
                 <button 
                   onClick={() => setShowTransactionModal(true)}
                   className="group relative px-6 py-3.5 bg-black text-white rounded-full font-bold shadow-[0_8px_20px_rgb(0,0,0,0.15)] hover:shadow-[0_8px_25px_rgb(0,0,0,0.25)] hover:-translate-y-0.5 transition-all flex items-center gap-2 overflow-hidden"
@@ -343,6 +374,40 @@ export default function Khata() {
                 <input type="text" value={transactionNotes} onChange={(e) => setTransactionNotes(e.target.value)} className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="e.g. Weekly groceries"/>
               </div>
               <button type="submit" className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-colors">Record Transaction</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="flex justify-between items-center p-6 border-b border-gray-100">
+              <h2 className="text-xl font-bold text-red-600">Delete Khata Account</h2>
+              <button onClick={() => {
+                setShowDeleteModal(false);
+                setDeletePassword('');
+              }} className="text-gray-400 hover:text-gray-600"><X className="w-6 h-6"/></button>
+            </div>
+            <form onSubmit={handleDeleteAccount} className="p-6">
+              <p className="text-sm text-gray-600 mb-4">
+                Are you sure you want to delete this Khata account and all its transactions? This action cannot be undone.
+              </p>
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Confirm Tenant Password</label>
+                <input 
+                  type="password" 
+                  required 
+                  value={deletePassword} 
+                  onChange={(e) => setDeletePassword(e.target.value)} 
+                  className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 outline-none" 
+                  placeholder="Enter your password"
+                />
+              </div>
+              <button type="submit" disabled={isDeleting} className="w-full py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50">
+                {isDeleting ? 'Deleting...' : 'Delete Account'}
+              </button>
             </form>
           </div>
         </div>

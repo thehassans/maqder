@@ -92,4 +92,32 @@ router.post('/:id/transactions', protect, async (req, res) => {
   }
 });
 
+import User from '../models/User.js';
+
+// Delete a Khata account (requires password)
+router.delete('/:id', protect, async (req, res) => {
+  try {
+    const { password } = req.body;
+    
+    // Verify password
+    const user = await User.findById(req.user._id).select('+password');
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Invalid password' });
+    }
+
+    const account = await KhataAccount.findOne({ _id: req.params.id, tenantId: req.user.tenantId });
+    if (!account) return res.status(404).json({ error: 'Khata account not found' });
+
+    await KhataTransaction.deleteMany({ accountId: account._id });
+    await account.deleteOne();
+
+    res.json({ message: 'Account deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
