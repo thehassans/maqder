@@ -17,9 +17,6 @@ export default function WeightScale() {
   const [quantity, setQuantity] = useState(1);
   
   const [barcodeValue, setBarcodeValue] = useState(null);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newProduct, setNewProduct] = useState({ name: '', retailPrice: '', unit: 'KG' });
-  const [isAdding, setIsAdding] = useState(false);
   const printRef = useRef(null);
 
   const loadProducts = async () => {
@@ -185,16 +182,8 @@ export default function WeightScale() {
               <Scale className="w-7 h-7 text-emerald-500" />
               Smart Scale & Labelling
             </h1>
-            <p className="text-sm text-gray-500 mt-1 font-medium">Fruits, Vegetables, and Weighed Products</p>
           </div>
         </div>
-        <button 
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl font-bold transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          Add Fruit / Vegetable
-        </button>
       </div>
 
       <div className="flex-1 flex justify-center items-start pt-12 px-4 overflow-y-auto pb-20">
@@ -228,12 +217,18 @@ export default function WeightScale() {
             {selectedProduct && (
               <div className="bg-gray-900 rounded-[2.5rem] p-10 shadow-2xl relative overflow-hidden border-4 border-gray-800">
                 <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
-                <div className="flex justify-between items-center mb-8">
-                  <span className="text-emerald-400 font-mono font-bold tracking-widest text-sm flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    SCALE ACTIVE
-                  </span>
-                  <div className="bg-gray-800 text-gray-300 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase">
+                <div className="flex justify-between items-center mb-8 bg-gray-800/80 p-3 rounded-2xl border border-gray-700">
+                  <div className="flex items-center gap-3">
+                    <div className="relative flex items-center justify-center">
+                      <span className="absolute inline-flex w-3 h-3 rounded-full bg-emerald-400 opacity-75 animate-ping"></span>
+                      <span className="relative inline-flex w-3 h-3 rounded-full bg-emerald-500"></span>
+                    </div>
+                    <div>
+                      <span className="text-emerald-400 font-bold text-sm tracking-wide block">CAS PR-100 CONNECTED</span>
+                      <span className="text-gray-400 text-xs font-mono">PORT: COM3 | BAUD: 9600</span>
+                    </div>
+                  </div>
+                  <div className="bg-gray-900 text-gray-300 px-3 py-1 rounded-xl text-xs font-bold tracking-wider uppercase border border-gray-700">
                     UNIT: {selectedProduct.unit || 'KG'}
                   </div>
                 </div>
@@ -363,86 +358,6 @@ export default function WeightScale() {
           </div>
         </div>
       </div>
-
-      {/* Add Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-gray-900">Add Fruit or Vegetable</h3>
-              <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Product Name</label>
-                <input 
-                  type="text" 
-                  value={newProduct.name}
-                  onChange={e => setNewProduct({...newProduct, name: e.target.value})}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
-                  placeholder="e.g. Fresh Red Apples"
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Unit Price (SAR)</label>
-                  <input 
-                    type="number" 
-                    value={newProduct.retailPrice}
-                    onChange={e => setNewProduct({...newProduct, retailPrice: e.target.value})}
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
-                    placeholder="0.00"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">Unit Type</label>
-                  <select 
-                    value={newProduct.unit}
-                    onChange={e => setNewProduct({...newProduct, unit: e.target.value})}
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none appearance-none"
-                  >
-                    <option value="KG">Per KG</option>
-                    <option value="PCS">Per Piece</option>
-                    <option value="DZ">Per Dozen</option>
-                  </select>
-                </div>
-              </div>
-
-              <button
-                disabled={isAdding || !newProduct.name || !newProduct.retailPrice}
-                onClick={async () => {
-                  setIsAdding(true);
-                  try {
-                    const primaryBarcode = String(Math.floor(Math.random() * 90000) + 10000);
-                    await api.post('/bakala-products', {
-                      ...newProduct,
-                      retailPrice: Number(newProduct.retailPrice),
-                      category: 'Fruits & Vegetables',
-                      primaryBarcode,
-                      stockQuantity: 999
-                    });
-                    toast.success('Product added successfully!');
-                    await loadProducts();
-                    setShowAddModal(false);
-                    setNewProduct({ name: '', retailPrice: '', unit: 'KG' });
-                  } catch (e) {
-                    toast.error('Failed to add product');
-                  } finally {
-                    setIsAdding(false);
-                  }
-                }}
-                className="w-full mt-6 py-4 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors disabled:opacity-50"
-              >
-                {isAdding ? 'Adding...' : 'Save Product'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

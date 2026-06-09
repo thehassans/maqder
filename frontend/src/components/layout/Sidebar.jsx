@@ -50,7 +50,8 @@ import {
   MonitorPlay,
   Database,
   Monitor,
-  Scale
+  Scale,
+  Leaf
 } from 'lucide-react'
 import { toggleSidebarCollapse, setMobileMenuOpen } from '../../store/slices/uiSlice'
 import { useTranslation } from '../../lib/translations'
@@ -193,6 +194,7 @@ export default function Sidebar() {
       items: [
         { path: '/app/dashboard/bakala/pos', icon: ShoppingCart, label: language === 'ar' ? 'نقطة البيع' : 'POS Checkout' },
         { path: '/app/dashboard/bakala/products', icon: Package, label: language === 'ar' ? 'المنتجات' : 'Products' },
+        { path: '/app/dashboard/bakala/produce', icon: Leaf, label: language === 'ar' ? 'الفواكه والخضروات' : 'Fruits & Vegetables', requireAddon: 'hasWeightScaleAddon' },
         { path: '/app/dashboard/bakala/weight-scale', icon: Scale, label: language === 'ar' ? 'الميزان' : 'Weight Scale', requireAddon: 'hasWeightScaleAddon' },
         { path: '/app/dashboard/bakala/dashboard', icon: ShieldCheck, label: language === 'ar' ? 'لوحة التحكم' : 'Administration' },
       ]
