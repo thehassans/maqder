@@ -91,6 +91,8 @@ import BakalaDashboard from './pages/bakala/BakalaDashboard'
 import BakalaProducts from './pages/bakala/BakalaProducts'
 import BakalaProduce from './pages/bakala/BakalaProduce'
 import WeightScale from './pages/bakala/WeightScale'
+import BakalaShiftManagement from './pages/bakala/BakalaShiftManagement'
+import BakalaReturns from './pages/bakala/BakalaReturns'
 import IoT from './pages/IoT'
 import IoTDeviceForm from './pages/IoTDeviceForm'
 import Khata from './pages/finance/Khata'
@@ -429,6 +431,8 @@ function App() {
 
         {/* Bakala Routes */}
         <Route path="bakala/pos" element={<BusinessTypeRoute allowedTypes={['bakala']}><BakalaPOS /></BusinessTypeRoute>} />
+        <Route path="bakala/shift" element={<BusinessTypeRoute allowedTypes={['bakala']}><BakalaShiftManagement /></BusinessTypeRoute>} />
+        <Route path="bakala/returns" element={<BusinessTypeRoute allowedTypes={['bakala']}><BakalaReturns /></BusinessTypeRoute>} />
         <Route path="bakala/dashboard" element={<BusinessTypeRoute allowedTypes={['bakala']}><BakalaDashboard /></BusinessTypeRoute>} />
         <Route path="bakala/products/*" element={<BusinessTypeRoute allowedTypes={['bakala']}><BakalaProducts /></BusinessTypeRoute>} />
         <Route path="bakala/produce" element={<BusinessTypeRoute allowedTypes={['bakala']}><BakalaProduce /></BusinessTypeRoute>} />

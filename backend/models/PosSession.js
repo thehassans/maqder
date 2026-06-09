@@ -13,6 +13,10 @@ const posSessionSchema = new mongoose.Schema({
   }],
   expectedClosingBalance: { type: Number }, // System calculated based on sales
   actualClosingBalance: { type: Number }, // Blind count entered by cashier
+  cashDiscrepancy: { type: Number }, // actual - expected
+  totalSales: { type: Number, default: 0 },
+  totalCash: { type: Number, default: 0 },
+  totalCard: { type: Number, default: 0 },
   status: { type: String, enum: ['open', 'closed'], default: 'open' },
   notes: { type: String }
 }, { timestamps: true });

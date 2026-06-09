@@ -9,6 +9,11 @@ const bakalaProductSchema = new mongoose.Schema({
   primaryBarcode: { type: String, required: true },
   expiryDate: { type: Date },
   batchNumber: { type: String },
+  batches: [{
+    batchNumber: { type: String },
+    expiryDate: { type: Date },
+    quantity: { type: Number, default: 0 }
+  }],
   category: { type: String },
   brand: { type: String },
   unit: { type: String, default: 'PCS' },
@@ -17,6 +22,13 @@ const bakalaProductSchema = new mongoose.Schema({
   costPrice: { type: Number, default: 0 },
   retailPrice: { type: Number, required: true, default: 0 },
   taxRate: { type: Number, default: 15 },
+  mixAndMatchPromo: {
+    isActive: { type: Boolean, default: false },
+    buyQty: { type: Number },
+    getQtyFree: { type: Number },
+    discountPercent: { type: Number },
+    endDate: { type: Date }
+  },
   isActive: { type: Boolean, default: true },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: true });

@@ -158,7 +158,11 @@ const invoiceSchema = new mongoose.Schema({
   exchangeRate: { type: Number, default: 1 },
   
   // Payment
-  paymentMethod: { type: String, enum: ['cash', 'card', 'credit', 'bank_transfer', 'cheque', 'other'], default: 'cash' },
+  paymentMethod: { type: String, enum: ['cash', 'card', 'credit', 'bank_transfer', 'cheque', 'other', 'split'], default: 'cash' },
+  payments: [{
+    method: { type: String, enum: ['cash', 'card', 'bank_transfer', 'other'] },
+    amount: { type: Number }
+  }],
   paymentTerms: { type: String },
   paymentStatus: { type: String, enum: ['pending', 'partial', 'paid', 'overdue', 'cancelled'], default: 'pending' },
   paidAmount: { type: Number, default: 0 },

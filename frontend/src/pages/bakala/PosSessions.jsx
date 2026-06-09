@@ -14,7 +14,7 @@ export default function PosSessions({ onSessionVerified }) {
 
   const checkCurrentSession = async () => {
     try {
-      const res = await api.get('/pos-sessions/current');
+      const res = await api.get('/bakala/shift/current');
       if (res.data.session) {
         setSession(res.data.session);
         if (onSessionVerified) onSessionVerified(res.data.session);
@@ -29,7 +29,7 @@ export default function PosSessions({ onSessionVerified }) {
   const handleOpenSession = async (e) => {
     e.preventDefault();
     try {
-      const res = await api.post('/pos-sessions/open', {
+      const res = await api.post('/bakala/shift/open', {
         openingBalance: Number(openingBalance)
       });
       setSession(res.data);

@@ -1,15 +1,15 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 
 export const useCartEngine = () => {
-  const [cartItems, setCartItems] = useState([]);
+  const [rawCartItems, setRawCartItems] = useState([]);
   
   const addItem = useCallback((product) => {
-    setCartItems(prev => {
+    setRawCartItems(prev => {
       const existing = prev.find(item => item.productId === product._id || item.primaryBarcode === product.primaryBarcode);
       if (existing) {
         return prev.map(item => 
           item.productId === product._id || item.primaryBarcode === product.primaryBarcode
-            ? { ...item, quantity: item.quantity + 1, lineTotal: (item.quantity + 1) * item.unitPrice }
+            ? { ...item, quantity: item.quantity + 1 }
             : item
         );
       }
@@ -21,43 +21,98 @@ export const useCartEngine = () => {
         quantity: 1,
         unitPrice: product.retailPrice,
         taxRate: product.taxRate || 15,
-        lineTotal: product.retailPrice
+        promo: product.mixAndMatchPromo
       }];
     });
   }, []);
 
   const updateQuantity = useCallback((index, quantity) => {
     if (quantity <= 0) {
-      setCartItems(prev => prev.filter((_, i) => i !== index));
+      setRawCartItems(prev => prev.filter((_, i) => i !== index));
       return;
     }
-    setCartItems(prev => prev.map((item, i) => 
-      i === index 
-        ? { ...item, quantity, lineTotal: quantity * item.unitPrice }
-        : item
+    setRawCartItems(prev => prev.map((item, i) => 
+      i === index ? { ...item, quantity } : item
     ));
   }, []);
 
   const removeItem = useCallback((index) => {
-    setCartItems(prev => prev.filter((_, i) => i !== index));
+    setRawCartItems(prev => prev.filter((_, i) => i !== index));
   }, []);
 
   const clearCart = useCallback(() => {
-    setCartItems([]);
+    setRawCartItems([]);
   }, []);
 
-  const totals = cartItems.reduce((acc, item) => {
-    const totalWithTax = item.lineTotal; // retailPrice is tax-inclusive usually in Bakala, but let's assume standard logic
-    // For ZATCA Phase 2, B2C prices are often displayed inclusive of tax.
-    const taxAmount = (totalWithTax * item.taxRate) / (100 + item.taxRate);
-    const taxableAmount = totalWithTax - taxAmount;
-    
-    return {
-      subtotal: acc.subtotal + taxableAmount,
-      taxAmount: acc.taxAmount + taxAmount,
-      grandTotal: acc.grandTotal + totalWithTax
+  // Compute final items with promo logic
+  const cartItems = useMemo(() => {
+    return rawCartItems.map(item => {
+      let finalQuantityToCharge = item.quantity;
+      let discountAmount = 0;
+
+      // Mix & Match Promo: Buy X Get Y Free
+      if (item.promo?.isActive && item.promo.buyQty > 0 && item.promo.getQtyFree > 0) {
+        const bundleSize = item.promo.buyQty + item.promo.getQtyFree;
+        const bundles = Math.floor(item.quantity / bundleSize);
+        const freeItems = bundles * item.promo.getQtyFree;
+        finalQuantityToCharge = item.quantity - freeItems;
+        discountAmount = freeItems * item.unitPrice;
+      }
+
+      const originalTotal = item.quantity * item.unitPrice;
+      const lineTotal = finalQuantityToCharge * item.unitPrice;
+
+      return {
+        ...item,
+        originalTotal,
+        lineTotal,
+        discountAmount,
+        hasPromo: discountAmount > 0
+      };
+    });
+  }, [rawCartItems]);
+
+  const totals = useMemo(() => {
+    return cartItems.reduce((acc, item) => {
+      const totalWithTax = item.lineTotal;
+      const taxAmount = (totalWithTax * item.taxRate) / (100 + item.taxRate);
+      const taxableAmount = totalWithTax - taxAmount;
+      
+      return {
+        subtotal: acc.subtotal + taxableAmount,
+        taxAmount: acc.taxAmount + taxAmount,
+        grandTotal: acc.grandTotal + totalWithTax
+      };
+    }, { subtotal: 0, taxAmount: 0, grandTotal: 0 });
+  }, [cartItems]);
+
+  // Hold Bill functionality
+  const holdBill = useCallback((customerName = 'Walk-in') => {
+    if (rawCartItems.length === 0) return;
+    const holdData = {
+      id: Date.now().toString(),
+      time: new Date().toISOString(),
+      customerName,
+      items: rawCartItems
     };
-  }, { subtotal: 0, taxAmount: 0, grandTotal: 0 });
+    const existing = JSON.parse(localStorage.getItem('maqder_held_bills') || '[]');
+    localStorage.setItem('maqder_held_bills', JSON.stringify([...existing, holdData]));
+    setRawCartItems([]);
+  }, [rawCartItems]);
+
+  const recallBill = useCallback((heldBillId) => {
+    const existing = JSON.parse(localStorage.getItem('maqder_held_bills') || '[]');
+    const bill = existing.find(b => b.id === heldBillId);
+    if (bill) {
+      setRawCartItems(bill.items);
+      const remaining = existing.filter(b => b.id !== heldBillId);
+      localStorage.setItem('maqder_held_bills', JSON.stringify(remaining));
+    }
+  }, []);
+
+  const getHeldBills = useCallback(() => {
+    return JSON.parse(localStorage.getItem('maqder_held_bills') || '[]');
+  }, []);
 
   return {
     cartItems,
@@ -65,6 +120,9 @@ export const useCartEngine = () => {
     updateQuantity,
     removeItem,
     clearCart,
-    totals
+    totals,
+    holdBill,
+    recallBill,
+    getHeldBills
   };
 };

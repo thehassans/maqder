@@ -5,6 +5,7 @@ import Tenant from '../models/Tenant.js';
 import ZatcaService from '../utils/zatca/ZatcaService.js';
 import mongoose from 'mongoose';
 import BakalaProduct from '../models/BakalaProduct.js';
+import PosSession from '../models/PosSession.js';
 
 const router = express.Router();
 
@@ -59,7 +60,8 @@ router.post('/sync', protect, async (req, res) => {
         // Prepare Invoice document
         const cleanedInvoice = {
           ...offlineInvoice,
-          paymentMethod: ['mada', 'apple_pay'].includes(offlineInvoice.paymentMethod) ? 'card' : (offlineInvoice.paymentMethod || 'cash'),
+          paymentMethod: offlineInvoice.paymentMethod === 'split' ? 'split' : (['mada', 'apple_pay'].includes(offlineInvoice.paymentMethod) ? 'card' : (offlineInvoice.paymentMethod || 'cash')),
+          payments: offlineInvoice.payments || [],
           lineItems: offlineInvoice.lineItems?.map(line => {
             const l = { ...line };
             if (l.productId && !mongoose.Types.ObjectId.isValid(l.productId)) {
@@ -114,6 +116,35 @@ router.post('/sync', protect, async (req, res) => {
         }
 
         await newInvoice.save();
+
+        // FIFO Inventory Deduction
+        for (const line of newInvoice.lineItems) {
+          if (line.productId) {
+            const bp = await BakalaProduct.findOne({ tenantId, _id: line.productId });
+            if (bp) {
+              let remainingQtyToDeduct = line.quantity;
+              
+              // Sort batches by expiryDate ascending (FIFO)
+              if (bp.batches && bp.batches.length > 0) {
+                bp.batches.sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
+                
+                for (let i = 0; i < bp.batches.length && remainingQtyToDeduct > 0; i++) {
+                  const batch = bp.batches[i];
+                  if (batch.quantity > 0) {
+                    const deduct = Math.min(batch.quantity, remainingQtyToDeduct);
+                    batch.quantity -= deduct;
+                    remainingQtyToDeduct -= deduct;
+                  }
+                }
+              }
+              
+              // Deduct from overall stock
+              bp.stockQuantity = (bp.stockQuantity || 0) - line.quantity;
+              await bp.save();
+            }
+          }
+        }
+
         syncedInvoices.push({ offlineId: offlineInvoice.offlineId, uuid: newInvoice.zatca?.uuid || newInvoice._id });
         
       } catch (err) {
@@ -138,3 +169,88 @@ router.post('/sync', protect, async (req, res) => {
 });
 
 export default router;
+
+// --- POS Session / Shift Management ---
+
+router.get('/shift/current', protect, async (req, res) => {
+  try {
+    const session = await PosSession.findOne({ 
+      tenantId: req.user.tenantId, 
+      userId: req.user._id, 
+      status: 'open' 
+    });
+    res.json({ success: true, session });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/shift/open', protect, async (req, res) => {
+  try {
+    const existing = await PosSession.findOne({ 
+      tenantId: req.user.tenantId, 
+      userId: req.user._id, 
+      status: 'open' 
+    });
+    if (existing) return res.status(400).json({ success: false, message: 'Shift already open' });
+
+    const session = new PosSession({
+      tenantId: req.user.tenantId,
+      userId: req.user._id,
+      openingBalance: req.body.openingBalance || 0
+    });
+    await session.save();
+    res.json({ success: true, session });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/shift/drop', protect, async (req, res) => {
+  try {
+    const session = await PosSession.findOne({ 
+      tenantId: req.user.tenantId, 
+      userId: req.user._id, 
+      status: 'open' 
+    });
+    if (!session) return res.status(400).json({ success: false, message: 'No open shift' });
+
+    session.cashDrops.push({
+      amount: req.body.amount,
+      reason: req.body.reason
+    });
+    await session.save();
+    res.json({ success: true, session });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/shift/close', protect, async (req, res) => {
+  try {
+    const session = await PosSession.findOne({ 
+      tenantId: req.user.tenantId, 
+      userId: req.user._id, 
+      status: 'open' 
+    });
+    if (!session) return res.status(400).json({ success: false, message: 'No open shift' });
+
+    session.closedAt = new Date();
+    session.actualClosingBalance = req.body.actualClosingBalance || 0;
+    session.totalSales = req.body.totalSales || 0;
+    session.totalCash = req.body.totalCash || 0;
+    session.totalCard = req.body.totalCard || 0;
+    
+    // Calculate expected (opening float + total cash - cash drops)
+    const dropsTotal = session.cashDrops.reduce((acc, d) => acc + d.amount, 0);
+    session.expectedClosingBalance = session.openingBalance + session.totalCash - dropsTotal;
+    session.cashDiscrepancy = session.actualClosingBalance - session.expectedClosingBalance;
+    
+    session.status = 'closed';
+    await session.save();
+    
+    res.json({ success: true, session });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});

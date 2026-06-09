@@ -80,6 +80,19 @@ export default function Sidebar() {
       : 'bg-white dark:bg-dark-800'
 
   const navSections = [
+    {
+      title: language === 'ar' ? 'البقالة' : 'Bakala',
+      businessTypes: ['bakala'],
+      items: [
+        { path: '/app/dashboard/bakala/pos', icon: ShoppingCart, label: language === 'ar' ? 'نقطة البيع' : 'POS Checkout' },
+        { path: '/app/dashboard/bakala/products', icon: Package, label: language === 'ar' ? 'المنتجات' : 'Products' },
+        { path: '/app/dashboard/bakala/produce', icon: Leaf, label: language === 'ar' ? 'الفواكه والخضروات' : 'Fruits & Vegetables', requireAddon: 'hasWeightScaleAddon' },
+        { path: '/app/dashboard/bakala/weight-scale', icon: Scale, label: language === 'ar' ? 'الميزان' : 'Weight Scale', requireAddon: 'hasWeightScaleAddon' },
+        { path: '/app/dashboard/bakala/shift', icon: Wallet, label: language === 'ar' ? 'إدارة الوردية' : 'Shift Management' },
+        { path: '/app/dashboard/bakala/returns', icon: FileText, label: language === 'ar' ? 'المرتجعات' : 'Returns' },
+        { path: '/app/dashboard/bakala/dashboard', icon: ShieldCheck, label: language === 'ar' ? 'لوحة التحكم' : 'Administration' },
+      ]
+    },
       {
         title: language === 'ar' ? 'الخياطة' : 'Tailoring',
         businessTypes: ['khayyat'],
@@ -188,17 +201,7 @@ export default function Sidebar() {
         { path: '/app/dashboard/tasks', icon: ClipboardList, label: language === 'ar' ? 'المهام' : 'Tasks' },
       ]
     },
-    {
-      title: language === 'ar' ? 'البقالة' : 'Bakala',
-      businessTypes: ['bakala'],
-      items: [
-        { path: '/app/dashboard/bakala/pos', icon: ShoppingCart, label: language === 'ar' ? 'نقطة البيع' : 'POS Checkout' },
-        { path: '/app/dashboard/bakala/products', icon: Package, label: language === 'ar' ? 'المنتجات' : 'Products' },
-        { path: '/app/dashboard/bakala/produce', icon: Leaf, label: language === 'ar' ? 'الفواكه والخضروات' : 'Fruits & Vegetables', requireAddon: 'hasWeightScaleAddon' },
-        { path: '/app/dashboard/bakala/weight-scale', icon: Scale, label: language === 'ar' ? 'الميزان' : 'Weight Scale', requireAddon: 'hasWeightScaleAddon' },
-        { path: '/app/dashboard/bakala/dashboard', icon: ShieldCheck, label: language === 'ar' ? 'لوحة التحكم' : 'Administration' },
-      ]
-    },
+
     {
       title: language === 'ar' ? 'السفر' : 'Travel',
       businessTypes: ['travel_agency'],

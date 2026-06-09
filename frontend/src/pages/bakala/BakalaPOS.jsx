@@ -15,13 +15,18 @@ export default function BakalaPOS() {
   const { tenant } = useSelector(state => state.auth);
   const scalePrefix = (tenant?.settings?.hardwareSettings?.scaleBarcodePrefix || '21').substring(0, 2).padEnd(2, '0');
   
-  const { cartItems, addItem, updateQuantity, removeItem, clearCart, totals } = useCartEngine();
+  const { cartItems, addItem, updateQuantity, removeItem, clearCart, totals, holdBill, recallBill, getHeldBills } = useCartEngine();
   const { isOnline, pendingCount, syncOfflineData } = useBakalaSync();
   const barcodeInputRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [allProducts, setAllProducts] = useState([]);
   const [fastItems, setFastItems] = useState([]);
   const [activeSession, setActiveSession] = useState(null);
+  const [showSplitModal, setShowSplitModal] = useState(false);
+  const [splitCash, setSplitCash] = useState('');
+  const [splitCard, setSplitCard] = useState('');
+  const [scannerConnected, setScannerConnected] = useState(false);
+  const heldBills = getHeldBills();
 
   // Focus search input automatically if typing letters/numbers outside of an input
   useEffect(() => {
@@ -45,7 +50,7 @@ export default function BakalaPOS() {
       const { getAllProducts } = await import('../../lib/bakalaDb');
       const products = await getAllProducts();
       setAllProducts(products);
-      setFastItems(products.slice(0, 24)); // Load first 24 as default
+      setFastItems([]); // Empty by default per user request
     };
     loadProducts();
   }, [syncOfflineData]);
@@ -53,7 +58,7 @@ export default function BakalaPOS() {
   // Handle Search Filtering
   useEffect(() => {
     if (!searchTerm.trim()) {
-      setFastItems(allProducts.slice(0, 24));
+      setFastItems([]);
       return;
     }
     const lower = searchTerm.toLowerCase();
@@ -123,7 +128,7 @@ export default function BakalaPOS() {
   };
 
   // Checkout handling
-  const handleCheckout = async (paymentMethod) => {
+  const handleCheckout = async (paymentMethod, payments = null) => {
     if (cartItems.length === 0) return;
     
     const invoice = {
@@ -145,6 +150,7 @@ export default function BakalaPOS() {
       totalTax: totals.taxAmount,
       grandTotal: totals.grandTotal,
       paymentMethod,
+      payments,
       issueDate: new Date().toISOString()
     };
 
@@ -176,7 +182,7 @@ export default function BakalaPOS() {
     if (actualClosing === null) return;
 
     try {
-      await api.post(`/pos-sessions/${activeSession._id}/close`, {
+      await api.post(`/bakala/shift/close`, {
         actualClosingBalance: Number(actualClosing)
       });
       toast.success("Till closed successfully");
@@ -263,8 +269,40 @@ export default function BakalaPOS() {
       {/* RIGHT PANEL: Actions & Fast Menu (40%) */}
       <div className="w-[40%] flex flex-col bg-[#F8F9FA]">
         
-        {/* Search Bar */}
+        {/* Search Bar & Scanner Status */}
         <div className="px-6 pt-6 pb-2">
+          <div className="flex justify-between items-center mb-3">
+            <h2 className="font-bold text-gray-700">Search Products</h2>
+            {scannerConnected ? (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-full text-xs font-bold border border-emerald-100">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                Scanner Connected
+              </div>
+            ) : (
+              <button 
+                onClick={async () => {
+                  try {
+                    if ('serial' in navigator) {
+                      await navigator.serial.requestPort();
+                      setScannerConnected(true);
+                      toast.success('Scanner Connected via Serial');
+                    } else {
+                      // Fallback to keyboard wedge logic
+                      setScannerConnected(true);
+                      barcodeInputRef.current?.focus();
+                      toast.success('Scanner Ready (Keyboard Mode)');
+                    }
+                  } catch (err) {
+                    toast.error('Failed to connect scanner');
+                  }
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 rounded-full text-xs font-bold transition-colors"
+              >
+                <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+                Connect Scanner
+              </button>
+            )}
+          </div>
           <form onSubmit={handleScannerSubmit} className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input 
@@ -283,7 +321,7 @@ export default function BakalaPOS() {
         <div className="flex-1 px-6 pb-6 pt-2 overflow-y-auto">
           {fastItems.length === 0 ? (
             <div className="text-gray-400 text-sm text-center py-10 rounded-2xl bg-white border border-gray-100">
-              No products found. Add products to Bakala or click Online to sync.
+              {searchTerm ? 'No products found matching your search.' : 'Type or scan a barcode to search for products.'}
             </div>
           ) : (
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
@@ -326,25 +364,137 @@ export default function BakalaPOS() {
           </div>
 
           {/* Action Drawer */}
-          <div className="grid grid-cols-2 gap-3">
-            <button onClick={() => handleCheckout('cash')} className="flex flex-col items-center justify-center gap-1 p-4 bg-emerald-500 text-white hover:bg-emerald-600 rounded-2xl font-bold transition-colors active:scale-95 shadow-sm shadow-emerald-200">
-              <Wallet className="w-6 h-6 mb-1" /> 
-              <span>Pay Cash</span>
-              <span className="text-[10px] font-normal opacity-75">[F1]</span>
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <button 
+              onClick={() => holdBill('Walk-in')}
+              disabled={cartItems.length === 0}
+              className="flex items-center justify-center gap-2 p-3 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded-xl font-bold transition-colors disabled:opacity-50"
+            >
+              Hold Bill
+            </button>
+            <button 
+              onClick={() => {
+                const bill = heldBills[0];
+                if(bill) recallBill(bill.id);
+              }}
+              disabled={heldBills.length === 0}
+              className="flex items-center justify-center gap-2 p-3 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-xl font-bold transition-colors disabled:opacity-50 relative"
+            >
+              Recall Bill
+              {heldBills.length > 0 && (
+                <span className="absolute -top-2 -right-2 w-6 h-6 bg-rose-500 text-white rounded-full text-xs flex items-center justify-center shadow-sm">
+                  {heldBills.length}
+                </span>
+              )}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            <button onClick={() => handleCheckout('cash')} className="flex flex-col items-center justify-center gap-1 p-3 bg-emerald-500 text-white hover:bg-emerald-600 rounded-2xl font-bold transition-colors active:scale-95 shadow-sm shadow-emerald-200">
+              <Wallet className="w-5 h-5" /> 
+              <span className="text-xs">Cash</span>
             </button>
             <button 
               onClick={() => handleCheckout('card')}
               disabled={cartItems.length === 0}
-              className="flex flex-col items-center justify-center gap-1 p-4 bg-[#0a192f] text-white hover:bg-[#112240] rounded-2xl font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              className="flex flex-col items-center justify-center gap-1 p-3 bg-[#0a192f] text-white hover:bg-[#112240] rounded-2xl font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
             >  
-              <CreditCard className="w-6 h-6 mb-1" /> 
-              <span>Mada / Visa</span>
-              <span className="text-[10px] font-normal opacity-75">[F2]</span>
+              <CreditCard className="w-5 h-5" /> 
+              <span className="text-xs">Mada/Visa</span>
+            </button>
+            <button 
+              onClick={() => setShowSplitModal(true)}
+              disabled={cartItems.length === 0}
+              className="flex flex-col items-center justify-center gap-1 p-3 bg-purple-500 text-white hover:bg-purple-600 rounded-2xl font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shadow-purple-200"
+            >  
+              <RefreshCw className="w-5 h-5" /> 
+              <span className="text-xs">Split Pay</span>
             </button>
           </div>
         </div>
         
       </div>
+
+      {/* Split Payment Modal */}
+      {showSplitModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <RefreshCw className="w-5 h-5 text-purple-500" />
+                Split Payment
+              </h2>
+              <button onClick={() => setShowSplitModal(false)} className="p-2 text-gray-400 hover:text-gray-900 bg-white rounded-full shadow-sm hover:shadow transition-all">
+                &times;
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              <div className="text-center">
+                <p className="text-sm text-gray-500 font-medium mb-1">Total to Pay</p>
+                <p className="text-4xl font-black text-emerald-600 tracking-tight">SAR {totals.grandTotal.toFixed(2)}</p>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Cash Amount</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-gray-400">SAR</span>
+                    <input 
+                      type="number" 
+                      value={splitCash}
+                      onChange={(e) => {
+                        setSplitCash(e.target.value);
+                        const remainder = totals.grandTotal - Number(e.target.value);
+                        setSplitCard(remainder > 0 ? remainder.toFixed(2) : '0');
+                      }}
+                      className="w-full pl-14 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-xl font-bold"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Card (Mada/Visa) Amount</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-gray-400">SAR</span>
+                    <input 
+                      type="number" 
+                      value={splitCard}
+                      onChange={(e) => {
+                        setSplitCard(e.target.value);
+                        const remainder = totals.grandTotal - Number(e.target.value);
+                        setSplitCash(remainder > 0 ? remainder.toFixed(2) : '0');
+                      }}
+                      className="w-full pl-14 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-xl font-bold"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <button 
+                  onClick={() => {
+                    const cash = Number(splitCash);
+                    const card = Number(splitCard);
+                    if (Math.abs(cash + card - totals.grandTotal) > 0.01) {
+                      toast.error('Split amounts must equal total');
+                      return;
+                    }
+                    setShowSplitModal(false);
+                    handleCheckout('split', [
+                      { method: 'cash', amount: cash },
+                      { method: 'card', amount: card }
+                    ]);
+                  }}
+                  className="w-full py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-lg transition-colors shadow-lg shadow-purple-200 active:scale-95"
+                >
+                  Confirm Split Payment
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
