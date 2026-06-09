@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useCartEngine } from '../../hooks/useCartEngine';
 import { useBakalaSync } from '../../hooks/useBakalaSync';
 import { getProductByBarcode, saveOfflineInvoice } from '../../lib/bakalaDb';
-import { ShoppingCart, CreditCard, Wallet, Send, RefreshCw, Server, WifiOff, ArrowLeft, Search, Plus, Minus, Trash2, LogOut } from 'lucide-react';
+import { ShoppingCart, CreditCard, Wallet, Send, RefreshCw, Server, WifiOff, ArrowLeft, Search, Plus, Minus, Trash2, LogOut, Smartphone, Keyboard, Users, CheckCircle2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -27,6 +27,13 @@ export default function BakalaPOS() {
   const [splitCard, setSplitCard] = useState('');
   const [scannerConnected, setScannerConnected] = useState(false);
   const [showRecallModal, setShowRecallModal] = useState(false);
+  
+  // Khata Modal
+  const [showKhataModal, setShowKhataModal] = useState(false);
+  const [khataAccounts, setKhataAccounts] = useState([]);
+  const [loadingKhata, setLoadingKhata] = useState(false);
+  const [khataSearch, setKhataSearch] = useState('');
+
   const heldBills = getHeldBills();
 
   const getBillTotal = (bill) => {
@@ -79,6 +86,30 @@ export default function BakalaPOS() {
     );
     setFastItems(filtered.slice(0, 24));
   }, [searchTerm, allProducts]);
+
+  const handleOpenKhata = async () => {
+    if (cartItems.length === 0) return;
+    setShowKhataModal(true);
+    setLoadingKhata(true);
+    try {
+      const res = await api.get('/khata');
+      setKhataAccounts(res.data || []);
+    } catch (err) {
+      toast.error('Failed to fetch Khata accounts');
+    } finally {
+      setLoadingKhata(false);
+    }
+  };
+
+  const filteredKhataAccounts = useMemo(() => {
+    if (!khataSearch) return khataAccounts;
+    const lower = khataSearch.toLowerCase();
+    return khataAccounts.filter(a => 
+      a.customerId?.name?.toLowerCase().includes(lower) || 
+      a.customerId?.phone?.includes(lower) ||
+      a.customerId?.mobile?.includes(lower)
+    );
+  }, [khataSearch, khataAccounts]);
 
   // Handle Barcode Scans via Enter key in search
   const handleScannerSubmit = async (e) => {
@@ -138,8 +169,22 @@ export default function BakalaPOS() {
   };
 
   // Checkout handling
-  const handleCheckout = async (paymentMethod, payments = null) => {
+  const handleCheckout = async (paymentMethod, payments = null, khataAccountId = null) => {
     if (cartItems.length === 0) return;
+
+    if (paymentMethod === 'khata' && khataAccountId) {
+      try {
+        await api.post(`/khata/${khataAccountId}/transactions`, {
+          type: 'credit',
+          amount: totals.grandTotal,
+          notes: 'POS Checkout (Bakala)'
+        });
+        toast.success('Recorded in Khata');
+      } catch (error) {
+        toast.error('Failed to record Khata transaction');
+        return; // Stop checkout if Khata transaction fails
+      }
+    }
     
     const invoice = {
       offlineId: uuidv4(),
@@ -161,6 +206,7 @@ export default function BakalaPOS() {
       grandTotal: totals.grandTotal,
       paymentMethod,
       payments,
+      khataAccountId,
       issueDate: new Date().toISOString()
     };
 
@@ -176,8 +222,8 @@ export default function BakalaPOS() {
       switch(e.key) {
         case 'F1': e.preventDefault(); handleCheckout('cash'); break;
         case 'F2': e.preventDefault(); handleCheckout('card'); break;
-        case 'F3': e.preventDefault(); handleCheckout('card'); break;
-        case 'F4': e.preventDefault(); /* Open Daftar Modal */ break;
+        case 'F3': e.preventDefault(); setShowSplitModal(true); break;
+        case 'F4': e.preventDefault(); handleOpenKhata(); break;
         case 'Escape': e.preventDefault(); clearCart(); break;
         default: break;
       }
@@ -403,7 +449,7 @@ export default function BakalaPOS() {
             </button>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
             <button onClick={() => handleCheckout('cash')} className="flex flex-col items-center justify-center gap-1 p-3 bg-emerald-500 text-white hover:bg-emerald-600 rounded-2xl font-bold transition-colors active:scale-95 shadow-sm shadow-emerald-200">
               <Wallet className="w-5 h-5" /> 
               <span className="text-xs">Cash</span>
@@ -423,6 +469,14 @@ export default function BakalaPOS() {
             >  
               <RefreshCw className="w-5 h-5" /> 
               <span className="text-xs">Split Pay</span>
+            </button>
+            <button 
+              onClick={handleOpenKhata}
+              disabled={cartItems.length === 0}
+              className="flex flex-col items-center justify-center gap-1 p-3 bg-amber-500 text-white hover:bg-amber-600 rounded-2xl font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shadow-amber-200"
+            >  
+              <Users className="w-5 h-5" /> 
+              <span className="text-xs">Khata</span>
             </button>
           </div>
         </div>
@@ -511,6 +565,10 @@ export default function BakalaPOS() {
       )}
 
       {/* Recall Bill Modal */}
+        </div>
+      )}
+
+      {/* Recall Bill Modal */}
       {showRecallModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
@@ -543,6 +601,72 @@ export default function BakalaPOS() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Khata Checkout Modal */}
+      {showKhataModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <Users className="w-5 h-5 text-amber-500" />
+                Select Khata Customer
+              </h2>
+              <button onClick={() => setShowKhataModal(false)} className="p-2 text-gray-400 hover:text-gray-900 bg-white rounded-full shadow-sm hover:shadow transition-all">
+                &times;
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="mb-4 relative">
+                <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input 
+                  type="text" 
+                  placeholder="Search by name or phone..."
+                  value={khataSearch}
+                  onChange={(e) => setKhataSearch(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-amber-500 outline-none transition-all font-medium"
+                  autoFocus
+                />
+              </div>
+
+              <div className="max-h-[50vh] overflow-y-auto space-y-2">
+                {loadingKhata ? (
+                  <div className="flex justify-center py-10"><RefreshCw className="w-6 h-6 animate-spin text-amber-500" /></div>
+                ) : filteredKhataAccounts.length === 0 ? (
+                  <div className="text-center py-10 text-gray-400 font-medium">No customers found</div>
+                ) : (
+                  filteredKhataAccounts.map((acc) => (
+                    <button
+                      key={acc._id}
+                      onClick={() => {
+                        handleCheckout('khata', null, acc._id);
+                        setShowKhataModal(false);
+                      }}
+                      className="w-full flex justify-between items-center p-4 border border-gray-100 rounded-2xl hover:border-amber-400 hover:bg-amber-50/50 hover:shadow-md transition-all text-left group"
+                    >
+                      <div>
+                        <h3 className="font-bold text-gray-900 group-hover:text-amber-700">{acc.customerId?.name}</h3>
+                        <p className="text-xs text-gray-500 font-medium">{acc.customerId?.phone || acc.customerId?.mobile || 'No phone'}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] uppercase font-bold text-gray-400">Balance</p>
+                        <p className={`font-black tracking-tight ${acc.balance > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
+                          SAR {Math.abs(acc.balance).toFixed(2)}
+                        </p>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
+              <div>
+                <p className="text-xs font-bold text-gray-500 uppercase">Total to charge</p>
+                <p className="text-2xl font-black text-emerald-600">SAR {totals.grandTotal.toFixed(2)}</p>
+              </div>
             </div>
           </div>
         </div>
