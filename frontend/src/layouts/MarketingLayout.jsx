@@ -34,7 +34,7 @@ export default function MarketingLayout() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="h-16 flex items-center justify-between gap-3">
             <Link to="/" className="flex items-center gap-3">
-              <div className="w-auto h-10 flex items-center justify-center">
+              <div className="w-auto h-12 flex items-center justify-center">
                 <img src="/maqdernewlogo.png" alt="Maqder" className="h-full w-auto object-contain" />
               </div>
             </Link>

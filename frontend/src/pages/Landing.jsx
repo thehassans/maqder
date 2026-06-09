@@ -24,9 +24,8 @@ import {
   Lock,
   Cloud,
   Smartphone,
+  Smartphone,
   ChevronRight,
-  Menu,
-  X,
   Phone,
   Mail,
   MapPin,
@@ -47,6 +46,9 @@ import {
   Scissors,
   HardHat,
 } from 'lucide-react'
+import { Header } from '@/components/ui/Header'
+import { HeroSection } from '@/components/ui/HeroSection'
+import SarIcon from '@/components/ui/SarIcon'
 
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
@@ -383,240 +385,14 @@ const solutionsData = [
 
 export default function Landing() {
   const [language, setLanguage] = useState('en')
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [selectedSolution, setSelectedSolution] = useState(null)
   const isArabic = language === 'ar'
 
   return (
     <div className={`min-h-screen bg-white ${isArabic ? 'rtl' : 'ltr'}`} dir={isArabic ? 'rtl' : 'ltr'}>
-      {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <div className="w-auto h-10 flex items-center justify-center">
-                <img src="/maqdernewlogo.png" alt="Maqder" className="h-full w-auto object-contain" />
-              </div>
-            </div>
-
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-8">
-              <a href="#features" className="text-gray-600 hover:text-primary-600 transition font-medium">
-                {isArabic ? 'المميزات' : 'Features'}
-              </a>
-              <a href="#modules" className="text-gray-600 hover:text-primary-600 transition font-medium">
-                {isArabic ? 'الوحدات' : 'Modules'}
-              </a>
-              <a href="#pricing" className="text-gray-600 hover:text-primary-600 transition font-medium">
-                {isArabic ? 'الأسعار' : 'Pricing'}
-              </a>
-              <a href="#contact" className="text-gray-600 hover:text-primary-600 transition font-medium">
-                {isArabic ? 'تواصل معنا' : 'Contact'}
-              </a>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setLanguage(isArabic ? 'en' : 'ar')}
-                className="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition flex items-center gap-1.5"
-              >
-                <Globe className="w-4 h-4" />
-                {isArabic ? 'English' : 'العربية'}
-              </button>
-              
-              <div className="hidden xl:flex items-center gap-4 border-l border-gray-200 pl-4 ml-2">
-                <a href="tel:+966596775485" className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-primary-600 transition">
-                  <Phone className="w-4 h-4 text-primary-500" />
-                  <span dir="ltr">+966 59 677 5485</span>
-                </a>
-                <a href="mailto:support@maqder.com" className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-primary-600 transition">
-                  <Mail className="w-4 h-4 text-primary-500" />
-                  <span>support@maqder.com</span>
-                </a>
-                <a href="https://wa.me/966596775485" target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition bg-emerald-50 px-2 py-1 rounded-lg">
-                  <MessageCircle className="w-4 h-4" />
-                  <span>WhatsApp</span>
-                </a>
-              </div>
-
-              <div className="hidden 2xl:flex items-center gap-2 rounded-2xl border border-gray-200 bg-white/80 px-3 py-2 ml-4">
-                {complianceLogos.map((logo) => (
-                  <div key={logo.alt} className="flex h-10 w-20 items-center justify-center rounded-xl bg-white px-2 py-1 shadow-sm">
-                    <img src={logo.src} alt={logo.alt} className={`max-h-full max-w-full object-contain ${logo.imageClassName || ''}`} />
-                  </div>
-                ))}
-              </div>
-              <Link
-                to="/login"
-                className="hidden sm:inline-flex px-5 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-semibold shadow-lg shadow-primary-500/30 hover:shadow-xl hover:shadow-primary-500/40 transition-all hover:-translate-y-0.5"
-              >
-                {isArabic ? 'تسجيل الدخول' : 'Login'}
-              </Link>
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden p-2 rounded-lg hover:bg-gray-100"
-              >
-                {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile Menu */}
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="md:hidden bg-white border-t border-gray-100 px-4 py-4 space-y-3"
-          >
-            <a href="#features" className="block py-2 text-gray-600 font-medium">
-              {isArabic ? 'المميزات' : 'Features'}
-            </a>
-            <a href="#modules" className="block py-2 text-gray-600 font-medium">
-              {isArabic ? 'الوحدات' : 'Modules'}
-            </a>
-            <a href="#pricing" className="block py-2 text-gray-600 font-medium">
-              {isArabic ? 'الأسعار' : 'Pricing'}
-            </a>
-            <Link to="/login" className="block w-full text-center py-2.5 bg-primary-600 text-white rounded-xl font-semibold">
-              {isArabic ? 'تسجيل الدخول' : 'Login'}
-            </Link>
-          </motion.div>
-        )}
-      </nav>
-
-      {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 overflow-hidden">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary-50 rounded-full text-primary-700 font-medium text-sm mb-6">
-                <Sparkles className="w-4 h-4" />
-                {isArabic ? 'مزود خدمات الفوترة الإلكترونية المعتمد - متوافق مع هيئة الزكاة والضريبة والجمارك' : 'Certified E-Invoicing Services Provider - ZATCA Phase 2 Compliant'}
-              </div>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
-                {isArabic ? (
-                  <>
-                    نظام ERP متكامل
-                    <span className="bg-gradient-to-r from-primary-600 to-emerald-600 bg-clip-text text-transparent"> للسعودية</span>
-                  </>
-                ) : (
-                  <>
-                    Complete ERP System
-                    <span className="bg-gradient-to-r from-primary-600 to-emerald-600 bg-clip-text text-transparent"> for Saudi</span>
-                  </>
-                )}
-              </h1>
-              <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                {isArabic
-                  ? 'تقديم خدمات الفوترة الإلكترونية، الموارد البشرية، الرواتب، المخزون، المشتريات، وأكثر - كل ما تحتاجه لإدارة أعمالك في منصة واحدة متكاملة.'
-                  : 'Providing E-Invoicing Services, HR, Payroll, Inventory, Procurement, and more — everything you need to run your business in one integrated platform.'}
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link
-                  to="/login"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-2xl font-semibold text-lg shadow-xl shadow-primary-500/30 hover:shadow-2xl hover:shadow-primary-500/40 transition-all hover:-translate-y-0.5"
-                >
-                  {isArabic ? 'ابدأ الآن' : 'Get Started'}
-                  <ArrowRight className="w-5 h-5" />
-                </Link>
-                <a
-                  href="#features"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gray-100 text-gray-700 rounded-2xl font-semibold text-lg hover:bg-gray-200 transition"
-                >
-                  <Play className="w-5 h-5" />
-                  {isArabic ? 'شاهد العرض' : 'Watch Demo'}
-                </a>
-              </div>
-
-              <div className="mt-8 flex flex-wrap items-center gap-4">
-                {complianceLogos.map((logo) => (
-                  <div key={logo.alt} className="flex h-16 w-36 items-center justify-center rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
-                    <img src={logo.src} alt={logo.alt} className={`max-h-full max-w-full object-contain ${logo.imageClassName || ''}`} />
-                  </div>
-                ))}
-              </div>
-
-              {/* Trust Badges */}
-              <div className="mt-10 flex flex-wrap items-center gap-6">
-                <div className="flex items-center gap-2 text-gray-500">
-                  <BadgeCheck className="w-5 h-5 text-primary-600" />
-                  <span className="text-sm font-medium">{isArabic ? 'معتمد من ZATCA' : 'ZATCA Certified'}</span>
-                </div>
-                <div className="flex items-center gap-2 text-gray-500">
-                  <Lock className="w-5 h-5 text-primary-600" />
-                  <span className="text-sm font-medium">{isArabic ? 'بيانات مشفرة' : 'Encrypted Data'}</span>
-                </div>
-                <div className="flex items-center gap-2 text-gray-500">
-                  <Cloud className="w-5 h-5 text-primary-600" />
-                  <span className="text-sm font-medium">{isArabic ? 'سحابي 100%' : '100% Cloud'}</span>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              className="relative"
-            >
-              <div className="relative z-10">
-                <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-3xl p-2 shadow-2xl">
-                  <div className="bg-gray-800 rounded-2xl overflow-hidden">
-                    <div className="flex items-center gap-2 px-4 py-3 bg-gray-900/50">
-                      <div className="w-3 h-3 rounded-full bg-red-500" />
-                      <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                      <div className="w-3 h-3 rounded-full bg-green-500" />
-                      <span className="ml-2 text-gray-400 text-sm">maqder.com/dashboard</span>
-                    </div>
-                    <div className="p-6 space-y-4">
-                      {/* Mock Dashboard */}
-                      <div className="grid grid-cols-3 gap-3">
-                        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl p-4">
-                          <TrendingUp className="w-6 h-6 text-white/80 mb-2" />
-                          <p className="text-white/70 text-xs">Revenue</p>
-                          <p className="text-white font-bold text-lg">SAR 125K</p>
-                        </div>
-                        <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-4">
-                          <FileText className="w-6 h-6 text-white/80 mb-2" />
-                          <p className="text-white/70 text-xs">Invoices</p>
-                          <p className="text-white font-bold text-lg">248</p>
-                        </div>
-                        <div className="bg-gradient-to-br from-purple-500 to-violet-600 rounded-xl p-4">
-                          <Users className="w-6 h-6 text-white/80 mb-2" />
-                          <p className="text-white/70 text-xs">Employees</p>
-                          <p className="text-white font-bold text-lg">32</p>
-                        </div>
-                      </div>
-                      <div className="bg-gray-700/50 rounded-xl p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-gray-300 text-sm font-medium">Revenue vs Expenses</span>
-                          <span className="text-emerald-400 text-xs">+12.5%</span>
-                        </div>
-                        <div className="flex items-end gap-1 h-20">
-                          {[40, 65, 45, 80, 55, 90, 70].map((h, i) => (
-                            <div key={i} className="flex-1 flex flex-col gap-1">
-                              <div className="bg-emerald-500/80 rounded-t" style={{ height: `${h}%` }} />
-                              <div className="bg-rose-500/60 rounded-b" style={{ height: `${h * 0.4}%` }} />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              {/* Background Decorations */}
-              <div className="absolute -top-10 -right-10 w-72 h-72 bg-primary-500/20 rounded-full blur-3xl" />
-              <div className="absolute -bottom-10 -left-10 w-72 h-72 bg-emerald-500/20 rounded-full blur-3xl" />
-            </motion.div>
-          </div>
-        </div>
-      </section>
+    <div className={`min-h-screen bg-white ${isArabic ? 'rtl' : 'ltr'}`} dir={isArabic ? 'rtl' : 'ltr'}>
+      <Header isArabic={isArabic} setLanguage={setLanguage} />
+      <HeroSection isArabic={isArabic} />
 
       {/* Stats Section */}
       <section className="py-16 bg-gradient-to-r from-primary-600 to-primary-700">
@@ -1095,11 +871,16 @@ export default function Landing() {
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">
                   {isArabic ? plan.nameAr : plan.name}
                 </h3>
-                <div className="mb-6">
-                  <span className="text-4xl font-bold text-gray-900">
-                    {plan.price === 'Custom' ? (isArabic ? plan.priceAr : plan.price) : `SAR ${plan.price}`}
+                <div className="mb-6 flex flex-col justify-center items-center">
+                  <span className="flex items-center gap-1.5 text-4xl font-bold text-gray-900">
+                    {plan.price === 'Custom' ? (isArabic ? plan.priceAr : plan.price) : (
+                      <>
+                        <SarIcon className="w-8 h-8 text-emerald-600 mb-0.5" />
+                        {plan.price}
+                      </>
+                    )}
                   </span>
-                  <span className="text-gray-500">{isArabic ? plan.periodAr : plan.period}</span>
+                  <span className="text-gray-500 mt-1">{isArabic ? plan.periodAr : plan.period}</span>
                 </div>
                 <ul className="space-y-4 mb-8">
                   {(isArabic ? plan.featuresAr : plan.features).map((feature, i) => (

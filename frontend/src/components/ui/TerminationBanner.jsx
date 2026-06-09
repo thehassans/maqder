@@ -113,7 +113,7 @@ export function TerminationBlocker() {
         
         {/* Logo Section */}
         <div className="mb-8 flex flex-col items-center">
-          <div className="w-auto h-16 bg-white rounded-2xl p-2 shadow-xl flex items-center justify-center mb-4">
+          <div className="w-auto h-20 flex items-center justify-center mb-4">
             {tenant?.branding?.logo ? (
               <img src={tenant.branding.logo} alt="Logo" className="w-full h-full object-contain rounded-xl bg-white" />
             ) : (

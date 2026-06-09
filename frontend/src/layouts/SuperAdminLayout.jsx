@@ -38,7 +38,7 @@ export default function SuperAdminLayout() {
         <div className="flex items-center justify-between px-6 h-16">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-auto h-10 bg-white rounded-xl p-1 shadow-lg flex items-center justify-center">
+              <div className="w-auto h-10 flex items-center justify-center">
                 <img src="/maqdernewlogo.png" alt="Maqder" className="h-full w-auto object-contain" />
               </div>
               <div>
