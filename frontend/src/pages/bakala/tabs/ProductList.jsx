@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Search, Loader, Download } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, Loader, Download, QrCode } from 'lucide-react';
+import Barcode from 'react-barcode';
 import api from '../../../lib/api';
 import toast from 'react-hot-toast';
 
@@ -8,6 +9,7 @@ export default function ProductList() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [viewBarcodeProduct, setViewBarcodeProduct] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
     name: '', nameAr: '', primaryBarcode: '', category: '', brand: '', 
@@ -186,6 +188,9 @@ export default function ProductList() {
                     <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">{item.unit || 'PCS'}</span>
                   </td>
                   <td className="px-6 py-3 text-right">
+                    <button onClick={() => setViewBarcodeProduct(item)} title="View Barcode" className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded mr-2">
+                      <QrCode className="w-4 h-4" />
+                    </button>
                     <button onClick={() => handleEdit(item)} className="p-1 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded mr-2">
                       <Edit2 className="w-4 h-4" />
                     </button>
@@ -256,6 +261,34 @@ export default function ProductList() {
                 <button type="submit" className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Save Product</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Barcode Modal */}
+      {viewBarcodeProduct && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setViewBarcodeProduct(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-gray-900 mb-2 truncate">{viewBarcodeProduct.name}</h3>
+            <p className="text-sm text-gray-500 mb-6">SAR {viewBarcodeProduct.retailPrice?.toFixed(2)}</p>
+            <div className="flex justify-center bg-gray-50 p-6 rounded-xl border border-gray-100 mb-6">
+              <Barcode 
+                value={viewBarcodeProduct.primaryBarcode} 
+                format="EAN13" 
+                width={2} 
+                height={80} 
+                fontSize={16} 
+                margin={0} 
+                background="#F9FAFB" 
+                valid={() => {}} // Ignore invalid lengths gracefully if needed
+              />
+            </div>
+            <button 
+              onClick={() => setViewBarcodeProduct(null)} 
+              className="w-full py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}
