@@ -84,8 +84,8 @@ export default function Login() {
         <div className="relative z-10 flex flex-col justify-between p-12 text-white">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-auto h-20 flex items-center justify-center">
-              <img src="/maqdernewlogo.png" alt="Maqder" className="h-full w-auto object-contain" />
+            <div className="w-full h-32 flex items-center justify-start">
+              <img src="/maqdernewlogo.png" alt="Maqder" className="h-full w-auto object-contain object-left" />
             </div>
           </div>
 
@@ -171,7 +171,7 @@ export default function Login() {
 
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-            <img src="/maqdernewlogo.png" alt="Maqder" className="h-20 w-auto object-contain" />
+            <img src="/maqdernewlogo.png" alt="Maqder" className="h-32 w-auto object-contain object-center" />
           </div>
 
           {/* Header */}

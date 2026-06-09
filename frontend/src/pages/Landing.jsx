@@ -390,27 +390,29 @@ export default function Landing() {
 
   return (
     <div className={`min-h-screen bg-white ${isArabic ? 'rtl' : 'ltr'}`} dir={isArabic ? 'rtl' : 'ltr'}>
-    <div className={`min-h-screen bg-white ${isArabic ? 'rtl' : 'ltr'}`} dir={isArabic ? 'rtl' : 'ltr'}>
       <Header isArabic={isArabic} setLanguage={setLanguage} />
       <HeroSection isArabic={isArabic} />
 
       {/* Stats Section */}
-      <section className="py-16 bg-gradient-to-r from-primary-600 to-primary-700">
+      <section className="py-16 bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className="text-center"
-              >
-                <p className="text-4xl md:text-5xl font-bold text-white mb-2">{stat.value}</p>
-                <p className="text-primary-100 font-medium">{isArabic ? stat.labelAr : stat.label}</p>
-              </motion.div>
-            ))}
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center">
+              <p className="text-4xl md:text-5xl font-bold text-[#0c1811] mb-3">500+</p>
+              <p className="text-gray-500 font-medium text-sm sm:text-base">{isArabic ? 'الشركات تثق بنا' : 'Companies trust us'}</p>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }} className="text-center">
+              <p className="text-4xl md:text-5xl font-bold text-[#0c1811] mb-3">50K+</p>
+              <p className="text-gray-500 font-medium text-sm sm:text-base">{isArabic ? 'فاتورة تعالج يومياً' : 'Invoices processed daily'}</p>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }} className="text-center">
+              <p className="text-4xl md:text-5xl font-bold text-[#0c1811] mb-3">99.9%</p>
+              <p className="text-gray-500 font-medium text-sm sm:text-base">{isArabic ? 'وقت تشغيل المنصة' : 'Platform uptime'}</p>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.3 }} className="text-center">
+              <p className="text-4xl md:text-5xl font-bold text-[#0c1811] mb-3">24/7</p>
+              <p className="text-gray-500 font-medium text-sm sm:text-base">{isArabic ? 'دعم العملاء' : 'Customer support'}</p>
+            </motion.div>
           </div>
         </div>
       </section>
