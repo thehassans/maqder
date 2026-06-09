@@ -64,10 +64,36 @@ export default function BakalaPOS() {
   // Handle Barcode Scans via Enter key in search
   const handleScannerSubmit = async (e) => {
     e.preventDefault();
-    if (!searchTerm.trim()) return;
+    const term = searchTerm.trim();
+    if (!term) return;
+
+    // 1. Check for Scale Barcode (EAN-13 starting with 21)
+    if (term.length === 13 && term.startsWith('21')) {
+      const itemCode = term.substring(2, 7);
+      const priceHalalas = parseInt(term.substring(7, 12), 10);
+      const priceSAR = priceHalalas / 100;
+
+      // Find product by itemCode (assuming itemCode is the first 5 digits of primaryBarcode)
+      const scaleMatch = allProducts.find(p => 
+        (p.primaryBarcode && p.primaryBarcode.startsWith(itemCode)) || 
+        (p.primaryBarcode && p.primaryBarcode.endsWith(itemCode)) ||
+        p.primaryBarcode === itemCode
+      );
+
+      if (scaleMatch) {
+        const scaledItem = {
+          ...scaleMatch,
+          retailPrice: priceSAR,
+          name: `${scaleMatch.name} (Weighed)`
+        };
+        addItem(scaledItem);
+        setSearchTerm('');
+        return;
+      }
+    }
     
-    // Check if the exact search term matches a barcode in the filtered items
-    const exactMatch = allProducts.find(p => p.primaryBarcode === searchTerm.trim() || p.barcodes?.includes(searchTerm.trim()));
+    // 2. Check for Exact Match
+    const exactMatch = allProducts.find(p => p.primaryBarcode === term || p.barcodes?.includes(term));
     
     if (exactMatch) {
       addItem(exactMatch);
@@ -81,8 +107,8 @@ export default function BakalaPOS() {
         // Fallback for manual test item
         addItem({
           _id: uuidv4(),
-          name: `Item ${searchTerm}`,
-          primaryBarcode: searchTerm,
+          name: `Item ${term}`,
+          primaryBarcode: term,
           retailPrice: 15.0,
           taxRate: 15
         });
