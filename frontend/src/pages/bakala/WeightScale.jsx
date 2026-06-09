@@ -105,7 +105,10 @@ export default function WeightScale() {
   };
 
   const productOptions = products
-    .filter(p => p.category === 'Fruits & Vegetables')
+    .filter(p => {
+      const cat = (p.category || '').toLowerCase();
+      return cat.includes('fruit') || cat.includes('veg') || cat.includes('produce') || p.unit === 'KG';
+    })
     .map(p => ({
       value: p._id,
       label: `${p.name} - SAR ${p.retailPrice?.toFixed(2)}/${p.unit || 'KG'}`,
