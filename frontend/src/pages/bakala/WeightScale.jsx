@@ -4,6 +4,8 @@ import { ArrowLeft, Scale, Printer, Search, RefreshCw, X, Hash, Minus, Plus } fr
 import Barcode from 'react-barcode';
 import Select from 'react-select';
 import { getAllProducts } from '../../lib/bakalaDb';
+import api from '../../lib/api';
+import toast from 'react-hot-toast';
 
 export default function WeightScale() {
   const navigate = useNavigate();
@@ -15,13 +17,17 @@ export default function WeightScale() {
   const [quantity, setQuantity] = useState(1);
   
   const [barcodeValue, setBarcodeValue] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newProduct, setNewProduct] = useState({ name: '', retailPrice: '', unit: 'KG' });
+  const [isAdding, setIsAdding] = useState(false);
   const printRef = useRef(null);
 
+  const loadProducts = async () => {
+    const allProducts = await getAllProducts();
+    setProducts(allProducts);
+  };
+
   useEffect(() => {
-    const loadProducts = async () => {
-      const allProducts = await getAllProducts();
-      setProducts(allProducts);
-    };
     loadProducts();
   }, []);
 
@@ -114,12 +120,17 @@ export default function WeightScale() {
     printWindow.document.close();
   };
 
-  // Prepare options for react-select
-  const productOptions = products.map(p => ({
-    value: p._id,
-    label: `${p.name} - SAR ${p.retailPrice?.toFixed(2)}/${p.unit || 'KG'}`,
-    product: p
-  }));
+  // Prepare options for react-select, filtered for fruits/veg/weighed items
+  const productOptions = products
+    .filter(p => {
+      const cat = (p.category || '').toLowerCase();
+      return cat.includes('fruit') || cat.includes('veg') || cat.includes('produce') || p.unit === 'KG';
+    })
+    .map(p => ({
+      value: p._id,
+      label: `${p.name} - SAR ${p.retailPrice?.toFixed(2)}/${p.unit || 'KG'}`,
+      product: p
+    }));
 
   const customSelectStyles = {
     control: (base, state) => ({
@@ -177,6 +188,13 @@ export default function WeightScale() {
             <p className="text-sm text-gray-500 mt-1 font-medium">Fruits, Vegetables, and Weighed Products</p>
           </div>
         </div>
+        <button 
+          onClick={() => setShowAddModal(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl font-bold transition-colors"
+        >
+          <Plus className="w-5 h-5" />
+          Add Fruit / Vegetable
+        </button>
       </div>
 
       <div className="flex-1 flex justify-center items-start pt-12 px-4 overflow-y-auto pb-20">
@@ -299,11 +317,11 @@ export default function WeightScale() {
                     <div className="name">{selectedProduct.name}</div>
                     <div className="details">
                       <span>{isWeightBased ? `${parseFloat(weightKg).toFixed(3)} kg` : `${quantity} ${selectedProduct.unit}`}</span>
-                      <span>@ ${selectedProduct.retailPrice.toFixed(2)}/${selectedProduct.unit}</span>
+                      <span>@ SAR {selectedProduct.retailPrice.toFixed(2)}/{selectedProduct.unit}</span>
                     </div>
                     <div className="price-row">
                       <span className="price-label">NET PRICE</span>
-                      <span className="price">SAR ${totalPrice.toFixed(2)}</span>
+                      <span className="price">SAR {totalPrice.toFixed(2)}</span>
                     </div>
                     <div className="barcode">
                       <Barcode value={barcodeValue} format="EAN13" width={1.6} height={40} fontSize={10} margin={0} displayValue={true} />
@@ -345,6 +363,86 @@ export default function WeightScale() {
           </div>
         </div>
       </div>
+
+      {/* Add Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-gray-900">Add Fruit or Vegetable</h3>
+              <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Product Name</label>
+                <input 
+                  type="text" 
+                  value={newProduct.name}
+                  onChange={e => setNewProduct({...newProduct, name: e.target.value})}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                  placeholder="e.g. Fresh Red Apples"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Unit Price (SAR)</label>
+                  <input 
+                    type="number" 
+                    value={newProduct.retailPrice}
+                    onChange={e => setNewProduct({...newProduct, retailPrice: e.target.value})}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">Unit Type</label>
+                  <select 
+                    value={newProduct.unit}
+                    onChange={e => setNewProduct({...newProduct, unit: e.target.value})}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none appearance-none"
+                  >
+                    <option value="KG">Per KG</option>
+                    <option value="PCS">Per Piece</option>
+                    <option value="DZ">Per Dozen</option>
+                  </select>
+                </div>
+              </div>
+
+              <button
+                disabled={isAdding || !newProduct.name || !newProduct.retailPrice}
+                onClick={async () => {
+                  setIsAdding(true);
+                  try {
+                    const primaryBarcode = String(Math.floor(Math.random() * 90000) + 10000);
+                    await api.post('/bakala-products', {
+                      ...newProduct,
+                      retailPrice: Number(newProduct.retailPrice),
+                      category: 'Fruits & Vegetables',
+                      primaryBarcode,
+                      stockQuantity: 999
+                    });
+                    toast.success('Product added successfully!');
+                    await loadProducts();
+                    setShowAddModal(false);
+                    setNewProduct({ name: '', retailPrice: '', unit: 'KG' });
+                  } catch (e) {
+                    toast.error('Failed to add product');
+                  } finally {
+                    setIsAdding(false);
+                  }
+                }}
+                className="w-full mt-6 py-4 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors disabled:opacity-50"
+              >
+                {isAdding ? 'Adding...' : 'Save Product'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
