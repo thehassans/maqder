@@ -92,8 +92,10 @@ export const useCartEngine = () => {
     const holdData = {
       id: Date.now().toString(),
       time: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
       customerName,
-      items: rawCartItems
+      items: rawCartItems,
+      totals
     };
     const existing = JSON.parse(localStorage.getItem('maqder_held_bills') || '[]');
     localStorage.setItem('maqder_held_bills', JSON.stringify([...existing, holdData]));

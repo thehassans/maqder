@@ -523,11 +523,11 @@ export default function BakalaPOS() {
                 >
                   <div>
                     <h3 className="font-bold text-gray-800">Bill #{heldBills.length - index}</h3>
-                    <p className="text-xs text-gray-500">{new Date(bill.createdAt).toLocaleTimeString()}</p>
+                    <p className="text-xs text-gray-500">{new Date(bill.createdAt || bill.time).toLocaleTimeString()}</p>
                     <p className="text-sm text-gray-600 mt-1">{bill.items.length} items</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-black text-emerald-600 text-xl">SAR {bill.totals.grandTotal.toFixed(2)}</p>
+                    <p className="font-black text-emerald-600 text-xl">SAR {(bill.totals?.grandTotal || 0).toFixed(2)}</p>
                     <button className="mt-2 px-4 py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-xl text-sm font-bold transition-colors">
                       Recall
                     </button>
