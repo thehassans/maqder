@@ -53,6 +53,40 @@ const schema = z.object({
     }),
     autoSifUploadEnabled: z.boolean().default(false)
   }),
+  carRentalIntegrations: z.object({
+    tamm: z.object({
+      enabled: z.boolean().default(false),
+      apiKey: z.string().optional(),
+      apiSecret: z.string().optional(),
+      companyLicenseNumber: z.string().optional(),
+      environment: z.enum(['sandbox', 'production']).default('sandbox'),
+      autoSyncContracts: z.boolean().default(false)
+    }),
+    najm: z.object({
+      enabled: z.boolean().default(false),
+      apiKey: z.string().optional(),
+      clientId: z.string().optional(),
+      clientSecret: z.string().optional(),
+      environment: z.enum(['sandbox', 'production']).default('sandbox'),
+      autoCheckOnCheckout: z.boolean().default(true)
+    }),
+    wathiq: z.object({
+      enabled: z.boolean().default(false),
+      apiKey: z.string().optional(),
+      appId: z.string().optional(),
+      environment: z.enum(['sandbox', 'production']).default('sandbox'),
+      autoVerifyId: z.boolean().default(true)
+    }),
+    sms: z.object({
+      enabled: z.boolean().default(false),
+      provider: z.enum(['taqnyat', 'unifonic', 'msegat', 'custom']).default('taqnyat'),
+      apiKey: z.string().optional(),
+      senderId: z.string().optional(),
+      sendOnCheckout: z.boolean().default(true),
+      sendOnCheckin: z.boolean().default(true),
+      sendOnOverdue: z.boolean().default(true)
+    })
+  }),
   industrySpecific: z.object({
     baladyApiKey: z.string().optional(),
     saberToken: z.string().optional(),
@@ -60,6 +94,21 @@ const schema = z.object({
     etimadPassword: z.string().optional()
   })
 });
+
+// Reuse Toggle layout
+const Toggle = ({ checked, onChange }) => (
+  <button
+    type="button"
+    onClick={() => onChange(!checked)}
+    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none ${
+      checked ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-dark-600'
+    }`}
+  >
+    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${
+      checked ? 'translate-x-6' : 'translate-x-1'
+    }`} />
+  </button>
+)
 
 export default function GovernmentIntegrations() {
   const queryClient = useQueryClient()
@@ -94,6 +143,21 @@ export default function GovernmentIntegrations() {
   const [isSyncing, setIsSyncing] = useState(false)
   const [syncStatusText, setSyncStatusText] = useState('')
 
+  // Accordion details for Elm sub-integrations
+  const [expandedSections, setExpandedSections] = useState({
+    tamm: true,
+    najm: false,
+    wathiq: false,
+    sms: false
+  })
+
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }))
+  }
+
   // 1. Fetch config from API
   const { data: config, isLoading: isConfigLoading } = useQuery({
     queryKey: ['government-integrations-config'],
@@ -109,6 +173,12 @@ export default function GovernmentIntegrations() {
       qiwa: { establishmentId: '', accessToken: '', contractAuthAutomationEnabled: false, saudizationWidgetEnabled: false },
       gosi: { registrationNumber: '', enabled: false },
       mudad: { registrationNumber: '', clientCertificate: '', autoSifUploadEnabled: false },
+      carRentalIntegrations: {
+        tamm: { enabled: false, apiKey: '', apiSecret: '', companyLicenseNumber: '', environment: 'sandbox', autoSyncContracts: false },
+        najm: { enabled: false, apiKey: '', clientId: '', clientSecret: '', environment: 'sandbox', autoCheckOnCheckout: true },
+        wathiq: { enabled: false, apiKey: '', appId: '', environment: 'sandbox', autoVerifyId: true },
+        sms: { enabled: false, provider: 'taqnyat', apiKey: '', senderId: '', sendOnCheckout: true, sendOnCheckin: true, sendOnOverdue: true }
+      },
       industrySpecific: { baladyApiKey: '', saberToken: '', etimadUser: '', etimadPassword: '' }
     }
   })
@@ -144,6 +214,40 @@ export default function GovernmentIntegrations() {
           registrationNumber: config.mudad?.registrationNumber || '',
           clientCertificate: config.mudad?.hasClientCertificate ? '-----BEGIN CERTIFICATE-----\n****************\n-----END CERTIFICATE-----' : '',
           autoSifUploadEnabled: config.mudad?.autoSifUploadEnabled || false
+        },
+        carRentalIntegrations: {
+          tamm: {
+            enabled: config.carRentalIntegrations?.tamm?.enabled || false,
+            apiKey: config.carRentalIntegrations?.tamm?.apiKey ? '****************' : '',
+            apiSecret: config.carRentalIntegrations?.tamm?.apiSecret ? '****************' : '',
+            companyLicenseNumber: config.carRentalIntegrations?.tamm?.companyLicenseNumber || '',
+            environment: config.carRentalIntegrations?.tamm?.environment || 'sandbox',
+            autoSyncContracts: config.carRentalIntegrations?.tamm?.autoSyncContracts || false,
+          },
+          najm: {
+            enabled: config.carRentalIntegrations?.najm?.enabled || false,
+            apiKey: config.carRentalIntegrations?.najm?.apiKey ? '****************' : '',
+            clientId: config.carRentalIntegrations?.najm?.clientId || '',
+            clientSecret: config.carRentalIntegrations?.najm?.clientSecret ? '****************' : '',
+            environment: config.carRentalIntegrations?.najm?.environment || 'sandbox',
+            autoCheckOnCheckout: config.carRentalIntegrations?.najm?.autoCheckOnCheckout !== false,
+          },
+          wathiq: {
+            enabled: config.carRentalIntegrations?.wathiq?.enabled || false,
+            apiKey: config.carRentalIntegrations?.wathiq?.apiKey ? '****************' : '',
+            appId: config.carRentalIntegrations?.wathiq?.appId || '',
+            environment: config.carRentalIntegrations?.wathiq?.environment || 'sandbox',
+            autoVerifyId: config.carRentalIntegrations?.wathiq?.autoVerifyId !== false,
+          },
+          sms: {
+            enabled: config.carRentalIntegrations?.sms?.enabled || false,
+            provider: config.carRentalIntegrations?.sms?.provider || 'taqnyat',
+            apiKey: config.carRentalIntegrations?.sms?.apiKey ? '****************' : '',
+            senderId: config.carRentalIntegrations?.sms?.senderId || '',
+            sendOnCheckout: config.carRentalIntegrations?.sms?.sendOnCheckout !== false,
+            sendOnCheckin: config.carRentalIntegrations?.sms?.sendOnCheckin !== false,
+            sendOnOverdue: config.carRentalIntegrations?.sms?.sendOnOverdue !== false,
+          }
         },
         industrySpecific: {
           baladyApiKey: '',
@@ -217,7 +321,9 @@ export default function GovernmentIntegrations() {
         if (config.zatca?.hasPrivateKey) return 'action_required'
         return 'disconnected'
       case 'elm':
-        if (config.elm?.clientId && config.elm?.hasClientSecret && (config.elm?.nafathOtpEnabled || config.elm?.tammEnabled)) {
+        // Active if any of Tamm, NAJM, or Wathiq is enabled
+        const cri = config.carRentalIntegrations || {}
+        if (cri.tamm?.enabled || cri.najm?.enabled || cri.wathiq?.enabled) {
           return 'connected'
         }
         if (config.elm?.clientId) return 'action_required'
@@ -537,95 +643,359 @@ export default function GovernmentIntegrations() {
               </motion.div>
             )}
 
-            {/* TAB CONTENT: ELM */}
+            {/* TAB CONTENT: ELM (Yakeen, Tamm, NAJM, Wathiq, SMS) */}
             {activeTab === 'elm' && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="card p-6 space-y-6">
-                <div className="border-b border-gray-150 dark:border-dark-750 pb-4">
-                  <h3 className="text-xl font-bold flex items-center gap-2">
-                    <Key className="w-6 h-6 text-primary-500" />
-                    {t('Elm DevPortal Integration (Yakeen & TAMM)', 'بوابة المطورين علم (يقين وتم)')}
-                  </h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {t('Configure credentials for driver identity checks (Yakeen/Nafath) and car authorization (TAMM API).',
-                       'تهيئة بيانات الاعتماد للتحقق من هوية السائقين (يقين/نفاذ) وتفويضات المركبات عبر (بوابة تم).')}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="label">{t('Elm Client ID', 'معرف العميل (علم)')}</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. elm_client_98234"
-                      {...register('elm.clientId')}
-                      className="input mt-1"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="label">{t('Elm Client Secret', 'السر الخاص بالعميل (علم)')}</label>
-                    <input
-                      type="password"
-                      placeholder="••••••••••••••••"
-                      {...register('elm.clientSecret')}
-                      className="input mt-1"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="label">{t('App ID / Agency ID', 'معرف التطبيق / الوكالة')}</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. SA-TAMM-2309"
-                      {...register('elm.appId')}
-                      className="input mt-1"
-                    />
-                    <p className="text-[10px] text-gray-400 mt-1">
-                      {t('Required for Traffic Violation Polling and TAMM driver authorization workflows.',
-                         'مطلوب للاستعلام عن المخالفات المرورية وتفويض سائقي المركبات في بوابة تم.')}
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                
+                {/* 1. Elm DevPortal (Yakeen) */}
+                <div className="card p-6 space-y-4">
+                  <div className="border-b border-gray-150 dark:border-dark-750 pb-3">
+                    <h3 className="text-lg font-bold flex items-center gap-2">
+                      <Key className="w-5 h-5 text-primary-500" />
+                      {t('Elm DevPortal Integration (Yakeen)', 'بوابة المطورين علم (يقين)')}
+                    </h3>
+                    <p className="text-xs text-gray-400">
+                      {t('Configure credentials for resident identity check (Yakeen) and Nafath OTP authentication.',
+                         'تهيئة بيانات الاعتماد للتحقق من هوية المقيمين (يقين) وتفويضات نفاذ.')}
                     </p>
                   </div>
-                </div>
 
-                <div className="space-y-3 border-t border-gray-100 dark:border-dark-750 pt-4">
-                  <h4 className="font-bold text-sm">{t('Service Authorizations', 'تفويض الخدمات')}</h4>
-                  
-                  <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-dark-750 rounded-2xl">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <span className="font-semibold text-sm">{t('Enable Nafath OTP Identity Verification', 'تفعيل التحقق من الهوية عبر نفاذ OTP')}</span>
-                      <p className="text-xs text-gray-400">{t('Verifies identity dynamically via Nafath platform before contract signing.', 'يتحقق من الهوية فورياً عبر نفاذ قبل توقيع العقد.')}</p>
+                      <label className="label text-xs">{t('Elm Client ID', 'معرف العميل (علم)')}</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. client_id_..."
+                        {...register('elm.clientId')}
+                        className="input mt-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="label text-xs">{t('Elm Client Secret', 'السر الخاص بالعميل (علم)')}</label>
+                      <input
+                        type="password"
+                        placeholder="••••••••"
+                        {...register('elm.clientSecret')}
+                        className="input mt-1"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-dark-750">
+                    <div>
+                      <p className="text-xs font-semibold text-gray-900 dark:text-white">{t('Enable Nafath OTP Identity Verification', 'تفعيل التحقق من الهوية عبر نفاذ OTP')}</p>
+                      <p className="text-[10px] text-gray-400">{t('Trigger live Nafath OTP check during customer registration.', 'إرسال رمز نفاذ للتحقق الفوري عند تسجيل العميل.')}</p>
                     </div>
                     <Controller
                       name="elm.nafathOtpEnabled"
                       control={control}
-                      render={({ field }) => (
-                        <input
-                          type="checkbox"
-                          checked={field.value}
-                          onChange={field.onChange}
-                          className="w-10 h-6 bg-gray-200 rounded-full appearance-none checked:bg-primary-500 relative transition-colors cursor-pointer before:content-[\'\'] before:absolute before:w-4 before:h-4 before:bg-white before:rounded-full before:top-1 before:left-1 checked:before:left-5 before:transition-all"
-                        />
-                      )}
+                      render={({ field }) => <Toggle checked={field.value} onChange={field.onChange} />}
                     />
                   </div>
+                </div>
 
-                  <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-dark-750 rounded-2xl">
-                    <div>
-                      <span className="font-semibold text-sm">{t('Enable TAMM Driver Authorization & violation polling', 'تفعيل تفويض سائقي تم والاستعلام عن المخالفات')}</span>
-                      <p className="text-xs text-gray-400">{t('Syncs driver statistics, active rentals, and polls traffic violation state.', 'يزامن إحصائيات السائقين، التأجيرات النشطة، والمخالفات المرورية.')}</p>
+                {/* 2. Tamm (Amakin) */}
+                <div className="card p-0 overflow-hidden border border-gray-200 dark:border-dark-700">
+                  <div className="p-4 flex items-center justify-between bg-gray-50 dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">🏛️</span>
+                      <div>
+                        <h4 className="font-bold text-sm text-gray-900 dark:text-white flex items-center gap-2">
+                          {t('Tamm (Amakin)', 'تمم (أماكن)')}
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">MOT</span>
+                        </h4>
+                        <p className="text-xs text-gray-400">{t('Saudi Ministry of Transport – rental contract registry', 'وزارة النقل السعودية – سجل عقود التأجير')}</p>
+                      </div>
                     </div>
                     <Controller
-                      name="elm.tammEnabled"
+                      name="carRentalIntegrations.tamm.enabled"
                       control={control}
-                      render={({ field }) => (
-                        <input
-                          type="checkbox"
-                          checked={field.value}
-                          onChange={field.onChange}
-                          className="w-10 h-6 bg-gray-200 rounded-full appearance-none checked:bg-primary-500 relative transition-colors cursor-pointer before:content-[\'\'] before:absolute before:w-4 before:h-4 before:bg-white before:rounded-full before:top-1 before:left-1 checked:before:left-5 before:transition-all"
-                        />
-                      )}
+                      render={({ field }) => <Toggle checked={field.value} onChange={field.onChange} />}
                     />
+                  </div>
+                  
+                  {watch('carRentalIntegrations.tamm.enabled') && (
+                    <div className="p-5 space-y-4 bg-white dark:bg-dark-800">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="label text-xs">{t('API Key', 'مفتاح API')}</label>
+                          <input type="password" placeholder="tamm_key_..." {...register('carRentalIntegrations.tamm.apiKey')} className="input mt-1" />
+                        </div>
+                        <div>
+                          <label className="label text-xs">{t('API Secret', 'سر API')}</label>
+                          <input type="password" placeholder="tamm_secret_..." {...register('carRentalIntegrations.tamm.apiSecret')} className="input mt-1" />
+                        </div>
+                        <div>
+                          <label className="label text-xs">{t('Company License No.', 'رقم رخصة الشركة')}</label>
+                          <input placeholder="7100XXXXXXX" {...register('carRentalIntegrations.tamm.companyLicenseNumber')} className="input mt-1" />
+                        </div>
+                        <div>
+                          <label className="label text-xs">{t('Environment', 'البيئة')}</label>
+                          <div className="flex gap-2 mt-1">
+                            {['sandbox', 'production'].map(env => (
+                              <button
+                                key={env}
+                                type="button"
+                                onClick={() => control._fields['carRentalIntegrations.tamm.environment']._f.onChange(env)}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                                  watch('carRentalIntegrations.tamm.environment') === env
+                                    ? env === 'production'
+                                      ? 'bg-emerald-500 text-white'
+                                      : 'bg-amber-500 text-white'
+                                    : 'bg-gray-100 dark:bg-dark-700 text-gray-500'
+                                }`}
+                              >
+                                {env === 'sandbox' ? '🧪 Sandbox' : '🚀 Production'}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-dark-750">
+                        <div>
+                          <p className="text-xs font-semibold text-gray-900 dark:text-white">{t('Auto-sync contracts to Tamm', 'مزامنة العقود تلقائياً إلى تمم')}</p>
+                          <p className="text-[10px] text-gray-400">{t('Push every checkout to the government registry', 'إرسال كل عقد تأجير إلى سجل وزارة النقل')}</p>
+                        </div>
+                        <Controller
+                          name="carRentalIntegrations.tamm.autoSyncContracts"
+                          control={control}
+                          render={({ field }) => <Toggle checked={field.value} onChange={field.onChange} />}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 3. NAJM */}
+                <div className="card p-0 overflow-hidden border border-gray-200 dark:border-dark-700">
+                  <div className="p-4 flex items-center justify-between bg-gray-50 dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">🛡️</span>
+                      <div>
+                        <h4 className="font-bold text-sm text-gray-900 dark:text-white flex items-center gap-2">
+                          {t('NAJM Insurance', 'نجم للتأمين')}
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">NAJM</span>
+                        </h4>
+                        <p className="text-xs text-gray-400">{t('Saudi Insurance Services – accident & claim verification', 'شركة نجم – التحقق من التأمين والحوادث')}</p>
+                      </div>
+                    </div>
+                    <Controller
+                      name="carRentalIntegrations.najm.enabled"
+                      control={control}
+                      render={({ field }) => <Toggle checked={field.value} onChange={field.onChange} />}
+                    />
+                  </div>
+                  
+                  {watch('carRentalIntegrations.najm.enabled') && (
+                    <div className="p-5 space-y-4 bg-white dark:bg-dark-800">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="label text-xs">{t('API Key', 'مفتاح API')}</label>
+                          <input type="password" placeholder="najm_..." {...register('carRentalIntegrations.najm.apiKey')} className="input mt-1" />
+                        </div>
+                        <div>
+                          <label className="label text-xs">{t('Client ID', 'معرف العميل')}</label>
+                          <input placeholder="client_id" {...register('carRentalIntegrations.najm.clientId')} className="input mt-1" />
+                        </div>
+                        <div>
+                          <label className="label text-xs">{t('Client Secret', 'سر العميل')}</label>
+                          <input type="password" placeholder="client_secret" {...register('carRentalIntegrations.najm.clientSecret')} className="input mt-1" />
+                        </div>
+                        <div>
+                          <label className="label text-xs">{t('Environment', 'البيئة')}</label>
+                          <div className="flex gap-2 mt-1">
+                            {['sandbox', 'production'].map(env => (
+                              <button
+                                key={env}
+                                type="button"
+                                onClick={() => control._fields['carRentalIntegrations.najm.environment']._f.onChange(env)}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                                  watch('carRentalIntegrations.najm.environment') === env
+                                    ? env === 'production'
+                                      ? 'bg-emerald-500 text-white'
+                                      : 'bg-amber-500 text-white'
+                                    : 'bg-gray-100 dark:bg-dark-700 text-gray-500'
+                                }`}
+                              >
+                                {env === 'sandbox' ? '🧪 Sandbox' : '🚀 Production'}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-dark-750">
+                        <div>
+                          <p className="text-xs font-semibold text-gray-900 dark:text-white">{t('Auto-check customer at checkout', 'التحقق التلقائي عند التأجير')}</p>
+                          <p className="text-[10px] text-gray-400">{t('Verify insurance & accident history before rental', 'التحقق من التأمين وتاريخ الحوادث قبل التأجير')}</p>
+                        </div>
+                        <Controller
+                          name="carRentalIntegrations.najm.autoCheckOnCheckout"
+                          control={control}
+                          render={({ field }) => <Toggle checked={field.value} onChange={field.onChange} />}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 4. Wathiq */}
+                <div className="card p-0 overflow-hidden border border-gray-200 dark:border-dark-700">
+                  <div className="p-4 flex items-center justify-between bg-gray-50 dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">🪪</span>
+                      <div>
+                        <h4 className="font-bold text-sm text-gray-900 dark:text-white flex items-center gap-2">
+                          {t('Wathiq (SAFCSP)', 'وثيق')}
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">NIC</span>
+                        </h4>
+                        <p className="text-xs text-gray-400">{t('National identity & document verification – هيئة الاتصالات', 'التحقق من الهوية الوطنية – وثيق')}</p>
+                      </div>
+                    </div>
+                    <Controller
+                      name="carRentalIntegrations.wathiq.enabled"
+                      control={control}
+                      render={({ field }) => <Toggle checked={field.value} onChange={field.onChange} />}
+                    />
+                  </div>
+                  
+                  {watch('carRentalIntegrations.wathiq.enabled') && (
+                    <div className="p-5 space-y-4 bg-white dark:bg-dark-800">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="label text-xs">{t('API Key', 'مفتاح API')}</label>
+                          <input type="password" placeholder="wathiq_..." {...register('carRentalIntegrations.wathiq.apiKey')} className="input mt-1" />
+                        </div>
+                        <div>
+                          <label className="label text-xs">{t('App ID', 'معرف التطبيق')}</label>
+                          <input placeholder="app_id" {...register('carRentalIntegrations.wathiq.appId')} className="input mt-1" />
+                        </div>
+                        <div>
+                          <label className="label text-xs">{t('Environment', 'البيئة')}</label>
+                          <div className="flex gap-2 mt-1">
+                            {['sandbox', 'production'].map(env => (
+                              <button
+                                key={env}
+                                type="button"
+                                onClick={() => control._fields['carRentalIntegrations.wathiq.environment']._f.onChange(env)}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                                  watch('carRentalIntegrations.wathiq.environment') === env
+                                    ? env === 'production'
+                                      ? 'bg-emerald-500 text-white'
+                                      : 'bg-amber-500 text-white'
+                                    : 'bg-gray-100 dark:bg-dark-700 text-gray-500'
+                                }`}
+                              >
+                                {env === 'sandbox' ? '🧪 Sandbox' : '🚀 Production'}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-dark-750">
+                        <div>
+                          <p className="text-xs font-semibold text-gray-900 dark:text-white">{t('Auto-verify ID on customer registration', 'تحقق تلقائي عند تسجيل العميل')}</p>
+                          <p className="text-[10px] text-gray-400">{t('Verify Iqama/National ID against government DB', 'التحقق من الإقامة/الهوية من قاعدة بيانات الحكومة')}</p>
+                        </div>
+                        <Controller
+                          name="carRentalIntegrations.wathiq.autoVerifyId"
+                          control={control}
+                          render={({ field }) => <Toggle checked={field.value} onChange={field.onChange} />}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 5. SMS */}
+                <div className="card p-0 overflow-hidden border border-gray-200 dark:border-dark-700">
+                  <div className="p-4 flex items-center justify-between bg-gray-50 dark:bg-dark-800 border-b border-gray-200 dark:border-dark-700">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">📱</span>
+                      <div>
+                        <h4 className="font-bold text-sm text-gray-900 dark:text-white">{t('SMS Notifications', 'إشعارات SMS')}</h4>
+                        <p className="text-xs text-gray-400">{t('Taqnyat / Unifonic / Msegat – automated customer alerts', 'تقنيات / يونيفونيك / مسجات – إشعارات تلقائية')}</p>
+                      </div>
+                    </div>
+                    <Controller
+                      name="carRentalIntegrations.sms.enabled"
+                      control={control}
+                      render={({ field }) => <Toggle checked={field.value} onChange={field.onChange} />}
+                    />
+                  </div>
+                  
+                  {watch('carRentalIntegrations.sms.enabled') && (
+                    <div className="p-5 space-y-4 bg-white dark:bg-dark-800">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="col-span-full space-y-1">
+                          <label className="label text-xs">{t('Provider', 'المزود')}</label>
+                          <div className="flex gap-2 mt-1">
+                            {['taqnyat', 'unifonic', 'msegat', 'custom'].map(p => (
+                              <button
+                                key={p}
+                                type="button"
+                                onClick={() => control._fields['carRentalIntegrations.sms.provider']._f.onChange(p)}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold capitalize transition-all ${
+                                  watch('carRentalIntegrations.sms.provider') === p
+                                    ? 'bg-emerald-500 text-white shadow-md'
+                                    : 'bg-gray-100 dark:bg-dark-700 text-gray-500'
+                                }`}
+                              >
+                                {p}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="label text-xs">{t('API Key', 'مفتاح API')}</label>
+                          <input type="password" placeholder="sms_api_key..." {...register('carRentalIntegrations.sms.apiKey')} className="input mt-1" />
+                        </div>
+                        <div>
+                          <label className="label text-xs">{t('Sender ID', 'معرف المرسل')}</label>
+                          <input placeholder="MAQDER" maxLength={11} {...register('carRentalIntegrations.sms.senderId')} className="input mt-1" />
+                          <p className="text-[10px] text-gray-400 mt-1">{t('Max 11 characters', 'حد أقصى 11 حرف')}</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 border-t border-gray-100 dark:border-dark-750 pt-3">
+                        <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-dark-700">
+                          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">🚗 {t('On Checkout', 'عند التأجير')}</span>
+                          <Controller
+                            name="carRentalIntegrations.sms.sendOnCheckout"
+                            control={control}
+                            render={({ field }) => <Toggle checked={field.value} onChange={field.onChange} />}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-dark-700">
+                          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">✅ {t('On Check-In', 'عند الإرجاع')}</span>
+                          <Controller
+                            name="carRentalIntegrations.sms.sendOnCheckin"
+                            control={control}
+                            render={({ field }) => <Toggle checked={field.value} onChange={field.onChange} />}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-dark-700">
+                          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">⚠️ {t('On Overdue', 'عند التأخر')}</span>
+                          <Controller
+                            name="carRentalIntegrations.sms.sendOnOverdue"
+                            control={control}
+                            render={({ field }) => <Toggle checked={field.value} onChange={field.onChange} />}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 6. Integration Documentation Notice */}
+                <div className="rounded-2xl p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/40 flex gap-3">
+                  <span className="text-xl flex-shrink-0">ℹ️</span>
+                  <div className="text-xs text-blue-800 dark:text-blue-300">
+                    <p className="font-bold mb-1 text-sm">{t('Integration Documentation', 'توثيق التكاملات')}</p>
+                    <ul className="space-y-0.5 text-blue-700 dark:text-blue-400">
+                      <li>• <strong>Tamm:</strong> developer.tamm.sa</li>
+                      <li>• <strong>NAJM:</strong> developer.najm.sa</li>
+                      <li>• <strong>Wathiq:</strong> wathiq.com/api</li>
+                      <li>• <strong>Taqnyat:</strong> api.taqnyat.sa</li>
+                    </ul>
                   </div>
                 </div>
               </motion.div>
@@ -680,14 +1050,7 @@ export default function GovernmentIntegrations() {
                     <Controller
                       name="qiwa.contractAuthAutomationEnabled"
                       control={control}
-                      render={({ field }) => (
-                        <input
-                          type="checkbox"
-                          checked={field.value}
-                          onChange={field.onChange}
-                          className="w-10 h-6 bg-gray-200 rounded-full appearance-none checked:bg-primary-500 relative transition-colors cursor-pointer before:content-[\'\'] before:absolute before:w-4 before:h-4 before:bg-white before:rounded-full before:top-1 before:left-1 checked:before:left-5 before:transition-all"
-                        />
-                      )}
+                      render={({ field }) => <Toggle checked={field.value} onChange={field.onChange} />}
                     />
                   </div>
 
@@ -699,14 +1062,7 @@ export default function GovernmentIntegrations() {
                     <Controller
                       name="qiwa.saudizationWidgetEnabled"
                       control={control}
-                      render={({ field }) => (
-                        <input
-                          type="checkbox"
-                          checked={field.value}
-                          onChange={field.onChange}
-                          className="w-10 h-6 bg-gray-200 rounded-full appearance-none checked:bg-primary-500 relative transition-colors cursor-pointer before:content-[\'\'] before:absolute before:w-4 before:h-4 before:bg-white before:rounded-full before:top-1 before:left-1 checked:before:left-5 before:transition-all"
-                        />
-                      )}
+                      render={({ field }) => <Toggle checked={field.value} onChange={field.onChange} />}
                     />
                   </div>
                 </div>
@@ -762,14 +1118,7 @@ export default function GovernmentIntegrations() {
                     <Controller
                       name="mudad.autoSifUploadEnabled"
                       control={control}
-                      render={({ field }) => (
-                        <input
-                          type="checkbox"
-                          checked={field.value}
-                          onChange={field.onChange}
-                          className="w-10 h-6 bg-gray-200 rounded-full appearance-none checked:bg-primary-500 relative transition-colors cursor-pointer before:content-[\'\'] before:absolute before:w-4 before:h-4 before:bg-white before:rounded-full before:top-1 before:left-1 checked:before:left-5 before:transition-all"
-                        />
-                      )}
+                      render={({ field }) => <Toggle checked={field.value} onChange={field.onChange} />}
                     />
                   </div>
                 </div>

@@ -27,6 +27,7 @@ router.get('/', async (req, res) => {
 
     const saudi = tenant.settings?.saudiIntegrations || {};
     const zatca = tenant.zatca || {};
+    const cri = tenant.settings?.carRentalIntegrations || {};
 
     res.json({
       zatca: {
@@ -64,6 +65,41 @@ router.get('/', async (req, res) => {
       gosi: {
         registrationNumber: saudi.gosi?.registrationNumber || saudi.gosi?.establishmentId || '',
         enabled: saudi.gosi?.enabled || false,
+      },
+      carRentalIntegrations: {
+        tamm: {
+          enabled: cri.tamm?.enabled || false,
+          apiKey: cri.tamm?.apiKey || '',
+          apiKeyMasked: maskSecret(cri.tamm?.apiKey),
+          apiSecretMasked: maskSecret(cri.tamm?.apiSecret),
+          companyLicenseNumber: cri.tamm?.companyLicenseNumber || '',
+          environment: cri.tamm?.environment || 'sandbox',
+          autoSyncContracts: cri.tamm?.autoSyncContracts || false,
+        },
+        najm: {
+          enabled: cri.najm?.enabled || false,
+          apiKeyMasked: maskSecret(cri.najm?.apiKey),
+          clientId: cri.najm?.clientId || '',
+          clientSecretMasked: maskSecret(cri.najm?.clientSecret),
+          environment: cri.najm?.environment || 'sandbox',
+          autoCheckOnCheckout: cri.najm?.autoCheckOnCheckout !== false,
+        },
+        wathiq: {
+          enabled: cri.wathiq?.enabled || false,
+          apiKeyMasked: maskSecret(cri.wathiq?.apiKey),
+          appId: cri.wathiq?.appId || '',
+          environment: cri.wathiq?.environment || 'sandbox',
+          autoVerifyId: cri.wathiq?.autoVerifyId !== false,
+        },
+        sms: {
+          enabled: cri.smsNotifications?.enabled || false,
+          provider: cri.smsNotifications?.provider || 'taqnyat',
+          apiKeyMasked: maskSecret(cri.smsNotifications?.apiKey),
+          senderId: cri.smsNotifications?.senderId || '',
+          sendOnCheckout: cri.smsNotifications?.sendOnCheckout !== false,
+          sendOnCheckin: cri.smsNotifications?.sendOnCheckin !== false,
+          sendOnOverdue: cri.smsNotifications?.sendOnOverdue !== false,
+        }
       }
     });
   } catch (error) {
@@ -75,7 +111,7 @@ router.get('/', async (req, res) => {
 // @desc    Save/Update tenant compliance configs securely
 router.post('/', async (req, res) => {
   try {
-    const { zatca, elm, qiwa, mudad, gosi } = req.body;
+    const { zatca, elm, qiwa, mudad, gosi, carRentalIntegrations } = req.body;
     const tenant = await Tenant.findById(req.user.tenantId);
     if (!tenant) {
       return res.status(404).json({ error: 'Tenant not found' });
@@ -89,6 +125,7 @@ router.post('/', async (req, res) => {
     if (!tenant.settings.saudiIntegrations.qiwa) tenant.settings.saudiIntegrations.qiwa = {};
     if (!tenant.settings.saudiIntegrations.mudad) tenant.settings.saudiIntegrations.mudad = {};
     if (!tenant.settings.saudiIntegrations.gosi) tenant.settings.saudiIntegrations.gosi = {};
+    if (!tenant.settings.carRentalIntegrations) tenant.settings.carRentalIntegrations = {};
 
     // 1. ZATCA Environment & Keys
     if (zatca) {
@@ -153,6 +190,69 @@ router.post('/', async (req, res) => {
       tenant.settings.saudiIntegrations.gosi.registrationNumber = gosi.registrationNumber || '';
       tenant.settings.saudiIntegrations.gosi.establishmentId = gosi.registrationNumber || '';
       tenant.settings.saudiIntegrations.gosi.enabled = !!gosi.enabled;
+    }
+
+    // 5. Car Rental Integrations
+    if (carRentalIntegrations) {
+      // Tamm
+      if (carRentalIntegrations.tamm) {
+        if (!tenant.settings.carRentalIntegrations.tamm) tenant.settings.carRentalIntegrations.tamm = {};
+        tenant.settings.carRentalIntegrations.tamm.enabled = !!carRentalIntegrations.tamm.enabled;
+        tenant.settings.carRentalIntegrations.tamm.companyLicenseNumber = carRentalIntegrations.tamm.companyLicenseNumber || '';
+        tenant.settings.carRentalIntegrations.tamm.environment = carRentalIntegrations.tamm.environment || 'sandbox';
+        tenant.settings.carRentalIntegrations.tamm.autoSyncContracts = !!carRentalIntegrations.tamm.autoSyncContracts;
+        
+        if (carRentalIntegrations.tamm.apiKey && !carRentalIntegrations.tamm.apiKey.startsWith('*')) {
+          tenant.settings.carRentalIntegrations.tamm.apiKey = carRentalIntegrations.tamm.apiKey;
+        }
+        if (carRentalIntegrations.tamm.apiSecret && !carRentalIntegrations.tamm.apiSecret.startsWith('*')) {
+          tenant.settings.carRentalIntegrations.tamm.apiSecret = carRentalIntegrations.tamm.apiSecret;
+        }
+      }
+
+      // NAJM
+      if (carRentalIntegrations.najm) {
+        if (!tenant.settings.carRentalIntegrations.najm) tenant.settings.carRentalIntegrations.najm = {};
+        tenant.settings.carRentalIntegrations.najm.enabled = !!carRentalIntegrations.najm.enabled;
+        tenant.settings.carRentalIntegrations.najm.clientId = carRentalIntegrations.najm.clientId || '';
+        tenant.settings.carRentalIntegrations.najm.environment = carRentalIntegrations.najm.environment || 'sandbox';
+        tenant.settings.carRentalIntegrations.najm.autoCheckOnCheckout = !!carRentalIntegrations.najm.autoCheckOnCheckout;
+        
+        if (carRentalIntegrations.najm.apiKey && !carRentalIntegrations.najm.apiKey.startsWith('*')) {
+          tenant.settings.carRentalIntegrations.najm.apiKey = carRentalIntegrations.najm.apiKey;
+        }
+        if (carRentalIntegrations.najm.clientSecret && !carRentalIntegrations.najm.clientSecret.startsWith('*')) {
+          tenant.settings.carRentalIntegrations.najm.clientSecret = carRentalIntegrations.najm.clientSecret;
+        }
+      }
+
+      // Wathiq
+      if (carRentalIntegrations.wathiq) {
+        if (!tenant.settings.carRentalIntegrations.wathiq) tenant.settings.carRentalIntegrations.wathiq = {};
+        tenant.settings.carRentalIntegrations.wathiq.enabled = !!carRentalIntegrations.wathiq.enabled;
+        tenant.settings.carRentalIntegrations.wathiq.appId = carRentalIntegrations.wathiq.appId || '';
+        tenant.settings.carRentalIntegrations.wathiq.environment = carRentalIntegrations.wathiq.environment || 'sandbox';
+        tenant.settings.carRentalIntegrations.wathiq.autoVerifyId = !!carRentalIntegrations.wathiq.autoVerifyId;
+        
+        if (carRentalIntegrations.wathiq.apiKey && !carRentalIntegrations.wathiq.apiKey.startsWith('*')) {
+          tenant.settings.carRentalIntegrations.wathiq.apiKey = carRentalIntegrations.wathiq.apiKey;
+        }
+      }
+
+      // SMS
+      if (carRentalIntegrations.sms) {
+        if (!tenant.settings.carRentalIntegrations.smsNotifications) tenant.settings.carRentalIntegrations.smsNotifications = {};
+        tenant.settings.carRentalIntegrations.smsNotifications.enabled = !!carRentalIntegrations.sms.enabled;
+        tenant.settings.carRentalIntegrations.smsNotifications.provider = carRentalIntegrations.sms.provider || 'taqnyat';
+        tenant.settings.carRentalIntegrations.smsNotifications.senderId = carRentalIntegrations.sms.senderId || '';
+        tenant.settings.carRentalIntegrations.smsNotifications.sendOnCheckout = !!carRentalIntegrations.sms.sendOnCheckout;
+        tenant.settings.carRentalIntegrations.smsNotifications.sendOnCheckin = !!carRentalIntegrations.sms.sendOnCheckin;
+        tenant.settings.carRentalIntegrations.smsNotifications.sendOnOverdue = !!carRentalIntegrations.sms.sendOnOverdue;
+        
+        if (carRentalIntegrations.sms.apiKey && !carRentalIntegrations.sms.apiKey.startsWith('*')) {
+          tenant.settings.carRentalIntegrations.smsNotifications.apiKey = carRentalIntegrations.sms.apiKey;
+        }
+      }
     }
 
     tenant.markModified('zatca');
