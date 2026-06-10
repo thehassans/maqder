@@ -265,7 +265,7 @@ export default function TenantForm() {
 
             <div>
               <label className="label">{language === 'ar' ? 'نوع النشاط' : 'Business Type'}</label>
-              <div className="grid grid-cols-1 gap-3 mt-2">
+              <div className="flex flex-wrap gap-2 mt-2">
                 {businessTypeOptions.map((option) => {
                   const active = watchedBusinessTypes.includes(option.id)
                   return (
@@ -273,10 +273,9 @@ export default function TenantForm() {
                       key={option.id}
                       type="button"
                       onClick={() => toggleBusinessType(option.id)}
-                      className={`rounded-2xl border p-4 text-start transition-all ${active ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-dark-600'}`}
+                      className={`rounded-xl px-4 py-2.5 text-sm font-medium border transition-all ${active ? 'border-primary-500 bg-primary-50 text-primary-700 dark:border-primary-500/50 dark:bg-primary-900/30 dark:text-primary-300 shadow-sm' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-400 dark:hover:border-dark-500'}`}
                     >
-                      <p className="font-semibold text-gray-900 dark:text-white">{option.label}</p>
-                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{option.description}</p>
+                      {option.label}
                     </button>
                   )
                 })}
@@ -284,20 +283,22 @@ export default function TenantForm() {
               <input type="hidden" {...register('businessTypes')} />
             </div>
 
-            <div>
-              <label className="label">{language === 'ar' ? 'النشاط الأساسي (الواجهة الافتراضية)' : 'Primary Context (Default Dashboard)'}</label>
-              <select {...register('businessType')} className="select">
-                {watchedBusinessTypes.map((typeId) => {
-                  const opt = businessTypeOptions.find((o) => o.id === typeId)
-                  return (
-                    <option key={typeId} value={typeId}>
-                      {opt?.label}
-                    </option>
-                  )
-                })}
-              </select>
-              <p className="text-xs text-gray-500 mt-2">{language === 'ar' ? 'جميع الأنشطة المحددة أعلاه ستكون فعالة. هذا الخيار يحدد الواجهة الافتراضية فقط.' : 'All selected types above will be active. This only sets the default dashboard.'}</p>
-            </div>
+            {watchedBusinessTypes.length > 1 && (
+              <div>
+                <label className="label">{language === 'ar' ? 'النشاط الأساسي (الواجهة الافتراضية)' : 'Primary Context (Default Dashboard)'}</label>
+                <select {...register('businessType')} className="select">
+                  {watchedBusinessTypes.map((typeId) => {
+                    const opt = businessTypeOptions.find((o) => o.id === typeId)
+                    return (
+                      <option key={typeId} value={typeId}>
+                        {opt?.label}
+                      </option>
+                    )
+                  })}
+                </select>
+                <p className="text-xs text-gray-500 mt-2">{language === 'ar' ? 'جميع الأنشطة المحددة أعلاه ستكون فعالة. هذا الخيار يحدد الواجهة الافتراضية فقط.' : 'All selected types above will be active. This only sets the default dashboard.'}</p>
+              </div>
+            )}
             <div>
               <label className="label">{language === 'ar' ? 'الاسم القانوني (EN)' : 'Legal Name (EN)'} *</label>
               <input {...register('business.legalNameEn', { required: true })} className="input" />
@@ -314,50 +315,54 @@ export default function TenantForm() {
               <label className="label">{language === 'ar' ? 'السجل التجاري' : 'CR Number'} *</label>
               <input {...register('business.crNumber', { required: true })} className="input" />
             </div>
-            <div>
-              <label className="label">{language === 'ar' ? 'المدينة' : 'City'}</label>
-              <input {...register('business.address.city')} className="input" />
-            </div>
-            <div>
-              <label className="label">{language === 'ar' ? 'المدينة (AR)' : 'City (AR)'}</label>
-              <input {...register('business.address.cityAr')} className="input" dir="rtl" />
-            </div>
-            <div>
-              <label className="label">{language === 'ar' ? 'الحي' : 'District'}</label>
-              <input {...register('business.address.district')} className="input" />
-            </div>
-            <div>
-              <label className="label">{language === 'ar' ? 'الحي (AR)' : 'District (AR)'}</label>
-              <input {...register('business.address.districtAr')} className="input" dir="rtl" />
-            </div>
-            <div>
-              <label className="label">{language === 'ar' ? 'الشارع' : 'Street'}</label>
-              <input {...register('business.address.street')} className="input" />
-            </div>
-            <div>
-              <label className="label">{language === 'ar' ? 'الشارع (AR)' : 'Street (AR)'}</label>
-              <input {...register('business.address.streetAr')} className="input" dir="rtl" />
-            </div>
-            <div>
-              <label className="label">{language === 'ar' ? 'الرمز البريدي' : 'Postal Code'}</label>
-              <input {...register('business.address.postalCode')} className="input" />
-            </div>
-            <div>
-              <label className="label">{language === 'ar' ? 'رقم المبنى' : 'Building Number'}</label>
-              <input {...register('business.address.buildingNumber')} className="input" />
-            </div>
-            <div>
-              <label className="label">{language === 'ar' ? 'الرقم الإضافي' : 'Additional Number'}</label>
-              <input {...register('business.address.additionalNumber')} className="input" />
-            </div>
-            <div>
-              <label className="label">{language === 'ar' ? 'الدولة' : 'Country'}</label>
-              <input {...register('business.address.country')} className="input" placeholder="SA" />
-            </div>
-            <div>
-              <label className="label">{language === 'ar' ? 'البريد الإلكتروني' : 'Email'}</label>
-              <input type="email" {...register('business.contactEmail')} className="input" />
-            </div>
+            {isEdit && (
+              <>
+                <div>
+                  <label className="label">{language === 'ar' ? 'المدينة' : 'City'}</label>
+                  <input {...register('business.address.city')} className="input" />
+                </div>
+                <div>
+                  <label className="label">{language === 'ar' ? 'المدينة (AR)' : 'City (AR)'}</label>
+                  <input {...register('business.address.cityAr')} className="input" dir="rtl" />
+                </div>
+                <div>
+                  <label className="label">{language === 'ar' ? 'الحي' : 'District'}</label>
+                  <input {...register('business.address.district')} className="input" />
+                </div>
+                <div>
+                  <label className="label">{language === 'ar' ? 'الحي (AR)' : 'District (AR)'}</label>
+                  <input {...register('business.address.districtAr')} className="input" dir="rtl" />
+                </div>
+                <div>
+                  <label className="label">{language === 'ar' ? 'الشارع' : 'Street'}</label>
+                  <input {...register('business.address.street')} className="input" />
+                </div>
+                <div>
+                  <label className="label">{language === 'ar' ? 'الشارع (AR)' : 'Street (AR)'}</label>
+                  <input {...register('business.address.streetAr')} className="input" dir="rtl" />
+                </div>
+                <div>
+                  <label className="label">{language === 'ar' ? 'الرمز البريدي' : 'Postal Code'}</label>
+                  <input {...register('business.address.postalCode')} className="input" />
+                </div>
+                <div>
+                  <label className="label">{language === 'ar' ? 'رقم المبنى' : 'Building Number'}</label>
+                  <input {...register('business.address.buildingNumber')} className="input" />
+                </div>
+                <div>
+                  <label className="label">{language === 'ar' ? 'الرقم الإضافي' : 'Additional Number'}</label>
+                  <input {...register('business.address.additionalNumber')} className="input" />
+                </div>
+                <div>
+                  <label className="label">{language === 'ar' ? 'الدولة' : 'Country'}</label>
+                  <input {...register('business.address.country')} className="input" placeholder="SA" />
+                </div>
+                <div>
+                  <label className="label">{language === 'ar' ? 'البريد الإلكتروني' : 'Email'}</label>
+                  <input type="email" {...register('business.contactEmail')} className="input" />
+                </div>
+              </>
+            )}
           </div>
         </motion.div>
 
@@ -512,17 +517,19 @@ export default function TenantForm() {
         </motion.div>
         ) : null}
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
-          <EmailAdminSettingsSection
-            register={register}
-            watch={watch}
-            language={language}
-            tenantName={watch('business.legalNameEn') || watch('business.legalNameAr') || watch('name') || ''}
-            tenantSlug={watch('slug') || ''}
-            contactEmail={watch('business.contactEmail') || ''}
-            initialEmailSettings={tenant?.tenant?.settings?.communication?.email || {}}
-          />
-        </motion.div>
+        {isEdit && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
+            <EmailAdminSettingsSection
+              register={register}
+              watch={watch}
+              language={language}
+              tenantName={watch('business.legalNameEn') || watch('business.legalNameAr') || watch('name') || ''}
+              tenantSlug={watch('slug') || ''}
+              contactEmail={watch('business.contactEmail') || ''}
+              initialEmailSettings={tenant?.tenant?.settings?.communication?.email || {}}
+            />
+          </motion.div>
+        )}
 
         {/* Subscription */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="card p-6">
@@ -555,54 +562,58 @@ export default function TenantForm() {
                 <option value="yearly">{language === 'ar' ? 'سنوي' : 'Yearly'}</option>
               </select>
             </div>
-            <div>
-              <label className="label">{language === 'ar' ? 'تاريخ الانتهاء' : 'End Date'}</label>
-              <input type="date" {...register('subscription.endDate')} className="input" />
-            </div>
-            <div>
-              <label className="label">{language === 'ar' ? 'الحد الأقصى للمستخدمين' : 'Max Users'}</label>
-              <input type="number" {...register('subscription.maxUsers', { valueAsNumber: true })} className="input" />
-            </div>
-            <div>
-              <label className="label">{language === 'ar' ? 'الحد الأقصى للفواتير' : 'Max Invoices'}</label>
-              <input type="number" {...register('subscription.maxInvoices', { valueAsNumber: true })} className="input" />
-            </div>
-            <div>
-              <label className="label">
-                <span className="inline-flex items-center gap-1">
-                  {language === 'ar' ? 'السعر' : 'Price'}
-                  <SarIcon className="w-[1em] h-[1em]" />
-                </span>
-              </label>
-              <input type="number" {...register('subscription.price', { valueAsNumber: true })} className="input" />
-            </div>
-            <label className="md:col-span-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20 flex items-center justify-between gap-4">
-              <div>
-                <p className="font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'إضافة البريد الإلكتروني' : 'Email Add-on'}</p>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{language === 'ar' ? 'يمنح المستأجر صندوق البريد، الإرسال التلقائي للفواتير، وربط هوية SMTP خاصة.' : 'Grants the tenant inbox access, automated invoice delivery, and custom SMTP identity support.'}</p>
-              </div>
-              <input type="checkbox" {...register('subscription.hasEmailAddon')} className="h-4 w-4" />
-            </label>
-            <label className="md:col-span-3 rounded-2xl border border-cyan-200 bg-cyan-50/70 p-4 dark:border-cyan-900/40 dark:bg-cyan-950/20 flex items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'إضافة إنترنت الأشياء (IoT)' : 'IoT Add-on'}</p>
-                  <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-[10px] font-bold uppercase">Smart Corp</span>
+            {isEdit && (
+              <>
+                <div>
+                  <label className="label">{language === 'ar' ? 'تاريخ الانتهاء' : 'End Date'}</label>
+                  <input type="date" {...register('subscription.endDate')} className="input" />
                 </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{language === 'ar' ? 'يمكّن المستأجر من دمج وإدارة بنيته التحتية الكاملة عبر شبكة إنترنت الأشياء — مستشعرات، بوابات، عدادات، وأنظمة مؤسسية ذكية.' : 'Enables the tenant to integrate and manage their complete corporate infrastructure through a unified IoT network — sensors, gateways, meters, and smart enterprise systems.'}</p>
-              </div>
-              <input type="checkbox" {...register('subscription.hasIotAddon')} className="h-4 w-4 accent-cyan-500" />
-            </label>
-            <label className="md:col-span-3 rounded-2xl border border-teal-200 bg-teal-50/70 p-4 dark:border-teal-900/40 dark:bg-teal-950/20 flex items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <p className="font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'إضافة الميزان الذكي (Bakala)' : 'Weight Scale Add-on (Bakala)'}</p>
-                  <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[10px] font-bold uppercase">Premium</span>
+                <div>
+                  <label className="label">{language === 'ar' ? 'الحد الأقصى للمستخدمين' : 'Max Users'}</label>
+                  <input type="number" {...register('subscription.maxUsers', { valueAsNumber: true })} className="input" />
                 </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">{language === 'ar' ? 'يمكّن المستأجر من استخدام الميزان لطباعة ملصقات الباركود للمنتجات الموزونة (خاص بالسوبرماركت).' : 'Enables the smart weight scale feature to print and read weight barcodes for supermarket items.'}</p>
-              </div>
-              <input type="checkbox" {...register('subscription.hasWeightScaleAddon')} className="h-4 w-4 accent-teal-500" />
-            </label>
+                <div>
+                  <label className="label">{language === 'ar' ? 'الحد الأقصى للفواتير' : 'Max Invoices'}</label>
+                  <input type="number" {...register('subscription.maxInvoices', { valueAsNumber: true })} className="input" />
+                </div>
+                <div>
+                  <label className="label">
+                    <span className="inline-flex items-center gap-1">
+                      {language === 'ar' ? 'السعر' : 'Price'}
+                      <SarIcon className="w-[1em] h-[1em]" />
+                    </span>
+                  </label>
+                  <input type="number" {...register('subscription.price', { valueAsNumber: true })} className="input" />
+                </div>
+                <label className="md:col-span-3 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20 flex items-center justify-between gap-4">
+                  <div>
+                    <p className="font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'إضافة البريد الإلكتروني' : 'Email Add-on'}</p>
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{language === 'ar' ? 'يمنح المستأجر صندوق البريد، الإرسال التلقائي للفواتير، وربط هوية SMTP خاصة.' : 'Grants the tenant inbox access, automated invoice delivery, and custom SMTP identity support.'}</p>
+                  </div>
+                  <input type="checkbox" {...register('subscription.hasEmailAddon')} className="h-4 w-4" />
+                </label>
+                <label className="md:col-span-3 rounded-2xl border border-cyan-200 bg-cyan-50/70 p-4 dark:border-cyan-900/40 dark:bg-cyan-950/20 flex items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'إضافة إنترنت الأشياء (IoT)' : 'IoT Add-on'}</p>
+                      <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-cyan-500 to-teal-500 text-white text-[10px] font-bold uppercase">Smart Corp</span>
+                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{language === 'ar' ? 'يمكّن المستأجر من دمج وإدارة بنيته التحتية الكاملة عبر شبكة إنترنت الأشياء — مستشعرات، بوابات، عدادات، وأنظمة مؤسسية ذكية.' : 'Enables the tenant to integrate and manage their complete corporate infrastructure through a unified IoT network — sensors, gateways, meters, and smart enterprise systems.'}</p>
+                  </div>
+                  <input type="checkbox" {...register('subscription.hasIotAddon')} className="h-4 w-4 accent-cyan-500" />
+                </label>
+                <label className="md:col-span-3 rounded-2xl border border-teal-200 bg-teal-50/70 p-4 dark:border-teal-900/40 dark:bg-teal-950/20 flex items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'إضافة الميزان الذكي (Bakala)' : 'Weight Scale Add-on (Bakala)'}</p>
+                      <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[10px] font-bold uppercase">Premium</span>
+                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{language === 'ar' ? 'يمكّن المستأجر من استخدام الميزان لطباعة ملصقات الباركود للمنتجات الموزونة (خاص بالسوبرماركت).' : 'Enables the smart weight scale feature to print and read weight barcodes for supermarket items.'}</p>
+                  </div>
+                  <input type="checkbox" {...register('subscription.hasWeightScaleAddon')} className="h-4 w-4 accent-teal-500" />
+                </label>
+              </>
+            )}
           </div>
         </motion.div>
 

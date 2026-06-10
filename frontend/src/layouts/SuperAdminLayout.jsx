@@ -36,17 +36,11 @@ export default function SuperAdminLayout() {
       {/* Top Header */}
       <header className="sticky top-0 z-50 bg-[#1a3d28] text-white">
         <div className="flex items-center justify-between px-6 h-16">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-full h-12 flex items-center justify-center flex-shrink-0">
-                <img src="/maqdernewlogo.png" alt="Maqder" className="h-full w-auto object-contain" />
-              </div>
-              <div>
-                <span className="text-xs bg-white/20 text-white px-2 py-0.5 rounded-full">
-                  Super Admin
-                </span>
-              </div>
-            </div>
+          <div className="flex items-center gap-6">
+            <img src="/maqdernewlogo.png" alt="Maqder" className="h-14 w-auto object-contain transform scale-150 origin-left" />
+            <span className="text-sm font-medium bg-white/20 text-white px-3 py-1 rounded-full whitespace-nowrap">
+              Super Admin
+            </span>
           </div>
 
           <nav className="hidden md:flex items-center gap-1">

@@ -13,7 +13,7 @@ export default function TenantManagement() {
   const { t } = useTranslation(language)
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
-  const [filters, setFilters] = useState({ status: '', plan: '' })
+  const [filters, setFilters] = useState({ status: '', plan: '', businessType: '' })
   const [page, setPage] = useState(1)
   const [backupTenant, setBackupTenant] = useState(null)
   const [backupForm, setBackupForm] = useState({ period: 'monthly', startDate: '', endDate: '', email: '', formats: ['excel', 'pdf'] })
@@ -231,7 +231,7 @@ export default function TenantManagement() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('tenants')}</h1>
           <p className="text-gray-500 mt-1">{language === 'ar' ? 'إدارة جميع المستأجرين والاشتراكات' : 'Manage all tenants and subscriptions'}</p>
         </div>
-        <Link to="/super-admin/tenants/new" className="btn btn-primary">
+        <Link to="/super-admin/tenants/new" className="btn btn-primary bg-emerald-600 hover:bg-emerald-700 border-emerald-600 hover:border-emerald-700 text-white">
           <Plus className="w-4 h-4" />
           {language === 'ar' ? 'إضافة مستأجر' : 'Add Tenant'}
         </Link>
@@ -255,6 +255,18 @@ export default function TenantManagement() {
             <option value="starter">Starter</option>
             <option value="professional">Professional</option>
             <option value="enterprise">Enterprise</option>
+          </select>
+          <select value={filters.businessType} onChange={(e) => setFilters({ ...filters, businessType: e.target.value })} className="select w-full sm:w-40">
+            <option value="">{language === 'ar' ? 'كل الأنشطة' : 'All Types'}</option>
+            <option value="trading">{language === 'ar' ? 'تجارة' : 'Trading'}</option>
+            <option value="construction">{language === 'ar' ? 'مقاولات' : 'Construction'}</option>
+            <option value="restaurant">{language === 'ar' ? 'مطعم' : 'Restaurant'}</option>
+            <option value="travel_agency">{language === 'ar' ? 'وكالة سفر' : 'Travel Agency'}</option>
+            <option value="car_rental">{language === 'ar' ? 'تأجير سيارات' : 'Car Rental'}</option>
+            <option value="laundry">{language === 'ar' ? 'مغسلة' : 'Laundry'}</option>
+            <option value="khayyat">{language === 'ar' ? 'خياط' : 'Khayyat'}</option>
+            <option value="saloon">{language === 'ar' ? 'صالون' : 'Saloon'}</option>
+            <option value="bakala">{language === 'ar' ? 'بقالة' : 'Bakala'}</option>
           </select>
         </div>
       </div>
