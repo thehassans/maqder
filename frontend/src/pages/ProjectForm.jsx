@@ -267,10 +267,10 @@ export default function ProjectForm() {
   const dueDate = watch("dueDate")
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-4 space-y-6 bg-background text-foreground">
+    <div id="project-report-container" className="w-full max-w-7xl mx-auto p-4 space-y-6 bg-background text-foreground">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate(-1)} className="btn btn-ghost btn-icon">
+          <button onClick={() => navigate(-1)} className="btn btn-ghost btn-icon no-print">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <h1 className="text-3xl font-bold">
@@ -287,7 +287,7 @@ export default function ProjectForm() {
           </Badge>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 no-print">
           {isEdit && projectData && (
             <button
               type="button"
@@ -533,7 +533,7 @@ export default function ProjectForm() {
             <CardTitle>{language === "ar" ? "تقارير التقدم" : "Progress Reports"}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="space-y-4">
+            <div className="space-y-4 no-print">
               <h3 className="font-semibold text-lg">{language === "ar" ? "إضافة تقرير جديد" : "Add New Report"}</h3>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                 <div className="space-y-2">
