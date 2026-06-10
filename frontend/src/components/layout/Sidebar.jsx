@@ -284,6 +284,7 @@ export default function Sidebar() {
       items: [
         { path: '/app/dashboard/compliance', icon: Shield, label: language === 'ar' ? 'لوحة الامتثال' : 'Compliance Dashboard' },
         { path: '/app/dashboard/saudi-compliance', icon: Globe, label: language === 'ar' ? 'الامتثال التنظيمي السعودي' : 'Saudi Regulatory' },
+        { path: '/app/dashboard/tenant-settings/government-integrations', icon: Key, label: language === 'ar' ? 'التكاملات الحكومية' : 'Gov Integrations' },
       ]
     },
   ]

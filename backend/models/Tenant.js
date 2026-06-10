@@ -64,7 +64,8 @@ const zatcaConfigSchema = new mongoose.Schema({
   lastInvoiceHash: { type: String },
   invoiceCounter: { type: Number, default: 0 },
   deviceSerialNumber: { type: String },
-  onboardedAt: { type: Date }
+  onboardedAt: { type: Date },
+  environment: { type: String, enum: ['sandbox', 'simulation', 'production'], default: 'sandbox' }
 });
 
 const invoiceBrandingProfileSchema = new mongoose.Schema({
@@ -143,10 +144,30 @@ const tenantSchema = new mongoose.Schema({
       gosi: {
         enabled: { type: Boolean, default: false },
         establishmentId: { type: String, default: '' },
+        registrationNumber: { type: String, default: '' },
         clientId: { type: String, default: '' },
         clientSecret: { type: String, default: '' },
         redirectUri: { type: String, default: '' },
         lastSyncAt: { type: Date },
+      },
+      elm: {
+        clientId: { type: String, default: '' },
+        clientSecret: { type: String, default: '' },
+        appId: { type: String, default: '' },
+        agencyId: { type: String, default: '' },
+        nafathOtpEnabled: { type: Boolean, default: false },
+        tammEnabled: { type: Boolean, default: false }
+      },
+      qiwa: {
+        establishmentId: { type: String, default: '' },
+        accessToken: { type: String, default: '' },
+        contractAuthAutomationEnabled: { type: Boolean, default: false },
+        saudizationWidgetEnabled: { type: Boolean, default: false }
+      },
+      mudad: {
+        registrationNumber: { type: String, default: '' },
+        clientCertificate: { type: String, default: '' },
+        autoSifUploadEnabled: { type: Boolean, default: false }
       }
     },
     communication: {

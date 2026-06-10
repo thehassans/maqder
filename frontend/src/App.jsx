@@ -136,6 +136,7 @@ import LandedCostForm from './pages/landed-costs/LandedCostForm'
 import Compliance from './pages/compliance/Compliance'
 import Communicate from './pages/Communicate'
 import SaudiCompliance from './pages/compliance/SaudiCompliance'
+import GovernmentIntegrations from './pages/tenant-settings/GovernmentIntegrations'
 import CarRentalLayout from './layouts/CarRentalLayout'
 import FleetList from './pages/car-rental/FleetList'
 import CarForm from './pages/car-rental/CarForm'
@@ -446,6 +447,8 @@ function App() {
         <Route path="khata" element={<Khata />} />
         <Route path="users" element={<Users />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="settings/government-integrations" element={<GovernmentIntegrations />} />
+        <Route path="tenant-settings/government-integrations" element={<GovernmentIntegrations />} />
         <Route path="backup" element={<Backup />} />
         <Route path="super-admin" element={<BusinessTypeRoute allowedTypes={['super_admin']}><SuperAdminDashboard /></BusinessTypeRoute>} />
         <Route path="job-costing" element={<BusinessTypeRoute allowedTypes={['construction']}><JobCosting /></BusinessTypeRoute>} />

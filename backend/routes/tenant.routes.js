@@ -100,6 +100,18 @@ router.put('/current', authorize('admin'), async (req, res) => {
             ...(currentSettings.saudiIntegrations?.gosi || {}),
             ...(settings.saudiIntegrations?.gosi || {}),
           },
+          elm: {
+            ...(currentSettings.saudiIntegrations?.elm || {}),
+            ...(settings.saudiIntegrations?.elm || {}),
+          },
+          qiwa: {
+            ...(currentSettings.saudiIntegrations?.qiwa || {}),
+            ...(settings.saudiIntegrations?.qiwa || {}),
+          },
+          mudad: {
+            ...(currentSettings.saudiIntegrations?.mudad || {}),
+            ...(settings.saudiIntegrations?.mudad || {}),
+          },
         },
         invoiceBranding: {
           ...(currentSettings.invoiceBranding || {}),
