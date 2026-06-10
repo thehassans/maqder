@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux'
 import { QRCodeSVG } from 'qrcode.react'
 import { generateZatcaQrValue } from '../../lib/zatcaQr'
 
-const ThermalReceipt = forwardRef(({ order, type = 'laundry', isKitchen = false }, ref) => {
+const ThermalReceipt = forwardRef(({ order, type = 'laundry', isKitchen = false, isUpdated = false }, ref) => {
   const { tenant } = useSelector(state => state.auth)
   const { language } = useSelector(state => state.ui)
   const isRtl = language === 'ar'
@@ -129,6 +129,7 @@ const ThermalReceipt = forwardRef(({ order, type = 'laundry', isKitchen = false 
           
           <div className="text-[10px] font-bold text-gray-700 tracking-wider">
             SIMPLIFIED TAX INVOICE | فاتورة ضريبية مبسطة
+            {isUpdated && <div className="mt-0.5 text-amber-600 font-extrabold">UPDATED | محدثة</div>}
           </div>
           
           <div className="text-[9px] mt-1 text-gray-600">
@@ -138,8 +139,12 @@ const ThermalReceipt = forwardRef(({ order, type = 'laundry', isKitchen = false 
         </div>
       ) : (
         <div className="text-center mb-4 flex flex-col items-center">
-          <h2 className="font-extrabold text-xl text-gray-900 leading-snug">KITCHEN TICKET</h2>
-          <h2 className="font-extrabold text-xl text-gray-900 leading-snug mt-1">طلب مطبخ</h2>
+          <h2 className="font-extrabold text-xl text-gray-900 leading-snug">
+            KITCHEN TICKET{isUpdated ? ' (UPDATED)' : ''}
+          </h2>
+          <h2 className="font-extrabold text-xl text-gray-900 leading-snug mt-1">
+            طلب مطبخ{isUpdated ? ' (محدث)' : ''}
+          </h2>
           <div className="border-t border-solid border-gray-900 border-[2px] w-full my-2"></div>
           {order.kitchenNote && (
             <div className="border border-black p-2 my-2 w-full text-center font-bold text-lg border-dashed">

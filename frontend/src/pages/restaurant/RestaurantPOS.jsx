@@ -694,7 +694,7 @@ export default function RestaurantPOS() {
             </div>
             
             <div className="border border-gray-200 rounded-lg p-2 print:border-none print:p-0 flex justify-center">
-              <ThermalReceipt ref={receiptRef} order={completedOrder} type="restaurant" isKitchen={receiptType === 'kitchen'} />
+              <ThermalReceipt ref={receiptRef} order={completedOrder} type="restaurant" isKitchen={receiptType === 'kitchen'} isUpdated={!!editOrderId} />
             </div>
 
             <div className="mt-6 flex gap-3 print:hidden">
