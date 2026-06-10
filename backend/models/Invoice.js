@@ -80,6 +80,8 @@ const partySchema = new mongoose.Schema({
 
 const zatcaSchema = new mongoose.Schema({
   uuid: { type: String },
+  
+  // Phase 1 / Legacy
   invoiceCounter: { type: Number },
   previousInvoiceHash: { type: String },
   invoiceHash: { type: String },
@@ -88,6 +90,23 @@ const zatcaSchema = new mongoose.Schema({
   signedXml: { type: String },
   qrCodeData: { type: String },
   qrCodeImage: { type: String },
+
+  // Phase 2 / Offline Sync Fields
+  icv: { type: Number }, // Invoice Counter Value
+  pih: { type: String }, // Previous Invoice Hash (Base64)
+  xmlHash: { type: String }, // SHA-256 Base64
+  cryptographicStamp: { type: String }, // ECDSA
+  phase2QrCode: { type: String }, // Tags 1-9
+  xmlPayload: { type: String }, // UBL 2.1 XML
+
+  // Sync Status for Offline-First Architecture
+  syncStatus: { 
+    type: String, 
+    enum: ['PENDING_SYNC', 'SYNCED', 'ZATCA_REPORTED', 'ZATCA_FAILED'], 
+    default: 'PENDING_SYNC' 
+  },
+  syncDeviceId: { type: String },
+
   submissionStatus: {
     type: String,
     enum: ['pending', 'submitted', 'cleared', 'reported', 'rejected', 'warning'],

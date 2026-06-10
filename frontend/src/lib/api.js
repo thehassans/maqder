@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { enqueueSyncItem } from './syncEngine'
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api'
 
@@ -42,7 +43,30 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    // Offline-First Interceptor Logic
+    const isNetworkError = !error.response || !navigator.onLine
+    
+    if (isNetworkError) {
+      const queueType = error.config?.headers?.['X-Queue-Offline']
+      if (queueType && error.config.data) {
+        try {
+          const payload = typeof error.config.data === 'string' ? JSON.parse(error.config.data) : error.config.data
+          const id = await enqueueSyncItem(queueType, payload)
+          
+          // Return a mock successful response to the caller
+          return Promise.resolve({
+            data: { success: true, offline: true, id, message: 'Saved offline and queued for sync.' },
+            status: 202,
+            statusText: 'Accepted Offline',
+            headers: {}
+          })
+        } catch (e) {
+          console.error('Failed to queue offline item', e)
+        }
+      }
+    }
+
     error.userMessage = getApiErrorMessage(error)
 
     const requestUrl = String(error.config?.url || '')
@@ -53,8 +77,6 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !isAuthEntryRequest) {
       const errMsg = error.response?.data?.error || ''
       if (errMsg === 'Tenant account is inactive') {
-        // Don't log out — fire an event so the Redux store marks the tenant inactive
-        // and the InactiveBlocker screen is shown without clearing the session
         window.dispatchEvent(new CustomEvent('tenant-inactive'))
       } else {
         localStorage.removeItem('token')
