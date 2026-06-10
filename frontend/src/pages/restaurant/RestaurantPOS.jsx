@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useSelector } from 'react-redux'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Minus, Trash2, ShoppingBag, CreditCard, Search, Coffee, Truck, UtensilsCrossed } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 import api from '../../lib/api'
 import { toast } from 'react-hot-toast'
 import ThermalReceipt from '../../components/ui/ThermalReceipt'
@@ -13,6 +14,10 @@ export default function RestaurantPOS() {
   const isRtl = language === 'ar'
   const cardTerminalEnabled = Boolean(tenant?.settings?.posTerminal?.enabled)
   const terminalLabel = tenant?.settings?.posTerminal?.terminalLabel || ''
+
+  const [searchParams] = useSearchParams()
+  const editOrderId = searchParams.get('orderId')
+  const [editingOrder, setEditingOrder] = useState(null)
 
   const [menuItems, setMenuItems] = useState([])
   const [tables, setTables] = useState([])
@@ -49,8 +54,43 @@ export default function RestaurantPOS() {
         api.get('/restaurant/menu-items?limit=200'),
         api.get('/restaurant/tables?status=available')
       ])
-      setMenuItems(menuRes.data.items || [])
+      const loadedMenuItems = menuRes.data.items || []
+      setMenuItems(loadedMenuItems)
       setTables(tablesRes.data || [])
+
+      if (editOrderId) {
+        try {
+          const orderRes = await api.get(`/restaurant/orders/${editOrderId}`)
+          const order = orderRes.data
+          if (order) {
+            setEditingOrder(order)
+            setCustomerName(order.customerName || '')
+            setCustomerPhone(order.customerPhone || '')
+            setOrderType(order.orderType || 'dine_in')
+            if (order.tableId) setSelectedTable(order.tableId)
+            if (order.paymentMethod) setPaymentMethod(order.paymentMethod)
+            
+            // Reconstruct cart
+            const reconstructedCart = (order.lineItems || []).map(li => {
+              const mItem = loadedMenuItems.find(m => String(m._id) === String(li.menuItemId)) || { _id: li.menuItemId }
+              const isHalfPlate = li.nameEn?.includes('Half Plate') || li.name?.includes('Half Plate')
+              return {
+                cartItemId: `${li.menuItemId}-${isHalfPlate ? 'half' : 'full'}`,
+                menuItem: mItem,
+                isHalfPlate,
+                quantity: li.quantity,
+                unitPrice: li.unitPrice,
+                taxRate: li.taxRate,
+                nameEn: li.name || li.nameEn,
+                nameAr: li.nameAr || li.name
+              }
+            })
+            setCart(reconstructedCart)
+          }
+        } catch (err) {
+          toast.error('Failed to load existing order')
+        }
+      }
     } catch (error) {
       toast.error('Failed to load POS data')
     } finally {
@@ -168,8 +208,17 @@ export default function RestaurantPOS() {
         }
       }
       
-      const { data } = await api.post('/restaurant/orders', payload)
-      toast.success(isRtl ? `تم إنشاء الطلب: ${data.orderNumber}` : `Order created: ${data.orderNumber}`)
+      let data;
+      if (editOrderId) {
+        const res = await api.put(`/restaurant/orders/${editOrderId}`, payload)
+        data = res.data
+        toast.success(isRtl ? `تم تحديث الطلب: ${data.orderNumber}` : `Order updated: ${data.orderNumber}`)
+      } else {
+        const res = await api.post('/restaurant/orders', payload)
+        data = res.data
+        toast.success(isRtl ? `تم إنشاء الطلب: ${data.orderNumber}` : `Order created: ${data.orderNumber}`)
+      }
+      
       setReceiptType('customer')
       setCompletedOrder(data)
       
@@ -210,8 +259,16 @@ export default function RestaurantPOS() {
         if (table) { payload.tableId = table._id; payload.tableNumber = table.tableNumber }
       }
       
-      const { data } = await api.post('/restaurant/orders', payload)
-      toast.success(isRtl ? `تم الإرسال للمطبخ: ${data.orderNumber}` : `Sent to kitchen: ${data.orderNumber}`)
+      let data;
+      if (editOrderId) {
+        const res = await api.put(`/restaurant/orders/${editOrderId}`, payload)
+        data = res.data
+        toast.success(isRtl ? `تم التحديث للمطبخ: ${data.orderNumber}` : `Updated to kitchen: ${data.orderNumber}`)
+      } else {
+        const res = await api.post('/restaurant/orders', payload)
+        data = res.data
+        toast.success(isRtl ? `تم الإرسال للمطبخ: ${data.orderNumber}` : `Sent to kitchen: ${data.orderNumber}`)
+      }
       
       setReceiptType('kitchen')
       setCompletedOrder(data)
@@ -254,7 +311,16 @@ export default function RestaurantPOS() {
         const table = tables.find(t => t._id === selectedTable)
         if (table) { payload.tableId = table._id; payload.tableNumber = table.tableNumber }
       }
-      const { data } = await api.post('/restaurant/orders', payload)
+      
+      let data;
+      if (editOrderId) {
+        const res = await api.put(`/restaurant/orders/${editOrderId}`, payload)
+        data = res.data
+      } else {
+        const res = await api.post('/restaurant/orders', payload)
+        data = res.data
+      }
+
       // Best-effort PATCH to record the POS payment
       try {
         await api.patch(`/restaurant/orders/${data._id}/payment`, {
@@ -265,7 +331,13 @@ export default function RestaurantPOS() {
       } catch {
         // ignore
       }
-      toast.success(isRtl ? `تم إنشاء الطلب: ${data.orderNumber}` : `Order created: ${data.orderNumber}`)
+      
+      if (editOrderId) {
+        toast.success(isRtl ? `تم تحديث الطلب: ${data.orderNumber}` : `Order updated: ${data.orderNumber}`)
+      } else {
+        toast.success(isRtl ? `تم إنشاء الطلب: ${data.orderNumber}` : `Order created: ${data.orderNumber}`)
+      }
+      
       setReceiptType('customer')
       setCompletedOrder(data)
       if (orderType === 'dine_in') fetchData()

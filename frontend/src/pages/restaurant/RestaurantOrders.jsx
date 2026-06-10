@@ -141,7 +141,7 @@ export default function RestaurantOrders() {
                           <Utensils className="w-4 h-4" />
                         </button>
                         <Link
-                          to={`/app/dashboard/restaurant/orders/${o._id}`}
+                          to={`/app/dashboard/restaurant/pos?orderId=${o._id}`}
                           className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg"
                         >
                           <Edit className="w-4 h-4 text-gray-600" />

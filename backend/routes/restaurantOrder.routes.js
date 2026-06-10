@@ -131,6 +131,82 @@ router.get('/', checkPermission('restaurant', 'read'), async (req, res) => {
   }
 });
 
+export async function createInvoiceForOrder(order, req) {
+  if (order.invoiceId) return null;
+
+  const tenant = await Tenant.findById(req.user.tenantId);
+  if (!tenant) return null;
+
+  const lastInvoice = await Invoice.findOne({ tenantId: req.user.tenantId, invoiceNumber: { $regex: '^INV-' } })
+    .sort({ createdAt: -1 })
+    .select('invoiceNumber');
+
+  let invoiceCount = 1;
+  if (lastInvoice?.invoiceNumber) {
+    const maybe = parseInt(String(lastInvoice.invoiceNumber).split('-').pop());
+    if (Number.isFinite(maybe)) invoiceCount = maybe + 1;
+  }
+
+  const invoiceNumber = `INV-${new Date().getFullYear()}-${String(invoiceCount).padStart(6, '0')}`;
+
+  const lineItems = (Array.isArray(order.lineItems) ? order.lineItems : []).map((li, i) => ({
+    lineNumber: i + 1,
+    productName: li.name,
+    productNameAr: li.nameAr,
+    quantity: toNumber(li.quantity, 0),
+    unitCode: 'PCE',
+    unitPrice: toNumber(li.unitPrice, 0),
+    taxRate: toNumber(li.taxRate ?? 15, 15),
+    taxCategory: 'S',
+    productId: undefined,
+  }));
+
+  const paymentMethod =
+    order.paymentMethod === 'cash'
+      ? 'cash'
+      : order.paymentMethod === 'transfer'
+        ? 'bank_transfer'
+        : order.paymentMethod === 'card'
+          ? 'card'
+          : 'other';
+
+  const invoice = await Invoice.create({
+    tenantId: req.user.tenantId,
+    flow: 'sell',
+    businessContext: 'restaurant',
+    invoiceNumber,
+    transactionType: 'B2C',
+    invoiceTypeCode: '0200000',
+    issueDate: new Date(),
+    currency: order.currency || 'SAR',
+    paymentMethod,
+    contractNumber: order.orderNumber,
+    restaurantOrderId: order._id,
+    seller: {
+      name: tenant.business.legalNameEn,
+      nameAr: tenant.business.legalNameAr,
+      vatNumber: tenant.business.vatNumber,
+      crNumber: tenant.business.crNumber,
+      address: tenant.business.address,
+    },
+    buyer: {
+      name: order.customerName || 'Cash Customer',
+      nameAr: order.customerName ? undefined : 'عميل نقدي',
+      contactPhone: order.customerPhone,
+    },
+    lineItems,
+    createdBy: req.user._id,
+    notes: order.notes,
+  });
+
+  order.invoiceId = invoice._id;
+  order.invoiceNumber = invoice.invoiceNumber;
+  order.invoicedAt = new Date();
+  await order.save();
+
+  return invoice;
+}
+
 router.post('/:id/create-invoice', checkPermission('restaurant', 'update'), checkPermission('invoicing', 'create'), async (req, res) => {
   try {
     const order = await RestaurantOrder.findOne({ _id: req.params.id, ...req.tenantFilter, isActive: true });
@@ -180,6 +256,7 @@ router.post('/:id/create-invoice', checkPermission('restaurant', 'update'), chec
     const invoice = await Invoice.create({
       tenantId: req.user.tenantId,
       flow: 'sell',
+      businessContext: 'restaurant',
       invoiceNumber,
       transactionType: 'B2C',
       invoiceTypeCode: '0200000',
@@ -350,6 +427,10 @@ router.post('/', checkPermission('restaurant', 'create'), async (req, res) => {
       createdBy: req.user._id,
     });
 
+    if (order.status === 'paid') {
+      await createInvoiceForOrder(order, req);
+    }
+
     res.status(201).json(order);
   } catch (error) {
     if (error?.code === 11000) {
@@ -383,6 +464,10 @@ router.put('/:id', checkPermission('restaurant', 'update'), async (req, res) => 
       { new: true, runValidators: true }
     );
 
+    if (updated.status === 'paid' && !updated.invoiceId) {
+      await createInvoiceForOrder(updated, req);
+    }
+
     res.json(updated);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -415,6 +500,11 @@ router.patch('/:id/payment', checkPermission('restaurant', 'update'), async (req
     if (posPaymentId) order.posPaymentId = posPaymentId;
     if (status) order.status = status;
     await order.save();
+    
+    if (order.status === 'paid' && !order.invoiceId) {
+      await createInvoiceForOrder(order, req);
+    }
+    
     res.json(order);
   } catch (error) {
     res.status(500).json({ error: error.message });
