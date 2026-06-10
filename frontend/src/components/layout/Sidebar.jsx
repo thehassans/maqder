@@ -64,6 +64,17 @@ export default function Sidebar() {
   const { tenant, user } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
 
+  const hasZatca = tenant?.zatca?.isOnboarded;
+  const hasElm = !!tenant?.settings?.saudiIntegrations?.elm?.clientId;
+  const hasQiwa = !!tenant?.settings?.saudiIntegrations?.qiwa?.establishmentId;
+  const hasGosi = !!tenant?.settings?.saudiIntegrations?.gosi?.registrationNumber || !!tenant?.settings?.saudiIntegrations?.mudad?.registrationNumber;
+
+  const govChildren = [];
+  if (hasZatca) govChildren.push({ path: '/app/dashboard/tenant-settings/government-integrations/zatca', label: language === 'ar' ? 'بوابة زاتكا' : 'ZATCA Portal' });
+  if (hasElm) govChildren.push({ path: '/app/dashboard/tenant-settings/government-integrations/elm', label: language === 'ar' ? 'بوابة علم / يقين' : 'Elm Portal' });
+  if (hasQiwa) govChildren.push({ path: '/app/dashboard/tenant-settings/government-integrations/qiwa', label: language === 'ar' ? 'بوابة قوى' : 'Qiwa Portal' });
+  if (hasGosi) govChildren.push({ path: '/app/dashboard/tenant-settings/government-integrations/gosi', label: language === 'ar' ? 'بوابة التأمينات / مدد' : 'GOSI/Mudad Portal' });
+
   const businessTypes = getTenantBusinessTypes(tenant)
 
   const hasAccess = (module, action) => {
@@ -285,7 +296,7 @@ export default function Sidebar() {
       items: [
         { path: '/app/dashboard/compliance', icon: Shield, label: language === 'ar' ? 'لوحة الامتثال' : 'Compliance Dashboard' },
         { path: '/app/dashboard/saudi-compliance', icon: Globe, label: language === 'ar' ? 'الامتثال التنظيمي السعودي' : 'Saudi Regulatory' },
-        { path: '/app/dashboard/tenant-settings/government-integrations', icon: Key, label: language === 'ar' ? 'التكاملات الحكومية' : 'Gov Integrations' },
+        { path: '/app/dashboard/tenant-settings/government-integrations', icon: Key, label: language === 'ar' ? 'التكاملات الحكومية' : 'Gov Integrations', children: govChildren },
       ]
     },
   ]
@@ -363,28 +374,53 @@ export default function Sidebar() {
               </h3>
             )}
             <div className="space-y-1">
-              {section.items.map((item) => (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  end={item.end}
-                  onClick={() => dispatch(setMobileMenuOpen(false))}
-                  className={({ isActive }) =>
-                    `sidebar-link ${isActive ? 'active' : ''} ${sidebarCollapsed ? 'justify-center px-3' : ''}`
-                  }
-                >
-                  <item.icon className="w-5 h-5 flex-shrink-0" />
-                  {!sidebarCollapsed && (
-                    <motion.span
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
+              {section.items.map((item) => {
+                const hasChildren = Array.isArray(item.children) && item.children.length > 0;
+                return (
+                  <div key={item.path} className="space-y-1">
+                    <NavLink
+                      to={item.path}
+                      end={item.end}
+                      onClick={() => dispatch(setMobileMenuOpen(false))}
+                      className={({ isActive }) =>
+                        `sidebar-link ${isActive ? 'active' : ''} ${sidebarCollapsed ? 'justify-center px-3' : ''}`
+                      }
                     >
-                      {item.label}
-                    </motion.span>
-                  )}
-                </NavLink>
-              ))}
+                      <item.icon className="w-5 h-5 flex-shrink-0" />
+                      {!sidebarCollapsed && (
+                        <motion.span
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="flex-1 flex justify-between items-center"
+                        >
+                          <span>{item.label}</span>
+                        </motion.span>
+                      )}
+                    </NavLink>
+                    {hasChildren && !sidebarCollapsed && (
+                      <div className="ps-6 ml-6 border-l border-gray-200 dark:border-dark-600 space-y-1 mt-1">
+                        {item.children.map((child) => (
+                          <NavLink
+                            key={child.path}
+                            to={child.path}
+                            onClick={() => dispatch(setMobileMenuOpen(false))}
+                            className={({ isActive }) =>
+                              `block py-1.5 px-3 rounded-lg text-[11px] font-medium transition-all ${
+                                isActive
+                                  ? 'bg-primary-50 text-primary-600 dark:bg-primary-950/20 dark:text-primary-400 font-semibold'
+                                  : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-dark-700/50'
+                              }`
+                            }
+                          >
+                            {child.label}
+                          </NavLink>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         ))}

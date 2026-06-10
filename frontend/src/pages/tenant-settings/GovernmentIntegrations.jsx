@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -8,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Shield, Key, Lock, Users, Server, Globe, ExternalLink,
   CheckCircle2, AlertTriangle, AlertCircle, RefreshCw,
-  Building, Sliders, Play, Check, X, FileText, WifiOff, HelpCircle
+  Building, Sliders, Play, Check, X, FileText, WifiOff, HelpCircle, Eye
 } from 'lucide-react'
 import api from '../../lib/api'
 import toast from 'react-hot-toast'
@@ -509,10 +510,18 @@ export default function GovernmentIntegrations() {
             {activeTab === 'zatca' && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="card p-6 space-y-6">
                 <div className="border-b border-gray-150 dark:border-dark-750 pb-4">
-                  <h3 className="text-xl font-bold flex items-center gap-2">
-                    <Shield className="w-6 h-6 text-primary-500" />
-                    {t('ZATCA E-Invoicing Phase 2 Integration', 'تكامل هيئة الزكاة والجمارك (المرحلة الثانية)')}
-                  </h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-bold flex items-center gap-2">
+                      <Shield className="w-6 h-6 text-primary-500" />
+                      {t('ZATCA E-Invoicing Phase 2 Integration', 'تكامل هيئة الزكاة والجمارك (المرحلة الثانية)')}
+                    </h3>
+                    {config?.zatca?.isOnboarded && (
+                      <Link to="/app/settings/government-integrations/zatca" className="btn btn-secondary btn-sm flex items-center gap-1.5 hover:scale-[1.02] transition-transform">
+                        <Eye className="w-4 h-4 text-emerald-500" />
+                        {t('View Dashboard', 'عرض لوحة التحكم')}
+                      </Link>
+                    )}
+                  </div>
                   <p className="text-sm text-gray-500 mt-1">
                     {t('Configure your cryptographic stamp and environment to submit invoices for Clearance (B2B) and Reporting (B2C).',
                        'تهيئة ختم التشفير والبيئة التنظيمية لإرسال الفواتير الضريبية للاعتماد والمبسطة للإبلاغ.')}
@@ -650,10 +659,18 @@ export default function GovernmentIntegrations() {
                 {/* 1. Elm DevPortal (Yakeen) */}
                 <div className="card p-6 space-y-4">
                   <div className="border-b border-gray-150 dark:border-dark-750 pb-3">
-                    <h3 className="text-lg font-bold flex items-center gap-2">
-                      <Key className="w-5 h-5 text-primary-500" />
-                      {t('Elm DevPortal Integration (Yakeen)', 'بوابة المطورين علم (يقين)')}
-                    </h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-bold flex items-center gap-2">
+                        <Key className="w-5 h-5 text-primary-500" />
+                        {t('Elm DevPortal Integration (Yakeen)', 'بوابة المطورين علم (يقين)')}
+                      </h3>
+                      {config?.elm?.clientId && (
+                        <Link to="/app/settings/government-integrations/elm" className="btn btn-secondary btn-sm flex items-center gap-1.5 hover:scale-[1.02] transition-transform">
+                          <Eye className="w-4 h-4 text-emerald-500" />
+                          {t('View Dashboard', 'عرض لوحة التحكم')}
+                        </Link>
+                      )}
+                    </div>
                     <p className="text-xs text-gray-400">
                       {t('Configure credentials for resident identity check (Yakeen) and Nafath OTP authentication.',
                          'تهيئة بيانات الاعتماد للتحقق من هوية المقيمين (يقين) وتفويضات نفاذ.')}
@@ -1005,10 +1022,18 @@ export default function GovernmentIntegrations() {
             {activeTab === 'qiwa' && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="card p-6 space-y-6">
                 <div className="border-b border-gray-150 dark:border-dark-750 pb-4">
-                  <h3 className="text-xl font-bold flex items-center gap-2">
-                    <Users className="w-6 h-6 text-primary-500" />
-                    {t('Qiwa & MHRSD Labor Integration', 'تكامل منصة قوى ووزارة الموارد البشرية')}
-                  </h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-bold flex items-center gap-2">
+                      <Users className="w-6 h-6 text-primary-500" />
+                      {t('Qiwa & MHRSD Labor Integration', 'تكامل منصة قوى ووزارة الموارد البشرية')}
+                    </h3>
+                    {config?.qiwa?.establishmentId && (
+                      <Link to="/app/settings/government-integrations/qiwa" className="btn btn-secondary btn-sm flex items-center gap-1.5 hover:scale-[1.02] transition-transform">
+                        <Eye className="w-4 h-4 text-emerald-500" />
+                        {t('View Dashboard', 'عرض لوحة التحكم')}
+                      </Link>
+                    )}
+                  </div>
                   <p className="text-sm text-gray-500 mt-1">
                     {t('Automate employment contract authentication, Saudization checking, and Nitaqat calculations.',
                        'أتمتة توثيق عقود العمل، التحقق من السعودة، وحسابات نطاقات المنشأة.')}
@@ -1073,10 +1098,18 @@ export default function GovernmentIntegrations() {
             {activeTab === 'gosi' && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="card p-6 space-y-6">
                 <div className="border-b border-gray-150 dark:border-dark-750 pb-4">
-                  <h3 className="text-xl font-bold flex items-center gap-2">
-                    <Building className="w-6 h-6 text-primary-500" />
-                    {t('GOSI & Mudad WPS Integration', 'تكامل التأمينات الاجتماعية ومنصة مدد (حماية الأجور)')}
-                  </h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xl font-bold flex items-center gap-2">
+                      <Building className="w-6 h-6 text-primary-500" />
+                      {t('GOSI & Mudad WPS Integration', 'تكامل التأمينات الاجتماعية ومنصة مدد (حماية الأجور)')}
+                    </h3>
+                    {(config?.gosi?.registrationNumber || config?.mudad?.registrationNumber) && (
+                      <Link to="/app/settings/government-integrations/gosi" className="btn btn-secondary btn-sm flex items-center gap-1.5 hover:scale-[1.02] transition-transform">
+                        <Eye className="w-4 h-4 text-emerald-500" />
+                        {t('View Dashboard', 'عرض لوحة التحكم')}
+                      </Link>
+                    )}
+                  </div>
                   <p className="text-sm text-gray-500 mt-1">
                     {t('Configure your organization registration details and Client Certificate to sync monthly payroll SIF files.',
                        'تهيئة تفاصيل تسجيل المنشأة وشهادة العميل لمزامنة ملفات الأجور الشهرية SIF.')}
