@@ -1,16 +1,76 @@
-import { useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useSelector } from 'react-redux'
-import { useForm } from 'react-hook-form'
-import { motion } from 'framer-motion'
-import { ArrowLeft, Save, FolderKanban, Calendar, User, Percent, Wallet, Download } from 'lucide-react'
-import toast from 'react-hot-toast'
-import api from '../lib/api'
-import { useTranslation } from '../lib/translations'
-import SarIcon from '../components/ui/SarIcon'
-import { useLiveTranslation } from '../lib/liveTranslation'
-import { downloadProjectProgressPdf } from '../lib/projectProgressPdf'
+import React, { useState, useMemo } from "react"
+import { useParams, useNavigate } from "react-router-dom"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useSelector } from "react-redux"
+import { useForm, Controller } from "react-hook-form"
+import { Calendar, Save, ArrowLeft, Download } from "lucide-react"
+import toast from "react-hot-toast"
+
+import api from "../lib/api"
+import { useTranslation } from "../lib/translations"
+import { useLiveTranslation } from "../lib/liveTranslation"
+import { downloadProjectProgressPdf } from "../lib/projectProgressPdf"
+
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
+import { Input } from "../components/ui/input"
+import { Label } from "../components/ui/label"
+import { Textarea } from "../components/ui/textarea"
+import { Badge } from "../components/ui/badge"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  SelectGroup,
+  SelectLabel,
+} from "../components/ui/select"
+
+const CircleProgress = ({
+  value,
+  maxValue,
+  size = 40,
+  strokeWidth = 3,
+  className = "",
+}) => {
+  const radius = (size - strokeWidth) / 2
+  const circumference = 2 * Math.PI * radius
+  const fillPercentage = Math.min(value / maxValue, 1)
+  const strokeDashoffset = circumference * (1 - fillPercentage)
+
+  const getColor = (percentage) => {
+    if (percentage < 0.7) return "stroke-emerald-500"
+    if (percentage < 0.9) return "stroke-amber-500"
+    return "stroke-red-500"
+  }
+
+  const currentColor = getColor(fillPercentage)
+
+  return (
+    <div className={className}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          className="fill-transparent stroke-gray-200 dark:stroke-gray-700"
+          strokeWidth={strokeWidth}
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          className={`fill-transparent transition-colors ${currentColor}`}
+          strokeWidth={strokeWidth}
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+          strokeLinecap="round"
+        />
+      </svg>
+    </div>
+  )
+}
 
 export default function ProjectForm() {
   const { id } = useParams()
@@ -22,20 +82,22 @@ export default function ProjectForm() {
   const { t } = useTranslation(language)
 
   const [downloadingPdf, setDownloadingPdf] = useState(false)
-
   const isEdit = Boolean(id)
 
-  const formatDateTime = (value) => {
-    if (!value) return ''
-    const d = new Date(value)
-    if (Number.isNaN(d.getTime())) return ''
-    return d.toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US')
-  }
+  const { data: usersData } = useQuery({
+    queryKey: ["users-list"],
+    queryFn: () => api.get("/users", { params: { limit: 200 } }).then((res) => res.data.users || []),
+  })
+
+  const { data: employeesData } = useQuery({
+    queryKey: ["employees-list"],
+    queryFn: () => api.get("/employees", { params: { limit: 200 } }).then((res) => res.data.employees || []),
+  })
 
   const formatDateForInput = (value) => {
-    if (!value) return ''
+    if (!value) return ""
     const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return ''
+    if (Number.isNaN(date.getTime())) return ""
     const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
     return local.toISOString().slice(0, 10)
   }
@@ -49,18 +111,18 @@ export default function ProjectForm() {
     control,
   } = useForm({
     defaultValues: {
-      code: '',
-      status: 'planned',
-      nameEn: '',
-      nameAr: '',
-      ownerName: '',
-      startDate: '',
-      dueDate: '',
+      code: "",
+      status: "planned",
+      nameEn: "",
+      nameAr: "",
+      ownerName: "",
+      startDate: "",
+      dueDate: "",
       progress: 0,
       budget: 0,
-      currency: tenant?.settings?.currency || 'SAR',
-      description: '',
-      notes: '',
+      currency: tenant?.settings?.currency || "SAR",
+      description: "",
+      notes: "",
     },
   })
 
@@ -68,63 +130,91 @@ export default function ProjectForm() {
     control,
     watch,
     setValue,
-    sourceField: 'nameEn',
-    targetField: 'nameAr',
-    sourceLang: 'en',
-    targetLang: 'ar'
+    sourceField: "nameEn",
+    targetField: "nameAr",
+    sourceLang: "en",
+    targetLang: "ar",
   })
 
   useLiveTranslation({
     control,
     watch,
     setValue,
-    sourceField: 'nameAr',
-    targetField: 'nameEn',
-    sourceLang: 'ar',
-    targetLang: 'en'
+    sourceField: "nameAr",
+    targetField: "nameEn",
+    sourceLang: "ar",
+    targetLang: "en",
   })
 
-  const progress = watch('progress')
+  const progress = watch("progress")
+  const status = watch("status")
 
   const { data: projectData, isLoading } = useQuery({
-    queryKey: ['project', id],
+    queryKey: ["project", id],
     queryFn: () => api.get(`/projects/${id}`).then((res) => res.data),
     enabled: isEdit,
     onSuccess: (data) => {
       reset({
-        code: data?.code || '',
-        status: data?.status || 'planned',
-        nameEn: data?.nameEn || '',
-        nameAr: data?.nameAr || '',
-        ownerName: data?.ownerName || '',
+        code: data?.code || "",
+        status: data?.status || "planned",
+        nameEn: data?.nameEn || "",
+        nameAr: data?.nameAr || "",
+        ownerName: data?.ownerName || "",
         startDate: formatDateForInput(data?.startDate),
         dueDate: formatDateForInput(data?.dueDate),
         progress: data?.progress ?? 0,
         budget: data?.budget ?? 0,
-        currency: data?.currency || tenant?.settings?.currency || 'SAR',
-        description: data?.description || '',
-        notes: data?.notes || '',
+        currency: data?.currency || tenant?.settings?.currency || "SAR",
+        description: data?.description || "",
+        notes: data?.notes || "",
       })
     },
   })
 
+  const progressMutation = useMutation({
+    mutationFn: ({ progress, note }) =>
+      api.post(`/projects/${id}/progress`, { progress, note }).then((r) => r.data),
+    onSuccess: () => {
+      toast.success(language === "ar" ? "تم تحديث التقدم" : "Progress updated")
+      queryClient.invalidateQueries(["project", id])
+      queryClient.invalidateQueries(["projects"])
+    },
+    onError: (err) => toast.error(err.response?.data?.error || "Error"),
+  })
+
+  const addProgressReport = (e) => {
+    e.preventDefault()
+    if (!newReport.note) return
+    progressMutation.mutate({
+      progress: Number(newReport.progress),
+      note: newReport.note,
+    })
+    setNewReport({ date: formatDateForInput(new Date()), note: "", progress: Number(progress) })
+  }
+
+  const [newReport, setNewReport] = useState({
+    date: formatDateForInput(new Date()),
+    note: "",
+    progress: 0,
+  })
+
   const mutation = useMutation({
-    mutationFn: (data) => (isEdit ? api.put(`/projects/${id}`, data) : api.post('/projects', data)),
+    mutationFn: (data) => (isEdit ? api.put(`/projects/${id}`, data) : api.post("/projects", data)),
     onSuccess: () => {
       toast.success(
         isEdit
-          ? language === 'ar'
-            ? 'تم تحديث المشروع'
-            : 'Project updated'
-          : language === 'ar'
-            ? 'تم إضافة المشروع'
-            : 'Project added'
+          ? language === "ar"
+            ? "تم تحديث المشروع"
+            : "Project updated"
+          : language === "ar"
+            ? "تم إضافة المشروع"
+            : "Project added"
       )
-      queryClient.invalidateQueries(['projects'])
-      queryClient.invalidateQueries(['projects-stats'])
-      navigate('/projects')
+      queryClient.invalidateQueries(["projects"])
+      queryClient.invalidateQueries(["projects-stats"])
+      navigate("/projects")
     },
-    onError: (err) => toast.error(err.response?.data?.error || 'Error'),
+    onError: (err) => toast.error(err.response?.data?.error || "Error"),
   })
 
   const onSubmit = (data) => {
@@ -142,6 +232,25 @@ export default function ProjectForm() {
     mutation.mutate(payload)
   }
 
+  const getStatusColor = (s) => {
+    switch (s) {
+      case "planned":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+      case "in-progress":
+      case "in_progress":
+        return "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200"
+      case "completed":
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+      case "on-hold":
+      case "on_hold":
+        return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
+      case "cancelled":
+        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+      default:
+        return "bg-gray-100 text-gray-800"
+    }
+  }
+
   if (isEdit && isLoading) {
     return (
       <div className="flex justify-center p-12">
@@ -152,212 +261,368 @@ export default function ProjectForm() {
 
   const safeProgress = Math.max(0, Math.min(100, Number(progress || 0)))
   const progressUpdates = Array.isArray(projectData?.progressUpdates) ? projectData.progressUpdates : []
+  const budget = watch("budget") || 0
+  const currency = watch("currency") || "SAR"
+  const startDate = watch("startDate")
+  const dueDate = watch("dueDate")
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
+    <div className="w-full max-w-7xl mx-auto p-4 space-y-6 bg-background text-foreground">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="btn btn-ghost btn-icon">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {isEdit ? (language === 'ar' ? 'تعديل مشروع' : 'Edit Project') : language === 'ar' ? 'إضافة مشروع' : 'Add Project'}
-            </h1>
-          </div>
+          <h1 className="text-3xl font-bold">
+            {isEdit
+              ? language === "ar"
+                ? "تقرير المشروع"
+                : "Project Report"
+              : language === "ar"
+              ? "إضافة مشروع"
+              : "Add Project"}
+          </h1>
+          <Badge className={getStatusColor(status)}>
+            {status?.replace("_", " ")?.toUpperCase()}
+          </Badge>
         </div>
 
-        {isEdit && projectData && (
+        <div className="flex items-center gap-3">
+          {isEdit && projectData && (
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  setDownloadingPdf(true)
+                  const full = await api.get(`/projects/${id}`).then((r) => r.data)
+                  await downloadProjectProgressPdf({ project: full, language, tenant })
+                } catch (e) {
+                  toast.error(language === "ar" ? "فشل تحميل PDF" : "Failed to download PDF")
+                } finally {
+                  setDownloadingPdf(false)
+                }
+              }}
+              disabled={downloadingPdf}
+              className="btn btn-secondary flex items-center gap-2"
+            >
+              {downloadingPdf ? (
+                <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )}
+              {language === "ar" ? "تحميل التقرير" : "Download Report"}
+            </button>
+          )}
           <button
-            type="button"
-            onClick={async () => {
-              try {
-                setDownloadingPdf(true)
-                const full = await api.get(`/projects/${id}`).then((r) => r.data)
-                await downloadProjectProgressPdf({ project: full, language, tenant })
-              } catch (e) {
-                toast.error(language === 'ar' ? 'فشل تحميل PDF' : 'Failed to download PDF')
-              } finally {
-                setDownloadingPdf(false)
-              }
-            }}
-            disabled={downloadingPdf}
-            className="btn btn-secondary"
+            onClick={handleSubmit(onSubmit)}
+            disabled={mutation.isPending}
+            className="btn btn-primary flex items-center gap-2"
           >
-            {downloadingPdf ? (
-              <div className="w-5 h-5 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
+            {mutation.isPending ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
-              <Download className="w-4 h-4" />
+              <Save className="w-4 h-4" />
             )}
-            {language === 'ar' ? 'PDF التقدم' : 'Progress PDF'}
+            {t("save")}
           </button>
-        )}
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
-              <FolderKanban className="w-5 h-5 text-primary-600" />
-            </div>
-            <h3 className="text-lg font-semibold">{language === 'ar' ? 'معلومات المشروع' : 'Project Information'}</h3>
-          </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>{language === "ar" ? "معلومات المشروع" : "Project Information"}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="code">{language === "ar" ? "الكود" : "Code"}</Label>
+                <Input
+                  id="code"
+                  {...register("code")}
+                  disabled={isEdit}
+                  placeholder={language === "ar" ? "تلقائي" : "Auto"}
+                />
+              </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <label className="label">{language === 'ar' ? 'الكود' : 'Code'}</label>
-              <input
-                {...register('code')}
-                className="input"
-                placeholder={language === 'ar' ? 'تلقائي إذا تركته فارغاً' : 'Auto if left empty'}
-                disabled={isEdit}
-              />
-            </div>
-
-            <div>
-              <label className="label">{t('status')}</label>
-              <select {...register('status')} className="select">
-                <option value="planned">{language === 'ar' ? 'مخطط' : 'Planned'}</option>
-                <option value="in_progress">{language === 'ar' ? 'قيد التنفيذ' : 'In Progress'}</option>
-                <option value="on_hold">{language === 'ar' ? 'متوقف' : 'On Hold'}</option>
-                <option value="completed">{language === 'ar' ? 'مكتمل' : 'Completed'}</option>
-                <option value="cancelled">{language === 'ar' ? 'ملغي' : 'Cancelled'}</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="label">{language === 'ar' ? 'المالك' : 'Owner'}</label>
-              <div className="relative">
-                <User className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input {...register('ownerName')} className="input ps-10" />
+              <div className="space-y-2">
+                <Label htmlFor="status">{t("status")}</Label>
+                <Controller
+                  name="status"
+                  control={control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="planned">{language === "ar" ? "مخطط" : "Planned"}</SelectItem>
+                        <SelectItem value="in_progress">
+                          {language === "ar" ? "قيد التنفيذ" : "In Progress"}
+                        </SelectItem>
+                        <SelectItem value="completed">
+                          {language === "ar" ? "مكتمل" : "Completed"}
+                        </SelectItem>
+                        <SelectItem value="on_hold">{language === "ar" ? "متوقف" : "On Hold"}</SelectItem>
+                        <SelectItem value="cancelled">{language === "ar" ? "ملغي" : "Cancelled"}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
             </div>
 
-            <div className="md:col-span-2">
-              <label className="label">{language === 'ar' ? 'الاسم (EN)' : 'Name (EN)'} *</label>
-              <input {...register('nameEn', { required: true })} className="input" />
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="ownerName">{language === "ar" ? "المالك" : "Owner"}</Label>
+                <Controller
+                  name="ownerName"
+                  control={control}
+                  render={({ field }) => (
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={language === "ar" ? "اختر المالك" : "Select owner"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>{language === "ar" ? "الموظفون" : "Employees"}</SelectLabel>
+                          {employeesData?.map((emp) => (
+                            <SelectItem key={emp._id} value={`${emp.firstName} ${emp.lastName}`}>
+                              {emp.firstName} {emp.lastName}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                        <SelectGroup>
+                          <SelectLabel>{language === "ar" ? "المستخدمون" : "Users"}</SelectLabel>
+                          {usersData?.map((u) => (
+                            <SelectItem key={u._id} value={`${u.firstName} ${u.lastName}`}>
+                              {u.firstName} {u.lastName}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="nameEn">{language === "ar" ? "الاسم (EN)" : "Name (EN)"} *</Label>
+                  <Input id="nameEn" {...register("nameEn", { required: true })} />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="nameAr" className="text-right block">
+                    {language === "ar" ? "الاسم (AR)" : "Name (AR)"}
+                  </Label>
+                  <Input id="nameAr" {...register("nameAr")} dir="rtl" className="text-right" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">{language === "ar" ? "الوصف" : "Description"}</Label>
+                <Textarea id="description" {...register("description")} rows={3} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{language === "ar" ? "نظرة عامة" : "Progress Overview"}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex flex-col items-center justify-center py-4">
+              <div className="relative">
+                <CircleProgress value={safeProgress} maxValue={100} size={120} strokeWidth={8} />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-2xl font-bold">{safeProgress}%</span>
+                </div>
+              </div>
+              <p className="mt-4 text-sm text-muted-foreground">
+                {language === "ar" ? "اكتمال المشروع" : "Project Completion"}
+              </p>
             </div>
 
-            <div>
-              <label className="label">{language === 'ar' ? 'الاسم (AR)' : 'Name (AR)'}</label>
-              <input {...register('nameAr')} className="input" dir="rtl" />
-            </div>
-
-            <div className="md:col-span-2 lg:col-span-3">
-              <label className="label">{language === 'ar' ? 'الوصف' : 'Description'}</label>
-              <textarea {...register('description')} className="input" rows={3} />
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="card p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <Calendar className="w-5 h-5 text-blue-600" />
-            </div>
-            <h3 className="text-lg font-semibold">{language === 'ar' ? 'الجدول والميزانية' : 'Schedule & Budget'}</h3>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <label className="label">{language === 'ar' ? 'تاريخ البداية' : 'Start Date'}</label>
-              <input type="date" {...register('startDate')} className="input" />
-            </div>
-
-            <div>
-              <label className="label">{language === 'ar' ? 'تاريخ الانتهاء' : 'Due Date'}</label>
-              <input type="date" {...register('dueDate')} className="input" />
-            </div>
-
-            <div>
-              <label className="label">
-                <span className="inline-flex items-center gap-2">
-                  <Percent className="w-4 h-4 text-gray-400" />
-                  {language === 'ar' ? 'التقدم (%)' : 'Progress (%)'}
+            <div className="space-y-3">
+              <div className="flex justify-between items-center border-b pb-2">
+                <span className="text-sm text-muted-foreground">
+                  {language === "ar" ? "الميزانية" : "Budget"}
                 </span>
-              </label>
-              <input type="number" min="0" max="100" step="1" {...register('progress', { valueAsNumber: true })} className="input" />
-              <div className="mt-2">
-                <div className="h-2 bg-gray-200 dark:bg-dark-600 rounded-full overflow-hidden">
-                  <div className="h-full bg-primary-500 rounded-full" style={{ width: `${safeProgress}%` }} />
+                <span className="font-semibold text-lg">
+                  {Number(budget).toLocaleString()} {currency}
+                </span>
+              </div>
+              <div className="flex justify-between items-center border-b pb-2">
+                <span className="text-sm text-muted-foreground">
+                  {language === "ar" ? "تاريخ البداية" : "Start Date"}
+                </span>
+                <span className="font-semibold">{startDate || "-"}</span>
+              </div>
+              <div className="flex justify-between items-center border-b pb-2">
+                <span className="text-sm text-muted-foreground">
+                  {language === "ar" ? "تاريخ الانتهاء" : "Due Date"}
+                </span>
+                <span className="font-semibold">{dueDate || "-"}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{language === "ar" ? "الجدول والميزانية" : "Schedule & Budget"}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="startDate">{language === "ar" ? "تاريخ البداية" : "Start Date"}</Label>
+              <div className="relative">
+                <Input id="startDate" type="date" {...register("startDate")} />
+                <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="dueDate">{language === "ar" ? "تاريخ الانتهاء" : "Due Date"}</Label>
+              <div className="relative">
+                <Input id="dueDate" type="date" {...register("dueDate")} />
+                <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="progress">{language === "ar" ? "التقدم (%)" : "Progress (%)"}</Label>
+              <Input
+                id="progress"
+                type="number"
+                min="0"
+                max="100"
+                {...register("progress", { valueAsNumber: true })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="budget">{language === "ar" ? "الميزانية" : "Budget"}</Label>
+              <Input
+                id="budget"
+                type="number"
+                min="0"
+                {...register("budget", { valueAsNumber: true })}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="currency">{language === "ar" ? "العملة" : "Currency"}</Label>
+              <Input id="currency" {...register("currency")} disabled />
+            </div>
+          </div>
+
+          <div className="mt-4 space-y-2">
+            <Label htmlFor="notes">{language === "ar" ? "ملاحظات عامة" : "General Notes"}</Label>
+            <Textarea id="notes" {...register("notes")} rows={3} />
+          </div>
+        </CardContent>
+      </Card>
+
+      {isEdit && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{language === "ar" ? "تقارير التقدم" : "Progress Reports"}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-4">
+              <h3 className="font-semibold text-lg">{language === "ar" ? "إضافة تقرير جديد" : "Add New Report"}</h3>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <div className="space-y-2">
+                  <Label htmlFor="reportDate">{language === "ar" ? "التاريخ" : "Date"}</Label>
+                  <Input
+                    id="reportDate"
+                    type="date"
+                    value={newReport.date}
+                    onChange={(e) => setNewReport((p) => ({ ...p, date: e.target.value }))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="reportProgress">{language === "ar" ? "التقدم (%)" : "Progress (%)"}</Label>
+                  <Input
+                    id="reportProgress"
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={newReport.progress}
+                    onChange={(e) => setNewReport((p) => ({ ...p, progress: Number(e.target.value) }))}
+                  />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="reportNote">{language === "ar" ? "الملاحظة" : "Description"}</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="reportNote"
+                      value={newReport.note}
+                      onChange={(e) => setNewReport((p) => ({ ...p, note: e.target.value }))}
+                      placeholder={language === "ar" ? "وصف التحديث" : "Progress description"}
+                      className="flex-1"
+                    />
+                    <button
+                      type="button"
+                      onClick={addProgressReport}
+                      disabled={progressMutation.isPending || !newReport.note}
+                      className="btn btn-primary whitespace-nowrap"
+                    >
+                      {progressMutation.isPending ? "..." : language === "ar" ? "إضافة تقرير" : "Add Report"}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div>
-              <label className="label">
-                <span className="inline-flex items-center gap-2">
-                  <Wallet className="w-4 h-4 text-gray-400" />
-                  {language === 'ar' ? 'الميزانية' : 'Budget'}
-                  <SarIcon className="w-[1em] h-[1em]" />
-                </span>
-              </label>
-              <input type="number" min="0" step="0.01" {...register('budget', { valueAsNumber: true })} className="input" />
-            </div>
-
-            <div>
-              <label className="label">{language === 'ar' ? 'العملة' : 'Currency'}</label>
-              <input {...register('currency')} className="input" disabled />
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="card p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-              <FolderKanban className="w-5 h-5 text-emerald-600" />
-            </div>
-            <h3 className="text-lg font-semibold">{language === 'ar' ? 'ملاحظات' : 'Notes'}</h3>
-          </div>
-
-          <textarea {...register('notes')} className="input" rows={4} />
-        </motion.div>
-
-        {isEdit && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="card p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
-                <Percent className="w-5 h-5 text-amber-600" />
-              </div>
-              <h3 className="text-lg font-semibold">{language === 'ar' ? 'سجل التقدم' : 'Progress Updates'}</h3>
-            </div>
-
-            {progressUpdates.length === 0 ? (
-              <div className="text-sm text-gray-500">{language === 'ar' ? 'لا يوجد تحديثات بعد' : 'No updates yet'}</div>
-            ) : (
-              <div className="space-y-3">
-                {[...progressUpdates].reverse().map((u, idx) => (
-                  <div key={u?._id || `${u?.createdAt || idx}`} className="p-3 rounded-xl border border-gray-200 dark:border-dark-700">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">{Math.max(0, Math.min(100, Number(u?.progress || 0)))}%</div>
-                      <div className="text-xs text-gray-500">{formatDateTime(u?.createdAt)}</div>
+            <div className="space-y-3 pt-4 border-t border-border">
+              <h3 className="font-semibold text-lg">{language === "ar" ? "سجل التقارير" : "Report History"}</h3>
+              {progressUpdates.length === 0 ? (
+                <div className="text-sm text-muted-foreground py-4">
+                  {language === "ar" ? "لا يوجد تقارير بعد" : "No reports yet"}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {[...progressUpdates].reverse().map((report, idx) => (
+                    <div
+                      key={report._id || idx}
+                      className="flex items-center justify-between p-4 border border-border rounded-xl bg-card"
+                    >
+                      <div className="flex-1 pr-4">
+                        <p className="font-medium text-foreground whitespace-pre-wrap">
+                          {report.note || "-"}
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {report.createdAt
+                            ? new Date(report.createdAt).toLocaleString(
+                                language === "ar" ? "ar-SA" : "en-US"
+                              )
+                            : "-"}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <CircleProgress
+                          value={report.progress || 0}
+                          maxValue={100}
+                          size={48}
+                          strokeWidth={4}
+                        />
+                        <span className="font-semibold text-lg">{report.progress || 0}%</span>
+                      </div>
                     </div>
-                    {String(u?.note || '').trim() ? (
-                      <div className="mt-2 text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{String(u.note).trim()}</div>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-            )}
-          </motion.div>
-        )}
-
-        <div className="flex justify-end gap-3">
-          <button type="button" onClick={() => navigate(-1)} className="btn btn-secondary">
-            {t('cancel')}
-          </button>
-          <button type="submit" disabled={mutation.isPending} className="btn btn-primary">
-            {mutation.isPending ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <>
-                <Save className="w-4 h-4" />
-                {t('save')}
-              </>
-            )}
-          </button>
-        </div>
-      </form>
+                  ))}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

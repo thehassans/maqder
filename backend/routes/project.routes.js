@@ -6,7 +6,6 @@ const router = express.Router();
 
 router.use(protect);
 router.use(tenantFilter);
-router.use(requireBusinessType('trading'));
 
 async function generateProjectCode(tenantFilterValue) {
   const today = new Date();
