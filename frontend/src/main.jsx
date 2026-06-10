@@ -7,6 +7,16 @@ import { Toaster } from 'react-hot-toast'
 import App from './App'
 import { store } from './store'
 import './index.css'
+import { registerSW } from 'virtual:pwa-register'
+
+const updateSW = registerSW({
+  onNeedRefresh() {
+    console.log('New content available, please refresh.')
+  },
+  onOfflineReady() {
+    console.log('App is ready for offline usage.')
+  },
+})
 
 const queryClient = new QueryClient({
   defaultOptions: {
