@@ -9,6 +9,7 @@ import {
   Package,
   Warehouse,
   Settings,
+  Key,
   ChevronLeft,
   ChevronRight,
   X,
