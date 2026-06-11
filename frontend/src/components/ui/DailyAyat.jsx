@@ -84,7 +84,7 @@ export default function DailyAyat({ className = "", variant = "dark" }) {
         
         {/* Arabic Text */}
         <p 
-          className={`text-2xl md:text-3xl lg:text-4xl font-arabic leading-[1.8] md:leading-[2] drop-shadow-sm ${
+          className={`text-lg md:text-xl lg:text-2xl font-arabic leading-[1.8] md:leading-[2] drop-shadow-sm ${
             isDark ? 'text-amber-50' : 'text-[#1a3d28]'
           }`} 
           dir="rtl" 
@@ -101,7 +101,7 @@ export default function DailyAyat({ className = "", variant = "dark" }) {
         </div>
         
         {/* English Translation */}
-        <p className={`text-sm md:text-base italic font-serif max-w-2xl mx-auto leading-relaxed ${
+        <p className={`text-xs md:text-sm italic font-serif max-w-2xl mx-auto leading-relaxed ${
           isDark ? 'text-gray-300' : 'text-gray-600'
         }`}>
           "{ayatOfTheDay.english}"

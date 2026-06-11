@@ -53,7 +53,6 @@ import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
 import Money from '../components/ui/Money'
 import { getTenantBusinessTypes } from '../lib/businessTypes'
-import DailyAyat from '../components/ui/DailyAyat'
 
 const COLORS = ['rgb(var(--color-primary-500))', '#f59e0b', '#ef4444', 'rgb(var(--color-secondary-500))']
 const DASHBOARD_REFRESH_MS = 30 * 1000
@@ -433,11 +432,6 @@ export default function Dashboard() {
           </div>
         </div>
       </motion.div>
-
-      {/* Daily Ayat */}
-      <div className="w-full">
-        <DailyAyat variant="light" />
-      </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-4">
