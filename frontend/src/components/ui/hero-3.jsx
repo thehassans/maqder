@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ArrowRightIcon, PhoneCallIcon } from "lucide-react";
 
-export function HeroSection() {
+export function HeroSection({ isArabic }) {
   return (
     <section className="mx-auto w-full max-w-5xl overflow-hidden pt-16">
       {/* Shades */}
@@ -20,47 +20,54 @@ export function HeroSection() {
       <div className="relative z-10 flex max-w-2xl flex-col gap-5 px-4">
         <a
           className={cn(
-            "group flex w-fit items-center gap-3 rounded-full border bg-white p-1 shadow-sm",
-            "fade-in slide-in-from-bottom-10 animate-in fill-mode-backwards transition-all delay-500 duration-500 ease-out"
+            "group flex w-fit items-center gap-3 rounded-full border border-gray-200/60 bg-white/50 backdrop-blur-md px-3 py-1.5 shadow-sm hover:bg-white/80 transition-all",
+            "fade-in slide-in-from-bottom-10 animate-in fill-mode-backwards delay-500 duration-500 ease-out"
           )}
           href="#link"
         >
-          <div className="rounded-full border bg-[#1a3d28] px-2 py-0.5 shadow-sm text-white">
-            <p className="font-mono text-xs font-bold">NEW</p>
+          <div className="rounded-full bg-primary-600 px-2.5 py-0.5 shadow-sm text-white">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-wider">NEW</p>
           </div>
 
-          <span className="text-xs text-gray-600 font-medium">Maqder ERP Complete System</span>
-          <span className="block h-5 border-l border-gray-200" />
+          <span className="text-xs text-gray-600 font-medium tracking-wide">
+            {isArabic ? 'نظام مقدر المتكامل' : 'Maqder ERP Complete System'}
+          </span>
+          <span className="block h-4 border-l border-gray-300" />
 
-          <div className="pr-2">
-            <ArrowRightIcon className="w-3 h-3 text-gray-500 -translate-x-0.5 duration-150 ease-out group-hover:translate-x-0.5" />
+          <div className="pr-1">
+            <ArrowRightIcon className={`w-3 h-3 text-gray-400 duration-200 ease-out group-hover:text-gray-700 ${isArabic ? 'rotate-180 group-hover:-translate-x-1' : 'group-hover:translate-x-1'}`} />
           </div>
         </a>
 
         <h1
           className={cn(
-            "text-balance font-bold text-4xl text-gray-900 leading-tight md:text-5xl lg:text-6xl",
+            "text-balance font-extrabold text-5xl text-gray-900 leading-[1.1] md:text-6xl lg:text-7xl tracking-tight",
             "fade-in slide-in-from-bottom-10 animate-in fill-mode-backwards delay-100 duration-500 ease-out"
           )}
         >
-          Building Digital Experiences That Drive Growth
+          {isArabic ? 'إدارة أعمالك' : 'Manage your business'} <br />
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-emerald-500">
+            {isArabic ? 'بذكاء وأناقة' : 'with intelligence and elegance'}
+          </span>
         </h1>
 
         <p
           className={cn(
-            "text-gray-500 text-sm tracking-wide sm:text-lg md:text-xl max-w-xl",
+            "text-gray-500 text-base sm:text-lg md:text-xl max-w-2xl font-light leading-relaxed",
             "fade-in slide-in-from-bottom-10 animate-in fill-mode-backwards delay-200 duration-500 ease-out"
           )}
         >
-          We help brands scale faster through design, development <br className="hidden sm:block" /> and strategic execution.
+          {isArabic 
+            ? 'نظام متكامل يجمع بين قوة الأداء وبساطة التصميم. مصمم خصيصاً لتلبية متطلبات السوق السعودي والفوترة الإلكترونية.'
+            : 'An integrated system combining powerful performance with minimal design. Specifically built for the Saudi market and ZATCA e-invoicing.'}
         </p>
 
-        <div className="fade-in slide-in-from-bottom-10 flex w-fit animate-in items-center justify-start gap-3 fill-mode-backwards pt-4 delay-300 duration-500 ease-out">
-          <Button variant="outline" className="rounded-full border-gray-200 text-gray-700 hover:bg-gray-50 px-6 py-6 font-medium">
-            <PhoneCallIcon className="w-4 h-4 mr-2" /> Book a Call
+        <div className="fade-in slide-in-from-bottom-10 flex w-fit flex-col sm:flex-row items-center gap-4 fill-mode-backwards pt-6 delay-300 duration-500 ease-out">
+          <Button className="w-full sm:w-auto rounded-full bg-gray-900 text-white hover:bg-gray-800 px-8 py-6 font-medium shadow-xl shadow-gray-900/20 transition-all hover:-translate-y-0.5 text-base">
+            {isArabic ? 'ابدأ الآن' : 'Get Started'} <ArrowRightIcon className={`w-4 h-4 mx-2 ${isArabic ? 'rotate-180' : ''}`} />
           </Button>
-          <Button className="rounded-full bg-[#1a3d28] text-white hover:bg-[#1a3d28]/90 px-6 py-6 font-medium shadow-lg shadow-[#1a3d28]/20">
-            Get started <ArrowRightIcon className="w-4 h-4 ml-2" />
+          <Button variant="outline" className="w-full sm:w-auto rounded-full border-gray-200 text-gray-700 hover:bg-gray-50 px-8 py-6 font-medium transition-all text-base">
+            <PhoneCallIcon className="w-4 h-4 mx-2" /> {isArabic ? 'احجز مكالمة' : 'Book a Call'}
           </Button>
         </div>
       </div>
@@ -81,8 +88,8 @@ export function HeroSection() {
           <div className="relative mx-auto max-w-5xl overflow-hidden rounded-2xl border border-gray-200/50 bg-white/50 p-2 shadow-2xl backdrop-blur-sm">
             <img
               alt="app screen"
-              className="z-10 relative aspect-[16/10] w-full rounded-xl border border-gray-100 object-cover shadow-sm dark:hidden"
-              src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=2070"
+              className="z-10 relative aspect-[16/10] w-full rounded-xl border border-gray-100/50 object-cover shadow-sm dark:hidden"
+              src="/adminpanel.png"
             />
           </div>
         </div>

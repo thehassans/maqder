@@ -293,5 +293,5 @@ function useScroll(threshold) {
 }
 
 const WordmarkIcon = (props) => (
-  <img src="/maqder-logo.png" alt="Maqder" className="h-12 w-auto object-contain" />
+  <img src="/maqderlogolandingpage.png" alt="Maqder" className="h-24 w-auto object-contain" />
 );
