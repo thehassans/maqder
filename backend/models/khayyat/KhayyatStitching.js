@@ -43,6 +43,14 @@ const khayyatStitchingSchema = new mongoose.Schema({
     ref: 'Customer',
     required: true
   },
+  customerName: {
+    type: String,
+    default: ''
+  },
+  customerPhone: {
+    type: String,
+    default: ''
+  },
   relationId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Customer',

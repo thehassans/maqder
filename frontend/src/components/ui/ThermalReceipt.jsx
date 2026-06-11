@@ -176,10 +176,10 @@ const ThermalReceipt = forwardRef(({ order, type = 'laundry', isKitchen = false,
             </span>
           </div>
         )}
-        {order.customerPhone && (
+        {(order.customerPhone || order.customer?.phone || order.customerId?.phone) && (
           <div className="flex justify-between">
             <span className="text-gray-600">Phone / رقم الهاتف:</span>
-            <span className="font-semibold">{order.customerPhone}</span>
+            <span className="font-semibold">{order.customerPhone || order.customer?.phone || order.customerId?.phone}</span>
           </div>
         )}
         {type === 'restaurant' && order.orderType && (

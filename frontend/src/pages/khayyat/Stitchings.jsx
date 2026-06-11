@@ -238,7 +238,7 @@ const Stitchings = () => {
   const [sendingWa, setSendingWa] = useState(false);
   const handleSendWhatsApp = async () => {
     if (!printOrder || !printRef.current) return;
-    const phone = printOrder.customerId?.phone;
+    const phone = printOrder.customerPhone || printOrder.customerId?.phone;
     if (!phone) {
       toast.error(language === 'ar' ? 'رقم هاتف العميل غير موجود' : 'Customer phone number missing');
       return;
@@ -356,10 +356,10 @@ const Stitchings = () => {
                 <div className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4">
                   <div className="text-xs text-gray-500 dark:text-slate-400">{(language === 'ar' ? 'العميل' : 'Customer')}</div>
                   <div className="mt-1 font-semibold text-gray-900 dark:text-slate-100">
-                    {invoiceModal.stitching.customerId?.nameI18n?.[langKey] || invoiceModal.stitching.customerId?.name || '-'}
+                    {invoiceModal.stitching.customerId?.nameI18n?.[langKey] || invoiceModal.stitching.customerName || invoiceModal.stitching.customerId?.name || '-'}
                   </div>
                   <div className="mt-1 text-sm text-gray-600 dark:text-slate-300">
-                    {invoiceModal.stitching.customerId?.phone || '-'}
+                    {invoiceModal.stitching.customerPhone || invoiceModal.stitching.customerId?.phone || '-'}
                   </div>
                 </div>
 
@@ -653,7 +653,7 @@ const Stitchings = () => {
         loading={deleteModal.loading}
         onConfirm={confirmDelete}
         previewTitle={`#${deleteModal?.stitching?.receiptNumber || deleteModal?.stitching?._id?.slice(-6) || ''}`}
-        previewSubtitle={`${deleteModal?.stitching?.customerId?.nameI18n?.[langKey] || deleteModal?.stitching?.customerId?.name || ''}${deleteModal?.stitching?.customerId?.phone ? ` • ${deleteModal.stitching.customerId.phone}` : ''}`}
+        previewSubtitle={`${deleteModal?.stitching?.customerId?.nameI18n?.[langKey] || deleteModal?.stitching?.customerName || deleteModal?.stitching?.customerId?.name || ''}${(deleteModal?.stitching?.customerPhone || deleteModal?.stitching?.customerId?.phone) ? ` • ${deleteModal.stitching.customerPhone || deleteModal.stitching.customerId.phone}` : ''}`}
       />
 
       <DemoBlockedModal

@@ -131,6 +131,8 @@ router.post('/', upload.single('measurementImage'), async (req, res) => {
     const stitching = new KhayyatStitching({
       tenantId: req.user.tenantId,
       customerId: customer._id,
+      customerName: customerName || customer.name,
+      customerPhone: customerPhone || customer.phone,
       receiptNumber: receiptNumber || `RCPT-${Date.now()}`,
       thawbType: thawbType || 'saudi',
       fabricColor: fabricColor || null,
@@ -180,7 +182,7 @@ router.put('/:id', upload.single('measurementImage'), async (req, res) => {
       return res.status(404).json({ error: 'Stitching not found' });
     }
 
-    let { status, workerId, measurements, styleOptions, removeMeasurementImage } = req.body;
+    let { status, workerId, measurements, styleOptions, removeMeasurementImage, customerName, customerPhone } = req.body;
 
     if (typeof measurements === 'string') {
       try { measurements = JSON.parse(measurements); } catch (e) {}
@@ -193,6 +195,8 @@ router.put('/:id', upload.single('measurementImage'), async (req, res) => {
     if (workerId !== undefined) stitching.workerId = workerId || null;
     if (measurements) stitching.measurements = measurements;
     if (styleOptions) stitching.styleOptions = styleOptions;
+    if (customerName) stitching.customerName = customerName;
+    if (customerPhone) stitching.customerPhone = customerPhone;
 
     if (removeMeasurementImage === 'true') {
       stitching.measurementImage = '';
