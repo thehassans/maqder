@@ -10,10 +10,10 @@ export default function WhatsAppConnect() {
   const { data: statusData, refetch, isLoading } = useQuery({
     queryKey: ['whatsapp-client-status'],
     queryFn: () => api.get('/whatsapp/client/status').then(r => r.data),
-    refetchInterval: (data) => {
-      // Poll faster if initializing or waiting for QR
-      if (data?.status === 'INITIALIZING' || data?.status === 'QR_READY') return 2000;
-      return false; // Stop polling if connected or disconnected
+    refetchInterval: (query) => {
+      const currentData = query?.state?.data;
+      if (currentData?.status === 'INITIALIZING' || currentData?.status === 'QR_READY') return 2000;
+      return false;
     }
   });
 
