@@ -12,7 +12,7 @@ import { Modal } from './components/ui/Modal';
 import { ConfirmModal } from './components/ui/ConfirmModal';
 import DemoBlockedModal from './components/ui/DemoBlockedModal';
 import { Table, Thead, Tbody, Tr, Th, Td } from './components/ui/Table';
-import { Plus, Search, UserPlus, Trash2, Printer, X, Eye, Send } from 'lucide-react';
+import { Plus, Search, UserPlus, Trash2, Printer, X, Eye, Send, MessageCircle } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import SARIcon from './components/ui/SARIcon';
@@ -42,6 +42,14 @@ const Stitchings = () => {
   const fetchRequestIdRef = useRef(0);
   const printRef = useRef(null);
   const [printOrder, setPrintOrder] = useState(null);
+
+  const [waModalInvoice, setWaModalInvoice] = useState(null);
+  const [waPhone, setWaPhone] = useState('');
+  const [waLoadingId, setWaLoadingId] = useState(null);
+  const [waMessageLang, setWaMessageLang] = useState('both');
+  const [waMessage, setWaMessage] = useState('');
+  const [sendingWaModal, setSendingWaModal] = useState(false);
+  const waPrintRef = useRef(null);
 
   const isDemo = !!user?.isDemoSession;
   const langKey = (language || 'en').split('-')[0];
@@ -134,7 +142,7 @@ const Stitchings = () => {
     const requestId = ++fetchRequestIdRef.current;
     try {
       setLoading(true);
-      const params = new URLSearchParams();
+      const params = new window.URLSearchParams();
       if (search) params.append('search', search);
       if (statusFilter) params.append('status', statusFilter);
       
@@ -238,16 +246,22 @@ const Stitchings = () => {
   const [sendingWa, setSendingWa] = useState(false);
   const handleSendWhatsApp = async () => {
     if (!printOrder || !printRef.current) return;
-    const phone = printOrder.customerPhone || printOrder.customerId?.phone;
-    if (!phone) {
-      toast.error(language === 'ar' ? 'رقم هاتف العميل غير موجود' : 'Customer phone number missing');
-      return;
-    }
-    
-    setSendingWa(true);
     try {
+      const status = await api.get('/whatsapp/client/status').then(r => r.data);
+      if (status?.status !== 'READY') {
+        toast.error(language === 'ar' ? 'الرجاء ربط واتساب أولاً من صفحة واتساب' : 'Please connect WhatsApp first from the WhatsApp page');
+        return;
+      }
+
+      const phone = printOrder.customerPhone || printOrder.customerId?.phone;
+      if (!phone) {
+        toast.error(language === 'ar' ? 'رقم هاتف العميل غير موجود' : 'Customer phone number missing');
+        return;
+      }
+      
+      setSendingWa(true);
       const element = printRef.current;
-      const canvas = await html2canvas(element, { scale: 2 });
+      const canvas = await html2canvas(element, { scale: 2, width: element.offsetWidth || 300, windowWidth: 300 });
       const imgData = canvas.toDataURL('image/png');
       
       const pdf = new jsPDF({
@@ -260,7 +274,7 @@ const Stitchings = () => {
       const orderNum = printOrder.receiptNumber || printOrder.orderNumber || printOrder._id?.slice(-6) || '';
       const pdfBlob = pdf.output('blob');
       
-      const formData = new FormData();
+      const formData = new window.FormData();
       formData.append('pdf', pdfBlob, `Invoice-${orderNum}.pdf`);
       formData.append('phoneNumber', phone);
       
@@ -285,6 +299,83 @@ const Stitchings = () => {
       toast.error(e?.response?.data?.error || (language === 'ar' ? 'حدث خطأ' : 'Error sending'));
     }
     setSendingWa(false);
+  };
+
+  const handleWaClick = async (stitch) => {
+    try {
+      setWaLoadingId(stitch._id);
+      const status = await api.get('/whatsapp/client/status').then(r => r.data);
+      if (status?.status !== 'READY') {
+        toast.error(language === 'ar' ? 'الرجاء ربط واتساب أولاً من صفحة واتساب' : 'Please connect WhatsApp first from the WhatsApp page');
+        return;
+      }
+      
+      const phone = stitch.customerPhone || stitch.customerId?.phone || '';
+      let cleanPhone = phone.replace(/\D/g, '');
+      if (cleanPhone.startsWith('05') && cleanPhone.length === 10) {
+        cleanPhone = '966' + cleanPhone.substring(1);
+      }
+      setWaPhone(cleanPhone);
+      
+      const customerName = stitch.customerId?.nameI18n?.ar || stitch.customerName || stitch.customerId?.name || '';
+      const paid = Number(stitch.paidAmount || 0).toFixed(2);
+      const price = Number(stitch.price || 0).toFixed(2);
+      const pending = Math.max(0, price - paid).toFixed(2);
+      const orderNum = stitch.receiptNumber || stitch.orderNumber || stitch._id?.slice(-6) || '';
+      
+      let initialLang = language === 'ar' ? 'ar' : 'en';
+      setWaMessageLang(initialLang);
+      
+      const msgAr = `مرحباً ${customerName}،\nمرفق إيصال طلبك رقم #${orderNum}.\n\nإجمالي الطلب: ${price} ريال\nالمدفوع: ${paid} ريال\nالمتبقي: ${pending} ريال\n\nشكراً لتعاملك معنا.`;
+      const msgEn = `Hello ${customerName},\nAttached is your receipt #${orderNum}.\n\nTotal: ${price} SAR\nPaid: ${paid} SAR\nPending: ${pending} SAR\n\nThank you for your business.`;
+      
+      if (initialLang === 'ar') {
+        setWaMessage(msgAr);
+      } else {
+        setWaMessage(msgEn);
+      }
+      
+      setWaModalInvoice(stitch);
+    } catch (e) {
+      toast.error(language === 'ar' ? 'الرجاء ربط واتساب أولاً من صفحة واتساب' : 'Please connect WhatsApp first from the WhatsApp page');
+    } finally {
+      setWaLoadingId(null);
+    }
+  };
+
+  const sendWaMutation = async () => {
+    if (!waModalInvoice || !waPhone || !waPrintRef.current) return;
+    setSendingWaModal(true);
+    try {
+      const element = waPrintRef.current;
+      const canvas = await html2canvas(element, { scale: 2, width: element.offsetWidth || 300, windowWidth: 300 });
+      const imgData = canvas.toDataURL('image/png');
+      
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: [80, (canvas.height * 80) / canvas.width]
+      });
+      pdf.addImage(imgData, 'PNG', 0, 0, 80, (canvas.height * 80) / canvas.width);
+      
+      const orderNum = waModalInvoice.receiptNumber || waModalInvoice.orderNumber || waModalInvoice._id?.slice(-6) || '';
+      const pdfBlob = pdf.output('blob');
+      
+      const formData = new window.FormData();
+      formData.append('pdf', pdfBlob, `Invoice-${orderNum}.pdf`);
+      formData.append('phoneNumber', waPhone);
+      formData.append('caption', waMessage);
+      
+      await api.post('/whatsapp/client/send-pdf', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      toast.success(language === 'ar' ? 'تم الإرسال بنجاح' : 'Sent successfully');
+      setWaModalInvoice(null);
+    } catch (e) {
+      toast.error(e?.response?.data?.error || (language === 'ar' ? 'حدث خطأ في الإرسال' : 'Error sending'));
+    }
+    setSendingWaModal(false);
   };
 
   return (
@@ -442,6 +533,96 @@ const Stitchings = () => {
           ) : (
             <div className="text-sm text-gray-500 dark:text-slate-400">{(language === 'ar' ? 'لا توجد بيانات' : 'No data available')}</div>
           )}
+        </div>
+      </Modal>
+
+      {/* Hidden ThermalReceipt for WhatsApp Modal */}
+      {waModalInvoice && (
+        <div style={{ position: 'absolute', top: '-9999px', left: '-9999px', width: '302px' }}>
+          <div className="bg-white w-[302px] flex justify-center">
+            <ThermalReceipt ref={waPrintRef} order={waModalInvoice} type="khayyat" />
+          </div>
+        </div>
+      )}
+
+      <Modal
+        isOpen={!!waModalInvoice}
+        onClose={() => setWaModalInvoice(null)}
+        title={language === 'ar' ? 'إرسال عبر واتساب' : 'Send via WhatsApp'}
+      >
+        <div className="space-y-4 p-2">
+          <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-slate-300 block mb-1">
+              {language === 'ar' ? 'رقم الهاتف (مع رمز الدولة)' : 'Phone Number (with country code)'}
+            </label>
+            <input
+              type="text"
+              value={waPhone}
+              onChange={(e) => setWaPhone(e.target.value)}
+              placeholder="9665XXXXXXXX"
+              className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              dir="ltr"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              {language === 'ar' ? 'مثال: 9665XXXXXXXX' : 'Example: 9665XXXXXXXX'}
+            </p>
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-slate-300">
+                {language === 'ar' ? 'رسالة الفاتورة' : 'Invoice Message'}
+              </label>
+              <select
+                value={waMessageLang}
+                onChange={(e) => {
+                  const newLang = e.target.value;
+                  setWaMessageLang(newLang);
+                  const customerName = waModalInvoice?.customerId?.nameI18n?.ar || waModalInvoice?.customerName || waModalInvoice?.customerId?.name || '';
+                  const paid = Number(waModalInvoice?.paidAmount || 0).toFixed(2);
+                  const price = Number(waModalInvoice?.price || 0).toFixed(2);
+                  const pending = Math.max(0, price - paid).toFixed(2);
+                  const orderNum = waModalInvoice?.receiptNumber || waModalInvoice?.orderNumber || waModalInvoice?._id?.slice(-6) || '';
+                  const msgAr = `مرحباً ${customerName}،\nمرفق إيصال طلبك رقم #${orderNum}.\n\nإجمالي الطلب: ${price} ريال\nالمدفوع: ${paid} ريال\nالمتبقي: ${pending} ريال\n\nشكراً لتعاملك معنا.`;
+                  const msgEn = `Hello ${customerName},\nAttached is your receipt #${orderNum}.\n\nTotal: ${price} SAR\nPaid: ${paid} SAR\nPending: ${pending} SAR\n\nThank you for your business.`;
+                  if (newLang === 'ar') setWaMessage(msgAr);
+                  else if (newLang === 'en') setWaMessage(msgEn);
+                  else setWaMessage(`${msgAr}\n\n${msgEn}`);
+                }}
+                className="text-xs bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded py-1 px-2 text-gray-700 dark:text-slate-300 outline-none"
+              >
+                <option value="both">{language === 'ar' ? 'عربي وإنجليزي' : 'Arabic & English'}</option>
+                <option value="ar">عربي</option>
+                <option value="en">English</option>
+              </select>
+            </div>
+            <textarea
+              value={waMessage}
+              onChange={(e) => setWaMessage(e.target.value)}
+              className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500 min-h-[120px]"
+              dir={waMessageLang === 'ar' ? 'rtl' : 'ltr'}
+            />
+          </div>
+          <div className="flex gap-3 pt-4">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setWaModalInvoice(null)}
+              disabled={sendingWaModal}
+            >
+              {language === 'ar' ? 'إلغاء' : 'Cancel'}
+            </Button>
+            <Button
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+              onClick={sendWaMutation}
+              disabled={!waPhone || sendingWaModal}
+              icon={sendingWaModal ? null : Send}
+            >
+              {sendingWaModal ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+              ) : null}
+              {language === 'ar' ? 'إرسال' : 'Send'}
+            </Button>
+          </div>
         </div>
       </Modal>
 
@@ -606,6 +787,18 @@ const Stitchings = () => {
                         title="Print Label"
                       >
                         <Printer className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleWaClick(stitch)}
+                        disabled={waLoadingId === stitch._id}
+                        className="p-2 hover:bg-green-50 dark:hover:bg-green-900/20 text-green-600 dark:text-green-500 rounded-lg transition-colors"
+                        title={language === 'ar' ? 'إرسال عبر واتساب' : 'Send via WhatsApp'}
+                      >
+                        {waLoadingId === stitch._id ? (
+                          <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <MessageCircle className="w-4 h-4" />
+                        )}
                       </button>
                       <button
                         onClick={() => requestDelete(stitch)}
