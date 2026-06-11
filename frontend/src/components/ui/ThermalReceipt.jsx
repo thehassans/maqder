@@ -16,13 +16,13 @@ const ThermalReceipt = forwardRef(({ order, type = 'laundry', isKitchen = false,
 
   const dateStr = new Date(order.createdAt || Date.now()).toLocaleString(isRtl ? 'ar-SA' : 'en-US')
   const orderNumber = order.receiptNumber || order.orderNumber || order._id?.slice(-8) || 'N/A'
-  const customerName = order.customerName || order.customer?.fullName || order.customerId?.name || (isRtl ? 'عميل نقدي' : 'Cash Customer')
+  const customerName = order.customerId?.nameI18n?.[isRtl ? 'ar' : 'en'] || order.customerName || order.customer?.fullName || order.customerId?.name || (isRtl ? 'عميل نقدي' : 'Cash Customer')
 
   let items = order.items || order.lineItems || []
   if (type === 'khayyat') {
     items = [{
       nameEn: `Tailoring Order${order.orderFor ? ` (${order.orderFor})` : ''}`,
-      nameAr: `طلب خياطة${order.orderFor ? ` (${order.orderFor})` : ''}`,
+      nameAr: `طلب خياطة${order.orderForAr ? ` (${order.orderForAr})` : (order.orderFor ? ` (${order.orderFor})` : '')}`,
       quantity: order.quantity || 1,
       unitPrice: order.price || 0,
       total: order.price || 0

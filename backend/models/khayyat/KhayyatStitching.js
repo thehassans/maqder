@@ -68,6 +68,10 @@ const khayyatStitchingSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  orderForAr: {
+    type: String,
+    default: null
+  },
   workerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'KhayyatWorker',

@@ -6,6 +6,7 @@ import { Plus, Trash2, Printer, ArrowLeft, Upload, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../lib/api';
 import { useTranslation } from '../../lib/translations';
+import { useAutoTranslate } from '../../hooks/useAutoTranslate';
 import { formatSaudiRiyal } from './utils/saudi';
 import SARIcon from './components/ui/SARIcon';
 
@@ -14,6 +15,7 @@ export default function KhayyatQuickInvoice() {
   const { language } = useSelector((state) => state.ui);
   const { tenant } = useSelector((state) => state.auth);
   const { t } = useTranslation(language);
+  const { translate } = useAutoTranslate();
   const isRTL = ['ar', 'ur'].includes((language || 'en').split('-')[0]);
 
   const [customerName, setCustomerName] = useState('');
@@ -98,16 +100,28 @@ export default function KhayyatQuickInvoice() {
     let remainingPaid = paidVal;
     let remainingDiscount = discountVal;
 
+    let customerNameAr = '';
+    if (customerName.trim() && !/[\u0600-\u06FF]/.test(customerName)) {
+      try {
+        customerNameAr = await translate(customerName.trim(), 'en', 'ar');
+      } catch (e) {
+        console.error('Translation failed', e);
+      }
+    } else {
+      customerNameAr = customerName.trim();
+    }
+
     try {
       const createdOrders = [];
       for (let i = 0; i < validItems.length; i++) {
         const item = validItems[i];
-        const formData = new FormData();
+        const formData = new window.FormData();
         
         if (currentCustomerId) {
           formData.append('customerId', currentCustomerId);
         } else {
           formData.append('customerName', customerName.trim());
+          if (customerNameAr) formData.append('customerNameAr', customerNameAr);
           formData.append('customerPhone', customerPhone.trim());
         }
 
@@ -135,6 +149,14 @@ export default function KhayyatQuickInvoice() {
         formData.append('description', desc);
         formData.append('orderFor', item.name);
         
+        let orderForAr = item.name;
+        if (item.name && !/[\u0600-\u06FF]/.test(item.name)) {
+          try {
+            orderForAr = await translate(item.name.trim(), 'en', 'ar');
+          } catch(e) {}
+        }
+        formData.append('orderForAr', orderForAr);
+        
         if (notes) formData.append('notes', notes);
         if (item.imageFile) formData.append('measurementImage', item.imageFile);
 
@@ -160,7 +182,7 @@ export default function KhayyatQuickInvoice() {
         quantity: createdOrders.reduce((s, o) => s + (Number(o?.quantity) || 0), 0),
         items: createdOrders.map(o => ({
           nameEn: `Tailoring Order (${o.orderFor || o.description || 'Member'})`,
-          nameAr: `طلب خياطة (${o.orderFor || o.description || 'الفرد'})`,
+          nameAr: `طلب خياطة (${o.orderForAr || o.orderFor || o.description || 'الفرد'})`,
           quantity: o.quantity || 1,
           unitPrice: o.price || 0,
           total: o.price || 0

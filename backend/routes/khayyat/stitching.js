@@ -95,7 +95,9 @@ router.post('/', upload.single('measurementImage'), async (req, res) => {
       customFabricName,
       rollsUsed,
       measurements,
-      styleOptions
+      styleOptions,
+      orderFor,
+      orderForAr
     } = req.body;
 
     if (typeof measurements === 'string') {
@@ -112,6 +114,10 @@ router.post('/', upload.single('measurementImage'), async (req, res) => {
       customer = new Customer({
         tenantId: req.user.tenantId,
         name: customerName,
+        nameI18n: {
+          en: customerName,
+          ar: req.body.customerNameAr || customerName
+        },
         phone: customerPhone,
       });
       await customer.save();
@@ -145,6 +151,8 @@ router.post('/', upload.single('measurementImage'), async (req, res) => {
       price: price || 0,
       paidAmount: paidAmount || 0,
       description: description || '',
+      orderFor: orderFor || null,
+      orderForAr: orderForAr || null,
       dueDate: dueDate || null
     });
 
