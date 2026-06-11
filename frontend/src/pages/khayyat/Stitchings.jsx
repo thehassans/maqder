@@ -249,18 +249,31 @@ const Stitchings = () => {
       const element = printRef.current;
       const canvas = await html2canvas(element, { scale: 2 });
       const imgData = canvas.toDataURL('image/png');
+      
       const pdf = new jsPDF({
         orientation: 'portrait',
-        unit: 'px',
-        format: [canvas.width, canvas.height]
+        unit: 'mm',
+        format: [80, (canvas.height * 80) / canvas.width]
       });
-      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+      pdf.addImage(imgData, 'PNG', 0, 0, 80, (canvas.height * 80) / canvas.width);
+      
+      const orderNum = printOrder.receiptNumber || printOrder.orderNumber || printOrder._id?.slice(-6) || '';
       const pdfBlob = pdf.output('blob');
       
       const formData = new FormData();
-      formData.append('pdf', pdfBlob, `Invoice-${printOrder.orderNumber}.pdf`);
+      formData.append('pdf', pdfBlob, `Invoice-${orderNum}.pdf`);
       formData.append('phoneNumber', phone);
-      formData.append('caption', language === 'ar' ? `مرحباً، مرفق فاتورتك رقم ${printOrder.orderNumber}` : `Hello, attached is your invoice #${printOrder.orderNumber}`);
+      
+      const customerName = printOrder.customerId?.nameI18n?.ar || printOrder.customerName || printOrder.customerId?.name || '';
+      const paid = Number(printOrder.paidAmount || 0).toFixed(2);
+      const price = Number(printOrder.price || 0).toFixed(2);
+      const pending = Math.max(0, price - paid).toFixed(2);
+      
+      const captionText = language === 'ar' 
+        ? `مرحباً ${customerName}،\nمرفق إيصال طلبك رقم #${orderNum}.\n\nإجمالي الطلب: ${price} ريال\nالمدفوع: ${paid} ريال\nالمتبقي: ${pending} ريال\n\nشكراً لتعاملك معنا.`
+        : `Hello ${customerName},\nAttached is your receipt #${orderNum}.\n\nTotal: ${price} SAR\nPaid: ${paid} SAR\nPending: ${pending} SAR\n\nThank you for your business.`;
+      
+      formData.append('caption', captionText);
       
       await api.post('/whatsapp/client/send-pdf', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
