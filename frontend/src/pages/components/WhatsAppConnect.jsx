@@ -29,7 +29,9 @@ export default function WhatsAppConnect() {
 
   const status = statusData?.status || 'DISCONNECTED';
   const qrCode = statusData?.qrCode;
-  const errorMsg = statusData?.error;
+  
+  // Also check if the mutation itself failed synchronously
+  const errorMsg = statusData?.error || (initMutation.isError ? (initMutation.error?.userMessage || initMutation.error?.message || 'API Error') : null);
 
   return (
     <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-200 dark:border-dark-700 p-6 shadow-sm">

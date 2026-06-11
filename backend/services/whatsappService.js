@@ -24,21 +24,42 @@ class WhatsAppService {
 
     this.status.set(tenantId, { state: 'INITIALIZING', error: null });
     
-    // Use LocalAuth to persist session per tenant
+    // Try to find an executable path for Linux servers
+    let executablePath = null;
+    const fs = await import('fs');
+    const commonPaths = [
+      '/usr/bin/google-chrome-stable',
+      '/usr/bin/google-chrome',
+      '/usr/bin/chromium-browser',
+      '/usr/bin/chromium'
+    ];
+    for (const p of commonPaths) {
+      if (fs.existsSync(p)) {
+        executablePath = p;
+        break;
+      }
+    }
+
+    const puppeteerConfig = {
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--disable-gpu',
+        '--single-process'
+      ]
+    };
+    if (executablePath) {
+      puppeteerConfig.executablePath = executablePath;
+    }
+
     const client = new Client({
       authStrategy: new LocalAuth({ clientId: `tenant-${tenantId}` }),
-      puppeteer: {
-        headless: true,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--no-first-run',
-          '--no-zygote',
-          '--disable-gpu'
-        ]
-      },
+      puppeteer: puppeteerConfig,
       webVersionCache: {
         type: 'remote',
         remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
@@ -84,7 +105,8 @@ class WhatsAppService {
 
     client.initialize().catch(err => {
       console.error(`WhatsApp Client initialization error for tenant ${tenantId}:`, err);
-      this.status.set(tenantId, { state: 'DISCONNECTED', error: err.message || err });
+      const errorString = err?.message || (typeof err === 'object' ? JSON.stringify(err, Object.getOwnPropertyNames(err)) : String(err));
+      this.status.set(tenantId, { state: 'DISCONNECTED', error: errorString || 'Unknown initialization error' });
       this.clients.delete(tenantId);
     });
 
