@@ -63,6 +63,7 @@ class WhatsAppService {
   }
 
   getStatus(tenantId) {
+    tenantId = String(tenantId);
     return {
       status: this.status.get(tenantId)?.state || 'DISCONNECTED',
       qrCode: this.qrCodes.get(tenantId) || null,
@@ -71,6 +72,7 @@ class WhatsAppService {
   }
 
   async initClient(tenantId) {
+    tenantId = String(tenantId);
     if (this.clients.has(tenantId)) {
       return this.getStatus(tenantId);
     }
@@ -151,6 +153,7 @@ class WhatsAppService {
   }
 
   async logout(tenantId) {
+    tenantId = String(tenantId);
     const client = this.clients.get(tenantId);
     if (client) {
       try { await client.logout(); } catch (_) {}
@@ -161,6 +164,7 @@ class WhatsAppService {
   }
 
   async sendPdf(tenantId, phoneNumber, pdfBuffer, fileName = 'Invoice.pdf', caption = '') {
+    tenantId = String(tenantId);
     const client = this.clients.get(tenantId);
     if (!client || this.status.get(tenantId)?.state !== 'READY') {
       throw new Error('WhatsApp client is not ready. Please connect first.');
@@ -172,6 +176,7 @@ class WhatsAppService {
   }
 
   async sendText(tenantId, phoneNumber, text) {
+    tenantId = String(tenantId);
     const client = this.clients.get(tenantId);
     if (!client || this.status.get(tenantId)?.state !== 'READY') {
       throw new Error('WhatsApp client is not ready. Please connect first.');
