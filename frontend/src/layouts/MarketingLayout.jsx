@@ -32,10 +32,10 @@ export default function MarketingLayout() {
     <div className="min-h-screen bg-[linear-gradient(180deg,#f8faf7_0%,#f4f8f4_40%,#ffffff_100%)] text-slate-900" dir={isArabic ? 'rtl' : 'ltr'}>
       <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="h-16 flex items-center justify-between gap-3">
+          <div className="h-28 flex items-center justify-between gap-3">
             <Link to="/" className="flex items-center gap-3">
-              <div className="w-full h-12 flex items-center justify-center flex-shrink-0">
-                <img src="/maqdernewlogo.png" alt="Maqder" className="h-full w-auto object-contain" />
+              <div className="w-full h-24 flex items-center justify-center flex-shrink-0">
+                <img src="/maqderlogolandingpage.png" alt="Maqder" className="h-full w-auto object-contain" />
               </div>
             </Link>
 
@@ -125,8 +125,8 @@ export default function MarketingLayout() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
-              <div className="w-auto h-10 flex items-center justify-start">
-                <img src="/maqdernewlogo.png" alt="Maqder" className="h-full w-auto object-contain" />
+              <div className="w-auto h-20 flex items-center justify-start">
+                <img src="/maqderlogolandingpage.png" alt="Maqder" className="h-full w-auto object-contain" />
               </div>
               <p className="mt-2 text-sm leading-relaxed text-slate-500">
                 {isArabic
