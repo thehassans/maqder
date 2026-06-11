@@ -308,12 +308,12 @@ export default function TenantForm() {
               <input {...register('business.legalNameAr', { required: true })} className="input" dir="rtl" />
             </div>
             <div>
-              <label className="label">{language === 'ar' ? 'الرقم الضريبي' : 'VAT Number'} *</label>
-              <input {...register('business.vatNumber', { required: true })} className="input" placeholder="3XXXXXXXXXX00003" />
+              <label className="label">{language === 'ar' ? 'الرقم الضريبي' : 'VAT Number'}</label>
+              <input {...register('business.vatNumber')} className="input" placeholder="3XXXXXXXXXX00003" />
             </div>
             <div>
-              <label className="label">{language === 'ar' ? 'السجل التجاري' : 'CR Number'} *</label>
-              <input {...register('business.crNumber', { required: true })} className="input" />
+              <label className="label">{language === 'ar' ? 'السجل التجاري' : 'CR Number'}</label>
+              <input {...register('business.crNumber')} className="input" />
             </div>
             {isEdit && (
               <>

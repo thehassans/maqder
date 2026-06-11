@@ -346,8 +346,8 @@ export default function Sidebar() {
       {!sidebarCollapsed && tenant && (
         <div className="px-6 py-6 border-b border-gray-100 dark:border-dark-700 flex flex-col items-center text-center">
           {tenant?.branding?.logo ? (
-            <div className="w-16 h-16 mb-4">
-              <img src={tenant.branding.logo} alt="Company Logo" className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal" />
+            <div className="w-full h-20 mb-5 flex items-center justify-center">
+              <img src={tenant.branding.logo} alt="Company Logo" className="max-h-full max-w-[85%] object-contain dark:mix-blend-normal" />
             </div>
           ) : (
             <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-dark-700 text-gray-900 dark:text-white flex items-center justify-center font-light text-2xl mb-4">
@@ -355,12 +355,14 @@ export default function Sidebar() {
             </div>
           )}
           
-          <h3 className="font-medium text-gray-900 dark:text-white text-sm leading-tight line-clamp-2 tracking-wide uppercase">
+          <h3 className="font-bold text-gray-900 dark:text-white text-xs leading-snug tracking-widest uppercase">
             {language === 'ar' ? tenant.business?.legalNameAr : tenant.business?.legalNameEn}
           </h3>
-          <div className="mt-2 text-[10px] text-gray-400 tracking-widest font-mono uppercase">
-            VAT {tenant.business?.vatNumber}
-          </div>
+          {tenant.business?.vatNumber && (
+            <div className="mt-1.5 text-[9px] text-gray-400 tracking-widest font-mono uppercase">
+              VAT {tenant.business?.vatNumber}
+            </div>
+          )}
         </div>
       )}
 

@@ -35,8 +35,8 @@ const businessDetailsSchema = new mongoose.Schema({
   legalNameAr: { type: String, required: true },
   legalNameEn: { type: String, required: true },
   tradeName: { type: String },
-  vatNumber: { type: String, required: true, unique: true },
-  crNumber: { type: String, required: true },
+  vatNumber: { type: String, default: '' },
+  crNumber: { type: String, default: '' },
   address: {
     street: { type: String },
     streetAr: { type: String },
