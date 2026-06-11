@@ -255,6 +255,24 @@ router.get('/debug-chrome', async (req, res) => {
   }
 });
 
+router.get('/debug-status', async (req, res) => {
+  try {
+    const clients = Array.from(whatsappService.clients.keys());
+    const statuses = Array.from(whatsappService.status.entries()).map(([k, v]) => ({ tenantId: k, ...v }));
+    const qrCodes = Array.from(whatsappService.qrCodes.keys());
+    
+    res.json({
+      activeClientsCount: clients.length,
+      clients,
+      statuses,
+      qrCodesCount: qrCodes.length,
+      qrCodes: qrCodes.map(k => ({ tenantId: k, hasQr: !!whatsappService.qrCodes.get(k) }))
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ============== PROTECTED ROUTES ==============
 
 router.use(protect);

@@ -98,7 +98,6 @@ class WhatsAppService {
           '--no-first-run',
           '--no-zygote',
           '--disable-gpu',
-          '--single-process',
         ],
       },
     });
@@ -143,7 +142,7 @@ class WhatsAppService {
 
     client.initialize().catch((err) => {
       console.error(`[WhatsApp] Init error for tenant ${tenantId}:`, err);
-      const msg = err?.message || String(err);
+      const msg = err?.stack || err?.message || String(err);
       this.status.set(tenantId, { state: 'DISCONNECTED', error: msg });
       this.clients.delete(tenantId);
     });
