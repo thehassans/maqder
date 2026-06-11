@@ -14,29 +14,18 @@ class WhatsAppService {
     this._chromePath = undefined; // undefined = not yet detected
   }
 
-  async _getChromePath() {
+  _getChromePath() {
     // Return cached result
     if (this._chromePath !== undefined) return this._chromePath;
 
-    // 1. Allow explicit override via environment variable
+    // 1. Allow explicit override via environment variable (recommended for Plesk)
     if (process.env.CHROME_EXECUTABLE_PATH && existsSync(process.env.CHROME_EXECUTABLE_PATH)) {
       console.log('[WhatsApp] Using CHROME_EXECUTABLE_PATH env:', process.env.CHROME_EXECUTABLE_PATH);
       this._chromePath = process.env.CHROME_EXECUTABLE_PATH;
       return this._chromePath;
     }
 
-    // 2. Try puppeteer's bundled chrome (most reliable on any OS)
-    try {
-      const { default: puppeteer } = await import('puppeteer');
-      const ep = puppeteer?.executablePath?.();
-      if (ep && existsSync(ep)) {
-        console.log('[WhatsApp] Using puppeteer bundled Chrome:', ep);
-        this._chromePath = ep;
-        return this._chromePath;
-      }
-    } catch (_) {}
-
-    // 3. Windows: scan puppeteer cache directory
+    // 2. Windows: scan puppeteer user cache directory
     if (os.platform() === 'win32') {
       const cacheDir = path.join(os.homedir(), '.cache', 'puppeteer', 'chrome');
       if (existsSync(cacheDir)) {
@@ -55,12 +44,12 @@ class WhatsAppService {
       }
 
       // Windows system installs
-      const systemPaths = [
+      const windowsPaths = [
         'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
         'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
         path.join(os.homedir(), 'AppData', 'Local', 'Google', 'Chrome', 'Application', 'chrome.exe'),
       ];
-      for (const p of systemPaths) {
+      for (const p of windowsPaths) {
         if (existsSync(p)) {
           console.log('[WhatsApp] Found system Chrome (Windows):', p);
           this._chromePath = p;
@@ -69,7 +58,7 @@ class WhatsAppService {
       }
     }
 
-    // 4. Linux system paths
+    // 3. Linux system paths (Plesk/Ubuntu servers)
     const linuxPaths = [
       '/usr/bin/google-chrome-stable',
       '/usr/bin/google-chrome',
@@ -85,7 +74,21 @@ class WhatsAppService {
       }
     }
 
-    console.warn('[WhatsApp] Could not find Chrome. Will let puppeteer-core use its default.');
+    // 4. Try "which" command on Linux
+    if (os.platform() !== 'win32') {
+      try {
+        const found = execSync('which chromium-browser || which google-chrome || which chromium', {
+          encoding: 'utf8', timeout: 3000
+        }).trim().split('\n')[0];
+        if (found && existsSync(found)) {
+          console.log('[WhatsApp] Found Chrome via which:', found);
+          this._chromePath = found;
+          return this._chromePath;
+        }
+      } catch (_) {}
+    }
+
+    console.warn('[WhatsApp] No Chrome found. Set CHROME_EXECUTABLE_PATH env var in Plesk, or install chromium-browser on server.');
     this._chromePath = null;
     return null;
   }
@@ -105,10 +108,17 @@ class WhatsAppService {
 
     this.status.set(tenantId, { state: 'INITIALIZING', error: null });
 
-    const chromePath = await this._getChromePath();
+    const chromePath = this._getChromePath();
+
+    if (!chromePath) {
+      const errMsg = 'Chrome/Chromium not found on server. Please set CHROME_EXECUTABLE_PATH in your environment variables or install chromium-browser on the server.';
+      this.status.set(tenantId, { state: 'DISCONNECTED', error: errMsg });
+      return this.getStatus(tenantId);
+    }
 
     const puppeteerConfig = {
       headless: true,
+      executablePath: chromePath,
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -119,10 +129,6 @@ class WhatsAppService {
         '--disable-gpu',
       ],
     };
-
-    if (chromePath) {
-      puppeteerConfig.executablePath = chromePath;
-    }
 
     const client = new Client({
       authStrategy: new LocalAuth({ clientId: `tenant-${tenantId}` }),
