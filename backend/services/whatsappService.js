@@ -1,21 +1,61 @@
-/**
- * WhatsApp Service using @whiskeysockets/baileys
- * Pure Node.js - No Chrome / Puppeteer needed!
- */
-import { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } from '@whiskeysockets/baileys';
+import pkg from 'whatsapp-web.js';
+const { Client, LocalAuth, MessageMedia } = pkg;
 import qrcode from 'qrcode';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync } from 'fs';
+import { execSync } from 'child_process';
 import path from 'path';
-import pino from 'pino';
-
-const AUTH_DIR = path.resolve('./whatsapp-sessions');
+import os from 'os';
 
 class WhatsAppService {
   constructor() {
-    this.sockets = new Map();   // tenantId -> socket
-    this.qrCodes = new Map();   // tenantId -> qrDataUrl
-    this.status = new Map();    // tenantId -> { state, error }
-    this.retryCount = new Map();// tenantId -> count
+    this.clients = new Map();
+    this.qrCodes = new Map();
+    this.status = new Map();
+  }
+
+  _findChrome() {
+    // 1. Explicit env var (set in Plesk custom environment variables)
+    const envPath = process.env.CHROME_EXECUTABLE_PATH;
+    if (envPath && existsSync(envPath)) {
+      console.log('[WhatsApp] Chrome from env var:', envPath);
+      return envPath;
+    }
+
+    // 2. Linux system paths
+    const linuxPaths = [
+      '/usr/bin/google-chrome-stable',
+      '/usr/bin/google-chrome',
+      '/usr/bin/chromium-browser',
+      '/usr/bin/chromium',
+      '/snap/bin/chromium',
+    ];
+    for (const p of linuxPaths) {
+      if (existsSync(p)) {
+        console.log('[WhatsApp] Chrome found at:', p);
+        return p;
+      }
+    }
+
+    // 3. Windows: scan puppeteer cache
+    if (os.platform() === 'win32') {
+      const cacheDir = path.join(os.homedir(), '.cache', 'puppeteer', 'chrome');
+      if (existsSync(cacheDir)) {
+        try {
+          const out = execSync(`dir "${cacheDir}" /b /s /a-d chrome.exe 2>nul`, { encoding: 'utf8', timeout: 5000 });
+          const found = out.trim().split('\n').map(l => l.trim()).filter(l => l && existsSync(l))[0];
+          if (found) { console.log('[WhatsApp] Chrome via scan:', found); return found; }
+        } catch (_) {}
+      }
+    }
+
+    // 4. Try which command (Linux)
+    try {
+      const found = execSync('which google-chrome-stable 2>/dev/null || which chromium-browser 2>/dev/null || echo ""', { encoding: 'utf8', timeout: 3000 }).trim();
+      if (found && existsSync(found)) { console.log('[WhatsApp] Chrome via which:', found); return found; }
+    } catch (_) {}
+
+    console.warn('[WhatsApp] No Chrome found. Set CHROME_EXECUTABLE_PATH env var in Plesk.');
+    return null;
   }
 
   getStatus(tenantId) {
@@ -27,156 +67,115 @@ class WhatsAppService {
   }
 
   async initClient(tenantId) {
-    if (this.sockets.has(tenantId)) {
+    if (this.clients.has(tenantId)) {
       return this.getStatus(tenantId);
     }
 
     this.status.set(tenantId, { state: 'INITIALIZING', error: null });
-    this.qrCodes.delete(tenantId);
 
-    try {
-      await this._connect(tenantId);
-    } catch (err) {
-      console.error(`[WhatsApp] Init error for tenant ${tenantId}:`, err.message || err);
-      this.status.set(tenantId, { state: 'DISCONNECTED', error: err.message || String(err) });
+    const chromePath = this._findChrome();
+    if (!chromePath) {
+      const errMsg = 'No Chrome/Chromium found. Set CHROME_EXECUTABLE_PATH=/usr/bin/google-chrome-stable in Plesk environment variables.';
+      console.error('[WhatsApp]', errMsg);
+      this.status.set(tenantId, { state: 'DISCONNECTED', error: errMsg });
+      return this.getStatus(tenantId);
     }
+
+    const client = new Client({
+      authStrategy: new LocalAuth({ clientId: `tenant-${tenantId}` }),
+      puppeteer: {
+        headless: true,
+        executablePath: chromePath,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--no-first-run',
+          '--no-zygote',
+          '--disable-gpu',
+          '--single-process',
+        ],
+      },
+    });
+
+    this.clients.set(tenantId, client);
+
+    client.on('qr', async (qr) => {
+      console.log(`[WhatsApp] QR received for tenant ${tenantId}`);
+      this.status.set(tenantId, { state: 'QR_READY', error: null });
+      try {
+        const qrDataUrl = await qrcode.toDataURL(qr);
+        this.qrCodes.set(tenantId, qrDataUrl);
+      } catch (err) {
+        console.error(`[WhatsApp] QR generation error:`, err);
+      }
+    });
+
+    client.on('ready', () => {
+      console.log(`[WhatsApp] Ready for tenant ${tenantId}`);
+      this.status.set(tenantId, { state: 'READY', error: null });
+      this.qrCodes.delete(tenantId);
+    });
+
+    client.on('authenticated', () => {
+      console.log(`[WhatsApp] Authenticated for tenant ${tenantId}`);
+      this.status.set(tenantId, { state: 'CONNECTED', error: null });
+    });
+
+    client.on('auth_failure', (msg) => {
+      console.error(`[WhatsApp] Auth failure:`, msg);
+      this.status.set(tenantId, { state: 'DISCONNECTED', error: String(msg) });
+      this.qrCodes.delete(tenantId);
+      this.clients.delete(tenantId);
+    });
+
+    client.on('disconnected', (reason) => {
+      console.log(`[WhatsApp] Disconnected:`, reason);
+      this.status.set(tenantId, { state: 'DISCONNECTED', error: String(reason) });
+      this.qrCodes.delete(tenantId);
+      this.clients.delete(tenantId);
+    });
+
+    client.initialize().catch((err) => {
+      console.error(`[WhatsApp] Init error for tenant ${tenantId}:`, err);
+      const msg = err?.message || String(err);
+      this.status.set(tenantId, { state: 'DISCONNECTED', error: msg });
+      this.clients.delete(tenantId);
+    });
 
     return this.getStatus(tenantId);
   }
 
-  async _connect(tenantId) {
-    const sessionDir = path.join(AUTH_DIR, String(tenantId));
-    if (!existsSync(sessionDir)) mkdirSync(sessionDir, { recursive: true });
-
-    const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
-    const { version } = await fetchLatestBaileysVersion();
-
-    const sock = makeWASocket({
-      version,
-      auth: state,
-      logger: pino({ level: 'silent' }),
-      printQRInTerminal: false,
-      browser: ['Maqder ERP', 'Chrome', '1.0.0'],
-      generateHighQualityLinkPreview: false,
-      connectTimeoutMs: 60000,
-      defaultQueryTimeoutMs: 60000,
-      keepAliveIntervalMs: 30000,
-    });
-
-    this.sockets.set(tenantId, sock);
-
-    // Persist credentials on update
-    sock.ev.on('creds.update', saveCreds);
-
-    // Connection events
-    sock.ev.on('connection.update', async (update) => {
-      const { connection, lastDisconnect, qr } = update;
-
-      if (qr) {
-        // New QR code received
-        try {
-          const qrDataUrl = await qrcode.toDataURL(qr);
-          this.qrCodes.set(tenantId, qrDataUrl);
-          this.status.set(tenantId, { state: 'QR_READY', error: null });
-          console.log(`[WhatsApp] QR ready for tenant ${tenantId}`);
-        } catch (err) {
-          console.error(`[WhatsApp] QR generation error for tenant ${tenantId}:`, err);
-        }
-      }
-
-      if (connection === 'close') {
-        const statusCode = lastDisconnect?.error?.output?.statusCode;
-        const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
-
-        console.log(`[WhatsApp] Connection closed for tenant ${tenantId}, code: ${statusCode}, reconnect: ${shouldReconnect}`);
-
-        this.sockets.delete(tenantId);
-        this.qrCodes.delete(tenantId);
-
-        if (shouldReconnect) {
-          const retries = (this.retryCount.get(tenantId) || 0) + 1;
-          this.retryCount.set(tenantId, retries);
-
-          if (retries <= 3) {
-            console.log(`[WhatsApp] Reconnecting tenant ${tenantId} (attempt ${retries})...`);
-            this.status.set(tenantId, { state: 'INITIALIZING', error: null });
-            setTimeout(() => this._connect(tenantId).catch(console.error), 3000);
-          } else {
-            this.status.set(tenantId, { state: 'DISCONNECTED', error: 'Connection lost after multiple retries.' });
-            this.retryCount.delete(tenantId);
-          }
-        } else {
-          // Logged out
-          this.status.set(tenantId, { state: 'DISCONNECTED', error: null });
-          this.retryCount.delete(tenantId);
-        }
-      }
-
-      if (connection === 'open') {
-        console.log(`[WhatsApp] Connected for tenant ${tenantId}`);
-        this.status.set(tenantId, { state: 'READY', error: null });
-        this.qrCodes.delete(tenantId);
-        this.retryCount.delete(tenantId);
-      }
-    });
-  }
-
   async logout(tenantId) {
-    const sock = this.sockets.get(tenantId);
-    if (sock) {
-      try {
-        await sock.logout();
-      } catch (e) {
-        console.error(`[WhatsApp] Logout error for tenant ${tenantId}:`, e.message);
-      }
-      this.sockets.delete(tenantId);
+    const client = this.clients.get(tenantId);
+    if (client) {
+      try { await client.logout(); } catch (_) {}
+      this.clients.delete(tenantId);
     }
     this.qrCodes.delete(tenantId);
     this.status.set(tenantId, { state: 'DISCONNECTED', error: null });
-    this.retryCount.delete(tenantId);
-
-    // Remove session directory
-    try {
-      const { rm } = await import('fs/promises');
-      const sessionDir = path.join(AUTH_DIR, String(tenantId));
-      if (existsSync(sessionDir)) {
-        await rm(sessionDir, { recursive: true, force: true });
-      }
-    } catch (e) {
-      console.error(`[WhatsApp] Error removing session for tenant ${tenantId}:`, e.message);
-    }
   }
 
   async sendPdf(tenantId, phoneNumber, pdfBuffer, fileName = 'Invoice.pdf', caption = '') {
-    const sock = this.sockets.get(tenantId);
-    if (!sock || this.status.get(tenantId)?.state !== 'READY') {
-      throw new Error('WhatsApp is not connected. Please scan the QR code first.');
+    const client = this.clients.get(tenantId);
+    if (!client || this.status.get(tenantId)?.state !== 'READY') {
+      throw new Error('WhatsApp client is not ready. Please connect first.');
     }
-
-    const jid = this._formatJid(phoneNumber);
-    await sock.sendMessage(jid, {
-      document: pdfBuffer,
-      fileName,
-      mimetype: 'application/pdf',
-      caption,
-    });
-    return { success: true };
+    let phone = phoneNumber.replace(/\D/g, '');
+    if (!phone.endsWith('@c.us')) phone = `${phone}@c.us`;
+    const media = new MessageMedia('application/pdf', pdfBuffer.toString('base64'), fileName);
+    return await client.sendMessage(phone, media, { caption });
   }
 
   async sendText(tenantId, phoneNumber, text) {
-    const sock = this.sockets.get(tenantId);
-    if (!sock || this.status.get(tenantId)?.state !== 'READY') {
-      throw new Error('WhatsApp is not connected. Please scan the QR code first.');
+    const client = this.clients.get(tenantId);
+    if (!client || this.status.get(tenantId)?.state !== 'READY') {
+      throw new Error('WhatsApp client is not ready. Please connect first.');
     }
-
-    const jid = this._formatJid(phoneNumber);
-    await sock.sendMessage(jid, { text });
-    return { success: true };
-  }
-
-  _formatJid(phoneNumber) {
-    const clean = phoneNumber.replace(/\D/g, '');
-    return clean.endsWith('@s.whatsapp.net') ? clean : `${clean}@s.whatsapp.net`;
+    let phone = phoneNumber.replace(/\D/g, '');
+    if (!phone.endsWith('@c.us')) phone = `${phone}@c.us`;
+    return await client.sendMessage(phone, text);
   }
 }
 
