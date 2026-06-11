@@ -281,10 +281,12 @@ const ThermalReceipt = forwardRef(({ order, type = 'laundry', isKitchen = false,
                 <span>SAR {(Number(order.urgentFee || 0)).toFixed(2)}</span>
               </div>
             )}
-            <div className="flex justify-between">
-              <span className="text-gray-600">VAT (15%) / ضريبة القيمة المضافة:</span>
-              <span>SAR {(Number(order.totalVat || order.totalTax || 0)).toFixed(2)}</span>
-            </div>
+            {type !== 'khayyat' && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">VAT (15%) / ضريبة القيمة المضافة:</span>
+                <span>SAR {(Number(order.totalVat || order.totalTax || 0)).toFixed(2)}</span>
+              </div>
+            )}
             <div className="flex justify-between mt-2 pt-2 border-t border-dashed border-gray-300 font-extrabold text-sm text-gray-900">
               <span>Total / الإجمالي النهائي:</span>
               <span>SAR {(Number(order.grandTotal || order.total || order.price || 0)).toFixed(2)}</span>
