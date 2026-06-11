@@ -246,4 +246,69 @@ router.post('/seed-drinks', checkPermission('restaurant', 'create'), async (req,
   }
 });
 
+// Seed Food Endpoint
+router.post('/seed-food', checkPermission('restaurant', 'create'), async (req, res) => {
+  try {
+    const tenantIdStr = req.user.tenantId.toString();
+    const defaultsDir = path.join(process.cwd(), 'public', 'defaults', 'food');
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'restaurant', tenantIdStr);
+
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    const foods = [
+      // Arabic Category
+      { sku: 'FOD-A01', nameEn: 'Kabsa Chicken', nameAr: 'كبسة دجاج', descriptionEn: 'Traditional Saudi rice dish cooked with spiced chicken.', descriptionAr: 'طبق أرز سعودي تقليدي مطبوخ مع الدجاج المبهر.', category: 'Arabic', sellingPrice: 35, taxRate: 15, hasHalfPlate: true, calories: 650, prepTime: 25, isActive: true, localImage: 'kabsa_chicken.png' },
+      { sku: 'FOD-A02', nameEn: 'Mandi Meat', nameAr: 'مندي لحم', descriptionEn: 'Smoked slow-cooked meat with fragrant rice.', descriptionAr: 'لحم مطبوخ ببطء ومدخن مع الأرز العطري.', category: 'Arabic', sellingPrice: 65, taxRate: 15, hasHalfPlate: true, calories: 850, prepTime: 30, isActive: true, localImage: 'mandi_meat.png' },
+      { sku: 'FOD-A03', nameEn: 'Hummus', nameAr: 'حمص', descriptionEn: 'Creamy chickpea dip with tahini and olive oil.', descriptionAr: 'تغميسة حمص كريمية مع الطحينة وزيت الزيتون.', category: 'Arabic', sellingPrice: 15, taxRate: 15, hasHalfPlate: false, calories: 220, prepTime: 5, isActive: true, localImage: 'hummus.png' },
+      // Indian Category
+      { sku: 'FOD-I01', nameEn: 'Butter Chicken', nameAr: 'دجاج بالزبدة', descriptionEn: 'Tender chicken in a rich, creamy tomato gravy.', descriptionAr: 'دجاج طري في مرق الطماطم الغني والكريمي.', category: 'Indian', sellingPrice: 40, taxRate: 15, hasHalfPlate: false, calories: 550, prepTime: 20, isActive: true, localImage: 'butter_chicken.png' },
+      { sku: 'FOD-I02', nameEn: 'Chicken Biryani', nameAr: 'برياني دجاج', descriptionEn: 'Aromatic basmati rice cooked with spiced chicken.', descriptionAr: 'أرز بسمتي عطري مطبوخ مع الدجاج المبهر.', category: 'Indian', sellingPrice: 38, taxRate: 15, hasHalfPlate: true, calories: 600, prepTime: 25, isActive: true, localImage: 'chicken_biryani.png' },
+      { sku: 'FOD-I03', nameEn: 'Garlic Naan', nameAr: 'خبز نان بالثوم', descriptionEn: 'Freshly baked flatbread with garlic and butter.', descriptionAr: 'خبز طازج بالثوم والزبدة.', category: 'Indian', sellingPrice: 5, taxRate: 15, hasHalfPlate: false, calories: 150, prepTime: 10, isActive: true, localImage: 'garlic_naan.png' },
+      // Continental Category
+      { sku: 'FOD-C01', nameEn: 'Grilled Salmon', nameAr: 'سلمون مشوي', descriptionEn: 'Fresh salmon fillet served with roasted vegetables.', descriptionAr: 'فيليه سلمون طازج يقدم مع خضار مشوية.', category: 'Continental', sellingPrice: 85, taxRate: 15, hasHalfPlate: false, calories: 450, prepTime: 30, isActive: true, localImage: 'grilled_salmon.png' },
+      { sku: 'FOD-C02', nameEn: 'Beef Steak', nameAr: 'ستيك لحم بقري', descriptionEn: 'Juicy ribeye steak cooked to your liking.', descriptionAr: 'شريحة لحم ريب آي طرية مطبوخة حسب رغبتك.', category: 'Continental', sellingPrice: 120, taxRate: 15, hasHalfPlate: false, calories: 750, prepTime: 25, isActive: true, localImage: 'beef_steak.png' },
+      { sku: 'FOD-C03', nameEn: 'Caesar Salad', nameAr: 'سلطة سيزر', descriptionEn: 'Crisp romaine lettuce with croutons, parmesan, and Caesar dressing.', descriptionAr: 'خس رومين مقرمش مع الخبز المحمص والبارميزان وصلصة السيزر.', category: 'Continental', sellingPrice: 28, taxRate: 15, hasHalfPlate: false, calories: 320, prepTime: 10, isActive: true, localImage: 'caesar_salad.png' },
+    ];
+
+    for (const food of foods) {
+      const sourceImg = path.join(defaultsDir, food.localImage);
+      let imageUrl = '';
+      if (fs.existsSync(sourceImg)) {
+        const destName = food.localImage;
+        const destPath = path.join(uploadsDir, destName);
+        fs.copyFileSync(sourceImg, destPath);
+        imageUrl = `/uploads/restaurant/${tenantIdStr}/${destName}`;
+      }
+
+      await RestaurantMenuItem.findOneAndUpdate(
+        { tenantId: req.user.tenantId, sku: food.sku },
+        {
+          tenantId: req.user.tenantId,
+          sku: food.sku,
+          nameEn: food.nameEn,
+          nameAr: food.nameAr,
+          descriptionEn: food.descriptionEn,
+          descriptionAr: food.descriptionAr,
+          category: food.category,
+          sellingPrice: food.sellingPrice,
+          taxRate: food.taxRate,
+          hasHalfPlate: food.hasHalfPlate,
+          calories: food.calories,
+          prepTime: food.prepTime,
+          isActive: food.isActive,
+          imageUrl: imageUrl || ''
+        },
+        { upsert: true, new: true }
+      );
+    }
+
+    res.json({ message: 'Food seeded successfully' });
+  } catch (error) {
+    console.error('Seed error:', error);
+    res.status(500).json({ error: 'Failed to seed food' });
+  }
+});
+
 export default router;

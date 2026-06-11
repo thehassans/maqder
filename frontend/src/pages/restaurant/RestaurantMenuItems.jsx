@@ -44,6 +44,17 @@ export default function RestaurantMenuItems() {
     }
   })
 
+  const seedFoodMutation = useMutation({
+    mutationFn: () => api.post('/restaurant/menu-items/seed-food'),
+    onSuccess: () => {
+      toast.success(language === 'ar' ? 'تم إنشاء المأكولات بنجاح' : 'Food categories seeded successfully')
+      queryClient.invalidateQueries(['restaurant-menu-items'])
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.error || 'Failed to seed food')
+    }
+  })
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -56,6 +67,18 @@ export default function RestaurantMenuItems() {
           </p>
         </div>
         <div className="flex gap-2">
+          <button
+            onClick={() => seedFoodMutation.mutate()}
+            disabled={seedFoodMutation.isPending}
+            className="btn btn-secondary bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:hover:bg-emerald-900/40 border-transparent"
+          >
+            {seedFoodMutation.isPending ? (
+              <div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <UtensilsCrossed className="w-4 h-4" />
+            )}
+            {language === 'ar' ? 'توليد مأكولات' : 'Seed Food'}
+          </button>
           <button
             onClick={() => seedMutation.mutate()}
             disabled={seedMutation.isPending}
