@@ -20,6 +20,7 @@ import {
   ShieldCheck,
   ShieldOff,
   Layers,
+  MessageCircle,
   Trash2
 } from 'lucide-react'
 import api from '../../lib/api'
@@ -27,7 +28,7 @@ import { useTranslation } from '../../lib/translations'
 import Money from '../../components/ui/Money'
 import ExportMenu from '../../components/ui/ExportMenu'
 import toast from 'react-hot-toast'
-import { downloadInvoicePdf } from '../../lib/invoicePdf'
+import { downloadInvoicePdf, buildInvoicePdfBlob } from '../../lib/invoicePdf'
 import { getTenantBusinessTypes } from '../../lib/businessTypes'
 import { getZatcaStatusMeta, isEditableInvoice } from '../../lib/zatcaStatus'
 import { getTravelInvoiceLabelMeta, isTravelAgencyInvoice } from '../../lib/travelInvoiceStatus'
@@ -89,6 +90,9 @@ export default function Invoices() {
   const [page, setPage] = useState(1)
   const [pdfLoadingId, setPdfLoadingId] = useState(null)
   const [signModalInvoice, setSignModalInvoice] = useState(null)
+  const [waModalInvoice, setWaModalInvoice] = useState(null)
+  const [waPhone, setWaPhone] = useState('')
+  const [waLoadingId, setWaLoadingId] = useState(null)
   const tenantBusinessTypes = getTenantBusinessTypes(tenant)
   const hasTravel = tenantBusinessTypes.includes('travel_agency')
   const posTenants = ['bakala', 'super market', 'khayyat', 'saloon', 'laundry', 'restaurant']
@@ -150,6 +154,50 @@ export default function Invoices() {
     onError: (err) => {
       toast.error(err?.response?.data?.error || (language === 'ar' ? 'فشل توقيع الفاتورة' : 'Failed to sign invoice'))
     },
+  })
+
+  const handleWaClick = async (invoice) => {
+    try {
+      setWaLoadingId(invoice._id)
+      const status = await api.get('/whatsapp/client/status').then(r => r.data)
+      if (status?.status !== 'READY') {
+        toast.error(language === 'ar' ? 'الرجاء ربط واتساب أولاً من صفحة واتساب' : 'Please connect WhatsApp first from the WhatsApp page')
+        return
+      }
+      setWaPhone(invoice.buyer?.contactPhone || invoice.buyer?.phone || '')
+      setWaModalInvoice(invoice)
+    } catch (err) {
+      toast.error(language === 'ar' ? 'الرجاء ربط واتساب أولاً من صفحة واتساب' : 'Please connect WhatsApp first from the WhatsApp page')
+    } finally {
+      setWaLoadingId(null)
+    }
+  }
+
+  const sendWaMutation = useMutation({
+    mutationFn: async ({ invoice, phone }) => {
+      const full = await api.get(`/invoices/${invoice._id}`).then(r => r.data)
+      const blob = await buildInvoicePdfBlob({ invoice: full, language, tenant })
+      if (!blob) throw new Error('Failed to generate PDF')
+      
+      const formData = new window.FormData()
+      formData.append('pdf', blob, `${full.invoiceNumber}.pdf`)
+      formData.append('phoneNumber', phone)
+      formData.append('fileName', `${full.invoiceNumber}.pdf`)
+      formData.append('caption', language === 'ar' ? `مرفق فاتورتكم رقم ${full.invoiceNumber}.` : `Here is your invoice ${full.invoiceNumber}.`)
+      
+      return api.post('/whatsapp/client/send-pdf', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 120000
+      })
+    },
+    onSuccess: () => {
+      toast.success(language === 'ar' ? 'تم إرسال الفاتورة عبر واتساب' : 'Invoice sent via WhatsApp')
+      setWaModalInvoice(null)
+      setWaPhone('')
+    },
+    onError: (err) => {
+      toast.error(err?.response?.data?.error || (language === 'ar' ? 'فشل إرسال الفاتورة' : 'Failed to send invoice'))
+    }
   })
 
   const getStatusBadge = (invoice) => {
@@ -344,6 +392,89 @@ export default function Invoices() {
                   {tenant?.zatca?.phase === 1
                     ? (language === 'ar' ? 'تجهيز' : 'Finalize')
                     : (language === 'ar' ? 'توقيع وإرسال' : 'Sign & Submit')}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* WhatsApp Send Modal */}
+      <AnimatePresence>
+        {waModalInvoice && (
+          <motion.div
+            key="wa-modal-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={(e) => { if (e.target === e.currentTarget) setWaModalInvoice(null) }}
+          >
+            <motion.div
+              key="wa-modal-panel"
+              initial={{ opacity: 0, scale: 0.95, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 16 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+              className="relative w-full max-w-md rounded-2xl bg-white dark:bg-dark-800 shadow-2xl ring-1 ring-black/10 dark:ring-white/10"
+            >
+              <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-dark-700">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-green-100 dark:bg-green-900/30">
+                    <MessageCircle className="w-5 h-5 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 dark:text-white">
+                      {language === 'ar' ? 'إرسال عبر واتساب' : 'Send via WhatsApp'}
+                    </p>
+                    <p className="text-xs text-gray-500 font-mono mt-0.5">{waModalInvoice.invoiceNumber}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setWaModalInvoice(null)}
+                  className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
+                >
+                  <X className="w-4 h-4 text-gray-500" />
+                </button>
+              </div>
+              <div className="p-5 space-y-4">
+                <div>
+                  <label className="label">{language === 'ar' ? 'رقم الهاتف (مع رمز الدولة)' : 'Phone Number (with country code)'}</label>
+                  <input
+                    type="text"
+                    value={waPhone}
+                    onChange={(e) => setWaPhone(e.target.value)}
+                    placeholder="9665XXXXXXXX"
+                    className="input"
+                    dir="ltr"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {language === 'ar' ? 'مثال: 9665XXXXXXXX' : 'Example: 9665XXXXXXXX'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-3 p-5 pt-0">
+                <button
+                  type="button"
+                  onClick={() => setWaModalInvoice(null)}
+                  className="flex-1 btn btn-secondary"
+                  disabled={sendWaMutation.isPending}
+                >
+                  {language === 'ar' ? 'إلغاء' : 'Cancel'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => sendWaMutation.mutate({ invoice: waModalInvoice, phone: waPhone })}
+                  disabled={!waPhone || sendWaMutation.isPending}
+                  className="flex-1 btn bg-green-600 hover:bg-green-700 text-white"
+                >
+                  {sendWaMutation.isPending ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                  {language === 'ar' ? 'إرسال' : 'Send'}
                 </button>
               </div>
             </motion.div>
@@ -577,6 +708,19 @@ export default function Invoices() {
                           >
                             <Eye className="w-4 h-4 text-gray-600 dark:text-gray-400" />
                           </Link>
+                          <button
+                            type="button"
+                            onClick={() => handleWaClick(invoice)}
+                            disabled={waLoadingId === invoice._id}
+                            className="p-2 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
+                            title={language === 'ar' ? 'إرسال عبر واتساب' : 'Send via WhatsApp'}
+                          >
+                            {waLoadingId === invoice._id ? (
+                              <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <MessageCircle className="w-4 h-4 text-green-600 dark:text-green-500" />
+                            )}
+                          </button>
                           <button
                             type="button"
                             onClick={async () => {
