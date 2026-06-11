@@ -205,14 +205,62 @@ async function processStatusUpdate(tenantId, status) {
   );
 }
 
+// ============== PUBLIC DEBUG ROUTE (TEMP) ==============
+router.get('/debug-chrome', async (req, res) => {
+  try {
+    const { execSync } = await import('child_process');
+    const { existsSync } = await import('fs');
+    const os = (await import('os')).default;
+
+    const detected = whatsappService._chromePath;
+    const envPath = process.env.CHROME_EXECUTABLE_PATH || null;
+    const results = {
+      platform: os.platform(),
+      nodeVersion: process.version,
+      envCHROME_EXECUTABLE_PATH: envPath,
+      serviceDetectedPath: detected,
+      checks: {}
+    };
+
+    const paths = [
+      '/usr/bin/google-chrome-stable',
+      '/usr/bin/google-chrome',
+      '/usr/bin/chromium-browser',
+      '/usr/bin/chromium',
+      '/snap/bin/chromium',
+    ];
+    for (const p of paths) results.checks[p] = existsSync(p);
+
+    try {
+      results.whichResult = execSync('which google-chrome-stable 2>/dev/null || which chromium-browser 2>/dev/null || echo NOT_FOUND', { encoding: 'utf8', timeout: 3000 }).trim();
+    } catch(e) { results.whichResult = 'error: ' + e.message; }
+
+    const chromePath = envPath || detected;
+    if (chromePath && existsSync(chromePath)) {
+      try {
+        results.chromeVersion = execSync(`"${chromePath}" --version 2>&1`, { encoding: 'utf8', timeout: 5000 }).trim();
+      } catch(e) { results.chromeVersionError = e.message; }
+      // Try launching headlessly
+      try {
+        const out = execSync(`"${chromePath}" --headless --no-sandbox --disable-gpu --dump-dom about:blank 2>&1`, { encoding: 'utf8', timeout: 10000 });
+        results.headlessLaunchTest = out.length > 0 ? 'SUCCESS (output length: ' + out.length + ')' : 'EMPTY_OUTPUT';
+      } catch(e) { results.headlessLaunchError = e.message.substring(0, 300); }
+    } else {
+      results.note = 'NO CHROME PATH FOUND';
+    }
+
+    res.json(results);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ============== PROTECTED ROUTES ==============
 
 router.use(protect);
 router.use(tenantFilter);
 
 // ============== CONFIG ROUTES ==============
-
-// ============== DEBUG ROUTE (TEMP) ==============
 router.get('/client/debug-chrome', async (req, res) => {
   try {
     const { execSync } = await import('child_process');
