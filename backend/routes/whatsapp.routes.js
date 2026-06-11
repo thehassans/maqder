@@ -361,15 +361,48 @@ router.post('/client/send-pdf', upload.single('pdf'), async (req, res) => {
       return res.status(400).json({ error: 'Phone number and PDF file are required' });
     }
 
+    let cleanPhone = phoneNumber.replace(/\D/g, '');
+    if (cleanPhone.startsWith('05') && cleanPhone.length === 10) {
+      cleanPhone = '966' + cleanPhone.substring(1);
+    }
+
     const response = await whatsappService.sendPdf(
       req.user.tenantId,
-      phoneNumber,
+      cleanPhone,
       req.file.buffer,
       fileName || 'Invoice.pdf',
       caption || 'Here is your invoice.'
     );
 
-    res.json({ success: true, messageId: response.id?._serialized });
+    let contact = await WhatsAppContact.findOne({ tenantId: req.user.tenantId, phoneNumber: cleanPhone });
+    if (!contact) {
+      contact = await WhatsAppContact.create({
+        tenantId: req.user.tenantId,
+        phoneNumber: cleanPhone,
+        formattedPhone: `+${cleanPhone}`,
+        name: `+${cleanPhone}`
+      });
+    }
+
+    await WhatsAppMessage.create({
+      tenantId: req.user.tenantId,
+      contactId: contact._id,
+      waMessageId: response?.id?._serialized || Date.now().toString(),
+      direction: 'outbound',
+      type: 'document',
+      caption: caption || 'Here is your invoice.',
+      fileName: fileName || 'Invoice.pdf',
+      status: 'sent',
+      sentBy: req.user._id,
+      timestamp: new Date()
+    });
+
+    await WhatsAppContact.findByIdAndUpdate(contact._id, {
+      lastMessageAt: new Date(),
+      $inc: { totalMessages: 1 }
+    });
+
+    res.json({ success: true, messageId: response?.id?._serialized });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

@@ -164,7 +164,12 @@ export default function Invoices() {
         toast.error(language === 'ar' ? 'الرجاء ربط واتساب أولاً من صفحة واتساب' : 'Please connect WhatsApp first from the WhatsApp page')
         return
       }
-      setWaPhone(invoice.buyer?.contactPhone || invoice.buyer?.phone || '')
+      let phone = invoice.buyer?.contactPhone || invoice.buyer?.phone || ''
+      let cleanPhone = phone.replace(/\D/g, '')
+      if (cleanPhone.startsWith('05') && cleanPhone.length === 10) {
+        cleanPhone = '966' + cleanPhone.substring(1)
+      }
+      setWaPhone(cleanPhone)
       setWaModalInvoice(invoice)
     } catch (err) {
       toast.error(language === 'ar' ? 'الرجاء ربط واتساب أولاً من صفحة واتساب' : 'Please connect WhatsApp first from the WhatsApp page')
