@@ -88,7 +88,7 @@ export default function DailyAyat({ className = "", variant = "dark" }) {
             isDark ? 'text-amber-50' : 'text-[#1a3d28]'
           }`} 
           dir="rtl" 
-          style={{ fontFamily: "'Amiri', 'Traditional Arabic', serif" }}
+          style={{ fontFamily: "'Almarai', 'Traditional Arabic', serif" }}
         >
           {ayatOfTheDay.arabic}
         </p>
