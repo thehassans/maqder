@@ -523,8 +523,8 @@ export default function GovernmentIntegrations() {
                     )}
                   </div>
                   <p className="text-sm text-gray-500 mt-1">
-                    {t('Configure your cryptographic stamp and environment to submit invoices for Clearance (B2B) and Reporting (B2C).',
-                       'تهيئة ختم التشفير والبيئة التنظيمية لإرسال الفواتير الضريبية للاعتماد والمبسطة للإبلاغ.')}
+                    {t('ZATCA Phase 2 (Fatoora) integration ensures complete compliance with the Saudi e-invoicing mandate. It automatically generates ZATCA-compliant QR codes, digitally signs invoices using your cryptographic stamp, and transmits B2B invoices for clearance and B2C invoices for reporting in real-time. This eliminates manual tax filing errors and protects your business from compliance penalties.',
+                       'تكامل هيئة الزكاة والجمارك (المرحلة الثانية) يضمن الامتثال الكامل لمتطلبات الفوترة الإلكترونية السعودية. يقوم تلقائياً بإنشاء رموز QR المتوافقة، ويوقع الفواتير رقمياً باستخدام ختم التشفير، ويرسل الفواتير الضريبية (B2B) للاعتماد والمبسطة (B2C) للإبلاغ في الوقت الفعلي. هذا يقضي على أخطاء تقديم الضرائب اليدوية ويحمي عملك من غرامات عدم الامتثال.')}
                   </p>
                 </div>
 
@@ -672,8 +672,8 @@ export default function GovernmentIntegrations() {
                       )}
                     </div>
                     <p className="text-xs text-gray-400">
-                      {t('Configure credentials for resident identity check (Yakeen) and Nafath OTP authentication.',
-                         'تهيئة بيانات الاعتماد للتحقق من هوية المقيمين (يقين) وتفويضات نفاذ.')}
+                      {t('Elm Yakeen integration connects directly to the National Information Center (NIC). It automatically verifies customer identities, fetches accurate Iqama/National ID details, and secures high-risk transactions with Nafath OTP. This prevents identity fraud and ensures accurate customer data entry.',
+                         'تكامل علم (يقين) يتصل مباشرة بمركز المعلومات الوطني (NIC). يتحقق تلقائياً من هويات العملاء، ويجلب تفاصيل الإقامة/الهوية الوطنية الدقيقة، ويؤمن المعاملات عالية المخاطر برمز نفاذ (Nafath OTP). يمنع هذا الاحتيال في الهوية ويضمن إدخال بيانات دقيقة للعملاء.')}
                     </p>
                   </div>
 
@@ -721,7 +721,7 @@ export default function GovernmentIntegrations() {
                           {t('Tamm (Amakin)', 'تمم (أماكن)')}
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">MOT</span>
                         </h4>
-                        <p className="text-xs text-gray-400">{t('Saudi Ministry of Transport – rental contract registry', 'وزارة النقل السعودية – سجل عقود التأجير')}</p>
+                        <p className="text-xs text-gray-400 mt-1 leading-relaxed">{t('Mandatory integration with the Ministry of Transport (Tamm) to register vehicle rental contracts. It legally authorizes the renter to drive the vehicle and protects the rental agency from traffic violations and liabilities.', 'تكامل إلزامي مع وزارة النقل (تمم) لتسجيل عقود تأجير المركبات. يفوض المستأجر قانونياً بقيادة المركبة ويحمي مكتب التأجير من المخالفات المرورية والمسؤوليات.')}</p>
                       </div>
                     </div>
                     <Controller
@@ -793,7 +793,7 @@ export default function GovernmentIntegrations() {
                           {t('NAJM Insurance', 'نجم للتأمين')}
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">NAJM</span>
                         </h4>
-                        <p className="text-xs text-gray-400">{t('Saudi Insurance Services – accident & claim verification', 'شركة نجم – التحقق من التأمين والحوادث')}</p>
+                        <p className="text-xs text-gray-400 mt-1 leading-relaxed">{t('Direct integration with NAJM allows you to verify a customer\'s accident history and active insurance coverage instantly before renting out a vehicle, significantly reducing operational risks.', 'ربط مباشر مع نجم يتيح لك التحقق من تاريخ الحوادث والتغطية التأمينية الفعالة للعميل فوراً قبل تأجير المركبة، مما يقلل بشكل كبير من المخاطر التشغيلية.')}</p>
                       </div>
                     </div>
                     <Controller
@@ -865,7 +865,7 @@ export default function GovernmentIntegrations() {
                           {t('Wathiq (SAFCSP)', 'وثيق')}
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">NIC</span>
                         </h4>
-                        <p className="text-xs text-gray-400">{t('National identity & document verification – هيئة الاتصالات', 'التحقق من الهوية الوطنية – وثيق')}</p>
+                        <p className="text-xs text-gray-400 mt-1 leading-relaxed">{t('Wathiq integration provides real-time verification of commercial registrations, national IDs, and business licenses, ensuring B2B clients and individuals are legally verified and active.', 'تكامل وثيق يوفر تحققاً في الوقت الفعلي للسجلات التجارية والهويات الوطنية والتراخيص، مما يضمن التحقق القانوني ونشاط العملاء من الشركات والأفراد.')}</p>
                       </div>
                     </div>
                     <Controller
@@ -1035,8 +1035,8 @@ export default function GovernmentIntegrations() {
                     )}
                   </div>
                   <p className="text-sm text-gray-500 mt-1">
-                    {t('Automate employment contract authentication, Saudization checking, and Nitaqat calculations.',
-                       'أتمتة توثيق عقود العمل، التحقق من السعودة، وحسابات نطاقات المنشأة.')}
+                    {t('Qiwa integration fully digitalizes your HR operations with the Ministry of Human Resources. It automatically authenticates employment contracts, continuously monitors your Nitaqat band, tracks Saudization percentages, and ensures your work permits and visas are compliant with Saudi labor laws without manual portal logins.',
+                       'تكامل منصة قوى يرقمن عمليات الموارد البشرية بالكامل مع وزارة الموارد البشرية. يقوم بتوثيق عقود العمل تلقائياً، ويراقب باستمرار نطاق المنشأة ونسب التوطين، ويضمن توافق تصاريح العمل والتأشيرات مع قوانين العمل السعودية دون الحاجة للدخول اليدوي للبوابة.')}
                   </p>
                 </div>
 
@@ -1111,8 +1111,8 @@ export default function GovernmentIntegrations() {
                     )}
                   </div>
                   <p className="text-sm text-gray-500 mt-1">
-                    {t('Configure your organization registration details and Client Certificate to sync monthly payroll SIF files.',
-                       'تهيئة تفاصيل تسجيل المنشأة وشهادة العميل لمزامنة ملفات الأجور الشهرية SIF.')}
+                    {t('GOSI and Mudad integration automates your Wage Protection System (WPS) compliance. It seamlessly syncs employee registration data with GOSI and automatically generates and uploads standard .SIF payroll files to Mudad at the end of every billing cycle. This protects your business from labor disputes, salary delays, and Ministry penalties.',
+                       'تكامل التأمينات الاجتماعية ومدد يؤتمت التزامك بنظام حماية الأجور (WPS). يقوم بمزامنة بيانات تسجيل الموظفين مع التأمينات بسلاسة، ويقوم تلقائياً بإنشاء ورفع ملفات الأجور القياسية (.SIF) إلى منصة مدد في نهاية كل دورة مالية. هذا يحمي عملك من النزاعات العمالية، تأخير الرواتب، وغرامات الوزارة.')}
                   </p>
                 </div>
 
@@ -1195,9 +1195,9 @@ export default function GovernmentIntegrations() {
                         {...register('industrySpecific.saberToken')}
                         className="input mt-1"
                       />
-                      <p className="text-[10px] text-gray-400 mt-1">
-                        {t('Allows importing product details, custom declarations, and conformity certificates.',
-                           'يسمح باستيراد بيانات المنتجات، الجمارك، وشهادات المطابقة.')}
+                      <p className="text-[10px] text-gray-400 mt-1 leading-relaxed">
+                        {t('Saber integration directly links your inventory with the Saudi Standards, Metrology and Quality Organization (SASO). It allows you to instantly fetch product conformity certificates, manage customs clearance documentation securely, and ensure imported goods meet local regulatory standards without navigating external platforms.',
+                           'تكامل سابر يربط مخزونك مباشرة بالهيئة السعودية للمواصفات والمقاييس والجودة (SASO). يسمح لك بجلب شهادات مطابقة المنتجات فورياً، وإدارة وثائق التخليص الجمركي بشكل آمن، وضمان تلبية السلع المستوردة للمعايير التنظيمية المحلية دون الحاجة لاستخدام منصات خارجية.')}
                       </p>
                     </div>
                   </div>
@@ -1207,6 +1207,10 @@ export default function GovernmentIntegrations() {
                 {industryType === 'construction' && (
                   <div className="space-y-4 border border-gray-100 dark:border-dark-700 p-4 rounded-2xl bg-white dark:bg-dark-800">
                     <h4 className="font-bold text-sm text-gray-900 dark:text-white">🇸🇦 Etimad Portal Sync / بوابة اعتماد للمشتريات الحكومية</h4>
+                    <p className="text-[10px] text-gray-400 mt-1 leading-relaxed">
+                      {t('Etimad integration streamlines your participation in government tenders and procurement. It allows automatic syncing of project invoices, financial claims, and contract statuses directly with the Ministry of Finance, ensuring timely payments and strict compliance with public sector regulations.',
+                         'تكامل منصة اعتماد يسهل مشاركتك في المناقصات والمشتريات الحكومية. يتيح لك المزامنة التلقائية لفواتير المشاريع، المطالبات المالية، وحالات العقود مباشرة مع وزارة المالية، مما يضمن الدفع في الوقت المناسب والامتثال الصارم للوائح القطاع العام.')}
+                    </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="label text-xs">{t('Etimad API Username', 'اسم المستخدم لواجهة اعتماد')}</label>
@@ -1257,9 +1261,9 @@ export default function GovernmentIntegrations() {
                         {...register('industrySpecific.baladyApiKey')}
                         className="input mt-1"
                       />
-                      <p className="text-[10px] text-gray-400 mt-1">
-                        {t('Allows displaying municipal licenses and health certificate validity alerts.',
-                           'يسمح بعرض التراخيص البلدية والشهادات الصحية وتنبيهات صلاحيتها.')}
+                      <p className="text-[10px] text-gray-400 mt-1 leading-relaxed">
+                        {t('Balady integration connects your operations with the Ministry of Municipal and Rural Affairs. It automatically tracks the validity of your commercial municipal licenses and employee health certificates, providing proactive alerts to prevent business interruptions and municipal fines.',
+                           'تكامل بلدي يربط عملياتك بوزارة الشؤون البلدية والقروية. يقوم بتتبع صلاحية الرخص البلدية التجارية والشهادات الصحية للموظفين تلقائياً، مع تقديم تنبيهات استباقية لمنع توقف العمل وتجنب الغرامات البلدية.')}
                       </p>
                     </div>
                   </div>
