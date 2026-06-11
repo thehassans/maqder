@@ -23,11 +23,16 @@ import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import Money from '../../components/ui/Money'
 import ExportMenu from '../../components/ui/ExportMenu'
+import { getTenantBusinessTypes } from '../../lib/businessTypes'
 
 export default function CustomerList() {
   const { language } = useSelector((state) => state.ui)
+  const { tenant } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
   const queryClient = useQueryClient()
+  
+  const tenantBusinessTypes = getTenantBusinessTypes(tenant)
+  const hasKhayyat = tenantBusinessTypes.includes('khayyat')
   
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
@@ -315,9 +320,23 @@ export default function CustomerList() {
                     <th className="px-6 py-4 text-start text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       {language === 'ar' ? 'الرقم الضريبي' : 'VAT Number'}
                     </th>
-                    <th className="px-6 py-4 text-start text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      {language === 'ar' ? 'الفواتير' : 'Invoices'}
-                    </th>
+                    {hasKhayyat ? (
+                      <>
+                        <th className="px-6 py-4 text-start text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          {language === 'ar' ? 'الثياب' : 'Thawbs'}
+                        </th>
+                        <th className="px-6 py-4 text-start text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          {language === 'ar' ? 'المدفوع' : 'Paid'}
+                        </th>
+                        <th className="px-6 py-4 text-start text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          {language === 'ar' ? 'المتبقي' : 'Pending'}
+                        </th>
+                      </>
+                    ) : (
+                      <th className="px-6 py-4 text-start text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        {language === 'ar' ? 'الفواتير' : 'Invoices'}
+                      </th>
+                    )}
                     <th className="px-6 py-4 text-start text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       {language === 'ar' ? 'الإجراءات' : 'Actions'}
                     </th>
@@ -386,16 +405,36 @@ export default function CustomerList() {
                           {customer.vatNumber || customer.taxNumber || '-'}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
-                        <div>
-                          <p className="font-medium text-gray-900 dark:text-white">
-                            {customer.totalInvoices || 0}
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            <Money value={customer.totalRevenue || 0} minimumFractionDigits={0} maximumFractionDigits={0} />
-                          </p>
-                        </div>
-                      </td>
+                      {hasKhayyat ? (
+                        <>
+                          <td className="px-6 py-4">
+                            <span className="font-medium text-gray-900 dark:text-white">
+                              {customer.totalThawb || 0}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-green-600 dark:text-green-400 font-medium">
+                              <Money value={customer.khayyatPaidAmount || 0} minimumFractionDigits={0} maximumFractionDigits={0} />
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-red-600 dark:text-red-400 font-medium">
+                              <Money value={customer.khayyatPendingAmount || 0} minimumFractionDigits={0} maximumFractionDigits={0} />
+                            </span>
+                          </td>
+                        </>
+                      ) : (
+                        <td className="px-6 py-4">
+                          <div>
+                            <p className="font-medium text-gray-900 dark:text-white">
+                              {customer.totalInvoices || 0}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              <Money value={customer.totalRevenue || 0} minimumFractionDigits={0} maximumFractionDigits={0} />
+                            </p>
+                          </div>
+                        </td>
+                      )}
                       <td className="px-6 py-4">
                         <Menu as="div" className="relative">
                           <Menu.Button className="p-2 hover:bg-gray-100 dark:hover:bg-dark-600 rounded-lg transition-colors">

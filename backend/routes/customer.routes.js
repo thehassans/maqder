@@ -299,13 +299,46 @@ router.get('/', checkPermission('invoicing', 'read'), async (req, res) => {
     
     const skip = (parseInt(page) - 1) * parseInt(limit);
     
-    const [customers, total] = await Promise.all([
+    const [customersData, total] = await Promise.all([
       Customer.find(query)
         .sort({ createdAt: -1 })
         .skip(skip)
-        .limit(parseInt(limit)),
+        .limit(parseInt(limit))
+        .lean(),
       Customer.countDocuments(query)
     ]);
+    
+    // Compute khayyat stats if needed
+    const customerIds = customersData.map(c => c._id);
+    const KhayyatStitching = (await import('../models/khayyat/KhayyatStitching.js')).default;
+    const stitchingStats = await KhayyatStitching.aggregate([
+      { $match: { tenantId: req.user.tenantId, customerId: { $in: customerIds } } },
+      { $group: {
+          _id: '$customerId',
+          totalThawb: { $sum: { $ifNull: ['$quantity', 0] } },
+          totalPrice: { $sum: { $ifNull: ['$price', 0] } },
+          totalPaid: { $sum: { $ifNull: ['$paidAmount', 0] } }
+        }
+      }
+    ]);
+    
+    const statsMap = {};
+    stitchingStats.forEach(s => {
+      statsMap[s._id.toString()] = s;
+    });
+    
+    const customers = customersData.map(c => {
+      const s = statsMap[c._id.toString()];
+      if (s) {
+        return {
+          ...c,
+          totalThawb: s.totalThawb,
+          khayyatPaidAmount: s.totalPaid,
+          khayyatPendingAmount: Math.max(0, s.totalPrice - s.totalPaid)
+        };
+      }
+      return c;
+    });
     
     res.json({
       customers,

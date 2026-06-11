@@ -93,6 +93,8 @@ export default function Invoices() {
   const [waModalInvoice, setWaModalInvoice] = useState(null)
   const [waPhone, setWaPhone] = useState('')
   const [waLoadingId, setWaLoadingId] = useState(null)
+  const [waMessageLang, setWaMessageLang] = useState('en')
+  const [waMessage, setWaMessage] = useState('')
   const tenantBusinessTypes = getTenantBusinessTypes(tenant)
   const hasTravel = tenantBusinessTypes.includes('travel_agency')
   const posTenants = ['bakala', 'super market', 'khayyat', 'saloon', 'laundry', 'restaurant']
@@ -170,6 +172,19 @@ export default function Invoices() {
         cleanPhone = '966' + cleanPhone.substring(1)
       }
       setWaPhone(cleanPhone)
+      
+      const tNameAr = tenant?.nameAr || tenant?.name || ''
+      const tNameEn = tenant?.name || tenant?.nameAr || ''
+      const total = invoice.totalAmount + ' SAR'
+      
+      let initialLang = language === 'ar' ? 'ar' : 'en'
+      setWaMessageLang(initialLang)
+      if (initialLang === 'ar') {
+        setWaMessage(`شكراً لتسوقكم من ${tNameAr}. إجمالي الفاتورة ${total}.`)
+      } else {
+        setWaMessage(`Thank you for shopping from ${tNameEn}. Your total bill is ${total}.`)
+      }
+      
       setWaModalInvoice(invoice)
     } catch (err) {
       toast.error(language === 'ar' ? 'الرجاء ربط واتساب أولاً من صفحة واتساب' : 'Please connect WhatsApp first from the WhatsApp page')
@@ -188,7 +203,7 @@ export default function Invoices() {
       formData.append('pdf', blob, `${full.invoiceNumber}.pdf`)
       formData.append('phoneNumber', phone)
       formData.append('fileName', `${full.invoiceNumber}.pdf`)
-      formData.append('caption', language === 'ar' ? `مرفق فاتورتكم رقم ${full.invoiceNumber}.` : `Here is your invoice ${full.invoiceNumber}.`)
+      formData.append('caption', waMessage)
       
       return api.post('/whatsapp/client/send-pdf', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -457,6 +472,37 @@ export default function Invoices() {
                   <p className="text-xs text-gray-500 mt-1">
                     {language === 'ar' ? 'مثال: 9665XXXXXXXX' : 'Example: 9665XXXXXXXX'}
                   </p>
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="label mb-0">{language === 'ar' ? 'رسالة الفاتورة' : 'Invoice Message'}</label>
+                    <select
+                      value={waMessageLang}
+                      onChange={(e) => {
+                        const newLang = e.target.value;
+                        setWaMessageLang(newLang);
+                        const tNameAr = tenant?.nameAr || tenant?.name || '';
+                        const tNameEn = tenant?.name || tenant?.nameAr || '';
+                        const total = waModalInvoice?.totalAmount + ' SAR';
+                        const msgAr = `شكراً لتسوقكم من ${tNameAr}. إجمالي الفاتورة ${total}.`;
+                        const msgEn = `Thank you for shopping from ${tNameEn}. Your total bill is ${total}.`;
+                        if (newLang === 'ar') setWaMessage(msgAr);
+                        else if (newLang === 'en') setWaMessage(msgEn);
+                        else setWaMessage(`${msgAr}\n\n${msgEn}`);
+                      }}
+                      className="text-xs bg-gray-50 dark:bg-dark-700 border-gray-200 dark:border-dark-600 rounded-md py-1 px-2 text-gray-700 dark:text-gray-300 outline-none"
+                    >
+                      <option value="both">{language === 'ar' ? 'عربي وإنجليزي' : 'Arabic & English'}</option>
+                      <option value="ar">عربي</option>
+                      <option value="en">English</option>
+                    </select>
+                  </div>
+                  <textarea
+                    value={waMessage}
+                    onChange={(e) => setWaMessage(e.target.value)}
+                    className="input min-h-[80px]"
+                    dir={waMessageLang === 'ar' ? 'rtl' : 'ltr'}
+                  />
                 </div>
               </div>
               <div className="flex gap-3 p-5 pt-0">
