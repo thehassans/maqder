@@ -22,7 +22,7 @@ import ThermalReceipt from '../../components/ui/ThermalReceipt';
 
 const Stitchings = () => {
   
-  const { user } = useSelector(state => state.auth);
+  const { user, tenant } = useSelector(state => state.auth);
   const { language } = useSelector(state => state.ui);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -283,9 +283,12 @@ const Stitchings = () => {
       const price = Number(printOrder.price || 0).toFixed(2);
       const pending = Math.max(0, price - paid).toFixed(2);
       
+      const tNameAr = tenant?.nameAr || tenant?.name || '';
+      const tNameEn = tenant?.name || tenant?.nameAr || '';
+      
       const captionText = language === 'ar' 
-        ? `مرحباً ${customerName}،\nمرفق إيصال طلبك رقم #${orderNum}.\n\nإجمالي الطلب: ${price} ريال\nالمدفوع: ${paid} ريال\nالمتبقي: ${pending} ريال\n\nشكراً لتعاملك معنا.`
-        : `Hello ${customerName},\nAttached is your receipt #${orderNum}.\n\nTotal: ${price} SAR\nPaid: ${paid} SAR\nPending: ${pending} SAR\n\nThank you for your business.`;
+        ? `شكرًا لك، ${customerName}، لاختيارك ${tNameAr}.\n\nالإجمالي: ${price} SAR\n\nالمدفوع: ${paid} SAR\n\nالمتبقي: ${pending} SAR\n\nيسعدنا دائمًا طهيك بجميل اختيارك.`
+        : `Thank you, ${customerName}, for choosing ${tNameEn}.\n\nTotal: ${price} SAR\n\nPaid: ${paid} SAR\n\nBalance: ${pending} SAR\n\nWe appreciate your patronage.`;
       
       formData.append('caption', captionText);
       
@@ -321,13 +324,14 @@ const Stitchings = () => {
       const paid = Number(stitch.paidAmount || 0).toFixed(2);
       const price = Number(stitch.price || 0).toFixed(2);
       const pending = Math.max(0, price - paid).toFixed(2);
-      const orderNum = stitch.receiptNumber || stitch.orderNumber || stitch._id?.slice(-6) || '';
+      const tNameAr = tenant?.nameAr || tenant?.name || '';
+      const tNameEn = tenant?.name || tenant?.nameAr || '';
       
       let initialLang = language === 'ar' ? 'ar' : 'en';
       setWaMessageLang(initialLang);
       
-      const msgAr = `مرحباً ${customerName}،\nمرفق إيصال طلبك رقم #${orderNum}.\n\nإجمالي الطلب: ${price} ريال\nالمدفوع: ${paid} ريال\nالمتبقي: ${pending} ريال\n\nشكراً لتعاملك معنا.`;
-      const msgEn = `Hello ${customerName},\nAttached is your receipt #${orderNum}.\n\nTotal: ${price} SAR\nPaid: ${paid} SAR\nPending: ${pending} SAR\n\nThank you for your business.`;
+      const msgAr = `شكرًا لك، ${customerName}، لاختيارك ${tNameAr}.\n\nالإجمالي: ${price} SAR\n\nالمدفوع: ${paid} SAR\n\nالمتبقي: ${pending} SAR\n\nيسعدنا دائمًا طهيك بجميل اختيارك.`;
+      const msgEn = `Thank you, ${customerName}, for choosing ${tNameEn}.\n\nTotal: ${price} SAR\n\nPaid: ${paid} SAR\n\nBalance: ${pending} SAR\n\nWe appreciate your patronage.`;
       
       if (initialLang === 'ar') {
         setWaMessage(msgAr);
@@ -581,9 +585,11 @@ const Stitchings = () => {
                   const paid = Number(waModalInvoice?.paidAmount || 0).toFixed(2);
                   const price = Number(waModalInvoice?.price || 0).toFixed(2);
                   const pending = Math.max(0, price - paid).toFixed(2);
-                  const orderNum = waModalInvoice?.receiptNumber || waModalInvoice?.orderNumber || waModalInvoice?._id?.slice(-6) || '';
-                  const msgAr = `مرحباً ${customerName}،\nمرفق إيصال طلبك رقم #${orderNum}.\n\nإجمالي الطلب: ${price} ريال\nالمدفوع: ${paid} ريال\nالمتبقي: ${pending} ريال\n\nشكراً لتعاملك معنا.`;
-                  const msgEn = `Hello ${customerName},\nAttached is your receipt #${orderNum}.\n\nTotal: ${price} SAR\nPaid: ${paid} SAR\nPending: ${pending} SAR\n\nThank you for your business.`;
+                  const tNameAr = tenant?.nameAr || tenant?.name || '';
+                  const tNameEn = tenant?.name || tenant?.nameAr || '';
+                  
+                  const msgAr = `شكرًا لك، ${customerName}، لاختيارك ${tNameAr}.\n\nالإجمالي: ${price} SAR\n\nالمدفوع: ${paid} SAR\n\nالمتبقي: ${pending} SAR\n\nيسعدنا دائمًا طهيك بجميل اختيارك.`;
+                  const msgEn = `Thank you, ${customerName}, for choosing ${tNameEn}.\n\nTotal: ${price} SAR\n\nPaid: ${paid} SAR\n\nBalance: ${pending} SAR\n\nWe appreciate your patronage.`;
                   if (newLang === 'ar') setWaMessage(msgAr);
                   else if (newLang === 'en') setWaMessage(msgEn);
                   else setWaMessage(`${msgAr}\n\n${msgEn}`);
