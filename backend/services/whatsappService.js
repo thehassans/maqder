@@ -13,6 +13,10 @@ class WhatsAppService {
     this.status = new Map();
   }
 
+  get _chromePath() {
+    return this._findChrome();
+  }
+
   _findChrome() {
     // 1. Explicit env var (set in Plesk custom environment variables)
     const envPath = process.env.CHROME_EXECUTABLE_PATH;
