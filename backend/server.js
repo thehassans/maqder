@@ -250,6 +250,16 @@ app.use(helmet({
         "https://picsum.photos",
         "https://fastly.picsum.photos"
       ],
+      'style-src': [
+        "'self'",
+        "'unsafe-inline'",
+        "https://fonts.googleapis.com"
+      ],
+      'font-src': [
+        "'self'",
+        "data:",
+        "https://fonts.gstatic.com"
+      ],
       'script-src': [
         "'self'",
         ...(allowCloudflareInsights ? ['https://static.cloudflareinsights.com'] : []),
@@ -260,6 +270,8 @@ app.use(helmet({
       ],
       'connect-src': [
         "'self'",
+        "https://fonts.googleapis.com",
+        "https://fonts.gstatic.com",
         ...(allowCloudflareInsights
           ? [
             'https://cloudflareinsights.com',
