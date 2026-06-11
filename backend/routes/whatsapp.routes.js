@@ -212,6 +212,53 @@ router.use(tenantFilter);
 
 // ============== CONFIG ROUTES ==============
 
+// ============== DEBUG ROUTE (TEMP) ==============
+router.get('/client/debug-chrome', async (req, res) => {
+  try {
+    const { execSync } = await import('child_process');
+    const { existsSync } = await import('fs');
+    const os = await import('os');
+    const path = await import('path');
+
+    const results = {
+      platform: os.default.platform(),
+      nodeVersion: process.version,
+      chromePath: whatsappService._chromePath,
+      envPath: process.env.CHROME_EXECUTABLE_PATH || null,
+      checks: {}
+    };
+
+    // Check known paths
+    const paths = [
+      '/usr/bin/google-chrome-stable',
+      '/usr/bin/google-chrome',
+      '/usr/bin/chromium-browser',
+      '/usr/bin/chromium',
+      '/snap/bin/chromium',
+    ];
+    for (const p of paths) {
+      results.checks[p] = existsSync(p);
+    }
+
+    // Try which command
+    try {
+      results.whichChromium = execSync('which chromium-browser 2>/dev/null || which google-chrome 2>/dev/null || echo NOT_FOUND', { encoding: 'utf8', timeout: 3000 }).trim();
+    } catch(e) { results.whichChromium = 'error: ' + e.message; }
+
+    // Try running chrome --version
+    const detectedPath = whatsappService._chromePath;
+    if (detectedPath) {
+      try {
+        results.chromeVersion = execSync(`"${detectedPath}" --version 2>&1`, { encoding: 'utf8', timeout: 5000 }).trim();
+      } catch(e) { results.chromeVersionError = e.message; }
+    }
+
+    res.json(results);
+  } catch (error) {
+    res.status(500).json({ error: error.message, stack: error.stack });
+  }
+});
+
 // ============== UNOFFICIAL API ROUTES ==============
 
 router.get('/client/status', async (req, res) => {
