@@ -11,7 +11,8 @@ import {
   LogOut,
   Moon,
   Sun,
-  Globe
+  Globe,
+  Smartphone
 } from 'lucide-react'
 import { logout } from '../store/slices/authSlice'
 import { setTheme, setLanguage } from '../store/slices/uiSlice'
@@ -28,6 +29,7 @@ export default function SuperAdminLayout() {
     { path: '/super-admin/website', icon: Globe, label: t('websiteSettings') },
     { path: '/super-admin/email', icon: Mail, label: language === 'ar' ? 'البريد' : 'Email' },
     { path: '/super-admin/mailbox', icon: Inbox, label: language === 'ar' ? 'صندوق البريد' : 'Mailbox' },
+    { path: '/super-admin/whatsapp', icon: Smartphone, label: language === 'ar' ? 'واتساب' : 'WhatsApp' },
     { path: '/super-admin/identity', icon: ShieldCheck, label: t('identitySettings') },
     { path: '/super-admin/gemini', icon: Settings, label: t('geminiSettings') },
     { path: '/super-admin/system-settings', icon: Settings, label: 'System Settings' },
