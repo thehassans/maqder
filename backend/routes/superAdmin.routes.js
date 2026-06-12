@@ -1920,12 +1920,35 @@ router.post('/mailbox/messages/send', async (req, res) => {
     else if (config.fromEmail === globalEmail.supportEmail) department = 'Support Team';
     else if (config.fromEmail === globalEmail.billingEmail) department = 'Billing Team';
 
-    const fullHtml = buildEmailShell({
-      brandName: config.fromName,
-      title: payload.subject,
-      body: payload.bodyHtml,
-      department,
-    });
+    const signatureHtml = `
+<br /><br />
+<div style="font-family: sans-serif; color: #475569; font-size: 13px; margin-top: 16px; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+  <div style="font-weight: bold; color: #0f172a; margin-bottom: 2px;">${config.fromName}</div>
+  ${department ? `<div style="color: #1a3d28; font-weight: 600; margin-bottom: 8px;">${department}</div>` : ''}
+  <img src="https://maqder.com/maqdernewlogo.png" alt="Logo" style="height: 32px; width: auto; border-radius: 4px;" />
+</div>
+`;
+
+    let htmlBody = payload.bodyHtml || '';
+    if (htmlBody.includes('─────────────────────')) {
+      htmlBody = htmlBody.replace('─────────────────────', signatureHtml + '<br /><br />─────────────────────');
+    } else {
+      htmlBody += signatureHtml;
+    }
+
+    const fullHtml = `
+<div style="font-family: sans-serif; color: #1e293b; font-size: 14px; line-height: 1.6;">
+  ${htmlBody}
+</div>
+`;
+
+    const textSignature = `\n\n-- \n${config.fromName}${department ? ` - ${department}` : ''}`;
+    let fullText = payload.bodyText || '';
+    if (fullText.includes('─────────────────────')) {
+      fullText = fullText.replace('─────────────────────', textSignature + '\n\n─────────────────────');
+    } else {
+      fullText += textSignature;
+    }
 
     const result = await sendEmailWithConfig({
       config,
@@ -1935,7 +1958,7 @@ router.post('/mailbox/messages/send', async (req, res) => {
       replyTo: config.replyTo || undefined,
       subject: payload.subject,
       html: fullHtml,
-      text: payload.bodyText,
+      text: fullText,
       attachments: payload.attachments || [],
     });
 
@@ -1948,7 +1971,7 @@ router.post('/mailbox/messages/send', async (req, res) => {
       from: config.fromEmail,
       subject: payload.subject,
       bodyHtml: fullHtml,
-      bodyText: payload.bodyText || '',
+      bodyText: fullText || '',
       type: 'sent',
       direction: 'outgoing',
       status: 'sent',
