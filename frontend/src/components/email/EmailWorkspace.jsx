@@ -832,7 +832,6 @@ export default function EmailWorkspace() {
                       </div>
                     </div>
                   )}
-                </div>
               </motion.div>
 
             ) : (

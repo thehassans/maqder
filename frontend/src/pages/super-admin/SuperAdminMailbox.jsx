@@ -684,7 +684,6 @@ export default function SuperAdminMailbox() {
                       </div>
                     </div>
                   )}
-                </div>
               </motion.div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-center p-8">
