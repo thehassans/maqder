@@ -49,7 +49,7 @@ export const generateTermsPdf = async ({ tenantName, billingCleared }) => {
   // Load Logo as Base64
   let logoBase64 = '';
   try {
-    const logoPath = path.join(process.cwd(), '../frontend/public/maqdernewlogo.png');
+    const logoPath = path.join(process.cwd(), '../frontend/public/maqderlogolandingpage.png');
     if (existsSync(logoPath)) {
       const logoBuf = await fs.readFile(logoPath);
       logoBase64 = `data:image/png;base64,${logoBuf.toString('base64')}`;
@@ -72,7 +72,7 @@ export const generateTermsPdf = async ({ tenantName, billingCleared }) => {
           padding: 40px;
         }
         .header { text-align: center; margin-bottom: 20px; }
-        .logo { height: 70px; margin-bottom: 10px; object-fit: contain; }
+        .logo { height: 140px; margin-bottom: 10px; object-fit: contain; }
         .title { font-size: 22px; font-weight: bold; color: #1a3d28; margin: 0; }
         .subtitle { font-size: 16px; color: #475569; margin-top: 5px; }
         
