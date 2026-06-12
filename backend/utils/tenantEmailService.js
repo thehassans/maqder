@@ -135,7 +135,7 @@ export const buildEmailShell = ({ brandName, title, body, secondaryLines = [], d
           <div style="font-size:13px;letter-spacing:0.18em;text-transform:uppercase;opacity:0.78;">${escapeHtml(brandName)}</div>
           <h1 style="margin:12px 0 0;font-size:24px;line-height:1.35;font-weight:700;">${escapeHtml(title)}</h1>
         </div>
-        <img src="https://maqder.com/favicon.png" alt="Logo" style="height:48px; width:48px; border-radius:12px; object-fit:contain; background:#fff; padding:4px;" onerror="this.style.display='none'" />
+        <img src="https://maqder.com/maqdernewlogo.png" alt="Logo" style="height:48px; width:48px; border-radius:12px; object-fit:contain; background:#fff; padding:4px;" onerror="this.style.display='none'" />
       </div>
     </div>
     <div style="padding:32px;">

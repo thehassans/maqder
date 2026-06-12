@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Bug, Wifi, BarChart2, Clock, Shield, Save, RefreshCw,
   Check, Info, AlertTriangle, Server, Database, Zap,
-  Eye, EyeOff, ChevronRight, Activity, Lock, Globe
+  Eye, EyeOff, ChevronRight, Activity, Lock, Globe, Smartphone, QrCode, LogOut
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
@@ -16,6 +16,7 @@ const TABS = [
   { id: 'analytics', label: 'Analytics', icon: BarChart2, color: 'from-violet-500 to-purple-600' },
   { id: 'sessions', label: 'State & Sessions', icon: Clock, color: 'from-amber-500 to-orange-500' },
   { id: 'security', label: 'Performance & Security', icon: Shield, color: 'from-emerald-500 to-teal-600' },
+  { id: 'whatsapp', label: 'WhatsApp', icon: Smartphone, color: 'from-green-500 to-emerald-600' },
 ]
 
 // ── UI helpers ────────────────────────────────────────────────────────────────
@@ -484,6 +485,99 @@ function SecurityTab({ settings, onChange, onSave, saving }) {
   )
 }
 
+function WhatsAppTab() {
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['super-admin-whatsapp-status'],
+    queryFn: () => api.get('/super-admin/whatsapp/status').then(r => r.data),
+    refetchInterval: (data) => (data?.status === 'QR_READY' || data?.status === 'INITIALIZING' ? 2000 : false),
+  })
+
+  const initMutation = useMutation({
+    mutationFn: () => api.post('/super-admin/whatsapp/init'),
+    onSuccess: () => {
+      toast.success('Initializing WhatsApp session...')
+      refetch()
+    }
+  })
+
+  const logoutMutation = useMutation({
+    mutationFn: () => api.post('/super-admin/whatsapp/logout'),
+    onSuccess: () => {
+      toast.success('WhatsApp disconnected')
+      refetch()
+    }
+  })
+
+  if (isLoading) return <div className="p-8 text-center animate-pulse">Loading...</div>
+
+  const state = data?.status || 'DISCONNECTED'
+  const qrCode = data?.qrCode
+
+  return (
+    <div className="space-y-6">
+      <InfoBox icon={Smartphone} title="Super Admin WhatsApp">
+        Link your WhatsApp account to automatically send onboarding messages (Welcome, Credentials, Billing Cleared, and Terms &amp; Conditions PDF) to new tenants when you create them.
+      </InfoBox>
+
+      <div className="card rounded-2xl p-6 flex flex-col items-center justify-center text-center space-y-6">
+        <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+          <Smartphone className="w-8 h-8 text-green-600" />
+        </div>
+        <div>
+          <h3 className="text-xl font-bold">WhatsApp Status: {state}</h3>
+          {state === 'CONNECTED' || state === 'READY' ? (
+            <p className="text-green-600 font-medium mt-2">Your device is linked and ready to send onboarding messages!</p>
+          ) : (
+            <p className="text-gray-500 mt-2">Link your device to enable automated WhatsApp onboarding messages.</p>
+          )}
+        </div>
+
+        {state === 'QR_READY' && qrCode && (
+          <div className="p-4 bg-white rounded-2xl shadow-sm border border-gray-100 inline-block">
+            <img src={qrCode} alt="WhatsApp QR Code" className="w-64 h-64" />
+            <p className="text-sm text-gray-500 mt-4 font-medium">Open WhatsApp on your phone &gt; Linked Devices &gt; Link a Device</p>
+          </div>
+        )}
+
+        {state === 'DISCONNECTED' && (
+          <button 
+            onClick={() => initMutation.mutate()} 
+            disabled={initMutation.isPending}
+            className="btn btn-primary gap-2"
+          >
+            <QrCode className="w-4 h-4" />
+            {initMutation.isPending ? 'Generating QR...' : 'Link Device'}
+          </button>
+        )}
+
+        {(state === 'CONNECTED' || state === 'READY') && (
+          <button 
+            onClick={() => logoutMutation.mutate()} 
+            disabled={logoutMutation.isPending}
+            className="btn btn-danger gap-2"
+          >
+            <LogOut className="w-4 h-4" />
+            Unlink Device
+          </button>
+        )}
+        
+        {(state === 'INITIALIZING') && (
+           <div className="flex items-center gap-2 text-primary-600 font-medium justify-center">
+             <RefreshCw className="w-5 h-5 animate-spin" />
+             Starting WhatsApp Engine...
+           </div>
+        )}
+
+        {data?.error && (
+          <div className="mt-4 p-4 rounded-xl bg-red-50 text-red-600 text-sm w-full text-left max-w-lg mx-auto">
+            <strong>Error:</strong> {data.error}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── main ──────────────────────────────────────────────────────────────────────
 
 export default function SystemSettings() {
@@ -633,6 +727,7 @@ export default function SystemSettings() {
           {activeTab === 'analytics' && <AnalyticsTab {...tabProps} />}
           {activeTab === 'sessions' && <SessionsTab {...tabProps} />}
           {activeTab === 'security' && <SecurityTab {...tabProps} />}
+          {activeTab === 'whatsapp' && <WhatsAppTab />}
         </motion.div>
       </AnimatePresence>
     </div>

@@ -1,6 +1,7 @@
 import SystemSettings from '../models/SystemSettings.js';
 import logger from './logger.js';
 import { ensureEmailDeliveryConfig, sendEmailWithConfig } from './emailProviderService.js';
+import { generateTermsPdf } from './termsPdf.js';
 
 const normalizeLanguage = (language) => {
   if (language === 'ar') return 'ar';
@@ -290,6 +291,72 @@ export const sendEmailMessage = async ({ to, subject, html, replyTo, config: pro
   });
 
   return { to: recipients, from: config.fromEmail, provider: delivery.provider, providerMessageId: delivery.providerMessageId };
+};
+
+export const sendTenantOnboardingEmail = async ({ tenant, adminUser, rawPassword, personalEmail, billingCleared, preferredLanguage } = {}) => {
+  try {
+    const settings = await getGlobalSettings();
+    const config = resolveEmailConfig(settings, { allowEnvFallback: false });
+
+    if (!config.enabled) {
+      return { sent: false, reason: 'email_disabled' };
+    }
+
+    ensureEmailConfigured(config);
+
+    const recipients = dedupeRecipients(personalEmail, tenant?.business?.contactEmail || '', adminUser?.email || '');
+    if (recipients.length === 0) {
+      return { sent: false, reason: 'missing_recipient' };
+    }
+
+    const brandName = config.brandName;
+    const loginUrl = 'https://maqder.com/login';
+    const subject = `Welcome to the ${brandName} Family!`;
+
+    const htmlBody = `
+      <p>Hello ${adminUser?.firstName || 'Customer'},</p>
+      <p>Welcome to <strong>${brandName}</strong>! Your account has been successfully created.</p>
+      <p>Here are your login credentials:</p>
+      <ul>
+        <li><strong>Login URL:</strong> <a href="${loginUrl}">${loginUrl}</a></li>
+        <li><strong>Email:</strong> ${adminUser?.email}</li>
+        <li><strong>Password:</strong> ${rawPassword}</li>
+      </ul>
+      ${billingCleared ? '<p style="color: #16a34a; font-weight: bold; margin-top: 20px;">Your billing amount has been cleared successfully!</p>' : ''}
+      <p>If you have any questions, feel free to reply to this email.</p>
+    `;
+
+    const fullHtml = buildEmailShell({
+      brandName,
+      title: subject,
+      body: htmlBody,
+      dir: 'ltr'
+    });
+
+    let attachments = [];
+    if (billingCleared) {
+      const pdfBuffer = await generateTermsPdf({ tenantName: tenant.name, billingCleared: true });
+      attachments.push({
+        filename: 'Terms_and_Conditions.pdf',
+        content: pdfBuffer,
+        contentType: 'application/pdf'
+      });
+    }
+
+    await sendEmailWithConfig({
+      config,
+      to: recipients,
+      subject,
+      html: fullHtml,
+      replyTo: config.replyTo,
+      attachments
+    });
+
+    return { sent: true, to: recipients };
+  } catch (error) {
+    logger.error(`Failed to send tenant onboarding email: ${error.message}`);
+    return { sent: false, reason: 'send_failed', error: error.message };
+  }
 };
 
 export const sendTenantWelcomeEmail = async ({ tenant, adminUser, preferredLanguage } = {}) => {

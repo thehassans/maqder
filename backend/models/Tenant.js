@@ -87,6 +87,8 @@ const invoiceTypographySchema = new mongoose.Schema({
 const tenantSchema = new mongoose.Schema({
   name: { type: String, required: true },
   slug: { type: String, required: true, unique: true, lowercase: true },
+  personalEmail: { type: String },
+  phoneNumber: { type: String },
   businessType: { type: String, enum: BUSINESS_TYPES, default: 'trading', index: true },
   businessTypes: {
     type: [{ type: String, enum: BUSINESS_TYPES }],

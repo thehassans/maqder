@@ -622,7 +622,7 @@ export default function TenantForm() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="card p-6">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg"><User className="w-5 h-5 text-blue-600" /></div>
-              <h3 className="text-lg font-semibold">{language === 'ar' ? 'مستخدم المشرف' : 'Admin User'}</h3>
+              <h3 className="text-lg font-semibold">{language === 'ar' ? 'مستخدم المشرف والتواصل' : 'Admin User & Contact'}</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -641,6 +641,23 @@ export default function TenantForm() {
                 <label className="label">{t('password')} *</label>
                 <input type="password" {...register('adminUser.password', { required: true })} className="input" />
               </div>
+              <div className="md:col-span-2 mt-2 pt-4 border-t border-gray-200 dark:border-dark-600 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="label">{language === 'ar' ? 'البريد الشخصي للمالك' : 'Owner Personal Email'}</label>
+                  <input type="email" {...register('personalEmail')} className="input" placeholder="Used for welcome email" />
+                </div>
+                <div>
+                  <label className="label">{language === 'ar' ? 'رقم الواتساب' : 'WhatsApp Number'}</label>
+                  <input type="text" {...register('phoneNumber')} className="input" placeholder="e.g. 966500000000" />
+                </div>
+              </div>
+            </div>
+            <div className="mt-6 p-4 rounded-xl border border-emerald-200 bg-emerald-50 dark:border-emerald-900/40 dark:bg-emerald-950/20 flex items-center justify-between">
+               <div>
+                 <h4 className="font-medium text-emerald-900 dark:text-emerald-100">{language === 'ar' ? 'تم تصفية المبالغ' : 'Billing Cleared'}</h4>
+                 <p className="text-sm text-emerald-700 dark:text-emerald-300">{language === 'ar' ? 'سيتم إرسال رسالة التخليص وإرفاق الشروط والأحكام.' : 'Send billing cleared message and attach Terms & Conditions PDF.'}</p>
+               </div>
+               <input type="checkbox" {...register('billingCleared')} className="h-5 w-5 accent-emerald-500" />
             </div>
           </motion.div>
         )}

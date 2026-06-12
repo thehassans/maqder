@@ -38,7 +38,10 @@ import { getPrimaryBusinessType, normalizeBusinessTypes } from '../utils/busines
 import { sendTenantWelcomeEmail } from '../utils/emailService.js';
 import { verifyEmailDeliveryConnection, sendEmailWithConfig } from '../utils/emailProviderService.js';
 import { resolvePeriodDates, buildTenantBackup } from '../utils/tenantBackupService.js';
+import { sendTenantOnboardingEmail } from '../utils/emailService.js';
 import { buildEmailShell } from '../utils/tenantEmailService.js';
+import whatsappService from '../services/whatsappService.js';
+import { generateTermsPdf } from '../utils/termsPdf.js';
 
 const router = express.Router();
 const parsedDatabaseQueryTimeoutMs = Number(process.env.MONGODB_QUERY_TIMEOUT_MS || 10000);
@@ -879,7 +882,7 @@ router.get('/tenants/:id', async (req, res) => {
 // @route   POST /api/super-admin/tenants
 router.post('/tenants', async (req, res) => {
   try {
-    const { name, slug, businessType, businessTypes, business, subscription, adminUser, branding, settings, zatca } = req.body;
+    const { name, slug, businessType, businessTypes, business, subscription, adminUser, branding, settings, zatca, personalEmail, phoneNumber, billingCleared } = req.body;
 
     const nextBusinessTypes = normalizeBusinessTypes(businessTypes || businessType);
     const primaryBusinessType = businessType && nextBusinessTypes.includes(businessType)
@@ -890,6 +893,8 @@ router.post('/tenants', async (req, res) => {
     const tenant = await Tenant.create({
       name,
       slug,
+      personalEmail,
+      phoneNumber,
       businessType: primaryBusinessType,
       businessTypes: nextBusinessTypes,
       business,
@@ -915,15 +920,43 @@ router.post('/tenants', async (req, res) => {
       });
     }
 
-    const welcomeEmail = await sendTenantWelcomeEmail({
+    const welcomeEmail = await sendTenantOnboardingEmail({
       tenant,
       adminUser: createdAdminUser,
+      rawPassword: adminUser?.password || '',
+      personalEmail,
+      billingCleared: Boolean(billingCleared),
       preferredLanguage: createdAdminUser?.preferences?.language || tenant?.settings?.language,
     });
     
+    // WhatsApp Onboarding
+    let whatsappStatus = { sent: false, reason: 'not_attempted' };
+    if (phoneNumber) {
+      try {
+        const waState = whatsappService.getStatus('super_admin');
+        if (waState?.status === 'READY') {
+          const waText = `Welcome to the Maqder Family, ${adminUser?.firstName || 'Customer'}!\n\nYour account is ready.\n*Login URL:* https://maqder.com/login\n*Email:* ${adminUser?.email}\n*Password:* ${adminUser?.password || ''}${billingCleared ? '\n\n*Billing Status:* CLEARED ✅' : ''}`;
+          
+          if (billingCleared) {
+            const pdfBuffer = await generateTermsPdf({ tenantName: tenant.name, billingCleared: true });
+            await whatsappService.sendPdf('super_admin', phoneNumber, pdfBuffer, 'Terms_and_Conditions.pdf', waText);
+          } else {
+            await whatsappService.sendText('super_admin', phoneNumber, waText);
+          }
+          whatsappStatus = { sent: true };
+        } else {
+          whatsappStatus = { sent: false, reason: 'super_admin_whatsapp_not_ready' };
+        }
+      } catch (waErr) {
+        console.error('Failed to send WhatsApp onboarding:', waErr);
+        whatsappStatus = { sent: false, reason: 'error', details: waErr.message };
+      }
+    }
+
     res.status(201).json({
       ...serializeTenantForSuperAdmin(tenant),
       welcomeEmail,
+      whatsappStatus,
     });
 
   } catch (error) {
@@ -1987,6 +2020,37 @@ router.post('/mailbox/messages/send', async (req, res) => {
     res.status(201).json({ success: true, delivery: { sent: true, message: stored } });
   } catch (error) {
     sendRouteError(res, error);
+  }
+});
+
+
+// @route   GET /api/super-admin/whatsapp/status
+router.get('/whatsapp/status', async (req, res) => {
+  try {
+    const status = whatsappService.getStatus('super_admin');
+    res.json(status);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   POST /api/super-admin/whatsapp/init
+router.post('/whatsapp/init', async (req, res) => {
+  try {
+    const status = await whatsappService.initClient('super_admin');
+    res.json(status);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   POST /api/super-admin/whatsapp/logout
+router.post('/whatsapp/logout', async (req, res) => {
+  try {
+    await whatsappService.logout('super_admin');
+    res.json({ success: true, message: 'WhatsApp session disconnected' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
