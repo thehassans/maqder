@@ -111,11 +111,13 @@ const ensureConfigReady = (config) => {
   ensureEmailDeliveryConfig(config, { context: 'Tenant email delivery' });
 };
 
-const buildEmailShell = ({ brandName, title, body, secondaryLines = [], dir = 'ltr' }) => {
+export const buildEmailShell = ({ brandName, title, body, secondaryLines = [], dir = 'ltr', department = '' }) => {
   const secondaryHtml = secondaryLines
     .filter(Boolean)
     .map((line) => `<p style="margin:0;color:#475569;font-size:13px;line-height:1.8;">${escapeHtml(line)}</p>`)
     .join('');
+
+  const deptTag = department ? `<div style="font-size:11px; font-weight: bold; background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 12px; display: inline-block; margin-bottom: 8px;">${escapeHtml(department)}</div>` : '';
 
   return `<!DOCTYPE html>
 <html dir="${dir}">
@@ -127,8 +129,14 @@ const buildEmailShell = ({ brandName, title, body, secondaryLines = [], dir = 'l
 <body style="margin:0;padding:24px;background:#f8fafc;font-family:Segoe UI,Arial,sans-serif;color:#0f172a;">
   <div style="max-width:720px;margin:0 auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:24px;overflow:hidden;box-shadow:0 20px 45px -35px rgba(15,23,42,0.35);">
     <div style="background:linear-gradient(135deg,#1a3d28 0%,#2d5a3f 100%);padding:28px 32px;color:#ffffff;">
-      <div style="font-size:13px;letter-spacing:0.18em;text-transform:uppercase;opacity:0.78;">${escapeHtml(brandName)}</div>
-      <h1 style="margin:12px 0 0;font-size:24px;line-height:1.35;font-weight:700;">${escapeHtml(title)}</h1>
+      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div>
+          ${deptTag}
+          <div style="font-size:13px;letter-spacing:0.18em;text-transform:uppercase;opacity:0.78;">${escapeHtml(brandName)}</div>
+          <h1 style="margin:12px 0 0;font-size:24px;line-height:1.35;font-weight:700;">${escapeHtml(title)}</h1>
+        </div>
+        <img src="https://maqder.com/favicon.png" alt="Logo" style="height:48px; width:48px; border-radius:12px; object-fit:contain; background:#fff; padding:4px;" onerror="this.style.display='none'" />
+      </div>
     </div>
     <div style="padding:32px;">
       <div style="font-size:15px;line-height:1.95;color:#1e293b;">${escapeHtml(body).replace(/\r?\n/g, '<br />')}</div>
@@ -597,21 +605,44 @@ const extractInboundAttachments = (payload = {}) => {
 };
 
 export const saveInboundEmail = async (payload = {}, options = {}) => {
-  const tenant = await resolveInboundTenant(payload);
-  if (!tenant) {
-    return { saved: false, reason: 'tenant_not_found' };
+  const candidates = collectRecipientCandidates(payload).map(c => c.toLowerCase());
+
+  const globalSettings = await getGlobalSettings();
+  const globalEmail = globalSettings?.email || {};
+  const globalAliases = [
+    String(globalEmail.fromEmail || '').trim().toLowerCase(),
+    String(globalEmail.salesEmail || '').trim().toLowerCase(),
+    String(globalEmail.supportEmail || '').trim().toLowerCase(),
+    String(globalEmail.billingEmail || '').trim().toLowerCase(),
+  ].filter(Boolean);
+
+  const isSuperAdminEmail = globalAliases.some(alias => candidates.includes(alias));
+
+  let ownerType = 'tenant';
+  let ownerId = null;
+
+  if (isSuperAdminEmail) {
+    ownerType = 'super_admin';
+  } else {
+    const tenant = await resolveInboundTenant(payload);
+    if (!tenant) {
+      return { saved: false, reason: 'tenant_not_found' };
+    }
+    ownerId = tenant._id;
   }
 
   const messageId = String(payload.messageId || payload['Message-Id'] || payload.headers?.['message-id'] || '').trim();
   if (messageId) {
-    const existing = await EmailMessage.findOne({ tenantId: tenant._id, messageId });
+    const query = ownerType === 'super_admin' ? { ownerType: 'super_admin', messageId } : { tenantId: ownerId, messageId };
+    const existing = await EmailMessage.findOne(query);
     if (existing) {
       return { saved: true, duplicate: true, message: existing };
     }
   }
 
   const saved = await EmailMessage.create({
-    tenantId: tenant._id,
+    ownerType,
+    ...(ownerType === 'tenant' ? { tenantId: ownerId } : {}),
     messageId,
     threadId: String(payload.threadId || payload.thread_id || '').trim(),
     to: collectRecipientCandidates(payload),
@@ -632,5 +663,5 @@ export const saveInboundEmail = async (payload = {}, options = {}) => {
     metadata: payload,
   });
 
-  return { saved: true, tenantId: tenant._id, message: saved };
+  return { saved: true, [ownerType === 'tenant' ? 'tenantId' : 'ownerType']: ownerType === 'tenant' ? ownerId : 'super_admin', message: saved };
 };

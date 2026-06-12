@@ -38,6 +38,7 @@ import { getPrimaryBusinessType, normalizeBusinessTypes } from '../utils/busines
 import { sendTenantWelcomeEmail } from '../utils/emailService.js';
 import { verifyEmailDeliveryConnection, sendEmailWithConfig } from '../utils/emailProviderService.js';
 import { resolvePeriodDates, buildTenantBackup } from '../utils/tenantBackupService.js';
+import { buildEmailShell } from '../utils/tenantEmailService.js';
 
 const router = express.Router();
 const parsedDatabaseQueryTimeoutMs = Number(process.env.MONGODB_QUERY_TIMEOUT_MS || 10000);
@@ -1914,6 +1915,18 @@ router.post('/mailbox/messages/send', async (req, res) => {
       return res.status(201).json({ success: true, draft });
     }
 
+    let department = '';
+    if (config.fromEmail === globalEmail.salesEmail) department = 'Sales Team';
+    else if (config.fromEmail === globalEmail.supportEmail) department = 'Support Team';
+    else if (config.fromEmail === globalEmail.billingEmail) department = 'Billing Team';
+
+    const fullHtml = buildEmailShell({
+      brandName: config.fromName,
+      title: payload.subject,
+      body: payload.bodyHtml,
+      department,
+    });
+
     const result = await sendEmailWithConfig({
       config,
       to,
@@ -1921,7 +1934,7 @@ router.post('/mailbox/messages/send', async (req, res) => {
       bcc: payload.bcc || [],
       replyTo: config.replyTo || undefined,
       subject: payload.subject,
-      html: payload.bodyHtml,
+      html: fullHtml,
       text: payload.bodyText,
       attachments: payload.attachments || [],
     });
@@ -1934,7 +1947,7 @@ router.post('/mailbox/messages/send', async (req, res) => {
       bcc: payload.bcc || [],
       from: config.fromEmail,
       subject: payload.subject,
-      bodyHtml: payload.bodyHtml,
+      bodyHtml: fullHtml,
       bodyText: payload.bodyText || '',
       type: 'sent',
       direction: 'outgoing',
