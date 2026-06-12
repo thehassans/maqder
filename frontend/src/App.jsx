@@ -115,6 +115,7 @@ import UserManagement from './pages/super-admin/UserManagement'
 import IdentitySettings from './pages/super-admin/IdentitySettings'
 import GeminiSettings from './pages/super-admin/GeminiSettings'
 import EmailSettings from './pages/super-admin/EmailSettings'
+import SuperAdminMailbox from './pages/super-admin/SuperAdminMailbox'
 import WebsiteSettings from './pages/super-admin/WebsiteSettings'
 import ManpowerDashboard from './pages/manpower/ManpowerDashboard'
 import ManpowerWorkers from './pages/manpower/ManpowerWorkers'
@@ -309,6 +310,7 @@ function App() {
           <Route path="users" element={<UserManagement />} />
         <Route path="website" element={<WebsiteSettings />} />
         <Route path="email" element={<EmailSettings />} />
+        <Route path="mailbox" element={<SuperAdminMailbox />} />
         <Route path="identity" element={<IdentitySettings />} />
         <Route path="gemini" element={<GeminiSettings />} />
         <Route path="system-settings" element={<SystemSettings />} />

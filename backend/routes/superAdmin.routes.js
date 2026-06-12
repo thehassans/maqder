@@ -1773,4 +1773,185 @@ router.post('/tenants/:id/seed-saloon', async (req, res) => {
   }
 });
 
+// --- Super Admin Mailbox ---
+router.get('/mailbox/messages', async (req, res) => {
+  try {
+    const pageNumber = Math.max(1, Number(req.query.page) || 1);
+    const limitNumber = Math.min(100, Math.max(1, Number(req.query.limit) || 20));
+    const normalizedFolder = ['all', 'inbox', 'sent', 'draft'].includes(String(req.query.folder || '').trim().toLowerCase())
+      ? String(req.query.folder || '').trim().toLowerCase()
+      : 'inbox';
+    const search = req.query.search;
+    
+    const query = {
+      ownerType: 'super_admin',
+      ...(normalizedFolder === 'all' ? {} : { type: normalizedFolder }),
+    };
+
+    if (search) {
+      query.$or = [
+        { subject: { $regex: search, $options: 'i' } },
+        { from: { $regex: search, $options: 'i' } },
+        { to: { $regex: search, $options: 'i' } },
+        { previewText: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const [messages, total, counts] = await Promise.all([
+      EmailMessage.find(query)
+        .select('from to cc subject previewText isRead type direction status createdAt updatedAt delivery.sentAt delivery.receivedAt attachments.name attachments.type attachments.size metadata')
+        .sort({ createdAt: -1 })
+        .skip((pageNumber - 1) * limitNumber)
+        .limit(limitNumber)
+        .lean(),
+      EmailMessage.countDocuments(query),
+      EmailMessage.aggregate([
+        { $match: { ownerType: 'super_admin' } },
+        { $group: { _id: '$type', count: { $sum: 1 }, unread: { $sum: { $cond: [{ $eq: ['$isRead', false] }, 1, 0] } } } },
+      ]),
+    ]);
+
+    const result = {
+      messages,
+      pagination: {
+        page: pageNumber,
+        limit: limitNumber,
+        total,
+        pages: Math.max(1, Math.ceil(total / limitNumber)),
+      },
+      counts: counts.reduce((acc, item) => {
+        acc[item._id] = { count: item.count, unread: item.unread };
+        acc.all.count += item.count || 0;
+        acc.all.unread += item.unread || 0;
+        return acc;
+      }, { all: { count: 0, unread: 0 }, inbox: { count: 0, unread: 0 }, sent: { count: 0, unread: 0 }, draft: { count: 0, unread: 0 } }),
+    };
+    
+    res.json(result);
+  } catch (error) {
+    sendRouteError(res, error);
+  }
+});
+
+router.get('/mailbox/messages/:id', async (req, res) => {
+  try {
+    const message = await EmailMessage.findOne({ _id: req.params.id, ownerType: 'super_admin' });
+    if (!message) {
+      return res.status(404).json({ error: 'Email message not found' });
+    }
+
+    if (!message.isRead && message.type === 'inbox') {
+      message.isRead = true;
+      await message.save();
+    }
+
+    res.json(message);
+  } catch (error) {
+    sendRouteError(res, error);
+  }
+});
+
+router.patch('/mailbox/messages/:id/read', async (req, res) => {
+  try {
+    const message = await EmailMessage.findOne({ _id: req.params.id, ownerType: 'super_admin' });
+    if (!message) {
+      return res.status(404).json({ error: 'Email message not found' });
+    }
+
+    message.isRead = req.body?.isRead !== false;
+    await message.save();
+    res.json(message);
+  } catch (error) {
+    sendRouteError(res, error);
+  }
+});
+
+router.post('/mailbox/messages/send', async (req, res) => {
+  try {
+    const settings = await getGlobalSettings();
+    const globalEmail = settings.email || {};
+    
+    const config = {
+      enabled: globalEmail.enabled === true,
+      provider: String(globalEmail.provider || 'smtp').trim().toLowerCase() === 'brevo' ? 'brevo' : 'smtp',
+      host: String(globalEmail.smtpHost || '').trim(),
+      port: Number(globalEmail.smtpPort || 587),
+      secure: globalEmail.smtpSecure === true,
+      user: String(globalEmail.smtpUser || '').trim(),
+      pass: String(globalEmail.smtpPass || '').trim(),
+      brevoApiKey: String(globalEmail.brevoApiKey || '').trim(),
+      fromName: String(globalEmail.fromName || 'Maqder ERP').trim(),
+      fromEmail: String(req.body.from || globalEmail.fromEmail || globalEmail.smtpUser || '').trim(),
+      replyTo: String(globalEmail.replyTo || '').trim(),
+    };
+
+    if (!config.enabled) {
+      return res.status(400).json({ error: 'Global email delivery is disabled' });
+    }
+
+    const payload = req.body || {};
+    const to = payload.to || [];
+    if (!to || to.length === 0) {
+      return res.status(400).json({ error: 'Email recipient is required' });
+    }
+
+    if (payload.saveAsDraft === true) {
+      const draft = await EmailMessage.create({
+        ownerType: 'super_admin',
+        to,
+        cc: payload.cc || [],
+        bcc: payload.bcc || [],
+        from: config.fromEmail,
+        subject: String(payload.subject || '').trim(),
+        bodyHtml: String(payload.bodyHtml || '').trim(),
+        bodyText: String(payload.bodyText || '').trim(),
+        type: 'draft',
+        direction: 'outgoing',
+        status: 'draft',
+        attachments: payload.attachments || [],
+        metadata: { purpose: 'super_admin_compose' },
+      });
+      return res.status(201).json({ success: true, draft });
+    }
+
+    const result = await sendEmailWithConfig({
+      config,
+      to,
+      cc: payload.cc || [],
+      bcc: payload.bcc || [],
+      replyTo: config.replyTo || undefined,
+      subject: payload.subject,
+      html: payload.bodyHtml,
+      text: payload.bodyText,
+      attachments: payload.attachments || [],
+    });
+
+    const stored = await EmailMessage.create({
+      ownerType: 'super_admin',
+      messageId: String(result?.providerMessageId || '').trim(),
+      to,
+      cc: payload.cc || [],
+      bcc: payload.bcc || [],
+      from: config.fromEmail,
+      subject: payload.subject,
+      bodyHtml: payload.bodyHtml,
+      bodyText: payload.bodyText || '',
+      type: 'sent',
+      direction: 'outgoing',
+      status: 'sent',
+      attachments: payload.attachments || [],
+      delivery: {
+        provider: config.provider,
+        providerMessageId: String(result?.providerMessageId || '').trim(),
+        sentAt: new Date(),
+      },
+      metadata: { purpose: 'super_admin_compose' },
+    });
+
+    res.status(201).json({ success: true, delivery: { sent: true, message: stored } });
+  } catch (error) {
+    sendRouteError(res, error);
+  }
+});
+
 export default router;

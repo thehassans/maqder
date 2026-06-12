@@ -10,7 +10,8 @@ const attachmentSchema = new mongoose.Schema({
 }, { _id: false });
 
 const emailMessageSchema = new mongoose.Schema({
-  tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
+  ownerType: { type: String, enum: ['tenant', 'super_admin'], default: 'tenant', index: true },
+  tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', index: true },
   relatedInvoiceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Invoice', index: true },
   messageId: { type: String, default: '', index: true },
   threadId: { type: String, default: '', index: true },
@@ -43,6 +44,10 @@ emailMessageSchema.index({ tenantId: 1, type: 1, createdAt: -1 });
 emailMessageSchema.index({ tenantId: 1, createdAt: -1 });
 
 emailMessageSchema.pre('validate', function(next) {
+  if (this.ownerType === 'tenant' && !this.tenantId) {
+    this.invalidate('tenantId', 'Path `tenantId` is required when ownerType is `tenant`.');
+  }
+
   if (!this.previewText) {
     const plainText = String(this.bodyText || this.bodyHtml || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
     this.previewText = plainText.slice(0, 220);
@@ -64,6 +69,8 @@ emailMessageSchema.pre('validate', function(next) {
   next();
 });
 
+emailMessageSchema.index({ ownerType: 1, type: 1, createdAt: -1 });
+emailMessageSchema.index({ ownerType: 1, isRead: 1, createdAt: -1 });
 emailMessageSchema.index({ tenantId: 1, type: 1, createdAt: -1 });
 emailMessageSchema.index({ tenantId: 1, isRead: 1, createdAt: -1 });
 emailMessageSchema.index({ tenantId: 1, relatedInvoiceId: 1, createdAt: -1 });
