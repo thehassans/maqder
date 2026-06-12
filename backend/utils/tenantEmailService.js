@@ -111,7 +111,7 @@ const ensureConfigReady = (config) => {
   ensureEmailDeliveryConfig(config, { context: 'Tenant email delivery' });
 };
 
-export const buildEmailShell = ({ brandName, title, body, secondaryLines = [], dir = 'ltr', department = '' }) => {
+export const buildEmailShell = ({ brandName, title, body, htmlBody, secondaryLines = [], dir = 'ltr', department = '' }) => {
   const secondaryHtml = secondaryLines
     .filter(Boolean)
     .map((line) => `<p style="margin:0;color:#475569;font-size:13px;line-height:1.8;">${escapeHtml(line)}</p>`)
@@ -139,7 +139,7 @@ export const buildEmailShell = ({ brandName, title, body, secondaryLines = [], d
       </div>
     </div>
     <div style="padding:32px;">
-      <div style="font-size:15px;line-height:1.95;color:#1e293b;">${escapeHtml(body).replace(/\r?\n/g, '<br />')}</div>
+      <div style="font-size:15px;line-height:1.95;color:#1e293b;">${htmlBody || escapeHtml(body || '').replace(/\r?\n/g, '<br />')}</div>
       ${secondaryHtml ? `<div style="margin-top:24px;padding:20px;border-radius:18px;background:#f8fafc;border:1px solid #e2e8f0;display:grid;gap:8px;">${secondaryHtml}</div>` : ''}
     </div>
   </div>

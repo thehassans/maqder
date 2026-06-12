@@ -329,7 +329,7 @@ export const sendTenantOnboardingEmail = async ({ tenant, adminUser, rawPassword
     const fullHtml = buildEmailShell({
       brandName,
       title: subject,
-      body: htmlBody,
+      htmlBody: htmlBody,
       dir: 'ltr'
     });
 
