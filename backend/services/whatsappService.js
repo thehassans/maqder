@@ -40,8 +40,20 @@ class WhatsAppService {
       }
     }
 
-    // 3. Windows: scan puppeteer cache
+    // 3. Windows: scan puppeteer cache and standard paths
     if (os.platform() === 'win32') {
+      const winPaths = [
+        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+        'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+        'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+        'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
+      ];
+      for (const p of winPaths) {
+        if (existsSync(p)) {
+          console.log('[WhatsApp] Chrome found at standard path:', p);
+          return p;
+        }
+      }
       const cacheDir = path.join(os.homedir(), '.cache', 'puppeteer', 'chrome');
       if (existsSync(cacheDir)) {
         try {
@@ -101,6 +113,10 @@ class WhatsAppService {
           '--no-zygote',
           '--disable-gpu',
         ],
+      },
+      webVersionCache: {
+        type: 'remote',
+        remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
       },
     });
 

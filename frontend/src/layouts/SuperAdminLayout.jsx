@@ -42,7 +42,7 @@ export default function SuperAdminLayout() {
         <div className="flex items-center justify-between px-6 h-16">
           <div className="flex items-center gap-6">
             <img src="/maqdernewlogo.png" alt="Maqder" className="h-14 w-auto object-contain transform scale-150 origin-left" />
-            <span className="text-sm font-medium bg-white/20 text-white px-3 py-1 rounded-full whitespace-nowrap">
+            <span className="text-sm font-medium bg-white/20 text-white px-3 py-1 rounded-full whitespace-nowrap ml-8">
               Super Admin
             </span>
           </div>
