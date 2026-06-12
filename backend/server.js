@@ -87,6 +87,7 @@ import khayyatUserRoutes from './routes/khayyat/user.js';
 import { checkIqamaExpiry } from './jobs/iqamaChecker.js';
 import { processScheduledReports } from './jobs/reportScheduleJob.js';
 import { syncZatcaInvoices } from './jobs/zatcaSync.js';
+import { fetchImapEmails } from './jobs/imapFetcher.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 import logger from './utils/logger.js';
 import User from './models/User.js';
@@ -163,6 +164,10 @@ const startJobs = () => {
   cron.schedule('*/15 * * * *', async () => {
     logger.info('Running scheduled reports job...');
     await processScheduledReports();
+  });
+
+  cron.schedule('* * * * *', async () => {
+    await fetchImapEmails();
   });
 };
 
