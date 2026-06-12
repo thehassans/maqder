@@ -103,7 +103,7 @@ export const generateTermsPdf = async ({ tenantName, billingCleared }) => {
     </head>
     <body>
       <div class="header">
-        ${logoBase64 ? \`<img src="\${logoBase64}" class="logo" />\` : \`<h1 class="title">Maqder ERP</h1>\`}
+        ${logoBase64 ? `<img src="${logoBase64}" class="logo" />` : `<h1 class="title">Maqder ERP</h1>`}
         <h2 class="title" style="margin-top: 10px;">Terms and Conditions</h2>
         <div class="subtitle">Annual Subscription Agreement</div>
       </div>
