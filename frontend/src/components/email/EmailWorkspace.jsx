@@ -161,7 +161,6 @@ export default function EmailWorkspace() {
     enabled: hasEmailAddon && !!selectedMessageId && !composeState,
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
-    placeholderData: (prev) => prev,
   })
 
   const messages = messagesQuery.data?.messages || []
@@ -787,13 +786,20 @@ export default function EmailWorkspace() {
                 </div>
 
                 {/* Body */}
-                <div className="flex-1 overflow-y-auto scrollbar-thin p-6">
-                  <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-7 text-gray-700 dark:text-gray-300">
-                    {selectedMessage.bodyHtml
-                      ? <div dangerouslySetInnerHTML={{ __html: selectedMessage.bodyHtml }} />
-                      : <pre className="whitespace-pre-wrap font-sans text-sm text-gray-700 dark:text-gray-300">{selectedMessage.bodyText || ''}</pre>
-                    }
-                  </div>
+                <div className="flex-1 overflow-hidden p-0 relative bg-white dark:bg-white border-t border-gray-100 dark:border-dark-700">
+                  {selectedMessage.bodyHtml ? (
+                    <iframe
+                      srcDoc={selectedMessage.bodyHtml}
+                      className="w-full h-full border-0"
+                      title="Email Content"
+                      sandbox="allow-same-origin allow-popups"
+                    />
+                  ) : (
+                    <div className="p-6 h-full overflow-y-auto scrollbar-thin">
+                      <pre className="whitespace-pre-wrap font-sans text-sm text-gray-700">{selectedMessage.bodyText || ''}</pre>
+                    </div>
+                  )}
+                </div>
 
                   {/* Attachments */}
                   {selectedMessage.attachments?.length > 0 && (
