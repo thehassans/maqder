@@ -26,6 +26,9 @@ export default function EmailSettings() {
       fromName: 'Maqder ERP',
       fromEmail: '',
       replyTo: '',
+      salesEmail: '',
+      supportEmail: '',
+      billingEmail: '',
       tenantCreatedSubjectEn: '',
       tenantCreatedSubjectAr: '',
       tenantCreatedBodyEn: '',
@@ -59,6 +62,9 @@ export default function EmailSettings() {
       fromName: email.fromName || 'Maqder ERP',
       fromEmail: email.fromEmail || '',
       replyTo: email.replyTo || '',
+      salesEmail: email.salesEmail || '',
+      supportEmail: email.supportEmail || '',
+      billingEmail: email.billingEmail || '',
       tenantCreatedSubjectEn: email.templates?.tenantCreated?.subjectEn || '',
       tenantCreatedSubjectAr: email.templates?.tenantCreated?.subjectAr || '',
       tenantCreatedBodyEn: email.templates?.tenantCreated?.bodyEn || '',
@@ -83,6 +89,9 @@ export default function EmailSettings() {
       fromName: String(formData.fromName || '').trim(),
       fromEmail: String(formData.fromEmail || '').trim(),
       replyTo: String(formData.replyTo || '').trim(),
+      salesEmail: String(formData.salesEmail || '').trim(),
+      supportEmail: String(formData.supportEmail || '').trim(),
+      billingEmail: String(formData.billingEmail || '').trim(),
       templates: {
         tenantCreated: {
           subjectEn: String(formData.tenantCreatedSubjectEn || '').trim(),
@@ -119,6 +128,9 @@ export default function EmailSettings() {
         fromName: email?.fromName || 'Maqder ERP',
         fromEmail: email?.fromEmail || '',
         replyTo: email?.replyTo || '',
+        salesEmail: email?.salesEmail || '',
+        supportEmail: email?.supportEmail || '',
+        billingEmail: email?.billingEmail || '',
         tenantCreatedSubjectEn: email?.templates?.tenantCreated?.subjectEn || '',
         tenantCreatedSubjectAr: email?.templates?.tenantCreated?.subjectAr || '',
         tenantCreatedBodyEn: email?.templates?.tenantCreated?.bodyEn || '',
@@ -267,6 +279,18 @@ export default function EmailSettings() {
               <div>
                 <label className="label">{isArabic ? 'الرد إلى' : 'Reply-To'}</label>
                 <input type="email" {...register('replyTo')} className="input" placeholder="support@maqder.com" />
+              </div>
+              <div>
+                <label className="label">{isArabic ? 'بريد المبيعات' : 'Sales Email'}</label>
+                <input type="email" {...register('salesEmail')} className="input" placeholder="sales@maqder.com" />
+              </div>
+              <div>
+                <label className="label">{isArabic ? 'بريد الدعم' : 'Support Email'}</label>
+                <input type="email" {...register('supportEmail')} className="input" placeholder="support@maqder.com" />
+              </div>
+              <div>
+                <label className="label">{isArabic ? 'بريد الفواتير' : 'Billing Email'}</label>
+                <input type="email" {...register('billingEmail')} className="input" placeholder="billing@maqder.com" />
               </div>
             </div>
           </section>

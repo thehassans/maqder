@@ -108,6 +108,9 @@ const systemSettingsSchema = new mongoose.Schema({
     fromName: { type: String, default: 'Maqder ERP' },
     fromEmail: { type: String, default: '' },
     replyTo: { type: String, default: '' },
+    salesEmail: { type: String, default: '' },
+    supportEmail: { type: String, default: '' },
+    billingEmail: { type: String, default: '' },
     templates: {
       tenantCreated: {
         subjectEn: { type: String, default: 'Your {{brandName}} panel is ready for {{companyName}}' },
