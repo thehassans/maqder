@@ -12,7 +12,7 @@ import { Modal } from './components/ui/Modal';
 import { ConfirmModal } from './components/ui/ConfirmModal';
 import DemoBlockedModal from './components/ui/DemoBlockedModal';
 import { Table, Thead, Tbody, Tr, Th, Td } from './components/ui/Table';
-import { Plus, Search, UserPlus, Trash2, Printer, X, Eye, Send, MessageCircle } from 'lucide-react';
+import { Plus, Search, UserPlus, Trash2, Printer, X, Eye, Send, MessageCircle, CheckCircle } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import SARIcon from './components/ui/SARIcon';
@@ -42,6 +42,8 @@ const Stitchings = () => {
   const fetchRequestIdRef = useRef(0);
   const printRef = useRef(null);
   const [printOrder, setPrintOrder] = useState(null);
+  const [completeOrderNumber, setCompleteOrderNumber] = useState('');
+  const [completingOrder, setCompletingOrder] = useState(false);
 
   const [waModalInvoice, setWaModalInvoice] = useState(null);
   const [waPhone, setWaPhone] = useState('');
@@ -382,6 +384,28 @@ const Stitchings = () => {
     setSendingWaModal(false);
   };
 
+  const handleCompleteOrder = async () => {
+    const num = completeOrderNumber.trim();
+    if (!num) return;
+    
+    if (isDemo) {
+      setDemoBlockedOpen(true);
+      return;
+    }
+
+    setCompletingOrder(true);
+    try {
+      await api.post('/khayyat/stitchings/complete-by-receipt', { receiptNumber: num });
+      toast.success(language === 'ar' ? 'تم تحديث حالة الطلب إلى جاهز وإرسال رسالة واتساب' : 'Order marked as ready and WhatsApp message sent');
+      setCompleteOrderNumber('');
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.error || (language === 'ar' ? 'فشل تحديث الطلب' : 'Failed to complete order'));
+    } finally {
+      setCompletingOrder(false);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -392,6 +416,33 @@ const Stitchings = () => {
       </div>
 
       <Card className="p-4">
+        <div className="flex flex-col md:flex-row gap-4 mb-4 pb-4 border-b border-gray-200 dark:border-slate-700">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+              {language === 'ar' ? 'إكمال طلب جاهز (إرسال واتساب)' : 'Complete Ready Order (Send WhatsApp)'}
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={completeOrderNumber}
+                onChange={(e) => setCompleteOrderNumber(e.target.value)}
+                placeholder={language === 'ar' ? 'أدخل رقم الطلب/الإيصال' : 'Enter order/receipt number'}
+                className="flex-1 px-4 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleCompleteOrder()
+                }}
+              />
+              <Button 
+                onClick={handleCompleteOrder} 
+                disabled={completingOrder || !completeOrderNumber.trim()} 
+                icon={CheckCircle}
+              >
+                {language === 'ar' ? 'جاهز' : 'Ready'}
+              </Button>
+            </div>
+          </div>
+        </div>
+
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           <div className="flex-1 min-w-0 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-slate-400" />

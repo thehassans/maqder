@@ -58,6 +58,8 @@ export default function Settings() {
   const [invoicePdfTemplate, setInvoicePdfTemplate] = useState(1)
   const [invoicePdfPageSize, setInvoicePdfPageSize] = useState('a4')
   const [invoicePdfOrientation, setInvoicePdfOrientation] = useState('portrait')
+  const [invoiceSequencePattern, setInvoiceSequencePattern] = useState('RCPT-{N}')
+  const [khayyatWhatsappLanguage, setKhayyatWhatsappLanguage] = useState('both')
   const [invoiceCurrencyDisplay, setInvoiceCurrencyDisplay] = useState('text')
   const [invoiceCurrencyPosition, setInvoiceCurrencyPosition] = useState('after')
   const [invoiceLogoDataUrl, setInvoiceLogoDataUrl] = useState(null)
@@ -89,6 +91,8 @@ export default function Settings() {
     setInvoicePdfTemplate(Number(tenant.settings?.invoicePdfTemplate || 1))
     setInvoicePdfPageSize(tenant.settings?.invoicePdfPageSize || 'a4')
     setInvoicePdfOrientation(tenant.settings?.invoicePdfOrientation || 'portrait')
+    setInvoiceSequencePattern(tenant.settings?.invoiceSequencePattern || 'RCPT-{N}')
+    setKhayyatWhatsappLanguage(tenant.settings?.khayyat?.whatsappLanguage || 'both')
     setInvoiceCurrencyDisplay(tenant.settings?.invoiceCurrencyDisplay === 'icon' ? 'icon' : 'text')
     setInvoiceCurrencyPosition(tenant.settings?.invoiceCurrencyPosition === 'before' ? 'before' : 'after')
     setInvoiceLogoDataUrl(tenant.settings?.invoiceBranding?.logo || tenant.branding?.logo || null)
@@ -457,6 +461,21 @@ export default function Settings() {
                         </select>
                       </div>
                     </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                      <div>
+                        <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'نمط تسلسل الإيصالات' : 'Receipt Sequence Pattern'}</label>
+                        <input value={invoiceSequencePattern} onChange={(e) => setInvoiceSequencePattern(e.target.value)} placeholder="RCPT-{N}" className="input mt-1" />
+                        <p className="text-[10px] text-gray-500 mt-1">{language === 'ar' ? 'استخدم {N} للرقم المتسلسل.' : 'Use {N} for sequential number.'}</p>
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'لغة واتساب للطلبات' : 'Orders WhatsApp Language'}</label>
+                        <select value={khayyatWhatsappLanguage} onChange={(e) => setKhayyatWhatsappLanguage(e.target.value)} className="select mt-1">
+                          <option value="both">{language === 'ar' ? 'عربي وإنجليزي' : 'Arabic & English'}</option>
+                          <option value="ar">{language === 'ar' ? 'عربي فقط' : 'Arabic Only'}</option>
+                          <option value="en">{language === 'ar' ? 'إنجليزي فقط' : 'English Only'}</option>
+                        </select>
+                      </div>
+                    </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                       {language === 'ar' ? 'يتم تطبيق هذا القالب عند تحميل PDF من شاشة الفواتير.' : 'This template is used when downloading invoice PDFs.'}
                     </p>
@@ -678,6 +697,11 @@ export default function Settings() {
                         invoicePdfTemplate,
                         invoicePdfPageSize,
                         invoicePdfOrientation,
+                        invoiceSequencePattern,
+                        khayyat: {
+                          ...(tenant?.settings?.khayyat || {}),
+                          whatsappLanguage: khayyatWhatsappLanguage,
+                        },
                         invoiceCurrencyDisplay,
                         invoiceCurrencyPosition,
                         invoiceBranding: {

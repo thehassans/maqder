@@ -10,6 +10,8 @@ import multer from 'multer';
 import sharp from 'sharp';
 import path from 'path';
 import fs from 'fs';
+import Tenant from '../../models/Tenant.js';
+import whatsappService from '../../services/whatsappService.js';
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
@@ -134,12 +136,33 @@ router.post('/', upload.single('measurementImage'), async (req, res) => {
       );
     }
 
+    let generatedReceiptNumber = receiptNumber;
+    if (!generatedReceiptNumber) {
+      const tenant = await Tenant.findOneAndUpdate(
+        { _id: req.user.tenantId },
+        { $inc: { 'settings.invoiceSequenceCounter': 1 } },
+        { new: true }
+      );
+      let pattern = tenant?.settings?.invoiceSequencePattern || 'RCPT-{N}';
+      const counterStr = String(tenant?.settings?.invoiceSequenceCounter || 1).padStart(4, '0');
+      
+      const now = new Date();
+      const yy = String(now.getFullYear()).slice(-2);
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      
+      pattern = pattern.replace(/{N}/g, counterStr)
+                       .replace(/{YY}/g, yy)
+                       .replace(/{MM}/g, mm);
+                       
+      generatedReceiptNumber = pattern;
+    }
+
     const stitching = new KhayyatStitching({
       tenantId: req.user.tenantId,
       customerId: customer._id,
       customerName: customerName || customer.name,
       customerPhone: customerPhone || customer.phone,
-      receiptNumber: receiptNumber || `RCPT-${Date.now()}`,
+      receiptNumber: generatedReceiptNumber,
       thawbType: thawbType || 'saudi',
       fabricColor: fabricColor || null,
       fabricId: fabricId || null,
@@ -230,6 +253,60 @@ router.put('/:id', upload.single('measurementImage'), async (req, res) => {
     await stitching.save();
     res.json({ message: 'Stitching updated successfully', stitching });
   } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+router.post('/complete-by-receipt', async (req, res) => {
+  try {
+    const { receiptNumber } = req.body;
+    if (!receiptNumber) {
+      return res.status(400).json({ error: 'Receipt number is required' });
+    }
+
+    const stitching = await KhayyatStitching.findOne({
+      tenantId: req.user.tenantId,
+      receiptNumber: { $regex: new RegExp(`^${receiptNumber}$`, 'i') }
+    }).populate('customerId');
+
+    if (!stitching) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    if (stitching.status === 'completed' || stitching.status === 'delivered') {
+      return res.status(400).json({ error: 'Order is already completed or delivered' });
+    }
+
+    stitching.status = 'completed';
+    stitching.completedDate = Date.now();
+    await stitching.save();
+
+    const tenant = await Tenant.findById(req.user.tenantId);
+    const lang = tenant?.settings?.khayyat?.whatsappLanguage || 'both';
+    const tenantNameAr = tenant?.nameAr || tenant?.name || '';
+    const tenantNameEn = tenant?.name || tenant?.nameAr || '';
+
+    const phone = stitching.customerPhone || stitching.customerId?.phone;
+    if (phone) {
+      const msgAr = `مرحباً، طلبك رقم ${stitching.receiptNumber} جاهز للاستلام الآن من ${tenantNameAr}. شكراً لثقتكم بنا!`;
+      const msgEn = `Hello, your order #${stitching.receiptNumber} is now ready for pickup from ${tenantNameEn}. Thank you for choosing us!`;
+      
+      let message = '';
+      if (lang === 'ar') message = msgAr;
+      else if (lang === 'en') message = msgEn;
+      else message = `${msgAr}\n\n${msgEn}`;
+
+      try {
+        await whatsappService.sendText(req.user.tenantId, phone, message);
+      } catch (waErr) {
+        console.error('[WhatsApp] Failed to send order completion message:', waErr);
+        // We do not fail the request if WhatsApp fails, just log it.
+      }
+    }
+
+    res.json({ message: 'Order marked as completed', stitching });
+  } catch (error) {
+    console.error('Error completing order:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
