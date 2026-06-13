@@ -91,6 +91,7 @@ router.post('/', upload.single('measurementImage'), async (req, res) => {
       description, 
       dueDate,
       receiptNumber,
+      orderNumber,
       thawbType,
       fabricColor,
       fabricId,
@@ -163,6 +164,7 @@ router.post('/', upload.single('measurementImage'), async (req, res) => {
       customerName: customerName || customer.name,
       customerPhone: customerPhone || customer.phone,
       receiptNumber: generatedReceiptNumber,
+      orderNumber: orderNumber || null,
       thawbType: thawbType || 'saudi',
       fabricColor: fabricColor || null,
       fabricId: fabricId || null,
@@ -264,32 +266,43 @@ router.post('/complete-by-receipt', async (req, res) => {
       return res.status(400).json({ error: 'Receipt number is required' });
     }
 
-    const stitching = await KhayyatStitching.findOne({
+    const stitchings = await KhayyatStitching.find({
       tenantId: req.user.tenantId,
-      receiptNumber: { $regex: new RegExp(`^${receiptNumber}$`, 'i') }
+      $or: [
+        { receiptNumber: { $regex: new RegExp(`^${receiptNumber}$`, 'i') } },
+        { orderNumber: { $regex: new RegExp(`^${receiptNumber}$`, 'i') } }
+      ]
     }).populate('customerId');
 
-    if (!stitching) {
+    if (!stitchings || stitchings.length === 0) {
       return res.status(404).json({ error: 'Order not found' });
     }
 
-    if (stitching.status === 'completed' || stitching.status === 'delivered') {
-      return res.status(400).json({ error: 'Order is already completed or delivered' });
+    let updatedCount = 0;
+    let mainStitching = stitchings[0];
+
+    for (const stitching of stitchings) {
+      if (stitching.status !== 'completed' && stitching.status !== 'delivered') {
+        stitching.status = 'completed';
+        stitching.completedDate = Date.now();
+        await stitching.save();
+        updatedCount++;
+      }
     }
 
-    stitching.status = 'completed';
-    stitching.completedDate = Date.now();
-    await stitching.save();
+    if (updatedCount === 0) {
+      return res.status(400).json({ error: 'Order(s) already completed or delivered' });
+    }
 
     const tenant = await Tenant.findById(req.user.tenantId);
     const lang = tenant?.settings?.khayyat?.whatsappLanguage || 'both';
     const tenantNameAr = tenant?.nameAr || tenant?.name || '';
     const tenantNameEn = tenant?.name || tenant?.nameAr || '';
 
-    const phone = stitching.customerPhone || stitching.customerId?.phone;
+    const phone = mainStitching.customerPhone || mainStitching.customerId?.phone;
     if (phone) {
-      const msgAr = `مرحباً، طلبك رقم ${stitching.receiptNumber} جاهز للاستلام الآن من ${tenantNameAr}. شكراً لثقتكم بنا!`;
-      const msgEn = `Hello, your order #${stitching.receiptNumber} is now ready for pickup from ${tenantNameEn}. Thank you for choosing us!`;
+      const msgAr = `مرحباً، طلبك رقم ${receiptNumber} جاهز للاستلام الآن من ${tenantNameAr}. شكراً لثقتكم بنا!`;
+      const msgEn = `Hello, your order #${receiptNumber} is now ready for pickup from ${tenantNameEn}. Thank you for choosing us!`;
       
       let message = '';
       if (lang === 'ar') message = msgAr;
@@ -304,7 +317,7 @@ router.post('/complete-by-receipt', async (req, res) => {
       }
     }
 
-    res.json({ message: 'Order marked as completed', stitching });
+    res.json({ message: `Marked ${updatedCount} item(s) as completed`, stitchings });
   } catch (error) {
     console.error('Error completing order:', error);
     res.status(500).json({ error: 'Server error' });

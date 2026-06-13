@@ -113,9 +113,13 @@ export default function KhayyatQuickInvoice() {
 
     try {
       const createdOrders = [];
+      const sharedOrderNumber = `ORD-${Date.now().toString().slice(-6)}${Math.floor(Math.random()*1000)}`;
+      
       for (let i = 0; i < validItems.length; i++) {
         const item = validItems[i];
         const formData = new window.FormData();
+        
+        formData.append('orderNumber', sharedOrderNumber);
         
         if (currentCustomerId) {
           formData.append('customerId', currentCustomerId);
@@ -174,7 +178,8 @@ export default function KhayyatQuickInvoice() {
       const aggregatedOrder = {
         _id: createdOrders[0]._id,
         createdAt: createdOrders[0].createdAt,
-        receiptNumber: createdOrders[0].receiptNumber || createdOrders[0].orderNumber || createdOrders[0]._id.slice(-8),
+        orderNumber: sharedOrderNumber,
+        receiptNumber: createdOrders[0].receiptNumber || sharedOrderNumber,
         customerName: createdOrders[0].customerName || customerName.trim(),
         customerPhone: createdOrders[0].customerPhone || customerPhone.trim(),
         price: createdOrders.reduce((s, o) => s + (Number(o?.price) || 0), 0),
@@ -297,9 +302,14 @@ export default function KhayyatQuickInvoice() {
                         className="w-full bg-white dark:bg-slate-900 border-none rounded-xl text-sm font-medium p-3 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-200 dark:focus:ring-slate-700"
                         value={item.name}
                         onChange={e => {
+                          const val = e.target.value;
                           const newItems = [...items];
-                          newItems[index].name = e.target.value;
+                          newItems[index].name = val;
                           setItems(newItems);
+                          
+                          if (index === 0 && !customerName) {
+                            setCustomerName(val);
+                          }
                         }}
                       />
                     </div>

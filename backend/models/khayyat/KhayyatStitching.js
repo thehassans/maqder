@@ -77,6 +77,10 @@ const khayyatStitchingSchema = new mongoose.Schema({
     ref: 'KhayyatWorker',
     default: null
   },
+  orderNumber: {
+    type: String,
+    default: null
+  },
   receiptNumber: {
     type: String,
     required: true
