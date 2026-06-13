@@ -417,49 +417,12 @@ export default function Settings() {
                 <div className="pt-2">
                   <label className="label flex items-center gap-2"><FileText className="w-4 h-4" />{language === 'ar' ? 'تصميم PDF للفواتير' : 'Invoice PDF Design'}</label>
                   <div className="card-glass p-4 mt-2">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <div>
-                        <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'القالب' : 'Template'}</label>
-                        <select value={invoicePdfTemplate} onChange={(e) => setInvoicePdfTemplate(Number(e.target.value))} className="select mt-1">
-                          <option value={1}>{language === 'ar' ? 'قالب 1 (كلاسيكي)' : 'Template 1 (Classic)'}</option>
-                          <option value={2}>{language === 'ar' ? 'قالب 2 (مُتدرّج)' : 'Template 2 (Gradient)'}</option>
-                          <option value={3}>{language === 'ar' ? 'قالب 3 (شريط جانبي)' : 'Template 3 (Sidebar)'}</option>
-                          <option value={4}>{language === 'ar' ? 'قالب 4 (مُبسّط)' : 'Template 4 (Minimal)'}</option>
-                          <option value={5}>{language === 'ar' ? 'قالب 5 (داكن أنيق)' : 'Template 5 (Elegant Dark)'}</option>
-                          <option value={6}>{language === 'ar' ? 'قالب 6 (شبكة ضريبية)' : 'Template 6 (Tax Grid)'}</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'حجم الصفحة' : 'Page Size'}</label>
-                        <select value={invoicePdfPageSize} onChange={(e) => setInvoicePdfPageSize(e.target.value)} className="select mt-1">
-                          <option value="a4">A4</option>
-                          <option value="letter">Letter</option>
-                          <option value="a5">A5</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'الاتجاه' : 'Orientation'}</label>
-                        <select value={invoicePdfOrientation} onChange={(e) => setInvoicePdfOrientation(e.target.value)} className="select mt-1">
-                          <option value="portrait">{language === 'ar' ? 'طولي' : 'Portrait'}</option>
-                          <option value="landscape">{language === 'ar' ? 'عرضي' : 'Landscape'}</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-                      <div>
-                        <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'عرض العملة' : 'Currency Display'}</label>
-                        <select value={invoiceCurrencyDisplay} onChange={(e) => setInvoiceCurrencyDisplay(e.target.value === 'icon' ? 'icon' : 'text')} className="select mt-1">
-                          <option value="text">{language === 'ar' ? 'نص (SAR)' : 'Text (SAR)'}</option>
-                          <option value="icon">{language === 'ar' ? 'رمز الريال السعودي (﷼)' : 'Saudi Riyal Icon (﷼)'}</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'موضع رمز/نص العملة' : 'Currency Position'}</label>
-                        <select value={invoiceCurrencyPosition} onChange={(e) => setInvoiceCurrencyPosition(e.target.value === 'before' ? 'before' : 'after')} className="select mt-1">
-                          <option value="after">{language === 'ar' ? 'بعد المبلغ (200.00 SAR)' : 'After amount (200.00 SAR)'}</option>
-                          <option value="before">{language === 'ar' ? 'قبل المبلغ (SAR 200.00)' : 'Before amount (SAR 200.00)'}</option>
-                        </select>
-                      </div>
+                    <div className="mt-3">
+                      <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'عرض العملة' : 'Currency Display'}</label>
+                      <select value={invoiceCurrencyDisplay} onChange={(e) => setInvoiceCurrencyDisplay(e.target.value === 'icon' ? 'icon' : 'text')} className="select mt-1 w-full md:w-1/2">
+                        <option value="text">{language === 'ar' ? 'نص (SAR)' : 'Text (SAR)'}</option>
+                        <option value="icon">{language === 'ar' ? 'رمز الريال السعودي (﷼)' : 'Saudi Riyal Icon (﷼)'}</option>
+                      </select>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
                       <div>
@@ -482,146 +445,7 @@ export default function Settings() {
                   </div>
                 </div>
 
-                <div className="pt-2">
-                  <label className="label flex items-center gap-2"><Image className="w-4 h-4" />{language === 'ar' ? 'هوية الفاتورة' : 'Invoice Branding'}</label>
-                  <div className="grid grid-cols-1 gap-4 mt-2 xl:grid-cols-[320px_minmax(0,1fr)]">
-                    <div className="card-glass p-4 space-y-4">
-                      <div>
-                        <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'شعار الفاتورة' : 'Invoice Logo'}</label>
-                        <div className="mt-3 flex items-center gap-4">
-                          <div className="h-28 w-32 rounded-3xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 overflow-hidden flex items-center justify-center p-2">
-                            {invoiceLogoDataUrl ? (
-                              <img src={invoiceLogoDataUrl} alt="" className="h-full w-full object-contain scale-110" />
-                            ) : (
-                              <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-slate-200 to-slate-100 dark:from-dark-600 dark:to-dark-700" />
-                            )}
-                          </div>
-                          <div className="flex-1">
-                            <input type="file" accept="image/*" onChange={handleInvoiceLogoFile} className="input" />
-                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                              {language === 'ar' ? 'يظهر هذا الشعار في أعلى الفاتورة وداخل المعاينة وPDF.' : 'This logo appears in the invoice header, preview, and PDF.'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
 
-                      <div className="rounded-2xl border border-gray-200 dark:border-dark-600 bg-white/70 dark:bg-dark-800/40 p-4">
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">{language === 'ar' ? 'رؤية 2030' : 'Vision 2030'}</p>
-                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'إظهار شعار رؤية 2030 في أعلى الفاتورة.' : 'Show the Vision 2030 mark in the invoice header.'}</p>
-                          </div>
-                          <label className="inline-flex items-center cursor-pointer">
-                            <input type="checkbox" checked={showVision2030} onChange={(e) => setShowVision2030(e.target.checked)} className="sr-only peer" />
-                            <span className="relative h-6 w-11 rounded-full bg-gray-300 transition peer-checked:bg-primary-500 after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:after:translate-x-5 rtl:peer-checked:after:-translate-x-5" />
-                          </label>
-                        </div>
-                        <div className="mt-4 flex items-center gap-4">
-                          <div className="h-16 w-16 rounded-2xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 overflow-hidden flex items-center justify-center">
-                            {vision2030LogoDataUrl ? <img src={vision2030LogoDataUrl} alt="" className="h-full w-full object-contain" /> : null}
-                          </div>
-                          <div className="flex-1">
-                            <input type="file" accept="image/*" onChange={handleVision2030LogoFile} className="input" />
-                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'اختياري: ارفع شعاراً مختلفاً أو اترك الشعار الافتراضي.' : 'Optional: upload a different mark or keep the default asset.'}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="card-glass p-4">
-                        <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'نص أعلى الفاتورة (EN)' : 'Invoice Header Text (EN)'}</label>
-                        <textarea value={invoiceHeaderTextEn} onChange={(e) => setInvoiceHeaderTextEn(e.target.value)} rows={5} className="input mt-2 min-h-[120px]" placeholder={language === 'ar' ? 'مثال: Your Trusted Partner for Travel & Tours Worldwide.' : 'Example: Your Trusted Partner for Travel & Tours Worldwide.'} />
-                      </div>
-                      <div className="card-glass p-4">
-                        <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'نص أعلى الفاتورة (AR)' : 'Invoice Header Text (AR)'}</label>
-                        <textarea value={invoiceHeaderTextAr} onChange={(e) => setInvoiceHeaderTextAr(e.target.value)} rows={5} dir="rtl" className="input mt-2 min-h-[120px]" placeholder={language === 'ar' ? 'مثال: شريككم الموثوق للسفر والسياحة حول العالم.' : 'Example: شريككم الموثوق للسفر والسياحة حول العالم.'} />
-                      </div>
-                      <div className="card-glass p-4">
-                        <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'نص التذييل (EN)' : 'Invoice Footer Text (EN)'}</label>
-                        <textarea value={invoiceFooterTextEn} onChange={(e) => setInvoiceFooterTextEn(e.target.value)} rows={5} className="input mt-2 min-h-[120px]" placeholder={language === 'ar' ? 'العنوان، الهاتف، الموقع، البريد...' : 'Address, phone, website, email...'} />
-                      </div>
-                      <div className="card-glass p-4">
-                        <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'نص التذييل (AR)' : 'Invoice Footer Text (AR)'}</label>
-                        <textarea value={invoiceFooterTextAr} onChange={(e) => setInvoiceFooterTextAr(e.target.value)} rows={5} dir="rtl" className="input mt-2 min-h-[120px]" placeholder={language === 'ar' ? 'العنوان، الهاتف، الموقع، البريد...' : 'Example: العنوان، الهاتف، الموقع، البريد...'} />
-                      </div>
-                      <div className="card-glass p-4">
-                        <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'خط النص العام' : 'Body Font'}</label>
-                        <select value={invoiceBodyFontFamily} onChange={(e) => setInvoiceBodyFontFamily(e.target.value)} className="select mt-2">
-                          {INVOICE_FONT_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>{language === 'ar' ? option.labelAr : option.labelEn}</option>
-                          ))}
-                        </select>
-                        <label className="mt-4 block text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'حجم النص العام' : 'Body Font Size'}</label>
-                        <input type="number" min="9" max="40" value={invoiceBodyFontSize} onChange={(e) => setInvoiceBodyFontSize(Number(e.target.value || 12))} className="input mt-2" />
-                      </div>
-                      <div className="card-glass p-4">
-                        <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'خط العناوين' : 'Heading Font'}</label>
-                        <select value={invoiceHeadingFontFamily} onChange={(e) => setInvoiceHeadingFontFamily(e.target.value)} className="select mt-2">
-                          {INVOICE_FONT_OPTIONS.map((option) => (
-                            <option key={option.value} value={option.value}>{language === 'ar' ? option.labelAr : option.labelEn}</option>
-                          ))}
-                        </select>
-                        <label className="mt-4 block text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'حجم العناوين' : 'Heading Font Size'}</label>
-                        <input type="number" min="9" max="40" value={invoiceHeadingFontSize} onChange={(e) => setInvoiceHeadingFontSize(Number(e.target.value || 18))} className="input mt-2" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-2">
-                  <label className="label flex items-center gap-2"><FileText className="w-4 h-4" />{language === 'ar' ? 'أنماط الفواتير حسب النشاط' : 'Invoice Patterns by Business Type'}</label>
-                  <div className="mt-2 grid grid-cols-1 gap-4 xl:grid-cols-3">
-                    {invoiceBrandingContexts.map((item) => {
-                      const profile = invoiceBrandingProfiles?.[item.key] || {}
-                      return (
-                        <div key={item.key} className="card-glass p-4 space-y-4">
-                          <div>
-                            <p className="text-sm font-semibold text-gray-900 dark:text-white">{language === 'ar' ? item.labelAr : item.labelEn}</p>
-                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'يمكنك تخصيص القالب والشعار والنصوص لهذا النوع من الفواتير.' : 'Set a dedicated template, logo, and texts for this invoice type.'}</p>
-                          </div>
-
-                          <div>
-                            <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'القالب الافتراضي' : 'Default Template'}</label>
-                            <select value={Number(profile.templateId || getInvoiceTemplateId(tenant, item.key))} onChange={(e) => setInvoiceBrandingProfiles((current) => updateInvoiceBrandingProfileState(current, item.key, { templateId: Number(e.target.value) }))} className="select mt-1">
-                              {invoiceTemplateOptions.map((option) => (
-                                <option key={option.id} value={option.id}>{language === 'ar' ? option.nameAr : option.nameEn}</option>
-                              ))}
-                            </select>
-                          </div>
-
-                          <div className="grid grid-cols-[112px_minmax(0,1fr)] gap-4 items-center">
-                            <div className="flex h-24 w-28 items-center justify-center overflow-hidden rounded-3xl border border-gray-200 bg-white p-2 dark:border-dark-600 dark:bg-dark-800">
-                              {profile.logo ? <img src={profile.logo} alt="" className="h-full w-full object-contain scale-110" /> : <div className="h-14 w-16 rounded-2xl bg-gradient-to-br from-slate-200 to-slate-100 dark:from-dark-600 dark:to-dark-700" />}
-                            </div>
-                            <div>
-                              <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'شعار هذا النوع' : 'Context Logo'}</label>
-                              <input type="file" accept="image/*" onChange={handleInvoiceContextLogoFile(item.key)} className="input mt-1" />
-                              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'اختياري: يطبّق فقط على هذا النوع من الفواتير.' : 'Optional: applies only to this invoice type.'}</p>
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'نص أعلى الفاتورة (EN)' : 'Header Text (EN)'}</label>
-                            <textarea value={profile.headerTextEn || ''} onChange={(e) => setInvoiceBrandingProfiles((current) => updateInvoiceBrandingProfileState(current, item.key, { headerTextEn: e.target.value }))} rows={3} className="input mt-2 min-h-[88px]" />
-                          </div>
-                          <div>
-                            <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'نص أعلى الفاتورة (AR)' : 'Header Text (AR)'}</label>
-                            <textarea value={profile.headerTextAr || ''} onChange={(e) => setInvoiceBrandingProfiles((current) => updateInvoiceBrandingProfileState(current, item.key, { headerTextAr: e.target.value }))} rows={3} dir="rtl" className="input mt-2 min-h-[88px]" />
-                          </div>
-                          <div>
-                            <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'نص التذييل (EN)' : 'Footer Text (EN)'}</label>
-                            <textarea value={profile.footerTextEn || ''} onChange={(e) => setInvoiceBrandingProfiles((current) => updateInvoiceBrandingProfileState(current, item.key, { footerTextEn: e.target.value }))} rows={3} className="input mt-2 min-h-[88px]" />
-                          </div>
-                          <div>
-                            <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'نص التذييل (AR)' : 'Footer Text (AR)'}</label>
-                            <textarea value={profile.footerTextAr || ''} onChange={(e) => setInvoiceBrandingProfiles((current) => updateInvoiceBrandingProfileState(current, item.key, { footerTextAr: e.target.value }))} rows={3} dir="rtl" className="input mt-2 min-h-[88px]" />
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
 
                 <div className="pt-2">
                   <label className="label flex items-center gap-2"><Palette className="w-4 h-4" />{language === 'ar' ? 'ألوان العلامة' : 'Brand Colors'}</label>
