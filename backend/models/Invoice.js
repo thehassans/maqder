@@ -57,7 +57,9 @@ const invoiceLineSchema = new mongoose.Schema({
   agencyPrice: { type: Number, default: 0, min: 0 },
   customerPrice: { type: Number, default: 0, min: 0 },
   isTravelMargin: { type: Boolean, default: false },
-  marginTaxable: { type: Number, default: 0 }
+  marginTaxable: { type: Number, default: 0 },
+  sourceDnItemId: { type: mongoose.Schema.Types.ObjectId },
+  sourcePoItemId: { type: mongoose.Schema.Types.ObjectId }
 });
 
 const partySchema = new mongoose.Schema({
@@ -189,6 +191,7 @@ const invoiceSchema = new mongoose.Schema({
   // Reference
   purchaseOrderNumber: { type: String },
   sourcePurchaseOrderId: { type: mongoose.Schema.Types.ObjectId, ref: 'PurchaseOrder', index: true },
+  deliveryNoteIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'DeliveryNote', index: true }],
   contractNumber: { type: String },
   originalInvoiceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Invoice' },
   proformaSourceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Invoice' },

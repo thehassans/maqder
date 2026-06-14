@@ -6,6 +6,8 @@ const purchaseOrderLineItemSchema = new mongoose.Schema({
 
   quantityOrdered: { type: Number, required: true, min: 0 },
   quantityReceived: { type: Number, default: 0, min: 0 },
+  quantityDelivered: { type: Number, default: 0, min: 0 },
+  quantityInvoiced: { type: Number, default: 0, min: 0 },
 
   unitCost: { type: Number, required: true, min: 0 },
   taxRate: { type: Number, default: 15, min: 0 },
@@ -29,11 +31,13 @@ const purchaseOrderSchema = new mongoose.Schema({
   tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
 
   poNumber: { type: String, required: true },
-  supplierId: { type: mongoose.Schema.Types.ObjectId, ref: 'Supplier', required: true, index: true },
+  flow: { type: String, enum: ['sell', 'purchase'], default: 'purchase', index: true },
+  supplierId: { type: mongoose.Schema.Types.ObjectId, ref: 'Supplier', index: true },
+  customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', index: true },
 
   status: {
     type: String,
-    enum: ['draft', 'sent', 'approved', 'partially_received', 'received', 'cancelled'],
+    enum: ['draft', 'sent', 'approved', 'partially_received', 'received', 'partially_delivered', 'delivered', 'closed', 'cancelled'],
     default: 'draft'
   },
 
