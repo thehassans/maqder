@@ -16,6 +16,7 @@ import { buildDraftInvoiceQr } from '../utils/zatca/draftInvoiceQr.js';
 import ZatcaService from '../utils/zatca/ZatcaService.js';
 import { autoSendInvoice, sendInvoiceToRecipient } from '../utils/tenantEmailService.js';
 import { buildInvoicePdfAttachment } from '../utils/invoicePdfService.js';
+import { createInvoiceFromMultipleDNs } from '../controllers/invoiceController.js';
 
 const router = express.Router();
 
@@ -711,6 +712,9 @@ router.post('/', checkPermission('invoicing', 'create'), async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// @route   POST /api/invoices/consolidated
+router.post('/consolidated', checkPermission('invoicing', 'create'), createInvoiceFromMultipleDNs);
 
 // @route   POST /api/invoices/sell
 router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) => {

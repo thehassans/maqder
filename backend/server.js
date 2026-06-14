@@ -66,6 +66,7 @@ import inventoryAdjustmentsRoutes from './routes/inventoryAdjustments.routes.js'
 import voucherRoutes from './routes/voucher.routes.js';
 import backupRoutes from './routes/backup.routes.js';
 import syncRoutes from './routes/syncRoutes.js';
+import deliveryNoteRoutes from './routes/deliveryNote.routes.js';
 
 import laundryServiceRoutes from './routes/laundryService.routes.js';
 import laundryCustomerRoutes from './routes/laundryCustomer.routes.js';
@@ -411,6 +412,7 @@ app.use('/api/purchase-returns', ensureDatabaseReady, purchaseReturnsRoutes);
 app.use('/api/vouchers', ensureDatabaseReady, voucherRoutes);
 app.use('/api/backup', ensureDatabaseReady, backupRoutes);
 app.use('/api/inventory-adjustments', ensureDatabaseReady, inventoryAdjustmentsRoutes);
+app.use('/api/delivery-notes', ensureDatabaseReady, deliveryNoteRoutes);
 
 app.use('/api/laundry/services', ensureDatabaseReady, laundryServiceRoutes);
 app.use('/api/laundry/customers', ensureDatabaseReady, laundryCustomerRoutes);
