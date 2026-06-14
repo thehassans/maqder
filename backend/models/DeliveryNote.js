@@ -13,6 +13,7 @@ const deliveryNoteSchema = new mongoose.Schema({
   
   customerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Customer', required: true, index: true },
   purchaseOrderId: { type: mongoose.Schema.Types.ObjectId, ref: 'PurchaseOrder', required: true, index: true },
+  shipmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Shipment', index: true },
   
   status: { 
     type: String, 

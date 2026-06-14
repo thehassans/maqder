@@ -3,6 +3,7 @@ import Shipment from '../models/Shipment.js';
 import Tenant from '../models/Tenant.js';
 import Supplier from '../models/Supplier.js';
 import PurchaseOrder from '../models/PurchaseOrder.js';
+import DeliveryNote from '../models/DeliveryNote.js';
 import Product from '../models/Product.js';
 import Warehouse from '../models/Warehouse.js';
 import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
@@ -466,6 +467,47 @@ router.delete('/:id', checkPermission('supply_chain', 'delete'), async (req, res
     res.json({ message: 'Shipment deactivated', shipment });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/:id/link-delivery-notes', checkPermission('supply_chain', 'update'), async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    const shipment = await Shipment.findOne({ _id: req.params.id, ...req.tenantFilter, isActive: true }).session(session);
+    if (!shipment) throw new Error('Shipment not found');
+    
+    if (shipment.type !== 'outbound') throw new Error('Only outbound shipments can carry Delivery Notes');
+    
+    const deliveryNoteIds = req.body.deliveryNoteIds || [];
+    if (!deliveryNoteIds.length) throw new Error('No Delivery Note IDs provided');
+
+    // Find all DNs
+    const dns = await DeliveryNote.find({ _id: { $in: deliveryNoteIds }, tenantId: req.user.tenantId }).session(session);
+    if (dns.length !== deliveryNoteIds.length) throw new Error('One or more Delivery Notes not found');
+
+    for (const dn of dns) {
+      if (dn.shipmentId && dn.shipmentId.toString() !== shipment._id.toString()) {
+        throw new Error(`Delivery Note ${dn.dnNumber} is already linked to another shipment`);
+      }
+      dn.shipmentId = shipment._id;
+      await dn.save({ session });
+    }
+
+    // Merge into shipment's deliveryNoteIds array
+    const existingIds = shipment.deliveryNoteIds.map(id => id.toString());
+    const newIds = deliveryNoteIds.filter(id => !existingIds.includes(id.toString()));
+    shipment.deliveryNoteIds.push(...newIds);
+
+    await shipment.save({ session });
+    
+    await session.commitTransaction();
+    res.json({ message: 'Delivery Notes successfully linked to Shipment', shipment });
+  } catch (error) {
+    await session.abortTransaction();
+    res.status(400).json({ error: error.message });
+  } finally {
+    session.endSession();
   }
 });
 

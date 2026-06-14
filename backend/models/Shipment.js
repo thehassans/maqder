@@ -34,6 +34,7 @@ const shipmentSchema = new mongoose.Schema({
 
   supplierId: { type: mongoose.Schema.Types.ObjectId, ref: 'Supplier' },
   purchaseOrderId: { type: mongoose.Schema.Types.ObjectId, ref: 'PurchaseOrder' },
+  deliveryNoteIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'DeliveryNote' }],
   warehouseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Warehouse' },
 
   carrier: { type: String },
@@ -45,6 +46,10 @@ const shipmentSchema = new mongoose.Schema({
   deliveryRecipient: deliveryRecipientSchema,
 
   lineItems: { type: [shipmentLineItemSchema], default: [] },
+  
+  totalGrossWeight: { type: Number },
+  totalNetWeight: { type: Number },
+  boxCount: { type: Number },
 
   notes: { type: String },
 
