@@ -295,7 +295,7 @@ const solutionsData = [
     longDescriptionAr: 'قم بتحسين سلسلة التوريد الخاصة بك بالكامل مع تتبع المستودعات المتعددة ونقاط إعادة الطلب الآلية وإدارة الموردين الشاملة والفوترة الإلكترونية السلسة لمعاملات B2B و B2C.',
     features: ['Multi-warehouse inventory', 'Automated purchase orders', 'Real-time stock valuation', 'ZATCA B2B & B2C invoicing'],
     featuresAr: ['مخزون متعدد المستودعات', 'أوامر شراء مؤتمتة', 'تقييم المخزون في الوقت الفعلي', 'فواتير ZATCA B2B و B2C'],
-    email: 'admin@maqder.com'
+    email: 'trading@test.com'
   },
   {
     title: 'Construction & Contracting',
@@ -309,7 +309,7 @@ const solutionsData = [
     longDescriptionAr: 'تحكم في مشاريع البناء الخاصة بك من خلال حساب دقيق لتكاليف العمل، وطلبات المواد، وتتبع صيانة الأسطول والآلات، وتقارير ربحية المشروع المفصلة.',
     features: ['Detailed Job Costing', 'Project Management & Tasks', 'Heavy Machinery Fleet Tracking', 'Subcontractor Invoicing'],
     featuresAr: ['حساب مفصل لتكاليف العمل', 'إدارة المشاريع والمهام', 'تتبع أسطول الآليات الثقيلة', 'فواتير المقاولين من الباطن'],
-    email: 'admin@maqder.com'
+    email: 'construction@test.com'
   },
   {
     title: 'Travel & Tourism',
@@ -323,7 +323,7 @@ const solutionsData = [
     longDescriptionAr: 'مصمم خصيصاً لوكالات السفر، يدعم نظامنا حسابات ضريبة القيمة المضافة المعقدة (نظام الهامش)، وتتبع الركاب، وسجلات تذاكر الطيران، والتحليل الشامل لربحية الحجوزات.',
     features: ['Margin Scheme VAT (ZATCA)', 'Flight & Hotel Booking Logs', 'Passenger Manifests', 'Supplier Payment Tracking'],
     featuresAr: ['ضريبة القيمة المضافة بنظام الهامش', 'سجلات حجوزات الطيران والفنادق', 'قوائم الركاب', 'تتبع مدفوعات الموردين'],
-    email: 'travel@maqder.com'
+    email: 'travel@test.com'
   },
   {
     title: 'Restaurant & Cafe',
@@ -337,7 +337,7 @@ const solutionsData = [
     longDescriptionAr: 'نظام نقاط بيع فائق السرعة وسهل الاستخدام باللمس ومتكامل مع شاشة المطبخ (KDS). قم بإدارة حجوزات الطاولات ومكونات الوصفات وسجلات النقد للورديات.',
     features: ['Touch-friendly Smart POS', 'Kitchen Display System (KDS)', 'Table & Area Management', 'Recipe & Ingredient Tracking'],
     featuresAr: ['نظام نقاط بيع ذكي باللمس', 'نظام عرض المطبخ (KDS)', 'إدارة الطاولات والمناطق', 'تتبع الوصفات والمكونات'],
-    email: 'restaurant@maqder.com'
+    email: 'restaurant@test.com'
   },
   {
     title: 'Car Rental',
@@ -351,7 +351,7 @@ const solutionsData = [
     longDescriptionAr: 'إدارة أسطول التأجير الخاص بك بسهولة. إنشاء اتفاقيات تأجير ديناميكية، وتتبع توفر المركبات، ومراقبة جداول الصيانة، وحساب رسوم التأخير تلقائياً.',
     features: ['Dynamic Rental Contracts', 'Fleet Availability Calendar', 'Damage Check-in/Check-out', 'Automated Late Fees'],
     featuresAr: ['عقود تأجير ديناميكية', 'تقويم توفر الأسطول', 'فحص الأضرار عند التسليم والاستلام', 'رسوم التأخير التلقائية'],
-    email: 'rental@maqder.com'
+    email: 'rental@test.com'
   },
   {
     title: 'Laundry Services',
@@ -365,7 +365,7 @@ const solutionsData = [
     longDescriptionAr: 'تبسيط عمليات المغسلة الخاصة بك مع التتبع الدقيق للملابس، والفوترة الآلية على أساس الوزن، ورسوم الخدمة السريعة، وإشعارات الواتساب المتكاملة عندما تكون الملابس جاهزة.',
     features: ['Garment Tracking Tags', 'Weight-based Billing', 'Express Service Management', 'WhatsApp Ready Alerts'],
     featuresAr: ['علامات تتبع الملابس', 'الفوترة بناءً على الوزن', 'إدارة الخدمة السريعة', 'إشعارات الواتساب للجاهزية'],
-    email: 'laundry@maqder.com'
+    email: 'laundry@test.com'
   },
   {
     title: 'Saloon & Barber Shop',
@@ -379,7 +379,21 @@ const solutionsData = [
     longDescriptionAr: 'ارتق بأعمال الصالون الخاصة بك مع جدولة المواعيد الأنيقة، وحسابات عمولات الموظفين الآلية، وقوائم الخدمات المتميزة، وتتبع ولاء العملاء.',
     features: ['Staff Commission Tracking', 'Appointment Scheduling', 'Service Variations POS', 'Customer Loyalty'],
     featuresAr: ['تتبع عمولات الموظفين', 'جدولة المواعيد', 'نظام نقاط البيع للخدمات', 'ولاء العملاء'],
-    email: 'saloon@maqder.com'
+    email: 'saloon@test.com'
+  },
+  {
+    title: 'Supermarket & Bakala',
+    titleAr: 'السوبرماركت والبقالة',
+    icon: Package,
+    image: '/images/solutions/trading.png',
+    color: 'from-green-500 to-emerald-600',
+    description: 'Fast barcode scanning, scale integration, and inventory.',
+    descriptionAr: 'مسح الباركود السريع، تكامل الميزان، والمخزون.',
+    longDescription: 'A highly efficient POS system tailored for supermarkets and local Bakalas. Seamlessly integrated with barcode scanners, weighing scales, and real-time inventory tracking to keep your shelves stocked.',
+    longDescriptionAr: 'نظام نقاط بيع عالي الكفاءة مصمم خصيصاً للسوبرماركت والبقالات المحلية. متكامل بسلاسة مع ماسحات الباركود وموازين الوزن وتتبع المخزون في الوقت الفعلي.',
+    features: ['Barcode Scanner & Scale Ready', 'Fast Checkout POS', 'Expiry Date Tracking', 'Supplier Direct Orders'],
+    featuresAr: ['متوافق مع ماسح الباركود والميزان', 'نقاط بيع سريعة الدفع', 'تتبع تاريخ الصلاحية', 'طلبات الموردين المباشرة'],
+    email: 'bakala@test.com'
   }
 ]
 
