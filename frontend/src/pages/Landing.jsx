@@ -760,7 +760,7 @@ export default function Landing() {
 
                 <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-100">
                   <Link
-                    to="/login"
+                    to={`/login?demoEmail=${encodeURIComponent(selectedSolution.email)}&demoPassword=password123&autoLogin=true`}
                     state={{ email: selectedSolution.email, password: 'password123' }}
                     className={`flex-1 inline-flex items-center justify-center gap-2 py-4 rounded-xl text-white font-semibold shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-0.5 bg-gradient-to-r ${selectedSolution.color}`}
                   >

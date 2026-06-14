@@ -33,17 +33,17 @@ export default function Login() {
   const contactSalesSubject = encodeURIComponent('Maqder ERP Sales Inquiry')
 
   const location = useLocation()
+
+  const demoEmail = searchParams.get('demoEmail')
+  const demoPassword = searchParams.get('demoPassword')
+  const autoLogin = searchParams.get('autoLogin') === 'true'
   
   const { register, handleSubmit, formState: { errors } } = useForm({
     defaultValues: {
-      email: location.state?.email || '',
-      password: location.state?.password || ''
+      email: demoEmail || location.state?.email || '',
+      password: demoPassword || location.state?.password || ''
     }
   })
-
-  useEffect(() => {
-    dispatch(clearError())
-  }, [dispatch])
 
   const onSubmit = async (data) => {
     dispatch(clearError())
@@ -72,6 +72,14 @@ export default function Login() {
       // handled by auth slice state
     }
   }
+
+  useEffect(() => {
+    dispatch(clearError())
+    if (autoLogin && demoEmail && demoPassword) {
+      onSubmit({ email: demoEmail, password: demoPassword })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoLogin, demoEmail, demoPassword])
 
   return (
     <div className="min-h-screen flex">
