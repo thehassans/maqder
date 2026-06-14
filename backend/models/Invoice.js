@@ -179,9 +179,9 @@ const invoiceSchema = new mongoose.Schema({
   exchangeRate: { type: Number, default: 1 },
   
   // Payment
-  paymentMethod: { type: String, enum: ['cash', 'card', 'credit', 'bank_transfer', 'cheque', 'other', 'split'], default: 'cash' },
+  paymentMethod: { type: String, enum: ['cash', 'card', 'credit', 'bank_transfer', 'cheque', 'other', 'split', 'khata'], default: 'cash' },
   payments: [{
-    method: { type: String, enum: ['cash', 'card', 'bank_transfer', 'other'] },
+    method: { type: String, enum: ['cash', 'card', 'bank_transfer', 'other', 'khata'] },
     amount: { type: Number }
   }],
   paymentTerms: { type: String },

@@ -70,6 +70,8 @@ import PurchaseReturns from './pages/inventory/PurchaseReturns'
 import ZatcaLogs from './pages/finance/ZatcaLogs'
 import Shipments from './pages/Shipments'
 import ShipmentForm from './pages/ShipmentForm'
+import DeliveryNotes from './pages/DeliveryNotes'
+import DeliveryNoteForm from './pages/DeliveryNoteForm'
 import TravelBookings from './pages/travel/TravelBookings'
 import TravelBookingForm from './pages/travel/TravelBookingForm'
 import RestaurantMenuItems from './pages/restaurant/RestaurantMenuItems'
@@ -426,6 +428,11 @@ function App() {
         <Route path="shipments" element={<BusinessTypeRoute allowedTypes={['trading']}><Shipments /></BusinessTypeRoute>} />
         <Route path="shipments/new" element={<BusinessTypeRoute allowedTypes={['trading']}><ShipmentForm /></BusinessTypeRoute>} />
         <Route path="shipments/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><ShipmentForm /></BusinessTypeRoute>} />
+        
+        <Route path="delivery-notes" element={<BusinessTypeRoute allowedTypes={['trading']}><DeliveryNotes /></BusinessTypeRoute>} />
+        <Route path="delivery-notes/new" element={<BusinessTypeRoute allowedTypes={['trading']}><DeliveryNoteForm /></BusinessTypeRoute>} />
+        <Route path="delivery-notes/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><DeliveryNoteForm /></BusinessTypeRoute>} />
+
         <Route path="projects" element={<Projects />} />
         <Route path="projects/new" element={<ProjectForm />} />
         <Route path="projects/:id" element={<ProjectForm />} />

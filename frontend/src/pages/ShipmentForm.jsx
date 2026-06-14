@@ -634,6 +634,21 @@ export default function ShipmentForm() {
               <h3 className="text-lg font-semibold">{language === 'ar' ? 'بيانات التسليم' : 'Delivery Details'}</h3>
             </div>
 
+            {shipment?.deliveryNoteIds?.length > 0 && (
+              <div className="mb-6 p-4 bg-primary-50 dark:bg-primary-900/10 rounded-xl border border-primary-100 dark:border-primary-900/30">
+                <h4 className="text-sm font-semibold text-primary-800 dark:text-primary-200 mb-2">
+                  {language === 'ar' ? 'سندات التسليم المرتبطة' : 'Linked Delivery Notes'}
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {shipment.deliveryNoteIds.map((dn) => (
+                    <span key={dn} className="badge badge-primary">
+                      {dn.dnNumber || dn}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
                 <label className="label">{language === 'ar' ? 'اسم المستلم' : 'Recipient Name'}</label>

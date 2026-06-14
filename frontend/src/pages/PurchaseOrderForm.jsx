@@ -282,6 +282,16 @@ export default function PurchaseOrderForm() {
               <FileText className="w-4 h-4" />
               {language === 'ar' ? 'إنشاء فاتورة شراء' : 'Create Purchase Invoice'}
             </button>
+            {order?.flow === 'sell' && (
+              <button
+                type="button"
+                onClick={() => navigate(`/app/dashboard/delivery-notes/new?poId=${id}`)}
+                className="btn btn-secondary"
+              >
+                <FileText className="w-4 h-4" />
+                {language === 'ar' ? 'إنشاء إذن تسليم' : 'Create Delivery Note'}
+              </button>
+            )}
             <button
               type="button"
               onClick={() => navigate(`/app/dashboard/invoices/new/sell?poId=${id}`)}

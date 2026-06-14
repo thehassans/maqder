@@ -141,7 +141,7 @@ export default function Sidebar() {
         { path: '/app/dashboard/customers', icon: Users, label: language === 'ar' ? 'العملاء' : 'Customers', perm: { module: 'sales', action: 'read' } },
         { path: '/app/dashboard/customers/statement', icon: FileText, label: language === 'ar' ? 'كشف حساب' : 'Customer Statement', perm: { module: 'sales', action: 'read' } },
         { path: '/app/dashboard/quotations', icon: FileSignature, label: language === 'ar' ? 'عروض الأسعار' : 'Quotations', perm: { module: 'sales', action: 'read' } },
-        { path: '/app/dashboard/shipments/new?type=outbound&document=delivery-note', icon: FileText, label: language === 'ar' ? 'إذن تسليم' : 'Delivery Note', perm: { module: 'supply_chain', action: 'read' }, businessTypes: ['trading'] },
+        { path: '/app/dashboard/delivery-notes', icon: FileText, label: language === 'ar' ? 'سندات التسليم' : 'Delivery Notes', perm: { module: 'supply_chain', action: 'read' }, businessTypes: ['trading'] },
         { path: '/app/dashboard/contacts', icon: Users, label: language === 'ar' ? 'جهات الاتصال' : 'Contacts', perm: { module: 'invoicing', action: 'read' } },
         { path: '/app/dashboard/letterhead', icon: FileText, label: language === 'ar' ? 'منشئ الخطابات' : 'Letterhead', perm: { module: 'invoicing', action: 'read' } },
         { path: '/app/dashboard/purchase-orders', icon: ShoppingCart, label: language === 'ar' ? 'طلبات الشراء' : 'Purchase Orders', perm: { module: 'supply_chain', action: 'read' } },
