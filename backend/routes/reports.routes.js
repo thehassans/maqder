@@ -8,6 +8,7 @@ import LaundryOrder from '../models/LaundryOrder.js';
 import RestaurantOrder from '../models/RestaurantOrder.js';
 import { protect, tenantFilter, authorize, checkEmailAddon, requireBusinessType } from '../middleware/auth.js';
 import { getTenantBusinessTypes } from '../utils/businessTypes.js';
+import { buildBusinessReports } from '../utils/businessReports.js';
 import { computeNextRunAt, normalizeRecipients, serializeReportSchedule, REPORT_SCHEDULE_FREQUENCIES, REPORT_SCHEDULE_PRESETS, REPORT_SCHEDULE_TYPES } from '../utils/reportScheduleService.js';
 
 const router = express.Router();
@@ -787,7 +788,7 @@ router.get('/business-summary', async (req, res) => {
     
     if (businessTypes.includes('car_rental')) {
       const [{ rev } = { rev: 0 }] = await RentalContract.aggregate([
-        { $match: { ...req.tenantFilter, createdAt: { $gte: startDate, $lte: endDate }, status: { $in: ['active', 'completed'] } } },
+        { $match: { ...req.tenantFilter, createdAt: { $gte: startDate, $lte: endDate }, status: { $nin: ['CANCELLED'] } } },
         { $group: { _id: null, rev: { $sum: { $ifNull: ['$subtotal', 0] } } } }
       ]).catch(() => [{ rev: 0 }]);
       extraRevenue += rev;
@@ -937,6 +938,33 @@ router.get('/customer-statement', async (req, res) => {
     });
 
     res.json({ statement, totalBalance: balance });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   GET /api/reports/operations
+// Business-type-specific operational reports (KPIs + detail tables) tailored to
+// the tenant's enabled business types (restaurant, laundry, car rental, etc.).
+router.get('/operations', async (req, res) => {
+  try {
+    const { startDate, endDate } = resolvePeriod(req);
+    const only = req.query.businessType ? String(req.query.businessType).trim() : null;
+
+    const { businessTypes, sections } = await buildBusinessReports({
+      tenant: req.tenant,
+      tenantFilter: req.tenantFilter,
+      startDate,
+      endDate,
+      only,
+    });
+
+    res.json({
+      period: { startDate, endDate },
+      currency: 'SAR',
+      businessTypes,
+      sections,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
