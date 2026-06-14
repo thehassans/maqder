@@ -2,8 +2,19 @@ import express from 'express';
 import { protect } from '../middleware/auth.js';
 import InventoryAdjustment from '../models/InventoryAdjustment.js';
 import BakalaProduct from '../models/BakalaProduct.js';
+import Tenant from '../models/Tenant.js';
 
 const router = express.Router();
+
+// Resolve the tenant to operate on (super_admins fall back to the bakala tenant).
+const getTargetTenantId = async (user) => {
+  if (user.tenantId) return user.tenantId;
+  if (user.role === 'super_admin') {
+    const tenant = await Tenant.findOne({ businessTypes: 'bakala' });
+    return tenant ? tenant._id : null;
+  }
+  return null;
+};
 
 // Generate Adjustment Number
 const generateAdjustmentNumber = async (tenantId) => {
@@ -14,7 +25,9 @@ const generateAdjustmentNumber = async (tenantId) => {
 // Get all Adjustments
 router.get('/', protect, async (req, res) => {
   try {
-    const adjustments = await InventoryAdjustment.find({ tenantId: req.user.tenantId })
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.json([]);
+    const adjustments = await InventoryAdjustment.find({ tenantId })
       .populate('adjustedBy', 'name')
       .sort('-createdAt');
     res.json(adjustments);
@@ -28,10 +41,13 @@ router.post('/', protect, async (req, res) => {
   try {
     const { reason, notes, lines } = req.body;
 
-    const adjustmentNumber = await generateAdjustmentNumber(req.user.tenantId);
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found for this user.' });
+
+    const adjustmentNumber = await generateAdjustmentNumber(tenantId);
 
     const adjustment = new InventoryAdjustment({
-      tenantId: req.user.tenantId,
+      tenantId,
       adjustmentNumber,
       reason,
       notes,
@@ -46,7 +62,7 @@ router.post('/', protect, async (req, res) => {
       if (line.productId) {
         // We set the stock directly to actualQuantity
         await BakalaProduct.findOneAndUpdate(
-          { _id: line.productId, tenantId: req.user.tenantId },
+          { _id: line.productId, tenantId },
           { $set: { stockQuantity: line.actualQuantity } }
         );
       }
@@ -61,7 +77,8 @@ router.post('/', protect, async (req, res) => {
 // Get Single Adjustment
 router.get('/:id', protect, async (req, res) => {
   try {
-    const adjustment = await InventoryAdjustment.findOne({ _id: req.params.id, tenantId: req.user.tenantId })
+    const tenantId = await getTargetTenantId(req.user);
+    const adjustment = await InventoryAdjustment.findOne({ _id: req.params.id, ...(tenantId ? { tenantId } : {}) })
       .populate('adjustedBy', 'name');
     
     if (!adjustment) return res.status(404).json({ error: 'Adjustment not found' });

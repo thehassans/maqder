@@ -31,8 +31,8 @@ export default function SimpleCrudList({ endpoint, title, itemLabel }) {
     e.preventDefault();
     try {
       if (editingId) {
-        // Mock put for now if route not available, or just delete/recreate if it's simpler
-        toast.error('Edit not fully implemented in API yet, please delete and recreate for now.');
+        await api.put(`${endpoint}/${editingId}`, formData);
+        toast.success(`${itemLabel} updated`);
       } else {
         await api.post(endpoint, formData);
         toast.success(`${itemLabel} created`);
@@ -122,6 +122,16 @@ export default function SimpleCrudList({ endpoint, title, itemLabel }) {
                     </span>
                   </td>
                   <td className="px-6 py-3 text-right">
+                    <button
+                      onClick={() => {
+                        setFormData({ name: item.name || '', nameAr: item.nameAr || '', isActive: item.isActive ?? true });
+                        setEditingId(item._id);
+                        setIsModalOpen(true);
+                      }}
+                      className="p-1 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded mr-2"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
                     <button onClick={() => handleDelete(item._id)} className="p-1 text-red-500 hover:bg-red-50 rounded">
                       <Trash2 className="w-4 h-4" />
                     </button>

@@ -180,6 +180,21 @@ router.post('/categories', protect, async (req, res) => {
   }
 });
 
+router.put('/categories/:id', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    const category = await BakalaCategory.findOneAndUpdate(
+      { _id: req.params.id, ...(tenantId ? { tenantId } : {}) },
+      req.body,
+      { new: true, runValidators: true }
+    );
+    if (!category) return res.status(404).json({ error: 'Category not found' });
+    res.json(category);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 router.delete('/categories/:id', protect, async (req, res) => {
   try {
     const tenantId = await getTargetTenantId(req.user);
@@ -214,6 +229,21 @@ router.post('/brands', protect, async (req, res) => {
   }
 });
 
+router.put('/brands/:id', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    const brand = await BakalaBrand.findOneAndUpdate(
+      { _id: req.params.id, ...(tenantId ? { tenantId } : {}) },
+      req.body,
+      { new: true, runValidators: true }
+    );
+    if (!brand) return res.status(404).json({ error: 'Brand not found' });
+    res.json(brand);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 router.delete('/brands/:id', protect, async (req, res) => {
   try {
     const tenantId = await getTargetTenantId(req.user);
@@ -243,6 +273,21 @@ router.post('/units', protect, async (req, res) => {
     const unit = new BakalaUnit({ ...req.body, tenantId });
     await unit.save();
     res.status(201).json(unit);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.put('/units/:id', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    const unit = await BakalaUnit.findOneAndUpdate(
+      { _id: req.params.id, ...(tenantId ? { tenantId } : {}) },
+      req.body,
+      { new: true, runValidators: true }
+    );
+    if (!unit) return res.status(404).json({ error: 'Unit not found' });
+    res.json(unit);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }

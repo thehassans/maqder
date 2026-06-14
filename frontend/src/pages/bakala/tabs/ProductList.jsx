@@ -13,7 +13,8 @@ export default function ProductList() {
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
     name: '', nameAr: '', primaryBarcode: '', category: '', brand: '', 
-    unit: 'PCS', costPrice: 0, retailPrice: 0, minimumStockAlertLevel: 10, isActive: true
+    unit: 'PCS', costPrice: 0, retailPrice: 0, minimumStockAlertLevel: 10,
+    stockQuantity: 0, expiryDate: '', batchNumber: '', isActive: true
   });
   const [categories, setCategories] = useState([]);
   const [brands, setBrands] = useState([]);
@@ -54,11 +55,12 @@ export default function ProductList() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const payload = { ...formData, expiryDate: formData.expiryDate ? formData.expiryDate : null };
       if (editingId) {
-        await api.put(`/bakala-products/${editingId}`, formData);
+        await api.put(`/bakala-products/${editingId}`, payload);
         toast.success('Product updated');
       } else {
-        await api.post('/bakala-products', formData);
+        await api.post('/bakala-products', payload);
         toast.success('Product created');
       }
       setIsModalOpen(false);
@@ -79,6 +81,9 @@ export default function ProductList() {
       costPrice: product.costPrice || 0,
       retailPrice: product.retailPrice || 0,
       minimumStockAlertLevel: product.minimumStockAlertLevel || 10,
+      stockQuantity: product.stockQuantity || 0,
+      expiryDate: product.expiryDate ? product.expiryDate.substring(0, 10) : '',
+      batchNumber: product.batchNumber || '',
       isActive: product.isActive ?? true
     });
     setEditingId(product._id);
@@ -135,7 +140,8 @@ export default function ProductList() {
             onClick={() => {
               setFormData({
                 name: '', nameAr: '', primaryBarcode: '', category: '', brand: '', 
-                unit: 'PCS', costPrice: 0, retailPrice: 0, minimumStockAlertLevel: 10, isActive: true
+                unit: 'PCS', costPrice: 0, retailPrice: 0, minimumStockAlertLevel: 10,
+                stockQuantity: 0, expiryDate: '', batchNumber: '', isActive: true
               });
               setEditingId(null);
               setIsModalOpen(true);
@@ -254,6 +260,22 @@ export default function ProductList() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Retail Price (SAR) *</label>
                   <input type="number" step="0.01" min="0" required value={formData.retailPrice} onChange={e => setFormData({...formData, retailPrice: parseFloat(e.target.value) || 0})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Stock Quantity</label>
+                  <input type="number" step="1" value={formData.stockQuantity} onChange={e => setFormData({...formData, stockQuantity: parseFloat(e.target.value) || 0})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Min. Stock Alert Level</label>
+                  <input type="number" step="1" min="0" value={formData.minimumStockAlertLevel} onChange={e => setFormData({...formData, minimumStockAlertLevel: parseFloat(e.target.value) || 0})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
+                  <input type="date" value={formData.expiryDate} onChange={e => setFormData({...formData, expiryDate: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Batch Number</label>
+                  <input type="text" value={formData.batchNumber} onChange={e => setFormData({...formData, batchNumber: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 outline-none" />
                 </div>
               </div>
               <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
