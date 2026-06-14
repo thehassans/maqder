@@ -4,12 +4,30 @@ import { useSelector } from 'react-redux'
 import { motion, AnimatePresence } from 'framer-motion'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
+import { getTenantBusinessTypes, getBusinessTypeOptions } from '../lib/businessTypes'
 import Money from '../components/ui/Money'
 import ExportMenu from '../components/ui/ExportMenu'
 import { downloadBusinessReportPdf } from '../lib/businessReportPdf'
 import { downloadVatReturnReportPdf } from '../lib/vatReturnReportPdf'
-import { Clock3, Download, Mail, Trash2, TrendingUp, ShoppingCart, Receipt, Tag, BarChart3, FileText, AlertCircle, Calendar, ChevronDown, ChevronUp, ToggleLeft, ToggleRight, Users } from 'lucide-react'
+import { Clock3, Download, Mail, Trash2, TrendingUp, ShoppingCart, Receipt, Tag, BarChart3, FileText, AlertCircle, Calendar, ChevronDown, ChevronUp, ToggleLeft, ToggleRight, Users, Package, Boxes } from 'lucide-react'
 import toast from 'react-hot-toast'
+
+const OPS_PREFIX = 'ops:'
+
+const KPI_ICONS = [TrendingUp, ShoppingCart, Receipt, Tag, BarChart3, Package, Users, Boxes]
+const KPI_ICON_BG = [
+  'bg-gradient-to-br from-emerald-400 to-emerald-600',
+  'bg-gradient-to-br from-blue-400 to-blue-600',
+  'bg-gradient-to-br from-primary-400 to-primary-700',
+  'bg-gradient-to-br from-amber-400 to-amber-600',
+  'bg-gradient-to-br from-rose-400 to-rose-600',
+  'bg-gradient-to-br from-slate-400 to-slate-600',
+]
+
+const localized = (value, language) => {
+  if (value && typeof value === 'object') return value[language] || value.en || value.ar || ''
+  return value ?? ''
+}
 
 const formatInputDate = (value) => {
   const date = value instanceof Date ? value : new Date(value)
@@ -127,6 +145,89 @@ function PremiumTable({ headers, rows, emptyText }) {
   )
 }
 
+// ─── Operations (per business type) report ──────────────────────────────────
+function OperationsSection({ section, language, t }) {
+  const money = (value) => <Money value={value} minimumFractionDigits={2} maximumFractionDigits={2} />
+
+  const formatCell = (value, format) => {
+    if (format === 'money') return money(value)
+    if (format === 'percent') return `${Number(value || 0).toFixed(0)}%`
+    if (format === 'number') return Number(value || 0).toLocaleString()
+    return value === undefined || value === null || value === '' ? '-' : String(value)
+  }
+
+  if (!section) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 rounded-2xl bg-white dark:bg-dark-800 border border-gray-100 dark:border-dark-700">
+        <FileText className="w-8 h-8 text-gray-300 dark:text-gray-600 mb-2" />
+        <p className="text-sm text-gray-400 dark:text-gray-500">{t('noData')}</p>
+      </div>
+    )
+  }
+
+  const kpis = Array.isArray(section.kpis) ? section.kpis : []
+  const tables = Array.isArray(section.tables) ? section.tables : []
+
+  return (
+    <div className="space-y-6">
+      {section.error && (
+        <div className="flex items-center gap-3 rounded-2xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/40 px-5 py-4 text-sm text-amber-700 dark:text-amber-300">
+          <AlertCircle className="w-5 h-5 shrink-0" />
+          {section.error}
+        </div>
+      )}
+
+      {kpis.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          {kpis.map((kpi, i) => (
+            <KpiCard
+              key={kpi.key || i}
+              icon={KPI_ICONS[i % KPI_ICONS.length]}
+              iconBg={KPI_ICON_BG[i % KPI_ICON_BG.length]}
+              label={localized(kpi.label, language)}
+              value={formatCell(kpi.value, kpi.format)}
+              delay={0.04 * i}
+            />
+          ))}
+        </div>
+      )}
+
+      {tables.map((table, ti) => {
+        const columns = Array.isArray(table.columns) ? table.columns : []
+        const rows = Array.isArray(table.rows) ? table.rows : []
+        return (
+          <SectionCard
+            key={table.key || ti}
+            title={localized(table.title, language)}
+            delay={0.1 + ti * 0.05}
+            action={
+              <ExportMenu
+                language={language}
+                t={t}
+                rows={rows}
+                columns={columns.map((col) => ({
+                  key: col.key,
+                  label: localized(col.label, language),
+                  value: (row) => row[col.key],
+                }))}
+                fileBaseName={`${section.key}_${table.key || 'report'}`}
+                title={localized(table.title, language)}
+                disabled={rows.length === 0}
+              />
+            }
+          >
+            <PremiumTable
+              headers={columns.map((col) => localized(col.label, language))}
+              rows={rows.map((row) => columns.map((col) => formatCell(row[col.key], col.format)))}
+              emptyText={t('noData')}
+            />
+          </SectionCard>
+        )
+      })}
+    </div>
+  )
+}
+
 // ─── Toggle Switch ────────────────────────────────────────────────────────────
 function ToggleSwitch({ checked, onChange, disabled }) {
   return (
@@ -178,15 +279,43 @@ export default function Reports() {
   const hasEmailAddon = Boolean(tenant?.subscription?.hasEmailAddon || tenant?.subscription?.features?.includes('email_automation'))
   const canManageSchedules = user?.role === 'admin' || user?.role === 'super_admin'
 
+  const tenantBusinessTypes = getTenantBusinessTypes(tenant)
+  const businessTypeMeta = getBusinessTypeOptions(language)
+  const isOps = reportType.startsWith(OPS_PREFIX)
+  const opsType = isOps ? reportType.slice(OPS_PREFIX.length) : null
+
+  const reportTabs = [
+    { value: 'vat', label: 'VAT' },
+    { value: 'business', label: language === 'ar' ? 'الأعمال' : 'Business' },
+    { value: 'daily', label: language === 'ar' ? 'اليومية' : 'Daily' },
+    { value: 'sales', label: language === 'ar' ? 'مبيعات العملاء' : 'Customer Sales' },
+    ...tenantBusinessTypes.map((type) => ({
+      value: `${OPS_PREFIX}${type}`,
+      label: businessTypeMeta.find((meta) => meta.id === type)?.label || type,
+    })),
+  ]
+
   const { data, isLoading, error } = useQuery({
     queryKey: ['reports', reportType, startDate, endDate],
-    queryFn: () =>
-      api
-        .get(reportType === 'business' ? '/reports/business-summary' : reportType === 'daily' ? '/reports/daily-invoices' : reportType === 'sales' ? '/reports/customer-sales' : '/reports/vat-return', { params: { startDate, endDate } })
-        .then((res) => res.data)
-    ,
+    queryFn: () => {
+      if (isOps) {
+        return api
+          .get('/reports/operations', { params: { startDate, endDate, businessType: opsType } })
+          .then((res) => res.data)
+      }
+      const url = reportType === 'business'
+        ? '/reports/business-summary'
+        : reportType === 'daily'
+          ? '/reports/daily-invoices'
+          : reportType === 'sales'
+            ? '/reports/customer-sales'
+            : '/reports/vat-return'
+      return api.get(url, { params: { startDate, endDate } }).then((res) => res.data)
+    },
     enabled: !!startDate && !!endDate && !hasInvalidRange,
   })
+
+  const opsSection = isOps ? (data?.sections || []).find((section) => section.key === opsType) || data?.sections?.[0] : null
 
   const { data: schedulesData, isLoading: schedulesLoading } = useQuery({
     queryKey: ['report-schedules'],
@@ -328,9 +457,15 @@ export default function Reports() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">{t('reports')}</h1>
             <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">
-              {reportType === 'business'
-                ? (language === 'ar' ? 'تقرير الأعمال' : 'Business Report')
-                : (language === 'ar' ? 'تقرير إقرار ضريبة القيمة المضافة' : 'VAT Return Report')}
+              {isOps
+                ? `${localized(opsSection?.label, language) || (businessTypeMeta.find((meta) => meta.id === opsType)?.label || opsType)} ${language === 'ar' ? 'تقرير' : 'Report'}`
+                : reportType === 'business'
+                  ? (language === 'ar' ? 'تقرير الأعمال' : 'Business Report')
+                  : reportType === 'daily'
+                    ? (language === 'ar' ? 'تقرير المبيعات اليومية' : 'Daily Sales Report')
+                    : reportType === 'sales'
+                      ? (language === 'ar' ? 'تقرير مبيعات العملاء' : 'Customer Sales Report')
+                      : (language === 'ar' ? 'تقرير إقرار ضريبة القيمة المضافة' : 'VAT Return Report')}
             </p>
           </div>
         </div>
@@ -338,13 +473,8 @@ export default function Reports() {
         {/* Right: controls */}
         <div className="flex flex-wrap items-center gap-3">
           {/* Report type pill toggle */}
-          <div className="flex items-center p-1 bg-gray-100 dark:bg-dark-700 rounded-xl gap-1">
-            {[
-              { value: 'vat', label: 'VAT' },
-              { value: 'business', label: language === 'ar' ? 'الأعمال' : 'Business' },
-              { value: 'daily', label: language === 'ar' ? 'اليومية' : 'Daily' },
-              { value: 'sales', label: language === 'ar' ? 'مبيعات العملاء' : 'Customer Sales' },
-            ].map(({ value, label }) => (
+          <div className="flex flex-wrap items-center p-1 bg-gray-100 dark:bg-dark-700 rounded-xl gap-1">
+            {reportTabs.map(({ value, label }) => (
               <button
                 key={value}
                 type="button"
@@ -387,7 +517,7 @@ export default function Reports() {
           </div>
 
           {/* Download PDF */}
-          {data && !isLoading && !error && !hasInvalidRange && (
+          {data && !isLoading && !error && !hasInvalidRange && (reportType === 'business' || reportType === 'vat') && (
             <motion.button
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -757,6 +887,8 @@ export default function Reports() {
                 {language === 'ar' ? 'حاول مرة أخرى أو تحقق من الاتصال' : 'Please try again or check your connection'}
               </p>
             </motion.div>
+          ) : isOps ? (
+            <OperationsSection section={opsSection} language={language} t={t} />
           ) : data ? (
             <>
               {/* Export toolbar */}
