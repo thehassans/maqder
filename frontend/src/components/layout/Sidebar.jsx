@@ -134,17 +134,13 @@ export default function Sidebar() {
       ]
     },
     {
-      title: language === 'ar' ? 'الرئيسية' : 'Main',
+      title: language === 'ar' ? 'سلسلة التوريد' : 'Supply Chain',
+      businessTypes: ['trading', 'bakala'],
       items: [
-        { path: '/app/dashboard', icon: LayoutDashboard, label: language === 'ar' ? 'لوحة التحكم' : 'Dashboard', end: true, excludeBusinessTypes: ['khayyat'] },
-        { path: '/app/dashboard/invoices', icon: FileText, label: t('invoices'), perm: { module: 'invoicing', action: 'read' }, excludeBusinessTypes: ['khayyat'] },
-        { path: '/app/dashboard/customers', icon: Users, label: language === 'ar' ? 'العملاء' : 'Customers', perm: { module: 'sales', action: 'read' } },
-        { path: '/app/dashboard/customers/statement', icon: FileText, label: language === 'ar' ? 'كشف حساب' : 'Customer Statement', perm: { module: 'sales', action: 'read' } },
-        { path: '/app/dashboard/quotations', icon: FileSignature, label: language === 'ar' ? 'عروض الأسعار' : 'Quotations', perm: { module: 'sales', action: 'read' }, excludeBusinessTypes: ['bakala'] },
-        { path: '/app/dashboard/delivery-notes', icon: FileText, label: language === 'ar' ? 'سندات التسليم' : 'Delivery Notes', perm: { module: 'supply_chain', action: 'read' }, businessTypes: ['trading'] },
-        { path: '/app/dashboard/contacts', icon: Users, label: language === 'ar' ? 'جهات الاتصال' : 'Contacts', perm: { module: 'invoicing', action: 'read' }, excludeBusinessTypes: ['bakala'] },
-        { path: '/app/dashboard/letterhead', icon: FileText, label: language === 'ar' ? 'منشئ الخطابات' : 'Letterhead', perm: { module: 'invoicing', action: 'read' } },
-        { path: '/app/dashboard/purchase-orders', icon: ShoppingCart, label: language === 'ar' ? 'طلبات الشراء' : 'Purchase Orders', perm: { module: 'supply_chain', action: 'read' } },
+        { path: '/app/dashboard/suppliers', icon: Building, label: language === 'ar' ? 'الموردين' : 'Suppliers', perm: { module: 'supply_chain', action: 'read' } },
+        { path: '/app/dashboard/grn', icon: Truck, label: language === 'ar' ? 'استلام البضائع' : 'Goods Receipt', perm: { module: 'supply_chain', action: 'read' } },
+        { path: '/app/dashboard/purchase-returns', icon: PackageMinus, label: language === 'ar' ? 'مرتجعات المشتريات' : 'Purchase Returns', perm: { module: 'supply_chain', action: 'read' } },
+        { path: '/app/dashboard/shipments', icon: Truck, label: language === 'ar' ? 'الشحنات' : 'Shipments', perm: { module: 'supply_chain', action: 'read' } },
       ]
     },
     {
@@ -194,13 +190,17 @@ export default function Sidebar() {
       ]
     },
     {
-      title: language === 'ar' ? 'سلسلة التوريد' : 'Supply Chain',
-      businessTypes: ['trading', 'bakala'],
+      title: language === 'ar' ? 'الرئيسية' : 'Main',
       items: [
-        { path: '/app/dashboard/suppliers', icon: Building, label: language === 'ar' ? 'الموردين' : 'Suppliers', perm: { module: 'supply_chain', action: 'read' } },
-        { path: '/app/dashboard/grn', icon: Truck, label: language === 'ar' ? 'استلام البضائع' : 'Goods Receipt', perm: { module: 'supply_chain', action: 'read' } },
-        { path: '/app/dashboard/purchase-returns', icon: PackageMinus, label: language === 'ar' ? 'مرتجعات المشتريات' : 'Purchase Returns', perm: { module: 'supply_chain', action: 'read' } },
-        { path: '/app/dashboard/shipments', icon: Truck, label: language === 'ar' ? 'الشحنات' : 'Shipments', perm: { module: 'supply_chain', action: 'read' } },
+        { path: '/app/dashboard', icon: LayoutDashboard, label: language === 'ar' ? 'لوحة التحكم' : 'Dashboard', end: true, excludeBusinessTypes: ['khayyat'] },
+        { path: '/app/dashboard/invoices', icon: FileText, label: t('invoices'), perm: { module: 'invoicing', action: 'read' }, excludeBusinessTypes: ['khayyat'] },
+        { path: '/app/dashboard/customers', icon: Users, label: language === 'ar' ? 'العملاء' : 'Customers', perm: { module: 'sales', action: 'read' } },
+        { path: '/app/dashboard/customers/statement', icon: FileText, label: language === 'ar' ? 'كشف حساب' : 'Customer Statement', perm: { module: 'sales', action: 'read' } },
+        { path: '/app/dashboard/quotations', icon: FileSignature, label: language === 'ar' ? 'عروض الأسعار' : 'Quotations', perm: { module: 'sales', action: 'read' }, excludeBusinessTypes: ['bakala'] },
+        { path: '/app/dashboard/delivery-notes', icon: FileText, label: language === 'ar' ? 'سندات التسليم' : 'Delivery Notes', perm: { module: 'supply_chain', action: 'read' }, businessTypes: ['trading'] },
+        { path: '/app/dashboard/contacts', icon: Users, label: language === 'ar' ? 'جهات الاتصال' : 'Contacts', perm: { module: 'invoicing', action: 'read' }, excludeBusinessTypes: ['bakala'] },
+        { path: '/app/dashboard/letterhead', icon: FileText, label: language === 'ar' ? 'منشئ الخطابات' : 'Letterhead', perm: { module: 'invoicing', action: 'read' } },
+        { path: '/app/dashboard/purchase-orders', icon: ShoppingCart, label: language === 'ar' ? 'طلبات الشراء' : 'Purchase Orders', perm: { module: 'supply_chain', action: 'read' } },
       ]
     },
     {
