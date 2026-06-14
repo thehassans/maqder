@@ -37,6 +37,7 @@ export default function Login() {
   const demoEmail = searchParams.get('demoEmail')
   const demoPassword = searchParams.get('demoPassword')
   const autoLogin = searchParams.get('autoLogin') === 'true'
+  const [isAutoLoggingIn, setIsAutoLoggingIn] = useState(autoLogin && !!demoEmail && !!demoPassword)
   
   const { register, handleSubmit, formState: { errors } } = useForm({
     defaultValues: {
@@ -69,6 +70,7 @@ export default function Login() {
 
       navigate(redirectPath, { replace: true })
     } catch {
+      setIsAutoLoggingIn(false)
       // handled by auth slice state
     }
   }
@@ -80,6 +82,22 @@ export default function Login() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoLogin, demoEmail, demoPassword])
+
+  if (isAutoLoggingIn) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#1a3d28]">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <Loader2 className="w-12 h-12 text-white animate-spin mx-auto" />
+          <h2 className="text-xl font-semibold text-white">
+            {language === 'ar' ? 'جاري تسجيل الدخول...' : 'Logging you in...'}
+          </h2>
+          <p className="text-white/70">
+            {language === 'ar' ? 'إعداد مساحة العمل الخاصة بك' : 'Preparing your workspace'}
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen flex">
