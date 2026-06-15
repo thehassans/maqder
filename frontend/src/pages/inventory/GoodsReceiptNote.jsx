@@ -27,16 +27,39 @@ export default function GoodsReceiptNote() {
 
   const fetchData = async () => {
     try {
-      const [grnRes, suppRes, poRes, prodRes] = await Promise.all([
+      // Fetch GRNs and suppliers — these are required
+      const [grnRes, suppRes] = await Promise.all([
         api.get('/grn'),
-        api.get('/contacts?types=supplier'),
-        api.get('/purchase-orders'),
-        api.get('/bakala-products')
+        api.get('/contacts?types=supplier')
       ]);
-      setGrns(grnRes.data);
+      setGrns(Array.isArray(grnRes.data) ? grnRes.data : []);
       setSuppliers(suppRes.data?.contacts || []);
-      setPurchaseOrders(poRes.data.filter(po => po.status !== 'fulfilled'));
-      setAllProducts(prodRes.data);
+
+      // Fetch purchase-orders (optional — ignore if it fails)
+      try {
+        const poRes = await api.get('/purchase-orders');
+        const poArray = Array.isArray(poRes.data)
+          ? poRes.data
+          : Array.isArray(poRes.data?.orders)
+          ? poRes.data.orders
+          : [];
+        setPurchaseOrders(poArray.filter(po => po.status !== 'fulfilled'));
+      } catch (_) {
+        setPurchaseOrders([]);
+      }
+
+      // Fetch products for barcode lookup (trading uses /products)
+      try {
+        const prodRes = await api.get('/products', { params: { limit: 500 } });
+        const prodArray = Array.isArray(prodRes.data)
+          ? prodRes.data
+          : Array.isArray(prodRes.data?.products)
+          ? prodRes.data.products
+          : [];
+        setAllProducts(prodArray);
+      } catch (_) {
+        setAllProducts([]);
+      }
     } catch (err) {
       toast.error('Failed to load data');
     } finally {
@@ -48,7 +71,12 @@ export default function GoodsReceiptNote() {
     e.preventDefault();
     if (!searchTerm.trim()) return;
 
-    const product = allProducts.find(p => p.primaryBarcode === searchTerm || p.barcodes?.includes(searchTerm));
+    const product = allProducts.find(p =>
+      p.primaryBarcode === searchTerm ||
+      p.barcode === searchTerm ||
+      p.barcodes?.includes(searchTerm) ||
+      p.sku === searchTerm
+    );
     
     if (product) {
       // Check if already in lines
@@ -60,8 +88,8 @@ export default function GoodsReceiptNote() {
       } else {
         setLines([{
           productId: product._id,
-          productName: product.name,
-          barcode: product.primaryBarcode,
+          productName: product.nameEn || product.nameAr || product.name,
+          barcode: product.barcode || product.primaryBarcode || '',
           quantityReceived: 1,
           costPrice: product.costPrice || 0,
           expiryDate: '',
