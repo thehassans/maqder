@@ -339,16 +339,12 @@ export default function ProductForm() {
                     defaultValue={0}
                   />
                 </div>
-                <div>
-                  <label className="label">{t('reorderPoint')}</label>
-                  <input type="number" {...register('stocks.0.reorderPoint', { valueAsNumber: true })} className="input" defaultValue={10} />
-                </div>
               </>
             )}
 
             {isEdit && (
               <div className="md:col-span-3 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="label">{language === 'ar' ? 'المستودع' : 'Warehouse'}</label>
                     <select
@@ -371,16 +367,6 @@ export default function ProductForm() {
                       className="input"
                       value={stockQuantity}
                       onChange={(e) => setStockQuantity(Number(e.target.value))}
-                      min={0}
-                    />
-                  </div>
-                  <div>
-                    <label className="label">{t('reorderPoint')}</label>
-                    <input
-                      type="number"
-                      className="input"
-                      value={stockReorderPoint}
-                      onChange={(e) => setStockReorderPoint(Number(e.target.value))}
                       min={0}
                     />
                   </div>
