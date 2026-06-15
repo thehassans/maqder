@@ -411,9 +411,9 @@ export default function InvoiceCreateSell() {
 
           {isTrading && (
             <div className="mt-6">
-              <label className="label">{language === 'ar' ? 'المستودع' : 'Warehouse'} *</label>
-              <select {...register('warehouseId', { required: isTrading })} className="select">
-                <option value="">{language === 'ar' ? 'اختر' : 'Select'}</option>
+              <label className="label">{language === 'ar' ? 'المستودع' : 'Warehouse'}</label>
+              <select {...register('warehouseId')} className="select">
+                <option value="">{language === 'ar' ? 'اختر (اختياري)' : 'Select (Optional)'}</option>
                 {(warehouses || []).map((w) => (
                   <option key={w._id} value={w._id}>
                     {language === 'ar' ? (w.nameAr || w.nameEn) : w.nameEn}

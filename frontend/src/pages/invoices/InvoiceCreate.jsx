@@ -132,16 +132,7 @@ export default function InvoiceCreate() {
         )}
       </div>
 
-      <div className="card p-6 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
-        <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
-          {language === 'ar' ? 'ملاحظة' : 'Note'}
-        </h3>
-        <p className="text-sm text-blue-700 dark:text-blue-300">
-          {language === 'ar'
-            ? 'عند تفعيل نشاط السفر ستتوفر فواتير السفر مع بيانات المسافر والجواز والطباعة.'
-            : 'When travel business is enabled, travel invoices with passenger and passport details are available for printing.'}
-        </p>
-      </div>
+
     </div>
   )
 }
