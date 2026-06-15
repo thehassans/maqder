@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useCartEngine } from '../../hooks/useCartEngine';
 import { useBakalaSync } from '../../hooks/useBakalaSync';
 import { getProductByBarcode, saveOfflineInvoice } from '../../lib/bakalaDb';
-import { ShoppingCart, CreditCard, Wallet, Send, RefreshCw, Server, WifiOff, ArrowLeft, Search, Plus, Minus, Trash2, LogOut, Smartphone, Keyboard, Users, CheckCircle2 } from 'lucide-react';
+import { ShoppingCart, CreditCard, Wallet, Send, RefreshCw, Server, WifiOff, ArrowLeft, Search, Plus, Minus, Trash2, LogOut, Smartphone, Keyboard, Users, CheckCircle2, Scale, Plug, Unplug } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -15,7 +15,7 @@ export default function BakalaPOS() {
   const { tenant } = useSelector(state => state.auth);
   const scalePrefix = (tenant?.settings?.hardwareSettings?.scaleBarcodePrefix || '21').substring(0, 2).padEnd(2, '0');
   
-  const { cartItems, addItem, updateQuantity, removeItem, clearCart, totals, holdBill, recallBill, getHeldBills } = useCartEngine();
+  const { cartItems, addItem, addWeightedItem, updateQuantity, removeItem, clearCart, totals, holdBill, autoHoldBill, recallBill, getHeldBills } = useCartEngine();
   const { isOnline, pendingCount, syncOfflineData } = useBakalaSync();
   const barcodeInputRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -27,6 +27,15 @@ export default function BakalaPOS() {
   const [splitCard, setSplitCard] = useState('');
   const [scannerConnected, setScannerConnected] = useState(false);
   const [showRecallModal, setShowRecallModal] = useState(false);
+
+  // Weight Scale Modal
+  const [showWeighModal, setShowWeighModal] = useState(false);
+  const [weighSearch, setWeighSearch] = useState('');
+  const [weighProduct, setWeighProduct] = useState(null);
+  const [weighValue, setWeighValue] = useState('');
+  const [weighUnit, setWeighUnit] = useState('KG');
+  const [scalePort, setScalePort] = useState(null);
+  const scaleReaderRef = useRef(null);
   
   // Khata Modal
   const [showKhataModal, setShowKhataModal] = useState(false);
@@ -59,6 +68,29 @@ export default function BakalaPOS() {
     document.addEventListener('keydown', handleGlobalKeydown);
     return () => document.removeEventListener('keydown', handleGlobalKeydown);
   }, []);
+
+  // Auto-hold the active bill when leaving the POS page so nothing is lost.
+  useEffect(() => {
+    return () => {
+      const held = autoHoldBill();
+      if (held) {
+        toast('Bill moved to Hold', { icon: '⏸️' });
+      }
+    };
+  }, [autoHoldBill]);
+
+  // Warn the cashier before refreshing/closing the tab with an active bill.
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (cartItems.length > 0) {
+        autoHoldBill();
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [cartItems.length, autoHoldBill]);
 
   // Load products from IndexedDB
   useEffect(() => {
@@ -110,6 +142,111 @@ export default function BakalaPOS() {
       a.customerId?.mobile?.includes(lower)
     );
   }, [khataSearch, khataAccounts]);
+
+  // ===== Weight Scale (in-POS) =====
+  const weighProducts = useMemo(() => {
+    const list = allProducts.filter(p => {
+      const cat = (p.category || '').toLowerCase();
+      return cat.includes('fruit') || cat.includes('veg') || cat.includes('produce') || p.unit === 'KG';
+    });
+    if (!weighSearch.trim()) return list.slice(0, 30);
+    const lower = weighSearch.toLowerCase();
+    return list.filter(p =>
+      p.name.toLowerCase().includes(lower) ||
+      p.primaryBarcode?.includes(lower)
+    ).slice(0, 30);
+  }, [allProducts, weighSearch]);
+
+  const weighKg = useMemo(() => {
+    const v = parseFloat(weighValue) || 0;
+    return weighUnit === 'G' ? v / 1000 : v;
+  }, [weighValue, weighUnit]);
+
+  const weighTotal = weighProduct ? weighKg * (weighProduct.retailPrice || 0) : 0;
+
+  const openWeighModal = () => {
+    setWeighProduct(null);
+    setWeighSearch('');
+    setWeighValue('');
+    setWeighUnit('KG');
+    setShowWeighModal(true);
+  };
+
+  const connectPosScale = async () => {
+    if (!('serial' in navigator)) {
+      toast.error('Web Serial not supported. Use Chrome or Edge.');
+      return;
+    }
+    try {
+      const port = await navigator.serial.requestPort();
+      await port.open({ baudRate: 9600 });
+      setScalePort(port);
+      toast.success('Scale connected');
+      readScaleLoop(port);
+    } catch (err) {
+      toast.error('Failed to connect to scale');
+    }
+  };
+
+  const readScaleLoop = async (port) => {
+    try {
+      const decoder = new TextDecoderStream();
+      port.readable.pipeTo(decoder.writable);
+      const reader = decoder.readable.getReader();
+      scaleReaderRef.current = reader;
+      let buffer = '';
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += value;
+        const lines = buffer.split(/\r?\n/);
+        buffer = lines.pop();
+        for (const line of lines) {
+          const match = line.match(/([0-9]+\.[0-9]+)/);
+          if (match) {
+            setWeighUnit('KG');
+            setWeighValue(match[1]);
+          }
+        }
+      }
+    } catch (err) {
+      // stream ended
+    }
+  };
+
+  const disconnectPosScale = async () => {
+    try {
+      if (scaleReaderRef.current) await scaleReaderRef.current.cancel();
+      if (scalePort) await scalePort.close();
+    } catch (err) { /* noop */ }
+    setScalePort(null);
+  };
+
+  // Clean up scale connection when component unmounts
+  useEffect(() => {
+    return () => {
+      if (scaleReaderRef.current) {
+        try { scaleReaderRef.current.cancel(); } catch (e) { /* noop */ }
+      }
+      if (scalePort) {
+        try { scalePort.close(); } catch (e) { /* noop */ }
+      }
+    };
+  }, [scalePort]);
+
+  const handleAddWeighedToCart = () => {
+    if (!weighProduct) {
+      toast.error('Select a product first');
+      return;
+    }
+    if (!weighKg || weighKg <= 0) {
+      toast.error('Enter a valid weight');
+      return;
+    }
+    addWeightedItem(weighProduct, weighKg);
+    toast.success(`${weighProduct.name} • ${weighKg.toFixed(3)} KG added`);
+    setShowWeighModal(false);
+  };
 
   // Handle Barcode Scans via Enter key in search
   const handleScannerSubmit = async (e) => {
@@ -295,21 +432,40 @@ export default function BakalaPOS() {
           ) : (
             <div className="space-y-3">
               {cartItems.map((item, index) => (
-                <div key={index} className="flex items-center p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow group">
+                <div key={item.lineId || index} className="flex items-center p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-shadow group">
                   <div className="flex-1 min-w-0 pr-4">
-                    <p className="font-semibold text-gray-800 truncate text-lg">{item.productName}</p>
-                    <p className="text-sm text-gray-400 font-medium">{item.primaryBarcode}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-gray-800 truncate text-lg">{item.productName}</p>
+                      {item.isWeighed && (
+                        <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[11px] font-bold border border-emerald-100">
+                          <Scale className="w-3 h-3" /> {item.weightLabel}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-400 font-medium">
+                      {item.isWeighed
+                        ? `SAR ${(item.unitPrice || 0).toFixed(2)} / KG`
+                        : item.primaryBarcode}
+                    </p>
                   </div>
-                  
-                  <div className="flex items-center gap-4 mr-6 bg-gray-50 rounded-xl p-1">
-                    <button onClick={() => updateQuantity(index, item.quantity - 1)} className="w-10 h-10 flex items-center justify-center bg-white hover:bg-gray-100 rounded-lg text-gray-600 shadow-sm transition-colors">
-                      {item.quantity === 1 ? <Trash2 className="w-4 h-4 text-rose-400" /> : <Minus className="w-4 h-4" />}
-                    </button>
-                    <span className="w-8 text-center font-bold text-lg">{item.quantity}</span>
-                    <button onClick={() => updateQuantity(index, item.quantity + 1)} className="w-10 h-10 flex items-center justify-center bg-white hover:bg-gray-100 rounded-lg text-gray-600 shadow-sm transition-colors">
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
+
+                  {item.isWeighed ? (
+                    <div className="flex items-center mr-6">
+                      <button onClick={() => removeItem(index)} className="w-10 h-10 flex items-center justify-center bg-rose-50 hover:bg-rose-100 rounded-lg text-rose-500 shadow-sm transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-4 mr-6 bg-gray-50 rounded-xl p-1">
+                      <button onClick={() => updateQuantity(index, item.quantity - 1)} className="w-10 h-10 flex items-center justify-center bg-white hover:bg-gray-100 rounded-lg text-gray-600 shadow-sm transition-colors">
+                        {item.quantity === 1 ? <Trash2 className="w-4 h-4 text-rose-400" /> : <Minus className="w-4 h-4" />}
+                      </button>
+                      <span className="w-8 text-center font-bold text-lg">{item.quantity}</span>
+                      <button onClick={() => updateQuantity(index, item.quantity + 1)} className="w-10 h-10 flex items-center justify-center bg-white hover:bg-gray-100 rounded-lg text-gray-600 shadow-sm transition-colors">
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
 
                   <div className="text-right w-24">
                     <p className="font-bold text-gray-900 text-lg">{(item.lineTotal || 0).toFixed(2)}</p>
@@ -421,7 +577,13 @@ export default function BakalaPOS() {
           </div>
 
           {/* Action Drawer */}
-          <div className="grid grid-cols-2 gap-3 mb-3">
+          <div className="grid grid-cols-3 gap-3 mb-3">
+            <button
+              onClick={openWeighModal}
+              className="flex items-center justify-center gap-2 p-3 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl font-bold transition-colors"
+            >
+              <Scale className="w-4 h-4" /> Weigh
+            </button>
             <button 
               onClick={() => holdBill('Walk-in')}
               disabled={cartItems.length === 0}
@@ -482,6 +644,128 @@ export default function BakalaPOS() {
         </div>
         
       </div>
+
+      {/* Weight Scale Modal */}
+      {showWeighModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <Scale className="w-5 h-5 text-emerald-500" />
+                Weigh &amp; Add to Bill
+              </h2>
+              <div className="flex items-center gap-3">
+                {scalePort ? (
+                  <button onClick={disconnectPosScale} className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl font-bold text-xs hover:bg-emerald-100 transition-all border border-emerald-100">
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                    </span>
+                    Scale Live <Unplug className="w-3.5 h-3.5 opacity-60" />
+                  </button>
+                ) : (
+                  <button onClick={connectPosScale} className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 rounded-xl font-bold text-xs hover:bg-gray-50 transition-all border border-gray-200">
+                    <Plug className="w-4 h-4 text-gray-400" /> Connect Scale
+                  </button>
+                )}
+                <button onClick={() => setShowWeighModal(false)} className="p-2 text-gray-400 hover:text-gray-900 bg-white rounded-full shadow-sm hover:shadow transition-all">
+                  &times;
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 flex-1 overflow-hidden">
+              {/* Product Picker */}
+              <div className="p-6 border-r border-gray-100 flex flex-col min-h-0">
+                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">1. Select Item</label>
+                <div className="relative mb-3">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={weighSearch}
+                    onChange={(e) => setWeighSearch(e.target.value)}
+                    placeholder="Search produce / weighed items..."
+                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm font-medium"
+                    autoFocus
+                  />
+                </div>
+                <div className="flex-1 overflow-y-auto -mr-2 pr-2 space-y-2">
+                  {weighProducts.length === 0 ? (
+                    <div className="text-center text-gray-400 text-sm py-10">No weighable products found.</div>
+                  ) : (
+                    weighProducts.map(p => (
+                      <button
+                        key={p._id}
+                        onClick={() => setWeighProduct(p)}
+                        className={`w-full text-left p-3 rounded-xl border transition-all ${weighProduct?._id === p._id ? 'border-emerald-400 bg-emerald-50 shadow-sm' : 'border-gray-100 bg-white hover:border-emerald-200'}`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="font-semibold text-gray-700 truncate pr-2">{p.name}</span>
+                          <span className="text-sm font-bold text-emerald-600 shrink-0">SAR {(p.retailPrice || 0).toFixed(2)}<span className="text-gray-400 font-medium">/{p.unit || 'KG'}</span></span>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Weight Entry */}
+              <div className="p-6 flex flex-col justify-between bg-[#F8FAFC]">
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">2. Enter Weight</label>
+                  <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+                    <div className="flex justify-end mb-2">
+                      <div className="bg-gray-50 p-1 rounded-xl flex border border-gray-100">
+                        {['KG', 'G'].map(u => (
+                          <button
+                            key={u}
+                            onClick={() => setWeighUnit(u)}
+                            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${weighUnit === u ? 'bg-white text-gray-900 shadow-sm border border-gray-200' : 'text-gray-400 hover:text-gray-600'}`}
+                          >
+                            {u}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex items-baseline justify-center gap-3 border-b-4 border-gray-100 pb-4">
+                      <input
+                        type="text"
+                        value={weighValue}
+                        onChange={(e) => { if (/^\d*\.?\d*$/.test(e.target.value)) setWeighValue(e.target.value); }}
+                        placeholder="0.000"
+                        readOnly={!!scalePort}
+                        className="text-6xl font-black text-gray-900 w-full text-center outline-none bg-transparent tracking-tighter"
+                      />
+                      <span className="text-2xl font-black text-gray-300 uppercase">{weighUnit}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6">
+                  <div className="flex justify-between items-end mb-4">
+                    <div>
+                      <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Item</p>
+                      <p className="font-bold text-gray-800 truncate max-w-[180px]">{weighProduct?.name || '—'}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">Net Price</p>
+                      <p className="text-4xl font-black text-emerald-500 tracking-tight">SAR {weighTotal.toFixed(2)}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleAddWeighedToCart}
+                    disabled={!weighProduct || !weighKg}
+                    className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-black text-lg transition-all shadow-lg shadow-emerald-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    <Plus className="w-5 h-5" /> Add to Bill
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Split Payment Modal */}
       {showSplitModal && (

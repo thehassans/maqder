@@ -1,8 +1,8 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 
 export const useCartEngine = () => {
   const [rawCartItems, setRawCartItems] = useState([]);
-  
+
   const addItem = useCallback((product) => {
     setRawCartItems(prev => {
       const existing = prev.find(item => item.productId === product._id || item.primaryBarcode === product.primaryBarcode);
@@ -24,6 +24,23 @@ export const useCartEngine = () => {
         promo: product.mixAndMatchPromo
       }];
     });
+  }, []);
+
+  const addWeightedItem = useCallback((product, weightKg) => {
+    const qty = Number(weightKg);
+    if (!product || !qty || qty <= 0) return;
+    setRawCartItems(prev => [...prev, {
+      lineId: `w_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      productId: product._id,
+      productName: product.name,
+      productNameAr: product.nameAr || product.name,
+      primaryBarcode: product.primaryBarcode,
+      quantity: qty,
+      unitPrice: product.retailPrice,
+      taxRate: product.taxRate || 15,
+      isWeighed: true,
+      weightLabel: `${qty.toFixed(3)} KG`
+    }]);
   }, []);
 
   const updateQuantity = useCallback((index, quantity) => {
@@ -86,21 +103,41 @@ export const useCartEngine = () => {
     }, { subtotal: 0, taxAmount: 0, grandTotal: 0 });
   }, [cartItems]);
 
-  // Hold Bill functionality
-  const holdBill = useCallback((customerName = 'Walk-in') => {
-    if (rawCartItems.length === 0) return;
+  // Keep latest cart/totals in refs so unmount-time auto-hold uses fresh data
+  const cartStateRef = useRef({ rawCartItems, totals });
+  useEffect(() => {
+    cartStateRef.current = { rawCartItems, totals };
+  }, [rawCartItems, totals]);
+
+  const persistHeldBill = useCallback((items, billTotals, customerName, auto = false) => {
+    if (!items || items.length === 0) return false;
     const holdData = {
-      id: Date.now().toString(),
+      id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
       time: new Date().toISOString(),
       createdAt: new Date().toISOString(),
       customerName,
-      items: rawCartItems,
-      totals
+      auto,
+      items,
+      totals: billTotals
     };
     const existing = JSON.parse(localStorage.getItem('maqder_held_bills') || '[]');
     localStorage.setItem('maqder_held_bills', JSON.stringify([...existing, holdData]));
-    setRawCartItems([]);
-  }, [rawCartItems]);
+    return true;
+  }, []);
+
+  // Hold Bill functionality
+  const holdBill = useCallback((customerName = 'Walk-in') => {
+    const { rawCartItems: items, totals: billTotals } = cartStateRef.current;
+    if (persistHeldBill(items, billTotals, customerName, false)) {
+      setRawCartItems([]);
+    }
+  }, [persistHeldBill]);
+
+  // Auto-hold on page change / unmount (reads from ref, never clears React state on its own)
+  const autoHoldBill = useCallback(() => {
+    const { rawCartItems: items, totals: billTotals } = cartStateRef.current;
+    return persistHeldBill(items, billTotals, 'Auto-held', true);
+  }, [persistHeldBill]);
 
   const recallBill = useCallback((heldBillId) => {
     const existing = JSON.parse(localStorage.getItem('maqder_held_bills') || '[]');
@@ -119,11 +156,13 @@ export const useCartEngine = () => {
   return {
     cartItems,
     addItem,
+    addWeightedItem,
     updateQuantity,
     removeItem,
     clearCart,
     totals,
     holdBill,
+    autoHoldBill,
     recallBill,
     getHeldBills
   };
