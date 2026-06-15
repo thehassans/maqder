@@ -160,6 +160,12 @@ const ThermalReceipt = forwardRef(({ order, type = 'laundry', isKitchen = false,
           <span className="text-gray-600">Invoice No / رقم الفاتورة:</span>
           <span className="font-bold">{orderNumber}</span>
         </div>
+        {type === 'restaurant' && order.orderNumber && (
+          <div className="flex justify-between">
+            <span className="text-gray-600">Order No / رقم الطلب:</span>
+            <span className="font-bold">{order.orderNumber}</span>
+          </div>
+        )}
         <div className="flex justify-between">
           <span className="text-gray-600">Date / التاريخ:</span>
           <span>{dateStr}</span>
