@@ -117,8 +117,9 @@ export default function QueriesCRM() {
     ];
   }, [stats]);
 
+  const tenantLabelMap = useMemo(() => Object.fromEntries(TENANT_TYPES.map(t => [t.value, t.label])), []);
   const svcData = useMemo(() => (stats?.byService||[]).filter(x=>x._id).map(x=>({ name:SERVICE[x._id]?.label||x._id, value:x.count, color:SERVICE[x._id]?.color||'#94a3b8' })), [stats]);
-  const tntData = useMemo(() => (stats?.byTenant||[]).filter(x=>x._id).map((x,i)=>({ name:x._id, value:x.count, fill:PIE_COLORS[i%PIE_COLORS.length] })), [stats]);
+  const tntData = useMemo(() => (stats?.byTenant||[]).filter(x=>x._id).map((x,i)=>({ name:tenantLabelMap[x._id]||x._id, value:x.count, fill:PIE_COLORS[i%PIE_COLORS.length] })), [stats, tenantLabelMap]);
   const filterCount = Object.values(filters).filter(Boolean).length;
 
   return (
@@ -216,7 +217,7 @@ export default function QueriesCRM() {
                         </td>
                         <td><span className={`badge ${sc.color}`}><Si className="w-3 h-3 me-1"/>{sc.label}</span></td>
                         <td><span className="text-xs font-bold text-gray-500 px-2 py-1 rounded-md bg-gray-50 dark:bg-dark-700">{se.label}</span></td>
-                        <td><span className="text-xs font-medium text-gray-600 capitalize">{lead.tenantType||'—'}</span></td>
+                        <td><span className="text-xs font-medium text-gray-600">{tenantLabelMap[lead.tenantType]||lead.tenantType||'—'}</span></td>
                         <td><p className="text-xs text-gray-500 max-w-[200px] truncate">{lead.notes||'—'}</p></td>
                         <td className="text-gray-500 text-xs">{new Date(lead.createdAt).toLocaleDateString()}</td>
                         <td className="text-right">
