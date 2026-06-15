@@ -370,22 +370,6 @@ export default function Dashboard() {
             {language === 'ar' ? 'مرحباً بعودتك! إليك نظرة عامة على أعمالك' : 'Welcome back! Here\'s an overview of your business'}
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-          <Link
-            to="/app/dashboard/invoices/new"
-            className="btn btn-action-dark"
-          >
-            <Plus className="w-4 h-4" />
-            {language === 'ar' ? 'فاتورة جديدة' : 'New Invoice'}
-          </Link>
-          <Link
-            to="/app/dashboard/customers/new"
-            className="btn btn-action-dark"
-          >
-            <UserPlus className="w-4 h-4" />
-            {language === 'ar' ? 'عميل جديد' : 'New Customer'}
-          </Link>
-        </div>
       </div>
 
       {/* Today's Summary Card */}
