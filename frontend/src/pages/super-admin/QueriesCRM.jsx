@@ -249,11 +249,25 @@ export default function QueriesCRM() {
 
       {/* Modal */}
       <AnimatePresence>
-        {showModal&&<>
-          <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={closeModal} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"/>
-          <motion.div initial={{opacity:0,scale:.92,y:24}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:.92,y:24}} transition={{type:'spring',damping:25,stiffness:300}} className="fixed inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-2xl bg-white dark:bg-dark-800 rounded-[2rem] shadow-[0_25px_80px_-12px_rgba(0,0,0,0.35)] z-50 overflow-hidden flex flex-col max-h-[92vh]">
-            {/* Header */}
-            <div className="relative overflow-hidden">
+        {showModal&&(
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            onClick={closeModal}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 24 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 24 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="relative w-full max-w-2xl max-h-[92vh] bg-white dark:bg-dark-800 rounded-[2rem] shadow-[0_25px_80px_-12px_rgba(0,0,0,0.35)] overflow-hidden flex flex-col"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900"/>
               <div className="absolute top-0 right-0 w-64 h-64 bg-white/[0.03] rounded-full -translate-y-1/2 translate-x-1/2"/>
               <div className="relative flex items-center justify-between px-8 py-6">
@@ -346,7 +360,8 @@ export default function QueriesCRM() {
               </button>
             </div>
           </motion.div>
-        </>}
+        </motion.div>
+        )}
       </AnimatePresence>
     </div>
   );
