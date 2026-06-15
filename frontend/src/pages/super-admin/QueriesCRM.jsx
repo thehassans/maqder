@@ -41,6 +41,7 @@ const TENANT_TYPES = [
   { value: 'travel_agency', label: 'Travel Agency' },
   { value: 'maintenance', label: 'Maintenance' },
   { value: 'unknown', label: 'Pending / Unknown' },
+  { value: 'local_city', label: 'Local / Unknown City' },
 ];
 
 const PIE_COLORS = ['#14b8a6', '#f59e0b', '#8b5cf6', '#ef4444', '#3b82f6', '#10b981', '#64748b'];
