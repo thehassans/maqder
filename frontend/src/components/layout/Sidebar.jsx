@@ -197,7 +197,6 @@ export default function Sidebar() {
     },
     {
       title: language === 'ar' ? 'المخزون' : 'Inventory',
-      businessTypes: ['trading'],
       items: [
         { path: '/app/dashboard/products', icon: Package, label: t('products'), perm: { module: 'inventory', action: 'read' } },
         { path: '/app/dashboard/warehouses', icon: Warehouse, label: t('warehouses'), perm: { module: 'inventory', action: 'read' } },
