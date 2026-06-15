@@ -124,7 +124,19 @@ const ThermalReceipt = forwardRef(({ order, type = 'laundry', isKitchen = false,
           )}
           <h2 className="font-extrabold text-sm text-gray-900 leading-snug">{businessNameEn}</h2>
           <h2 className="font-extrabold text-sm text-gray-900 leading-snug mt-0.5">{businessNameAr}</h2>
-          
+
+          {type === 'restaurant' && order.orderNumber && (
+            <div className="mt-3 mb-1 w-full flex flex-col items-center">
+              <div className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Order No / رقم الطلب</div>
+              <div
+                className="w-full text-center font-extrabold text-lg tracking-wide py-1 px-3 rounded"
+                style={{ background: '#111', color: '#fff', letterSpacing: '0.05em' }}
+              >
+                {order.orderNumber}
+              </div>
+            </div>
+          )}
+
           <div className="border-t border-dashed border-gray-300 w-full my-2"></div>
           
           <div className="text-[10px] font-bold text-gray-700 tracking-wider">
@@ -160,12 +172,7 @@ const ThermalReceipt = forwardRef(({ order, type = 'laundry', isKitchen = false,
           <span className="text-gray-600">Invoice No / رقم الفاتورة:</span>
           <span className="font-bold">{orderNumber}</span>
         </div>
-        {type === 'restaurant' && order.orderNumber && (
-          <div className="flex justify-between">
-            <span className="text-gray-600">Order No / رقم الطلب:</span>
-            <span className="font-bold">{order.orderNumber}</span>
-          </div>
-        )}
+
         <div className="flex justify-between">
           <span className="text-gray-600">Date / التاريخ:</span>
           <span>{dateStr}</span>
