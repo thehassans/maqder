@@ -130,7 +130,7 @@ const ThermalReceipt = forwardRef(({ order, type = 'laundry', isKitchen = false,
               <div className="text-[9px] text-gray-500 uppercase tracking-widest mb-1">Order No / رقم الطلب</div>
               <div
                 className="w-full text-center font-extrabold text-lg tracking-wide py-1 px-3 rounded"
-                style={{ background: '#111', color: '#fff', letterSpacing: '0.05em' }}
+                style={{ background: '#fff', color: '#111', border: '2px solid #111', letterSpacing: '0.05em' }}
               >
                 {order.orderNumber}
               </div>
