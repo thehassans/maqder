@@ -203,6 +203,17 @@ export default function Sidebar() {
         { path: '/app/dashboard/warehouses', icon: Warehouse, label: t('warehouses'), perm: { module: 'inventory', action: 'read' } },
       ]
     },
+    {
+      title: language === 'ar' ? 'المالية' : 'Finance',
+      items: [
+        { path: '/app/dashboard/finance', icon: Landmark, label: language === 'ar' ? 'المالية' : 'Finance', perm: { module: 'finance', action: 'read' } },
+        { path: '/app/dashboard/vouchers', icon: Receipt, label: language === 'ar' ? 'السندات' : 'Vouchers', perm: { module: 'finance', action: 'read' } },
+        { path: '/app/dashboard/expenses', icon: Receipt, label: language === 'ar' ? 'المصروفات' : 'Expenses', perm: { module: 'finance', action: 'read' } },
+        { path: '/app/dashboard/vat-returns', icon: Calculator, label: language === 'ar' ? 'إقرارات القيمة المضافة' : 'VAT Returns', perm: { module: 'finance', action: 'read' } },
+        ...(tenant?.zatca?.phase !== 1 ? [{ path: '/app/dashboard/finance/zatca-logs', icon: Shield, label: language === 'ar' ? 'سجل زاتكا' : 'ZATCA Logs', perm: { module: 'finance', action: 'read' } }] : []),
+        { path: '/app/dashboard/reports', icon: BarChart3, label: language === 'ar' ? 'التقارير' : 'Reports', perm: { module: 'invoicing', action: 'read' } },
+      ]
+    },
 
     {
       title: language === 'ar' ? 'الموارد البشرية والعمالة' : 'Manpower & Labor Supply',
@@ -249,16 +260,7 @@ export default function Sidebar() {
         { path: '/app/dashboard/iot', icon: Cpu, label: language === 'ar' ? 'إنترنت الأشياء' : 'IoT', perm: { module: 'iot', action: 'read' } },
       ]
     },
-    {
-      title: language === 'ar' ? 'المالية' : 'Finance',
-      items: [
-        { path: '/app/dashboard/finance', icon: Landmark, label: language === 'ar' ? 'المالية' : 'Finance', perm: { module: 'finance', action: 'read' } },
-        { path: '/app/dashboard/vouchers', icon: Receipt, label: language === 'ar' ? 'السندات' : 'Vouchers', perm: { module: 'finance', action: 'read' } },
-        { path: '/app/dashboard/expenses', icon: Receipt, label: language === 'ar' ? 'المصروفات' : 'Expenses', perm: { module: 'finance', action: 'read' } },
-        { path: '/app/dashboard/vat-returns', icon: Calculator, label: language === 'ar' ? 'إقرارات القيمة المضافة' : 'VAT Returns', perm: { module: 'finance', action: 'read' } },
-        ...(tenant?.zatca?.phase !== 1 ? [{ path: '/app/dashboard/finance/zatca-logs', icon: Shield, label: language === 'ar' ? 'سجل زاتكا' : 'ZATCA Logs', perm: { module: 'finance', action: 'read' } }] : []),
-      ]
-    },
+
     {
       title: language === 'ar' ? 'التكلفة والتخطيط' : 'Costing & Planning',
       businessTypes: ['trading'],
@@ -270,7 +272,6 @@ export default function Sidebar() {
     {
       title: language === 'ar' ? 'الإعدادات' : 'Settings',
       items: [
-        { path: '/app/dashboard/reports', icon: BarChart3, label: language === 'ar' ? 'التقارير' : 'Reports', perm: { module: 'invoicing', action: 'read' } },
         { path: '/app/dashboard/users', icon: Users, label: t('users'), perm: { module: 'settings', action: 'read' } },
         { path: '/app/dashboard/backup', icon: Database, label: language === 'ar' ? 'النسخ الاحتياطي' : 'Backup', perm: { module: 'settings', action: 'read' } },
         { path: '/app/dashboard/settings', icon: Settings, label: t('settings'), perm: { module: 'settings', action: 'read' } },
