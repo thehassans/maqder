@@ -12,7 +12,8 @@ import {
   Moon,
   Sun,
   Globe,
-  Smartphone
+  Smartphone,
+  HelpCircle
 } from 'lucide-react'
 import { logout } from '../store/slices/authSlice'
 import { setTheme, setLanguage } from '../store/slices/uiSlice'
@@ -26,6 +27,7 @@ export default function SuperAdminLayout() {
   const navItems = [
     { path: '/super-admin', icon: LayoutDashboard, label: t('dashboard'), end: true },
     { path: '/super-admin/tenants', icon: Building2, label: t('tenants') },
+    { path: '/super-admin/queries', icon: HelpCircle, label: language === 'ar' ? 'الاستفسارات' : 'Queries' },
     { path: '/super-admin/website', icon: Globe, label: t('websiteSettings') },
     { path: '/super-admin/email', icon: Mail, label: language === 'ar' ? 'البريد' : 'Email' },
     { path: '/super-admin/mailbox', icon: Inbox, label: language === 'ar' ? 'صندوق البريد' : 'Mailbox' },

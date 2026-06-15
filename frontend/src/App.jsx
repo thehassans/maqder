@@ -130,6 +130,7 @@ import ManpowerAssignments from './pages/manpower/ManpowerAssignments'
 import ManpowerAssignmentForm from './pages/manpower/ManpowerAssignmentForm'
 import ManpowerContractPrint from './pages/manpower/ManpowerContractPrint'
 import SystemSettings from './pages/super-admin/SystemSettings'
+import QueriesCRM from './pages/super-admin/QueriesCRM'
 import EmailCommunication from './pages/EmailCommunication'
 import FleetAssets from './pages/fleet/FleetAssets'
 import FleetAssetForm from './pages/fleet/FleetAssetForm'
@@ -313,6 +314,7 @@ function App() {
             <Route path=":itemId" element={<RestaurantMenuItemForm />} />
           </Route>
           <Route path="users" element={<UserManagement />} />
+          <Route path="queries" element={<QueriesCRM />} />
         <Route path="website" element={<WebsiteSettings />} />
         <Route path="email" element={<EmailSettings />} />
         <Route path="mailbox" element={<SuperAdminMailbox />} />

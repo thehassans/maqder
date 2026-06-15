@@ -24,6 +24,7 @@ import Project from '../models/Project.js';
 import Payroll from '../models/Payroll.js';
 import JobCostEntry from '../models/JobCostEntry.js';
 import JobCostingJob from '../models/JobCostingJob.js';
+import LeadQuery from '../models/LeadQuery.js';
 import IoTDevice from '../models/IoTDevice.js';
 import IoTReading from '../models/IoTReading.js';
 import {
@@ -2049,6 +2050,115 @@ router.post('/whatsapp/logout', async (req, res) => {
   try {
     await whatsappService.logout('super_admin');
     res.json({ success: true, message: 'WhatsApp session disconnected' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- LEAD / QUERY CRM ---
+
+// @route   GET /api/super-admin/leads
+router.get('/leads', async (req, res) => {
+  try {
+    const { page = 1, limit = 50, search, status, serviceInterest, tenantType } = req.query;
+    const parsedPage = Math.max(1, Number.parseInt(page, 10));
+    const parsedLimit = Math.min(200, Math.max(1, Number.parseInt(limit, 10)));
+    const skip = (parsedPage - 1) * parsedLimit;
+
+    const filter = {};
+    if (status) filter.status = status;
+    if (serviceInterest) filter.serviceInterest = serviceInterest;
+    if (tenantType) filter.tenantType = tenantType;
+    if (search) {
+      filter.$or = [
+        { phoneNumber: { $regex: search, $options: 'i' } },
+        { name: { $regex: search, $options: 'i' } },
+        { notes: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const [leads, total] = await Promise.all([
+      LeadQuery.find(filter).sort('-createdAt').skip(skip).limit(parsedLimit).lean(),
+      LeadQuery.countDocuments(filter),
+    ]);
+
+    res.json({
+      leads,
+      pagination: { page: parsedPage, limit: parsedLimit, total, pages: Math.ceil(total / parsedLimit) },
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   GET /api/super-admin/leads/stats
+router.get('/leads/stats', async (req, res) => {
+  try {
+    const [total, newCount, attended, interested, notInterested, converted, followUp, byService, byTenant] = await Promise.all([
+      LeadQuery.countDocuments(),
+      LeadQuery.countDocuments({ status: 'new' }),
+      LeadQuery.countDocuments({ status: 'attended' }),
+      LeadQuery.countDocuments({ status: 'interested' }),
+      LeadQuery.countDocuments({ status: 'not_interested' }),
+      LeadQuery.countDocuments({ status: 'converted' }),
+      LeadQuery.countDocuments({ status: 'follow_up' }),
+      LeadQuery.aggregate([{ $group: { _id: '$serviceInterest', count: { $sum: 1 } } }]),
+      LeadQuery.aggregate([{ $group: { _id: '$tenantType', count: { $sum: 1 } } }]),
+    ]);
+    res.json({ total, new: newCount, attended, interested, notInterested, converted, followUp, byService, byTenant });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   POST /api/super-admin/leads
+router.post('/leads', async (req, res) => {
+  try {
+    const { phoneNumber, name, status, serviceInterest, tenantType, notes } = req.body;
+    const lead = await LeadQuery.create({
+      phoneNumber: String(phoneNumber || '').trim(),
+      name: String(name || '').trim(),
+      status: status || 'new',
+      serviceInterest: serviceInterest || 'none',
+      tenantType: tenantType || '',
+      notes: notes || '',
+      createdBy: req.user?._id,
+    });
+    res.status(201).json(lead);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// @route   PUT /api/super-admin/leads/:id
+router.put('/leads/:id', async (req, res) => {
+  try {
+    const { phoneNumber, name, status, serviceInterest, tenantType, notes } = req.body;
+    const lead = await LeadQuery.findByIdAndUpdate(
+      req.params.id,
+      {
+        ...(phoneNumber !== undefined && { phoneNumber: String(phoneNumber).trim() }),
+        ...(name !== undefined && { name: String(name).trim() }),
+        ...(status !== undefined && { status }),
+        ...(serviceInterest !== undefined && { serviceInterest }),
+        ...(tenantType !== undefined && { tenantType }),
+        ...(notes !== undefined && { notes }),
+      },
+      { new: true, runValidators: true }
+    );
+    if (!lead) return res.status(404).json({ error: 'Lead not found' });
+    res.json(lead);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// @route   DELETE /api/super-admin/leads/:id
+router.delete('/leads/:id', async (req, res) => {
+  try {
+    const lead = await LeadQuery.findByIdAndDelete(req.params.id);
+    if (!lead) return res.status(404).json({ error: 'Lead not found' });
+    res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

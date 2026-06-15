@@ -1,0 +1,307 @@
+import { useState, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSelector } from 'react-redux';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Phone, Plus, Search, X, Save, Trash2, FileDown,
+  Users, Eye, ThumbsUp, ThumbsDown, CheckCircle, PhoneCall,
+  HelpCircle, Monitor, ArrowUpRight, ArrowDownRight
+} from 'lucide-react';
+import toast from 'react-hot-toast';
+import api from '../../lib/api';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+
+const STATUS = {
+  new:           { label: 'New',           color: 'bg-slate-100 text-slate-700', icon: HelpCircle },
+  attended:      { label: 'Attended',      color: 'bg-blue-100 text-blue-700',    icon: Eye },
+  interested:    { label: 'Interested',    color: 'bg-emerald-100 text-emerald-700', icon: ThumbsUp },
+  not_interested:{ label: 'Not Interested',color: 'bg-rose-100 text-rose-700',    icon: ThumbsDown },
+  converted:     { label: 'Converted',     color: 'bg-violet-100 text-violet-700',  icon: CheckCircle },
+  follow_up:     { label: 'Follow Up',     color: 'bg-amber-100 text-amber-700',  icon: PhoneCall },
+};
+
+const SERVICE = {
+  hardware: { label: 'Hardware', color: '#f59e0b' },
+  software: { label: 'Software', color: '#3b82f6' },
+  both:     { label: 'Both',     color: '#10b981' },
+  none:     { label: 'None',     color: '#94a3b8' },
+};
+
+const TENANT_TYPES = [
+  { value: '', label: 'All Types' },
+  { value: 'trading', label: 'Trading' },
+  { value: 'restaurant', label: 'Restaurant' },
+  { value: 'car_rental', label: 'Car Rental' },
+  { value: 'bakala', label: 'Bakala / Supermarket' },
+  { value: 'saloon', label: 'Saloon / Barber' },
+  { value: 'khayyat', label: 'Tailor / Boutique' },
+  { value: 'manpower', label: 'Manpower' },
+  { value: 'laundry', label: 'Laundry' },
+  { value: 'construction', label: 'Construction' },
+  { value: 'travel_agency', label: 'Travel Agency' },
+  { value: 'maintenance', label: 'Maintenance' },
+];
+
+const PIE_COLORS = ['#14b8a6', '#f59e0b', '#8b5cf6', '#ef4444', '#3b82f6', '#10b981', '#64748b'];
+
+export default function QueriesCRM() {
+  const { language } = useSelector((state) => state.ui);
+  const qc = useQueryClient();
+
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState({ status: '', serviceInterest: '', tenantType: '' });
+  const [showModal, setShowModal] = useState(false);
+  const [editingLead, setEditingLead] = useState(null);
+  const [form, setForm] = useState({ phoneNumber: '', name: '', status: 'new', serviceInterest: 'none', tenantType: '', notes: '' });
+
+  const { data: stats } = useQuery({
+    queryKey: ['leads-stats'],
+    queryFn: () => api.get('/super-admin/leads/stats').then(r => r.data),
+  });
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['leads', page, search, filters],
+    queryFn: () => api.get('/super-admin/leads', { params: { page, limit: 50, search, ...filters } }).then(r => r.data),
+  });
+
+  const createM = useMutation({
+    mutationFn: (p) => api.post('/super-admin/leads', p),
+    onSuccess: () => { toast.success('Lead added'); qc.invalidateQueries(['leads','leads-stats']); closeModal(); },
+    onError: (e) => toast.error(e.response?.data?.error || 'Error'),
+  });
+  const updateM = useMutation({
+    mutationFn: ({ id, payload }) => api.put(`/super-admin/leads/${id}`, payload),
+    onSuccess: () => { toast.success('Updated'); qc.invalidateQueries(['leads','leads-stats']); closeModal(); },
+    onError: (e) => toast.error(e.response?.data?.error || 'Error'),
+  });
+  const deleteM = useMutation({
+    mutationFn: (id) => api.delete(`/super-admin/leads/${id}`),
+    onSuccess: () => { toast.success('Deleted'); qc.invalidateQueries(['leads','leads-stats']); },
+  });
+  const quickM = useMutation({
+    mutationFn: ({ id, status }) => api.put(`/super-admin/leads/${id}`, { status }),
+    onSuccess: () => qc.invalidateQueries(['leads','leads-stats']),
+  });
+
+  const openModal = (lead = null) => {
+    setEditingLead(lead);
+    setForm(lead ? { phoneNumber: lead.phoneNumber || '', name: lead.name || '', status: lead.status || 'new', serviceInterest: lead.serviceInterest || 'none', tenantType: lead.tenantType || '', notes: lead.notes || '' }
+                : { phoneNumber: '', name: '', status: 'new', serviceInterest: 'none', tenantType: '', notes: '' });
+    setShowModal(true);
+  };
+  const closeModal = () => { setShowModal(false); setEditingLead(null); };
+  const handleSubmit = () => {
+    if (!form.phoneNumber.trim()) return toast.error('Phone number required');
+    editingLead ? updateM.mutate({ id: editingLead._id, payload: form }) : createM.mutate(form);
+  };
+
+  const exportCsv = () => {
+    if (!data?.leads?.length) return toast.error('Nothing to export');
+    const h = ['Phone','Name','Status','Service','Tenant Type','Notes','Created'];
+    const b = data.leads.map(l => [l.phoneNumber, (l.name||'').replace(/,/g,' '), l.status, l.serviceInterest, l.tenantType, (l.notes||'').replace(/,/g,' '), new Date(l.createdAt).toLocaleString()]);
+    const blob = new Blob([[h,...b].map(r=>r.join(',')).join('\n')], { type:'text/csv' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `leads_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+  };
+
+  const kpis = useMemo(() => {
+    const s = stats || {};
+    return [
+      { l:'Total Leads', v:s.total||0, i:Users, g:'from-slate-600 to-slate-500' },
+      { l:'New', v:s.new||0, i:HelpCircle, g:'from-gray-500 to-gray-400' },
+      { l:'Attended', v:s.attended||0, i:Eye, g:'from-blue-500 to-blue-400' },
+      { l:'Interested', v:s.interested||0, i:ThumbsUp, g:'from-emerald-500 to-emerald-400' },
+      { l:'Not Interested', v:s.notInterested||0, i:ThumbsDown, g:'from-rose-500 to-rose-400' },
+      { l:'Converted', v:s.converted||0, i:CheckCircle, g:'from-violet-500 to-violet-400' },
+      { l:'Follow Up', v:s.followUp||0, i:PhoneCall, g:'from-amber-500 to-amber-400' },
+    ];
+  }, [stats]);
+
+  const svcData = useMemo(() => (stats?.byService||[]).filter(x=>x._id).map(x=>({ name:SERVICE[x._id]?.label||x._id, value:x.count, color:SERVICE[x._id]?.color||'#94a3b8' })), [stats]);
+  const tntData = useMemo(() => (stats?.byTenant||[]).filter(x=>x._id).map((x,i)=>({ name:x._id, value:x.count, fill:PIE_COLORS[i%PIE_COLORS.length] })), [stats]);
+  const filterCount = Object.values(filters).filter(Boolean).length;
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Queries / Leads CRM</h1>
+          <p className="text-gray-500 mt-1">Manage incoming queries and potential customers</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button onClick={exportCsv} className="btn btn-secondary"><FileDown className="w-4 h-4" /> Export</button>
+          <button onClick={()=>openModal()} className="btn btn-primary"><Plus className="w-4 h-4" /> Add Lead</button>
+        </div>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+        {kpis.map((k,i)=>{
+          const Icon=k.i;
+          return (
+            <motion.div key={k.l} initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:i*0.05}} className="card p-5">
+              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${k.g} flex items-center justify-center mb-3 shadow-lg`}><Icon className="w-5 h-5 text-white"/></div>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">{k.l}</p>
+              <p className="text-3xl font-black tracking-tighter text-gray-900 dark:text-white">{k.v}</p>
+            </motion.div>
+          );
+        })}
+      </div>
+
+      {/* Charts + Funnel */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:.35}} className="card p-6">
+          <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Service Interest</h3>
+          {svcData.length===0?<div className="h-40 flex items-center justify-center text-gray-400 text-sm">No data</div>:
+            <><div className="h-48"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={svcData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={4} dataKey="value">{svcData.map((e,i)=><Cell key={i} fill={e.color}/>)}</Pie><Tooltip/></PieChart></ResponsiveContainer></div>
+            <div className="grid grid-cols-2 gap-2 mt-2">{svcData.map((e,i)=>(<div key={i} className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{backgroundColor:e.color}}/><span className="text-xs text-gray-600">{e.name}: {e.value}</span></div>))}</div></>}
+        </motion.div>
+        <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:.4}} className="card p-6">
+          <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Tenant Type</h3>
+          {tntData.length===0?<div className="h-40 flex items-center justify-center text-gray-400 text-sm">No data</div>:
+            <><div className="h-48"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={tntData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={4} dataKey="value">{tntData.map((e,i)=><Cell key={i} fill={e.fill}/>)}</Pie><Tooltip/></PieChart></ResponsiveContainer></div>
+            <div className="grid grid-cols-2 gap-2 mt-2">{tntData.map((e,i)=>(<div key={i} className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{backgroundColor:e.fill}}/><span className="text-xs text-gray-600 capitalize">{e.name}: {e.value}</span></div>))}</div></>}
+        </motion.div>
+        <motion.div initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:.45}} className="card p-6 flex flex-col">
+          <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Conversion Funnel</h3>
+          {(()=>{const s=stats||{},t=s.total||1,f=[{l:'New',v:s.new||0,c:'bg-slate-500'},{l:'Attended',v:s.attended||0,c:'bg-blue-500'},{l:'Interested',v:s.interested||0,c:'bg-emerald-500'},{l:'Converted',v:s.converted||0,c:'bg-violet-500'}];
+          return <div className="flex-1 flex flex-col justify-center gap-3">{f.map(step=>{const pct=Math.round((step.v/t)*100);return(<div key={step.l}><div className="flex justify-between text-xs font-bold text-gray-500 mb-1"><span>{step.l}</span><span>{step.v} ({pct}%)</span></div><div className="h-2.5 bg-gray-100 rounded-full overflow-hidden"><motion.div initial={{width:0}} animate={{width:`${pct}%`}} transition={{duration:.8}} className={`h-full ${step.c} rounded-full`}/></div></div>)})}</div>;})()}
+        </motion.div>
+      </div>
+
+      {/* Filters */}
+      <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{delay:.5}} className="card p-4">
+        <div className="flex flex-col lg:flex-row gap-4">
+          <div className="flex-1 relative">
+            <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input type="text" placeholder="Search phone or name..." value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}} className="input ps-10" />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <select value={filters.status} onChange={e=>{setFilters(f=>({...f,status:e.target.value}));setPage(1);}} className="select w-40">
+              <option value="">All Statuses</option>{Object.entries(STATUS).map(([k,c])=><option key={k} value={k}>{c.label}</option>)}
+            </select>
+            <select value={filters.serviceInterest} onChange={e=>{setFilters(f=>({...f,serviceInterest:e.target.value}));setPage(1);}} className="select w-40">
+              <option value="">All Services</option>{Object.entries(SERVICE).map(([k,c])=><option key={k} value={k}>{c.label}</option>)}
+            </select>
+            <select value={filters.tenantType} onChange={e=>{setFilters(f=>({...f,tenantType:e.target.value}));setPage(1);}} className="select w-44">
+              {TENANT_TYPES.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            {filterCount>0&&<button onClick={()=>{setFilters({status:'',serviceInterest:'',tenantType:''});setPage(1);}} className="btn btn-ghost text-xs"><X className="w-3 h-3"/> Clear</button>}
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Table */}
+      <motion.div initial={{opacity:0}} animate={{opacity:1}} transition={{delay:.55}} className="card">
+        {isLoading?(
+          <div className="p-8 text-center"><div className="inline-block w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"/></div>
+        ):(
+          <>
+            <div className="table-container rounded-none border-0">
+              <table className="table">
+                <thead><tr>
+                  <th>Phone / Name</th><th>Status</th><th>Service</th><th>Tenant Type</th><th>Notes</th><th>Created</th><th className="text-right">Actions</th>
+                </tr></thead>
+                <tbody>
+                  {data?.leads?.map(lead=>{
+                    const sc=STATUS[lead.status]||STATUS.new, Si=sc.icon, se=SERVICE[lead.serviceInterest]||SERVICE.none;
+                    return (
+                      <tr key={lead._id}>
+                        <td>
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-gray-700 to-gray-600 flex items-center justify-center text-white font-bold text-xs">{lead.name?.[0]||lead.phoneNumber?.slice(-2)||'?'}</div>
+                            <div><p className="font-bold text-gray-900 dark:text-white">{lead.name||'—'}</p><p className="text-xs text-gray-500 flex items-center gap-1"><Phone className="w-3 h-3"/>{lead.phoneNumber}</p></div>
+                          </div>
+                        </td>
+                        <td><span className={`badge ${sc.color}`}><Si className="w-3 h-3 me-1"/>{sc.label}</span></td>
+                        <td><span className="text-xs font-bold text-gray-500 px-2 py-1 rounded-md bg-gray-50 dark:bg-dark-700">{se.label}</span></td>
+                        <td><span className="text-xs font-medium text-gray-600 capitalize">{lead.tenantType||'—'}</span></td>
+                        <td><p className="text-xs text-gray-500 max-w-[200px] truncate">{lead.notes||'—'}</p></td>
+                        <td className="text-gray-500 text-xs">{new Date(lead.createdAt).toLocaleDateString()}</td>
+                        <td className="text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            {lead.status!=='interested'&&<button onClick={()=>quickM.mutate({id:lead._id,status:'interested'})} title="Interested" className="p-1.5 rounded-lg hover:bg-emerald-50 text-gray-400 hover:text-emerald-500 transition-colors"><ThumbsUp className="w-3.5 h-3.5"/></button>}
+                            {lead.status!=='not_interested'&&<button onClick={()=>quickM.mutate({id:lead._id,status:'not_interested'})} title="Not Interested" className="p-1.5 rounded-lg hover:bg-rose-50 text-gray-400 hover:text-rose-500 transition-colors"><ThumbsDown className="w-3.5 h-3.5"/></button>}
+                            {lead.status!=='follow_up'&&<button onClick={()=>quickM.mutate({id:lead._id,status:'follow_up'})} title="Follow Up" className="p-1.5 rounded-lg hover:bg-amber-50 text-gray-400 hover:text-amber-500 transition-colors"><PhoneCall className="w-3.5 h-3.5"/></button>}
+                            <div className="w-px h-4 bg-gray-200 mx-1"/>
+                            <button onClick={()=>openModal(lead)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"><Monitor className="w-3.5 h-3.5"/></button>
+                            <button onClick={()=>{if(window.confirm('Delete?'))deleteM.mutate(lead._id);}} className="p-1.5 rounded-lg hover:bg-rose-50 text-gray-400 hover:text-rose-500 transition-colors"><Trash2 className="w-3.5 h-3.5"/></button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {data?.leads?.length===0&&<tr><td colSpan="7" className="text-center py-12 text-gray-400"><Phone className="w-10 h-10 mx-auto mb-3 opacity-30"/><p className="font-bold">No leads yet</p><p className="text-xs">Add your first lead to get started</p></td></tr>}
+                </tbody>
+              </table>
+            </div>
+            {data?.pagination&&<div className="p-4 border-t border-gray-100 flex items-center justify-between">
+              <p className="text-sm text-gray-500">Showing {data.leads.length} of {data.pagination.total}</p>
+              <div className="flex gap-2">
+                <button onClick={()=>setPage(p=>Math.max(1,p-1))} disabled={page===1} className="btn btn-secondary text-xs">Previous</button>
+                <button onClick={()=>setPage(p=>p+1)} disabled={page>=data.pagination.pages} className="btn btn-secondary text-xs">Next</button>
+              </div>
+            </div>}
+          </>
+        )}
+      </motion.div>
+
+      {/* Modal */}
+      <AnimatePresence>
+        {showModal&&<>
+          <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={closeModal} className="fixed inset-0 bg-black/50 z-40"/>
+          <motion.div initial={{opacity:0,scale:.95,y:20}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:.95,y:20}} className="fixed inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-lg bg-white dark:bg-dark-800 rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-dark-700">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">{editingLead?'Edit Lead':'New Lead'}</h3>
+              <button onClick={closeModal} className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors"><X className="w-5 h-5"/></button>
+            </div>
+            <div className="p-6 space-y-4 overflow-y-auto">
+              <div>
+                <label className="label">Phone Number *</label>
+                <div className="relative">
+                  <Phone className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"/>
+                  <input type="tel" value={form.phoneNumber} onChange={e=>setForm(f=>({...f,phoneNumber:e.target.value}))} placeholder="+966 5x xxx xxxx" className="input ps-10" autoFocus/>
+                </div>
+              </div>
+              <div>
+                <label className="label">Name</label>
+                <input type="text" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="Customer name" className="input"/>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Status</label>
+                  <select value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))} className="select">
+                    {Object.entries(STATUS).map(([k,c])=><option key={k} value={k}>{c.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Service Interest</label>
+                  <select value={form.serviceInterest} onChange={e=>setForm(f=>({...f,serviceInterest:e.target.value}))} className="select">
+                    {Object.entries(SERVICE).map(([k,c])=><option key={k} value={k}>{c.label}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="label">Tenant Type</label>
+                <select value={form.tenantType} onChange={e=>setForm(f=>({...f,tenantType:e.target.value}))} className="select">
+                  {TENANT_TYPES.filter(o=>o.value).map(o=><option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="label">Notes</label>
+                <textarea value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} rows={3} placeholder="Any details..." className="input resize-none"/>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-dark-700">
+              <button type="button" onClick={closeModal} className="btn btn-secondary">Cancel</button>
+              <button onClick={handleSubmit} disabled={createM.isPending||updateM.isPending} className="btn btn-primary">
+                {createM.isPending||updateM.isPending?<div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"/>:<><Save className="w-4 h-4"/>Save</>}
+              </button>
+            </div>
+          </motion.div>
+        </>}
+      </AnimatePresence>
+    </div>
+  );
+}
