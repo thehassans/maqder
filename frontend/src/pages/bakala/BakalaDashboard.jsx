@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, FileText, Send, ShieldAlert, ShieldCheck, AlertCircle, Scale, ArrowRight, Loader2, TrendingUp, ShoppingCart, Wallet, CreditCard } from 'lucide-react';
+import { Search, FileText, Send, ShieldAlert, ShieldCheck, AlertCircle, Scale, ArrowRight, Loader2, TrendingUp, ShoppingCart, Wallet, CreditCard, PackageX, TrendingDown, CalendarClock, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -14,19 +14,22 @@ export default function BakalaDashboard() {
   const [khataTransactions, setKhataTransactions] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [invoices, setInvoices] = useState([]);
+  const [inventoryAlerts, setInventoryAlerts] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [khataRes, alertsRes, invoicesRes] = await Promise.all([
+        const [khataRes, alertsRes, invoicesRes, invAlertsRes] = await Promise.all([
           api.get('/khata').catch(() => ({ data: [] })),
           api.get('/employees/compliance/alerts').catch(() => ({ data: [] })),
-          api.get('/invoices', { params: { businessContext: 'bakala', limit: 200 } }).catch(() => ({ data: { invoices: [] } }))
+          api.get('/invoices', { params: { businessContext: 'bakala', limit: 200 } }).catch(() => ({ data: { invoices: [] } })),
+          api.get('/bakala-products/inventory-alerts', { params: { expiryWindowDays: 30 } }).catch(() => ({ data: null }))
         ]);
         setKhataAccounts(khataRes.data || []);
         setAlerts(alertsRes.data || []);
         setInvoices(invoicesRes.data?.invoices || []);
+        setInventoryAlerts(invAlertsRes.data || null);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
@@ -178,6 +181,64 @@ export default function BakalaDashboard() {
           </div>
         </div>
       </div>
+
+      {/* INVENTORY ALERTS SUMMARY */}
+      {inventoryAlerts?.summary && (
+        (() => {
+          const s = inventoryAlerts.summary;
+          const totalIssues = (s.outOfStock || 0) + (s.lowStock || 0) + (s.expired || 0) + (s.expiringSoon || 0);
+          const cards = [
+            { label: 'Out of Stock', value: s.outOfStock || 0, icon: PackageX, cls: 'bg-rose-50 text-rose-500' },
+            { label: 'Low Stock', value: s.lowStock || 0, icon: TrendingDown, cls: 'bg-amber-50 text-amber-500' },
+            { label: 'Expired', value: s.expired || 0, icon: ShieldAlert, cls: 'bg-rose-50 text-rose-500' },
+            { label: 'Expiring Soon', value: s.expiringSoon || 0, icon: CalendarClock, cls: 'bg-blue-50 text-blue-500' },
+          ];
+          return (
+            <div className="bg-white dark:bg-dark-800 rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 dark:border-dark-700">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-2xl bg-gray-900 text-white flex items-center justify-center">
+                    <AlertTriangle className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold tracking-tight text-gray-900 dark:text-white">Inventory Alerts</h2>
+                    <p className="text-xs font-medium text-gray-400">
+                      {totalIssues === 0 ? 'All stock levels healthy' : `${totalIssues} item${totalIssues === 1 ? '' : 's'} need attention`}
+                      {s.stockValueAtRisk > 0 && ` • SAR ${Number(s.stockValueAtRisk).toFixed(2)} at risk`}
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  to="/app/dashboard/bakala/alerts"
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-full text-sm font-bold hover:shadow-lg hover:shadow-black/20 transition-all hover:-translate-y-0.5"
+                >
+                  View All <ArrowRight className="w-4 h-4 opacity-60" />
+                </Link>
+              </div>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {cards.map((c) => {
+                  const Icon = c.icon;
+                  return (
+                    <Link
+                      key={c.label}
+                      to="/app/dashboard/bakala/alerts"
+                      className="flex items-center gap-3 p-4 rounded-2xl border border-gray-100 dark:border-dark-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${c.cls}`}>
+                        <Icon className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-black tracking-tighter text-gray-900 dark:text-white leading-none">{c.value}</p>
+                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mt-1">{c.label}</p>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()
+      )}
 
       {/* MIDDLE: CHARTS & TOP PRODUCTS */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
