@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import toast from 'react-hot-toast'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
@@ -15,6 +16,56 @@ export default function Products() {
   const [search, setSearch] = useState('')
   const [filters, setFilters] = useState({ category: '', status: '' })
   const [page, setPage] = useState(1)
+
+  const queryClient = useQueryClient()
+  const [stockModal, setStockModal] = useState({ isOpen: false, productId: null, productName: '' })
+  const [stockWarehouseId, setStockWarehouseId] = useState('')
+  const [stockQuantity, setStockQuantity] = useState(1)
+
+  const { data: warehouses } = useQuery({
+    queryKey: ['warehouses'],
+    queryFn: () => api.get('/warehouses').then(res => res.data)
+  })
+  const warehouseOptions = Array.isArray(warehouses) ? warehouses : []
+
+  const addStockMutation = useMutation({
+    mutationFn: (data) => api.post(`/products/${data.productId}/stock`, {
+      warehouseId: data.warehouseId,
+      quantity: Number(data.quantity),
+      type: 'add'
+    }),
+    onSuccess: () => {
+      toast.success(language === 'ar' ? 'تمت إضافة المخزون' : 'Stock added successfully')
+      queryClient.invalidateQueries(['products'])
+      queryClient.invalidateQueries(['products-stats'])
+      setStockModal({ isOpen: false, productId: null, productName: '' })
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.error || (language === 'ar' ? 'حدث خطأ' : 'Failed to add stock'))
+    }
+  })
+
+  const openStockModal = (product) => {
+    setStockModal({
+      isOpen: true,
+      productId: product._id,
+      productName: language === 'ar' ? product.nameAr || product.nameEn : product.nameEn
+    })
+    setStockQuantity(1)
+    if (warehouseOptions.length > 0) {
+      setStockWarehouseId(warehouseOptions[0]._id)
+    }
+  }
+
+  const handleAddStock = (e) => {
+    e.preventDefault()
+    if (!stockWarehouseId || stockQuantity <= 0) return
+    addStockMutation.mutate({
+      productId: stockModal.productId,
+      warehouseId: stockWarehouseId,
+      quantity: stockQuantity
+    })
+  }
 
   const exportColumns = [
     {
@@ -227,6 +278,9 @@ export default function Products() {
                     </td>
                     <td>
                       <div className="flex items-center gap-2">
+                        <button onClick={() => openStockModal(product)} className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg text-emerald-600" title={language === 'ar' ? 'إضافة مخزون' : 'Add Stock'}>
+                          <Plus className="w-4 h-4" />
+                        </button>
                         <Link to={`/products/${product._id}`} className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg"><Eye className="w-4 h-4 text-gray-600" /></Link>
                         <Link to={`/products/${product._id}`} className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg"><Edit className="w-4 h-4 text-gray-600" /></Link>
                       </div>
@@ -238,6 +292,57 @@ export default function Products() {
           </div>
         )}
       </motion.div>
+
+      {/* Add Stock Modal */}
+      {stockModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white dark:bg-dark-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                {language === 'ar' ? 'إضافة مخزون' : 'Add Stock'} - {stockModal.productName}
+              </h3>
+              <form onSubmit={handleAddStock} className="space-y-4">
+                <div>
+                  <label className="label">{language === 'ar' ? 'المستودع' : 'Warehouse'}</label>
+                  <select
+                    className="select"
+                    value={stockWarehouseId}
+                    onChange={(e) => setStockWarehouseId(e.target.value)}
+                    required
+                  >
+                    <option value="">{language === 'ar' ? 'اختر المستودع' : 'Select warehouse'}</option>
+                    {warehouseOptions.map(w => (
+                      <option key={w._id} value={w._id}>
+                        {language === 'ar' ? w.nameAr || w.nameEn : w.nameEn}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="label">{language === 'ar' ? 'الكمية المراد إضافتها' : 'Quantity to Add'}</label>
+                  <input
+                    type="number"
+                    min="0.0001"
+                    step="0.0001"
+                    className="input"
+                    value={stockQuantity}
+                    onChange={(e) => setStockQuantity(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="flex justify-end gap-3 mt-6">
+                  <button type="button" onClick={() => setStockModal({ isOpen: false, productId: null, productName: '' })} className="btn btn-secondary">
+                    {language === 'ar' ? 'إلغاء' : 'Cancel'}
+                  </button>
+                  <button type="submit" disabled={addStockMutation.isPending} className="btn btn-primary bg-emerald-600 hover:bg-emerald-700 border-none text-white">
+                    {addStockMutation.isPending ? '...' : (language === 'ar' ? 'إضافة' : 'Add')}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   )
 }
