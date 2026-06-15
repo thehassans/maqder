@@ -2114,13 +2114,14 @@ router.get('/leads/stats', async (req, res) => {
 // @route   POST /api/super-admin/leads
 router.post('/leads', async (req, res) => {
   try {
-    const { phoneNumber, name, status, serviceInterest, tenantType, notes } = req.body;
+    const { phoneNumber, name, status, serviceInterest, tenantType, city, notes } = req.body;
     const lead = await LeadQuery.create({
       phoneNumber: String(phoneNumber || '').trim(),
       name: String(name || '').trim(),
       status: status || 'new',
       serviceInterest: serviceInterest || 'none',
       tenantType: tenantType || '',
+      city: city || '',
       notes: notes || '',
       createdBy: req.user?._id,
     });
@@ -2133,7 +2134,7 @@ router.post('/leads', async (req, res) => {
 // @route   PUT /api/super-admin/leads/:id
 router.put('/leads/:id', async (req, res) => {
   try {
-    const { phoneNumber, name, status, serviceInterest, tenantType, notes } = req.body;
+    const { phoneNumber, name, status, serviceInterest, tenantType, city, notes } = req.body;
     const lead = await LeadQuery.findByIdAndUpdate(
       req.params.id,
       {
@@ -2142,6 +2143,7 @@ router.put('/leads/:id', async (req, res) => {
         ...(status !== undefined && { status }),
         ...(serviceInterest !== undefined && { serviceInterest }),
         ...(tenantType !== undefined && { tenantType }),
+        ...(city !== undefined && { city }),
         ...(notes !== undefined && { notes }),
       },
       { new: true, runValidators: true }

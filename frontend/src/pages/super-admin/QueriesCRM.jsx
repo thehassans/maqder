@@ -55,7 +55,7 @@ export default function QueriesCRM() {
   const [filters, setFilters] = useState({ status: '', serviceInterest: '', tenantType: '' });
   const [showModal, setShowModal] = useState(false);
   const [editingLead, setEditingLead] = useState(null);
-  const [form, setForm] = useState({ phoneNumber: '', name: '', status: 'new', serviceInterest: 'none', tenantType: '', notes: '' });
+  const [form, setForm] = useState({ phoneNumber: '', name: '', status: 'new', serviceInterest: 'none', tenantType: '', city: '', notes: '' });
 
   const { data: stats } = useQuery({
     queryKey: ['leads-stats'],
@@ -88,8 +88,8 @@ export default function QueriesCRM() {
 
   const openModal = (lead = null) => {
     setEditingLead(lead);
-    setForm(lead ? { phoneNumber: lead.phoneNumber || '', name: lead.name || '', status: lead.status || 'new', serviceInterest: lead.serviceInterest || 'none', tenantType: lead.tenantType || '', notes: lead.notes || '' }
-                : { phoneNumber: '', name: '', status: 'new', serviceInterest: 'none', tenantType: '', notes: '' });
+    setForm(lead ? { phoneNumber: lead.phoneNumber || '', name: lead.name || '', status: lead.status || 'new', serviceInterest: lead.serviceInterest || 'none', tenantType: lead.tenantType || '', city: lead.city || '', notes: lead.notes || '' }
+                : { phoneNumber: '', name: '', status: 'new', serviceInterest: 'none', tenantType: '', city: '', notes: '' });
     setShowModal(true);
   };
   const closeModal = () => { setShowModal(false); setEditingLead(null); };
@@ -100,8 +100,8 @@ export default function QueriesCRM() {
 
   const exportCsv = () => {
     if (!data?.leads?.length) return toast.error('Nothing to export');
-    const h = ['Phone','Name','Status','Service','Tenant Type','Notes','Created'];
-    const b = data.leads.map(l => [l.phoneNumber, (l.name||'').replace(/,/g,' '), l.status, l.serviceInterest, l.tenantType, (l.notes||'').replace(/,/g,' '), new Date(l.createdAt).toLocaleString()]);
+    const h = ['Phone','Name','Status','Service','Tenant Type','City','Notes','Created'];
+    const b = data.leads.map(l => [l.phoneNumber, (l.name||'').replace(/,/g,' '), l.status, l.serviceInterest, l.tenantType, l.city, (l.notes||'').replace(/,/g,' '), new Date(l.createdAt).toLocaleString()]);
     const blob = new Blob([[h,...b].map(r=>r.join(',')).join('\n')], { type:'text/csv' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `leads_${new Date().toISOString().slice(0,10)}.csv`; a.click();
   };
@@ -204,7 +204,7 @@ export default function QueriesCRM() {
             <div className="table-container rounded-none border-0">
               <table className="table">
                 <thead><tr>
-                  <th>Phone / Name</th><th>Status</th><th>Service</th><th>Tenant Type</th><th>Notes</th><th>Created</th><th className="text-right">Actions</th>
+                  <th>Phone / Name</th><th>Status</th><th>Service</th><th>Tenant Type</th><th>City</th><th>Notes</th><th>Created</th><th className="text-right">Actions</th>
                 </tr></thead>
                 <tbody>
                   {data?.leads?.map(lead=>{
@@ -219,7 +219,8 @@ export default function QueriesCRM() {
                         </td>
                         <td><span className={`badge ${sc.color}`}><Si className="w-3 h-3 me-1"/>{sc.label}</span></td>
                         <td><span className="text-xs font-bold text-gray-500 px-2 py-1 rounded-md bg-gray-50 dark:bg-dark-700">{se.label}</span></td>
-                        <td><span className="text-xs font-medium text-gray-600">{tenantLabelMap[lead.tenantType]||lead.tenantType||'—'}</span></td>
+                        <td><span className="text-xs font-medium text-gray-600">{lead.tenantType ? (tenantLabelMap[lead.tenantType] || lead.tenantType) : '—'}</span></td>
+                        <td><span className="text-xs font-medium text-gray-600">{lead.city||'—'}</span></td>
                         <td><p className="text-xs text-gray-500 max-w-[200px] truncate">{lead.notes||'—'}</p></td>
                         <td className="text-gray-500 text-xs">{new Date(lead.createdAt).toLocaleDateString()}</td>
                         <td className="text-right">
@@ -297,7 +298,7 @@ export default function QueriesCRM() {
                   <div className="w-1.5 h-5 rounded-full bg-emerald-500"/>
                   <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Contact Info</h4>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2.5">Phone Number <span className="text-rose-400">*</span></label>
                     <div className="relative group">
@@ -308,6 +309,10 @@ export default function QueriesCRM() {
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2.5">Customer Name</label>
                     <input type="text" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="Full name" className="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-semibold text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-300 transition-all dark:bg-dark-800 dark:border-dark-600 dark:text-white"/>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2.5">City</label>
+                    <input type="text" value={form.city} onChange={e=>setForm(f=>({...f,city:e.target.value}))} placeholder="e.g. Riyadh, Jeddah" className="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-semibold text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-300 transition-all dark:bg-dark-800 dark:border-dark-600 dark:text-white"/>
                   </div>
                 </div>
               </div>
