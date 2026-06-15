@@ -268,7 +268,7 @@ export default function QueriesCRM() {
             >
               {/* Header */}
               <div className="relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900"/>
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-800 via-emerald-700 to-emerald-800"/>
               <div className="absolute top-0 right-0 w-64 h-64 bg-white/[0.03] rounded-full -translate-y-1/2 translate-x-1/2"/>
               <div className="relative flex items-center justify-between px-8 py-6">
                 <div className="flex items-center gap-4">
@@ -355,7 +355,7 @@ export default function QueriesCRM() {
             {/* Footer */}
             <div className="flex justify-end gap-3 px-8 py-6 bg-white dark:bg-dark-800 border-t border-gray-100 dark:border-dark-700">
               <button type="button" onClick={closeModal} className="px-6 py-3 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold text-sm rounded-2xl transition-all border border-gray-100 hover:border-gray-200">Cancel</button>
-              <button onClick={handleSubmit} disabled={createM.isPending||updateM.isPending} className="px-8 py-3 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 text-white font-bold text-sm rounded-2xl transition-all shadow-lg shadow-gray-900/20 hover:shadow-xl hover:shadow-gray-900/30 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+              <button onClick={handleSubmit} disabled={createM.isPending||updateM.isPending} className="px-8 py-3 bg-gradient-to-r from-emerald-700 to-emerald-600 hover:from-emerald-600 hover:to-emerald-500 text-white font-bold text-sm rounded-2xl transition-all shadow-lg shadow-emerald-700/20 hover:shadow-xl hover:shadow-emerald-700/30 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
                 {createM.isPending||updateM.isPending?<div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"/>:<><Save className="w-4 h-4"/>{editingLead?'Update Lead':'Save Lead'}</>}
               </button>
             </div>
