@@ -250,53 +250,99 @@ export default function QueriesCRM() {
       {/* Modal */}
       <AnimatePresence>
         {showModal&&<>
-          <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={closeModal} className="fixed inset-0 bg-black/50 z-40"/>
-          <motion.div initial={{opacity:0,scale:.95,y:20}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:.95,y:20}} className="fixed inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-lg bg-white dark:bg-dark-800 rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-dark-700">
-              <h3 className="text-lg font-bold text-gray-900 dark:text-white">{editingLead?'Edit Lead':'New Lead'}</h3>
-              <button onClick={closeModal} className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors"><X className="w-5 h-5"/></button>
-            </div>
-            <div className="p-6 space-y-4 overflow-y-auto">
-              <div>
-                <label className="label">Phone Number *</label>
-                <div className="relative">
-                  <Phone className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"/>
-                  <input type="tel" value={form.phoneNumber} onChange={e=>setForm(f=>({...f,phoneNumber:e.target.value}))} placeholder="+966 5x xxx xxxx" className="input ps-10" autoFocus/>
+          <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={closeModal} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"/>
+          <motion.div initial={{opacity:0,scale:.92,y:24}} animate={{opacity:1,scale:1,y:0}} exit={{opacity:0,scale:.92,y:24}} transition={{type:'spring',damping:25,stiffness:300}} className="fixed inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-2xl bg-white dark:bg-dark-800 rounded-[2rem] shadow-[0_25px_80px_-12px_rgba(0,0,0,0.35)] z-50 overflow-hidden flex flex-col max-h-[92vh]">
+            {/* Header */}
+            <div className="relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900"/>
+              <div className="absolute top-0 right-0 w-64 h-64 bg-white/[0.03] rounded-full -translate-y-1/2 translate-x-1/2"/>
+              <div className="relative flex items-center justify-between px-8 py-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10 flex items-center justify-center">
+                    <Phone className="w-6 h-6 text-white"/>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black text-white tracking-tight">{editingLead?'Edit Lead':'New Lead'}</h3>
+                    <p className="text-xs text-white/50 font-bold uppercase tracking-widest mt-0.5">{editingLead?'Update query details':'Capture a new customer query'}</p>
+                  </div>
                 </div>
-              </div>
-              <div>
-                <label className="label">Name</label>
-                <input type="text" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="Customer name" className="input"/>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="label">Status</label>
-                  <select value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))} className="select">
-                    {Object.entries(STATUS).map(([k,c])=><option key={k} value={k}>{c.label}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="label">Service Interest</label>
-                  <select value={form.serviceInterest} onChange={e=>setForm(f=>({...f,serviceInterest:e.target.value}))} className="select">
-                    {Object.entries(SERVICE).map(([k,c])=><option key={k} value={k}>{c.label}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="label">Tenant Type</label>
-                <select value={form.tenantType} onChange={e=>setForm(f=>({...f,tenantType:e.target.value}))} className="select">
-                  {TENANT_TYPES.filter(o=>o.value).map(o=><option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="label">Notes</label>
-                <textarea value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} rows={3} placeholder="Any details..." className="input resize-none"/>
+                <button onClick={closeModal} className="p-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all border border-white/10">
+                  <X className="w-5 h-5"/>
+                </button>
               </div>
             </div>
-            <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-dark-700">
-              <button type="button" onClick={closeModal} className="btn btn-secondary">Cancel</button>
-              <button onClick={handleSubmit} disabled={createM.isPending||updateM.isPending} className="btn btn-primary">
-                {createM.isPending||updateM.isPending?<div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"/>:<><Save className="w-4 h-4"/>Save</>}
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-8 space-y-6 bg-gray-50/50 dark:bg-dark-800">
+              {/* Contact Section */}
+              <div className="bg-white dark:bg-dark-700 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-dark-600 space-y-5">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-1.5 h-5 rounded-full bg-emerald-500"/>
+                  <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Contact Info</h4>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2.5">Phone Number <span className="text-rose-400">*</span></label>
+                    <div className="relative group">
+                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-emerald-500 transition-colors"/>
+                      <input type="tel" value={form.phoneNumber} onChange={e=>setForm(f=>({...f,phoneNumber:e.target.value}))} placeholder="+966 5x xxx xxxx" className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-semibold text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-300 transition-all dark:bg-dark-800 dark:border-dark-600 dark:text-white" autoFocus/>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2.5">Customer Name</label>
+                    <input type="text" value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="Full name" className="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-semibold text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-300 transition-all dark:bg-dark-800 dark:border-dark-600 dark:text-white"/>
+                  </div>
+                </div>
+              </div>
+
+              {/* Categorization Section */}
+              <div className="bg-white dark:bg-dark-700 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-dark-600 space-y-5">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-1.5 h-5 rounded-full bg-blue-500"/>
+                  <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Categorization</h4>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2.5">Status</label>
+                    <div className="relative">
+                      <select value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-semibold text-gray-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-300 transition-all appearance-none cursor-pointer dark:bg-dark-800 dark:border-dark-600 dark:text-white">
+                        {Object.entries(STATUS).map(([k,c])=><option key={k} value={k}>{c.label}</option>)}
+                      </select>
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <div className={`w-2.5 h-2.5 rounded-full ${(STATUS[form.status]||STATUS.new).color.split(' ')[0].replace('bg-','bg-')}`} style={{backgroundColor:form.status==='interested'?'#10b981':form.status==='not_interested'?'#ef4444':form.status==='converted'?'#8b5cf6':form.status==='follow_up'?'#f59e0b':form.status==='attended'?'#3b82f6':'#64748b'}}/>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2.5">Service Interest</label>
+                    <select value={form.serviceInterest} onChange={e=>setForm(f=>({...f,serviceInterest:e.target.value}))} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-semibold text-gray-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-300 transition-all appearance-none cursor-pointer dark:bg-dark-800 dark:border-dark-600 dark:text-white">
+                      {Object.entries(SERVICE).map(([k,c])=><option key={k} value={k}>{c.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2.5">Tenant Type</label>
+                    <select value={form.tenantType} onChange={e=>setForm(f=>({...f,tenantType:e.target.value}))} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-semibold text-gray-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-300 transition-all appearance-none cursor-pointer dark:bg-dark-800 dark:border-dark-600 dark:text-white">
+                      {TENANT_TYPES.filter(o=>o.value).map(o=><option key={o.value} value={o.value}>{o.label}</option>)}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notes Section */}
+              <div className="bg-white dark:bg-dark-700 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-dark-600">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-1.5 h-5 rounded-full bg-amber-500"/>
+                  <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Notes</h4>
+                </div>
+                <textarea value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} rows={4} placeholder="Conversation details, follow-up reminders, requirements..." className="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-semibold text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-300 transition-all resize-none dark:bg-dark-800 dark:border-dark-600 dark:text-white"/>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-3 px-8 py-6 bg-white dark:bg-dark-800 border-t border-gray-100 dark:border-dark-700">
+              <button type="button" onClick={closeModal} className="px-6 py-3 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold text-sm rounded-2xl transition-all border border-gray-100 hover:border-gray-200">Cancel</button>
+              <button onClick={handleSubmit} disabled={createM.isPending||updateM.isPending} className="px-8 py-3 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 text-white font-bold text-sm rounded-2xl transition-all shadow-lg shadow-gray-900/20 hover:shadow-xl hover:shadow-gray-900/30 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                {createM.isPending||updateM.isPending?<div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"/>:<><Save className="w-4 h-4"/>{editingLead?'Update Lead':'Save Lead'}</>}
               </button>
             </div>
           </motion.div>
