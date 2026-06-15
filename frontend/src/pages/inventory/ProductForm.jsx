@@ -92,11 +92,15 @@ export default function ProductForm() {
     targetLang: 'en'
   })
 
-  const { isLoading, error: productError } = useQuery({
+  const { data: rawProductData, isLoading, error: productError } = useQuery({
     queryKey: ['product', id],
     queryFn: () => api.get(`/products/${id}`).then(res => res.data),
-    enabled: isEdit,
-    onSuccess: (data) => {
+    enabled: isEdit
+  })
+
+  useEffect(() => {
+    if (isEdit && rawProductData) {
+      const data = rawProductData
       const normalized = {
         ...data,
         nameEn: data?.nameEn ?? data?.name ?? data?.productNameEn ?? data?.productName ?? '',
@@ -119,7 +123,7 @@ export default function ProductForm() {
         }))
       )
     }
-  })
+  }, [isEdit, rawProductData, reset])
 
   const { data: productsList } = useQuery({
     queryKey: ['products-list-lookup'],
