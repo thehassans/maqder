@@ -49,6 +49,13 @@ export default function DeliveryNotes() {
             {language === 'ar' ? 'إدارة إثباتات التسليم للعملاء' : 'Manage proof of deliveries for customers'}
           </p>
         </div>
+        <button
+          onClick={() => navigate('/app/dashboard/delivery-notes/new')}
+          className="btn btn-primary"
+        >
+          <Plus className="w-4 h-4" />
+          {language === 'ar' ? 'إضافة سند تسليم' : 'New Delivery Note'}
+        </button>
       </div>
 
       <div className="card p-4">
