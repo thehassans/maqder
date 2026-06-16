@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
@@ -59,15 +59,18 @@ export default function RestaurantMenuItemForm() {
     targetLang: 'ar',
   })
 
-  const { isLoading } = useQuery({
+  const { data: itemData, isLoading } = useQuery({
     queryKey: ['restaurant-menu-item', id],
     queryFn: () => api.get(`/restaurant/menu-items/${id}`).then((res) => res.data),
     enabled: isEdit,
-    onSuccess: (data) => {
-      reset(data)
-      if (data.imageUrl) setImageUrl(data.imageUrl)
-    },
   })
+
+  useEffect(() => {
+    if (itemData) {
+      reset(itemData)
+      if (itemData.imageUrl) setImageUrl(itemData.imageUrl)
+    }
+  }, [itemData, reset])
 
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0]
