@@ -197,7 +197,7 @@ export default function Login() {
 
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-            <img src="/maqdernewlogo.png" alt="Maqder" className="h-40 w-auto object-contain object-center scale-110" />
+            <img src="/maqderlogolandingpage.png" alt="Maqder" className="h-24 w-auto object-contain object-center" />
           </div>
 
           {/* Header */}
