@@ -2166,4 +2166,125 @@ router.delete('/leads/:id', async (req, res) => {
   }
 });
 
+// @route   POST /api/super-admin/leads/:id/send-demo
+router.post('/leads/:id/send-demo', async (req, res) => {
+  try {
+    const { langPair = 'en+ar', loginUrl, email, password } = req.body;
+    const lead = await LeadQuery.findById(req.params.id);
+    if (!lead) return res.status(404).json({ error: 'Lead not found' });
+
+    const phone = lead.phoneNumber;
+    if (!phone) return res.status(400).json({ error: 'Lead has no phone number' });
+
+    const name = lead.name || 'Customer';
+    const url   = loginUrl  || 'https://maqder.com/login';
+    const usr   = email     || 'demo@maqder.com';
+    const pwd   = password  || 'Demo@1234';
+
+    // Bilingual message blocks
+    const blocks = {
+      'en+ar': [
+        `🌟 *Welcome to Maqder – مرحباً بك في مقدر!*`,
+        ``,
+        `Dear ${name} / عزيزي ${name}،`,
+        ``,
+        `🚀 *Try Our Demo / جرّب النظام الآن*`,
+        `Your demo account is ready. Explore all features of Maqder POS & ERP — completely free!`,
+        `حسابك التجريبي جاهز. استكشف جميع مزايا مقدر — مجاناً!`,
+        ``,
+        `🔗 *Login / تسجيل الدخول:* ${url}`,
+        `📧 *Email / البريد:* ${usr}`,
+        `🔑 *Password / كلمة المرور:* ${pwd}`,
+        ``,
+        `💬 Contact us anytime / تواصل معنا في أي وقت`,
+        `📞 WhatsApp: wa.me/966500000000`,
+      ],
+      'en+hi': [
+        `🌟 *Welcome to Maqder – मक़दर में आपका स्वागत है!*`,
+        ``,
+        `Dear ${name} / प्रिय ${name},`,
+        ``,
+        `🚀 *Try Our Demo / डेमो आज़माएं*`,
+        `Your demo account is ready. Explore all features of Maqder POS & ERP — completely free!`,
+        `आपका डेमो अकाउंट तैयार है। मक़दर की सभी सुविधाएं मुफ़्त में आज़माएं!`,
+        ``,
+        `🔗 *Login / लॉगिन:* ${url}`,
+        `📧 *Email / ईमेल:* ${usr}`,
+        `🔑 *Password / पासवर्ड:* ${pwd}`,
+        ``,
+        `💬 Contact us anytime / किसी भी समय संपर्क करें`,
+        `📞 WhatsApp: wa.me/966500000000`,
+      ],
+      'en+ur': [
+        `🌟 *Welcome to Maqder – مقدر میں خوش آمدید!*`,
+        ``,
+        `Dear ${name} / عزیز ${name}،`,
+        ``,
+        `🚀 *Try Our Demo / ڈیمو آزمائیں*`,
+        `Your demo account is ready. Explore all features of Maqder POS & ERP — completely free!`,
+        `آپ کا ڈیمو اکاؤنٹ تیار ہے۔ مقدر کی تمام سہولیات مفت میں آزمائیں!`,
+        ``,
+        `🔗 *Login / لاگ ان:* ${url}`,
+        `📧 *Email / ای میل:* ${usr}`,
+        `🔑 *Password / پاس ورڈ:* ${pwd}`,
+        ``,
+        `💬 Contact us anytime / کسی بھی وقت رابطہ کریں`,
+        `📞 WhatsApp: wa.me/966500000000`,
+      ],
+      'en+bn': [
+        `🌟 *Welcome to Maqder – মাকদারে স্বাগতম!*`,
+        ``,
+        `Dear ${name} / প্রিয় ${name},`,
+        ``,
+        `🚀 *Try Our Demo / ডেমো ব্যবহার করুন*`,
+        `Your demo account is ready. Explore all features of Maqder POS & ERP — completely free!`,
+        `আপনার ডেমো অ্যাকাউন্ট প্রস্তুত। মাকদারের সব সুবিধা বিনামূল্যে উপভোগ করুন!`,
+        ``,
+        `🔗 *Login / লগইন:* ${url}`,
+        `📧 *Email / ইমেইল:* ${usr}`,
+        `🔑 *Password / পাসওয়ার্ড:* ${pwd}`,
+        ``,
+        `💬 Contact us anytime / যেকোনো সময় যোগাযোগ করুন`,
+        `📞 WhatsApp: wa.me/966500000000`,
+      ],
+      'en+fa': [
+        `🌟 *Welcome to Maqder – به مقدر خوش آمدید!*`,
+        ``,
+        `Dear ${name} / عزیز ${name}،`,
+        ``,
+        `🚀 *Try Our Demo / سیستم را امتحان کنید*`,
+        `Your demo account is ready. Explore all features of Maqder POS & ERP — completely free!`,
+        `حساب دیمو شما آماده است. تمام امکانات مقدر را رایگان امتحان کنید!`,
+        ``,
+        `🔗 *Login / ورود:* ${url}`,
+        `📧 *Email / ایمیل:* ${usr}`,
+        `🔑 *Password / رمز عبور:* ${pwd}`,
+        ``,
+        `💬 Contact us anytime / هر زمان تماس بگیرید`,
+        `📞 WhatsApp: wa.me/966500000000`,
+      ],
+    };
+
+    const message = (blocks[langPair] || blocks['en+ar']).join('\n');
+
+    const waState = whatsappService.getStatus('super_admin');
+    if (waState?.status !== 'READY') {
+      return res.status(503).json({ error: 'WhatsApp is not connected. Please connect WhatsApp first.' });
+    }
+
+    await whatsappService.sendText('super_admin', phone, message);
+
+    // Mark lead as attended if still new
+    if (lead.status === 'new') {
+      await LeadQuery.findByIdAndUpdate(lead._id, { status: 'attended' });
+    }
+
+    res.json({ success: true, sentTo: phone, langPair });
+  } catch (error) {
+    console.error('[Send Demo] Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
+

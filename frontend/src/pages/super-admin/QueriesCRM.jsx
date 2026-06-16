@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Phone, Plus, Search, X, Save, Trash2, FileDown,
   Users, Eye, ThumbsUp, ThumbsDown, CheckCircle, PhoneCall,
-  HelpCircle, Monitor, ArrowUpRight, ArrowDownRight
+  HelpCircle, Monitor, ArrowUpRight, ArrowDownRight,
+  Send, Globe, Lock, Mail, Link
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../lib/api';
@@ -44,6 +45,14 @@ const TENANT_TYPES = [
   { value: 'local_city', label: 'Local / Unknown City' },
 ];
 
+const LANG_PAIRS = [
+  { value: 'en+ar', label: 'English + Arabic',  flag: '🇸🇦', desc: 'English & عربي' },
+  { value: 'en+hi', label: 'English + Hindi',   flag: '🇮🇳', desc: 'English & हिंदी' },
+  { value: 'en+ur', label: 'English + Urdu',    flag: '🇵🇰', desc: 'English & اردو' },
+  { value: 'en+bn', label: 'English + Bengali', flag: '🇧🇩', desc: 'English & বাংলা' },
+  { value: 'en+fa', label: 'English + Afghan',  flag: '🇦🇫', desc: 'English & دری/پښتو' },
+];
+
 const PIE_COLORS = ['#14b8a6', '#f59e0b', '#8b5cf6', '#ef4444', '#3b82f6', '#10b981', '#64748b'];
 
 export default function QueriesCRM() {
@@ -56,6 +65,15 @@ export default function QueriesCRM() {
   const [showModal, setShowModal] = useState(false);
   const [editingLead, setEditingLead] = useState(null);
   const [form, setForm] = useState({ phoneNumber: '', name: '', status: 'new', serviceInterest: 'none', tenantType: '', city: '', notes: '' });
+
+  // Demo modal state
+  const [demoLead, setDemoLead] = useState(null);
+  const [demoForm, setDemoForm] = useState({
+    langPair: 'en+ar',
+    loginUrl: 'https://maqder.com/login',
+    email: '',
+    password: '',
+  });
 
   const { data: stats } = useQuery({
     queryKey: ['leads-stats'],
@@ -85,6 +103,15 @@ export default function QueriesCRM() {
     mutationFn: ({ id, status }) => api.put(`/super-admin/leads/${id}`, { status }),
     onSuccess: () => qc.invalidateQueries(['leads','leads-stats']),
   });
+  const sendDemoM = useMutation({
+    mutationFn: ({ id, payload }) => api.post(`/super-admin/leads/${id}/send-demo`, payload),
+    onSuccess: (res) => {
+      toast.success(`✅ Demo sent to ${res.data?.sentTo}`);
+      qc.invalidateQueries(['leads','leads-stats']);
+      setDemoLead(null);
+    },
+    onError: (e) => toast.error(e.response?.data?.error || 'Failed to send demo'),
+  });
 
   const openModal = (lead = null) => {
     setEditingLead(lead);
@@ -96,6 +123,16 @@ export default function QueriesCRM() {
   const handleSubmit = () => {
     if (!form.phoneNumber.trim()) return toast.error('Phone number required');
     editingLead ? updateM.mutate({ id: editingLead._id, payload: form }) : createM.mutate(form);
+  };
+
+  const openDemoModal = (lead) => {
+    setDemoLead(lead);
+    setDemoForm({ langPair: 'en+ar', loginUrl: 'https://maqder.com/login', email: '', password: '' });
+  };
+
+  const handleSendDemo = () => {
+    if (!demoLead) return;
+    sendDemoM.mutate({ id: demoLead._id, payload: demoForm });
   };
 
   const exportCsv = () => {
@@ -228,6 +265,14 @@ export default function QueriesCRM() {
                             {lead.status!=='interested'&&<button onClick={()=>quickM.mutate({id:lead._id,status:'interested'})} title="Interested" className="p-1.5 rounded-lg hover:bg-emerald-50 text-gray-400 hover:text-emerald-500 transition-colors"><ThumbsUp className="w-3.5 h-3.5"/></button>}
                             {lead.status!=='not_interested'&&<button onClick={()=>quickM.mutate({id:lead._id,status:'not_interested'})} title="Not Interested" className="p-1.5 rounded-lg hover:bg-rose-50 text-gray-400 hover:text-rose-500 transition-colors"><ThumbsDown className="w-3.5 h-3.5"/></button>}
                             {lead.status!=='follow_up'&&<button onClick={()=>quickM.mutate({id:lead._id,status:'follow_up'})} title="Follow Up" className="p-1.5 rounded-lg hover:bg-amber-50 text-gray-400 hover:text-amber-500 transition-colors"><PhoneCall className="w-3.5 h-3.5"/></button>}
+                            {/* Send Demo */}
+                            <button
+                              onClick={()=>openDemoModal(lead)}
+                              title="Send Demo Message"
+                              className="p-1.5 rounded-lg hover:bg-green-50 text-gray-400 hover:text-green-600 transition-colors"
+                            >
+                              <Send className="w-3.5 h-3.5"/>
+                            </button>
                             <div className="w-px h-4 bg-gray-200 mx-1"/>
                             <button onClick={()=>openModal(lead)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"><Monitor className="w-3.5 h-3.5"/></button>
                             <button onClick={()=>{if(window.confirm('Delete?'))deleteM.mutate(lead._id);}} className="p-1.5 rounded-lg hover:bg-rose-50 text-gray-400 hover:text-rose-500 transition-colors"><Trash2 className="w-3.5 h-3.5"/></button>
@@ -236,7 +281,7 @@ export default function QueriesCRM() {
                       </tr>
                     );
                   })}
-                  {data?.leads?.length===0&&<tr><td colSpan="7" className="text-center py-12 text-gray-400"><Phone className="w-10 h-10 mx-auto mb-3 opacity-30"/><p className="font-bold">No leads yet</p><p className="text-xs">Add your first lead to get started</p></td></tr>}
+                  {data?.leads?.length===0&&<tr><td colSpan="8" className="text-center py-12 text-gray-400"><Phone className="w-10 h-10 mx-auto mb-3 opacity-30"/><p className="font-bold">No leads yet</p><p className="text-xs">Add your first lead to get started</p></td></tr>}
                 </tbody>
               </table>
             </div>
@@ -251,7 +296,158 @@ export default function QueriesCRM() {
         )}
       </motion.div>
 
-      {/* Modal */}
+      {/* ── Send Demo Modal ── */}
+      <AnimatePresence>
+        {demoLead&&(
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            onClick={()=>setDemoLead(null)}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 24 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 24 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="relative w-full max-w-lg bg-white dark:bg-dark-800 rounded-[2rem] shadow-[0_25px_80px_-12px_rgba(0,0,0,0.35)] overflow-hidden flex flex-col"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-green-700 via-green-600 to-emerald-600"/>
+                <div className="absolute top-0 right-0 w-48 h-48 bg-white/[0.04] rounded-full -translate-y-1/2 translate-x-1/2"/>
+                <div className="relative flex items-center justify-between px-7 py-5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10 flex items-center justify-center">
+                      <Send className="w-5 h-5 text-white"/>
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-black text-white tracking-tight">Send Demo</h3>
+                      <p className="text-xs text-white/60 font-semibold mt-0.5">
+                        {demoLead.name || demoLead.phoneNumber}
+                      </p>
+                    </div>
+                  </div>
+                  <button onClick={()=>setDemoLead(null)} className="p-2 rounded-2xl bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all border border-white/10">
+                    <X className="w-4 h-4"/>
+                  </button>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 space-y-5 overflow-y-auto bg-gray-50/50 dark:bg-dark-800">
+
+                {/* Language selector */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Globe className="w-4 h-4 text-green-600"/>
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Message Language</p>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2">
+                    {LANG_PAIRS.map(lp=>(
+                      <button
+                        key={lp.value}
+                        onClick={()=>setDemoForm(f=>({...f,langPair:lp.value}))}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-2xl border-2 text-left transition-all ${
+                          demoForm.langPair===lp.value
+                            ? 'border-green-500 bg-green-50 dark:bg-green-900/20 shadow-sm'
+                            : 'border-gray-100 dark:border-dark-600 bg-white dark:bg-dark-700 hover:border-green-200'
+                        }`}
+                      >
+                        <span className="text-2xl">{lp.flag}</span>
+                        <div className="flex-1">
+                          <p className={`text-sm font-bold ${demoForm.langPair===lp.value ? 'text-green-700 dark:text-green-400' : 'text-gray-800 dark:text-white'}`}>{lp.label}</p>
+                          <p className="text-xs text-gray-400">{lp.desc}</p>
+                        </div>
+                        {demoForm.langPair===lp.value&&(
+                          <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                            <CheckCircle className="w-3 h-3 text-white"/>
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Credentials (optional override) */}
+                <div className="bg-white dark:bg-dark-700 rounded-3xl p-5 border border-gray-100 dark:border-dark-600 space-y-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Lock className="w-4 h-4 text-blue-500"/>
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest">Login Credentials</p>
+                    <span className="text-[10px] text-gray-400 font-normal ml-1">(optional override)</span>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-400 mb-1.5">
+                      <Link className="w-3 h-3 inline mr-1"/>Login URL
+                    </label>
+                    <input
+                      type="text"
+                      value={demoForm.loginUrl}
+                      onChange={e=>setDemoForm(f=>({...f,loginUrl:e.target.value}))}
+                      placeholder="https://maqder.com/login"
+                      className="w-full px-4 py-2.5 bg-gray-50 dark:bg-dark-800 border border-gray-100 dark:border-dark-600 rounded-xl text-sm font-medium text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-400/30 focus:border-green-400 transition"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-400 mb-1.5">
+                        <Mail className="w-3 h-3 inline mr-1"/>Email
+                      </label>
+                      <input
+                        type="email"
+                        value={demoForm.email}
+                        onChange={e=>setDemoForm(f=>({...f,email:e.target.value}))}
+                        placeholder="demo@maqder.com"
+                        className="w-full px-4 py-2.5 bg-gray-50 dark:bg-dark-800 border border-gray-100 dark:border-dark-600 rounded-xl text-sm font-medium text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-400/30 focus:border-green-400 transition"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-400 mb-1.5">
+                        <Lock className="w-3 h-3 inline mr-1"/>Password
+                      </label>
+                      <input
+                        type="text"
+                        value={demoForm.password}
+                        onChange={e=>setDemoForm(f=>({...f,password:e.target.value}))}
+                        placeholder="Demo@1234"
+                        className="w-full px-4 py-2.5 bg-gray-50 dark:bg-dark-800 border border-gray-100 dark:border-dark-600 rounded-xl text-sm font-medium text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-400/30 focus:border-green-400 transition"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Preview hint */}
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800 rounded-2xl px-4 py-3 flex items-start gap-2.5">
+                  <Send className="w-4 h-4 text-green-600 mt-0.5 shrink-0"/>
+                  <p className="text-xs text-green-700 dark:text-green-400 leading-relaxed">
+                    A bilingual WhatsApp message will be sent to <strong>{demoLead.phoneNumber}</strong> with the login link, email and password in <strong>{LANG_PAIRS.find(l=>l.value===demoForm.langPair)?.label}</strong>.
+                  </p>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex justify-end gap-3 px-6 py-5 bg-white dark:bg-dark-800 border-t border-gray-100 dark:border-dark-700">
+                <button type="button" onClick={()=>setDemoLead(null)} className="px-5 py-2.5 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold text-sm rounded-2xl transition-all border border-gray-100">Cancel</button>
+                <button
+                  onClick={handleSendDemo}
+                  disabled={sendDemoM.isPending}
+                  className="px-7 py-2.5 bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-500 hover:to-emerald-400 text-white font-bold text-sm rounded-2xl transition-all shadow-lg shadow-green-600/20 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {sendDemoM.isPending
+                    ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"/>
+                    : <><Send className="w-4 h-4"/> Send on WhatsApp</>
+                  }
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Lead Edit/Create Modal */}
       <AnimatePresence>
         {showModal&&(
           <motion.div
