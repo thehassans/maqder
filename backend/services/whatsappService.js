@@ -1,7 +1,7 @@
 import pkg from 'whatsapp-web.js';
 const { Client, LocalAuth, MessageMedia } = pkg;
 import qrcode from 'qrcode';
-import { existsSync } from 'fs';
+import { existsSync, rmSync } from 'fs';
 import { execSync } from 'child_process';
 import path from 'path';
 import os from 'os';
@@ -11,6 +11,13 @@ class WhatsAppService {
     this.clients = new Map();
     this.qrCodes = new Map();
     this.status = new Map();
+  }
+
+  _cleanSession(tenantId) {
+    const sessionDir = path.resolve(`.wwebjs_auth/session-tenant-${tenantId}`);
+    if (existsSync(sessionDir)) {
+      try { rmSync(sessionDir, { recursive: true, force: true }); } catch (_) {}
+    }
   }
 
   get _chromePath() {
@@ -100,6 +107,7 @@ class WhatsAppService {
       this.clients.delete(tenantId);
       this.qrCodes.delete(tenantId);
     }
+    this._cleanSession(tenantId);
 
     this.status.set(tenantId, { state: 'INITIALIZING', error: null });
 
@@ -188,6 +196,7 @@ class WhatsAppService {
           } else {
             this.status.set(tenantId, { state: 'DISCONNECTED', error: msg });
             this.clients.delete(tenantId);
+            this._cleanSession(tenantId);
             break;
           }
         }
@@ -202,6 +211,7 @@ class WhatsAppService {
         if (client) { try { client.destroy(); } catch (_) {} }
         this.clients.delete(tenantId);
         this.qrCodes.delete(tenantId);
+        this._cleanSession(tenantId);
         this.status.set(tenantId, { state: 'DISCONNECTED', error: 'Initialization timed out. Please try again.' });
       }
     }, 60000);
@@ -214,8 +224,10 @@ class WhatsAppService {
     const client = this.clients.get(tenantId);
     if (client) {
       try { await client.logout(); } catch (_) {}
+      try { await client.destroy(); } catch (_) {}
       this.clients.delete(tenantId);
     }
+    this._cleanSession(tenantId);
     this.qrCodes.delete(tenantId);
     this.status.set(tenantId, { state: 'DISCONNECTED', error: null });
   }
