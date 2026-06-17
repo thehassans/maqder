@@ -460,7 +460,7 @@ export default function Sidebar() {
           sidebarCollapsed ? 'lg:w-20' : 'lg:w-72'
         }`}
       >
-        <SidebarContent />
+        {SidebarContent()}
       </aside>
 
       {/* Mobile Sidebar */}
@@ -481,7 +481,7 @@ export default function Sidebar() {
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className={`fixed inset-y-0 ${language === 'ar' ? 'right-0' : 'left-0'} w-72 ${sidebarClassName} border-e border-gray-200 dark:border-dark-700 z-50 lg:hidden flex flex-col`}
             >
-              <SidebarContent />
+              {SidebarContent()}
             </motion.aside>
           </>
         )}
