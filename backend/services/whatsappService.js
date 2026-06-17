@@ -83,10 +83,22 @@ class WhatsAppService {
     };
   }
 
-  async initClient(tenantId) {
+  async initClient(tenantId, force = false) {
     tenantId = String(tenantId);
-    if (this.clients.has(tenantId)) {
-      return this.getStatus(tenantId);
+    const existing = this.clients.get(tenantId);
+    const existingState = this.status.get(tenantId)?.state;
+
+    if (existing && !force) {
+      if (existingState === 'READY' || existingState === 'CONNECTED') {
+        return this.getStatus(tenantId);
+      }
+    }
+
+    // Clean up any existing stuck client before restarting
+    if (existing) {
+      try { await existing.destroy(); } catch (_) {}
+      this.clients.delete(tenantId);
+      this.qrCodes.delete(tenantId);
     }
 
     this.status.set(tenantId, { state: 'INITIALIZING', error: null });
@@ -112,6 +124,10 @@ class WhatsAppService {
           '--no-first-run',
           '--no-zygote',
           '--disable-gpu',
+          '--single-process',
+          '--disable-background-timer-throttling',
+          '--disable-backgrounding-occluded-windows',
+          '--disable-renderer-backgrounding',
         ],
       },
     });
@@ -154,12 +170,41 @@ class WhatsAppService {
       this.clients.delete(tenantId);
     });
 
-    client.initialize().catch((err) => {
-      console.error(`[WhatsApp] Init error for tenant ${tenantId}:`, err);
-      const msg = err?.stack || err?.message || String(err);
-      this.status.set(tenantId, { state: 'DISCONNECTED', error: msg });
-      this.clients.delete(tenantId);
-    });
+    // Initialize with retry for shared-hosting crashes
+    (async () => {
+      let attempts = 0;
+      const maxAttempts = 3;
+      while (attempts < maxAttempts) {
+        attempts++;
+        try {
+          await client.initialize();
+          break; // success
+        } catch (err) {
+          const msg = err?.stack || err?.message || String(err);
+          console.error(`[WhatsApp] Init attempt ${attempts} failed for tenant ${tenantId}:`, msg);
+          if (String(msg).includes('Execution context was destroyed') && attempts < maxAttempts) {
+            console.warn(`[WhatsApp] Retrying initialization in 3s...`);
+            await new Promise(r => setTimeout(r, 3000));
+          } else {
+            this.status.set(tenantId, { state: 'DISCONNECTED', error: msg });
+            this.clients.delete(tenantId);
+            break;
+          }
+        }
+      }
+    })();
+
+    // Timeout: if still INITIALIZING after 60s, kill it
+    setTimeout(() => {
+      if (this.status.get(tenantId)?.state === 'INITIALIZING') {
+        console.error(`[WhatsApp] Init timeout for tenant ${tenantId}`);
+        const client = this.clients.get(tenantId);
+        if (client) { try { client.destroy(); } catch (_) {} }
+        this.clients.delete(tenantId);
+        this.qrCodes.delete(tenantId);
+        this.status.set(tenantId, { state: 'DISCONNECTED', error: 'Initialization timed out. Please try again.' });
+      }
+    }, 60000);
 
     return this.getStatus(tenantId);
   }

@@ -130,14 +130,24 @@ export default function SuperAdminWhatsApp() {
           )}
           
           {(state === 'INITIALIZING') && (
-             <div className="flex items-center gap-2 text-primary-600 font-medium justify-center">
-               <RefreshCw className="w-5 h-5 animate-spin" />
-               Starting WhatsApp Engine...
-             </div>
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex items-center gap-2 text-primary-600 font-medium">
+                <RefreshCw className="w-5 h-5 animate-spin" />
+                Starting WhatsApp Engine...
+              </div>
+              <button
+                onClick={() => logoutMutation.mutate()}
+                disabled={logoutMutation.isPending}
+                className="btn btn-secondary gap-2 text-sm"
+              >
+                <LogOut className="w-4 h-4" />
+                Cancel & Retry
+              </button>
+            </div>
           )}
 
           {data?.error && (
-            <div className="mt-4 p-4 rounded-xl bg-red-50 text-red-600 text-sm w-full text-left max-w-lg mx-auto">
+            <div className="mt-2 p-4 rounded-xl bg-red-50 text-red-600 text-sm w-full text-left max-w-lg mx-auto">
               <strong>Error:</strong> {data.error}
             </div>
           )}
