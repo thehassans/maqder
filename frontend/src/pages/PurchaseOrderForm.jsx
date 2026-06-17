@@ -35,6 +35,15 @@ export default function PurchaseOrderForm() {
 
   const [receiveWarehouseId, setReceiveWarehouseId] = useState('')
   const [receiveQty, setReceiveQty] = useState({})
+  const [manualModes, setManualModes] = useState([])
+
+  const toggleManualMode = (index) => {
+    setManualModes((prev) => {
+      const next = [...prev]
+      next[index] = !next[index]
+      return next
+    })
+  }
 
   const formatDateForInput = (value) => {
     if (!value) return ''
@@ -59,7 +68,7 @@ export default function PurchaseOrderForm() {
       expectedDate: '',
       currency: tenant?.settings?.currency || 'SAR',
       notes: '',
-      lineItems: [{ productId: '', description: '', quantityOrdered: 1, quantityReceived: 0, unitCost: 0, taxRate: 15 }],
+      lineItems: [{ productId: '', manualName: '', uom: '', description: '', quantityOrdered: 1, quantityReceived: 0, unitCost: 0, taxRate: 15 }],
     },
   })
 
@@ -95,6 +104,8 @@ export default function PurchaseOrderForm() {
         notes: data?.notes || '',
         lineItems: (data?.lineItems || []).map((li) => ({
           productId: li?.productId?._id || li?.productId || '',
+          manualName: li?.manualName || '',
+          uom: li?.uom || '',
           description: li?.description || '',
           quantityOrdered: li?.quantityOrdered ?? 0,
           quantityReceived: li?.quantityReceived ?? 0,
@@ -193,8 +204,10 @@ export default function PurchaseOrderForm() {
   const onSubmit = (data) => {
     const cleaned = {
       ...data,
-      lineItems: (data.lineItems || []).map((li) => ({
-        productId: li.productId,
+      lineItems: (data.lineItems || []).map((li, index) => ({
+        productId: manualModes[index] ? undefined : (li.productId || undefined),
+        manualName: manualModes[index] ? (li.manualName || '') : '',
+        uom: manualModes[index] ? (li.uom || '') : '',
         description: li.description,
         quantityOrdered: Number(li.quantityOrdered || 0),
         quantityReceived: Number(li.quantityReceived || 0),
@@ -411,7 +424,7 @@ export default function PurchaseOrderForm() {
             {!isLocked && (
               <button
                 type="button"
-                onClick={() => append({ productId: '', description: '', quantityOrdered: 1, quantityReceived: 0, unitCost: 0, taxRate: 15 })}
+                onClick={() => { append({ productId: '', manualName: '', uom: '', description: '', quantityOrdered: 1, quantityReceived: 0, unitCost: 0, taxRate: 15 }); setManualModes((p) => [...p, false]); }}
                 className="btn btn-secondary"
               >
                 <Plus className="w-4 h-4" />
@@ -436,19 +449,50 @@ export default function PurchaseOrderForm() {
                 <div key={field.id} className="p-4 bg-gray-50 dark:bg-dark-700 rounded-xl">
                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
                     <div className="lg:col-span-4">
-                      <label className="label">{language === 'ar' ? 'المنتج' : 'Product'} *</label>
-                      <select
-                        {...register(`lineItems.${index}.productId`, { required: true })}
-                        className="select"
-                        disabled={isLocked}
-                      >
-                        <option value="">{language === 'ar' ? 'اختر منتج' : 'Select product'}</option>
-                        {(products || []).map((p) => (
-                          <option key={p._id} value={p._id}>
-                            {(language === 'ar' ? p.nameAr || p.nameEn : p.nameEn) || p.sku}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="label mb-0">{language === 'ar' ? 'المنتج' : 'Product'} *</label>
+                        {!isLocked && (
+                          <button
+                            type="button"
+                            onClick={() => toggleManualMode(index)}
+                            className="text-xs font-semibold text-primary-600 hover:text-primary-700 dark:text-primary-400 underline underline-offset-2"
+                          >
+                            {manualModes[index]
+                              ? (language === 'ar' ? 'اختر من قائمة' : 'Select from list')
+                              : (language === 'ar' ? 'كتابة يدوية' : 'Type manually')}
+                          </button>
+                        )}
+                      </div>
+                      {manualModes[index] ? (
+                        <div className="flex gap-2">
+                          <input
+                            {...register(`lineItems.${index}.manualName`, { required: true })}
+                            placeholder={language === 'ar' ? 'اسم المنتج' : 'Product name'}
+                            className="input flex-1"
+                            disabled={isLocked}
+                          />
+                          <input
+                            {...register(`lineItems.${index}.uom`)}
+                            placeholder={language === 'ar' ? 'الوحدة' : 'UOM'}
+                            className="input w-20"
+                            disabled={isLocked}
+                            title={language === 'ar' ? 'وحدة القياس' : 'Unit of Measure'}
+                          />
+                        </div>
+                      ) : (
+                        <select
+                          {...register(`lineItems.${index}.productId`, { required: !manualModes[index] })}
+                          className="select"
+                          disabled={isLocked}
+                        >
+                          <option value="">{language === 'ar' ? 'اختر منتج' : 'Select product'}</option>
+                          {(products || []).map((p) => (
+                            <option key={p._id} value={p._id}>
+                              {(language === 'ar' ? p.nameAr || p.nameEn : p.nameEn) || p.sku}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                     </div>
 
                     <div className="lg:col-span-2">
@@ -587,11 +631,13 @@ export default function PurchaseOrderForm() {
                   <tbody>
                     {(order.lineItems || []).map((li) => {
                       const productId = li?.productId?._id || li?.productId
-                      const name = language === 'ar' ? li?.productId?.nameAr || li?.productId?.nameEn : li?.productId?.nameEn || li?.productId?.nameAr
+                      const name = li?.manualName
+                        ? `${li.manualName}${li.uom ? ` (${li.uom})` : ''}`
+                        : (language === 'ar' ? li?.productId?.nameAr || li?.productId?.nameEn : li?.productId?.nameEn || li?.productId?.nameAr)
                       const remaining = Math.max(0, Number(li.quantityOrdered || 0) - Number(li.quantityReceived || 0))
 
                       return (
-                        <tr key={productId}>
+                        <tr key={productId || li?.manualName || index}>
                           <td className="font-medium text-gray-900 dark:text-white">{name || '-'}</td>
                           <td>{remaining}</td>
                           <td>

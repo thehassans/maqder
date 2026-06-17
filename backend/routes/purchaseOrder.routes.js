@@ -27,7 +27,9 @@ function normalizeLineItems(lineItems = []) {
     const lineTotal = lineSubtotal + lineTax;
 
     return {
-      productId: li.productId,
+      productId: li.productId || undefined,
+      manualName: li.manualName || '',
+      uom: li.uom || '',
       description: li.description,
       quantityOrdered,
       quantityReceived,
@@ -194,6 +196,12 @@ router.post('/', checkPermission('supply_chain', 'create'), async (req, res) => 
       if (existingCount !== uniqueProductIds.length) {
         return res.status(400).json({ error: 'Invalid product in line items' });
       }
+    }
+
+    // Validate that each line item has either a productId or a manualName
+    const hasInvalidItem = normalized.some((li) => !li.productId && !li.manualName);
+    if (hasInvalidItem) {
+      return res.status(400).json({ error: 'Each line item must have a product or a product name' });
     }
 
     const data = {
