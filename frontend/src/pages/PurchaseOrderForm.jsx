@@ -471,13 +471,48 @@ export default function PurchaseOrderForm() {
                             className="input flex-1"
                             disabled={isLocked}
                           />
-                          <input
+                          <select
                             {...register(`lineItems.${index}.uom`)}
-                            placeholder={language === 'ar' ? 'الوحدة' : 'UOM'}
-                            className="input w-20"
+                            className="select w-28"
                             disabled={isLocked}
                             title={language === 'ar' ? 'وحدة القياس' : 'Unit of Measure'}
-                          />
+                          >
+                            <option value="">UOM</option>
+                            <optgroup label={language === 'ar' ? 'عام' : 'General'}>
+                              <option value="pcs">Pcs</option>
+                              <option value="unit">Unit</option>
+                              <option value="set">Set</option>
+                              <option value="pair">Pair</option>
+                              <option value="box">Box</option>
+                              <option value="carton">Carton</option>
+                              <option value="pack">Pack</option>
+                              <option value="roll">Roll</option>
+                              <option value="bag">Bag</option>
+                              <option value="bundle">Bundle</option>
+                            </optgroup>
+                            <optgroup label={language === 'ar' ? 'وزن' : 'Weight'}>
+                              <option value="kg">Kg</option>
+                              <option value="g">g</option>
+                              <option value="ton">Ton</option>
+                              <option value="lbs">Lbs</option>
+                            </optgroup>
+                            <optgroup label={language === 'ar' ? 'حجم' : 'Volume'}>
+                              <option value="l">L</option>
+                              <option value="ml">mL</option>
+                              <option value="gallon">Gallon</option>
+                            </optgroup>
+                            <optgroup label={language === 'ar' ? 'طول' : 'Length'}>
+                              <option value="m">m</option>
+                              <option value="cm">cm</option>
+                              <option value="mm">mm</option>
+                              <option value="ft">ft</option>
+                              <option value="inch">Inch</option>
+                            </optgroup>
+                            <optgroup label={language === 'ar' ? 'مساحة' : 'Area'}>
+                              <option value="sqm">m²</option>
+                              <option value="sqft">ft²</option>
+                            </optgroup>
+                          </select>
                         </div>
                       ) : (
                         <select
