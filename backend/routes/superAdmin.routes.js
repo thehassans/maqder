@@ -2123,6 +2123,7 @@ router.post('/leads', async (req, res) => {
       tenantType: tenantType || '',
       city: city || '',
       notes: notes || '',
+      noteHistory: notes ? [{ note: notes, date: new Date() }] : [],
       createdBy: req.user?._id,
     });
     res.status(201).json(lead);
@@ -2134,18 +2135,27 @@ router.post('/leads', async (req, res) => {
 // @route   PUT /api/super-admin/leads/:id
 router.put('/leads/:id', async (req, res) => {
   try {
-    const { phoneNumber, name, status, serviceInterest, tenantType, city, notes } = req.body;
+    const { phoneNumber, name, status, serviceInterest, tenantType, city, notes, newNote } = req.body;
+    
+    let updateData = {
+      ...(phoneNumber !== undefined && { phoneNumber: String(phoneNumber).trim() }),
+      ...(name !== undefined && { name: String(name).trim() }),
+      ...(status !== undefined && { status }),
+      ...(serviceInterest !== undefined && { serviceInterest }),
+      ...(tenantType !== undefined && { tenantType }),
+      ...(city !== undefined && { city }),
+    };
+
+    if (newNote) {
+      updateData.$push = { noteHistory: { note: newNote, date: new Date() } };
+      updateData.notes = newNote; // keep the latest note in the notes field
+    } else if (notes !== undefined) {
+      updateData.notes = notes;
+    }
+
     const lead = await LeadQuery.findByIdAndUpdate(
       req.params.id,
-      {
-        ...(phoneNumber !== undefined && { phoneNumber: String(phoneNumber).trim() }),
-        ...(name !== undefined && { name: String(name).trim() }),
-        ...(status !== undefined && { status }),
-        ...(serviceInterest !== undefined && { serviceInterest }),
-        ...(tenantType !== undefined && { tenantType }),
-        ...(city !== undefined && { city }),
-        ...(notes !== undefined && { notes }),
-      },
+      updateData,
       { new: true, runValidators: true }
     );
     if (!lead) return res.status(404).json({ error: 'Lead not found' });

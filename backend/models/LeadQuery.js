@@ -16,6 +16,10 @@ const leadQuerySchema = new mongoose.Schema({
   tenantType: { type: String, default: '' },
   city: { type: String, default: '' },
   notes: { type: String, default: '' },
+  noteHistory: [{
+    note: String,
+    date: { type: Date, default: Date.now },
+  }],
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: true });
 

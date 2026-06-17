@@ -64,7 +64,7 @@ export default function QueriesCRM() {
   const [filters, setFilters] = useState({ status: '', serviceInterest: '', tenantType: '' });
   const [showModal, setShowModal] = useState(false);
   const [editingLead, setEditingLead] = useState(null);
-  const [form, setForm] = useState({ phoneNumber: '', name: '', status: 'new', serviceInterest: 'none', tenantType: '', city: '', notes: '' });
+  const [form, setForm] = useState({ phoneNumber: '', name: '', status: 'new', serviceInterest: 'none', tenantType: '', city: '', notes: '', newNote: '' });
 
   // Demo modal state
   const [demoLead, setDemoLead] = useState(null);
@@ -115,8 +115,8 @@ export default function QueriesCRM() {
 
   const openModal = (lead = null) => {
     setEditingLead(lead);
-    setForm(lead ? { phoneNumber: lead.phoneNumber || '', name: lead.name || '', status: lead.status || 'new', serviceInterest: lead.serviceInterest || 'none', tenantType: lead.tenantType || '', city: lead.city || '', notes: lead.notes || '' }
-                : { phoneNumber: '', name: '', status: 'new', serviceInterest: 'none', tenantType: '', city: '', notes: '' });
+    setForm(lead ? { phoneNumber: lead.phoneNumber || '', name: lead.name || '', status: lead.status || 'new', serviceInterest: lead.serviceInterest || 'none', tenantType: lead.tenantType || '', city: lead.city || '', notes: lead.notes || '', newNote: '' }
+                : { phoneNumber: '', name: '', status: 'new', serviceInterest: 'none', tenantType: '', city: '', notes: '', newNote: '' });
     setShowModal(true);
   };
   const closeModal = () => { setShowModal(false); setEditingLead(null); };
@@ -552,7 +552,23 @@ export default function QueriesCRM() {
                   <div className="w-1.5 h-5 rounded-full bg-amber-500"/>
                   <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Notes</h4>
                 </div>
-                <textarea value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} rows={4} placeholder="Conversation details, follow-up reminders, requirements..." className="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-semibold text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-300 transition-all resize-none dark:bg-dark-800 dark:border-dark-600 dark:text-white"/>
+                
+                {editingLead && editingLead.noteHistory && editingLead.noteHistory.length > 0 && (
+                  <div className="mb-4 space-y-3 max-h-48 overflow-y-auto pr-2">
+                    {editingLead.noteHistory.map((n, i) => (
+                      <div key={i} className="p-3 bg-gray-50 dark:bg-dark-800 rounded-xl border border-gray-100 dark:border-dark-600">
+                        <p className="text-[10px] font-bold text-gray-400 mb-1">{new Date(n.date).toLocaleString()}</p>
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{n.note}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {editingLead ? (
+                  <textarea value={form.newNote} onChange={e=>setForm(f=>({...f,newNote:e.target.value}))} rows={3} placeholder="Add a new note..." className="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-semibold text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-300 transition-all resize-none dark:bg-dark-800 dark:border-dark-600 dark:text-white"/>
+                ) : (
+                  <textarea value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} rows={4} placeholder="Conversation details, follow-up reminders, requirements..." className="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-semibold text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-300 transition-all resize-none dark:bg-dark-800 dark:border-dark-600 dark:text-white"/>
+                )}
               </div>
             </div>
 
