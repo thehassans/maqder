@@ -2146,11 +2146,12 @@ router.put('/leads/:id', async (req, res) => {
       ...(city !== undefined && { city }),
     };
 
+    if (notes !== undefined) {
+      updateData.notes = notes;
+    }
+    
     if (newNote) {
       updateData.$push = { noteHistory: { note: newNote, date: new Date() } };
-      updateData.notes = newNote; // keep the latest note in the notes field
-    } else if (notes !== undefined) {
-      updateData.notes = notes;
     }
 
     const lead = await LeadQuery.findByIdAndUpdate(

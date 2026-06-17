@@ -550,25 +550,38 @@ export default function QueriesCRM() {
               <div className="bg-white dark:bg-dark-700 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-dark-600">
                 <div className="flex items-center gap-2 mb-4">
                   <div className="w-1.5 h-5 rounded-full bg-amber-500"/>
-                  <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Notes</h4>
+                  <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest">Notes & History</h4>
                 </div>
                 
-                {editingLead && editingLead.noteHistory && editingLead.noteHistory.length > 0 && (
-                  <div className="mb-4 space-y-3 max-h-48 overflow-y-auto pr-2">
-                    {editingLead.noteHistory.map((n, i) => (
-                      <div key={i} className="p-3 bg-gray-50 dark:bg-dark-800 rounded-xl border border-gray-100 dark:border-dark-600">
-                        <p className="text-[10px] font-bold text-gray-400 mb-1">{new Date(n.date).toLocaleString()}</p>
-                        <p className="text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{n.note}</p>
-                      </div>
-                    ))}
+                <div className="space-y-6">
+                  {/* Main Notes - Always editable */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2.5">Main Notes / Requirements</label>
+                    <textarea value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} rows={3} placeholder="Conversation details, requirements..." className="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-semibold text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-300 transition-all resize-none dark:bg-dark-800 dark:border-dark-600 dark:text-white"/>
                   </div>
-                )}
-                
-                {editingLead ? (
-                  <textarea value={form.newNote} onChange={e=>setForm(f=>({...f,newNote:e.target.value}))} rows={3} placeholder="Add a new note..." className="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-semibold text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-300 transition-all resize-none dark:bg-dark-800 dark:border-dark-600 dark:text-white"/>
-                ) : (
-                  <textarea value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} rows={4} placeholder="Conversation details, follow-up reminders, requirements..." className="w-full px-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-semibold text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-300 transition-all resize-none dark:bg-dark-800 dark:border-dark-600 dark:text-white"/>
-                )}
+
+                  {/* Note History - Only shown when editing */}
+                  {editingLead && (
+                    <div className="pt-4 border-t border-gray-100 dark:border-dark-600">
+                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Follow-up History</label>
+                      
+                      {editingLead.noteHistory && editingLead.noteHistory.length > 0 ? (
+                        <div className="mb-4 space-y-3 max-h-48 overflow-y-auto pr-2">
+                          {editingLead.noteHistory.map((n, i) => (
+                            <div key={i} className="p-3 bg-gray-50 dark:bg-dark-800 rounded-xl border border-gray-100 dark:border-dark-600">
+                              <p className="text-[10px] font-bold text-gray-400 mb-1">{new Date(n.date).toLocaleString()}</p>
+                              <p className="text-sm font-medium text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{n.note}</p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-400 italic mb-4">No follow-up history yet.</p>
+                      )}
+                      
+                      <textarea value={form.newNote} onChange={e=>setForm(f=>({...f,newNote:e.target.value}))} rows={2} placeholder="Add a new follow-up note..." className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-semibold text-gray-900 placeholder:text-gray-300 focus:outline-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-300 transition-all resize-none dark:bg-dark-800 dark:border-dark-600 dark:text-white"/>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
