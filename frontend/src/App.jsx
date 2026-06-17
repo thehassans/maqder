@@ -52,6 +52,10 @@ import Payroll from './pages/hr/Payroll'
 import PayrollCalculators from './pages/hr/PayrollCalculators'
 import HRCompliance from './pages/hr/HRCompliance'
 import Attendance from './pages/hr/Attendance'
+import Hiring from './pages/hr/Hiring'
+import Leaves from './pages/hr/Leaves'
+import Performance from './pages/hr/Performance'
+import HRReports from './pages/hr/HRReports'
 import Products from './pages/inventory/Products'
 import ProductForm from './pages/inventory/ProductForm'
 import Warehouses from './pages/inventory/Warehouses'
@@ -409,13 +413,18 @@ function App() {
         <Route path="expenses" element={<Expenses />} />
         <Route path="expenses/new" element={<ExpenseForm />} />
         <Route path="expenses/:id" element={<ExpenseForm />} />
+        {/* HR Routes */}
         <Route path="employees" element={<Employees />} />
         <Route path="employees/new" element={<EmployeeForm />} />
         <Route path="employees/:id" element={<EmployeeForm />} />
-        <Route path="payroll" element={<Payroll />} />
-        <Route path="payroll/calculators" element={<PayrollCalculators />} />
         <Route path="hr/attendance" element={<Attendance />} />
         <Route path="hr/compliance" element={<HRCompliance />} />
+        <Route path="hr/hiring" element={<Hiring />} />
+        <Route path="hr/leaves" element={<Leaves />} />
+        <Route path="hr/performance" element={<Performance />} />
+        <Route path="hr/reports" element={<HRReports />} />
+        <Route path="payroll" element={<Payroll />} />
+        <Route path="payroll/calculators" element={<PayrollCalculators />} />
         <Route path="products" element={<BusinessTypeRoute allowedTypes={['trading']}><Products /></BusinessTypeRoute>} />
         <Route path="products/new" element={<BusinessTypeRoute allowedTypes={['trading']}><ProductForm /></BusinessTypeRoute>} />
         <Route path="products/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><ProductForm /></BusinessTypeRoute>} />
