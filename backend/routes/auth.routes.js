@@ -1,9 +1,10 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import { createHash } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 import User from '../models/User.js';
 import Tenant from '../models/Tenant.js';
 import { protect } from '../middleware/auth.js';
+import { sendPasswordResetEmail } from '../utils/emailService.js';
 
 const router = express.Router();
 const parsedDatabaseQueryTimeoutMs = Number(process.env.MONGODB_QUERY_TIMEOUT_MS || 10000);
@@ -363,6 +364,77 @@ router.put('/password', protect, async (req, res) => {
     await user.save();
     
     res.json({ message: 'Password updated successfully' });
+  } catch (error) {
+    sendRouteError(res, error);
+  }
+});
+
+// @route   POST /api/auth/forgot-password
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email is required' });
+
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await withQueryTimeout(User.findOne({ email: normalizedEmail }));
+
+    if (!user) {
+      return res.status(200).json({ message: 'If that email exists in our system, we have sent a password reset link.' });
+    }
+
+    let personalEmail = undefined;
+    if (user.tenantId) {
+      const tenant = await withQueryTimeout(Tenant.findById(user.tenantId));
+      if (tenant && tenant.personalEmail) {
+        personalEmail = tenant.personalEmail;
+      }
+    }
+
+    const resetToken = randomBytes(32).toString('hex');
+    user.passwordResetToken = createHash('sha256').update(resetToken).digest('hex');
+    user.passwordResetExpires = Date.now() + 60 * 60 * 1000;
+
+    await user.save({ validateBeforeSave: false });
+
+    const baseUrl = req.get('origin') || process.env.CLIENT_URL || 'https://maqder.com';
+    const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
+
+    const emailResult = await sendPasswordResetEmail({ user, resetUrl, personalEmail });
+
+    if (!emailResult.sent) {
+      user.passwordResetToken = undefined;
+      user.passwordResetExpires = undefined;
+      await user.save({ validateBeforeSave: false });
+      return res.status(500).json({ error: 'There was an error sending the email. Try again later.' });
+    }
+
+    res.status(200).json({ message: 'If that email exists in our system, we have sent a password reset link.' });
+  } catch (error) {
+    sendRouteError(res, error);
+  }
+});
+
+// @route   POST /api/auth/reset-password/:token
+router.post('/reset-password/:token', async (req, res) => {
+  try {
+    const hashedToken = createHash('sha256').update(req.params.token).digest('hex');
+
+    const user = await withQueryTimeout(User.findOne({
+      passwordResetToken: hashedToken,
+      passwordResetExpires: { $gt: Date.now() }
+    }));
+
+    if (!user) {
+      return res.status(400).json({ error: 'Token is invalid or has expired' });
+    }
+
+    user.password = req.body.password;
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+
+    await user.save();
+
+    res.status(200).json({ message: 'Password has been reset successfully' });
   } catch (error) {
     sendRouteError(res, error);
   }

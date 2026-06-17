@@ -463,3 +463,54 @@ export const maskEmailSecret = (value) => {
   if (text.length <= 4) return '****';
   return `${text.slice(0, 2)}***${text.slice(-2)}`;
 };
+
+export const sendPasswordResetEmail = async ({ user, resetUrl, personalEmail } = {}) => {
+  try {
+    const settings = await getGlobalSettings();
+    const config = resolveEmailConfig(settings, { allowEnvFallback: false });
+
+    if (!config.enabled) {
+      return { sent: false, reason: 'email_disabled' };
+    }
+
+    ensureEmailConfigured(config);
+
+    const recipients = dedupeRecipients(personalEmail, user.email);
+    if (recipients.length === 0) {
+      return { sent: false, reason: 'missing_recipient' };
+    }
+
+    const brandName = config.brandName;
+    const subject = `Password Reset Request - ${brandName}`;
+
+    const htmlBody = `
+      <p>Hello ${user.firstName || 'User'},</p>
+      <p>We received a request to reset your password for your <strong>${brandName}</strong> account.</p>
+      <p>Click the button below to reset your password. This link will expire in 1 hour.</p>
+      <div style="margin: 30px 0;">
+        <a href="${resetUrl}" style="background-color: #16a34a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Reset Password</a>
+      </div>
+      <p>If you did not request a password reset, please ignore this email or contact support if you have questions.</p>
+      <p>Thanks,<br/>The ${brandName} Team</p>
+    `;
+
+    const fullHtml = buildEmailShell({
+      brandName,
+      title: subject,
+      htmlBody: htmlBody,
+      dir: 'ltr'
+    });
+
+    await sendEmailWithConfig({
+      config,
+      to: recipients,
+      subject,
+      html: fullHtml,
+    });
+
+    return { sent: true };
+  } catch (error) {
+    console.error('[EmailService] Failed to send password reset email:', error);
+    return { sent: false, reason: 'error', details: error.message };
+  }
+};

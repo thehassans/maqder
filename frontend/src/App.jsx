@@ -13,6 +13,7 @@ import SuperAdminLayout from './layouts/SuperAdminLayout'
 import MarketingLayout from './layouts/MarketingLayout'
 
 import Login from './pages/auth/Login'
+import ResetPassword from './pages/auth/ResetPassword'
 import MarketingHome from './pages/marketing/Home'
 import MarketingSolutions from './pages/marketing/Solutions'
 import SolutionDetail from './pages/marketing/SolutionDetail'
@@ -267,6 +268,7 @@ function App() {
       {/* Auth Routes */}
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<Login />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/inactive" element={<InactiveTenant />} />
       </Route>
 

@@ -25,6 +25,9 @@ export default function Login() {
   const { t } = useTranslation(language)
   const [showPassword, setShowPassword] = useState(false)
   const [showContactOptions, setShowContactOptions] = useState(false)
+  const [isForgotPassword, setIsForgotPassword] = useState(false)
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('')
+  const [forgotPasswordStatus, setForgotPasswordStatus] = useState(null)
   const { data: websiteSettings } = usePublicWebsiteSettings()
   const initialTenantSlug = String(searchParams.get('tenant') || searchParams.get('tenantSlug') || '').trim().toLowerCase()
   const salesPhone = String(websiteSettings?.contactPhone || '+966596775485').trim()
@@ -72,6 +75,23 @@ export default function Login() {
     } catch {
       setIsAutoLoggingIn(false)
       // handled by auth slice state
+    }
+  }
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    if (!forgotPasswordEmail) return;
+    setForgotPasswordStatus('loading');
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotPasswordEmail })
+      });
+      const data = await res.json();
+      setForgotPasswordStatus(data.error ? 'error' : 'success');
+    } catch {
+      setForgotPasswordStatus('error');
     }
   }
 
@@ -203,10 +223,12 @@ export default function Login() {
           {/* Header */}
           <div className="text-center lg:text-start mb-10">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              {t('welcomeBack')} 👋
+              {isForgotPassword ? (language === 'ar' ? 'استعادة كلمة المرور' : 'Reset Password') : t('welcomeBack') + ' 👋'}
             </h1>
             <p className="text-gray-500 text-lg">
-              {t('signInToContinue')}
+              {isForgotPassword 
+                ? (language === 'ar' ? 'أدخل بريدك الإلكتروني لإرسال رابط إعادة التعيين' : 'Enter your email to receive a reset link') 
+                : t('signInToContinue')}
             </p>
           </div>
 
@@ -227,84 +249,136 @@ export default function Login() {
           )}
 
           {/* Form */}
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            {/* Email */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">{t('email')}</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 start-0 flex items-center ps-4 pointer-events-none">
-                  <Mail className="w-5 h-5 text-gray-400" />
+          {isForgotPassword ? (
+            <form onSubmit={handleForgotPassword} className="space-y-5">
+              {forgotPasswordStatus === 'success' && (
+                <div className="p-4 bg-green-50 border border-green-100 rounded-2xl flex items-start gap-3">
+                  <Shield className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                  <p className="text-sm text-green-700 font-medium">If that email exists in our system, we have sent a password reset link to the configured email address.</p>
                 </div>
-                <input
-                  type="email"
-                  {...register('email', { 
-                    required: 'Email is required',
-                    pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, message: 'Invalid email' }
-                  })}
-                  className={`w-full h-14 ps-12 pe-4 bg-white border-2 ${errors.email ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-[#244D33]'} rounded-2xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-[#244D33]/10 transition-all`}
-                  placeholder="admin@zatca-erp.com"
-                />
+              )}
+              {forgotPasswordStatus === 'error' && (
+                <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-3">
+                  <Loader2 className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-700 font-medium">There was an error sending the reset email. Please try again later.</p>
+                </div>
+              )}
+              
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('email')}</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 start-0 flex items-center ps-4 pointer-events-none">
+                    <Mail className="w-5 h-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="email"
+                    required
+                    value={forgotPasswordEmail}
+                    onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                    className="w-full h-14 ps-12 pe-4 bg-white border-2 border-gray-200 focus:border-[#244D33] rounded-2xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-[#244D33]/10 transition-all"
+                    placeholder="admin@zatca-erp.com"
+                  />
+                </div>
               </div>
-              {errors.email && <p className="mt-2 text-sm text-red-500 font-medium">{errors.email.message}</p>}
-            </div>
 
-            {/* Password */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">{t('password')}</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 start-0 flex items-center ps-4 pointer-events-none">
-                  <Lock className="w-5 h-5 text-gray-400" />
-                </div>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  {...register('password', { required: 'Password is required' })}
-                  className={`w-full h-14 ps-12 pe-14 bg-white border-2 ${errors.password ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-[#244D33]'} rounded-2xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-[#244D33]/10 transition-all`}
-                  placeholder="••••••••"
-                />
+              <div className="flex items-center justify-between pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 end-0 flex items-center pe-4 text-gray-400 hover:text-gray-600 transition-colors"
+                  onClick={() => setIsForgotPassword(false)}
+                  className="text-sm font-medium text-gray-500 hover:text-gray-800 transition-colors"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {language === 'ar' ? 'العودة لتسجيل الدخول' : 'Back to Login'}
+                </button>
+                <button
+                  type="submit"
+                  disabled={forgotPasswordStatus === 'loading'}
+                  className="px-6 h-12 bg-gradient-to-r from-[#244D33] to-[#1e3f2a] hover:from-[#1e3f2a] hover:to-[#163121] text-white font-semibold rounded-xl shadow-md disabled:opacity-70 transition-all flex items-center gap-2"
+                >
+                  {forgotPasswordStatus === 'loading' ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                  {language === 'ar' ? 'إرسال الرابط' : 'Send Link'}
                 </button>
               </div>
-              {errors.password && <p className="mt-2 text-sm text-red-500 font-medium">{errors.password.message}</p>}
-            </div>
-
-            {/* Remember & Forgot */}
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-3 cursor-pointer group">
+            </form>
+          ) : (
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('email')}</label>
                 <div className="relative">
-                  <input type="checkbox" className="peer sr-only" />
-                  <div className="w-5 h-5 border-2 border-gray-300 rounded-md peer-checked:bg-[#244D33] peer-checked:border-[#244D33] transition-all" />
-                  <svg className="absolute top-0.5 left-0.5 w-4 h-4 text-white opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                  </svg>
+                  <div className="absolute inset-y-0 start-0 flex items-center ps-4 pointer-events-none">
+                    <Mail className="w-5 h-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="email"
+                    {...register('email', { 
+                      required: 'Email is required',
+                      pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, message: 'Invalid email' }
+                    })}
+                    className={`w-full h-14 ps-12 pe-4 bg-white border-2 ${errors.email ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-[#244D33]'} rounded-2xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-[#244D33]/10 transition-all`}
+                    placeholder="admin@zatca-erp.com"
+                  />
                 </div>
-                <span className="text-sm text-gray-600 group-hover:text-gray-900 transition-colors">{t('rememberMe')}</span>
-              </label>
-              <a href="#" className="text-sm text-[#244D33] hover:text-[#1e3f2a] font-semibold transition-colors">
-                {t('forgotPassword')}
-              </a>
-            </div>
+                {errors.email && <p className="mt-2 text-sm text-red-500 font-medium">{errors.email.message}</p>}
+              </div>
 
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full h-14 bg-gradient-to-r from-[#244D33] to-[#1e3f2a] hover:from-[#1e3f2a] hover:to-[#163121] text-white font-semibold rounded-2xl shadow-lg shadow-[#244D33]/30 hover:shadow-xl hover:shadow-[#244D33]/40 disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-2 group"
-            >
-              {isLoading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <>
-                  {t('login')}
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </>
-              )}
-            </button>
-          </form>
+              {/* Password */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">{t('password')}</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 start-0 flex items-center ps-4 pointer-events-none">
+                    <Lock className="w-5 h-5 text-gray-400" />
+                  </div>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    {...register('password', { required: 'Password is required' })}
+                    className={`w-full h-14 ps-12 pe-14 bg-white border-2 ${errors.password ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-[#244D33]'} rounded-2xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-[#244D33]/10 transition-all`}
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 end-0 flex items-center pe-4 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                {errors.password && <p className="mt-2 text-sm text-red-500 font-medium">{errors.password.message}</p>}
+              </div>
+
+              {/* Remember & Forgot */}
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <div className="relative">
+                    <input type="checkbox" className="peer sr-only" />
+                    <div className="w-5 h-5 border-2 border-gray-300 rounded-md peer-checked:bg-[#244D33] peer-checked:border-[#244D33] transition-all" />
+                    <svg className="absolute top-0.5 left-0.5 w-4 h-4 text-white opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <span className="text-sm text-gray-600 group-hover:text-gray-900 transition-colors">{t('rememberMe')}</span>
+                </label>
+                <button type="button" onClick={() => setIsForgotPassword(true)} className="text-sm text-[#244D33] hover:text-[#1e3f2a] font-semibold transition-colors">
+                  {t('forgotPassword')}
+                </button>
+              </div>
+
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full h-14 bg-gradient-to-r from-[#244D33] to-[#1e3f2a] hover:from-[#1e3f2a] hover:to-[#163121] text-white font-semibold rounded-2xl shadow-lg shadow-[#244D33]/30 hover:shadow-xl hover:shadow-[#244D33]/40 disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-2 group"
+              >
+                {isLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <>
+                    {t('login')}
+                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
+              </button>
+            </form>
+          )}
 
           {/* Footer */}
           <div className="mt-10 text-center">
