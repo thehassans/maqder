@@ -30,12 +30,12 @@ export default function CRMDealsTab({ preview }) {
 
   const save = useMutation({
     mutationFn: () => editing ? api.put(`/crm/deals/${editing._id}`, form) : api.post('/crm/deals', form),
-    onSuccess: () => { toast.success(editing ? t('Updated', 'تم التحديث') : t('Created', 'تم الإنشاء')); qc.invalidateQueries({ queryKey: ['crm-deals', 'crm-stats'] }); close() },
+    onSuccess: () => { toast.success(editing ? t('Updated', 'تم التحديث') : t('Created', 'تم الإنشاء')); qc.invalidateQueries({ queryKey: ['crm-deals'] }); qc.invalidateQueries({ queryKey: ['crm-stats'] }); close() },
     onError: (e) => toast.error(e.response?.data?.error || t('Failed', 'فشل'))
   })
   const del = useMutation({
     mutationFn: (id) => api.delete(`/crm/deals/${id}`),
-    onSuccess: () => { toast.success(t('Deleted', 'تم الحذف')); qc.invalidateQueries({ queryKey: ['crm-deals', 'crm-stats'] }) },
+    onSuccess: () => { toast.success(t('Deleted', 'تم الحذف')); qc.invalidateQueries({ queryKey: ['crm-deals'] }); qc.invalidateQueries({ queryKey: ['crm-stats'] }) },
     onError: (e) => toast.error(e.response?.data?.error || t('Failed', 'فشل'))
   })
 

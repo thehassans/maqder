@@ -9,6 +9,18 @@ const router = express.Router();
 router.use(protect);
 router.use(tenantFilter);
 
+function cleanBody(body) {
+  const cleaned = {};
+  for (const [key, value] of Object.entries(body)) {
+    if (value === '') {
+      cleaned[key] = null;
+    } else {
+      cleaned[key] = value;
+    }
+  }
+  return cleaned;
+}
+
 /* ─────────── LEADS ─────────── */
 
 router.get('/leads', checkPermission('crm', 'read'), async (req, res) => {
@@ -45,14 +57,14 @@ router.get('/leads/:id', checkPermission('crm', 'read'), async (req, res) => {
 
 router.post('/leads', checkPermission('crm', 'create'), async (req, res) => {
   try {
-    const lead = await CRMLead.create({ ...req.body, tenantId: req.user.tenantId, createdBy: req.user._id });
+    const lead = await CRMLead.create({ ...cleanBody(req.body), tenantId: req.user.tenantId, createdBy: req.user._id });
     res.status(201).json(lead);
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
 router.put('/leads/:id', checkPermission('crm', 'update'), async (req, res) => {
   try {
-    const lead = await CRMLead.findOneAndUpdate({ _id: req.params.id, ...req.tenantFilter }, req.body, { new: true, runValidators: true });
+    const lead = await CRMLead.findOneAndUpdate({ _id: req.params.id, ...req.tenantFilter }, cleanBody(req.body), { new: true, runValidators: true });
     if (!lead) return res.status(404).json({ error: 'Not found' });
     res.json(lead);
   } catch (e) { res.status(400).json({ error: e.message }); }
@@ -96,14 +108,14 @@ router.get('/deals/:id', checkPermission('crm', 'read'), async (req, res) => {
 
 router.post('/deals', checkPermission('crm', 'create'), async (req, res) => {
   try {
-    const deal = await CRMDeal.create({ ...req.body, tenantId: req.user.tenantId, createdBy: req.user._id });
+    const deal = await CRMDeal.create({ ...cleanBody(req.body), tenantId: req.user.tenantId, createdBy: req.user._id });
     res.status(201).json(deal);
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
 router.put('/deals/:id', checkPermission('crm', 'update'), async (req, res) => {
   try {
-    const updates = { ...req.body };
+    const updates = cleanBody(req.body);
     if (updates.stage === 'closed_won' || updates.stage === 'closed_lost') {
       updates.actualCloseDate = new Date();
     }
@@ -144,14 +156,14 @@ router.get('/activities', checkPermission('crm', 'read'), async (req, res) => {
 
 router.post('/activities', checkPermission('crm', 'create'), async (req, res) => {
   try {
-    const activity = await CRMActivity.create({ ...req.body, tenantId: req.user.tenantId, createdBy: req.user._id });
+    const activity = await CRMActivity.create({ ...cleanBody(req.body), tenantId: req.user.tenantId, createdBy: req.user._id });
     res.status(201).json(activity);
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
 router.put('/activities/:id', checkPermission('crm', 'update'), async (req, res) => {
   try {
-    const activity = await CRMActivity.findOneAndUpdate({ _id: req.params.id, ...req.tenantFilter }, req.body, { new: true, runValidators: true });
+    const activity = await CRMActivity.findOneAndUpdate({ _id: req.params.id, ...req.tenantFilter }, cleanBody(req.body), { new: true, runValidators: true });
     if (!activity) return res.status(404).json({ error: 'Not found' });
     res.json(activity);
   } catch (e) { res.status(400).json({ error: e.message }); }

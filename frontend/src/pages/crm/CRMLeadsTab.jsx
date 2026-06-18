@@ -37,12 +37,12 @@ export default function CRMLeadsTab() {
 
   const save = useMutation({
     mutationFn: () => editing ? api.put(`/crm/leads/${editing._id}`, form) : api.post('/crm/leads', form),
-    onSuccess: () => { toast.success(editing ? t('Updated', 'تم التحديث') : t('Created', 'تم الإنشاء')); qc.invalidateQueries({ queryKey: ['crm-leads', 'crm-stats'] }); close() },
+    onSuccess: () => { toast.success(editing ? t('Updated', 'تم التحديث') : t('Created', 'تم الإنشاء')); qc.invalidateQueries({ queryKey: ['crm-leads'] }); qc.invalidateQueries({ queryKey: ['crm-stats'] }); close() },
     onError: (e) => toast.error(e.response?.data?.error || t('Failed', 'فشل'))
   })
   const del = useMutation({
     mutationFn: (id) => api.delete(`/crm/leads/${id}`),
-    onSuccess: () => { toast.success(t('Deleted', 'تم الحذف')); qc.invalidateQueries({ queryKey: ['crm-leads', 'crm-stats'] }) },
+    onSuccess: () => { toast.success(t('Deleted', 'تم الحذف')); qc.invalidateQueries({ queryKey: ['crm-leads'] }); qc.invalidateQueries({ queryKey: ['crm-stats'] }) },
     onError: (e) => toast.error(e.response?.data?.error || t('Failed', 'فشل'))
   })
 

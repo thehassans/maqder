@@ -26,7 +26,7 @@ export default function CRMActivitiesTab({ preview }) {
 
   const save = useMutation({
     mutationFn: () => editing ? api.put(`/crm/activities/${editing._id}`, form) : api.post('/crm/activities', form),
-    onSuccess: () => { toast.success(editing ? t('Updated', 'تم التحديث') : t('Created', 'تم الإنشاء')); qc.invalidateQueries({ queryKey: ['crm-activities', 'crm-stats'] }); close() },
+    onSuccess: () => { toast.success(editing ? t('Updated', 'تم التحديث') : t('Created', 'تم الإنشاء')); qc.invalidateQueries({ queryKey: ['crm-activities'] }); qc.invalidateQueries({ queryKey: ['crm-stats'] }); close() },
     onError: (e) => toast.error(e.response?.data?.error || t('Failed', 'فشل'))
   })
   const del = useMutation({
