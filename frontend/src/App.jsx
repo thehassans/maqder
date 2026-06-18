@@ -151,6 +151,7 @@ import SaudiCompliance from './pages/compliance/SaudiCompliance'
 import GovernmentIntegrations from './pages/tenant-settings/GovernmentIntegrations'
 import GovernmentIntegrationDetail from './pages/tenant-settings/GovernmentIntegrationDetail'
 import CarRentalLayout from './layouts/CarRentalLayout'
+import WorkshopLayout from './layouts/WorkshopLayout'
 import FleetList from './pages/car-rental/FleetList'
 import CarForm from './pages/car-rental/CarForm'
 import CustomerRegistry from './pages/car-rental/CustomerRegistry'
@@ -159,6 +160,10 @@ import ActiveRentals from './pages/car-rental/ActiveRentals'
 import CheckoutPOS from './pages/car-rental/CheckoutPOS'
 import CheckinPOS from './pages/car-rental/CheckinPOS'
 import ContractDetail from './pages/car-rental/ContractDetail'
+import WorkshopDashboard from './pages/workshop/WorkshopDashboard'
+import JobCards from './pages/workshop/JobCards'
+import Vehicles from './pages/workshop/Vehicles'
+import WorkshopInventory from './pages/workshop/WorkshopInventory'
 
 import LaundryLayout from './layouts/LaundryLayout'
 import LaundryPOS from './pages/laundry/LaundryPOS'
@@ -539,6 +544,23 @@ function App() {
         <Route path="contracts" element={<Navigate to="/app/rental/active" replace />} />
         <Route path="contracts/:id" element={<ContractDetail />} />
         <Route path="contracts/:id/checkin" element={<CheckinPOS />} />
+      </Route>
+
+      {/* ───── Car Workshop Shell ───── */}
+      <Route
+        path="/app/workshop"
+        element={
+          <ProtectedRoute redirectSuperAdmin>
+            <BusinessTypeRoute allowedTypes={['car_workshop']}>
+              <WorkshopLayout />
+            </BusinessTypeRoute>
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<WorkshopDashboard />} />
+        <Route path="job-cards" element={<JobCards />} />
+        <Route path="vehicles" element={<Vehicles />} />
+        <Route path="inventory" element={<WorkshopInventory />} />
       </Route>
 
       {/* ───── Laundry Shell ───── */}
