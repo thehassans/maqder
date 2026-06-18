@@ -73,6 +73,8 @@ export default function InvoiceView() {
   const tenantBusinessTypes = getTenantBusinessTypes(tenant)
   const posTenants = ['bakala', 'super market', 'khayyat', 'saloon', 'laundry', 'restaurant']
   const isPosTenant = tenantBusinessTypes.some(t => posTenants.includes(t))
+  const isPosInvoice = ['restaurant', 'bakala', 'saloon', 'laundry', 'khayyat'].includes(invoice?.businessContext)
+  const showThermal = isPosTenant || isPosInvoice
 
   const signMutation = useMutation({
     mutationFn: () => api.post(`/invoices/${id}/sign`, undefined, { timeout: 120000 }),
@@ -207,7 +209,7 @@ export default function InvoiceView() {
           <button
             type="button"
             onClick={async () => {
-              if (isPosTenant) {
+              if (showThermal) {
                 window.print()
                 return
               }
@@ -228,6 +230,10 @@ export default function InvoiceView() {
           <button
             type="button"
             onClick={async () => {
+              if (showThermal) {
+                window.print()
+                return
+              }
               try {
                 setDownloadingPdf(true)
                 await downloadInvoicePdf({ invoice, language, tenant, sourceElement: invoicePreviewRef.current })
@@ -340,8 +346,8 @@ export default function InvoiceView() {
               )}
             </div>
 
-            <div ref={invoicePreviewRef} className={isPosTenant ? 'flex justify-center bg-gray-50 p-6 rounded-2xl border border-gray-100' : ''}>
-              {isPosTenant ? (
+            <div ref={invoicePreviewRef} className={showThermal ? 'flex justify-center bg-gray-50 p-6 rounded-2xl border border-gray-100' : ''}>
+              {showThermal ? (
                 <ThermalReceipt
                   order={{
                     ...invoice,
@@ -360,7 +366,7 @@ export default function InvoiceView() {
                       total: item.taxableAmount || (item.quantity * item.unitPrice)
                     }))
                   }}
-                  type={tenantBusinessTypes[0] || 'bakala'}
+                  type={invoice?.businessContext || tenantBusinessTypes[0] || 'bakala'}
                 />
               ) : (
                 <InvoiceLivePreview

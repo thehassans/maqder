@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { QRCodeSVG } from 'qrcode.react'
 import InvoiceLivePreview from '../components/invoices/InvoiceLivePreview'
 import QuotationDocumentPreview from '../components/quotations/QuotationDocumentPreview'
+import ThermalReceipt from '../components/ui/ThermalReceipt'
 import api from './api'
 import { formatCurrency, isSarCurrency } from './currency'
 import { calculateInvoiceSummary, normalizeTravelDetails } from './invoiceDocument'
@@ -206,6 +207,8 @@ const renderQrToDataUrl = async (value, size = 112) => {
 const shouldRenderBilingualInvoice = (invoice) => invoice?.invoiceSubtype === 'travel_ticket'
   || ['travel_agency', 'trading', 'construction'].includes(invoice?.businessContext)
 
+const isPosInvoice = (invoice) => ['restaurant', 'bakala', 'saloon', 'laundry', 'khayyat'].includes(invoice?.businessContext)
+
 const captureElementSnapshotCanvas = async (sourceElement) => {
   if (!sourceElement || typeof window === 'undefined') return null
 
@@ -229,10 +232,27 @@ const renderElementSnapshotPdf = async ({ doc, sourceElement }) => {
 
   const pageW = doc.internal.pageSize.getWidth()
   const pageH = doc.internal.pageSize.getHeight()
-  const margin = 18
+  const isThermal = pageW < 300
+  const margin = isThermal ? 8 : 18
   const usableW = pageW - margin * 2
   const usableH = pageH - margin * 2
   const scale = usableW / canvas.width
+
+  if (isThermal) {
+    const imgHeight = canvas.height * scale
+    doc.addImage(
+      canvas.toDataURL('image/png'),
+      'PNG',
+      margin,
+      margin,
+      usableW,
+      imgHeight,
+      undefined,
+      'FAST'
+    )
+    return true
+  }
+
   const pageCanvasHeight = Math.max(1, Math.floor(usableH / scale))
 
   let offsetY = 0
@@ -753,8 +773,9 @@ const generateInvoicePdf = async ({ invoice, language = 'en', tenant, sourceElem
   const autoTableModule = await import('jspdf-autotable')
   const autoTable = autoTableModule?.default || autoTableModule
 
+  const isPos = isPosInvoice(invoice)
   const pdfOrientation = tenant?.settings?.invoicePdfOrientation || 'portrait'
-  const pdfPageSize = tenant?.settings?.invoicePdfPageSize || 'a4'
+  const pdfPageSize = isPos ? [226, 800] : (tenant?.settings?.invoicePdfPageSize || 'a4')
   const doc = new jsPDF({ orientation: pdfOrientation, unit: 'pt', format: pdfPageSize })
   const name = sanitizeFileName(resolveDocumentNumber(invoice, documentType))
 
