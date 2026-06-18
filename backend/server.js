@@ -78,6 +78,7 @@ import saloonOrderRoutes from './routes/saloonOrder.routes.js';
 import saloonStaffRoutes from './routes/saloonStaff.routes.js';
 import posPaymentRoutes from './routes/posPayment.routes.js';
 
+import workshopRoutes from './routes/workshop.routes.js';
 import khayyatWorkerRoutes from './routes/khayyat/worker.js';
 import khayyatEmbroideryRoutes from './routes/khayyat/embroideryDesigns.js';
 import khayyatFabricRoutes from './routes/khayyat/fabric.js';
@@ -426,6 +427,7 @@ app.use('/api/saloon/orders', ensureDatabaseReady, saloonOrderRoutes);
 app.use('/api/saloon/staff', ensureDatabaseReady, saloonStaffRoutes);
 
 app.use('/api/pos', ensureDatabaseReady, posPaymentRoutes);
+app.use('/api/workshop', ensureDatabaseReady, workshopRoutes);
 
 app.use('/api/khayyat/worker', ensureDatabaseReady, khayyatWorkerRoutes);
 app.use('/api/khayyat/embroidery-designs', ensureDatabaseReady, khayyatEmbroideryRoutes);

@@ -1,4 +1,4 @@
-export const BUSINESS_TYPES = ['trading', 'construction', 'travel_agency', 'restaurant', 'car_rental', 'laundry', 'saloon', 'khayyat', 'manpower', 'bakala']
+export const BUSINESS_TYPES = ['trading', 'construction', 'travel_agency', 'restaurant', 'car_rental', 'laundry', 'saloon', 'khayyat', 'manpower', 'bakala', 'car_workshop']
 
 export const getBusinessTypeOptions = (language = 'en') => [
   {
@@ -50,6 +50,11 @@ export const getBusinessTypeOptions = (language = 'en') => [
     id: 'bakala',
     label: language === 'ar' ? 'البقالة والسوبر ماركت' : 'Bakala / Supermarket',
     description: language === 'ar' ? 'نقطة بيع سريعة للمواد الغذائية الاستهلاكية والتجزئة' : 'Fast-paced POS for grocery and retail',
+  },
+  {
+    id: 'car_workshop',
+    label: language === 'ar' ? 'مركز صيانة سيارات' : 'Car Workshop',
+    description: language === 'ar' ? 'بطاقات إصلاح، التقدير، والتكامل مع الزكاة والمرور' : 'Job cards, Taqdeer, ZATCA & Absher integration',
   },
 ]
 

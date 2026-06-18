@@ -6,8 +6,12 @@ import PerformanceReview from '../models/PerformanceReview.js';
 import Employee from '../models/Employee.js';
 import Payroll from '../models/Payroll.js';
 import { protect, tenantFilter, checkPermission } from '../middleware/auth.js';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage() });
 router.use(protect);
 router.use(tenantFilter);
 
@@ -69,6 +73,19 @@ router.delete('/requisitions/:id', checkPermission('hr', 'delete'), async (req, 
 
 /* ───────────────── CANDIDATES ───────────────── */
 
+function _saveCandidateFile(tenantId, fieldname, buffer, originalname) {
+  const ext = path.extname(originalname) || '.pdf';
+  const filename = `${fieldname}-${Date.now()}-${Math.round(Math.random() * 1E9)}${ext}`;
+  const tenantIdStr = String(tenantId);
+  const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'hr', 'candidates', tenantIdStr);
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+  const filepath = path.join(uploadsDir, filename);
+  fs.writeFileSync(filepath, buffer);
+  return `/uploads/hr/candidates/${tenantIdStr}/${filename}`;
+}
+
 // GET /api/hr/candidates
 router.get('/candidates', checkPermission('hr', 'read'), async (req, res) => {
   try {
@@ -89,19 +106,32 @@ router.get('/candidates', checkPermission('hr', 'read'), async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-router.post('/candidates', checkPermission('hr', 'create'), async (req, res) => {
+router.post('/candidates', checkPermission('hr', 'create'), upload.fields([{ name: 'resumeFile', maxCount: 1 }, { name: 'coverLetterFile', maxCount: 1 }]), async (req, res) => {
   try {
     const data = { ...req.body, tenantId: req.user.tenantId, createdBy: req.user._id };
+    if (req.files?.resumeFile?.[0]) {
+      data.resumeFile = _saveCandidateFile(req.user.tenantId, 'resume', req.files.resumeFile[0].buffer, req.files.resumeFile[0].originalname);
+    }
+    if (req.files?.coverLetterFile?.[0]) {
+      data.coverLetterFile = _saveCandidateFile(req.user.tenantId, 'coverLetter', req.files.coverLetterFile[0].buffer, req.files.coverLetterFile[0].originalname);
+    }
     const cand = await Candidate.create(data);
     res.status(201).json(cand);
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
-router.put('/candidates/:id', checkPermission('hr', 'update'), async (req, res) => {
+router.put('/candidates/:id', checkPermission('hr', 'update'), upload.fields([{ name: 'resumeFile', maxCount: 1 }, { name: 'coverLetterFile', maxCount: 1 }]), async (req, res) => {
   try {
+    const update = { ...req.body };
+    if (req.files?.resumeFile?.[0]) {
+      update.resumeFile = _saveCandidateFile(req.user.tenantId, 'resume', req.files.resumeFile[0].buffer, req.files.resumeFile[0].originalname);
+    }
+    if (req.files?.coverLetterFile?.[0]) {
+      update.coverLetterFile = _saveCandidateFile(req.user.tenantId, 'coverLetter', req.files.coverLetterFile[0].buffer, req.files.coverLetterFile[0].originalname);
+    }
     const cand = await Candidate.findOneAndUpdate(
       { _id: req.params.id, ...req.tenantFilter },
-      req.body,
+      update,
       { new: true }
     );
     if (!cand) return res.status(404).json({ error: 'Not found' });

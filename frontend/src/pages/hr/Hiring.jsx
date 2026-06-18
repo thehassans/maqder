@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import {
   Plus, Search, Filter, MoreVertical, Briefcase, Users, Calendar,
   ExternalLink, X, Save, Trash2, MapPin, Star, Phone, Mail,
-  UserCheck, UserX, ArrowRight
+  UserCheck, UserX, ArrowRight, Paperclip
 } from 'lucide-react';
 import api from '../../lib/api';
 
@@ -24,8 +24,8 @@ function initJobForm(job) {
   return { requisitionId: job.requisitionId || '', title: job.title || '', titleAr: job.titleAr || '', department: job.department || '', position: job.position || '', employmentType: job.employmentType || 'full_time', location: job.location || '', vacancies: job.vacancies || 1, salaryMin: job.salaryMin || '', salaryMax: job.salaryMax || '', description: job.description || '', requirements: job.requirements || '', status: job.status || 'draft', priority: job.priority || 'medium', postedDate: job.postedDate ? job.postedDate.slice(0, 10) : '', closingDate: job.closingDate ? job.closingDate.slice(0, 10) : '' };
 }
 function initCandForm(cand, jobId = '') {
-  if (!cand) return { jobRequisitionId: jobId, firstName: '', lastName: '', email: '', phone: '', nationality: '', source: 'other', stage: 'new', rating: '', resumeUrl: '', coverLetter: '', notes: '', interviewDate: '', offerSalary: '' };
-  return { jobRequisitionId: cand.jobRequisitionId || jobId, firstName: cand.firstName || '', lastName: cand.lastName || '', email: cand.email || '', phone: cand.phone || '', nationality: cand.nationality || '', source: cand.source || 'other', stage: cand.stage || 'new', rating: cand.rating || '', resumeUrl: cand.resumeUrl || '', coverLetter: cand.coverLetter || '', notes: cand.notes || '', interviewDate: cand.interviewDate ? cand.interviewDate.slice(0, 10) : '', offerSalary: cand.offerSalary || '' };
+  if (!cand) return { jobRequisitionId: jobId, firstName: '', lastName: '', email: '', phone: '', nationality: '', source: 'other', stage: 'new', rating: '', resumeUrl: '', resumeFile: null, coverLetter: '', coverLetterFile: null, notes: '', interviewDate: '', offerSalary: '' };
+  return { jobRequisitionId: cand.jobRequisitionId || jobId, firstName: cand.firstName || '', lastName: cand.lastName || '', email: cand.email || '', phone: cand.phone || '', nationality: cand.nationality || '', source: cand.source || 'other', stage: cand.stage || 'new', rating: cand.rating || '', resumeUrl: cand.resumeUrl || '', resumeFile: null, coverLetter: cand.coverLetter || '', coverLetterFile: null, notes: cand.notes || '', interviewDate: cand.interviewDate ? cand.interviewDate.slice(0, 10) : '', offerSalary: cand.offerSalary || '' };
 }
 
 export default function Hiring() {
@@ -61,7 +61,21 @@ export default function Hiring() {
     onError: (e) => toast.error(e.response?.data?.error || 'Failed'),
   });
   const candMut = useMutation({
-    mutationFn: (payload) => editingCand ? api.put(`/hr/candidates/${editingCand._id}`, payload) : api.post('/hr/candidates', payload),
+    mutationFn: (payload) => {
+      const hasFiles = payload.resumeFile instanceof File || payload.coverLetterFile instanceof File;
+      if (!hasFiles) {
+        return editingCand ? api.put(`/hr/candidates/${editingCand._id}`, payload) : api.post('/hr/candidates', payload);
+      }
+      const form = new FormData();
+      Object.entries(payload).forEach(([k, v]) => {
+        if (v === null || v === undefined) return;
+        if (v instanceof File) form.append(k, v);
+        else form.append(k, String(v));
+      });
+      return editingCand
+        ? api.put(`/hr/candidates/${editingCand._id}`, form, { headers: { 'Content-Type': 'multipart/form-data' } })
+        : api.post('/hr/candidates', form, { headers: { 'Content-Type': 'multipart/form-data' } });
+    },
     onSuccess: () => { toast.success(editingCand ? 'Updated' : 'Created'); qc.invalidateQueries({ queryKey: ['hr-candidates'] }); closeCandModal(); },
     onError: (e) => toast.error(e.response?.data?.error || 'Failed'),
   });
@@ -195,6 +209,10 @@ export default function Hiring() {
                         {c.email && <span className="flex items-center gap-1"><Mail className="w-3 h-3"/>{c.email}</span>}
                       </div>
                       {c.rating && <div className="flex items-center gap-0.5 mt-2"><Star className="w-3 h-3 text-amber-400 fill-amber-400"/><span className="text-xs font-medium text-gray-700">{c.rating}</span></div>}
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {c.resumeFile && <a href={c.resumeFile} target="_blank" rel="noopener noreferrer" className="text-[10px] px-2 py-1 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 font-medium flex items-center gap-1"><Paperclip className="w-3 h-3"/> Resume</a>}
+                        {c.coverLetterFile && <a href={c.coverLetterFile} target="_blank" rel="noopener noreferrer" className="text-[10px] px-2 py-1 rounded-md bg-purple-50 text-purple-600 hover:bg-purple-100 font-medium flex items-center gap-1"><Paperclip className="w-3 h-3"/> Cover Letter</a>}
+                      </div>
                       <div className="flex gap-2 mt-3">
                         {c.stage !== 'rejected' && c.stage !== 'hired' && (
                           <button onClick={() => moveCandMut.mutate({ id: c._id, stage: 'rejected' })} className="text-[10px] px-2 py-1 rounded-md bg-red-50 text-red-600 hover:bg-red-100 font-medium flex items-center gap-1"><UserX className="w-3 h-3"/> Reject</button>
@@ -267,8 +285,42 @@ export default function Hiring() {
                   <div><label className="text-xs font-medium text-gray-500">Interview Date</label><input type="date" value={candForm.interviewDate} onChange={e => setCandForm(f => ({ ...f, interviewDate: e.target.value }))} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm"/></div>
                   <div><label className="text-xs font-medium text-gray-500">Offer Salary</label><input type="number" value={candForm.offerSalary} onChange={e => setCandForm(f => ({ ...f, offerSalary: Number(e.target.value) }))} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm"/></div>
                 </div>
-                <div><label className="text-xs font-medium text-gray-500">Resume URL</label><input value={candForm.resumeUrl} onChange={e => setCandForm(f => ({ ...f, resumeUrl: e.target.value }))} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm"/></div>
-                <div><label className="text-xs font-medium text-gray-500">Cover Letter</label><textarea value={candForm.coverLetter} onChange={e => setCandForm(f => ({ ...f, coverLetter: e.target.value }))} rows={2} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm"/></div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500">Resume</label>
+                  <div className="mt-1 flex items-center gap-3">
+                    <label className="flex-1 cursor-pointer">
+                      <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={e => setCandForm(f => ({ ...f, resumeFile: e.target.files[0] }))} />
+                      <div className="px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 border-dashed rounded-lg text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors flex items-center gap-2">
+                        <Paperclip className="w-4 h-4" />
+                        {candForm.resumeFile?.name || (editingCand?.resumeFile ? 'Replace file' : 'Upload PDF/DOC')}
+                      </div>
+                    </label>
+                    {editingCand?.resumeFile && !candForm.resumeFile && (
+                      <a href={editingCand.resumeFile} target="_blank" rel="noopener noreferrer" className="text-primary-600 text-xs font-medium hover:underline flex items-center gap-1">
+                        <ExternalLink className="w-3 h-3" /> View
+                      </a>
+                    )}
+                  </div>
+                  <input value={candForm.resumeUrl} onChange={e => setCandForm(f => ({ ...f, resumeUrl: e.target.value }))} placeholder="Or paste resume URL" className="w-full mt-2 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500">Cover Letter</label>
+                  <div className="mt-1 flex items-center gap-3">
+                    <label className="flex-1 cursor-pointer">
+                      <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={e => setCandForm(f => ({ ...f, coverLetterFile: e.target.files[0] }))} />
+                      <div className="px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 border-dashed rounded-lg text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors flex items-center gap-2">
+                        <Paperclip className="w-4 h-4" />
+                        {candForm.coverLetterFile?.name || (editingCand?.coverLetterFile ? 'Replace file' : 'Upload PDF/DOC')}
+                      </div>
+                    </label>
+                    {editingCand?.coverLetterFile && !candForm.coverLetterFile && (
+                      <a href={editingCand.coverLetterFile} target="_blank" rel="noopener noreferrer" className="text-primary-600 text-xs font-medium hover:underline flex items-center gap-1">
+                        <ExternalLink className="w-3 h-3" /> View
+                      </a>
+                    )}
+                  </div>
+                  <textarea value={candForm.coverLetter} onChange={e => setCandForm(f => ({ ...f, coverLetter: e.target.value }))} placeholder="Or type cover letter text" rows={2} className="w-full mt-2 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" />
+                </div>
                 <div><label className="text-xs font-medium text-gray-500">Notes</label><textarea value={candForm.notes} onChange={e => setCandForm(f => ({ ...f, notes: e.target.value }))} rows={2} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm"/></div>
               </div>
               <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-100 dark:border-dark-700">
