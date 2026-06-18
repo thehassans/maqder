@@ -267,7 +267,7 @@ export default function Sidebar() {
     {
       title: language === 'ar' ? 'إدارة العملاء (CRM)' : 'CRM',
       items: [
-        { path: '/app/dashboard/crm', icon: Target, label: language === 'ar' ? 'لوحة CRM' : 'CRM Dashboard', perm: { module: 'crm', action: 'read' } },
+        { path: '/app/dashboard/crm', icon: Target, label: language === 'ar' ? 'لوحة CRM' : 'CRM Dashboard', end: true, perm: { module: 'crm', action: 'read' } },
         { path: '/app/dashboard/crm/leads', icon: Users, label: language === 'ar' ? 'العملاء المحتملون' : 'Leads', perm: { module: 'crm', action: 'read' } },
         { path: '/app/dashboard/crm/deals', icon: BarChart3, label: language === 'ar' ? 'الصفقات' : 'Deals', perm: { module: 'crm', action: 'read' } },
         { path: '/app/dashboard/crm/activities', icon: ClipboardList, label: language === 'ar' ? 'الأنشطة' : 'Activities', perm: { module: 'crm', action: 'read' } },

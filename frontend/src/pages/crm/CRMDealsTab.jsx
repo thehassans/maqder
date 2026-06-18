@@ -14,7 +14,7 @@ const DS = [
   { id: 'closed_won', label: 'Won', color: 'bg-emerald-500', ar: 'فوز' },
   { id: 'closed_lost', label: 'Lost', color: 'bg-rose-500', ar: 'خسارة' },
 ]
-const iD = () => ({ title: '', description: '', stage: 'prospecting', value: 0, probability: 10, expectedCloseDate: '', leadId: '', customerId: '' })
+const iD = () => ({ title: '', description: '', stage: 'prospecting', value: 0, probability: 10, expectedCloseDate: '', leadId: '', customerId: '', assignedTo: '' })
 
 export default function CRMDealsTab({ preview }) {
   const { language } = useSelector((state) => state.ui)
@@ -27,6 +27,7 @@ export default function CRMDealsTab({ preview }) {
 
   const { data: dd = {} } = useQuery({ queryKey: ['crm-deals', search], queryFn: async () => (await api.get('/crm/deals', { params: { search } })).data })
   const deals = dd.deals || []
+  const { data: users = [] } = useQuery({ queryKey: ['crm-users'], queryFn: async () => (await api.get('/crm/users')).data })
 
   const save = useMutation({
     mutationFn: () => editing ? api.put(`/crm/deals/${editing._id}`, form) : api.post('/crm/deals', form),
@@ -83,6 +84,7 @@ export default function CRMDealsTab({ preview }) {
                   <motion.div key={d._id} layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-gray-50 dark:bg-dark-700 rounded-lg p-2.5 cursor-pointer hover:shadow-sm transition-shadow" onClick={() => open(d)}>
                     <p className="text-xs font-bold text-gray-900 dark:text-white">{d.title}</p>
                     <p className="text-[10px] text-gray-500 mt-0.5">{d.value?.toLocaleString?.() ?? '0'} SAR</p>
+                    <p className="text-[10px] text-gray-400">{d.assignedTo?.name || '-'}</p>
                     {!preview && (
                       <div className="flex items-center justify-between mt-1.5">
                         <span className="text-[10px] text-gray-400">{d.probability}%</span>
@@ -109,9 +111,14 @@ export default function CRMDealsTab({ preview }) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <F l={t('Title', 'العنوان')} v={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
                   <F l={t('Value', 'القيمة')} type="number" v={form.value} onChange={e => setForm(f => ({ ...f, value: Number(e.target.value) }))} />
-                  <F l={t('Stage', 'المرحلة')} o={DS.map(s => <option key={s.id} value={s.id}>{t(s.label, s.ar)}</option>)} v={form.stage} onChange={e => setForm(f => ({ ...f, stage: e.target.value }))} />
+                  <F l={t('Stage', 'المرحلة')} o={DS.map(s => <option key={s.id} value={s.id}>{t(s.label, s.ar)}</option>)} v={form.stage} onChange={e => {
+                    const stage = e.target.value;
+                    const pmap = { prospecting: 10, qualification: 25, proposal: 50, negotiation: 75, closed_won: 100, closed_lost: 0 };
+                    setForm(f => ({ ...f, stage, probability: pmap[stage] ?? f.probability }));
+                  }} />
                   <F l={t('Probability (%)', 'الاحتمالية')} type="number" v={form.probability} onChange={e => setForm(f => ({ ...f, probability: Number(e.target.value) }))} />
                   <F l={t('Expected Close Date', 'تاريخ الإغلاق')} type="date" v={form.expectedCloseDate?.slice?.(0, 10) || ''} onChange={e => setForm(f => ({ ...f, expectedCloseDate: e.target.value }))} />
+                  <F l={t('Assigned To', 'مسؤول')} o={[<option key="" value="">{t('Unassigned', 'غير معين')}</option>, ...users.map(u => <option key={u._id} value={u._id}>{u.name}</option>)]} v={form.assignedTo || ''} onChange={e => setForm(f => ({ ...f, assignedTo: e.target.value }))} />
                   <div className="sm:col-span-2"><F l={t('Description', 'الوصف')} r={2} v={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} /></div>
                 </div>
               </div>

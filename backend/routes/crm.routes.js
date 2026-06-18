@@ -2,6 +2,7 @@ import express from 'express';
 import CRMLead from '../models/CRMLead.js';
 import CRMDeal from '../models/CRMDeal.js';
 import CRMActivity from '../models/CRMActivity.js';
+import User from '../models/User.js';
 import { protect, tenantFilter, checkPermission } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -19,6 +20,34 @@ function cleanBody(body) {
     }
   }
   return cleaned;
+}
+
+/* ─── Business Logic Helpers ─── */
+const LEAD_VALID_TRANSITIONS = {
+  new: ['contacted', 'qualified', 'lost'],
+  contacted: ['qualified', 'proposal_sent', 'lost'],
+  qualified: ['proposal_sent', 'negotiation', 'lost'],
+  proposal_sent: ['negotiation', 'converted', 'lost'],
+  negotiation: ['converted', 'lost'],
+  converted: [],
+  lost: ['new', 'contacted'],
+};
+
+const DEAL_STAGE_PROBABILITY = {
+  prospecting: 10,
+  qualification: 25,
+  proposal: 50,
+  negotiation: 75,
+  closed_won: 100,
+  closed_lost: 0,
+};
+
+function canTransitionLead(from, to) {
+  return LEAD_VALID_TRANSITIONS[from]?.includes(to) || false;
+}
+
+function getDealProbability(stage) {
+  return DEAL_STAGE_PROBABILITY[stage] ?? 10;
 }
 
 /* ─────────── LEADS ─────────── */
@@ -113,18 +142,6 @@ router.post('/deals', checkPermission('crm', 'create'), async (req, res) => {
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
-router.put('/deals/:id', checkPermission('crm', 'update'), async (req, res) => {
-  try {
-    const updates = cleanBody(req.body);
-    if (updates.stage === 'closed_won' || updates.stage === 'closed_lost') {
-      updates.actualCloseDate = new Date();
-    }
-    const deal = await CRMDeal.findOneAndUpdate({ _id: req.params.id, ...req.tenantFilter }, updates, { new: true, runValidators: true });
-    if (!deal) return res.status(404).json({ error: 'Not found' });
-    res.json(deal);
-  } catch (e) { res.status(400).json({ error: e.message }); }
-});
-
 router.delete('/deals/:id', checkPermission('crm', 'delete'), async (req, res) => {
   try {
     const deal = await CRMDeal.findOneAndDelete({ _id: req.params.id, ...req.tenantFilter });
@@ -177,11 +194,128 @@ router.delete('/activities/:id', checkPermission('crm', 'delete'), async (req, r
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+/* ─────────── LEAD STATUS TRANSITION ─────────── */
+
+router.post('/leads/:id/transition', checkPermission('crm', 'update'), async (req, res) => {
+  try {
+    const { status: nextStatus } = req.body;
+    const lead = await CRMLead.findOne({ _id: req.params.id, ...req.tenantFilter });
+    if (!lead) return res.status(404).json({ error: 'Not found' });
+    if (!canTransitionLead(lead.status, nextStatus)) {
+      return res.status(400).json({ error: `Invalid transition from ${lead.status} to ${nextStatus}` });
+    }
+    lead.status = nextStatus;
+    await lead.save();
+    // Log the transition as an activity
+    await CRMActivity.create({
+      tenantId: req.user.tenantId,
+      type: 'note',
+      subject: `Lead status changed to ${nextStatus}`,
+      leadId: lead._id,
+      createdBy: req.user._id,
+    });
+    res.json(lead);
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+/* ─────────── LEAD TO DEAL CONVERSION ─────────── */
+
+router.post('/leads/:id/convert', checkPermission('crm', 'create'), async (req, res) => {
+  try {
+    const lead = await CRMLead.findOne({ _id: req.params.id, ...req.tenantFilter });
+    if (!lead) return res.status(404).json({ error: 'Lead not found' });
+    if (lead.status === 'converted') return res.status(400).json({ error: 'Lead already converted' });
+
+    const deal = await CRMDeal.create({
+      tenantId: req.user.tenantId,
+      leadId: lead._id,
+      customerId: lead.customerId,
+      title: req.body.title || `Deal from ${lead.name}`,
+      description: req.body.description || lead.notes,
+      stage: 'prospecting',
+      value: lead.estimatedValue || 0,
+      probability: 10,
+      assignedTo: lead.assignedTo || req.user._id,
+      createdBy: req.user._id,
+    });
+
+    lead.status = 'converted';
+    await lead.save();
+
+    await CRMActivity.create({
+      tenantId: req.user.tenantId,
+      type: 'note',
+      subject: 'Lead converted to deal',
+      description: `Converted to deal: ${deal.title}`,
+      leadId: lead._id,
+      dealId: deal._id,
+      createdBy: req.user._id,
+    });
+
+    res.status(201).json({ deal, lead });
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+/* ─────────── DEAL PROBABILITY AUTO-UPDATE ─────────── */
+
+router.put('/deals/:id', checkPermission('crm', 'update'), async (req, res) => {
+  try {
+    const updates = cleanBody(req.body);
+    if (updates.stage) {
+      updates.probability = getDealProbability(updates.stage);
+    }
+    if (updates.stage === 'closed_won' || updates.stage === 'closed_lost') {
+      updates.actualCloseDate = new Date();
+    }
+    const deal = await CRMDeal.findOneAndUpdate({ _id: req.params.id, ...req.tenantFilter }, updates, { new: true, runValidators: true });
+    if (!deal) return res.status(404).json({ error: 'Not found' });
+    res.json(deal);
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+/* ─────────── ACTIVITY TIMELINE ─────────── */
+
+router.get('/leads/:id/activities', checkPermission('crm', 'read'), async (req, res) => {
+  try {
+    const items = await CRMActivity.find({ leadId: req.params.id, ...req.tenantFilter }).sort('-createdAt').populate('createdBy', 'name').lean();
+    res.json(items);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.get('/deals/:id/activities', checkPermission('crm', 'read'), async (req, res) => {
+  try {
+    const items = await CRMActivity.find({ dealId: req.params.id, ...req.tenantFilter }).sort('-createdAt').populate('createdBy', 'name').lean();
+    res.json(items);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+/* ─────────── ASSIGNED USERS ─────────── */
+
+router.get('/users', checkPermission('crm', 'read'), async (req, res) => {
+  try {
+    const users = await User.find({ ...req.tenantFilter }).select('_id name email').limit(100).lean();
+    res.json(users);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+/* ─────────── FOLLOW-UPS DUE ─────────── */
+
+router.get('/follow-ups', checkPermission('crm', 'read'), async (req, res) => {
+  try {
+    const items = await CRMActivity.find({
+      ...req.tenantFilter,
+      dueDate: { $lte: new Date() },
+      completedAt: { $exists: false },
+    }).sort('dueDate').populate('leadId', 'name').populate('dealId', 'title').populate('createdBy', 'name').lean();
+    res.json(items);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 /* ─────────── STATS / PIPELINE ─────────── */
 
 router.get('/stats', checkPermission('crm', 'read'), async (req, res) => {
   try {
-    const [leadTotal, dealTotal, activityTotal, pipeline, leadStatus] = await Promise.all([
+    const [leadTotal, dealTotal, activityTotal, pipeline, leadStatus, followUpCount] = await Promise.all([
       CRMLead.countDocuments({ ...req.tenantFilter }),
       CRMDeal.countDocuments({ ...req.tenantFilter }),
       CRMActivity.countDocuments({ ...req.tenantFilter }),
@@ -193,10 +327,11 @@ router.get('/stats', checkPermission('crm', 'read'), async (req, res) => {
         { $match: { ...req.tenantFilter } },
         { $group: { _id: '$status', count: { $sum: 1 } } },
       ]),
+      CRMActivity.countDocuments({ ...req.tenantFilter, dueDate: { $lte: new Date() }, completedAt: { $exists: false } }),
     ]);
     const dealValue = pipeline.reduce((s, p) => s + (p.value || 0), 0);
     const wonValue = pipeline.filter(p => p._id === 'closed_won').reduce((s, p) => s + (p.value || 0), 0);
-    res.json({ leadTotal, dealTotal, activityTotal, pipeline, leadStatus, dealValue, wonValue });
+    res.json({ leadTotal, dealTotal, activityTotal, pipeline, leadStatus, dealValue, wonValue, followUpCount });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

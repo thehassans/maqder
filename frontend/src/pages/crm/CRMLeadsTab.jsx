@@ -21,7 +21,7 @@ const SRC = [
   { id: 'whatsapp', label: 'WhatsApp', ar: 'واتساب' }, { id: 'phone', label: 'Phone', ar: 'هاتف' },
   { id: 'walk_in', label: 'Walk-in', ar: 'زيارة' }, { id: 'other', label: 'Other', ar: 'أخرى' },
 ]
-const iL = () => ({ name: '', email: '', phone: '', company: '', source: 'other', status: 'new', estimatedValue: 0, notes: '', tags: '' })
+const iL = () => ({ name: '', email: '', phone: '', company: '', source: 'other', status: 'new', estimatedValue: 0, notes: '', tags: '', assignedTo: '' })
 
 export default function CRMLeadsTab() {
   const { language } = useSelector((state) => state.ui)
@@ -34,6 +34,7 @@ export default function CRMLeadsTab() {
 
   const { data: ld = {} } = useQuery({ queryKey: ['crm-leads', search], queryFn: async () => (await api.get('/crm/leads', { params: { search } })).data })
   const leads = ld.leads || []
+  const { data: users = [] } = useQuery({ queryKey: ['crm-users'], queryFn: async () => (await api.get('/crm/users')).data })
 
   const save = useMutation({
     mutationFn: () => editing ? api.put(`/crm/leads/${editing._id}`, form) : api.post('/crm/leads', form),
@@ -43,6 +44,11 @@ export default function CRMLeadsTab() {
   const del = useMutation({
     mutationFn: (id) => api.delete(`/crm/leads/${id}`),
     onSuccess: () => { toast.success(t('Deleted', 'تم الحذف')); qc.invalidateQueries({ queryKey: ['crm-leads'] }); qc.invalidateQueries({ queryKey: ['crm-stats'] }) },
+    onError: (e) => toast.error(e.response?.data?.error || t('Failed', 'فشل'))
+  })
+  const convert = useMutation({
+    mutationFn: (id) => api.post(`/crm/leads/${id}/convert`, {}),
+    onSuccess: () => { toast.success(t('Converted to deal', 'تم التحويل إلى صفقة')); qc.invalidateQueries({ queryKey: ['crm-leads'] }); qc.invalidateQueries({ queryKey: ['crm-deals'] }); qc.invalidateQueries({ queryKey: ['crm-stats'] }) },
     onError: (e) => toast.error(e.response?.data?.error || t('Failed', 'فشل'))
   })
 
@@ -74,6 +80,7 @@ export default function CRMLeadsTab() {
               <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">{t('Name', 'الاسم')}</th>
               <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">{t('Contact', 'التواصل')}</th>
               <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">{t('Status', 'الحالة')}</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">{t('Assigned', 'المسؤول')}</th>
               <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">{t('Source', 'المصدر')}</th>
               <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">{t('Value', 'القيمة')}</th>
               <th className="text-right px-4 py-3 font-medium text-gray-500 dark:text-gray-400">{t('Actions', 'إجراءات')}</th>
@@ -84,15 +91,17 @@ export default function CRMLeadsTab() {
                   <td className="px-4 py-3"><p className="font-medium text-gray-900 dark:text-white">{l.name}</p><p className="text-xs text-gray-500">{l.company || '-'}</p></td>
                   <td className="px-4 py-3 text-xs text-gray-600 dark:text-gray-300">{l.phone && <span className="block">{l.phone}</span>}{l.email && <span className="block">{l.email}</span>}</td>
                   <td className="px-4 py-3"><span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${st.color}`}>{t(st.label, st.ar)}</span></td>
+                  <td className="px-4 py-3 text-xs text-gray-600 dark:text-gray-300">{l.assignedTo?.name || '-'}</td>
                   <td className="px-4 py-3 text-xs text-gray-600 dark:text-gray-300">{t(sr.label, sr.ar)}</td>
                   <td className="px-4 py-3 text-xs font-medium text-gray-700 dark:text-gray-300">{l.estimatedValue?.toLocaleString?.() ?? '0'} SAR</td>
                   <td className="px-4 py-3 text-right">
+                    {l.status !== 'converted' && l.status !== 'lost' && <button onClick={() => convert.mutate(l._id)} className="text-emerald-600 hover:underline text-xs font-medium mr-3">{t('Convert', 'تحويل')}</button>}
                     <button onClick={() => open(l)} className="text-primary-600 hover:underline text-xs font-medium mr-3">{t('Edit', 'تعديل')}</button>
                     <button onClick={() => { if (window.confirm(t('Delete lead?', 'حذف العميل المحتمل؟'))) del.mutate(l._id) }} className="text-red-600 hover:underline text-xs font-medium">{t('Delete', 'حذف')}</button>
                   </td>
                 </tr>
               )})}
-              {leads.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400 text-sm">{t('No leads yet', 'لا يوجد عملاء محتملون بعد')}</td></tr>}
+              {leads.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400 text-sm">{t('No leads yet', 'لا يوجد عملاء محتملون بعد')}</td></tr>}
             </tbody>
           </table>
         </div>
@@ -116,6 +125,7 @@ export default function CRMLeadsTab() {
                   <F l={t('Source', 'المصدر')} o={SRC.map(s => <option key={s.id} value={s.id}>{t(s.label, s.ar)}</option>)} v={form.source} onChange={e => setForm(f => ({ ...f, source: e.target.value }))} />
                   <F l={t('Estimated Value', 'القيمة المتوقعة')} type="number" v={form.estimatedValue} onChange={e => setForm(f => ({ ...f, estimatedValue: Number(e.target.value) }))} />
                   <F l={t('Tags', 'الوسوم')} v={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))} p={t('comma separated', 'مفصولة بفواصل')} />
+                  <F l={t('Assigned To', 'مسؤول')} o={[<option key="" value="">{t('Unassigned', 'غير معين')}</option>, ...users.map(u => <option key={u._id} value={u._id}>{u.name}</option>)]} v={form.assignedTo || ''} onChange={e => setForm(f => ({ ...f, assignedTo: e.target.value }))} />
                   <div className="sm:col-span-2"><F l={t('Notes', 'ملاحظات')} r={2} v={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
                 </div>
               </div>

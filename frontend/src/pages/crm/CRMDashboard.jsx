@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSelector } from 'react-redux'
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Target, Users, BarChart3, ClipboardList, DollarSign, TrendingUp } from 'lucide-react'
+import { Target, Users, BarChart3, ClipboardList, DollarSign, TrendingUp, AlertCircle } from 'lucide-react'
 import api from '../../lib/api'
 import CRMLeadsTab from './CRMLeadsTab'
 import CRMDealsTab from './CRMDealsTab'
@@ -27,6 +27,7 @@ export default function CRMDashboard({ tab }) {
     { label: t('Total Deals', 'إجمالي الصفقات'), value: stats?.dealTotal ?? 0, icon: BarChart3, color: 'bg-indigo-500' },
     { label: t('Pipeline', 'القيمة'), value: `${(stats?.dealValue ?? 0).toLocaleString()} SAR`, icon: DollarSign, color: 'bg-emerald-500' },
     { label: t('Won', 'الفوز'), value: `${(stats?.wonValue ?? 0).toLocaleString()} SAR`, icon: TrendingUp, color: 'bg-teal-500' },
+    { label: t('Follow-ups', 'متابعات'), value: stats?.followUpCount ?? 0, icon: AlertCircle, color: 'bg-amber-500' },
   ]
 
   return (
@@ -45,7 +46,7 @@ export default function CRMDashboard({ tab }) {
 
       {activeTab === 'dashboard' && (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
             {kpis.map((k, i) => { const Icon = k.icon; return (
               <motion.div key={k.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="bg-white dark:bg-dark-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-dark-700">
                 <div className={`w-8 h-8 rounded-lg ${k.color} flex items-center justify-center mb-2`}><Icon className="w-4 h-4 text-white" /></div>
