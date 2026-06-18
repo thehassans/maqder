@@ -3,6 +3,7 @@ import { forwardRef } from 'react';
 /**
  * BoutiqueThermalReceipt
  * ZATCA Phase 2 compliant 80mm thermal receipt for Ladies Boutique & Dress Rental.
+ * Supports both sale and rental transactions with bilingual EN/AR display.
  *
  * Print-optimized CSS:
  *  - @page { size: auto; margin: 0; } ensures the browser prints on continuous roll paper.
@@ -10,10 +11,11 @@ import { forwardRef } from 'react';
  *  - All web UI chrome is hidden via print:hidden utilities.
  */
 
-const BoutiqueThermalReceipt = forwardRef(({ rental, tenant }, ref) => {
+const BoutiqueThermalReceipt = forwardRef(({ rental, tenant, invoice, qrDataUrl }, ref) => {
   if (!rental) return null;
 
-  const isArabic = false; // Default to bilingual layout; can be driven by prop
+  const isSale = rental.transactionType === 'sale';
+  const logoUrl = tenant?.settings?.invoiceBranding?.logo || tenant?.logo || '';
   const businessName = tenant?.business?.legalNameEn || tenant?.name || 'Boutique';
   const businessNameAr = tenant?.business?.legalNameAr || 'بوتيك';
   const vatNumber = tenant?.business?.vatNumber || '000000000000000';
@@ -21,8 +23,9 @@ const BoutiqueThermalReceipt = forwardRef(({ rental, tenant }, ref) => {
     .filter(Boolean)
     .join(', ');
 
-  const rentalNumber = rental.rentalNumber || '---';
-  const customerName = rental.customerName || '---';
+  const receiptNumber = rental.rentalNumber || '---';
+  const customerName = rental.customerName || '';
+  const customerNameAr = rental.customerNameAr || '';
   const customerPhone = rental.customerPhone || '---';
   const startDate = rental.startDate ? new Date(rental.startDate).toLocaleDateString('en-GB') : '---';
   const endDate = rental.endDate ? new Date(rental.endDate).toLocaleDateString('en-GB') : '---';
@@ -34,8 +37,12 @@ const BoutiqueThermalReceipt = forwardRef(({ rental, tenant }, ref) => {
   const totalTax = rental.totalTax || 0;
   const grandTotal = rental.grandTotal || 0;
 
-  // ZATCA QR from invoice linkage
-  const qrData = rental.invoiceId?.zatca?.qrCodeData || '';
+  // Use backend-generated QR data URL if available, otherwise fall back to raw QR data
+  const qrImageSrc = qrDataUrl || '';
+  const qrRawData = invoice?.zatca?.qrCodeData || rental.invoiceId?.zatca?.qrCodeData || '';
+
+  // Helper: detect if text is Arabic
+  const hasArabic = (text) => /[\u0600-\u06FF]/.test(text || '');
 
   return (
     <div
@@ -49,7 +56,6 @@ const BoutiqueThermalReceipt = forwardRef(({ rental, tenant }, ref) => {
         lineHeight: 1.4,
       }}
     >
-      {/* Inline print-only CSS for environments where Tailwind @apply may not reach */}
       <style>{`
         @media print {
           .thermal-receipt {
@@ -65,14 +71,27 @@ const BoutiqueThermalReceipt = forwardRef(({ rental, tenant }, ref) => {
         }
       `}</style>
 
-      {/* Header */}
+      {/* Logo */}
+      {logoUrl && (
+        <div style={{ textAlign: 'center', marginBottom: '8px' }}>
+          <img
+            src={logoUrl}
+            alt=""
+            style={{ maxHeight: '16mm', maxWidth: '60mm', objectFit: 'contain' }}
+          />
+        </div>
+      )}
+
+      {/* Header — Bilingual */}
       <div style={{ textAlign: 'center', marginBottom: '10px' }}>
         <div style={{ fontSize: '14px', fontWeight: 'bold', letterSpacing: '0.5px' }}>
           {businessName}
         </div>
-        <div style={{ fontSize: '14px', fontWeight: 'bold', letterSpacing: '0.5px' }}>
-          {businessNameAr}
-        </div>
+        {businessNameAr && (
+          <div style={{ fontSize: '14px', fontWeight: 'bold', letterSpacing: '0.5px' }}>
+            {businessNameAr}
+          </div>
+        )}
         {address && (
           <div style={{ fontSize: '8px', marginTop: '3px', color: '#444' }}>{address}</div>
         )}
@@ -85,37 +104,57 @@ const BoutiqueThermalReceipt = forwardRef(({ rental, tenant }, ref) => {
         <div style={{ fontSize: '9px', fontWeight: 'bold' }}>
           فاتورة ضريبية مبسطة
         </div>
+        {isSale && (
+          <div style={{ fontSize: '8px', marginTop: '2px', color: '#10B981' }}>
+            SALE / بيع
+          </div>
+        )}
       </div>
 
       {/* Divider */}
       <div style={{ borderTop: '1px dashed #999', margin: '6px 0' }} />
 
-      {/* Meta */}
+      {/* Meta — Bilingual */}
       <div style={{ marginBottom: '8px', fontSize: '9px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span>Invoice No / رقم الفاتورة:</span>
-          <b>{rentalNumber}</b>
+          <b>{receiptNumber}</b>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span>Date / التاريخ:</span>
           <span>{issueDate}</span>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span>Customer / العميل:</span>
-          <b>{customerName}</b>
-        </div>
+        {customerName && (
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span>Customer / العميل:</span>
+            <b style={{ textAlign: 'right', maxWidth: '55%', wordBreak: 'break-word' }}>
+              {customerName}
+              {customerNameAr && <div style={{ fontSize: '8px', color: '#555' }}>{customerNameAr}</div>}
+            </b>
+          </div>
+        )}
+        {!customerName && customerNameAr && (
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span>Customer / العميل:</span>
+            <b>{customerNameAr}</b>
+          </div>
+        )}
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span>Phone / الجوال:</span>
           <span>{customerPhone}</span>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span>Pickup / الاستلام:</span>
-          <span>{startDate}</span>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span>Return / الإرجاع:</span>
-          <span>{endDate}</span>
-        </div>
+        {!isSale && (
+          <>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>Pickup / الاستلام:</span>
+              <span>{startDate}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>Return / الإرجاع:</span>
+              <span>{endDate}</span>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Divider */}
@@ -125,23 +164,34 @@ const BoutiqueThermalReceipt = forwardRef(({ rental, tenant }, ref) => {
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9px' }}>
         <thead>
           <tr style={{ borderBottom: '1px dashed #999' }}>
-            <th style={{ textAlign: 'left', padding: '2px 0', fontWeight: 'bold' }}>Item</th>
-            <th style={{ textAlign: 'center', padding: '2px 0', fontWeight: 'bold' }}>Days</th>
-            <th style={{ textAlign: 'right', padding: '2px 0', fontWeight: 'bold' }}>Total</th>
+            <th style={{ textAlign: 'left', padding: '2px 0', fontWeight: 'bold' }}>Item / البند</th>
+            {!isSale && (
+              <th style={{ textAlign: 'center', padding: '2px 0', fontWeight: 'bold' }}>Days / أيام</th>
+            )}
+            <th style={{ textAlign: 'right', padding: '2px 0', fontWeight: 'bold' }}>Total / المجموع</th>
           </tr>
         </thead>
         <tbody>
           {lineItems.map((item, idx) => (
             <tr key={idx} style={{ borderBottom: '1px dashed #ddd' }}>
               <td style={{ padding: '3px 0', verticalAlign: 'top' }}>
-                <div style={{ fontWeight: 'bold' }}>{item.productName || item.name}</div>
+                <div style={{ fontWeight: 'bold' }}>
+                  {item.productName || item.name}
+                </div>
+                {(item.productNameAr || item.nameAr) && (
+                  <div style={{ fontSize: '8px', color: '#555', direction: 'rtl', textAlign: 'right' }}>
+                    {item.productNameAr || item.nameAr}
+                  </div>
+                )}
                 <div style={{ fontSize: '8px', color: '#555' }}>
                   {item.sku} {item.size ? `· ${item.size}` : ''}
                 </div>
               </td>
-              <td style={{ textAlign: 'center', padding: '3px 0', verticalAlign: 'top' }}>
-                {item.rentalDays || 1}
-              </td>
+              {!isSale && (
+                <td style={{ textAlign: 'center', padding: '3px 0', verticalAlign: 'top' }}>
+                  {item.rentalDays || 1}
+                </td>
+              )}
               <td style={{ textAlign: 'right', padding: '3px 0', fontWeight: 'bold', verticalAlign: 'top' }}>
                 SAR {(item.rentalSubtotal || 0).toFixed(2)}
               </td>
@@ -189,10 +239,10 @@ const BoutiqueThermalReceipt = forwardRef(({ rental, tenant }, ref) => {
       <div style={{ borderTop: '1px dashed #999', margin: '6px 0' }} />
 
       {/* ZATCA QR */}
-      {qrData && (
+      {qrImageSrc ? (
         <div style={{ textAlign: 'center', marginTop: '8px' }}>
           <img
-            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`}
+            src={qrImageSrc}
             alt="ZATCA QR"
             style={{ width: '45mm', height: '45mm', imageRendering: 'pixelated' }}
           />
@@ -200,7 +250,18 @@ const BoutiqueThermalReceipt = forwardRef(({ rental, tenant }, ref) => {
             ZATCA Phase 2 Compliant QR Code
           </div>
         </div>
-      )}
+      ) : qrRawData ? (
+        <div style={{ textAlign: 'center', marginTop: '8px' }}>
+          <img
+            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrRawData)}`}
+            alt="ZATCA QR"
+            style={{ width: '45mm', height: '45mm', imageRendering: 'pixelated' }}
+          />
+          <div style={{ fontSize: '7px', color: '#666', marginTop: '4px' }}>
+            ZATCA Phase 2 Compliant QR Code
+          </div>
+        </div>
+      ) : null}
 
       {/* Footer */}
       <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '8px', color: '#555' }}>
@@ -208,8 +269,12 @@ const BoutiqueThermalReceipt = forwardRef(({ rental, tenant }, ref) => {
           Thank you for choosing us!
         </div>
         <div>شكراً لاختياركم</div>
-        <div style={{ marginTop: '4px' }}>Please keep this receipt for returns.</div>
-        <div>يرجى الاحتفاظ بهذا الإيصال عند الإرجاع</div>
+        {!isSale && (
+          <>
+            <div style={{ marginTop: '4px' }}>Please keep this receipt for returns.</div>
+            <div>يرجى الاحتفاظ بهذا الإيصال عند الإرجاع</div>
+          </>
+        )}
       </div>
 
       {/* Spacer for cutter */}

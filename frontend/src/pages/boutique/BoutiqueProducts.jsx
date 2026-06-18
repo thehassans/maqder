@@ -47,8 +47,9 @@ export default function BoutiqueProducts() {
     category: '',
     size: '',
     color: '',
-    mode: 'FOR_RENT',
+    mode: 'BOTH',
     dailyRate: '',
+    salePrice: '',
     rentalRates: '',
     securityDeposit: '',
     turnaroundHours: '24',
@@ -76,8 +77,9 @@ export default function BoutiqueProducts() {
       category: '',
       size: '',
       color: '',
-      mode: 'FOR_RENT',
+      mode: 'BOTH',
       dailyRate: '',
+      salePrice: '',
       rentalRates: '',
       securityDeposit: '',
       turnaroundHours: '24',
@@ -103,8 +105,9 @@ export default function BoutiqueProducts() {
       category: product.category || '',
       size: product.size || '',
       color: product.color || '',
-      mode: product.mode || 'FOR_RENT',
+      mode: product.mode || 'BOTH',
       dailyRate: product.dailyRate || '',
+      salePrice: product.salePrice || '',
       rentalRates: product.rentalRates?.map((r) => `${r.days}:${r.rate}`).join(',') || '',
       securityDeposit: product.securityDeposit || '',
       turnaroundHours: String(product.turnaroundHours || 24),
@@ -146,6 +149,7 @@ export default function BoutiqueProducts() {
     const payload = {
       ...form,
       dailyRate: Number(form.dailyRate) || 0,
+      salePrice: Number(form.salePrice) || 0,
       securityDeposit: Number(form.securityDeposit) || 0,
       turnaroundHours: Number(form.turnaroundHours) || 24,
       rentalQuantity: Number(form.rentalQuantity) || 1,
@@ -286,6 +290,22 @@ export default function BoutiqueProducts() {
                     {label('Deposit', 'تأمين')}: <Money value={p.securityDeposit || 0} />
                   </span>
                 </div>
+                {p.salePrice > 0 && (
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="text-[10px] text-emerald-600 font-bold">
+                      {label('Sale', 'للبيع')}: SAR {p.salePrice}
+                    </span>
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded ${
+                      p.mode === 'FOR_SALE' ? 'bg-emerald-50 text-emerald-700' :
+                      p.mode === 'FOR_RENT' ? 'bg-rose-50 text-rose-700' :
+                      'bg-purple-50 text-purple-700'
+                    }`}>
+                      {p.mode === 'FOR_SALE' ? label('Sale', 'للبيع') :
+                       p.mode === 'FOR_RENT' ? label('Rent', 'للإيجار') :
+                       label('Both', 'الإيجار والبيع')}
+                    </span>
+                  </div>
+                )}
               </div>
             </motion.div>
           ))}
@@ -418,6 +438,16 @@ export default function BoutiqueProducts() {
                     />
                   </div>
                   <div>
+                    <label className="text-xs text-gray-500 mb-1 block">{label('Sale Price (SAR)', 'سعر البيع')}</label>
+                    <input
+                      type="number"
+                      value={form.salePrice}
+                      onChange={(e) => setForm((f) => ({ ...f, salePrice: e.target.value }))}
+                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
+                      placeholder="2000"
+                    />
+                  </div>
+                  <div>
                     <label className="text-xs text-gray-500 mb-1 block">{label('Security Deposit', 'التأمين')}</label>
                     <input
                       type="number"
@@ -426,6 +456,18 @@ export default function BoutiqueProducts() {
                       className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
                       placeholder="500"
                     />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-xs text-gray-500 mb-1 block">{label('Mode', 'الوضع')}</label>
+                    <select
+                      value={form.mode}
+                      onChange={(e) => setForm((f) => ({ ...f, mode: e.target.value }))}
+                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
+                    >
+                      <option value="FOR_RENT">{label('For Rent', 'للإيجار')}</option>
+                      <option value="FOR_SALE">{label('For Sale', 'للبيع')}</option>
+                      <option value="BOTH">{label('Both', 'الإيجار والبيع')}</option>
+                    </select>
                   </div>
                   <div>
                     <label className="text-xs text-gray-500 mb-1 block">{label('Turnaround (hrs)', 'فترة التجهيز')}</label>

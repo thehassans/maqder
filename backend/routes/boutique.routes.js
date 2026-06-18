@@ -46,7 +46,9 @@ router.get('/products', checkPermission('boutique', 'read'), async (req, res) =>
     const filter = { ...req.tenantFilter };
     if (isActive !== undefined) filter.isActive = isActive === 'true';
     if (category) filter.category = category;
-    if (mode) filter.mode = mode;
+    if (mode === 'sale') filter.mode = { $in: ['FOR_SALE', 'BOTH'] };
+    else if (mode === 'rental') filter.mode = { $in: ['FOR_RENT', 'BOTH'] };
+    else if (mode) filter.mode = mode;
     if (rentalStatus) filter.rentalStatus = rentalStatus;
     if (search) {
       filter.$or = [
@@ -150,8 +152,9 @@ router.post('/seed-demo', checkPermission('boutique', 'write'), async (req, res)
       category: 'Evening',
       size: 'M / 38',
       color: 'Black',
-      mode: 'FOR_RENT',
+      mode: 'BOTH',
       dailyRate: 150,
+      salePrice: 2500,
       rentalRates: [
         { days: 3, rate: 400 },
         { days: 7, rate: 800 },
@@ -234,6 +237,34 @@ router.get('/rentals', checkPermission('boutique', 'read'), async (req, res) => 
   }
 });
 
+// GET /api/boutique/rentals/pending-returns — rentals that are out and due back
+router.get('/rentals/pending-returns', checkPermission('boutique', 'read'), async (req, res) => {
+  try {
+    const { overdue = 'false', page = 1, limit = 50 } = req.query;
+    const filter = { ...req.tenantFilter, transactionType: 'rental' };
+
+    if (overdue === 'true') {
+      filter.status = { $in: ['picked_up', 'late_return'] };
+      filter.endDate = { $lt: new Date() };
+    } else {
+      filter.status = { $in: ['reserved', 'picked_up', 'late_return'] };
+    }
+
+    const skip = (Number(page) - 1) * Number(limit);
+    const [rentals, total] = await Promise.all([
+      BoutiqueRental.find(filter)
+        .sort({ endDate: 1, createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit)),
+      BoutiqueRental.countDocuments(filter),
+    ]);
+
+    res.json({ rentals, total, page: Number(page), pages: Math.ceil(total / Number(limit)) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/boutique/rentals/:id — single rental
 router.get('/rentals/:id', checkPermission('boutique', 'read'), async (req, res) => {
   try {
@@ -245,19 +276,26 @@ router.get('/rentals/:id', checkPermission('boutique', 'read'), async (req, res)
   }
 });
 
-// POST /api/boutique/rentals — create rental (checkout)
+// POST /api/boutique/rentals — create rental or sale (checkout)
 router.post('/rentals', checkPermission('boutique', 'write'), async (req, res) => {
   try {
-    const { customerName, customerPhone, customerEmail, customerIdNumber, startDate, endDate, lineItems, staffNotes } = req.body;
+    const {
+      customerName, customerPhone, customerEmail, customerIdNumber,
+      startDate, endDate, lineItems, staffNotes, transactionType = 'rental'
+    } = req.body;
+
+    const isSale = transactionType === 'sale';
 
     // 1. Enrich line items with pricing
-    const enriched = await enrichRentalLineItems(lineItems, req.user.tenantId);
+    const enriched = await enrichRentalLineItems(lineItems, req.user.tenantId, transactionType);
 
-    // 2. Verify availability for every item
-    for (const item of enriched) {
-      const available = await isProductAvailable(item.productId, new Date(startDate), new Date(endDate));
-      if (!available) {
-        return res.status(409).json({ error: `Product ${item.sku} is not available for the selected dates` });
+    // 2. Verify availability for every item (rentals only)
+    if (!isSale) {
+      for (const item of enriched) {
+        const available = await isProductAvailable(item.productId, new Date(startDate), new Date(endDate));
+        if (!available) {
+          return res.status(409).json({ error: `Product ${item.sku} is not available for the selected dates` });
+        }
       }
     }
 
@@ -266,9 +304,11 @@ router.post('/rentals', checkPermission('boutique', 'write'), async (req, res) =
 
     // 4. Generate rental number
     const count = await BoutiqueRental.countDocuments(req.tenantFilter);
-    const rentalNumber = `REN-${String(count + 1).padStart(5, '0')}`;
+    const prefix = isSale ? 'SALE' : 'REN';
+    const rentalNumber = `${prefix}-${String(count + 1).padStart(5, '0')}`;
 
     // 5. Create rental document
+    const now = new Date();
     const rental = await BoutiqueRental.create({
       tenantId: req.user.tenantId,
       rentalNumber,
@@ -276,16 +316,30 @@ router.post('/rentals', checkPermission('boutique', 'write'), async (req, res) =
       customerPhone,
       customerEmail,
       customerIdNumber,
-      startDate: new Date(startDate),
-      endDate: new Date(endDate),
+      transactionType,
+      startDate: isSale ? now : new Date(startDate),
+      endDate: isSale ? now : new Date(endDate),
       lineItems: enriched,
       ...totals,
-      status: 'reserved',
+      status: isSale ? 'closed' : 'reserved',
       createdBy: req.user._id,
       staffNotes,
     });
 
-    res.status(201).json(rental);
+    // 6. Auto-generate ZATCA invoice for receipt
+    let invoice = null;
+    let qrDataUrl = '';
+    try {
+      if (req.tenant) {
+        const result = await generateBoutiqueThermalInvoice(rental, req.tenant);
+        invoice = result.invoice;
+        qrDataUrl = result.qrDataUrl;
+      }
+    } catch (invoiceErr) {
+      console.error('Auto-invoice generation failed:', invoiceErr.message);
+    }
+
+    res.status(201).json({ ...rental.toObject(), invoice, qrDataUrl });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

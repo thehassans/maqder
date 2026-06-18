@@ -62,6 +62,9 @@ const boutiqueRentalSchema = new mongoose.Schema({
   customerEmail: { type: String },
   customerIdNumber: { type: String },                 // Saudi ID / Iqama for contract
 
+  // --- Transaction type ---
+  transactionType: { type: String, enum: ['rental', 'sale'], default: 'rental', index: true },
+
   // --- Rental dates ---
   startDate: { type: Date, required: true, index: true },
   endDate: { type: Date, required: true, index: true },

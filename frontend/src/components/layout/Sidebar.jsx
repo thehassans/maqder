@@ -132,6 +132,7 @@ export default function Sidebar() {
       items: [
         { path: '/app/dashboard/boutique/pos', icon: Sparkles, label: language === 'ar' ? 'نقطة البيع' : 'POS', perm: { module: 'boutique', action: 'create' } },
         { path: '/app/dashboard/boutique/dresses', icon: Shirt, label: language === 'ar' ? 'الفساتين' : 'Dresses', perm: { module: 'boutique', action: 'read' } },
+        { path: '/app/dashboard/boutique/pending-returns', icon: Package, label: language === 'ar' ? 'الإرجاعات المعلقة' : 'Pending Returns', perm: { module: 'boutique', action: 'read' } },
       ]
     },
     {

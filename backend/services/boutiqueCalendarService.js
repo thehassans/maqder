@@ -152,7 +152,7 @@ export function computeRentalTotals(lineItems, vatRate = 15) {
  * @param {ObjectId} tenantId
  * @returns {Promise<Array>}
  */
-export async function enrichRentalLineItems(rawItems, tenantId) {
+export async function enrichRentalLineItems(rawItems, tenantId, transactionType = 'rental') {
   const normalized = [];
   const productIds = [...new Set(rawItems.map((i) => String(i.productId)))];
   const products = await BoutiqueProduct.find({ _id: { $in: productIds }, tenantId });
@@ -161,11 +161,17 @@ export async function enrichRentalLineItems(rawItems, tenantId) {
   for (const raw of rawItems) {
     const product = productMap.get(String(raw.productId));
     if (!product) throw new Error(`Product not found: ${raw.productId}`);
-    if (product.mode === 'FOR_SALE') throw new Error(`Product ${product.sku} is not available for rent`);
 
-    const days = Math.max(1, Number(raw.rentalDays) || 1);
-    const rentalSubtotal = calculateRentalPrice(product, days);
-    const depositAmount = product.securityDeposit || 0;
+    const isSale = transactionType === 'sale';
+    if (!isSale && product.mode === 'FOR_SALE') {
+      throw new Error(`Product ${product.sku} is not available for rent`);
+    }
+
+    const days = isSale ? 1 : Math.max(1, Number(raw.rentalDays) || 1);
+    const rentalSubtotal = isSale
+      ? (product.salePrice || 0)
+      : calculateRentalPrice(product, days);
+    const depositAmount = isSale ? 0 : (product.securityDeposit || 0);
 
     normalized.push({
       productId: product._id,
@@ -175,14 +181,14 @@ export async function enrichRentalLineItems(rawItems, tenantId) {
       size: product.size,
       color: product.color,
       quantity: Math.max(1, Number(raw.quantity) || 1),
-      dailyRate: product.dailyRate || (product.rentalRates?.[0]?.rate || 0),
+      dailyRate: isSale ? product.salePrice : (product.dailyRate || (product.rentalRates?.[0]?.rate || 0)),
       rentalDays: days,
       rentalSubtotal,
       depositAmount,
       lateFee: 0,
       damageFee: 0,
       cleaningFee: 0,
-      lineTotal: rentalSubtotal, // before fees; fees added later
+      lineTotal: rentalSubtotal,
     });
   }
 

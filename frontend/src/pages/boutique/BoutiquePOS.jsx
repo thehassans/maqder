@@ -47,9 +47,11 @@ export default function BoutiquePOS() {
   const [showCheckout, setShowCheckout] = useState(false)
   const [showReceipt, setShowReceipt] = useState(false)
   const [receiptData, setReceiptData] = useState(null)
+  const [transactionMode, setTransactionMode] = useState('rental') // 'rental' | 'sale'
 
   // ─── Customer & Dates ───
   const [customerName, setCustomerName] = useState('')
+  const [customerNameAr, setCustomerNameAr] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
   const [customerId, setCustomerId] = useState('')
   const [startDate, setStartDate] = useState('')
@@ -57,14 +59,14 @@ export default function BoutiquePOS() {
 
   // ─── Product Fetch ───
   const { data: productsData, isLoading } = useQuery({
-    queryKey: ['boutique-products', searchQuery, selectedCategory],
+    queryKey: ['boutique-products', searchQuery, selectedCategory, transactionMode],
     queryFn: () =>
       api
         .get('/boutique/products', {
           params: {
             search: searchQuery || undefined,
             category: selectedCategory || undefined,
-            mode: 'FOR_RENT',
+            mode: transactionMode,
             isActive: true,
             limit: 100,
           },
@@ -92,11 +94,13 @@ export default function BoutiquePOS() {
           size: product.size,
           color: product.color,
           image: product.primaryImage || product.images?.[0],
-          dailyRate: product.dailyRate,
+          dailyRate: transactionMode === 'sale' ? product.salePrice : product.dailyRate,
+          salePrice: product.salePrice,
           rentalRates: product.rentalRates,
-          securityDeposit: product.securityDeposit,
+          securityDeposit: transactionMode === 'sale' ? 0 : product.securityDeposit,
           quantity: 1,
           rentalDays: 1,
+          mode: transactionMode,
         },
       ]
     })
@@ -136,8 +140,9 @@ export default function BoutiquePOS() {
 
   const cartTotals = (() => {
     const lines = cart.map((item) => {
-      const rentalSubtotal = computeItemPrice(item)
-      const deposit = item.securityDeposit || 0
+      const isSaleItem = item.mode === 'sale'
+      const rentalSubtotal = isSaleItem ? (item.salePrice || 0) : computeItemPrice(item)
+      const deposit = isSaleItem ? 0 : (item.securityDeposit || 0)
       return { ...item, rentalSubtotal, deposit }
     })
     const rentalSubtotal = lines.reduce((s, l) => s + l.rentalSubtotal, 0)
@@ -160,17 +165,20 @@ export default function BoutiquePOS() {
   })
 
   const handleCheckout = () => {
-    if (!customerName || !customerPhone || !startDate || !endDate || cart.length === 0) return
+    const isSale = transactionMode === 'sale'
+    if (!customerName || !customerPhone || cart.length === 0) return
+    if (!isSale && (!startDate || !endDate)) return
     const payload = {
       customerName,
+      customerNameAr,
       customerPhone,
       customerIdNumber: customerId,
-      startDate,
-      endDate,
+      transactionType: transactionMode,
+      ...(isSale ? {} : { startDate, endDate }),
       lineItems: cart.map((item) => ({
         productId: item.productId,
         quantity: item.quantity,
-        rentalDays: item.rentalDays,
+        rentalDays: isSale ? 1 : item.rentalDays,
       })),
     }
     checkoutMutation.mutate(payload)
@@ -196,9 +204,28 @@ export default function BoutiquePOS() {
               <Sparkles className="w-5 h-5 text-rose-500" />
               {label('Boutique POS', 'نقاط البيع — بوتيك')}
             </h1>
-            <p className="text-sm text-gray-400 mt-0.5">
-              {label('Select dresses, pick dates, and checkout', 'اختر الفساتين، حدد التواريخ، وقم بالدفع')}
-            </p>
+            <div className="flex items-center gap-2 mt-1">
+              <button
+                onClick={() => { setTransactionMode('rental'); setCart([]) }}
+                className={`text-xs font-bold px-3 py-1 rounded-full transition-colors ${
+                  transactionMode === 'rental'
+                    ? 'bg-rose-100 text-rose-700'
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                }`}
+              >
+                {label('Rent', 'إيجار')}
+              </button>
+              <button
+                onClick={() => { setTransactionMode('sale'); setCart([]) }}
+                className={`text-xs font-bold px-3 py-1 rounded-full transition-colors ${
+                  transactionMode === 'sale'
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                }`}
+              >
+                {label('Buy', 'شراء')}
+              </button>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <div className="relative">
@@ -291,8 +318,12 @@ export default function BoutiquePOS() {
                     </div>
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                     <div className="absolute bottom-3 left-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="w-full bg-rose-600 text-white text-xs font-bold py-2 rounded-xl shadow-lg">
-                        {label('+ Add to Rental', '+ أضيفي للإيجار')}
+                      <button className={`w-full text-white text-xs font-bold py-2 rounded-xl shadow-lg ${
+                        transactionMode === 'sale' ? 'bg-emerald-600' : 'bg-rose-600'
+                      }`}>
+                        {transactionMode === 'sale'
+                          ? label('+ Add to Cart', '+ أضيفي للسلة')
+                          : label('+ Add to Rental', '+ أضيفي للإيجار')}
                       </button>
                     </div>
                   </div>
@@ -300,8 +331,12 @@ export default function BoutiquePOS() {
                     <h3 className="text-sm font-semibold text-gray-900 truncate">{product.name}</h3>
                     <p className="text-xs text-gray-400 mt-0.5">{product.sku}</p>
                     <div className="flex items-center justify-between mt-2">
-                      <span className="text-xs font-medium text-rose-600">
-                        {product.dailyRate > 0 ? `SAR ${product.dailyRate}/day` : 'Tiered pricing'}
+                      <span className={`text-xs font-medium ${transactionMode === 'sale' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        {transactionMode === 'sale'
+                          ? `SAR ${product.salePrice || 0}`
+                          : product.dailyRate > 0
+                          ? `SAR ${product.dailyRate}/day`
+                          : 'Tiered pricing'}
                       </span>
                       <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
                         {product.color}
@@ -318,8 +353,8 @@ export default function BoutiquePOS() {
         <div className="w-80 border-l border-gray-100 bg-gray-50/50 flex flex-col">
           <div className="p-4 border-b border-gray-100 bg-white">
             <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-              <ShoppingBag className="w-4 h-4 text-rose-500" />
-              {label('Rental Cart', 'عربة الإيجار')}
+              <ShoppingBag className={`w-4 h-4 ${transactionMode === 'sale' ? 'text-emerald-500' : 'text-rose-500'}`} />
+              {transactionMode === 'sale' ? label('Shopping Cart', 'سلة التسوق') : label('Rental Cart', 'عربة الإيجار')}
             </h2>
           </div>
 
@@ -366,30 +401,33 @@ export default function BoutiquePOS() {
                         </div>
                         <p className="text-[10px] text-gray-400">{item.sku} · {item.size}</p>
 
-                        {/* Days input */}
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className="text-[10px] text-gray-500">{label('Days', 'أيام')}:</span>
-                          <button
-                            onClick={() => updateCartItem(item.productId, 'rentalDays', Math.max(1, item.rentalDays - 1))}
-                            className="w-5 h-5 rounded bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600"
-                          >
-                            <Minus className="w-3 h-3" />
-                          </button>
-                          <span className="text-xs font-bold w-4 text-center">{item.rentalDays}</span>
-                          <button
-                            onClick={() => updateCartItem(item.productId, 'rentalDays', item.rentalDays + 1)}
-                            className="w-5 h-5 rounded bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600"
-                          >
-                            <Plus className="w-3 h-3" />
-                          </button>
-                        </div>
+                        {item.mode !== 'sale' && (
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="text-[10px] text-gray-500">{label('Days', 'أيام')}:</span>
+                            <button
+                              onClick={() => updateCartItem(item.productId, 'rentalDays', Math.max(1, item.rentalDays - 1))}
+                              className="w-5 h-5 rounded bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600"
+                            >
+                              <Minus className="w-3 h-3" />
+                            </button>
+                            <span className="text-xs font-bold w-4 text-center">{item.rentalDays}</span>
+                            <button
+                              onClick={() => updateCartItem(item.productId, 'rentalDays', item.rentalDays + 1)}
+                              className="w-5 h-5 rounded bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )}
 
                         <div className="flex justify-between mt-2 pt-2 border-t border-gray-50">
-                          <span className="text-[10px] text-gray-400">
-                            {label('Deposit', 'التأمين')}: <Money value={item.securityDeposit || 0} />
-                          </span>
-                          <span className="text-xs font-bold text-rose-600">
-                            SAR {computeItemPrice(item).toFixed(2)}
+                          {item.mode !== 'sale' && (
+                            <span className="text-[10px] text-gray-400">
+                              {label('Deposit', 'التأمين')}: <Money value={item.securityDeposit || 0} />
+                            </span>
+                          )}
+                          <span className={`text-xs font-bold ${item.mode === 'sale' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                            SAR {item.mode === 'sale' ? (item.salePrice || 0).toFixed(2) : computeItemPrice(item).toFixed(2)}
                           </span>
                         </div>
                       </div>
@@ -405,13 +443,15 @@ export default function BoutiquePOS() {
             <div className="p-4 bg-white border-t border-gray-100">
               <div className="space-y-1 text-xs">
                 <div className="flex justify-between text-gray-500">
-                  <span>{label('Rental Subtotal', 'إجمالي الإيجار')}</span>
+                  <span>{transactionMode === 'sale' ? label('Subtotal', 'المجموع الفرعي') : label('Rental Subtotal', 'إجمالي الإيجار')}</span>
                   <Money value={cartTotals.rentalSubtotal} />
                 </div>
-                <div className="flex justify-between text-gray-500">
-                  <span>{label('Security Deposit', 'تأمين')}</span>
-                  <Money value={cartTotals.totalDeposit} />
-                </div>
+                {transactionMode !== 'sale' && (
+                  <div className="flex justify-between text-gray-500">
+                    <span>{label('Security Deposit', 'تأمين')}</span>
+                    <Money value={cartTotals.totalDeposit} />
+                  </div>
+                )}
                 <div className="flex justify-between text-gray-500">
                   <span>{label('VAT (15%)', 'الضريبة 15%')}</span>
                   <Money value={cartTotals.totalTax} />
@@ -423,7 +463,9 @@ export default function BoutiquePOS() {
               </div>
               <button
                 onClick={() => setShowCheckout(true)}
-                className="w-full mt-3 bg-rose-600 hover:bg-rose-700 text-white py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2"
+                className={`w-full mt-3 text-white py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 ${
+                  transactionMode === 'sale' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-600 hover:bg-rose-700'
+                }`}
               >
                 {label('Proceed to Checkout', 'متابعة الدفع')}
                 <ArrowRight className="w-4 h-4" />
@@ -466,7 +508,7 @@ export default function BoutiquePOS() {
                   </h4>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="col-span-2">
-                      <label className="text-xs text-gray-500 mb-1 block">{label('Full Name', 'الاسم الكامل')} *</label>
+                      <label className="text-xs text-gray-500 mb-1 block">{label('Full Name (EN)', 'الاسم الكامل (إنجليزي)')} *</label>
                       <div className="relative">
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
@@ -476,6 +518,16 @@ export default function BoutiquePOS() {
                           placeholder={label('Customer name', 'اسم العميل')}
                         />
                       </div>
+                    </div>
+                    <div className="col-span-2">
+                      <label className="text-xs text-gray-500 mb-1 block">{label('Full Name (AR)', 'الاسم الكامل (عربي)')}</label>
+                      <input
+                        value={customerNameAr}
+                        onChange={(e) => setCustomerNameAr(e.target.value)}
+                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none text-right"
+                        dir="rtl"
+                        placeholder={label('اسم العميل', 'اسم العميل')}
+                      />
                     </div>
                     <div>
                       <label className="text-xs text-gray-500 mb-1 block">{label('Phone', 'الجوال')} *</label>
@@ -501,38 +553,39 @@ export default function BoutiquePOS() {
                   </div>
                 </div>
 
-                {/* Dates */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                    {label('Rental Dates', 'تواريخ الإيجار')}
-                  </h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs text-gray-500 mb-1 block">{label('Pickup Date', 'تاريخ الاستلام')} *</label>
-                      <div className="relative">
-                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input
-                          type="date"
-                          value={startDate}
-                          onChange={(e) => setStartDate(e.target.value)}
-                          className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
-                        />
+                {transactionMode === 'rental' && (
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                      {label('Rental Dates', 'تواريخ الإيجار')}
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs text-gray-500 mb-1 block">{label('Pickup Date', 'تاريخ الاستلام')} *</label>
+                        <div className="relative">
+                          <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <input
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
+                          />
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-500 mb-1 block">{label('Return Date', 'تاريخ الإرجاع')} *</label>
-                      <div className="relative">
-                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input
-                          type="date"
-                          value={endDate}
-                          onChange={(e) => setEndDate(e.target.value)}
-                          className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
-                        />
+                      <div>
+                        <label className="text-xs text-gray-500 mb-1 block">{label('Return Date', 'تاريخ الإرجاع')} *</label>
+                        <div className="relative">
+                          <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <input
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 {/* Summary */}
                 <div className="bg-gray-50 rounded-xl p-4 space-y-2">
@@ -541,7 +594,9 @@ export default function BoutiquePOS() {
                   </h4>
                   {cartTotals.lines.map((line) => (
                     <div key={line.productId} className="flex justify-between text-sm">
-                      <span className="text-gray-600 truncate max-w-[60%]">{line.name} ({line.rentalDays}d)</span>
+                      <span className="text-gray-600 truncate max-w-[60%]">
+                        {line.name} {line.mode !== 'sale' && `(${line.rentalDays}d)`}
+                      </span>
                       <span className="font-medium text-gray-900">SAR {line.rentalSubtotal.toFixed(2)}</span>
                     </div>
                   ))}
@@ -561,8 +616,10 @@ export default function BoutiquePOS() {
                 </button>
                 <button
                   onClick={handleCheckout}
-                  disabled={checkoutMutation.isPending || !customerName || !customerPhone || !startDate || !endDate}
-                  className="flex-1 py-3 rounded-xl bg-rose-600 text-white font-bold hover:bg-rose-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                  disabled={checkoutMutation.isPending || !customerName || !customerPhone || (transactionMode === 'rental' && (!startDate || !endDate))}
+                  className={`flex-1 py-3 rounded-xl text-white font-bold disabled:opacity-50 transition-colors flex items-center justify-center gap-2 ${
+                    transactionMode === 'sale' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-600 hover:bg-rose-700'
+                  }`}
                 >
                   {checkoutMutation.isPending ? (
                     <Clock className="w-4 h-4 animate-spin" />
@@ -591,8 +648,8 @@ export default function BoutiquePOS() {
             <div className="bg-white rounded-2xl shadow-xl p-6 w-[400px] max-h-[90vh] overflow-y-auto print:shadow-none print:p-0 print:w-auto print:max-h-none print:overflow-visible">
               <div className="flex justify-between items-center mb-4 print:hidden">
                 <h3 className="text-lg font-bold flex items-center gap-2">
-                  <Receipt className="w-5 h-5 text-rose-500" />
-                  {label('Rental Receipt', 'إيصال الإيجار')}
+                  <Receipt className={`w-5 h-5 ${receiptData?.transactionType === 'sale' ? 'text-emerald-500' : 'text-rose-500'}`} />
+                  {receiptData?.transactionType === 'sale' ? label('Sales Receipt', 'إيصال البيع') : label('Rental Receipt', 'إيصال الإيجار')}
                 </h3>
                 <button
                   onClick={() => setShowReceipt(false)}
@@ -607,6 +664,8 @@ export default function BoutiquePOS() {
                   ref={printRef}
                   rental={receiptData}
                   tenant={tenant}
+                  invoice={receiptData?.invoice}
+                  qrDataUrl={receiptData?.qrDataUrl}
                 />
               </div>
 
