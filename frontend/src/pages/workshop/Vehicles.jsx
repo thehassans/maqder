@@ -4,7 +4,7 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
 import {
-  Plus, Search, X, Save, Trash2, Car
+  Plus, Search, X, Save, Trash2, Car, History
 } from 'lucide-react'
 import api from '../../lib/api'
 
@@ -28,6 +28,16 @@ export default function Vehicles() {
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(initForm())
+  const [historyVehicle, setHistoryVehicle] = useState(null)
+
+  const { data: serviceHistory = [] } = useQuery({
+    queryKey: ['workshop-vehicle-history', historyVehicle?._id],
+    queryFn: async () => {
+      const res = await api.get(`/workshop/vehicles/${historyVehicle._id}/history`)
+      return res.data
+    },
+    enabled: !!historyVehicle,
+  })
 
   const { data: vehicles = [] } = useQuery({
     queryKey: ['workshop-vehicles', search],
@@ -99,6 +109,7 @@ export default function Vehicles() {
                   <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{v.currentOdometer?.toLocaleString?.() ?? '0'} km</td>
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">{v.istimaraNumber || '-'} {v.istimaraExpiry && `(Exp: ${v.istimaraExpiry.slice(0,10)})`}</td>
                   <td className="px-4 py-3 text-right">
+                    <button onClick={() => setHistoryVehicle(v)} className="text-gray-600 hover:text-primary-600 hover:underline text-xs font-medium mr-3">{t('History', 'السجل')}</button>
                     <button onClick={() => openModal(v)} className="text-primary-600 hover:underline text-xs font-medium mr-3">{t('Edit', 'تعديل')}</button>
                     <button onClick={() => { if (window.confirm(t('Delete vehicle?', 'حذف المركبة؟'))) deleteMut.mutate(v._id) }} className="text-red-600 hover:underline text-xs font-medium">{t('Delete', 'حذف')}</button>
                   </td>
@@ -159,6 +170,53 @@ export default function Vehicles() {
                 <button onClick={() => saveMut.mutate()} disabled={saveMut.isPending} className="px-4 py-2 rounded-lg text-sm font-medium bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50 flex items-center gap-2">
                   <Save className="w-4 h-4" /> {saveMut.isPending ? t('Saving...', 'جاري الحفظ...') : t('Save', 'حفظ')}
                 </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Service History Modal */}
+      <AnimatePresence>
+        {historyVehicle && (
+          <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setHistoryVehicle(null)}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-white dark:bg-dark-800 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-dark-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('Service History', 'سجل الصيانة')} — {historyVehicle.plateNumber}</h3>
+                <button onClick={() => setHistoryVehicle(null)} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-700"><X className="w-5 h-5" /></button>
+              </div>
+              <div className="p-5">
+                {serviceHistory.length === 0 ? (
+                  <div className="text-center text-gray-400 text-sm py-8">{t('No service history yet', 'لا يوجد سجل صيانة بعد')}</div>
+                ) : (
+                  <div className="space-y-3">
+                    {serviceHistory.map(job => (
+                      <div key={job._id} className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-dark-700 rounded-lg">
+                        <div className={`w-2 h-2 mt-1.5 rounded-full ${
+                          job.status === 'delivered' ? 'bg-green-500' :
+                          job.status === 'in_progress' ? 'bg-blue-500' :
+                          job.status === 'ready_pickup' ? 'bg-emerald-500' :
+                          'bg-amber-500'
+                        }`} />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-gray-900 dark:text-white">{job.jobCardNumber}</span>
+                            <span className="text-xs text-gray-500">{job.checkInDate ? new Date(job.checkInDate).toLocaleDateString() : ''}</span>
+                          </div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{job.customerComplaints || job.notes || t('No description', 'لا يوجد وصف')}</p>
+                          <div className="flex items-center gap-3 mt-1.5">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-200 dark:bg-dark-600 text-gray-700 dark:text-gray-300 uppercase">{job.status?.replace(/_/g, ' ')}</span>
+                            <span className="text-xs font-medium text-primary-600">{job.grandTotal?.toFixed?.(2) ?? '0.00'} SAR</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </motion.div>
           </motion.div>

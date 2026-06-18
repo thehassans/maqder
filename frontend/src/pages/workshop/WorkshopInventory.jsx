@@ -4,7 +4,7 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
 import {
-  Plus, Search, AlertTriangle, X, Save, Trash2, Package
+  Plus, Search, AlertTriangle, X, Save, Trash2, Package, ArrowUpDown
 } from 'lucide-react'
 import api from '../../lib/api'
 
@@ -30,6 +30,9 @@ export default function WorkshopInventory() {
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(initForm())
+  const [adjustItem, setAdjustItem] = useState(null)
+  const [adjustQty, setAdjustQty] = useState(0)
+  const [adjustReason, setAdjustReason] = useState('')
 
   const { data: items = [] } = useQuery({
     queryKey: ['workshop-inventory', search, categoryFilter],
@@ -139,6 +142,7 @@ export default function WorkshopInventory() {
                     <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">{item.costPrice?.toFixed?.(2) ?? '0.00'}</td>
                     <td className="px-4 py-3 text-right text-gray-700 dark:text-gray-300">{item.sellingPrice?.toFixed?.(2) ?? '0.00'}</td>
                     <td className="px-4 py-3 text-right">
+                      <button onClick={() => { setAdjustItem(item); setAdjustQty(0); setAdjustReason('') }} className="text-gray-600 hover:text-primary-600 hover:underline text-xs font-medium mr-3">{t('Adjust', 'تعديل المخزون')}</button>
                       <button onClick={() => openModal(item)} className="text-primary-600 hover:underline text-xs font-medium mr-3">{t('Edit', 'تعديل')}</button>
                       <button onClick={() => { if (window.confirm(t('Delete part?', 'حذف القطعة؟'))) deleteMut.mutate(item._id) }} className="text-red-600 hover:underline text-xs font-medium">{t('Delete', 'حذف')}</button>
                     </td>
@@ -187,6 +191,58 @@ export default function WorkshopInventory() {
                 <button onClick={closeModal} className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">{t('Cancel', 'إلغاء')}</button>
                 <button onClick={() => saveMut.mutate()} disabled={saveMut.isPending} className="px-4 py-2 rounded-lg text-sm font-medium bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50 flex items-center gap-2">
                   <Save className="w-4 h-4" /> {saveMut.isPending ? t('Saving...', 'جاري الحفظ...') : t('Save', 'حفظ')}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Stock Adjustment Modal */}
+      <AnimatePresence>
+        {adjustItem && (
+          <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={() => setAdjustItem(null)}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-white dark:bg-dark-800 rounded-xl shadow-xl w-full max-w-md"
+            >
+              <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-dark-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{t('Adjust Stock', 'تعديل المخزون')} — {adjustItem.sku}</h3>
+                <button onClick={() => setAdjustItem(null)} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-700"><X className="w-5 h-5" /></button>
+              </div>
+              <div className="p-5 space-y-4">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-500">{t('Current Stock', 'المخزون الحالي')}</span>
+                  <span className="font-medium text-gray-900 dark:text-white">{adjustItem.quantityOnHand}</span>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500">{t('Quantity Change', 'تغيير الكمية')} ({t('use negative for stock out', 'سالب للسحب')})</label>
+                  <input type="number" value={adjustQty} onChange={e => setAdjustQty(Number(e.target.value))} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500">{t('Reason', 'السبب')}</label>
+                  <input value={adjustReason} onChange={e => setAdjustReason(e.target.value)} placeholder={t('e.g. Received from supplier, Damaged', 'مثال: استلام من مورد، تالف')} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" />
+                </div>
+                <div className="flex items-center justify-between text-sm font-medium">
+                  <span className="text-gray-700 dark:text-gray-300">{t('New Stock', 'المخزون الجديد')}</span>
+                  <span className="text-primary-600">{adjustItem.quantityOnHand + adjustQty}</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-100 dark:border-dark-700">
+                <button onClick={() => setAdjustItem(null)} className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">{t('Cancel', 'إلغاء')}</button>
+                <button
+                  onClick={async () => {
+                    try {
+                      await api.post(`/workshop/inventory/${adjustItem._id}/adjust-stock`, { quantityChange: adjustQty, reason: adjustReason })
+                      toast.success(t('Stock adjusted', 'تم تعديل المخزون'))
+                      qc.invalidateQueries({ queryKey: ['workshop-inventory'] })
+                      setAdjustItem(null)
+                    } catch (e) { toast.error(e.response?.data?.error || t('Failed', 'فشل')) }
+                  }}
+                  className="px-4 py-2 rounded-lg text-sm font-medium bg-primary-600 text-white hover:bg-primary-700 flex items-center gap-2"
+                >
+                  <ArrowUpDown className="w-4 h-4" /> {t('Adjust', 'تعديل')}
                 </button>
               </div>
             </motion.div>
