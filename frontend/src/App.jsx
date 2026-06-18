@@ -164,6 +164,7 @@ import WorkshopDashboard from './pages/workshop/WorkshopDashboard'
 import JobCards from './pages/workshop/JobCards'
 import Vehicles from './pages/workshop/Vehicles'
 import WorkshopInventory from './pages/workshop/WorkshopInventory'
+import CRMDashboard from './pages/crm/CRMDashboard'
 
 import LaundryLayout from './layouts/LaundryLayout'
 import LaundryPOS from './pages/laundry/LaundryPOS'
@@ -430,6 +431,12 @@ function App() {
         <Route path="hr/reports" element={<HRReports />} />
         <Route path="payroll" element={<Payroll />} />
         <Route path="payroll/calculators" element={<PayrollCalculators />} />
+
+        {/* CRM Routes */}
+        <Route path="crm" element={<CRMDashboard />} />
+        <Route path="crm/leads" element={<CRMDashboard tab="leads" />} />
+        <Route path="crm/deals" element={<CRMDashboard tab="deals" />} />
+        <Route path="crm/activities" element={<CRMDashboard tab="activities" />} />
         <Route path="products" element={<BusinessTypeRoute allowedTypes={['trading']}><Products /></BusinessTypeRoute>} />
         <Route path="products/new" element={<BusinessTypeRoute allowedTypes={['trading']}><ProductForm /></BusinessTypeRoute>} />
         <Route path="products/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><ProductForm /></BusinessTypeRoute>} />
