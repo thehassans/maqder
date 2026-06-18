@@ -201,33 +201,42 @@ export default function BoutiquePOS() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-rose-500" />
+              <Sparkles className={`w-5 h-5 ${transactionMode === 'sale' ? 'text-emerald-500' : 'text-rose-500'}`} />
               {label('Boutique POS', 'نقاط البيع — بوتيك')}
             </h1>
-            <div className="flex items-center gap-2 mt-1">
+          </div>
+          <div className="flex items-center gap-3">
+            {/* Mode Toggle — Ultra Premium Pill */}
+            <div className="relative inline-flex bg-gray-100/80 backdrop-blur-sm rounded-full p-1 border border-gray-200/60 shadow-inner">
+              <motion.div
+                layout
+                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                className={`absolute top-1 bottom-1 rounded-full shadow-sm ${
+                  transactionMode === 'sale' ? 'bg-white left-1/2 right-1' : 'bg-white left-1 right-1/2'
+                }`}
+                style={{ borderRadius: '9999px' }}
+              />
               <button
                 onClick={() => { setTransactionMode('rental'); setCart([]) }}
-                className={`text-xs font-bold px-3 py-1 rounded-full transition-colors ${
-                  transactionMode === 'rental'
-                    ? 'bg-rose-100 text-rose-700'
-                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                className={`relative z-10 flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-colors ${
+                  transactionMode === 'rental' ? 'text-rose-700' : 'text-gray-400 hover:text-gray-600'
                 }`}
               >
+                <Clock className="w-3.5 h-3.5" />
                 {label('Rent', 'إيجار')}
               </button>
               <button
                 onClick={() => { setTransactionMode('sale'); setCart([]) }}
-                className={`text-xs font-bold px-3 py-1 rounded-full transition-colors ${
-                  transactionMode === 'sale'
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                className={`relative z-10 flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-colors ${
+                  transactionMode === 'sale' ? 'text-emerald-700' : 'text-gray-400 hover:text-gray-600'
                 }`}
               >
-                {label('Buy', 'شراء')}
+                <ShoppingBag className="w-3.5 h-3.5" />
+                {label('Sell', 'بيع')}
               </button>
             </div>
-          </div>
-          <div className="flex items-center gap-3">
+
+            <div className="h-6 w-px bg-gray-200" />
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -541,15 +550,17 @@ export default function BoutiquePOS() {
                         />
                       </div>
                     </div>
-                    <div>
-                      <label className="text-xs text-gray-500 mb-1 block">{label('ID / Iqama', 'الهوية')}</label>
-                      <input
-                        value={customerId}
-                        onChange={(e) => setCustomerId(e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
-                        placeholder="1xxxxxxxx"
-                      />
-                    </div>
+                    {transactionMode !== 'sale' && (
+                      <div>
+                        <label className="text-xs text-gray-500 mb-1 block">{label('ID / Iqama', 'الهوية')}</label>
+                        <input
+                          value={customerId}
+                          onChange={(e) => setCustomerId(e.target.value)}
+                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
+                          placeholder="1xxxxxxxx"
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
 
