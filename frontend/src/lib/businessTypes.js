@@ -1,4 +1,4 @@
-export const BUSINESS_TYPES = ['trading', 'construction', 'travel_agency', 'restaurant', 'car_rental', 'laundry', 'saloon', 'khayyat', 'manpower', 'bakala', 'car_workshop']
+export const BUSINESS_TYPES = ['trading', 'construction', 'travel_agency', 'restaurant', 'car_rental', 'laundry', 'saloon', 'khayyat', 'boutique', 'manpower', 'bakala', 'car_workshop']
 
 export const getBusinessTypeOptions = (language = 'en') => [
   {
@@ -38,8 +38,13 @@ export const getBusinessTypeOptions = (language = 'en') => [
   },
   {
     id: 'khayyat',
-    label: language === 'ar' ? 'خياط / مشغل' : 'Tailor / Boutique',
+    label: language === 'ar' ? 'خياط / مشغل' : 'Tailor / Workshop',
     description: language === 'ar' ? 'إدارة الخياطين والمقاسات ونقاط البيع' : 'Tailor management, measurements and POS',
+  },
+  {
+    id: 'boutique',
+    label: language === 'ar' ? 'بوتيك وإيجار فساتين' : 'Boutique & Dress Rental',
+    description: language === 'ar' ? 'إدارة الفساتين، التقويم، والإيجار' : 'Dress inventory, rental calendar, and POS',
   },
   {
     id: 'manpower',
