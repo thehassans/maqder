@@ -80,6 +80,10 @@ export default function CRMLeadsTab() {
 
   return (
     <div className="space-y-3">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('Leads', 'العملاء المحتملون')}</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('Manage and track potential customers', 'إدارة وتتبع العملاء المحتملين')}</p>
+      </div>
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />

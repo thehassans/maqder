@@ -165,6 +165,9 @@ import JobCards from './pages/workshop/JobCards'
 import Vehicles from './pages/workshop/Vehicles'
 import WorkshopInventory from './pages/workshop/WorkshopInventory'
 import CRMDashboard from './pages/crm/CRMDashboard'
+import CRMLeadsTab from './pages/crm/CRMLeadsTab'
+import CRMDealsTab from './pages/crm/CRMDealsTab'
+import CRMActivitiesTab from './pages/crm/CRMActivitiesTab'
 
 import LaundryLayout from './layouts/LaundryLayout'
 import LaundryPOS from './pages/laundry/LaundryPOS'
@@ -434,9 +437,9 @@ function App() {
 
         {/* CRM Routes */}
         <Route path="crm" element={<CRMDashboard />} />
-        <Route path="crm/leads" element={<CRMDashboard tab="leads" />} />
-        <Route path="crm/deals" element={<CRMDashboard tab="deals" />} />
-        <Route path="crm/activities" element={<CRMDashboard tab="activities" />} />
+        <Route path="crm/leads" element={<CRMLeadsTab />} />
+        <Route path="crm/deals" element={<CRMDealsTab />} />
+        <Route path="crm/activities" element={<CRMActivitiesTab />} />
         <Route path="products" element={<BusinessTypeRoute allowedTypes={['trading']}><Products /></BusinessTypeRoute>} />
         <Route path="products/new" element={<BusinessTypeRoute allowedTypes={['trading']}><ProductForm /></BusinessTypeRoute>} />
         <Route path="products/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><ProductForm /></BusinessTypeRoute>} />

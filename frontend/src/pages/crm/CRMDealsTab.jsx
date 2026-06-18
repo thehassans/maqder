@@ -75,13 +75,19 @@ export default function CRMDealsTab({ preview }) {
   return (
     <div className="space-y-3">
       {!preview && (
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('Search deals...', 'البحث في الصفقات...')} className="w-full pl-9 pr-4 py-2 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" />
+        <>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('Deals', 'الصفقات')}</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('Track your sales pipeline and opportunities', 'تتبع خط المبيعات والفرص')}</p>
           </div>
-          <button onClick={() => open(null)} className="px-3 py-2 bg-primary-600 text-white rounded-lg text-xs font-medium hover:bg-primary-700 flex items-center gap-1.5"><Plus className="w-3.5 h-3.5" /> {t('New Deal', 'صفقة جديدة')}</button>
-        </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('Search deals...', 'البحث في الصفقات...')} className="w-full pl-9 pr-4 py-2 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" />
+            </div>
+            <button onClick={() => open(null)} className="px-3 py-2 bg-primary-600 text-white rounded-lg text-xs font-medium hover:bg-primary-700 flex items-center gap-1.5"><Plus className="w-3.5 h-3.5" /> {t('New Deal', 'صفقة جديدة')}</button>
+          </div>
+        </>
       )}
       {preview && <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{t('Deal Pipeline', 'خط الأنابيب')}</h3>}
       <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 ${preview ? 'xl:grid-cols-6' : 'xl:grid-cols-6'} gap-3`}>

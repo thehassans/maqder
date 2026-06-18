@@ -52,10 +52,16 @@ export default function CRMActivitiesTab({ preview }) {
   return (
     <div className="space-y-3">
       {!preview && (
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{t('Activities', 'الأنشطة')}</h3>
-          <button onClick={() => open(null)} className="px-3 py-2 bg-primary-600 text-white rounded-lg text-xs font-medium hover:bg-primary-700 flex items-center gap-1.5"><Plus className="w-3.5 h-3.5" /> {t('New Activity', 'نشاط جديد')}</button>
-        </div>
+        <>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('Activities', 'الأنشطة')}</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('Track calls, emails, meetings, and tasks', 'تتبع المكالمات والبريد والاجتماعات والمهام')}</p>
+          </div>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{t('Activities', 'الأنشطة')}</h3>
+            <button onClick={() => open(null)} className="px-3 py-2 bg-primary-600 text-white rounded-lg text-xs font-medium hover:bg-primary-700 flex items-center gap-1.5"><Plus className="w-3.5 h-3.5" /> {t('New Activity', 'نشاط جديد')}</button>
+          </div>
+        </>
       )}
       {preview && <h3 className="text-sm font-semibold text-gray-900 dark:text-white">{t('Recent Activities', 'أحدث الأنشطة')}</h3>}
       <div className="space-y-2">
