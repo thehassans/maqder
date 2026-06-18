@@ -16,6 +16,8 @@ import {
 } from '../services/boutiqueCalendarService.js';
 import { generateBoutiqueThermalInvoice, queueZatcaReporting } from '../services/boutiqueZatcaService.js';
 import { sendPaymentConfirmation } from '../services/boutiqueWhatsAppService.js';
+import { generateZatcaQr } from '../lib/zatcaQr.js';
+import QRCode from 'qrcode';
 import { protect, checkPermission } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -329,17 +331,45 @@ router.post('/rentals', checkPermission('boutique', 'write'), async (req, res) =
     // 6. Auto-generate ZATCA invoice for receipt
     let invoice = null;
     let qrDataUrl = '';
-    try {
-      if (req.tenant) {
-        const result = await generateBoutiqueThermalInvoice(rental, req.tenant);
-        invoice = result.invoice;
-        qrDataUrl = result.qrDataUrl;
+    let qrPayload = '';
+    if (req.tenant) {
+      const tenant = req.tenant;
+      const sellerName = tenant.business?.legalNameAr || tenant.business?.legalNameEn || tenant.name || 'Boutique';
+      const vatNumber = tenant.business?.vatNumber || '000000000000000';
+      const issueDate = rental.createdAt || new Date();
+
+      // Always generate QR payload (never fails)
+      qrPayload = generateZatcaQr({
+        sellerName,
+        vatNumber,
+        invoiceDate: issueDate,
+        totalAmount: rental.grandTotal,
+        vatAmount: rental.totalTax,
+      });
+
+      // Always generate QR image data URL
+      try {
+        qrDataUrl = await QRCode.toDataURL(qrPayload, {
+          width: 256,
+          margin: 2,
+          color: { dark: '#000000', light: '#ffffff' },
+        });
+      } catch (qrErr) {
+        console.error('QR image generation failed:', qrErr.message);
       }
-    } catch (invoiceErr) {
-      console.error('Auto-invoice generation failed:', invoiceErr.message);
+
+      // Try to persist invoice (optional — must not fail the sale)
+      try {
+        const result = await generateBoutiqueThermalInvoice(rental, tenant);
+        invoice = result.invoice;
+        // Prefer the service-generated QR if available
+        if (result.qrDataUrl) qrDataUrl = result.qrDataUrl;
+      } catch (invoiceErr) {
+        console.error('Invoice persistence failed:', invoiceErr.message);
+      }
     }
 
-    res.status(201).json({ ...rental.toObject(), invoice, qrDataUrl });
+    res.status(201).json({ ...rental.toObject(), invoice, qrDataUrl, qrPayload });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
