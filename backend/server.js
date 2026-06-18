@@ -205,6 +205,17 @@ const connectToDatabase = async () => {
     .then(async () => {
       logger.info('MongoDB connected successfully');
       await seedSuperAdmin();
+      // Drop old unique indexes that prevent creating tenants without CR/VAT
+      try {
+        const db = mongoose.connection.db;
+        await db.collection('tenants').dropIndex('business.vatNumber_1');
+        logger.info('Dropped unique index business.vatNumber_1');
+      } catch (_) { /* index may not exist */ }
+      try {
+        const db = mongoose.connection.db;
+        await db.collection('tenants').dropIndex('business.crNumber_1');
+        logger.info('Dropped unique index business.crNumber_1');
+      } catch (_) { /* index may not exist */ }
       startJobs();
     })
     .catch((err) => {
