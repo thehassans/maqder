@@ -56,7 +56,9 @@ export default function InvoiceView() {
   const { tenant } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
   const [downloadingPdf, setDownloadingPdf] = useState(false)
+  const [printModalOpen, setPrintModalOpen] = useState(false)
   const invoicePreviewRef = useRef(null)
+  const printModalRef = useRef(null)
 
   const { data: invoice, isLoading } = useQuery({
     queryKey: ['invoice', id],
@@ -210,7 +212,7 @@ export default function InvoiceView() {
             type="button"
             onClick={async () => {
               if (showThermal) {
-                window.print()
+                setPrintModalOpen(true)
                 return
               }
               try {
@@ -231,7 +233,7 @@ export default function InvoiceView() {
             type="button"
             onClick={async () => {
               if (showThermal) {
-                window.print()
+                setPrintModalOpen(true)
                 return
               }
               try {
@@ -490,6 +492,53 @@ export default function InvoiceView() {
           )}
         </div>
       </div>
+
+      {printModalOpen && showThermal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 print:bg-white print:static print:inset-auto">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-[400px] max-h-[90vh] overflow-y-auto print:shadow-none print:p-0 print:w-auto print:max-h-none print:overflow-visible">
+            <div className="flex justify-between items-center mb-4 print:hidden">
+              <h3 className="text-lg font-bold">
+                {language === 'ar' ? 'إيصال الفاتورة' : 'Invoice Receipt'}
+              </h3>
+              <button onClick={() => setPrintModalOpen(false)} className="text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-full w-8 h-8 flex items-center justify-center">
+                ×
+              </button>
+            </div>
+            <div className="border border-gray-200 rounded-lg p-2 print:border-none print:p-0 flex justify-center">
+              <ThermalReceipt
+                ref={printModalRef}
+                order={{
+                  ...invoice,
+                  receiptNumber: invoice.invoiceNumber,
+                  customerName: invoice.buyer?.name || invoice.buyer?.nameAr,
+                  customerPhone: invoice.buyer?.phone,
+                  grandTotal: invoice.grandTotal,
+                  totalVat: invoice.totalTax,
+                  subtotal: invoice.subTotal || (invoice.grandTotal - invoice.totalTax),
+                  zatcaQrCode: invoice.zatca?.qrCodeData,
+                  items: invoice.lineItems?.map(item => ({
+                    nameEn: item.name,
+                    nameAr: item.nameAr,
+                    quantity: item.quantity,
+                    unitPrice: item.unitPrice,
+                    total: item.taxableAmount || (item.quantity * item.unitPrice)
+                  }))
+                }}
+                type={invoice?.businessContext || tenantBusinessTypes[0] || 'bakala'}
+                isUpdated={invoice?.updatedAt && invoice?.createdAt && new Date(invoice.updatedAt).getTime() > new Date(invoice.createdAt).getTime() + 5000}
+              />
+            </div>
+            <div className="mt-6 flex gap-3 print:hidden">
+              <button onClick={() => setPrintModalOpen(false)} className="flex-1 py-3 rounded-xl border border-gray-200 font-bold hover:bg-gray-50 text-gray-700">
+                {language === 'ar' ? 'إغلاق' : 'Close'}
+              </button>
+              <button onClick={() => { if (printModalRef.current) window.print() }} className="flex-1 py-3 rounded-xl bg-amber-600 text-white font-bold hover:bg-amber-700">
+                {language === 'ar' ? 'طباعة' : 'Print'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -458,6 +458,14 @@ router.put('/:id', checkPermission('restaurant', 'update'), async (req, res) => 
       patch.kitchenStatusUpdatedAt = new Date();
     }
 
+    const historyEntry = {
+      updatedAt: new Date(),
+      updatedBy: req.user?._id,
+      changes: Object.keys(req.body).join(', '),
+      reason: req.body.updateReason || ''
+    };
+    patch.$push = { updateHistory: historyEntry };
+
     const updated = await RestaurantOrder.findOneAndUpdate(
       { _id: req.params.id, ...req.tenantFilter },
       patch,
@@ -493,18 +501,27 @@ router.delete('/:id', checkPermission('restaurant', 'delete'), async (req, res) 
 // PATCH /api/restaurant/orders/:id/payment
 router.patch('/:id/payment', checkPermission('restaurant', 'update'), async (req, res) => {
   try {
-    const { paymentMethod, posPaymentId, status } = req.body;
+    const { paymentMethod, posPaymentId, status, updateReason } = req.body;
     const order = await RestaurantOrder.findOne({ _id: req.params.id, ...req.tenantFilter });
     if (!order) return res.status(404).json({ error: 'Order not found' });
     if (paymentMethod) order.paymentMethod = paymentMethod;
     if (posPaymentId) order.posPaymentId = posPaymentId;
     if (status) order.status = status;
+
+    order.updateHistory = order.updateHistory || [];
+    order.updateHistory.push({
+      updatedAt: new Date(),
+      updatedBy: req.user?._id,
+      changes: Object.keys(req.body).join(', '),
+      reason: updateReason || ''
+    });
+
     await order.save();
-    
+
     if (order.status === 'paid' && !order.invoiceId) {
       await createInvoiceForOrder(order, req);
     }
-    
+
     res.json(order);
   } catch (error) {
     res.status(500).json({ error: error.message });

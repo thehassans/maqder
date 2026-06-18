@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Search, Receipt, Edit, Printer, Utensils } from 'lucide-react'
+import { Plus, Search, Receipt, Edit, Printer, Utensils, History, Clock } from 'lucide-react'
 import { useRef } from 'react'
 import api from '../../lib/api'
 import ThermalReceipt from '../../components/ui/ThermalReceipt'
@@ -20,6 +20,7 @@ export default function RestaurantOrders() {
   const [printOrder, setPrintOrder] = useState(null)
   const [receiptType, setReceiptType] = useState('customer')
   const [kitchenNote, setKitchenNote] = useState('')
+  const [historyOrder, setHistoryOrder] = useState(null)
   const receiptRef = useRef(null)
 
   const handlePrint = () => {
@@ -126,6 +127,12 @@ export default function RestaurantOrders() {
                     </td>
                     <td>
                       <div className="flex items-center gap-2">
+                        {(o.updateHistory?.length > 0 || (o.updatedAt && o.createdAt && new Date(o.updatedAt).getTime() > new Date(o.createdAt).getTime() + 5000)) && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700 whitespace-nowrap" title={language === 'ar' ? 'تم التحديث' : 'Updated'}>
+                            <Clock className="w-3 h-3" />
+                            {language === 'ar' ? 'محدث' : 'UPDATED'}
+                          </span>
+                        )}
                         <button
                           onClick={() => { setPrintOrder(o); setReceiptType('customer'); setKitchenNote(''); }}
                           className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg text-amber-600"
@@ -146,6 +153,13 @@ export default function RestaurantOrders() {
                         >
                           <Edit className="w-4 h-4 text-gray-600" />
                         </Link>
+                        <button
+                          onClick={() => setHistoryOrder(o)}
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg text-gray-500"
+                          title={language === 'ar' ? 'سجل التحديثات' : 'Update History'}
+                        >
+                          <History className="w-4 h-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -211,11 +225,12 @@ export default function RestaurantOrders() {
             )}
             
             <div className="border border-gray-200 rounded-lg p-2 print:border-none print:p-0 flex justify-center">
-              <ThermalReceipt 
-                ref={receiptRef} 
-                order={receiptType === 'kitchen' && kitchenNote ? { ...printOrder, kitchenNote } : printOrder} 
-                type="restaurant" 
-                isKitchen={receiptType === 'kitchen'} 
+              <ThermalReceipt
+                ref={receiptRef}
+                order={receiptType === 'kitchen' && kitchenNote ? { ...printOrder, kitchenNote } : printOrder}
+                type="restaurant"
+                isKitchen={receiptType === 'kitchen'}
+                isUpdated={(printOrder.updateHistory?.length > 0 || (printOrder.updatedAt && printOrder.createdAt && new Date(printOrder.updatedAt).getTime() > new Date(printOrder.createdAt).getTime() + 5000)) && receiptType !== 'kitchen'}
               />
             </div>
 
@@ -225,6 +240,53 @@ export default function RestaurantOrders() {
               </button>
               <button onClick={handlePrint} className="flex-1 py-3 rounded-xl bg-amber-600 text-white font-bold hover:bg-amber-700">
                 {language === 'ar' ? 'طباعة' : 'Print'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {historyOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-[480px] max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold">
+                {language === 'ar' ? 'سجل التحديثات' : 'Update History'}
+              </h3>
+              <button onClick={() => setHistoryOrder(null)} className="text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-full w-8 h-8 flex items-center justify-center">
+                ×
+              </button>
+            </div>
+            <div className="space-y-3">
+              {historyOrder.updateHistory?.length > 0 ? (
+                historyOrder.updateHistory.map((entry, idx) => (
+                  <div key={idx} className="border border-gray-200 rounded-lg p-3 text-sm">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-gray-500">
+                        {new Date(entry.updatedAt).toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US')}
+                      </span>
+                    </div>
+                    {entry.changes && (
+                      <div className="text-gray-700">
+                        <span className="font-medium">{language === 'ar' ? 'التغييرات:' : 'Changes:'}</span> {entry.changes}
+                      </div>
+                    )}
+                    {entry.reason && (
+                      <div className="text-gray-700 mt-1">
+                        <span className="font-medium">{language === 'ar' ? 'السبب:' : 'Reason:'}</span> {entry.reason}
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="text-center text-gray-500 py-6">
+                  {language === 'ar' ? 'لا يوجد سجل تحديثات مسجل' : 'No update history recorded'}
+                </div>
+              )}
+            </div>
+            <div className="mt-6">
+              <button onClick={() => setHistoryOrder(null)} className="w-full py-3 rounded-xl border border-gray-200 font-bold hover:bg-gray-50 text-gray-700">
+                {language === 'ar' ? 'إغلاق' : 'Close'}
               </button>
             </div>
           </div>

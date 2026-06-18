@@ -54,6 +54,13 @@ const restaurantOrderSchema = new mongoose.Schema({
   invoiceNumber: { type: String },
   invoicedAt: { type: Date },
 
+  updateHistory: [{
+    updatedAt: { type: Date, default: Date.now },
+    updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    changes: { type: String },
+    reason: { type: String }
+  }],
+
   isActive: { type: Boolean, default: true },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, {
