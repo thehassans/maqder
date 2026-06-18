@@ -3,7 +3,10 @@ import CRMLead from '../models/CRMLead.js';
 import CRMDeal from '../models/CRMDeal.js';
 import CRMActivity from '../models/CRMActivity.js';
 import User from '../models/User.js';
+import Tenant from '../models/Tenant.js';
 import { protect, tenantFilter, checkPermission } from '../middleware/auth.js';
+import whatsappService from '../services/whatsappService.js';
+import { sendTenantEmail } from '../utils/tenantEmailService.js';
 
 const router = express.Router();
 
@@ -332,6 +335,116 @@ router.get('/stats', checkPermission('crm', 'read'), async (req, res) => {
     const dealValue = pipeline.reduce((s, p) => s + (p.value || 0), 0);
     const wonValue = pipeline.filter(p => p._id === 'closed_won').reduce((s, p) => s + (p.value || 0), 0);
     res.json({ leadTotal, dealTotal, activityTotal, pipeline, leadStatus, dealValue, wonValue, followUpCount });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+/* ─────────── CRM COMMUNICATION ─────────── */
+
+router.post('/leads/:id/send-whatsapp', checkPermission('crm', 'update'), async (req, res) => {
+  try {
+    const { message } = req.body;
+    const lead = await CRMLead.findOne({ _id: req.params.id, ...req.tenantFilter });
+    if (!lead) return res.status(404).json({ error: 'Not found' });
+    if (!lead.phone) return res.status(400).json({ error: 'Lead has no phone number' });
+
+    const waState = whatsappService.getStatus(String(req.user.tenantId));
+    if (!waState || waState.status !== 'READY') {
+      return res.status(503).json({ error: 'WhatsApp is not connected. Please connect WhatsApp first.' });
+    }
+
+    await whatsappService.sendText(String(req.user.tenantId), lead.phone, message);
+    await CRMActivity.create({
+      tenantId: req.user.tenantId,
+      type: 'whatsapp',
+      subject: 'WhatsApp sent',
+      description: message,
+      leadId: lead._id,
+      createdBy: req.user._id,
+    });
+    res.json({ success: true, sentTo: lead.phone });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/leads/:id/send-email', checkPermission('crm', 'update'), async (req, res) => {
+  try {
+    const { subject, body } = req.body;
+    const lead = await CRMLead.findOne({ _id: req.params.id, ...req.tenantFilter });
+    if (!lead) return res.status(404).json({ error: 'Not found' });
+    if (!lead.email) return res.status(400).json({ error: 'Lead has no email' });
+
+    const tenant = await Tenant.findById(req.user.tenantId);
+    await sendTenantEmail({
+      tenant,
+      to: [lead.email],
+      subject,
+      html: `<p>${body.replace(/\n/g, '<br>')}</p>`,
+      text: body,
+      metadata: { module: 'crm', leadId: lead._id.toString(), sentBy: req.user._id.toString() },
+    });
+    await CRMActivity.create({
+      tenantId: req.user.tenantId,
+      type: 'email',
+      subject: `Email: ${subject}`,
+      description: body,
+      leadId: lead._id,
+      createdBy: req.user._id,
+    });
+    res.json({ success: true, sentTo: lead.email });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/deals/:id/send-whatsapp', checkPermission('crm', 'update'), async (req, res) => {
+  try {
+    const { message } = req.body;
+    const deal = await CRMDeal.findOne({ _id: req.params.id, ...req.tenantFilter }).populate('leadId', 'phone');
+    if (!deal) return res.status(404).json({ error: 'Not found' });
+    const phone = deal.leadId?.phone;
+    if (!phone) return res.status(400).json({ error: 'No phone number available for this deal' });
+
+    const waState = whatsappService.getStatus(String(req.user.tenantId));
+    if (!waState || waState.status !== 'READY') {
+      return res.status(503).json({ error: 'WhatsApp is not connected' });
+    }
+
+    await whatsappService.sendText(String(req.user.tenantId), phone, message);
+    await CRMActivity.create({
+      tenantId: req.user.tenantId,
+      type: 'whatsapp',
+      subject: 'WhatsApp sent',
+      description: message,
+      dealId: deal._id,
+      createdBy: req.user._id,
+    });
+    res.json({ success: true, sentTo: phone });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/deals/:id/send-email', checkPermission('crm', 'update'), async (req, res) => {
+  try {
+    const { subject, body } = req.body;
+    const deal = await CRMDeal.findOne({ _id: req.params.id, ...req.tenantFilter }).populate('leadId', 'email');
+    if (!deal) return res.status(404).json({ error: 'Not found' });
+    const email = deal.leadId?.email;
+    if (!email) return res.status(400).json({ error: 'No email available for this deal' });
+
+    const tenant = await Tenant.findById(req.user.tenantId);
+    await sendTenantEmail({
+      tenant,
+      to: [email],
+      subject,
+      html: `<p>${body.replace(/\n/g, '<br>')}</p>`,
+      text: body,
+      metadata: { module: 'crm', dealId: deal._id.toString(), sentBy: req.user._id.toString() },
+    });
+    await CRMActivity.create({
+      tenantId: req.user.tenantId,
+      type: 'email',
+      subject: `Email: ${subject}`,
+      description: body,
+      dealId: deal._id,
+      createdBy: req.user._id,
+    });
+    res.json({ success: true, sentTo: email });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
-import { Plus, Search, X, Save, Trash2 } from 'lucide-react'
+import { Plus, Search, X, Save, Trash2, MessageCircle, Mail, Send } from 'lucide-react'
 import api from '../../lib/api'
 
 const LS = [
@@ -31,6 +31,10 @@ export default function CRMLeadsTab() {
   const [show, setShow] = useState(false)
   const [editing, setEditing] = useState(null)
   const [form, setForm] = useState(iL())
+  const [commLead, setCommLead] = useState(null)
+  const [commType, setCommType] = useState('') // 'whatsapp' | 'email'
+  const [commMsg, setCommMsg] = useState('')
+  const [commSubject, setCommSubject] = useState('')
 
   const { data: ld = {} } = useQuery({ queryKey: ['crm-leads', search], queryFn: async () => (await api.get('/crm/leads', { params: { search } })).data })
   const leads = ld.leads || []
@@ -54,6 +58,16 @@ export default function CRMLeadsTab() {
 
   const close = () => { setShow(false); setEditing(null); setForm(iL()) }
   const open = (l) => { if (l) { setEditing(l); setForm({ ...iL(), ...l }) } else { setEditing(null); setForm(iL()) } setShow(true) }
+  const openComm = (l, type) => { setCommLead(l); setCommType(type); setCommMsg(''); setCommSubject(''); }
+  const closeComm = () => { setCommLead(null); setCommType(''); setCommMsg(''); setCommSubject(''); }
+
+  const sendComm = useMutation({
+    mutationFn: () => commType === 'whatsapp'
+      ? api.post(`/crm/leads/${commLead._id}/send-whatsapp`, { message: commMsg })
+      : api.post(`/crm/leads/${commLead._id}/send-email`, { subject: commSubject, body: commMsg }),
+    onSuccess: (res) => { toast.success(`${t('Sent to', 'تم الإرسال إلى')} ${res.data?.sentTo}`); qc.invalidateQueries({ queryKey: ['crm-activities'] }); closeComm() },
+    onError: (e) => toast.error(e.response?.data?.error || t('Failed', 'فشل'))
+  })
 
   const F = ({ l: label, t: type = 'text', v, onChange, p = '', r = 0, o = null }) => (
     <div>
@@ -95,6 +109,8 @@ export default function CRMLeadsTab() {
                   <td className="px-4 py-3 text-xs text-gray-600 dark:text-gray-300">{t(sr.label, sr.ar)}</td>
                   <td className="px-4 py-3 text-xs font-medium text-gray-700 dark:text-gray-300">{l.estimatedValue?.toLocaleString?.() ?? '0'} SAR</td>
                   <td className="px-4 py-3 text-right">
+                    {l.phone && <button onClick={() => openComm(l, 'whatsapp')} title="WhatsApp" className="text-green-600 hover:text-green-700 text-xs font-medium mr-2"><MessageCircle className="w-3.5 h-3.5 inline" /></button>}
+                    {l.email && <button onClick={() => openComm(l, 'email')} title="Email" className="text-blue-600 hover:text-blue-700 text-xs font-medium mr-2"><Mail className="w-3.5 h-3.5 inline" /></button>}
                     {l.status !== 'converted' && l.status !== 'lost' && <button onClick={() => convert.mutate(l._id)} className="text-emerald-600 hover:underline text-xs font-medium mr-3">{t('Convert', 'تحويل')}</button>}
                     <button onClick={() => open(l)} className="text-primary-600 hover:underline text-xs font-medium mr-3">{t('Edit', 'تعديل')}</button>
                     <button onClick={() => { if (window.confirm(t('Delete lead?', 'حذف العميل المحتمل؟'))) del.mutate(l._id) }} className="text-red-600 hover:underline text-xs font-medium">{t('Delete', 'حذف')}</button>
@@ -132,6 +148,36 @@ export default function CRMLeadsTab() {
               <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-100 dark:border-dark-700">
                 <button onClick={close} className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">{t('Cancel', 'إلغاء')}</button>
                 <button onClick={() => save.mutate()} disabled={save.isPending} className="px-4 py-2 rounded-lg text-sm font-medium bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50 flex items-center gap-2"><Save className="w-4 h-4" /> {save.isPending ? t('Saving...', 'جاري الحفظ...') : t('Save', 'حفظ')}</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {commLead && (
+          <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={closeComm}>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} onClick={e => e.stopPropagation()} className="bg-white dark:bg-dark-800 rounded-xl shadow-xl w-full max-w-lg">
+              <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-dark-700">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{commType === 'whatsapp' ? t('Send WhatsApp', 'إرسال واتساب') : t('Send Email', 'إرسال بريد')} — {commLead.name}</h3>
+                <button onClick={closeComm} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-700"><X className="w-5 h-5" /></button>
+              </div>
+              <div className="p-5 space-y-3">
+                {commType === 'email' && (
+                  <div>
+                    <label className="text-xs font-medium text-gray-500">{t('Subject', 'الموضوع')}</label>
+                    <input value={commSubject} onChange={e => setCommSubject(e.target.value)} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" />
+                  </div>
+                )}
+                <div>
+                  <label className="text-xs font-medium text-gray-500">{t('Message', 'الرسالة')}</label>
+                  <textarea value={commMsg} onChange={e => setCommMsg(e.target.value)} rows={4} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" />
+                </div>
+                <p className="text-[10px] text-gray-400">{t('Sending to', 'الإرسال إلى')}: {commType === 'whatsapp' ? commLead.phone : commLead.email}</p>
+              </div>
+              <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-100 dark:border-dark-700">
+                <button onClick={closeComm} className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">{t('Cancel', 'إلغاء')}</button>
+                <button onClick={() => sendComm.mutate()} disabled={sendComm.isPending || !commMsg.trim()} className="px-4 py-2 rounded-lg text-sm font-medium bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50 flex items-center gap-2"><Send className="w-4 h-4" /> {sendComm.isPending ? t('Sending...', 'جاري الإرسال...') : t('Send', 'إرسال')}</button>
               </div>
             </motion.div>
           </motion.div>
