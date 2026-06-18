@@ -8,9 +8,7 @@ import {
   Calendar,
   User,
   Phone,
-  CreditCard,
   Printer,
-  X,
   ChevronRight,
   Sparkles,
   Plus,
@@ -20,7 +18,6 @@ import {
   CheckCircle2,
   ArrowRight,
   Receipt,
-  MessageCircle,
 } from 'lucide-react'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
@@ -56,6 +53,7 @@ export default function BoutiquePOS() {
   const [customerId, setCustomerId] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
+  const [discountAmount, setDiscountAmount] = useState(0)
 
   // ─── Product Fetch ───
   const { data: productsData, isLoading } = useQuery({
@@ -147,9 +145,9 @@ export default function BoutiquePOS() {
     })
     const rentalSubtotal = lines.reduce((s, l) => s + l.rentalSubtotal, 0)
     const totalDeposit = lines.reduce((s, l) => s + l.deposit, 0)
-    const totalTax = Math.round(rentalSubtotal * 0.15 * 100) / 100
-    const grandTotal = Math.round((rentalSubtotal + totalTax) * 100) / 100
-    return { lines, rentalSubtotal, totalDeposit, totalTax, grandTotal }
+    const totalTax = Math.round(Math.max(0, rentalSubtotal - discountAmount) * 0.15 * 100) / 100
+    const grandTotal = Math.round(Math.max(0, rentalSubtotal - discountAmount + totalTax) * 100) / 100
+    return { lines, rentalSubtotal, totalDeposit, totalTax, grandTotal, discountAmount }
   })()
 
   // ─── Checkout Mutation ───
@@ -174,6 +172,7 @@ export default function BoutiquePOS() {
       customerPhone,
       customerIdNumber: customerId,
       transactionType: transactionMode,
+      discount: discountAmount || 0,
       ...(isSale ? {} : { startDate, endDate }),
       lineItems: cart.map((item) => ({
         productId: item.productId,
@@ -337,19 +336,28 @@ export default function BoutiquePOS() {
                     </div>
                   </div>
                   <div className="p-3">
-                    <h3 className="text-sm font-semibold text-gray-900 truncate">{product.name}</h3>
+                    <h3 className="text-sm font-semibold text-gray-900 truncate">{isArabic ? product.nameAr || product.name : product.name}</h3>
                     <p className="text-xs text-gray-400 mt-0.5">{product.sku}</p>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className={`text-xs font-medium ${transactionMode === 'sale' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    <div className="mt-2 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className={`text-xs font-medium ${transactionMode === 'sale' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                          {transactionMode === 'sale'
+                            ? `SAR ${product.salePrice || 0}`
+                            : product.dailyRate > 0
+                            ? `SAR ${product.dailyRate}/${label('day', 'يوم')}`
+                            : label('Tiered pricing', 'تسعيرة متدرجة')}
+                        </span>
+                        <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+                          {product.color}
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-gray-500">
                         {transactionMode === 'sale'
-                          ? `SAR ${product.salePrice || 0}`
+                          ? `${label('After VAT', 'بعد الضريبة')}: SAR ${Math.round((product.salePrice || 0) * 1.15 * 100) / 100}`
                           : product.dailyRate > 0
-                          ? `SAR ${product.dailyRate}/day`
-                          : 'Tiered pricing'}
-                      </span>
-                      <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
-                        {product.color}
-                      </span>
+                          ? `${label('After VAT', 'بعد الضريبة')}: SAR ${Math.round((product.dailyRate || 0) * 1.15 * 100) / 100}/${label('day', 'يوم')}`
+                          : ''}
+                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -400,7 +408,7 @@ export default function BoutiquePOS() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between">
-                          <h4 className="text-xs font-semibold text-gray-900 truncate">{item.name}</h4>
+                          <h4 className="text-xs font-semibold text-gray-900 truncate">{isArabic ? item.nameAr || item.name : item.name}</h4>
                           <button
                             onClick={() => removeFromCart(item.productId)}
                             className="text-gray-300 hover:text-red-500 transition-colors"
@@ -447,205 +455,209 @@ export default function BoutiquePOS() {
             </AnimatePresence>
           </div>
 
-          {/* Cart Footer */}
+          {/* Cart Footer / Inline Checkout */}
           {cart.length > 0 && (
             <div className="p-4 bg-white border-t border-gray-100">
-              <div className="space-y-1 text-xs">
-                <div className="flex justify-between text-gray-500">
-                  <span>{transactionMode === 'sale' ? label('Subtotal', 'المجموع الفرعي') : label('Rental Subtotal', 'إجمالي الإيجار')}</span>
-                  <Money value={cartTotals.rentalSubtotal} />
-                </div>
-                {transactionMode !== 'sale' && (
-                  <div className="flex justify-between text-gray-500">
-                    <span>{label('Security Deposit', 'تأمين')}</span>
-                    <Money value={cartTotals.totalDeposit} />
-                  </div>
-                )}
-                <div className="flex justify-between text-gray-500">
-                  <span>{label('VAT (15%)', 'الضريبة 15%')}</span>
-                  <Money value={cartTotals.totalTax} />
-                </div>
-                <div className="flex justify-between text-sm font-bold text-gray-900 pt-2 border-t border-gray-100">
-                  <span>{label('Total', 'الإجمالي')}</span>
-                  <Money value={cartTotals.grandTotal} />
-                </div>
-              </div>
-              <button
-                onClick={() => setShowCheckout(true)}
-                className={`w-full mt-3 text-white py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 ${
-                  transactionMode === 'sale' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-600 hover:bg-rose-700'
-                }`}
-              >
-                {label('Proceed to Checkout', 'متابعة الدفع')}
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ─── Checkout Modal ─── */}
-      <AnimatePresence>
-        {showCheckout && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden"
-            >
-              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                  <CreditCard className="w-5 h-5 text-rose-500" />
-                  {label('Checkout', 'الدفع')}
-                </h3>
-                <button onClick={() => setShowCheckout(false)} className="text-gray-400 hover:text-gray-600">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
-                {/* Customer Info */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                    {label('Customer Details', 'بيانات العميل')}
-                  </h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="col-span-2">
-                      <label className="text-xs text-gray-500 mb-1 block">{label('Full Name (EN)', 'الاسم الكامل (إنجليزي)')} *</label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input
-                          value={customerName}
-                          onChange={(e) => setCustomerName(e.target.value)}
-                          className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
-                          placeholder={label('Customer name', 'اسم العميل')}
-                        />
-                      </div>
-                    </div>
-                    <div className="col-span-2">
-                      <label className="text-xs text-gray-500 mb-1 block">{label('Full Name (AR)', 'الاسم الكامل (عربي)')}</label>
-                      <input
-                        value={customerNameAr}
-                        onChange={(e) => setCustomerNameAr(e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none text-right"
-                        dir="rtl"
-                        placeholder={label('اسم العميل', 'اسم العميل')}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-500 mb-1 block">{label('Phone', 'الجوال')} *</label>
-                      <div className="relative">
-                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input
-                          value={customerPhone}
-                          onChange={(e) => setCustomerPhone(e.target.value)}
-                          className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
-                          placeholder="05xxxxxxxx"
-                        />
-                      </div>
+              {!showCheckout ? (
+                /* ── Cart Summary + Proceed ── */
+                <div>
+                  <div className="space-y-1 text-xs">
+                    <div className="flex justify-between text-gray-500">
+                      <span>{transactionMode === 'sale' ? label('Subtotal', 'المجموع الفرعي') : label('Rental Subtotal', 'إجمالي الإيجار')}</span>
+                      <Money value={cartTotals.rentalSubtotal} />
                     </div>
                     {transactionMode !== 'sale' && (
-                      <div>
-                        <label className="text-xs text-gray-500 mb-1 block">{label('ID / Iqama', 'الهوية')}</label>
-                        <input
-                          value={customerId}
-                          onChange={(e) => setCustomerId(e.target.value)}
-                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
-                          placeholder="1xxxxxxxx"
-                        />
+                      <div className="flex justify-between text-gray-500">
+                        <span>{label('Security Deposit', 'تأمين')}</span>
+                        <Money value={cartTotals.totalDeposit} />
                       </div>
                     )}
+                    <div className="flex justify-between text-gray-500">
+                      <span>{label('VAT (15%)', 'الضريبة 15%')}</span>
+                      <Money value={cartTotals.totalTax} />
+                    </div>
+                    <div className="flex justify-between text-sm font-bold text-gray-900 pt-2 border-t border-gray-100">
+                      <span>{label('Total', 'الإجمالي')}</span>
+                      <Money value={cartTotals.grandTotal} />
+                    </div>
                   </div>
+                  <button
+                    onClick={() => setShowCheckout(true)}
+                    className={`w-full mt-3 text-white py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 ${
+                      transactionMode === 'sale' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-600 hover:bg-rose-700'
+                    }`}
+                  >
+                    {label('Proceed to Checkout', 'متابعة الدفع')}
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
                 </div>
+              ) : (
+                /* ── Inline Checkout Form ── */
+                <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+                  {/* Back to Cart */}
+                  <button
+                    onClick={() => setShowCheckout(false)}
+                    className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                  >
+                    <ChevronRight className={`w-3 h-3 ${isArabic ? 'rotate-180' : ''}`} />
+                    {label('Back to Cart', 'العودة للسلة')}
+                  </button>
 
-                {transactionMode === 'rental' && (
-                  <div className="space-y-3">
+                  {/* Customer Info */}
+                  <div className="space-y-2">
                     <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                      {label('Rental Dates', 'تواريخ الإيجار')}
+                      {label('Customer Details', 'بيانات العميل')}
                     </h4>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
                       <div>
-                        <label className="text-xs text-gray-500 mb-1 block">{label('Pickup Date', 'تاريخ الاستلام')} *</label>
+                        <label className="text-[10px] text-gray-500 mb-0.5 block">{label('Full Name (EN)', 'الاسم الكامل (إنجليزي)')} *</label>
                         <div className="relative">
-                          <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <User className={`absolute ${isArabic ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400`} />
+                          <input
+                            value={customerName}
+                            onChange={(e) => setCustomerName(e.target.value)}
+                            className={`w-full ${isArabic ? 'pr-8 pl-2' : 'pl-8 pr-2'} py-2 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-rose-200 outline-none`}
+                            placeholder={label('Customer name', 'اسم العميل')}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-gray-500 mb-0.5 block">{label('Full Name (AR)', 'الاسم الكامل (عربي)')}</label>
+                        <input
+                          value={customerNameAr}
+                          onChange={(e) => setCustomerNameAr(e.target.value)}
+                          className="w-full px-2 py-2 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-rose-200 outline-none text-right"
+                          dir="rtl"
+                          placeholder={label('اسم العميل', 'اسم العميل')}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-gray-500 mb-0.5 block">{label('Phone', 'الجوال')} *</label>
+                        <div className="relative">
+                          <Phone className={`absolute ${isArabic ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400`} />
+                          <input
+                            value={customerPhone}
+                            onChange={(e) => setCustomerPhone(e.target.value)}
+                            className={`w-full ${isArabic ? 'pr-8 pl-2' : 'pl-8 pr-2'} py-2 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-rose-200 outline-none`}
+                            placeholder="05xxxxxxxx"
+                          />
+                        </div>
+                      </div>
+                      {transactionMode !== 'sale' && (
+                        <div>
+                          <label className="text-[10px] text-gray-500 mb-0.5 block">{label('ID / Iqama', 'الهوية')}</label>
+                          <input
+                            value={customerId}
+                            onChange={(e) => setCustomerId(e.target.value)}
+                            className="w-full px-2 py-2 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-rose-200 outline-none"
+                            placeholder="1xxxxxxxx"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Rental Dates */}
+                  {transactionMode === 'rental' && (
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                        {label('Rental Dates', 'تواريخ الإيجار')}
+                      </h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[10px] text-gray-500 mb-0.5 block">{label('Pickup Date', 'تاريخ الاستلام')} *</label>
                           <input
                             type="date"
                             value={startDate}
                             onChange={(e) => setStartDate(e.target.value)}
-                            className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
+                            className="w-full px-2 py-2 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-rose-200 outline-none"
                           />
                         </div>
-                      </div>
-                      <div>
-                        <label className="text-xs text-gray-500 mb-1 block">{label('Return Date', 'تاريخ الإرجاع')} *</label>
-                        <div className="relative">
-                          <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <div>
+                          <label className="text-[10px] text-gray-500 mb-0.5 block">{label('Return Date', 'تاريخ الإرجاع')} *</label>
                           <input
                             type="date"
                             value={endDate}
                             onChange={(e) => setEndDate(e.target.value)}
-                            className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
+                            className="w-full px-2 py-2 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-rose-200 outline-none"
                           />
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
-
-                {/* Summary */}
-                <div className="bg-gray-50 rounded-xl p-4 space-y-2">
-                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                    {label('Order Summary', 'ملخص الطلب')}
-                  </h4>
-                  {cartTotals.lines.map((line) => (
-                    <div key={line.productId} className="flex justify-between text-sm">
-                      <span className="text-gray-600 truncate max-w-[60%]">
-                        {line.name} {line.mode !== 'sale' && `(${line.rentalDays}d)`}
-                      </span>
-                      <span className="font-medium text-gray-900">SAR {line.rentalSubtotal.toFixed(2)}</span>
-                    </div>
-                  ))}
-                  <div className="border-t border-gray-200 pt-2 flex justify-between text-sm font-bold text-gray-900">
-                    <span>{label('Grand Total', 'الإجمالي')}</span>
-                    <Money value={cartTotals.grandTotal} />
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 border-t border-gray-100 flex gap-3">
-                <button
-                  onClick={() => setShowCheckout(false)}
-                  className="flex-1 py-3 rounded-xl border border-gray-200 font-bold text-gray-600 hover:bg-gray-50 transition-colors"
-                >
-                  {label('Cancel', 'إلغاء')}
-                </button>
-                <button
-                  onClick={handleCheckout}
-                  disabled={checkoutMutation.isPending || !customerName || !customerPhone || (transactionMode === 'rental' && (!startDate || !endDate))}
-                  className={`flex-1 py-3 rounded-xl text-white font-bold disabled:opacity-50 transition-colors flex items-center justify-center gap-2 ${
-                    transactionMode === 'sale' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-600 hover:bg-rose-700'
-                  }`}
-                >
-                  {checkoutMutation.isPending ? (
-                    <Clock className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <>
-                      {label('Confirm & Print', 'تأكيد وطباعة')}
-                      <Printer className="w-4 h-4" />
-                    </>
                   )}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
+                  {/* Discount */}
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                      {label('Discount', 'الخصم')}
+                    </h4>
+                    <div className="relative">
+                      <span className={`absolute ${isArabic ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-[10px] text-gray-400`}>SAR</span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={cartTotals.rentalSubtotal}
+                        value={discountAmount || ''}
+                        onChange={(e) => setDiscountAmount(Math.max(0, Number(e.target.value)))}
+                        className={`w-full ${isArabic ? 'pl-10 pr-2' : 'pr-10 pl-2'} py-2 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-rose-200 outline-none`}
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Summary */}
+                  <div className="bg-gray-50 rounded-xl p-3 space-y-1.5 text-xs">
+                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                      {label('Order Summary', 'ملخص الطلب')}
+                    </h4>
+                    <div className="flex justify-between text-gray-500">
+                      <span>{transactionMode === 'sale' ? label('Subtotal', 'المجموع الفرعي') : label('Rental Subtotal', 'إجمالي الإيجار')}</span>
+                      <Money value={cartTotals.rentalSubtotal} />
+                    </div>
+                    {cartTotals.discountAmount > 0 && (
+                      <div className="flex justify-between text-emerald-600">
+                        <span>{label('Discount', 'خصم')}</span>
+                        <span>-<Money value={cartTotals.discountAmount} /></span>
+                      </div>
+                    )}
+                    {transactionMode !== 'sale' && (
+                      <div className="flex justify-between text-gray-500">
+                        <span>{label('Security Deposit', 'تأمين')}</span>
+                        <Money value={cartTotals.totalDeposit} />
+                      </div>
+                    )}
+                    <div className="flex justify-between text-gray-500">
+                      <span>{label('VAT (15%)', 'الضريبة 15%')}</span>
+                      <Money value={cartTotals.totalTax} />
+                    </div>
+                    <div className="flex justify-between text-sm font-bold text-gray-900 pt-1.5 border-t border-gray-200">
+                      <span>{label('Grand Total', 'الإجمالي')}</span>
+                      <Money value={cartTotals.grandTotal} />
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleCheckout}
+                    disabled={checkoutMutation.isPending || !customerName || !customerPhone || (transactionMode === 'rental' && (!startDate || !endDate))}
+                    className={`w-full py-3 rounded-xl text-white text-sm font-bold disabled:opacity-50 transition-colors flex items-center justify-center gap-2 ${
+                      transactionMode === 'sale' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-600 hover:bg-rose-700'
+                    }`}
+                  >
+                    {checkoutMutation.isPending ? (
+                      <Clock className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <>
+                        {label('Confirm & Print', 'تأكيد وطباعة')}
+                        <Printer className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* ─── Receipt Print Modal ─── */}
       <AnimatePresence>

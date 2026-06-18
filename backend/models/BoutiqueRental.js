@@ -78,6 +78,7 @@ const boutiqueRentalSchema = new mongoose.Schema({
   // --- Totals ---
   rentalSubtotal: { type: Number, required: true, default: 0 },   // Sum of line rentalSubtotals
   totalDeposit: { type: Number, default: 0 },                   // Sum of line depositAmounts
+  discount: { type: Number, default: 0 },                        // Applied discount
   totalLateFee: { type: Number, default: 0 },
   totalDamageFee: { type: Number, default: 0 },
   totalCleaningFee: { type: Number, default: 0 },

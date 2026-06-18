@@ -33,6 +33,7 @@ const BoutiqueThermalReceipt = forwardRef(({ rental, tenant, invoice, qrDataUrl 
 
   const lineItems = rental.lineItems || [];
   const rentalSubtotal = rental.rentalSubtotal || 0;
+  const discount = rental.discount || 0;
   const totalDeposit = rental.totalDeposit || 0;
   const totalTax = rental.totalTax || 0;
   const grandTotal = rental.grandTotal || 0;
@@ -209,6 +210,12 @@ const BoutiqueThermalReceipt = forwardRef(({ rental, tenant, invoice, qrDataUrl 
           <span>Subtotal / الإجمالي الفرعي:</span>
           <span>SAR {rentalSubtotal.toFixed(2)}</span>
         </div>
+        {discount > 0 && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+            <span>Discount / خصم:</span>
+            <span style={{ color: '#059669' }}>-SAR {discount.toFixed(2)}</span>
+          </div>
+        )}
         {totalDeposit > 0 && (
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
             <span>Security Deposit / التأمين:</span>
