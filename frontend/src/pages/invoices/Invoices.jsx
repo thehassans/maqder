@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
@@ -30,6 +30,7 @@ import ExportMenu from '../../components/ui/ExportMenu'
 import toast from 'react-hot-toast'
 import { downloadInvoicePdf, buildInvoicePdfBlob } from '../../lib/invoicePdf'
 import { getTenantBusinessTypes } from '../../lib/businessTypes'
+import ThermalReceipt from '../../components/ui/ThermalReceipt'
 import { getZatcaStatusMeta, isEditableInvoice } from '../../lib/zatcaStatus'
 import { getTravelInvoiceLabelMeta, isTravelAgencyInvoice } from '../../lib/travelInvoiceStatus'
 
@@ -91,6 +92,8 @@ export default function Invoices() {
   const [pdfLoadingId, setPdfLoadingId] = useState(null)
   const [signModalInvoice, setSignModalInvoice] = useState(null)
   const [waModalInvoice, setWaModalInvoice] = useState(null)
+  const [printModalInvoice, setPrintModalInvoice] = useState(null)
+  const printModalRef = useRef(null)
   const [waPhone, setWaPhone] = useState('')
   const [waLoadingId, setWaLoadingId] = useState(null)
   const [waMessageLang, setWaMessageLang] = useState('en')
@@ -100,101 +103,6 @@ export default function Invoices() {
   const posTenants = ['bakala', 'super market', 'khayyat', 'saloon', 'laundry', 'restaurant']
   const showNewInvoiceBtn = !tenantBusinessTypes.some(t => posTenants.includes(t))
   const isPosInvoice = (inv) => ['restaurant', 'bakala', 'saloon', 'laundry', 'khayyat'].includes(inv?.businessContext)
-
-  const printThermalFromList = (inv) => {
-    const businessNameEn = tenant?.business?.legalNameEn || tenant?.name || 'Maqder POS'
-    const businessNameAr = tenant?.business?.legalNameAr || tenant?.name || 'مقدر نقاط البيع'
-    const vatNumber = tenant?.business?.vatNumber || '300000000000003'
-    const addressText = [tenant?.business?.address?.street, tenant?.business?.address?.city].filter(Boolean).join(', ')
-    const dateStr = new Date(inv.issueDate || Date.now()).toLocaleString(language === 'ar' ? 'ar-SA' : 'en-US')
-    const orderNumber = inv.invoiceNumber || 'N/A'
-    const customerName = language === 'ar'
-      ? (inv.buyer?.nameAr || inv.buyer?.name || 'عميل نقدي')
-      : (inv.buyer?.name || inv.buyer?.nameAr || 'Cash Customer')
-    const items = inv.lineItems || []
-    const subtotal = inv.subTotal || (inv.grandTotal - inv.totalTax) || 0
-    const totalVat = inv.totalTax || 0
-    const grandTotal = inv.grandTotal || 0
-
-    const itemsHtml = items.map((item) => `
-      <tr style="border-bottom: 1px dashed #ddd;">
-        <td style="padding: 4px 0; font-size: 10px; font-weight: bold;">${item.name || item.nameAr || 'Item'}</td>
-        <td style="padding: 4px 0; font-size: 10px; text-align: center;">${item.quantity}</td>
-        <td style="padding: 4px 0; font-size: 10px; text-align: right; font-weight: bold;">SAR ${(item.taxableAmount || (item.quantity * item.unitPrice)).toFixed(2)}</td>
-      </tr>
-    `).join('')
-
-    const receiptHtml = `
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8" />
-<title>${orderNumber}</title>
-<style>
-  @page { size: auto; margin: 0; }
-  body { margin: 0; padding: 0; background: white; color: black; font-family: monospace; }
-  body * { visibility: hidden; }
-  .print-section, .print-section * { visibility: visible; }
-  .print-section { position: absolute; left: 0; top: 0; width: 80mm; padding: 4mm; border: none !important; box-sizing: border-box; }
-  ::-webkit-scrollbar { display: none; }
-</style>
-</head>
-<body>
-<div class="print-section">
-  <div style="text-align: center; margin-bottom: 12px;">
-    <div style="font-size: 13px; font-weight: bold;">${businessNameEn}</div>
-    <div style="font-size: 13px; font-weight: bold;">${businessNameAr}</div>
-    <div style="font-size: 9px; margin-top: 4px; font-weight: bold;">SIMPLIFIED TAX INVOICE | فاتورة ضريبية مبسطة</div>
-    <div style="font-size: 8px; margin-top: 2px;">VAT / الرقم الضريبي: <b>${vatNumber}</b></div>
-    ${addressText ? `<div style="font-size: 8px; margin-top: 2px;">${addressText}</div>` : ''}
-  </div>
-  <div style="border-top: 1px dashed #999; border-bottom: 1px dashed #999; padding: 6px 0; margin-bottom: 8px; font-size: 9px;">
-    <div style="display: flex; justify-content: space-between;"><span>Invoice No:</span><b>${orderNumber}</b></div>
-    <div style="display: flex; justify-content: space-between;"><span>Date:</span><span>${dateStr}</span></div>
-    <div style="display: flex; justify-content: space-between;"><span>Customer:</span><b>${customerName}</b></div>
-  </div>
-  <table style="width: 100%; border-collapse: collapse; margin-bottom: 8px;">
-    <thead>
-      <tr style="border-bottom: 1px dashed #999;">
-        <th style="text-align: left; font-size: 9px; padding: 2px 0;">Item</th>
-        <th style="text-align: center; font-size: 9px; padding: 2px 0;">Qty</th>
-        <th style="text-align: right; font-size: 9px; padding: 2px 0;">Total</th>
-      </tr>
-    </thead>
-    <tbody>${itemsHtml}</tbody>
-  </table>
-  <div style="border-top: 1px dashed #999; padding-top: 6px; font-size: 9px;">
-    <div style="display: flex; justify-content: space-between;"><span>Subtotal:</span><span>SAR ${Number(subtotal).toFixed(2)}</span></div>
-    <div style="display: flex; justify-content: space-between;"><span>VAT (15%):</span><span>SAR ${Number(totalVat).toFixed(2)}</span></div>
-    <div style="display: flex; justify-content: space-between; margin-top: 4px; padding-top: 4px; border-top: 1px dashed #ccc; font-size: 12px; font-weight: bold;">
-      <span>Total:</span><span>SAR ${Number(grandTotal).toFixed(2)}</span>
-    </div>
-  </div>
-  <div style="text-align: center; margin-top: 16px; font-size: 8px; color: #555;">
-    <div style="font-weight: bold; font-size: 10px; color: #000;">Thank you for your visit!</div>
-    <div>Please keep this receipt.</div>
-  </div>
-</div>
-</body>
-</html>`
-
-    const frame = document.createElement('iframe')
-    frame.style.position = 'fixed'
-    frame.style.right = '0'
-    frame.style.bottom = '0'
-    frame.style.width = '0'
-    frame.style.height = '0'
-    frame.style.border = '0'
-    document.body.appendChild(frame)
-    frame.contentWindow.document.open()
-    frame.contentWindow.document.write(receiptHtml)
-    frame.contentWindow.document.close()
-    setTimeout(() => {
-      frame.contentWindow.focus()
-      frame.contentWindow.print()
-      setTimeout(() => { if (frame.parentNode) frame.parentNode.removeChild(frame) }, 500)
-    }, 300)
-  }
 
   useEffect(() => {
     const handle = setTimeout(() => setDebouncedSearch(search), 300)
@@ -874,7 +782,7 @@ export default function Invoices() {
                               try {
                                 setPdfLoadingId(invoice._id)
                                 if (isPosInvoice(invoice)) {
-                                  printThermalFromList(invoice)
+                                  setPrintModalInvoice(invoice)
                                   return
                                 }
                                 const full = await api.get(`/invoices/${invoice._id}`).then((res) => res.data)
@@ -957,6 +865,52 @@ export default function Invoices() {
           </>
         )}
       </motion.div>
+
+      {printModalInvoice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 print:bg-white print:static print:inset-auto">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-[400px] max-h-[90vh] overflow-y-auto print:shadow-none print:p-0 print:w-auto print:max-h-none print:overflow-visible">
+            <div className="flex justify-between items-center mb-4 print:hidden">
+              <h3 className="text-lg font-bold">
+                {language === 'ar' ? 'إيصال الفاتورة' : 'Invoice Receipt'}
+              </h3>
+              <button onClick={() => setPrintModalInvoice(null)} className="text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-full w-8 h-8 flex items-center justify-center">
+                ×
+              </button>
+            </div>
+            <div className="border border-gray-200 rounded-lg p-2 print:border-none print:p-0 flex justify-center">
+              <ThermalReceipt
+                ref={printModalRef}
+                order={{
+                  ...printModalInvoice,
+                  receiptNumber: printModalInvoice.invoiceNumber,
+                  customerName: printModalInvoice.buyer?.name || printModalInvoice.buyer?.nameAr,
+                  customerPhone: printModalInvoice.buyer?.phone,
+                  grandTotal: printModalInvoice.grandTotal,
+                  totalVat: printModalInvoice.totalTax,
+                  subtotal: printModalInvoice.subTotal || (printModalInvoice.grandTotal - printModalInvoice.totalTax),
+                  zatcaQrCode: printModalInvoice.zatca?.qrCodeData,
+                  items: printModalInvoice.lineItems?.map(item => ({
+                    nameEn: item.name,
+                    nameAr: item.nameAr,
+                    quantity: item.quantity,
+                    unitPrice: item.unitPrice,
+                    total: item.taxableAmount || (item.quantity * item.unitPrice)
+                  }))
+                }}
+                type={printModalInvoice.businessContext || 'restaurant'}
+              />
+            </div>
+            <div className="mt-6 flex gap-3 print:hidden">
+              <button onClick={() => setPrintModalInvoice(null)} className="flex-1 py-3 rounded-xl border border-gray-200 font-bold hover:bg-gray-50 text-gray-700">
+                {language === 'ar' ? 'إغلاق' : 'Close'}
+              </button>
+              <button onClick={() => { if (printModalRef.current) window.print() }} className="flex-1 py-3 rounded-xl bg-amber-600 text-white font-bold hover:bg-amber-700">
+                {language === 'ar' ? 'طباعة' : 'Print'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
