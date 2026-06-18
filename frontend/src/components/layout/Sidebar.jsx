@@ -55,7 +55,8 @@ import {
   Leaf,
   AlertTriangle,
   CalendarDays,
-  Target
+  Target,
+  Sparkles
 } from 'lucide-react'
 import { toggleSidebarCollapse, setMobileMenuOpen } from '../../store/slices/uiSlice'
 import { useTranslation } from '../../lib/translations'
@@ -123,6 +124,13 @@ export default function Sidebar() {
         { path: '/app/dashboard/restaurant/kitchen', icon: ChefHat, label: language === 'ar' ? 'المطبخ' : 'Kitchen', perm: { module: 'restaurant', action: 'read' } },
         { path: '/app/dashboard/restaurant/branches', icon: Building, label: language === 'ar' ? 'الفروع' : 'Branches', perm: { module: 'restaurant', action: 'read' } },
         { path: '/app/dashboard/restaurant/qr-menu', icon: QrCode, label: language === 'ar' ? 'رمز القائمة (QR)' : 'QR Menu', perm: { module: 'restaurant', action: 'read' } },
+      ]
+    },
+    {
+      title: language === 'ar' ? 'بوتيك وإيجار فساتين' : 'Boutique & Rentals',
+      businessTypes: ['boutique'],
+      items: [
+        { path: '/app/dashboard/boutique/pos', icon: Sparkles, label: language === 'ar' ? 'نقطة البيع' : 'POS', perm: { module: 'boutique', action: 'create' } },
       ]
     },
     {

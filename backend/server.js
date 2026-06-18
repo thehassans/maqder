@@ -87,11 +87,13 @@ import khayyatLaundryRoutes from './routes/khayyat/laundry.js';
 import khayyatStitchingRoutes from './routes/khayyat/stitching.js';
 import khayyatPaymentRoutes from './routes/khayyat/payment.js';
 import khayyatUserRoutes from './routes/khayyat/user.js';
+import boutiqueRoutes from './routes/boutique.routes.js';
 
 import { checkIqamaExpiry } from './jobs/iqamaChecker.js';
 import { processScheduledReports } from './jobs/reportScheduleJob.js';
 import { syncZatcaInvoices } from './jobs/zatcaSync.js';
 import { fetchImapEmails } from './jobs/imapFetcher.js';
+import { startBoutiqueReminderJobs } from './jobs/boutiqueReminderJob.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 import logger from './utils/logger.js';
 import User from './models/User.js';
@@ -173,6 +175,9 @@ const startJobs = () => {
   cron.schedule('* * * * *', async () => {
     await fetchImapEmails();
   });
+
+  // Boutique rental reminders & overdue alerts
+  startBoutiqueReminderJobs();
 };
 
 const scheduleReconnect = () => {
@@ -449,6 +454,8 @@ app.use('/api/khayyat/laundry', ensureDatabaseReady, khayyatLaundryRoutes);
 app.use('/api/khayyat/stitchings', ensureDatabaseReady, khayyatStitchingRoutes);
 app.use('/api/khayyat/payments', ensureDatabaseReady, khayyatPaymentRoutes);
 app.use('/api/khayyat/user', ensureDatabaseReady, khayyatUserRoutes);
+
+app.use('/api/boutique', ensureDatabaseReady, boutiqueRoutes);
 
 // Serve static frontend files in production
 const resolveFrontendBuild = () => {

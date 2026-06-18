@@ -1,0 +1,358 @@
+import express from 'express';
+import mongoose from 'mongoose';
+import BoutiqueProduct from '../models/BoutiqueProduct.js';
+import BoutiqueRental from '../models/BoutiqueRental.js';
+import {
+  isProductAvailable,
+  checkAvailabilityBatch,
+  calculateRentalPrice,
+  computeRentalTotals,
+  enrichRentalLineItems,
+  transitionRentalStatus,
+} from '../services/boutiqueCalendarService.js';
+import { generateBoutiqueThermalInvoice, queueZatcaReporting } from '../services/boutiqueZatcaService.js';
+import { sendPaymentConfirmation } from '../services/boutiqueWhatsAppService.js';
+import { authenticate } from '../middleware/auth.js';
+import { checkPermission } from '../middleware/permission.js';
+import { buildInvoicePdfBlob } from '../lib/invoicePdf.js';
+
+const router = express.Router();
+
+// All routes require authentication
+router.use(authenticate);
+
+/**
+ * Helper: inject tenant filter from auth middleware into req.tenantFilter
+ */
+router.use((req, res, next) => {
+  if (req.user?.tenantId) {
+    req.tenantFilter = { tenantId: new mongoose.Types.ObjectId(req.user.tenantId) };
+  }
+  next();
+});
+
+/* ─────── PRODUCTS ─────── */
+
+// GET /api/boutique/products — list boutique products
+router.get('/products', checkPermission('boutique', 'read'), async (req, res) => {
+  try {
+    const {
+      search, category, mode, rentalStatus, isActive, page = 1, limit = 50,
+    } = req.query;
+
+    const filter = { ...req.tenantFilter };
+    if (isActive !== undefined) filter.isActive = isActive === 'true';
+    if (category) filter.category = category;
+    if (mode) filter.mode = mode;
+    if (rentalStatus) filter.rentalStatus = rentalStatus;
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { sku: { $regex: search, $options: 'i' } },
+        { tags: { $in: [new RegExp(search, 'i')] } },
+      ];
+    }
+
+    const skip = (Number(page) - 1) * Number(limit);
+    const [products, total] = await Promise.all([
+      BoutiqueProduct.find(filter).sort({ createdAt: -1 }).skip(skip).limit(Number(limit)),
+      BoutiqueProduct.countDocuments(filter),
+    ]);
+
+    res.json({ products, total, page: Number(page), pages: Math.ceil(total / Number(limit)) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/boutique/products — create product
+router.post('/products', checkPermission('boutique', 'write'), async (req, res) => {
+  try {
+    const data = { ...req.body, tenantId: req.user.tenantId };
+    const product = await BoutiqueProduct.create(data);
+    res.status(201).json(product);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /api/boutique/products/:id — update product
+router.put('/products/:id', checkPermission('boutique', 'update'), async (req, res) => {
+  try {
+    const product = await BoutiqueProduct.findOneAndUpdate(
+      { _id: req.params.id, ...req.tenantFilter },
+      req.body,
+      { new: true, runValidators: true }
+    );
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+    res.json(product);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/boutique/products/:id — soft delete
+router.delete('/products/:id', checkPermission('boutique', 'delete'), async (req, res) => {
+  try {
+    const product = await BoutiqueProduct.findOneAndUpdate(
+      { _id: req.params.id, ...req.tenantFilter },
+      { isActive: false },
+      { new: true }
+    );
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+    res.json({ message: 'Product deactivated' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ─────── AVAILABILITY ─────── */
+
+// POST /api/boutique/availability — check if products are available for dates
+router.post('/availability', checkPermission('boutique', 'read'), async (req, res) => {
+  try {
+    const { items } = req.body; // [{ productId, startDate, endDate }]
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'items array required' });
+    }
+
+    const requests = items.map((i) => ({
+      productId: new mongoose.Types.ObjectId(i.productId),
+      startDate: new Date(i.startDate),
+      endDate: new Date(i.endDate),
+    }));
+
+    const results = await checkAvailabilityBatch(requests);
+    const mapped = Object.fromEntries(results);
+    res.json({ available: mapped });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/boutique/availability/:productId — single product check
+router.post('/availability/:productId', checkPermission('boutique', 'read'), async (req, res) => {
+  try {
+    const { startDate, endDate } = req.body;
+    const available = await isProductAvailability(
+      new mongoose.Types.ObjectId(req.params.productId),
+      new Date(startDate),
+      new Date(endDate)
+    );
+    res.json({ available });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ─────── RENTALS ─────── */
+
+// GET /api/boutique/rentals — list rentals
+router.get('/rentals', checkPermission('boutique', 'read'), async (req, res) => {
+  try {
+    const { status, customerPhone, page = 1, limit = 50 } = req.query;
+    const filter = { ...req.tenantFilter };
+    if (status) filter.status = status;
+    if (customerPhone) filter.customerPhone = { $regex: customerPhone };
+
+    const skip = (Number(page) - 1) * Number(limit);
+    const [rentals, total] = await Promise.all([
+      BoutiqueRental.find(filter).sort({ createdAt: -1 }).skip(skip).limit(Number(limit)),
+      BoutiqueRental.countDocuments(filter),
+    ]);
+
+    res.json({ rentals, total, page: Number(page), pages: Math.ceil(total / Number(limit)) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/boutique/rentals/:id — single rental
+router.get('/rentals/:id', checkPermission('boutique', 'read'), async (req, res) => {
+  try {
+    const rental = await BoutiqueRental.findOne({ _id: req.params.id, ...req.tenantFilter });
+    if (!rental) return res.status(404).json({ error: 'Rental not found' });
+    res.json(rental);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/boutique/rentals — create rental (checkout)
+router.post('/rentals', checkPermission('boutique', 'write'), async (req, res) => {
+  try {
+    const { customerName, customerPhone, customerEmail, customerIdNumber, startDate, endDate, lineItems, staffNotes } = req.body;
+
+    // 1. Enrich line items with pricing
+    const enriched = await enrichRentalLineItems(lineItems, req.user.tenantId);
+
+    // 2. Verify availability for every item
+    for (const item of enriched) {
+      const available = await isProductAvailable(item.productId, new Date(startDate), new Date(endDate));
+      if (!available) {
+        return res.status(409).json({ error: `Product ${item.sku} is not available for the selected dates` });
+      }
+    }
+
+    // 3. Compute totals
+    const totals = computeRentalTotals(enriched, 15);
+
+    // 4. Generate rental number
+    const count = await BoutiqueRental.countDocuments(req.tenantFilter);
+    const rentalNumber = `REN-${String(count + 1).padStart(5, '0')}`;
+
+    // 5. Create rental document
+    const rental = await BoutiqueRental.create({
+      tenantId: req.user.tenantId,
+      rentalNumber,
+      customerName,
+      customerPhone,
+      customerEmail,
+      customerIdNumber,
+      startDate: new Date(startDate),
+      endDate: new Date(endDate),
+      lineItems: enriched,
+      ...totals,
+      status: 'reserved',
+      createdBy: req.user._id,
+      staffNotes,
+    });
+
+    res.status(201).json(rental);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PATCH /api/boutique/rentals/:id/status — transition status
+router.patch('/rentals/:id/status', checkPermission('boutique', 'update'), async (req, res) => {
+  try {
+    const { status, note } = req.body;
+    const rental = await BoutiqueRental.findOne({ _id: req.params.id, ...req.tenantFilter });
+    if (!rental) return res.status(404).json({ error: 'Rental not found' });
+
+    await transitionRentalStatus(rental, status, req.user._id, note || '');
+    res.json(rental);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// POST /api/boutique/rentals/:id/payment — record payment
+router.post('/rentals/:id/payment', checkPermission('boutique', 'update'), async (req, res) => {
+  try {
+    const { method, amount, reference } = req.body;
+    const rental = await BoutiqueRental.findOne({ _id: req.params.id, ...req.tenantFilter });
+    if (!rental) return res.status(404).json({ error: 'Rental not found' });
+
+    rental.payments = rental.payments || [];
+    rental.payments.push({ method, amount: Number(amount), reference, paidAt: new Date() });
+    rental.amountPaid = (rental.amountPaid || 0) + Number(amount);
+
+    // If fully paid, auto-transition reserved -> picked_up
+    if (rental.status === 'reserved' && rental.amountPaid >= rental.grandTotal) {
+      await transitionRentalStatus(rental, 'picked_up', req.user._id, 'Auto: payment received');
+    } else {
+      await rental.save();
+    }
+
+    res.json(rental);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/boutique/rentals/:id/invoice — generate ZATCA invoice
+router.post('/rentals/:id/invoice', checkPermission('boutique', 'write'), async (req, res) => {
+  try {
+    const rental = await BoutiqueRental.findOne({ _id: req.params.id, ...req.tenantFilter });
+    if (!rental) return res.status(404).json({ error: 'Rental not found' });
+    if (rental.invoiceId) return res.status(409).json({ error: 'Invoice already generated for this rental' });
+
+    const tenant = req.tenant; // set by auth middleware if available
+    const result = await generateBoutiqueThermalInvoice(rental, tenant);
+    await queueZatcaReporting(result.invoice._id);
+
+    res.json({ invoice: result.invoice, qrDataUrl: result.qrDataUrl });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/boutique/rentals/:id/whatsapp — send payment confirmation WhatsApp
+router.post('/rentals/:id/whatsapp', checkPermission('boutique', 'write'), async (req, res) => {
+  try {
+    const { language, invoicePdfUrl } = req.body;
+    await sendPaymentConfirmation(req.params.id, invoicePdfUrl, language || 'ar');
+    res.json({ message: 'WhatsApp message queued' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/boutique/rentals/:id/inspection — record inspection
+router.post('/rentals/:id/inspection', checkPermission('boutique', 'update'), async (req, res) => {
+  try {
+    const { condition, notes, photos, cleaningRequired, repairRequired, damageFeeApplied } = req.body;
+    const rental = await BoutiqueRental.findOne({ _id: req.params.id, ...req.tenantFilter });
+    if (!rental) return res.status(404).json({ error: 'Rental not found' });
+
+    rental.inspection = {
+      inspectedAt: new Date(),
+      inspectedBy: req.user._id,
+      condition,
+      notes,
+      photos: photos || [],
+      cleaningRequired: cleaningRequired || false,
+      repairRequired: repairRequired || false,
+      damageFeeApplied: Number(damageFeeApplied) || 0,
+    };
+
+    // Apply damage fee to totals
+    if (damageFeeApplied > 0) {
+      rental.totalDamageFee = (rental.totalDamageFee || 0) + Number(damageFeeApplied);
+      const totals = computeRentalTotals(rental.lineItems, 15);
+      rental.totalTax = totals.totalTax;
+      rental.grandTotal = totals.grandTotal;
+    }
+
+    await rental.save();
+    res.json(rental);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/boutique/rentals/:id/refund-deposit — refund security deposit
+router.post('/rentals/:id/refund-deposit', checkPermission('boutique', 'update'), async (req, res) => {
+  try {
+    const { amount, method, note } = req.body;
+    const rental = await BoutiqueRental.findOne({ _id: req.params.id, ...req.tenantFilter });
+    if (!rental) return res.status(404).json({ error: 'Rental not found' });
+
+    const refundAmount = Number(amount) || rental.totalDeposit;
+    rental.amountRefunded = (rental.amountRefunded || 0) + refundAmount;
+
+    // Determine deposit status
+    if (rental.amountRefunded >= rental.totalDeposit) {
+      rental.depositStatus = 'fully_refunded';
+    } else if (rental.amountRefunded > 0) {
+      rental.depositStatus = 'partially_refunded';
+    }
+
+    rental.updateHistory.push({
+      updatedAt: new Date(),
+      updatedBy: req.user._id,
+      fromStatus: rental.status,
+      toStatus: rental.status,
+      note: `Deposit refund: SAR ${refundAmount.toFixed(2)}. ${note || ''}`,
+    });
+
+    await rental.save();
+    res.json(rental);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+export default router;
