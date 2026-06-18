@@ -21,7 +21,6 @@ import {
   ArrowRight,
   Receipt,
   MessageCircle,
-  PackagePlus,
 } from 'lucide-react'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
@@ -48,19 +47,6 @@ export default function BoutiquePOS() {
   const [showCheckout, setShowCheckout] = useState(false)
   const [showReceipt, setShowReceipt] = useState(false)
   const [receiptData, setReceiptData] = useState(null)
-  const [showAddDress, setShowAddDress] = useState(false)
-
-  // ─── Add Dress Form ───
-  const [dressName, setDressName] = useState('')
-  const [dressNameAr, setDressNameAr] = useState('')
-  const [dressSku, setDressSku] = useState('')
-  const [dressCategory, setDressCategory] = useState('')
-  const [dressSize, setDressSize] = useState('')
-  const [dressColor, setDressColor] = useState('')
-  const [dressDailyRate, setDressDailyRate] = useState('')
-  const [dressDeposit, setDressDeposit] = useState('')
-  const [dressTurnaround, setDressTurnaround] = useState('24')
-  const [dressImageUrl, setDressImageUrl] = useState('')
 
   // ─── Customer & Dates ───
   const [customerName, setCustomerName] = useState('')
@@ -225,13 +211,6 @@ export default function BoutiquePOS() {
                 className="pl-9 pr-4 py-2 rounded-xl border border-gray-200 text-sm w-64 focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all"
               />
             </div>
-            <button
-              onClick={() => setShowAddDress(true)}
-              className="flex items-center gap-2 bg-white border border-gray-200 hover:border-rose-300 text-gray-700 hover:text-rose-600 px-4 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm"
-            >
-              <PackagePlus className="w-4 h-4" />
-              {label('Add Dress', 'إضافة فستان')}
-            </button>
             {cart.length > 0 && (
               <button
                 onClick={() => setShowCheckout(true)}
@@ -593,187 +572,6 @@ export default function BoutiquePOS() {
                       <Printer className="w-4 h-4" />
                     </>
                   )}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ─── Add Dress Modal ─── */}
-      <AnimatePresence>
-        {showAddDress && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden"
-            >
-              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                  <PackagePlus className="w-5 h-5 text-rose-500" />
-                  {label('Add New Dress', 'إضافة فستان جديد')}
-                </h3>
-                <button onClick={() => setShowAddDress(false)} className="text-gray-400 hover:text-gray-600">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="col-span-2">
-                    <label className="text-xs text-gray-500 mb-1 block">{label('Dress Name (EN)', 'اسم الفستان (إنجليزي)')}</label>
-                    <input
-                      value={dressName}
-                      onChange={(e) => setDressName(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
-                      placeholder={label('Evening Gown', 'فستان سهرة')}
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <label className="text-xs text-gray-500 mb-1 block">{label('Dress Name (AR)', 'اسم الفستان (عربي)')}</label>
-                    <input
-                      value={dressNameAr}
-                      onChange={(e) => setDressNameAr(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none text-right"
-                      dir="rtl"
-                      placeholder={label('فستان سهرة', 'فستان سهرة')}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">{label('SKU', 'الرمز')}</label>
-                    <input
-                      value={dressSku}
-                      onChange={(e) => setDressSku(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
-                      placeholder="DRES-001"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">{label('Category', 'الفئة')}</label>
-                    <input
-                      value={dressCategory}
-                      onChange={(e) => setDressCategory(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
-                      placeholder={label('Evening', 'سهرة')}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">{label('Size', 'المقاس')}</label>
-                    <input
-                      value={dressSize}
-                      onChange={(e) => setDressSize(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
-                      placeholder="M / 38"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">{label('Color', 'اللون')}</label>
-                    <input
-                      value={dressColor}
-                      onChange={(e) => setDressColor(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
-                      placeholder={label('Red', 'أحمر')}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">{label('Daily Rate (SAR)', 'السعر اليومي')}</label>
-                    <input
-                      type="number"
-                      value={dressDailyRate}
-                      onChange={(e) => setDressDailyRate(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
-                      placeholder="150"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">{label('Security Deposit (SAR)', 'التأمين')}</label>
-                    <input
-                      type="number"
-                      value={dressDeposit}
-                      onChange={(e) => setDressDeposit(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
-                      placeholder="500"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">{label('Turnaround (hours)', 'فترة التجهيز')}</label>
-                    <input
-                      type="number"
-                      value={dressTurnaround}
-                      onChange={(e) => setDressTurnaround(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
-                      placeholder="24"
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <label className="text-xs text-gray-500 mb-1 block">{label('Image URL', 'رابط الصورة')}</label>
-                    <input
-                      value={dressImageUrl}
-                      onChange={(e) => setDressImageUrl(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
-                      placeholder="https://..."
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 border-t border-gray-100 flex gap-3">
-                <button
-                  onClick={() => setShowAddDress(false)}
-                  className="flex-1 py-3 rounded-xl border border-gray-200 font-bold text-gray-600 hover:bg-gray-50 transition-colors"
-                >
-                  {label('Cancel', 'إلغاء')}
-                </button>
-                <button
-                  onClick={async () => {
-                    const payload = {
-                      name: dressName,
-                      nameAr: dressNameAr,
-                      sku: dressSku || `DRES-${Date.now()}`,
-                      category: dressCategory,
-                      size: dressSize,
-                      color: dressColor,
-                      mode: 'FOR_RENT',
-                      dailyRate: Number(dressDailyRate) || 0,
-                      rentalRates: [],
-                      securityDeposit: Number(dressDeposit) || 0,
-                      turnaroundHours: Number(dressTurnaround) || 24,
-                      primaryImage: dressImageUrl || undefined,
-                      images: dressImageUrl ? [dressImageUrl] : [],
-                      rentalQuantity: 1,
-                      rentalStatus: 'available',
-                      isActive: true,
-                    }
-                    try {
-                      await api.post('/boutique/products', payload)
-                      queryClient.invalidateQueries({ queryKey: ['boutique-products'] })
-                      setShowAddDress(false)
-                      setDressName('')
-                      setDressNameAr('')
-                      setDressSku('')
-                      setDressCategory('')
-                      setDressSize('')
-                      setDressColor('')
-                      setDressDailyRate('')
-                      setDressDeposit('')
-                      setDressTurnaround('24')
-                      setDressImageUrl('')
-                    } catch (err) {
-                      alert(err.response?.data?.error || err.message)
-                    }
-                  }}
-                  disabled={!dressName || !dressSku}
-                  className="flex-1 py-3 rounded-xl bg-rose-600 text-white font-bold hover:bg-rose-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  {label('Save Dress', 'حفظ الفستان')}
                 </button>
               </div>
             </motion.div>

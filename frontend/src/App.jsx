@@ -91,6 +91,7 @@ import RestaurantBranches from './pages/restaurant/Branches'
 import CashierPanel from './pages/restaurant/CashierPanel'
 import QRMenu from './pages/restaurant/QRMenu'
 import BoutiquePOS from './pages/boutique/BoutiquePOS'
+import BoutiqueProducts from './pages/boutique/BoutiqueProducts'
 import Projects from './pages/Projects'
 import ProjectForm from './pages/ProjectForm'
 import Tasks from './pages/Tasks'
@@ -417,6 +418,7 @@ function App() {
         {/* Legacy / Alternate paths */}
         <Route path="restaurant/kitchen" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantKitchen /></BusinessTypeRoute>} />
         <Route path="boutique/pos" element={<BusinessTypeRoute allowedTypes={['boutique']}><BoutiquePOS /></BusinessTypeRoute>} />
+        <Route path="boutique/dresses" element={<BusinessTypeRoute allowedTypes={['boutique']}><BoutiqueProducts /></BusinessTypeRoute>} />
         <Route path="laundry/pos" element={<BusinessTypeRoute allowedTypes={['laundry']}><LaundryPOS /></BusinessTypeRoute>} />
         <Route path="laundry/services" element={<BusinessTypeRoute allowedTypes={['laundry']}><LaundryServices /></BusinessTypeRoute>} />
         <Route path="laundry/orders" element={<BusinessTypeRoute allowedTypes={['laundry']}><LaundryKanban /></BusinessTypeRoute>} />

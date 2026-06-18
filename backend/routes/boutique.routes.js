@@ -1,5 +1,9 @@
 import express from 'express';
 import mongoose from 'mongoose';
+import path from 'path';
+import fs from 'fs';
+import multer from 'multer';
+import sharp from 'sharp';
 import BoutiqueProduct from '../models/BoutiqueProduct.js';
 import BoutiqueRental from '../models/BoutiqueRental.js';
 import {
@@ -15,6 +19,7 @@ import { sendPaymentConfirmation } from '../services/boutiqueWhatsAppService.js'
 import { protect, checkPermission } from '../middleware/auth.js';
 
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
 // All routes require authentication
 router.use(protect);
@@ -104,6 +109,70 @@ router.delete('/products/:id', checkPermission('boutique', 'delete'), async (req
   }
 });
 
+// POST /api/boutique/upload-image — upload dress image
+router.post('/upload-image', checkPermission('boutique', 'write'), upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
+
+    const tenantIdStr = req.user.tenantId.toString();
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'boutique', tenantIdStr);
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    const filename = `dress-${Date.now()}-${Math.round(Math.random() * 1E9)}.webp`;
+    const filepath = path.join(uploadsDir, filename);
+
+    await sharp(req.file.buffer)
+      .resize({ width: 800, withoutEnlargement: true })
+      .webp({ quality: 80 })
+      .toFile(filepath);
+
+    const imageUrl = `/uploads/boutique/${tenantIdStr}/${filename}`;
+    res.json({ imageUrl });
+  } catch (error) {
+    console.error('Boutique image upload error:', error);
+    res.status(500).json({ error: 'Failed to process image' });
+  }
+});
+
+// POST /api/boutique/seed-demo — create demo dress
+router.post('/seed-demo', checkPermission('boutique', 'write'), async (req, res) => {
+  try {
+    const existing = await BoutiqueProduct.findOne({ ...req.tenantFilter, sku: 'DEMO-SUIT-001' });
+    if (existing) return res.status(409).json({ error: 'Demo dress already exists' });
+
+    const demo = await BoutiqueProduct.create({
+      tenantId: req.user.tenantId,
+      name: 'Classic Black Evening Gown',
+      nameAr: 'فستان سهرة أسود كلاسيكي',
+      sku: 'DEMO-SUIT-001',
+      category: 'Evening',
+      size: 'M / 38',
+      color: 'Black',
+      mode: 'FOR_RENT',
+      dailyRate: 150,
+      rentalRates: [
+        { days: 3, rate: 400 },
+        { days: 7, rate: 800 },
+        { days: 14, rate: 1400 },
+      ],
+      securityDeposit: 500,
+      turnaroundHours: 24,
+      rentalQuantity: 1,
+      rentalStatus: 'available',
+      description: 'Elegant floor-length black evening gown. Perfect for formal events, weddings, and galas. Dry-cleaned after every rental.',
+      tags: ['evening', 'black', 'elegant', 'formal'],
+      careInstructions: 'Dry clean only. Do not bleach. Store in garment bag.',
+      isActive: true,
+    });
+
+    res.status(201).json({ message: 'Demo dress created', product: demo });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 /* ─────── AVAILABILITY ─────── */
 
 // POST /api/boutique/availability — check if products are available for dates
@@ -132,7 +201,7 @@ router.post('/availability', checkPermission('boutique', 'read'), async (req, re
 router.post('/availability/:productId', checkPermission('boutique', 'read'), async (req, res) => {
   try {
     const { startDate, endDate } = req.body;
-    const available = await isProductAvailability(
+    const available = await isProductAvailable(
       new mongoose.Types.ObjectId(req.params.productId),
       new Date(startDate),
       new Date(endDate)
