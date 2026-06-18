@@ -12,14 +12,12 @@ import {
 } from '../services/boutiqueCalendarService.js';
 import { generateBoutiqueThermalInvoice, queueZatcaReporting } from '../services/boutiqueZatcaService.js';
 import { sendPaymentConfirmation } from '../services/boutiqueWhatsAppService.js';
-import { authenticate } from '../middleware/auth.js';
-import { checkPermission } from '../middleware/permission.js';
-import { buildInvoicePdfBlob } from '../lib/invoicePdf.js';
+import { protect, checkPermission } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // All routes require authentication
-router.use(authenticate);
+router.use(protect);
 
 /**
  * Helper: inject tenant filter from auth middleware into req.tenantFilter

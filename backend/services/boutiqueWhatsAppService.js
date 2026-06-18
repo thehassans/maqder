@@ -1,6 +1,6 @@
 import axios from 'axios';
 import BoutiqueRental from '../models/BoutiqueRental.js';
-import WhatsAppConfig from '../models/WhatsApp.js';
+import { WhatsAppConfig } from '../models/WhatsApp.js';
 
 /**
  * Boutique WhatsApp Service
