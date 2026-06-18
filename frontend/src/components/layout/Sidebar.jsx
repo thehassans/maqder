@@ -204,11 +204,10 @@ export default function Sidebar() {
       title: language === 'ar' ? 'مركز الصيانة' : 'Car Workshop',
       businessTypes: ['car_workshop'],
       items: [
-        { path: '/app/workshop', icon: Wrench, label: language === 'ar' ? 'لوحة التحكم' : 'Dashboard', perm: { module: 'workshop', action: 'read' } },
+        { path: '/app/workshop', icon: Wrench, label: language === 'ar' ? 'ورشة العمل' : 'Workshop', perm: { module: 'workshop', action: 'read' } },
         { path: '/app/workshop/job-cards', icon: ClipboardList, label: language === 'ar' ? 'بطاقات الإصلاح' : 'Job Cards', perm: { module: 'workshop', action: 'read' } },
         { path: '/app/workshop/vehicles', icon: Car, label: language === 'ar' ? 'السيارات' : 'Vehicles', perm: { module: 'workshop', action: 'read' } },
         { path: '/app/workshop/inventory', icon: Package, label: language === 'ar' ? 'قطع الغيار' : 'Spare Parts', perm: { module: 'workshop', action: 'read' } },
-        { path: '/app/invoices/create/sell', icon: TrendingUp, label: language === 'ar' ? 'فاتورة جديدة' : 'New Invoice', perm: { module: 'invoicing', action: 'create' } },
       ]
     },
     {

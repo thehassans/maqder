@@ -46,7 +46,7 @@ export default function WorkshopDashboard() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Workshop Dashboard</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Overview of your service center operations</p>
         </div>
-        <a href="#/app/workshop/job-cards/new" className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 flex items-center gap-2">
+        <a href="/app/workshop/job-cards" className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 flex items-center gap-2">
           <Plus className="w-4 h-4" /> New Job Card
         </a>
       </div>
@@ -82,7 +82,7 @@ export default function WorkshopDashboard() {
         <div className="lg:col-span-2 bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-gray-100 dark:border-dark-700">
           <div className="p-5 border-b border-gray-100 dark:border-dark-700 flex items-center justify-between">
             <h3 className="font-semibold text-gray-900 dark:text-white">Recent Job Cards</h3>
-            <a href="#/app/workshop/job-cards" className="text-sm text-primary-600 hover:underline">View All</a>
+            <a href="/app/workshop/job-cards" className="text-sm text-primary-600 hover:underline">View All</a>
           </div>
           <div className="divide-y divide-gray-100 dark:divide-dark-700">
             {(stats?.recentJobs ?? []).map(job => (
@@ -112,10 +112,10 @@ export default function WorkshopDashboard() {
             <h3 className="font-semibold text-gray-900 dark:text-white">Quick Actions</h3>
           </div>
           <div className="p-4 space-y-2">
-            <QuickAction href="#/app/workshop/job-cards/new" icon={Wrench} label="Create Job Card" color="bg-blue-50 text-blue-600 dark:bg-blue-900/20" />
-            <QuickAction href="#/app/workshop/vehicles/new" icon={Car} label="Register Vehicle" color="bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20" />
-            <QuickAction href="#/app/workshop/inventory" icon={Package} label="Check Inventory" color="bg-purple-50 text-purple-600 dark:bg-purple-900/20" />
-            <QuickAction href="#/app/invoices/create/sell" icon={TrendingUp} label="Create Invoice" color="bg-orange-50 text-orange-600 dark:bg-orange-900/20" />
+            <QuickAction href="/app/workshop/job-cards" icon={Wrench} label="Create Job Card" color="bg-blue-50 text-blue-600 dark:bg-blue-900/20" />
+            <QuickAction href="/app/workshop/vehicles" icon={Car} label="Register Vehicle" color="bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20" />
+            <QuickAction href="/app/workshop/inventory" icon={Package} label="Check Inventory" color="bg-purple-50 text-purple-600 dark:bg-purple-900/20" />
+            <QuickAction href="/app/invoices/create/sell" icon={TrendingUp} label="Create Invoice" color="bg-orange-50 text-orange-600 dark:bg-orange-900/20" />
           </div>
         </div>
       </div>
