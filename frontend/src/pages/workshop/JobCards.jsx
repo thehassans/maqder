@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSelector } from 'react-redux'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
@@ -8,7 +9,7 @@ import {
 } from 'lucide-react'
 import api from '../../lib/api'
 
-const STAGES = [
+const STAGES_EN = [
   { id: 'checkin', label: 'Check-In', color: 'bg-gray-400' },
   { id: 'legal_verification', label: 'Legal Verification', color: 'bg-indigo-500' },
   { id: 'estimation', label: 'Estimation', color: 'bg-sky-500' },
@@ -20,6 +21,19 @@ const STAGES = [
   { id: 'ready_pickup', label: 'Ready for Pickup', color: 'bg-green-500' },
   { id: 'invoiced', label: 'Invoiced', color: 'bg-cyan-500' },
   { id: 'delivered', label: 'Delivered', color: 'bg-emerald-600' },
+]
+const STAGES_AR = [
+  { id: 'checkin', label: 'تسجيل دخول', color: 'bg-gray-400' },
+  { id: 'legal_verification', label: 'التحقق القانوني', color: 'bg-indigo-500' },
+  { id: 'estimation', label: 'التقدير', color: 'bg-sky-500' },
+  { id: 'waiting_approval', label: 'بانتظار الموافقة', color: 'bg-amber-500' },
+  { id: 'approved', label: 'تمت الموافقة', color: 'bg-teal-500' },
+  { id: 'in_progress', label: 'قيد التنفيذ', color: 'bg-blue-500' },
+  { id: 'waiting_parts', label: 'بانتظار القطع', color: 'bg-orange-500' },
+  { id: 'quality_control', label: 'مراقبة الجودة', color: 'bg-violet-500' },
+  { id: 'ready_pickup', label: 'جاهز للاستلام', color: 'bg-green-500' },
+  { id: 'invoiced', label: 'تمت الفوترة', color: 'bg-cyan-500' },
+  { id: 'delivered', label: 'تم التسليم', color: 'bg-emerald-600' },
 ]
 
 const NEXT_MAP = {
@@ -49,6 +63,9 @@ function initForm() {
 }
 
 export default function JobCards() {
+  const { language } = useSelector((state) => state.ui)
+  const t = (en, ar) => language === 'ar' ? ar : en
+  const STAGES = language === 'ar' ? STAGES_AR : STAGES_EN
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
   const [showModal, setShowModal] = useState(false)
@@ -74,14 +91,14 @@ export default function JobCards() {
 
   const transitionMut = useMutation({
     mutationFn: ({ id, status }) => api.post(`/workshop/job-cards/${id}/transition`, { status }),
-    onSuccess: () => { toast.success('Status updated'); qc.invalidateQueries({ queryKey: ['workshop-job-cards'] }) },
-    onError: (e) => toast.error(e.response?.data?.error || 'Failed'),
+    onSuccess: () => { toast.success(t('Status updated', 'تم تحديث الحالة')); qc.invalidateQueries({ queryKey: ['workshop-job-cards'] }) },
+    onError: (e) => toast.error(e.response?.data?.error || t('Failed', 'فشل')),
   })
 
   const deleteMut = useMutation({
     mutationFn: (id) => api.delete(`/workshop/job-cards/${id}`),
-    onSuccess: () => { toast.success('Deleted'); qc.invalidateQueries({ queryKey: ['workshop-job-cards'] }) },
-    onError: (e) => toast.error(e.response?.data?.error || 'Failed'),
+    onSuccess: () => { toast.success(t('Deleted', 'تم الحذف')); qc.invalidateQueries({ queryKey: ['workshop-job-cards'] }) },
+    onError: (e) => toast.error(e.response?.data?.error || t('Failed', 'فشل')),
   })
 
   const openModal = (card) => {
@@ -101,8 +118,8 @@ export default function JobCards() {
     mutationFn: () => editing
       ? api.put(`/workshop/job-cards/${editing._id}`, form)
       : api.post('/workshop/job-cards', form),
-    onSuccess: () => { toast.success(editing ? 'Updated' : 'Created'); qc.invalidateQueries({ queryKey: ['workshop-job-cards'] }); closeModal() },
-    onError: (e) => toast.error(e.response?.data?.error || 'Failed'),
+    onSuccess: () => { toast.success(editing ? t('Updated', 'تم التحديث') : t('Created', 'تم الإنشاء')); qc.invalidateQueries({ queryKey: ['workshop-job-cards'] }); closeModal() },
+    onError: (e) => toast.error(e.response?.data?.error || t('Failed', 'فشل')),
   })
 
   const stageGroups = STAGES.reduce((acc, s) => { acc[s.id] = cards.filter(c => c.status === s.id); return acc }, {})
@@ -111,11 +128,11 @@ export default function JobCards() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Job Cards</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage repair orders and track vehicle status</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('Job Cards', 'بطاقات الإصلاح')}</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('Manage repair orders and track vehicle status', 'إدارة أوامر الإصلاح ومتابعة حالة المركبات')}</p>
         </div>
         <button onClick={() => openModal(null)} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 flex items-center gap-2">
-          <Plus className="w-4 h-4" /> New Job Card
+          <Plus className="w-4 h-4" /> {t('New Job Card', 'بطاقة إصلاح جديدة')}
         </button>
       </div>
 
@@ -125,12 +142,12 @@ export default function JobCards() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search job cards, vehicles..."
+            placeholder={t('Search job cards, vehicles...', 'البحث في بطاقات الإصلاح والمركبات...')}
             className="w-full pl-9 pr-4 py-2 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg text-sm"
           />
         </div>
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="px-3 py-2 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg text-sm">
-          <option value="">All Statuses</option>
+          <option value="">{t('All Statuses', 'جميع الحالات')}</option>
           {STAGES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
         </select>
       </div>
@@ -159,12 +176,12 @@ export default function JobCards() {
                     >
                       <div className="flex items-start justify-between">
                         <p className="text-xs font-bold text-primary-600">{card.jobCardNumber}</p>
-                        <button onClick={e => { e.stopPropagation(); if (window.confirm('Delete job card?')) deleteMut.mutate(card._id) }} className="text-gray-400 hover:text-red-500">
+                        <button onClick={e => { e.stopPropagation(); if (window.confirm(t('Delete job card?', 'حذف بطاقة الإصلاح؟'))) deleteMut.mutate(card._id) }} className="text-gray-400 hover:text-red-500">
                           <Trash2 className="w-3 h-3" />
                         </button>
                       </div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">{card.vehicleId?.plateNumber || 'Unknown Vehicle'}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{card.customerId?.name || 'Unknown Customer'}</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white mt-1">{card.vehicleId?.plateNumber || t('Unknown Vehicle', 'مركبة غير معروفة')}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{card.customerId?.name || t('Unknown Customer', 'عميل غير معروف')}</p>
                       <div className="flex items-center justify-between mt-2">
                         <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{card.grandTotal?.toFixed?.(2) ?? '0.00'} SAR</span>
                         {NEXT_MAP[card.status] && (
@@ -172,7 +189,7 @@ export default function JobCards() {
                             onClick={e => { e.stopPropagation(); transitionMut.mutate({ id: card._id, status: NEXT_MAP[card.status] }) }}
                             className="text-[10px] px-2 py-1 rounded-md bg-primary-50 text-primary-600 hover:bg-primary-100 font-medium"
                           >
-                            Move &rarr;
+                            {t('Move', 'نقل')} &rarr;
                           </button>
                         )}
                       </div>
@@ -195,47 +212,47 @@ export default function JobCards() {
               className="bg-white dark:bg-dark-800 rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-dark-700">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{editing ? 'Edit Job Card' : 'New Job Card'}</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{editing ? t('Edit Job Card', 'تعديل بطاقة الإصلاح') : t('New Job Card', 'بطاقة إصلاح جديدة')}</h3>
                 <button onClick={closeModal} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-700"><X className="w-5 h-5" /></button>
               </div>
               <div className="p-5 space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-medium text-gray-500">Vehicle</label>
+                    <label className="text-xs font-medium text-gray-500">{t('Vehicle', 'المركبة')}</label>
                     <select value={form.vehicleId} onChange={e => setForm(f => ({ ...f, vehicleId: e.target.value }))} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm">
-                      <option value="">Select Vehicle</option>
+                      <option value="">{t('Select Vehicle', 'اختر مركبة')}</option>
                       {vehicles.map(v => <option key={v._id} value={v._id}>{v.plateNumber} — {v.make} {v.model}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-gray-500">Bay Number</label>
+                    <label className="text-xs font-medium text-gray-500">{t('Bay Number', 'رقم الركن')}</label>
                     <input value={form.bayNumber} onChange={e => setForm(f => ({ ...f, bayNumber: e.target.value }))} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-gray-500">Expected Completion</label>
+                    <label className="text-xs font-medium text-gray-500">{t('Expected Completion', 'تاريخ الانتهاء المتوقع')}</label>
                     <input type="date" value={form.expectedCompletion} onChange={e => setForm(f => ({ ...f, expectedCompletion: e.target.value }))} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" />
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-gray-500">Repair Permit Required?</label>
+                    <label className="text-xs font-medium text-gray-500">{t('Repair Permit Required?', 'هل يتطلب تصريح إصلاح؟')}</label>
                     <select value={form.repairPermit?.required ? 'true' : 'false'} onChange={e => setForm(f => ({ ...f, repairPermit: { ...f.repairPermit, required: e.target.value === 'true' } }))} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm">
-                      <option value="false">No</option>
-                      <option value="true">Yes (Bodywork)</option>
+                      <option value="false">{t('No', 'لا')}</option>
+                      <option value="true">{t('Yes (Bodywork)', 'نعم (أعمال هيكل)')}</option>
                     </select>
                   </div>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-500">Customer Complaints</label>
+                  <label className="text-xs font-medium text-gray-500">{t('Customer Complaints', 'شكاوى العميل')}</label>
                   <textarea value={form.customerComplaints} onChange={e => setForm(f => ({ ...f, customerComplaints: e.target.value }))} rows={2} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-500">Notes</label>
+                  <label className="text-xs font-medium text-gray-500">{t('Notes', 'ملاحظات')}</label>
                   <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" />
                 </div>
               </div>
               <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-100 dark:border-dark-700">
-                <button onClick={closeModal} className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">Cancel</button>
+                <button onClick={closeModal} className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">{t('Cancel', 'إلغاء')}</button>
                 <button onClick={() => saveMut.mutate()} disabled={saveMut.isPending} className="px-4 py-2 rounded-lg text-sm font-medium bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50 flex items-center gap-2">
-                  <Save className="w-4 h-4" /> {saveMut.isPending ? 'Saving...' : 'Save'}
+                  <Save className="w-4 h-4" /> {saveMut.isPending ? t('Saving...', 'جاري الحفظ...') : t('Save', 'حفظ')}
                 </button>
               </div>
             </motion.div>

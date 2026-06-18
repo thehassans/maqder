@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSelector } from 'react-redux'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import toast from 'react-hot-toast'
@@ -20,6 +21,8 @@ function initForm() {
 }
 
 export default function Vehicles() {
+  const { language } = useSelector((state) => state.ui)
+  const t = (en, ar) => language === 'ar' ? ar : en
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
   const [showModal, setShowModal] = useState(false)
@@ -37,8 +40,8 @@ export default function Vehicles() {
 
   const deleteMut = useMutation({
     mutationFn: (id) => api.delete(`/workshop/vehicles/${id}`),
-    onSuccess: () => { toast.success('Deleted'); qc.invalidateQueries({ queryKey: ['workshop-vehicles'] }) },
-    onError: (e) => toast.error(e.response?.data?.error || 'Failed'),
+    onSuccess: () => { toast.success(t('Deleted', 'تم الحذف')); qc.invalidateQueries({ queryKey: ['workshop-vehicles'] }) },
+    onError: (e) => toast.error(e.response?.data?.error || t('Failed', 'فشل')),
   })
 
   const openModal = (v) => {
@@ -52,25 +55,25 @@ export default function Vehicles() {
     mutationFn: () => editing
       ? api.put(`/workshop/vehicles/${editing._id}`, form)
       : api.post('/workshop/vehicles', form),
-    onSuccess: () => { toast.success(editing ? 'Updated' : 'Created'); qc.invalidateQueries({ queryKey: ['workshop-vehicles'] }); closeModal() },
-    onError: (e) => toast.error(e.response?.data?.error || 'Failed'),
+    onSuccess: () => { toast.success(editing ? t('Updated', 'تم التحديث') : t('Created', 'تم الإنشاء')); qc.invalidateQueries({ queryKey: ['workshop-vehicles'] }); closeModal() },
+    onError: (e) => toast.error(e.response?.data?.error || t('Failed', 'فشل')),
   })
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Vehicle Registry</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Track all customer vehicles, Istimara, and service history</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('Vehicle Registry', 'سجل المركبات')}</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('Track all customer vehicles, Istimara, and service history', 'تتبع جميع مركبات العملاء والاستمارة وسجل الصيانة')}</p>
         </div>
         <button onClick={() => openModal(null)} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 flex items-center gap-2">
-          <Plus className="w-4 h-4" /> Register Vehicle
+          <Plus className="w-4 h-4" /> {t('Register Vehicle', 'تسجيل مركبة')}
         </button>
       </div>
 
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by plate, VIN, make or model..."
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('Search by plate, VIN, make or model...', 'البحث باللوحة أو الهيكل أو الشركة أو الموديل...')}
           className="w-full pl-9 pr-4 py-2 bg-white dark:bg-dark-800 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" />
       </div>
 
@@ -79,12 +82,12 @@ export default function Vehicles() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-dark-700">
               <tr>
-                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Plate</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Vehicle</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">VIN</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Odometer</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Istimara</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-500 dark:text-gray-400">Actions</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">{t('Plate', 'اللوحة')}</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">{t('Vehicle', 'المركبة')}</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">{t('VIN', 'الهيكل')}</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">{t('Odometer', 'العداد')}</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-500 dark:text-gray-400">{t('Istimara', 'الاستمارة')}</th>
+                <th className="text-right px-4 py-3 font-medium text-gray-500 dark:text-gray-400">{t('Actions', 'إجراءات')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-dark-700">
@@ -96,13 +99,13 @@ export default function Vehicles() {
                   <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{v.currentOdometer?.toLocaleString?.() ?? '0'} km</td>
                   <td className="px-4 py-3 text-gray-500 dark:text-gray-400 text-xs">{v.istimaraNumber || '-'} {v.istimaraExpiry && `(Exp: ${v.istimaraExpiry.slice(0,10)})`}</td>
                   <td className="px-4 py-3 text-right">
-                    <button onClick={() => openModal(v)} className="text-primary-600 hover:underline text-xs font-medium mr-3">Edit</button>
-                    <button onClick={() => { if (window.confirm('Delete vehicle?')) deleteMut.mutate(v._id) }} className="text-red-600 hover:underline text-xs font-medium">Delete</button>
+                    <button onClick={() => openModal(v)} className="text-primary-600 hover:underline text-xs font-medium mr-3">{t('Edit', 'تعديل')}</button>
+                    <button onClick={() => { if (window.confirm(t('Delete vehicle?', 'حذف المركبة؟'))) deleteMut.mutate(v._id) }} className="text-red-600 hover:underline text-xs font-medium">{t('Delete', 'حذف')}</button>
                   </td>
                 </tr>
               ))}
               {vehicles.length === 0 && (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400 text-sm">No vehicles registered yet</td></tr>
+                <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400 text-sm">{t('No vehicles registered yet', 'لم يتم تسجيل مركبات بعد')}</td></tr>
               )}
             </tbody>
           </table>
@@ -119,42 +122,42 @@ export default function Vehicles() {
               className="bg-white dark:bg-dark-800 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-dark-700">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{editing ? 'Edit Vehicle' : 'Register Vehicle'}</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{editing ? t('Edit Vehicle', 'تعديل مركبة') : t('Register Vehicle', 'تسجيل مركبة')}</h3>
                 <button onClick={closeModal} className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-700"><X className="w-5 h-5" /></button>
               </div>
               <div className="p-5 space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div><label className="text-xs font-medium text-gray-500">Plate Number</label><input value={form.plateNumber} onChange={e => setForm(f => ({ ...f, plateNumber: e.target.value }))} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" /></div>
-                  <div><label className="text-xs font-medium text-gray-500">VIN</label><input value={form.vin} onChange={e => setForm(f => ({ ...f, vin: e.target.value }))} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" /></div>
-                  <div><label className="text-xs font-medium text-gray-500">Make</label><input value={form.make} onChange={e => setForm(f => ({ ...f, make: e.target.value }))} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" /></div>
-                  <div><label className="text-xs font-medium text-gray-500">Model</label><input value={form.model} onChange={e => setForm(f => ({ ...f, model: e.target.value }))} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" /></div>
-                  <div><label className="text-xs font-medium text-gray-500">Year</label><input type="number" value={form.year} onChange={e => setForm(f => ({ ...f, year: Number(e.target.value) }))} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" /></div>
-                  <div><label className="text-xs font-medium text-gray-500">Color</label><input value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" /></div>
+                  <div><label className="text-xs font-medium text-gray-500">{t('Plate Number', 'رقم اللوحة')}</label><input value={form.plateNumber} onChange={e => setForm(f => ({ ...f, plateNumber: e.target.value }))} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" /></div>
+                  <div><label className="text-xs font-medium text-gray-500">{t('VIN', 'رقم الهيكل')}</label><input value={form.vin} onChange={e => setForm(f => ({ ...f, vin: e.target.value }))} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" /></div>
+                  <div><label className="text-xs font-medium text-gray-500">{t('Make', 'الشركة')}</label><input value={form.make} onChange={e => setForm(f => ({ ...f, make: e.target.value }))} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" /></div>
+                  <div><label className="text-xs font-medium text-gray-500">{t('Model', 'الموديل')}</label><input value={form.model} onChange={e => setForm(f => ({ ...f, model: e.target.value }))} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" /></div>
+                  <div><label className="text-xs font-medium text-gray-500">{t('Year', 'السنة')}</label><input type="number" value={form.year} onChange={e => setForm(f => ({ ...f, year: Number(e.target.value) }))} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" /></div>
+                  <div><label className="text-xs font-medium text-gray-500">{t('Color', 'اللون')}</label><input value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" /></div>
                   <div>
-                    <label className="text-xs font-medium text-gray-500">Body Type</label>
+                    <label className="text-xs font-medium text-gray-500">{t('Body Type', 'نوع الهيكل')}</label>
                     <select value={form.bodyType} onChange={e => setForm(f => ({ ...f, bodyType: e.target.value }))} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm">
-                      <option value="">Select</option>
+                      <option value="">{t('Select', 'اختر')}</option>
                       {BODY_OPTS.map(o => <option key={o} value={o}>{o}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-gray-500">Fuel Type</label>
+                    <label className="text-xs font-medium text-gray-500">{t('Fuel Type', 'نوع الوقود')}</label>
                     <select value={form.fuelType} onChange={e => setForm(f => ({ ...f, fuelType: e.target.value }))} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm">
-                      <option value="">Select</option>
+                      <option value="">{t('Select', 'اختر')}</option>
                       {FUEL_OPTS.map(o => <option key={o} value={o}>{o}</option>)}
                     </select>
                   </div>
-                  <div><label className="text-xs font-medium text-gray-500">Istimara Number</label><input value={form.istimaraNumber} onChange={e => setForm(f => ({ ...f, istimaraNumber: e.target.value }))} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" /></div>
-                  <div><label className="text-xs font-medium text-gray-500">Istimara Expiry</label><input type="date" value={form.istimaraExpiry} onChange={e => setForm(f => ({ ...f, istimaraExpiry: e.target.value }))} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" /></div>
-                  <div><label className="text-xs font-medium text-gray-500">Current Odometer (km)</label><input type="number" value={form.currentOdometer} onChange={e => setForm(f => ({ ...f, currentOdometer: Number(e.target.value) }))} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" /></div>
-                  <div><label className="text-xs font-medium text-gray-500">Customer ID</label><input value={form.customerId} onChange={e => setForm(f => ({ ...f, customerId: e.target.value }))} placeholder="Link to existing customer" className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" /></div>
+                  <div><label className="text-xs font-medium text-gray-500">{t('Istimara Number', 'رقم الاستمارة')}</label><input value={form.istimaraNumber} onChange={e => setForm(f => ({ ...f, istimaraNumber: e.target.value }))} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" /></div>
+                  <div><label className="text-xs font-medium text-gray-500">{t('Istimara Expiry', 'انتهاء الاستمارة')}</label><input type="date" value={form.istimaraExpiry} onChange={e => setForm(f => ({ ...f, istimaraExpiry: e.target.value }))} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" /></div>
+                  <div><label className="text-xs font-medium text-gray-500">{t('Current Odometer (km)', 'العداد الحالي (كم)')}</label><input type="number" value={form.currentOdometer} onChange={e => setForm(f => ({ ...f, currentOdometer: Number(e.target.value) }))} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" /></div>
+                  <div><label className="text-xs font-medium text-gray-500">{t('Customer ID', 'معرف العميل')}</label><input value={form.customerId} onChange={e => setForm(f => ({ ...f, customerId: e.target.value }))} placeholder={t('Link to existing customer', 'ربط بعميل موجود')} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" /></div>
                 </div>
-                <div><label className="text-xs font-medium text-gray-500">Notes</label><textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" /></div>
+                <div><label className="text-xs font-medium text-gray-500">{t('Notes', 'ملاحظات')}</label><textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} className="w-full mt-1 px-3 py-2 bg-gray-50 dark:bg-dark-900 border border-gray-200 dark:border-dark-700 rounded-lg text-sm" /></div>
               </div>
               <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-100 dark:border-dark-700">
-                <button onClick={closeModal} className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">Cancel</button>
+                <button onClick={closeModal} className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">{t('Cancel', 'إلغاء')}</button>
                 <button onClick={() => saveMut.mutate()} disabled={saveMut.isPending} className="px-4 py-2 rounded-lg text-sm font-medium bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50 flex items-center gap-2">
-                  <Save className="w-4 h-4" /> {saveMut.isPending ? 'Saving...' : 'Save'}
+                  <Save className="w-4 h-4" /> {saveMut.isPending ? t('Saving...', 'جاري الحفظ...') : t('Save', 'حفظ')}
                 </button>
               </div>
             </motion.div>
