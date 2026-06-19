@@ -723,16 +723,11 @@ export default function BoutiquePOS() {
                           })
                           const blob = new Blob([response.data], { type: 'application/pdf' })
                           const url = window.URL.createObjectURL(blob)
-                          const link = document.createElement('a')
-                          link.href = url
-                          link.download = `${receiptData.invoice.invoiceNumber || 'invoice'}.pdf`
-                          document.body.appendChild(link)
-                          link.click()
-                          document.body.removeChild(link)
-                          window.URL.revokeObjectURL(url)
+                          window.open(url, '_blank')
+                          setTimeout(() => window.URL.revokeObjectURL(url), 30000)
                         } catch (err) {
-                          console.error('Failed to download A4 invoice PDF', err)
-                          alert(label('Failed to download PDF. Please try again.', 'فشل تحميل ملف PDF. حاول مرة أخرى.'))
+                          console.error('Failed to open A4 invoice PDF', err)
+                          alert(label('Failed to open PDF. Please try again.', 'فشل فتح ملف PDF. حاول مرة أخرى.'))
                         }
                       }}
                       className="flex-1 py-3 rounded-xl border border-gray-200 font-bold hover:bg-gray-50 text-gray-700 flex items-center justify-center gap-2"
