@@ -205,7 +205,7 @@ const renderQrToDataUrl = async (value, size = 112) => {
 }
 
 const shouldRenderBilingualInvoice = (invoice) => invoice?.invoiceSubtype === 'travel_ticket'
-  || ['travel_agency', 'trading', 'construction'].includes(invoice?.businessContext)
+  || ['travel_agency', 'trading', 'construction', 'boutique'].includes(invoice?.businessContext)
 
 const isPosInvoice = (invoice) => ['restaurant', 'bakala', 'saloon', 'laundry', 'khayyat'].includes(invoice?.businessContext)
 

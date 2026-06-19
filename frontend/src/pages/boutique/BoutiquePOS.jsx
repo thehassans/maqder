@@ -25,6 +25,8 @@ import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import Money from '../../components/ui/Money'
 import BoutiqueThermalReceipt from '../../components/boutique/BoutiqueThermalReceipt'
+import InvoiceLivePreview from '../../components/invoices/InvoiceLivePreview'
+import { printInvoiceSnapshot, downloadInvoicePdf } from '../../lib/invoicePdf'
 
 /**
  * Boutique POS — Ladies Boutique & Dress Rental
@@ -153,41 +155,22 @@ export default function BoutiquePOS() {
     return { lines, rentalSubtotal, totalDeposit, totalTax, grandTotal, discountAmount }
   })()
 
-  // ─── A4 PDF Print Helper ───
-  const printA4Invoice = async (invoiceId) => {
+  // ─── A4 PDF Print Helper (same template as trading invoices) ───
+  const printA4Invoice = async (invoice) => {
     try {
-      const response = await api.get(`/invoices/${invoiceId}/pdf`, {
-        responseType: 'blob',
-        timeout: 120000,
-      })
-      const blob = response.data instanceof Blob ? response.data : new Blob([response.data], { type: 'application/pdf' })
-      const url = URL.createObjectURL(blob)
-      const iframe = document.createElement('iframe')
-      iframe.style.position = 'fixed'
-      iframe.style.right = '0'
-      iframe.style.bottom = '0'
-      iframe.style.width = '0'
-      iframe.style.height = '0'
-      iframe.style.border = '0'
-      document.body.appendChild(iframe)
-
-      await new Promise((resolve) => {
-        iframe.onload = resolve
-        iframe.src = url
-      })
-
-      const pw = iframe.contentWindow
-      if (pw) {
-        pw.focus()
-        pw.print()
-      }
-
-      setTimeout(() => {
-        if (iframe.parentNode) iframe.parentNode.removeChild(iframe)
-        URL.revokeObjectURL(url)
-      }, 2000)
+      await printInvoiceSnapshot({ invoice, language, tenant, documentType: 'invoice' })
     } catch (err) {
       console.error('Failed to print A4 invoice', err)
+    }
+  }
+
+  // ─── A4 PDF Download Helper (same template as trading invoices) ───
+  const downloadA4Invoice = async (invoice) => {
+    try {
+      await downloadInvoicePdf({ invoice, language, tenant, documentType: 'invoice' })
+    } catch (err) {
+      console.error('Failed to download A4 invoice', err)
+      alert(label('Failed to download PDF. Please try again.', 'فشل تحميل ملف PDF. حاول مرة أخرى.'))
     }
   }
 
@@ -201,8 +184,8 @@ export default function BoutiquePOS() {
       setShowReceipt(true)
       setCart([])
       // Auto-print A4 PDF after invoice is created
-      if (data?.invoice?._id) {
-        setTimeout(() => printA4Invoice(data.invoice._id), 800)
+      if (data?.invoice) {
+        setTimeout(() => printA4Invoice(data.invoice), 800)
       }
     },
   })
@@ -230,8 +213,8 @@ export default function BoutiquePOS() {
 
   // ─── Print ───
   const handlePrint = () => {
-    if (receiptData?.invoice?._id) {
-      printA4Invoice(receiptData.invoice._id)
+    if (receiptData?.invoice) {
+      printA4Invoice(receiptData.invoice)
     } else if (printRef.current) {
       window.print()
     }
@@ -717,11 +700,11 @@ export default function BoutiquePOS() {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 print:bg-white print:static print:inset-auto"
           >
-            <div className="bg-white rounded-2xl shadow-xl p-6 w-[400px] max-h-[90vh] overflow-y-auto print:shadow-none print:p-0 print:w-auto print:max-h-none print:overflow-visible">
+            <div className="bg-white rounded-2xl shadow-xl p-6 w-[900px] max-w-[95vw] max-h-[90vh] overflow-y-auto print:shadow-none print:p-0 print:w-auto print:max-h-none print:overflow-visible">
               <div className="flex justify-between items-center mb-4 print:hidden">
                 <h3 className="text-lg font-bold flex items-center gap-2">
                   <Receipt className={`w-5 h-5 ${receiptData?.transactionType === 'sale' ? 'text-emerald-500' : 'text-rose-500'}`} />
-                  {receiptData?.transactionType === 'sale' ? label('Sales Receipt', 'إيصال البيع') : label('Rental Receipt', 'إيصال الإيجار')}
+                  {label('Invoice', 'فاتورة')}
                 </h3>
                 <button
                   onClick={() => setShowReceipt(false)}
@@ -732,13 +715,23 @@ export default function BoutiquePOS() {
               </div>
 
               <div className="border border-gray-200 rounded-lg p-2 print:border-none print:p-0 flex justify-center">
-                <BoutiqueThermalReceipt
-                  ref={printRef}
-                  rental={receiptData}
-                  tenant={tenant}
-                  invoice={receiptData?.invoice}
-                  qrDataUrl={receiptData?.qrDataUrl}
-                />
+                {receiptData?.invoice ? (
+                  <InvoiceLivePreview
+                    invoice={receiptData.invoice}
+                    tenant={tenant}
+                    language={language}
+                    bilingual
+                    currencyRenderMode="icon"
+                  />
+                ) : (
+                  <BoutiqueThermalReceipt
+                    ref={printRef}
+                    rental={receiptData}
+                    tenant={tenant}
+                    invoice={receiptData?.invoice}
+                    qrDataUrl={receiptData?.qrDataUrl}
+                  />
+                )}
               </div>
 
               <div className="mt-6 flex gap-2 print:hidden">
@@ -758,19 +751,7 @@ export default function BoutiquePOS() {
                       {label('Invoice', 'الفاتورة')}
                     </button>
                     <button
-                      onClick={async () => {
-                        try {
-                          const response = await api.get(`/invoices/${receiptData.invoice._id}/pdf`, {
-                            responseType: 'blob',
-                          })
-                          const url = window.URL.createObjectURL(response.data)
-                          window.open(url, '_blank')
-                          setTimeout(() => window.URL.revokeObjectURL(url), 60000)
-                        } catch (err) {
-                          console.error('Failed to open A4 invoice PDF', err)
-                          alert(label('Failed to open PDF. Please try again.', 'فشل فتح ملف PDF. حاول مرة أخرى.'))
-                        }
-                      }}
+                      onClick={() => downloadA4Invoice(receiptData.invoice)}
                       className="flex-1 py-3 rounded-xl border border-gray-200 font-bold hover:bg-gray-50 text-gray-700 flex items-center justify-center gap-2"
                     >
                       <FileDown className="w-4 h-4" />
