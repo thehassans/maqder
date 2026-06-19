@@ -1,6 +1,6 @@
 import Tenant from '../models/Tenant.js';
 import { sendSms } from '../services/smsService.js';
-import { sendWhatsAppMessage } from '../services/whatsappService.js';
+import whatsAppService from '../services/whatsappService.js';
 
 /**
  * Check all tenants with restaurant business type and autoStatusUpdate enabled.
@@ -50,11 +50,11 @@ export async function checkRestaurantAutoStatus() {
         if (isOpen) {
           const msgEn = `${businessName} is now OPEN. Opening hours: ${openingTime} - ${closingTime}. We look forward to serving you!`;
           const msgAr = `مرحباً! ${businessNameAr} مفتوح الآن. ساعات العمل: من ${openingTime} إلى ${closingTime}. نتطلع لخدمتكم!`;
-          await sendNotification(notifyPhone, msgEn, msgAr);
+          await sendNotification(tenant._id, notifyPhone, msgEn, msgAr);
         } else {
           const msgEn = `${businessName} is now CLOSED. Thank you for visiting! We open tomorrow at ${openingTime}.`;
           const msgAr = `شكراً لزيارتكم! ${businessNameAr} مغلق الآن. نفتح غداً في الساعة ${openingTime}.`;
-          await sendNotification(notifyPhone, msgEn, msgAr);
+          await sendNotification(tenant._id, notifyPhone, msgEn, msgAr);
         }
       }
     }
@@ -63,10 +63,10 @@ export async function checkRestaurantAutoStatus() {
   }
 }
 
-async function sendNotification(phone, msgEn, msgAr) {
+async function sendNotification(tenantId, phone, msgEn, msgAr) {
   try {
     // Try WhatsApp first, fallback to SMS
-    await sendWhatsAppMessage(phone, `${msgEn}\n\n${msgAr}`);
+    await whatsAppService.sendText(tenantId, phone, `${msgEn}\n\n${msgAr}`);
   } catch {
     try {
       await sendSms(phone, msgEn);
