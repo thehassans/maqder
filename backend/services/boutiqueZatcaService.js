@@ -84,8 +84,9 @@ export async function generateBoutiqueThermalInvoice(rental, tenant, previousHas
   const invoiceData = {
     tenantId: rental.tenantId,
     businessContext: 'boutique',
-    invoiceType: 'simplified',
-    invoiceTypeCode: '388', // Standard invoice per ZATCA
+    invoiceType: '388',
+    invoiceTypeCode: '0200000',
+    transactionType: 'B2C',
     invoiceNumber: rental.invoiceNumber || await generateInvoiceNumber(rental.tenantId),
     issueDate,
     issueTime: issueDate.toISOString().split('T')[1].split('.')[0],

@@ -251,7 +251,7 @@ const BoutiqueThermalReceipt = forwardRef(({ rental, tenant, invoice, qrDataUrl 
           <img
             src={qrImageSrc}
             alt="ZATCA QR"
-            style={{ width: '45mm', height: '45mm', imageRendering: 'pixelated' }}
+            style={{ width: '45mm', height: '45mm', imageRendering: 'pixelated', display: 'block', margin: '0 auto' }}
           />
           <div style={{ fontSize: '7px', color: '#666', marginTop: '4px' }}>
             ZATCA Phase 2 Compliant QR Code
@@ -262,7 +262,7 @@ const BoutiqueThermalReceipt = forwardRef(({ rental, tenant, invoice, qrDataUrl 
           <img
             src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrRawData)}`}
             alt="ZATCA QR"
-            style={{ width: '45mm', height: '45mm', imageRendering: 'pixelated' }}
+            style={{ width: '45mm', height: '45mm', imageRendering: 'pixelated', display: 'block', margin: '0 auto' }}
           />
           <div style={{ fontSize: '7px', color: '#666', marginTop: '4px' }}>
             ZATCA Phase 2 Compliant QR Code

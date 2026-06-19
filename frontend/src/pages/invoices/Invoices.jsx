@@ -101,9 +101,9 @@ export default function Invoices() {
   const [waMessage, setWaMessage] = useState('')
   const tenantBusinessTypes = getTenantBusinessTypes(tenant)
   const hasTravel = tenantBusinessTypes.includes('travel_agency')
-  const posTenants = ['bakala', 'super market', 'khayyat', 'saloon', 'laundry', 'restaurant']
+  const posTenants = ['bakala', 'super market', 'khayyat', 'saloon', 'laundry', 'restaurant', 'boutique']
   const showNewInvoiceBtn = !tenantBusinessTypes.some(t => posTenants.includes(t))
-  const isPosInvoice = (inv) => ['restaurant', 'bakala', 'saloon', 'laundry', 'khayyat'].includes(inv?.businessContext)
+  const isPosInvoice = (inv) => ['restaurant', 'bakala', 'saloon', 'laundry', 'khayyat', 'boutique'].includes(inv?.businessContext)
 
   useEffect(() => {
     const handle = setTimeout(() => setDebouncedSearch(search), 300)
