@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:7.0
+    container_name: maqder_mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: maqder
+    volumes:
+      - mongo_data:/data/db
+      - ./backups:/backups
+    networks:
+      - maqder_net
+    # Do not expose 27017 outside the container network
+    # Backend connects via service name: mongo
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: maqder_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      MONGODB_URI: mongodb://mongo:27017/maqder
+      NODE_ENV: production
+      PORT: 3000
+    depends_on:
+      - mongo
+    networks:
+      - maqder_net
+    volumes:
+      - ./uploads:/app/uploads
+    # Not exposed directly; Nginx proxies /api
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: maqder_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - maqder_net
+    # Plesk Docker proxy will forward port 80 to this container
+    # /api is proxied internally to the backend container
+
+volumes:
+  mongo_data:
+
+networks:
+  maqder_net:
+    driver: bridge

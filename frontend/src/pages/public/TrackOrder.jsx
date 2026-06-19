@@ -36,7 +36,7 @@ export default function TrackOrder() {
 
     const fetchOrder = async () => {
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const API_URL = import.meta.env.VITE_API_URL || '/api';
         const res = await axios.get(`${API_URL}/public/track/khayyat/${id}`);
         setOrder(res.data);
       } catch (err) {
