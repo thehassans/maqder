@@ -721,10 +721,9 @@ export default function BoutiquePOS() {
                           const response = await api.get(`/invoices/${receiptData.invoice._id}/pdf`, {
                             responseType: 'blob',
                           })
-                          const blob = new Blob([response.data], { type: 'application/pdf' })
-                          const url = window.URL.createObjectURL(blob)
+                          const url = window.URL.createObjectURL(response.data)
                           window.open(url, '_blank')
-                          setTimeout(() => window.URL.revokeObjectURL(url), 30000)
+                          setTimeout(() => window.URL.revokeObjectURL(url), 60000)
                         } catch (err) {
                           console.error('Failed to open A4 invoice PDF', err)
                           alert(label('Failed to open PDF. Please try again.', 'فشل فتح ملف PDF. حاول مرة أخرى.'))
