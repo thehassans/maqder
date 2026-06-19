@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useSelector } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -35,6 +36,7 @@ export default function BoutiquePOS() {
   const { t } = useTranslation(language)
   const tenant = useSelector((state) => state.auth.tenant)
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const printRef = useRef(null)
 
   // ─── UI State ───
@@ -692,13 +694,22 @@ export default function BoutiquePOS() {
                 />
               </div>
 
-              <div className="mt-6 flex gap-3 print:hidden">
+              <div className="mt-6 flex gap-2 print:hidden">
                 <button
                   onClick={() => setShowReceipt(false)}
                   className="flex-1 py-3 rounded-xl border border-gray-200 font-bold hover:bg-gray-50 text-gray-700"
                 >
                   {label('Close', 'إغلاق')}
                 </button>
+                {receiptData?.invoice?._id && (
+                  <button
+                    onClick={() => navigate(`/dashboard/invoices/${receiptData.invoice._id}`)}
+                    className="flex-1 py-3 rounded-xl border border-gray-200 font-bold hover:bg-gray-50 text-gray-700 flex items-center justify-center gap-2"
+                  >
+                    <Receipt className="w-4 h-4" />
+                    {label('Invoice', 'الفاتورة')}
+                  </button>
+                )}
                 <button
                   onClick={handlePrint}
                   className="flex-1 py-3 rounded-xl bg-rose-600 text-white font-bold hover:bg-rose-700 flex items-center justify-center gap-2"

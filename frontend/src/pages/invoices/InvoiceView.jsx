@@ -42,6 +42,7 @@ const getInvoiceContextLabel = (invoice, language = 'en') => {
     construction: language === 'ar' ? 'فاتورة مقاولات' : 'Construction Invoice',
     travel_agency: language === 'ar' ? 'فاتورة وكالة سفر' : 'Travel Agency Invoice',
     restaurant: language === 'ar' ? 'فاتورة مطعم' : 'Restaurant Invoice',
+    boutique: language === 'ar' ? 'فاتورة بوتيك' : 'Boutique Invoice',
   }
 
   if (labels[context]) return labels[context]
@@ -69,13 +70,13 @@ export default function InvoiceView() {
   const invoiceTypeLabel = invoice?.transactionType === 'B2B' ? t('b2bInvoice') : t('b2cInvoice')
   const zatcaStatusMeta = getZatcaStatusMeta(invoice, language, tenant?.zatca?.phase || 2)
   const travelInvoiceLabelMeta = isTravelAgencyInvoice(invoice) ? getTravelInvoiceLabelMeta(invoice, language) : null
-  const isBilingualInvoice = invoice?.invoiceSubtype === 'travel_ticket' || ['travel_agency', 'trading', 'construction'].includes(invoice?.businessContext)
+  const isBilingualInvoice = invoice?.invoiceSubtype === 'travel_ticket' || ['travel_agency', 'trading', 'construction', 'boutique'].includes(invoice?.businessContext)
   const hasEmailAddon = tenant?.subscription?.hasEmailAddon === true || (Array.isArray(tenant?.subscription?.features) && tenant.subscription.features.includes('email_automation'))
   
   const tenantBusinessTypes = getTenantBusinessTypes(tenant)
   const posTenants = ['bakala', 'super market', 'khayyat', 'saloon', 'laundry', 'restaurant']
   const isPosTenant = tenantBusinessTypes.some(t => posTenants.includes(t))
-  const isPosInvoice = ['restaurant', 'bakala', 'saloon', 'laundry', 'khayyat'].includes(invoice?.businessContext)
+  const isPosInvoice = ['restaurant', 'bakala', 'saloon', 'laundry', 'khayyat', 'boutique'].includes(invoice?.businessContext)
   const showThermal = isPosTenant || isPosInvoice
 
   const signMutation = useMutation({

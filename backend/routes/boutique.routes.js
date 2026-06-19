@@ -6,6 +6,7 @@ import multer from 'multer';
 import sharp from 'sharp';
 import BoutiqueProduct from '../models/BoutiqueProduct.js';
 import BoutiqueRental from '../models/BoutiqueRental.js';
+import Customer from '../models/Customer.js';
 import {
   isProductAvailable,
   checkAvailabilityBatch,
@@ -316,7 +317,7 @@ router.post('/rentals', checkPermission('boutique', 'write'), async (req, res) =
 
     // 5. Create rental document
     const now = new Date();
-    const rental = await BoutiqueRental.create({
+    let rental = await BoutiqueRental.create({
       tenantId: req.user.tenantId,
       rentalNumber,
       customerName,
@@ -333,7 +334,40 @@ router.post('/rentals', checkPermission('boutique', 'write'), async (req, res) =
       staffNotes,
     });
 
-    // 6. Auto-generate ZATCA invoice for receipt
+    // 6. Ensure customer record exists and link it
+    let customer = null;
+    try {
+      const phone = String(customerPhone || '').trim();
+      if (phone) {
+        customer = await Customer.findOne({ tenantId: req.user.tenantId, phone }).lean();
+        if (!customer) {
+          customer = await Customer.create({
+            tenantId: req.user.tenantId,
+            name: customerName,
+            nameAr: customerNameAr,
+            phone,
+            email: customerEmail,
+            vatNumber: customerIdNumber,
+            type: 'individual',
+          });
+        } else {
+          await Customer.findByIdAndUpdate(customer._id, {
+            $set: {
+              name: customerName || customer.name,
+              nameAr: customerNameAr || customer.nameAr,
+              email: customerEmail || customer.email,
+              vatNumber: customerIdNumber || customer.vatNumber,
+            },
+          });
+        }
+        rental.customerId = customer._id;
+        await rental.save();
+      }
+    } catch (customerErr) {
+      console.error('Customer sync failed:', customerErr.message);
+    }
+
+    // 7. Auto-generate ZATCA invoice for receipt
     let invoice = null;
     let qrDataUrl = '';
     let qrPayload = '';
@@ -367,6 +401,24 @@ router.post('/rentals', checkPermission('boutique', 'write'), async (req, res) =
       try {
         const result = await generateBoutiqueThermalInvoice(rental, tenant);
         invoice = result.invoice;
+        // Link customer to invoice
+        if (customer && invoice) {
+          invoice.customerId = customer._id;
+          invoice.buyer = {
+            ...(invoice.buyer || {}),
+            name: customerName,
+            nameAr: customerNameAr,
+            vatNumber: customerIdNumber || '',
+          };
+          await invoice.save();
+          await Customer.updateOne(
+            { _id: customer._id, tenantId: req.user.tenantId },
+            {
+              $inc: { totalInvoices: 1, totalRevenue: rental.grandTotal || 0 },
+              $set: { lastInvoiceDate: invoice.issueDate || new Date() },
+            }
+          );
+        }
         // Prefer the service-generated QR if available
         if (result.qrDataUrl) qrDataUrl = result.qrDataUrl;
       } catch (invoiceErr) {

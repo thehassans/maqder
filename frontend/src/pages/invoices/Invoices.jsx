@@ -41,6 +41,7 @@ const getInvoiceContextLabel = (invoice, language = 'en') => {
     construction: language === 'ar' ? 'فاتورة مقاولات' : 'Construction Invoice',
     travel_agency: language === 'ar' ? 'فاتورة وكالة سفر' : 'Travel Agency Invoice',
     restaurant: language === 'ar' ? 'فاتورة مطعم' : 'Restaurant Invoice',
+    boutique: language === 'ar' ? 'فاتورة بوتيك' : 'Boutique Invoice',
   }
 
   if (labels[context]) return labels[context]
