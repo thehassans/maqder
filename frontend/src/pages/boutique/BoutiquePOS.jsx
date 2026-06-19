@@ -153,6 +153,44 @@ export default function BoutiquePOS() {
     return { lines, rentalSubtotal, totalDeposit, totalTax, grandTotal, discountAmount }
   })()
 
+  // ─── A4 PDF Print Helper ───
+  const printA4Invoice = async (invoiceId) => {
+    try {
+      const response = await api.get(`/invoices/${invoiceId}/pdf`, {
+        responseType: 'blob',
+        timeout: 120000,
+      })
+      const blob = response.data instanceof Blob ? response.data : new Blob([response.data], { type: 'application/pdf' })
+      const url = URL.createObjectURL(blob)
+      const iframe = document.createElement('iframe')
+      iframe.style.position = 'fixed'
+      iframe.style.right = '0'
+      iframe.style.bottom = '0'
+      iframe.style.width = '0'
+      iframe.style.height = '0'
+      iframe.style.border = '0'
+      document.body.appendChild(iframe)
+
+      await new Promise((resolve) => {
+        iframe.onload = resolve
+        iframe.src = url
+      })
+
+      const pw = iframe.contentWindow
+      if (pw) {
+        pw.focus()
+        pw.print()
+      }
+
+      setTimeout(() => {
+        if (iframe.parentNode) iframe.parentNode.removeChild(iframe)
+        URL.revokeObjectURL(url)
+      }, 2000)
+    } catch (err) {
+      console.error('Failed to print A4 invoice', err)
+    }
+  }
+
   // ─── Checkout Mutation ───
   const checkoutMutation = useMutation({
     mutationFn: (payload) => api.post('/boutique/rentals', payload).then((res) => res.data),
@@ -162,10 +200,10 @@ export default function BoutiquePOS() {
       setShowCheckout(false)
       setShowReceipt(true)
       setCart([])
-      // Auto-print after receipt renders
-      setTimeout(() => {
-        if (printRef.current) window.print()
-      }, 500)
+      // Auto-print A4 PDF after invoice is created
+      if (data?.invoice?._id) {
+        setTimeout(() => printA4Invoice(data.invoice._id), 800)
+      }
     },
   })
 
@@ -192,7 +230,11 @@ export default function BoutiquePOS() {
 
   // ─── Print ───
   const handlePrint = () => {
-    if (printRef.current) window.print()
+    if (receiptData?.invoice?._id) {
+      printA4Invoice(receiptData.invoice._id)
+    } else if (printRef.current) {
+      window.print()
+    }
   }
 
   // ─── Helpers ───
@@ -741,7 +783,7 @@ export default function BoutiquePOS() {
                   className="flex-1 py-3 rounded-xl bg-rose-600 text-white font-bold hover:bg-rose-700 flex items-center justify-center gap-2"
                 >
                   <Printer className="w-4 h-4" />
-                  {label('Print Thermal', 'طباعة حرارية')}
+                  {label('Print Invoice', 'طباعة الفاتورة')}
                 </button>
               </div>
             </div>
