@@ -19,6 +19,7 @@ import {
   CheckCircle2,
   ArrowRight,
   Receipt,
+  FileDown,
 } from 'lucide-react'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
@@ -706,13 +707,22 @@ export default function BoutiquePOS() {
                   {label('Close', 'إغلاق')}
                 </button>
                 {receiptData?.invoice?._id && (
-                  <button
-                    onClick={() => navigate(`/dashboard/invoices/${receiptData.invoice._id}`)}
-                    className="flex-1 py-3 rounded-xl border border-gray-200 font-bold hover:bg-gray-50 text-gray-700 flex items-center justify-center gap-2"
-                  >
-                    <Receipt className="w-4 h-4" />
-                    {label('Invoice', 'الفاتورة')}
-                  </button>
+                  <>
+                    <button
+                      onClick={() => navigate(`/dashboard/invoices/${receiptData.invoice._id}`)}
+                      className="flex-1 py-3 rounded-xl border border-gray-200 font-bold hover:bg-gray-50 text-gray-700 flex items-center justify-center gap-2"
+                    >
+                      <Receipt className="w-4 h-4" />
+                      {label('Invoice', 'الفاتورة')}
+                    </button>
+                    <button
+                      onClick={() => window.open(`${api.defaults.baseURL}/invoices/${receiptData.invoice._id}/pdf`, '_blank')}
+                      className="flex-1 py-3 rounded-xl border border-gray-200 font-bold hover:bg-gray-50 text-gray-700 flex items-center justify-center gap-2"
+                    >
+                      <FileDown className="w-4 h-4" />
+                      {label('A4 Invoice', 'فاتورة A4')}
+                    </button>
+                  </>
                 )}
                 <button
                   onClick={handlePrint}
