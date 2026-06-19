@@ -161,6 +161,10 @@ export default function BoutiquePOS() {
       setShowCheckout(false)
       setShowReceipt(true)
       setCart([])
+      // Auto-print after receipt renders
+      setTimeout(() => {
+        if (printRef.current) window.print()
+      }, 500)
     },
   })
 

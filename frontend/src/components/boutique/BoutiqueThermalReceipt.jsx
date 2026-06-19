@@ -118,9 +118,15 @@ const BoutiqueThermalReceipt = forwardRef(({ rental, tenant, invoice, qrDataUrl 
       {/* Meta — Bilingual */}
       <div style={{ marginBottom: '8px', fontSize: '9px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span>Invoice No / رقم الفاتورة:</span>
+          <span>Receipt No / رقم الإيصال:</span>
           <b>{receiptNumber}</b>
         </div>
+        {invoice?.invoiceNumber && (
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span>Invoice No / رقم الفاتورة:</span>
+            <b>{invoice.invoiceNumber}</b>
+          </div>
+        )}
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span>Date / التاريخ:</span>
           <span>{issueDate}</span>
