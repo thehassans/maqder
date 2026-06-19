@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Save, Building2, CreditCard, User, Shield, FileText, Image } from 'lucide-react'
+import { ArrowLeft, Save, Building2, CreditCard, User, Shield, FileText, Image, MapPin, Briefcase, Receipt } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
@@ -363,6 +363,132 @@ export default function TenantForm() {
                 </div>
               </>
             )}
+          </div>
+        </motion.div>
+
+        {/* National Address */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }} className="card p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg"><MapPin className="w-5 h-5 text-blue-600" /></div>
+            <h3 className="text-lg font-semibold">{language === 'ar' ? 'العنوان الوطني' : 'National Address'}</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="label">{language === 'ar' ? 'رقم الإثبات' : 'Proof Number'}</label>
+              <input {...register('business.nationalAddress.proofNumber')} className="input" />
+            </div>
+            <div>
+              <label className="label">{language === 'ar' ? 'الرقم الإضافي / حساب العميل' : 'Customer Account'}</label>
+              <input {...register('business.nationalAddress.customerAccount')} className="input" />
+            </div>
+            <div>
+              <label className="label">{language === 'ar' ? 'تاريخ الإصدار الأصلي' : 'Original Date'}</label>
+              <input type="date" {...register('business.nationalAddress.originalDate')} className="input" />
+            </div>
+            <div>
+              <label className="label">{language === 'ar' ? 'تاريخ الانتهاء' : 'Expiration Date'}</label>
+              <input type="date" {...register('business.nationalAddress.expirationDate')} className="input" />
+            </div>
+            <div>
+              <label className="label">{language === 'ar' ? 'تاريخ التسجيل' : 'Registration Date'}</label>
+              <input type="date" {...register('business.nationalAddress.regDate')} className="input" />
+            </div>
+            <div>
+              <label className="label">{language === 'ar' ? 'العنوان المختصر' : 'Short Address'}</label>
+              <input {...register('business.nationalAddress.shortAddress')} className="input" />
+            </div>
+            <div>
+              <label className="label">{language === 'ar' ? 'رقم المبنى' : 'Building No'}</label>
+              <input {...register('business.nationalAddress.buildingNo')} className="input" />
+            </div>
+            <div>
+              <label className="label">{language === 'ar' ? 'الحي' : 'Neighborhood'}</label>
+              <input {...register('business.nationalAddress.neighborhood')} className="input" />
+            </div>
+            <div>
+              <label className="label">{language === 'ar' ? 'المنطقة' : 'Region'}</label>
+              <input {...register('business.nationalAddress.region')} className="input" />
+            </div>
+            <div className="md:col-span-2">
+              <label className="label">{language === 'ar' ? 'رابط QR للتحقق' : 'QR Verification URL'}</label>
+              <input {...register('business.nationalAddress.qrCodeUrl')} className="input" placeholder="https://proof.address.gov.sa/VerifyProofNA.aspx" />
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Commercial Registration */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 }} className="card p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg"><Briefcase className="w-5 h-5 text-amber-600" /></div>
+            <h3 className="text-lg font-semibold">{language === 'ar' ? 'السجل التجاري' : 'Commercial Registration'}</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="label">{language === 'ar' ? 'الرقم الوطني الموحد' : 'CR Number'}</label>
+              <input {...register('business.commercialRegistration.crNumber')} className="input" />
+            </div>
+            <div>
+              <label className="label">{language === 'ar' ? 'تاريخ الإصدار' : 'Issue Date'}</label>
+              <input type="date" {...register('business.commercialRegistration.issueDate')} className="input" />
+            </div>
+            <div>
+              <label className="label">{language === 'ar' ? 'نوع الكيان (EN)' : 'Company Type (EN)'}</label>
+              <input {...register('business.commercialRegistration.companyType')} className="input" placeholder="Limited Liability Company" />
+            </div>
+            <div>
+              <label className="label">{language === 'ar' ? 'نوع الكيان (AR)' : 'Company Type (AR)'}</label>
+              <input {...register('business.commercialRegistration.companyTypeAr')} className="input" dir="rtl" placeholder="شركة ذات مسؤولية محدودة" />
+            </div>
+            <div>
+              <label className="label">{language === 'ar' ? 'حالة السجل (EN)' : 'Company Status (EN)'}</label>
+              <input {...register('business.commercialRegistration.companyStatus')} className="input" placeholder="Active" />
+            </div>
+            <div>
+              <label className="label">{language === 'ar' ? 'حالة السجل (AR)' : 'Company Status (AR)'}</label>
+              <input {...register('business.commercialRegistration.companyStatusAr')} className="input" dir="rtl" placeholder="نشط" />
+            </div>
+            <div className="md:col-span-2">
+              <label className="label">{language === 'ar' ? 'رابط QR للتحقق' : 'QR Verification URL'}</label>
+              <input {...register('business.commercialRegistration.qrCodeUrl')} className="input" />
+            </div>
+          </div>
+        </motion.div>
+
+        {/* VAT Registration Certificate */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="card p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-teal-100 dark:bg-teal-900/30 rounded-lg"><Receipt className="w-5 h-5 text-teal-600" /></div>
+            <h3 className="text-lg font-semibold">{language === 'ar' ? 'شهادة تسجيل ضريبة القيمة المضافة' : 'VAT Registration Certificate'}</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="label">{language === 'ar' ? 'رقم الشهادة' : 'Certificate No'}</label>
+              <input {...register('business.vatCertificate.certificateNo')} className="input" />
+            </div>
+            <div>
+              <label className="label">{language === 'ar' ? 'تاريخ الشهادة' : 'Certificate Date'}</label>
+              <input type="date" {...register('business.vatCertificate.certificateDate')} className="input" />
+            </div>
+            <div>
+              <label className="label">{language === 'ar' ? 'تاريخ التسجيل الفعّال' : 'Effective Registration Date'}</label>
+              <input type="date" {...register('business.vatCertificate.effectiveDate')} className="input" />
+            </div>
+            <div>
+              <label className="label">{language === 'ar' ? 'تاريخ أول إقرار ضريبي' : 'First Filing Due Date'}</label>
+              <input type="date" {...register('business.vatCertificate.firstFilingDueDate')} className="input" />
+            </div>
+            <div>
+              <label className="label">{language === 'ar' ? 'الفترة الضريبية (EN)' : 'Tax Period (EN)'}</label>
+              <input {...register('business.vatCertificate.taxPeriod')} className="input" placeholder="Quarterly" />
+            </div>
+            <div>
+              <label className="label">{language === 'ar' ? 'الفترة الضريبية (AR)' : 'Tax Period (AR)'}</label>
+              <input {...register('business.vatCertificate.taxPeriodAr')} className="input" dir="rtl" placeholder="ربع سنوي" />
+            </div>
+            <div className="md:col-span-2">
+              <label className="label">{language === 'ar' ? 'رابط QR للتحقق' : 'QR Verification URL'}</label>
+              <input {...register('business.vatCertificate.qrCodeUrl')} className="input" />
+            </div>
           </div>
         </motion.div>
 

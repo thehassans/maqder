@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector, useDispatch } from 'react-redux'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
-import { Building2, Shield, Globe, Palette, Bell, Save, Key, CheckCircle, Image, Database, Download, FileText, CreditCard, Terminal, Car, UtensilsCrossed, Clock, Printer } from 'lucide-react'
+import { Building2, Shield, Globe, Palette, Bell, Save, Key, CheckCircle, Image, Database, Download, FileText, CreditCard, Terminal, Car, UtensilsCrossed, Clock, Printer, MapPin, Briefcase, Receipt } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
@@ -147,7 +147,37 @@ export default function Settings() {
         country: tenant.business?.address?.country || 'SA'
       },
       contactEmail: tenant.business?.contactEmail || '',
-      contactPhone: tenant.business?.contactPhone || ''
+      contactPhone: tenant.business?.contactPhone || '',
+      nationalAddress: {
+        proofNumber: tenant.business?.nationalAddress?.proofNumber || '',
+        originalDate: tenant.business?.nationalAddress?.originalDate ? new Date(tenant.business.nationalAddress.originalDate).toISOString().split('T')[0] : '',
+        expirationDate: tenant.business?.nationalAddress?.expirationDate ? new Date(tenant.business.nationalAddress.expirationDate).toISOString().split('T')[0] : '',
+        customerAccount: tenant.business?.nationalAddress?.customerAccount || '',
+        regDate: tenant.business?.nationalAddress?.regDate ? new Date(tenant.business.nationalAddress.regDate).toISOString().split('T')[0] : '',
+        shortAddress: tenant.business?.nationalAddress?.shortAddress || '',
+        buildingNo: tenant.business?.nationalAddress?.buildingNo || '',
+        neighborhood: tenant.business?.nationalAddress?.neighborhood || '',
+        region: tenant.business?.nationalAddress?.region || '',
+        qrCodeUrl: tenant.business?.nationalAddress?.qrCodeUrl || '',
+      },
+      commercialRegistration: {
+        crNumber: tenant.business?.commercialRegistration?.crNumber || '',
+        issueDate: tenant.business?.commercialRegistration?.issueDate ? new Date(tenant.business.commercialRegistration.issueDate).toISOString().split('T')[0] : '',
+        companyType: tenant.business?.commercialRegistration?.companyType || '',
+        companyTypeAr: tenant.business?.commercialRegistration?.companyTypeAr || '',
+        companyStatus: tenant.business?.commercialRegistration?.companyStatus || '',
+        companyStatusAr: tenant.business?.commercialRegistration?.companyStatusAr || '',
+        qrCodeUrl: tenant.business?.commercialRegistration?.qrCodeUrl || '',
+      },
+      vatCertificate: {
+        certificateNo: tenant.business?.vatCertificate?.certificateNo || '',
+        certificateDate: tenant.business?.vatCertificate?.certificateDate ? new Date(tenant.business.vatCertificate.certificateDate).toISOString().split('T')[0] : '',
+        effectiveDate: tenant.business?.vatCertificate?.effectiveDate ? new Date(tenant.business.vatCertificate.effectiveDate).toISOString().split('T')[0] : '',
+        taxPeriod: tenant.business?.vatCertificate?.taxPeriod || '',
+        taxPeriodAr: tenant.business?.vatCertificate?.taxPeriodAr || '',
+        firstFilingDueDate: tenant.business?.vatCertificate?.firstFilingDueDate ? new Date(tenant.business.vatCertificate.firstFilingDueDate).toISOString().split('T')[0] : '',
+        qrCodeUrl: tenant.business?.vatCertificate?.qrCodeUrl || '',
+      },
     })
   }, [tenant, reset])
 
@@ -358,6 +388,133 @@ export default function Settings() {
                     <input {...register('contactPhone')} className="input" />
                   </div>
                 </div>
+
+                {/* National Address */}
+                <div className="pt-6 border-t border-gray-200 dark:border-dark-600">
+                  <h4 className="text-md font-semibold mb-4 flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-blue-500" />
+                    {language === 'ar' ? 'العنوان الوطني' : 'National Address'}
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="label">{language === 'ar' ? 'رقم الإثبات' : 'Proof Number'}</label>
+                      <input {...register('nationalAddress.proofNumber')} className="input" />
+                    </div>
+                    <div>
+                      <label className="label">{language === 'ar' ? 'حساب العميل' : 'Customer Account'}</label>
+                      <input {...register('nationalAddress.customerAccount')} className="input" />
+                    </div>
+                    <div>
+                      <label className="label">{language === 'ar' ? 'تاريخ الإصدار الأصلي' : 'Original Date'}</label>
+                      <input type="date" {...register('nationalAddress.originalDate')} className="input" />
+                    </div>
+                    <div>
+                      <label className="label">{language === 'ar' ? 'تاريخ الانتهاء' : 'Expiration Date'}</label>
+                      <input type="date" {...register('nationalAddress.expirationDate')} className="input" />
+                    </div>
+                    <div>
+                      <label className="label">{language === 'ar' ? 'تاريخ التسجيل' : 'Registration Date'}</label>
+                      <input type="date" {...register('nationalAddress.regDate')} className="input" />
+                    </div>
+                    <div>
+                      <label className="label">{language === 'ar' ? 'العنوان المختصر' : 'Short Address'}</label>
+                      <input {...register('nationalAddress.shortAddress')} className="input" />
+                    </div>
+                    <div>
+                      <label className="label">{language === 'ar' ? 'رقم المبنى' : 'Building No'}</label>
+                      <input {...register('nationalAddress.buildingNo')} className="input" />
+                    </div>
+                    <div>
+                      <label className="label">{language === 'ar' ? 'الحي' : 'Neighborhood'}</label>
+                      <input {...register('nationalAddress.neighborhood')} className="input" />
+                    </div>
+                    <div>
+                      <label className="label">{language === 'ar' ? 'المنطقة' : 'Region'}</label>
+                      <input {...register('nationalAddress.region')} className="input" />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="label">{language === 'ar' ? 'رابط QR للتحقق' : 'QR Verification URL'}</label>
+                      <input {...register('nationalAddress.qrCodeUrl')} className="input" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Commercial Registration */}
+                <div className="pt-6 border-t border-gray-200 dark:border-dark-600">
+                  <h4 className="text-md font-semibold mb-4 flex items-center gap-2">
+                    <Briefcase className="w-4 h-4 text-amber-500" />
+                    {language === 'ar' ? 'السجل التجاري' : 'Commercial Registration'}
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="label">{language === 'ar' ? 'الرقم الوطني الموحد' : 'CR Number'}</label>
+                      <input {...register('commercialRegistration.crNumber')} className="input" />
+                    </div>
+                    <div>
+                      <label className="label">{language === 'ar' ? 'تاريخ الإصدار' : 'Issue Date'}</label>
+                      <input type="date" {...register('commercialRegistration.issueDate')} className="input" />
+                    </div>
+                    <div>
+                      <label className="label">{language === 'ar' ? 'نوع الكيان (EN)' : 'Company Type (EN)'}</label>
+                      <input {...register('commercialRegistration.companyType')} className="input" />
+                    </div>
+                    <div>
+                      <label className="label">{language === 'ar' ? 'نوع الكيان (AR)' : 'Company Type (AR)'}</label>
+                      <input {...register('commercialRegistration.companyTypeAr')} className="input" dir="rtl" />
+                    </div>
+                    <div>
+                      <label className="label">{language === 'ar' ? 'حالة السجل (EN)' : 'Company Status (EN)'}</label>
+                      <input {...register('commercialRegistration.companyStatus')} className="input" />
+                    </div>
+                    <div>
+                      <label className="label">{language === 'ar' ? 'حالة السجل (AR)' : 'Company Status (AR)'}</label>
+                      <input {...register('commercialRegistration.companyStatusAr')} className="input" dir="rtl" />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="label">{language === 'ar' ? 'رابط QR للتحقق' : 'QR Verification URL'}</label>
+                      <input {...register('commercialRegistration.qrCodeUrl')} className="input" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* VAT Registration Certificate */}
+                <div className="pt-6 border-t border-gray-200 dark:border-dark-600">
+                  <h4 className="text-md font-semibold mb-4 flex items-center gap-2">
+                    <Receipt className="w-4 h-4 text-teal-500" />
+                    {language === 'ar' ? 'شهادة تسجيل ضريبة القيمة المضافة' : 'VAT Registration Certificate'}
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="label">{language === 'ar' ? 'رقم الشهادة' : 'Certificate No'}</label>
+                      <input {...register('vatCertificate.certificateNo')} className="input" />
+                    </div>
+                    <div>
+                      <label className="label">{language === 'ar' ? 'تاريخ الشهادة' : 'Certificate Date'}</label>
+                      <input type="date" {...register('vatCertificate.certificateDate')} className="input" />
+                    </div>
+                    <div>
+                      <label className="label">{language === 'ar' ? 'تاريخ التسجيل الفعّال' : 'Effective Registration Date'}</label>
+                      <input type="date" {...register('vatCertificate.effectiveDate')} className="input" />
+                    </div>
+                    <div>
+                      <label className="label">{language === 'ar' ? 'تاريخ أول إقرار ضريبي' : 'First Filing Due Date'}</label>
+                      <input type="date" {...register('vatCertificate.firstFilingDueDate')} className="input" />
+                    </div>
+                    <div>
+                      <label className="label">{language === 'ar' ? 'الفترة الضريبية (EN)' : 'Tax Period (EN)'}</label>
+                      <input {...register('vatCertificate.taxPeriod')} className="input" />
+                    </div>
+                    <div>
+                      <label className="label">{language === 'ar' ? 'الفترة الضريبية (AR)' : 'Tax Period (AR)'}</label>
+                      <input {...register('vatCertificate.taxPeriodAr')} className="input" dir="rtl" />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="label">{language === 'ar' ? 'رابط QR للتحقق' : 'QR Verification URL'}</label>
+                      <input {...register('vatCertificate.qrCodeUrl')} className="input" />
+                    </div>
+                  </div>
+                </div>
+
                 <div>
                   <label className="label flex items-center gap-2"><Image className="w-4 h-4" />{language === 'ar' ? 'شعار لوحة الإدارة' : 'Admin Panel Logo'}</label>
                   <div className="card-glass p-4 mt-2">

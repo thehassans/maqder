@@ -51,7 +51,43 @@ const businessDetailsSchema = new mongoose.Schema({
   },
   contactPhone: { type: String },
   contactEmail: { type: String },
-  website: { type: String }
+  website: { type: String },
+
+  // National Address (Saudi National Address)
+  nationalAddress: {
+    proofNumber: { type: String, default: '' },
+    originalDate: { type: Date },
+    expirationDate: { type: Date },
+    customerAccount: { type: String, default: '' },
+    regDate: { type: Date },
+    shortAddress: { type: String, default: '' },
+    buildingNo: { type: String, default: '' },
+    neighborhood: { type: String, default: '' },
+    region: { type: String, default: '' },
+    qrCodeUrl: { type: String, default: '' },
+  },
+
+  // Commercial Registration (Ministry of Commerce)
+  commercialRegistration: {
+    crNumber: { type: String, default: '' },
+    issueDate: { type: Date },
+    companyType: { type: String, default: '' },
+    companyTypeAr: { type: String, default: '' },
+    companyStatus: { type: String, default: '' },
+    companyStatusAr: { type: String, default: '' },
+    qrCodeUrl: { type: String, default: '' },
+  },
+
+  // VAT Registration Certificate (ZATCA)
+  vatCertificate: {
+    certificateNo: { type: String, default: '' },
+    certificateDate: { type: Date },
+    effectiveDate: { type: Date },
+    taxPeriod: { type: String, default: '' },
+    taxPeriodAr: { type: String, default: '' },
+    firstFilingDueDate: { type: Date },
+    qrCodeUrl: { type: String, default: '' },
+  },
 });
 
 const zatcaConfigSchema = new mongoose.Schema({
