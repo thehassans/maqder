@@ -32,7 +32,7 @@ services:
     networks:
       - maqder_net
     volumes:
-      - ./uploads:/app/uploads
+      - ./uploads:/app/public/uploads
     # Not exposed directly; Nginx proxies /api
 
   frontend:
