@@ -1,13 +1,13 @@
-FROM node:20-alpine
+FROM node:20-slim
 
 # Install native dependencies required by sharp and other packages
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y \
     python3 \
     make \
     g++ \
-    vips-dev \
-    vips \
-    libc6-compat
+    libvips-dev \
+    libvips42 \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
