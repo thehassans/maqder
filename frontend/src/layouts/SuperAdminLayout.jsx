@@ -27,14 +27,14 @@ export default function SuperAdminLayout() {
   const navItems = [
     { path: '/super-admin', icon: LayoutDashboard, label: t('dashboard'), end: true },
     { path: '/super-admin/tenants', icon: Building2, label: t('tenants') },
-    { path: '/super-admin/queries', icon: HelpCircle, label: language === 'ar' ? 'الاستفسارات' : 'Queries' },
+    { path: '/super-admin/queries', icon: HelpCircle, label: t('queries') },
     { path: '/super-admin/website', icon: Globe, label: t('websiteSettings') },
-    { path: '/super-admin/email', icon: Mail, label: language === 'ar' ? 'البريد' : 'Email' },
-    { path: '/super-admin/mailbox', icon: Inbox, label: language === 'ar' ? 'صندوق البريد' : 'Mailbox' },
-    { path: '/super-admin/whatsapp', icon: Smartphone, label: language === 'ar' ? 'واتساب' : 'WhatsApp' },
+    { path: '/super-admin/email', icon: Mail, label: t('email') },
+    { path: '/super-admin/mailbox', icon: Inbox, label: t('mailbox') },
+    { path: '/super-admin/whatsapp', icon: Smartphone, label: t('whatsapp') },
     { path: '/super-admin/identity', icon: ShieldCheck, label: t('identitySettings') },
     { path: '/super-admin/gemini', icon: Settings, label: t('geminiSettings') },
-    { path: '/super-admin/system-settings', icon: Settings, label: 'System Settings' },
+    { path: '/super-admin/system-settings', icon: Settings, label: t('systemSettings') },
   ]
 
   return (
@@ -45,7 +45,7 @@ export default function SuperAdminLayout() {
           <div className="flex items-center gap-6">
             <img src="/maqdernewlogo.png" alt="Maqder" className="h-14 w-auto object-contain transform scale-150 origin-left" />
             <span className="text-sm font-medium bg-white/20 text-white px-3 py-1 rounded-full whitespace-nowrap ml-8">
-              Super Admin
+              {t('superAdmin')}
             </span>
           </div>
 

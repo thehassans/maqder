@@ -16,6 +16,10 @@ export const translations = {
     geminiSettings: 'Gemini Settings',
     identitySettings: 'Identity Settings',
     websiteSettings: 'Website Settings',
+    systemSettings: 'System Settings',
+    queries: 'Queries',
+    mailbox: 'Mailbox',
+    whatsapp: 'WhatsApp',
     
     // Common
     save: 'Save',
@@ -220,6 +224,10 @@ export const translations = {
     geminiSettings: 'إعدادات Gemini',
     identitySettings: 'إعدادات الهوية',
     websiteSettings: 'إعدادات الموقع',
+    systemSettings: 'إعدادات النظام',
+    queries: 'الاستفسارات',
+    mailbox: 'صندوق البريد',
+    whatsapp: 'واتساب',
     
     // Common
     save: 'حفظ',
