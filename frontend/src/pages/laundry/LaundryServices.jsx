@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import api from '../../lib/api'
-import { Plus, Search, Edit2, Trash2, Package, Sparkles } from 'lucide-react'
+import { Plus, Search, Edit2, Trash2, Package, Sparkles, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { motion } from 'framer-motion'
 import { useForm } from 'react-hook-form'
@@ -96,7 +96,9 @@ export default function LaundryServices() {
     reset()
   }
 
-  const handleImageUpload = (e) => {
+  const [uploadingImage, setUploadingImage] = useState(false)
+
+  const handleImageUpload = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
 
@@ -105,16 +107,25 @@ export default function LaundryServices() {
       return
     }
 
-    if (file.size > 1024 * 1024 * 2) { // 2MB limit
-      toast.error(isRtl ? 'حجم الصورة كبير جداً (الحد 2MB)' : 'Image is too large (max 2MB)')
+    if (file.size > 1024 * 1024 * 5) {
+      toast.error(isRtl ? 'حجم الصورة كبير جداً (الحد 5MB)' : 'Image is too large (max 5MB)')
       return
     }
 
-    const reader = new FileReader()
-    reader.onload = () => {
-      setValue('imageUrl', reader.result, { shouldDirty: true, shouldValidate: true })
+    setUploadingImage(true)
+    try {
+      const fd = new FormData()
+      fd.append('image', file)
+      const res = await api.post('/laundry/services/upload-image', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 120000,
+      })
+      setValue('imageUrl', res.data.imageUrl, { shouldDirty: true, shouldValidate: true })
+    } catch (err) {
+      toast.error(err.response?.data?.error || isRtl ? 'فشل رفع الصورة' : 'Image upload failed')
+    } finally {
+      setUploadingImage(false)
     }
-    reader.readAsDataURL(file)
   }
 
   const filteredServices = services.filter(s => 
@@ -264,7 +275,9 @@ export default function LaundryServices() {
                   <label className="label">{isRtl ? 'صورة الخدمة' : 'Service Image'}</label>
                   <div className="flex items-center gap-4">
                     <div className="w-24 h-24 rounded-xl border-2 border-dashed border-gray-300 dark:border-dark-600 flex items-center justify-center overflow-hidden bg-gray-50 dark:bg-dark-800">
-                      {useFormImageUrl ? (
+                      {uploadingImage ? (
+                        <Loader2 className="w-8 h-8 text-teal-600 animate-spin" />
+                      ) : useFormImageUrl ? (
                         <img src={useFormImageUrl} alt="Preview" className="w-full h-full object-cover" />
                       ) : (
                         <Package className="w-8 h-8 text-gray-400" />
@@ -275,11 +288,12 @@ export default function LaundryServices() {
                         type="file" 
                         accept="image/*" 
                         onChange={handleImageUpload} 
-                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 dark:file:bg-teal-500/10 dark:file:text-teal-400"
+                        disabled={uploadingImage}
+                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100 dark:file:bg-teal-500/10 dark:file:text-teal-400 disabled:opacity-50"
                       />
                       <input type="hidden" {...register('imageUrl')} />
                       <p className="text-xs text-gray-500">
-                        {isRtl ? 'الحد الأقصى للحجم 2 ميجابايت' : 'Maximum size 2MB'}
+                        {isRtl ? 'الحد الأقصى للحجم 5 ميجابايت' : 'Maximum size 5MB'}
                       </p>
                     </div>
                   </div>

@@ -1,12 +1,44 @@
 import express from 'express';
 import LaundryService from '../models/LaundryService.js';
 import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
+import multer from 'multer';
+import sharp from 'sharp';
+import path from 'path';
+import fs from 'fs';
 
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
 router.use(protect);
 router.use(tenantFilter);
 router.use(requireBusinessType('laundry'));
+
+// POST /api/laundry/services/upload-image
+router.post('/upload-image', checkPermission('laundry', 'write'), upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
+
+    const tenantIdStr = req.user.tenantId.toString();
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'laundry', tenantIdStr);
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    const filename = `laundry-${Date.now()}-${Math.round(Math.random() * 1E9)}.webp`;
+    const filepath = path.join(uploadsDir, filename);
+
+    await sharp(req.file.buffer)
+      .resize({ width: 800, withoutEnlargement: true })
+      .webp({ quality: 80 })
+      .toFile(filepath);
+
+    const imageUrl = `/uploads/laundry/${tenantIdStr}/${filename}`;
+    res.json({ imageUrl });
+  } catch (error) {
+    console.error('Laundry image upload error:', error);
+    res.status(500).json({ error: 'Failed to process image' });
+  }
+});
 
 // GET /api/laundry/services
 router.get('/', checkPermission('laundry', 'read'), async (req, res) => {
