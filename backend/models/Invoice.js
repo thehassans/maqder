@@ -37,6 +37,23 @@ const travelDetailsSchema = new mongoose.Schema({
   passengers: [travelPassengerSchema],
 }, { _id: false });
 
+const boutiqueDetailsSchema = new mongoose.Schema({
+  rentalId: { type: mongoose.Schema.Types.ObjectId, ref: 'BoutiqueRental' },
+  rentalNumber: { type: String },
+  startDate: { type: Date },
+  endDate: { type: Date },
+  pickedUpAt: { type: Date },
+  returnedAt: { type: Date },
+  totalDeposit: { type: Number, default: 0 },
+  totalLateFee: { type: Number, default: 0 },
+  totalDamageFee: { type: Number, default: 0 },
+  totalCleaningFee: { type: Number, default: 0 },
+  amountPaid: { type: Number, default: 0 },
+  amountRefunded: { type: Number, default: 0 },
+  depositStatus: { type: String, enum: ['pending', 'held', 'partially_refunded', 'fully_refunded', 'forfeited'], default: 'pending' },
+  transactionType: { type: String, enum: ['rental', 'sale'], default: 'rental' },
+}, { _id: false });
+
 const invoiceLineSchema = new mongoose.Schema({
   lineNumber: { type: Number, required: true },
   productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
@@ -199,7 +216,10 @@ const invoiceSchema = new mongoose.Schema({
 
   restaurantOrderId: { type: mongoose.Schema.Types.ObjectId, ref: 'RestaurantOrder', index: true },
   travelBookingId: { type: mongoose.Schema.Types.ObjectId, ref: 'TravelBooking', index: true },
+  rentalId: { type: mongoose.Schema.Types.ObjectId, ref: 'BoutiqueRental', index: true },
+  rentalNumber: { type: String, index: true },
   travelDetails: travelDetailsSchema,
+  boutiqueDetails: boutiqueDetailsSchema,
   
   // ZATCA Compliance
   zatca: zatcaSchema,

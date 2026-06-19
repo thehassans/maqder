@@ -97,6 +97,27 @@ const buildTravelRows = (invoice = {}) => {
   ].filter(([, value]) => String(value || '').trim());
 };
 
+const isBoutiqueInvoiceDoc = (invoice = {}) => invoice?.businessContext === 'boutique' || invoice?.invoiceSubtype === 'boutique_rental';
+
+const buildBoutiqueRows = (invoice = {}) => {
+  const bd = invoice?.boutiqueDetails || {};
+  const rows = [
+    ['Rental # / رقم الحجز', normalizeText(bd?.rentalNumber || invoice?.rentalNumber)],
+    ['Type / النوع', bd?.transactionType === 'sale' ? 'Sale / بيع' : 'Rental / إيجار'],
+    ['Rental Period / فترة الإيجار', bd?.startDate && bd?.endDate ? `${formatDate(bd.startDate, 'en')} → ${formatDate(bd.endDate, 'en')}` : '—'],
+    ['Pick-up / الاستلام', formatDate(bd?.pickedUpAt, 'en') || '—'],
+    ['Return / التسليم', formatDate(bd?.returnedAt, 'en') || '—'],
+    ['Deposit / التأمين', bd?.totalDeposit > 0 ? toMoney(bd.totalDeposit, invoice?.currency) : '—'],
+    ['Late Fee / رسوم التأخير', bd?.totalLateFee > 0 ? toMoney(bd.totalLateFee, invoice?.currency) : '—'],
+    ['Damage Fee / رسوم التلف', bd?.totalDamageFee > 0 ? toMoney(bd.totalDamageFee, invoice?.currency) : '—'],
+    ['Cleaning Fee / رسوم التنظيف', bd?.totalCleaningFee > 0 ? toMoney(bd.totalCleaningFee, invoice?.currency) : '—'],
+    ['Amount Paid / المبلغ المدفوع', bd?.amountPaid > 0 ? toMoney(bd.amountPaid, invoice?.currency) : '—'],
+    ['Refunded / المبلغ المسترجع', bd?.amountRefunded > 0 ? toMoney(bd.amountRefunded, invoice?.currency) : '—'],
+    ['Deposit Status / حالة التأمين', normalizeText(bd?.depositStatus) || '—'],
+  ];
+  return rows.filter(([, value]) => String(value || '').trim() && String(value) !== '—');
+};
+
 const buildFallbackInvoiceLines = ({ invoice, tenant, customerName }) => {
   const sellerName = normalizeText(tenant?.business?.legalNameEn || tenant?.business?.legalNameAr || tenant?.name || 'Maqder ERP');
   const buyerName = normalizeText(customerName || invoice?.buyer?.name || invoice?.buyer?.nameAr || 'Customer');
@@ -128,6 +149,15 @@ const buildFallbackInvoiceLines = ({ invoice, tenant, customerName }) => {
     lines.push('');
     lines.push('Travel Details');
     travelRows.forEach(([label, value]) => {
+      lines.push(`${String(label || '').replace(/\n/g, ' / ')}: ${value}`);
+    });
+  }
+
+  const boutiqueRows = buildBoutiqueRows(invoice);
+  if (boutiqueRows.length) {
+    lines.push('');
+    lines.push('Rental Details / تفاصيل الإيجار');
+    boutiqueRows.forEach(([label, value]) => {
       lines.push(`${String(label || '').replace(/\n/g, ' / ')}: ${value}`);
     });
   }
@@ -384,12 +414,17 @@ export const buildInvoicePdfBuffer = async ({ invoice, tenant, customerName, lan
   const sellerNameEn = normalizeText(tenant?.business?.legalNameEn || tenant?.name || 'Maqder ERP');
   const sellerNameAr = normalizeText(tenant?.business?.legalNameAr);
   const buyerName = normalizeText(customerName || invoice?.buyer?.name || invoice?.buyer?.nameAr || 'Customer');
+  const isBoutiquePdf = isBoutiqueInvoiceDoc(invoice);
   const invoiceTitle = invoice?.businessContext === 'travel_agency' || invoice?.invoiceSubtype === 'travel_ticket'
     ? `Travel Services Invoice ${normalizeText(invoice?.invoiceNumber)}`
-    : `Invoice ${normalizeText(invoice?.invoiceNumber)}`;
+    : isBoutiquePdf
+      ? `Boutique Invoice ${normalizeText(invoice?.invoiceNumber)}`
+      : `Invoice ${normalizeText(invoice?.invoiceNumber)}`;
   const invoiceTitleAr = invoice?.businessContext === 'travel_agency' || invoice?.invoiceSubtype === 'travel_ticket'
     ? `فاتورة خدمات السفر ${normalizeText(invoice?.invoiceNumber)}`
-    : `الفاتورة ${normalizeText(invoice?.invoiceNumber)}`;
+    : isBoutiquePdf
+      ? `فاتورة البوتيك ${normalizeText(invoice?.invoiceNumber)}`
+      : `الفاتورة ${normalizeText(invoice?.invoiceNumber)}`;
   const flowValue = normalizeText(invoice?.flow || 'sell');
   const infoCards = [
     { label: 'Invoice # / رقم الفاتورة', value: normalizeText(invoice?.invoiceNumber) || '—' },
@@ -400,13 +435,19 @@ export const buildInvoicePdfBuffer = async ({ invoice, tenant, customerName, lan
   const partyLinesSeller = buildBilingualPartyLines(invoice?.seller || tenant?.business || {}, sellerNameEn);
   const partyLinesBuyer = buildBilingualPartyLines(invoice?.buyer || {}, buyerName);
   const travelRows = buildTravelRows(invoice);
+  const boutiqueRows = buildBoutiqueRows(invoice);
   const lineItems = Array.isArray(invoice?.lineItems) ? invoice.lineItems : [];
 
   doc.setFillColor(22, 59, 39);
   doc.rect(0, 0, pageWidth, 120, 'F');
   setDocFont(doc, englishFont, 'normal', 8);
   doc.setTextColor(214, 211, 209);
-  doc.text(invoice?.businessContext === 'travel_agency' || invoice?.invoiceSubtype === 'travel_ticket' ? 'TRAVEL SERVICES INVOICE' : 'TAX INVOICE', margin, 24);
+  const headerLabel = invoice?.businessContext === 'travel_agency' || invoice?.invoiceSubtype === 'travel_ticket'
+    ? 'TRAVEL SERVICES INVOICE'
+    : isBoutiquePdf
+      ? 'BOUTIQUE INVOICE'
+      : 'TAX INVOICE';
+  doc.text(headerLabel, margin, 24);
   setDocFont(doc, englishFont, 'bold', 22);
   doc.setTextColor(255, 255, 255);
   doc.text(sellerNameEn, margin, 42);
@@ -491,6 +532,42 @@ export const buildInvoicePdfBuffer = async ({ invoice, tenant, customerName, lan
     cursorY += travelHeight + 18;
   }
 
+  if (boutiqueRows.length) {
+    const boutiqueLabelWidth = 170;
+    const boutiqueValueWidth = pageWidth - margin * 2 - 32 - boutiqueLabelWidth;
+    const boutiqueHeight = boutiqueRows.reduce((total, [label, value]) => {
+      const labelHeight = measureWrappedLinesHeight(doc, [label], boutiqueLabelWidth, englishFont, arabicFont, 9.5, 12);
+      const valueHeight = measureWrappedLinesHeight(doc, [value], boutiqueValueWidth, englishFont, arabicFont, 9.5, 12);
+      return total + Math.max(labelHeight, valueHeight, 20) + 10;
+    }, 32);
+
+    cursorY = ensurePageSpace(doc, cursorY, boutiqueHeight + 12, margin, 46);
+    drawCard(doc, margin, cursorY, pageWidth - margin * 2, boutiqueHeight, [250, 250, 250]);
+    setDocFont(doc, englishFont, 'bold', 12);
+    doc.setTextColor(15, 23, 42);
+    doc.text('Rental Details / تفاصيل الإيجار', margin + 12, cursorY + 18);
+
+    let rowY = cursorY + 34;
+    boutiqueRows.forEach(([label, value], rowIndex) => {
+      const rowHeight = Math.max(
+        measureWrappedLinesHeight(doc, [label], boutiqueLabelWidth, englishFont, arabicFont, 9.5, 12),
+        measureWrappedLinesHeight(doc, [value], boutiqueValueWidth, englishFont, arabicFont, 9.5, 12),
+        20
+      ) + 6;
+
+      if (rowIndex > 0) {
+        doc.setDrawColor(226, 232, 240);
+        doc.line(margin + 12, rowY - 6, pageWidth - margin - 12, rowY - 6);
+      }
+
+      drawWrappedLines(doc, [label], margin + 12, rowY + 2, boutiqueLabelWidth, { englishFont, arabicFont, fontSize: 9.5, lineHeight: 12 });
+      drawWrappedLines(doc, [value], margin + 22 + boutiqueLabelWidth, rowY + 2, boutiqueValueWidth, { englishFont, arabicFont, fontSize: 9.5, lineHeight: 12 });
+      rowY += rowHeight;
+    });
+
+    cursorY += boutiqueHeight + 18;
+  }
+
   const tableX = margin;
   const tableWidth = pageWidth - margin * 2;
   const isTravelPdf = isTravelInvoiceDoc(invoice);
@@ -573,16 +650,24 @@ export const buildInvoicePdfBuffer = async ({ invoice, tenant, customerName, lan
   let footerY = rowY + 18;
   footerY = ensurePageSpace(doc, footerY, 120, margin, 46);
 
-  const summaryWidth = 206;
-  drawCard(doc, pageWidth - margin - summaryWidth, footerY, summaryWidth, 92, [248, 250, 252]);
-  const summaryRows = [
+  const summaryWidth = 226;
+  const bd = invoice?.boutiqueDetails || {};
+  const summaryRowsBase = [
     ['Subtotal / الإجمالي الفرعي', toMoney(invoice?.subtotal, invoice?.currency)],
-    ['Tax / الضريبة', toMoney(invoice?.totalTax, invoice?.currency)],
-    ['Grand Total / الإجمالي', toMoney(invoice?.grandTotal, invoice?.currency)],
   ];
-  summaryRows.forEach(([label, value], index) => {
+  if (bd?.totalLateFee > 0) summaryRowsBase.push(['Late Fee / رسوم التأخير', toMoney(bd.totalLateFee, invoice?.currency)]);
+  if (bd?.totalDamageFee > 0) summaryRowsBase.push(['Damage Fee / رسوم التلف', toMoney(bd.totalDamageFee, invoice?.currency)]);
+  if (bd?.totalCleaningFee > 0) summaryRowsBase.push(['Cleaning Fee / رسوم التنظيف', toMoney(bd.totalCleaningFee, invoice?.currency)]);
+  if (bd?.totalDeposit > 0) summaryRowsBase.push(['Deposit / التأمين', toMoney(bd.totalDeposit, invoice?.currency)]);
+  summaryRowsBase.push(['Tax / الضريبة', toMoney(invoice?.totalTax, invoice?.currency)]);
+  summaryRowsBase.push(['Grand Total / الإجمالي', toMoney(invoice?.grandTotal, invoice?.currency)]);
+
+  const summaryHeight = 28 + summaryRowsBase.length * 24 + 8;
+  drawCard(doc, pageWidth - margin - summaryWidth, footerY, summaryWidth, summaryHeight, [248, 250, 252]);
+  summaryRowsBase.forEach(([label, value], index) => {
+    const isTotal = index === summaryRowsBase.length - 1;
     const rowOffset = footerY + 22 + index * 24;
-    setDocFont(doc, englishFont, index === 2 ? 'bold' : 'normal', index === 2 ? 11.5 : 10);
+    setDocFont(doc, englishFont, isTotal ? 'bold' : 'normal', isTotal ? 11.5 : 10);
     doc.setTextColor(15, 23, 42);
     doc.text(label, pageWidth - margin - summaryWidth + 12, rowOffset);
     doc.text(value, pageWidth - margin - 12, rowOffset, { align: 'right' });
@@ -590,7 +675,7 @@ export const buildInvoicePdfBuffer = async ({ invoice, tenant, customerName, lan
 
   if (invoice?.notes) {
     const notesWidth = pageWidth - margin * 2 - summaryWidth - 18;
-    drawCard(doc, margin, footerY, notesWidth, 92, [255, 255, 255]);
+    drawCard(doc, margin, footerY, notesWidth, summaryHeight, [255, 255, 255]);
     setDocFont(doc, englishFont, 'bold', 11);
     doc.text('Notes / ملاحظات', margin + 12, footerY + 18);
     drawWrappedLines(doc, [normalizeText(invoice.notes)], margin + 12, footerY + 38, notesWidth - 24, { englishFont, arabicFont, fontSize: 10, lineHeight: 13 });

@@ -125,6 +125,23 @@ export async function generateBoutiqueThermalInvoice(rental, tenant, previousHas
     // Link back to rental
     rentalId: rental._id,
     rentalNumber: rental.rentalNumber,
+
+    boutiqueDetails: {
+      rentalId: rental._id,
+      rentalNumber: rental.rentalNumber,
+      startDate: rental.startDate,
+      endDate: rental.endDate,
+      pickedUpAt: rental.pickedUpAt,
+      returnedAt: rental.returnedAt,
+      totalDeposit: rental.totalDeposit,
+      totalLateFee: rental.totalLateFee,
+      totalDamageFee: rental.totalDamageFee,
+      totalCleaningFee: rental.totalCleaningFee,
+      amountPaid: rental.amountPaid,
+      amountRefunded: rental.amountRefunded,
+      depositStatus: rental.depositStatus,
+      transactionType: rental.transactionType,
+    },
   };
 
   // Persist invoice
