@@ -173,6 +173,7 @@ export default function BoutiqueProducts() {
       fd.append('image', file)
       const res = await api.post('/boutique/upload-image', fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 120000,
       })
       setForm((f) => ({ ...f, primaryImage: res.data.imageUrl }))
       setPreviewUrl(res.data.imageUrl)
