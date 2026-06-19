@@ -75,7 +75,9 @@ router.put('/current', authorize('admin'), async (req, res) => {
           qrMenu: {
             ...(currentSettings.restaurant?.qrMenu || {}),
             ...(settings.restaurant?.qrMenu || {}),
-          }
+          },
+          // Printers array: replace entirely if provided, otherwise keep current
+          ...(settings.restaurant?.printers !== undefined ? { printers: settings.restaurant.printers } : {}),
         },
         saloon: {
           ...(currentSettings.saloon || {}),

@@ -94,6 +94,7 @@ import { processScheduledReports } from './jobs/reportScheduleJob.js';
 import { syncZatcaInvoices } from './jobs/zatcaSync.js';
 import { fetchImapEmails } from './jobs/imapFetcher.js';
 import { startBoutiqueReminderJobs } from './jobs/boutiqueReminderJob.js';
+import { checkRestaurantAutoStatus } from './jobs/restaurantAutoStatusJob.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 import logger from './utils/logger.js';
 import User from './models/User.js';
@@ -178,6 +179,11 @@ const startJobs = () => {
 
   // Boutique rental reminders & overdue alerts
   startBoutiqueReminderJobs();
+
+  // Restaurant auto open/close based on time
+  cron.schedule('* * * * *', async () => {
+    await checkRestaurantAutoStatus();
+  });
 };
 
 const scheduleReconnect = () => {

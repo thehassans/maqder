@@ -245,7 +245,21 @@ const tenantSchema = new mongoose.Schema({
       qrMenu: {
         heroImage: { type: String },
         defaultLanguage: { type: String, enum: ['en', 'ar'], default: 'ar' }
-      }
+      },
+      autoStatusUpdate: { type: Boolean, default: false },
+      openingTime: { type: String, default: '08:00' },
+      closingTime: { type: String, default: '23:00' },
+      notifyOnStatusChange: { type: Boolean, default: false },
+      statusNotificationPhone: { type: String, default: '' },
+      printers: [{
+        name: { type: String, default: 'Kitchen Printer' },
+        type: { type: String, enum: ['usb', 'network', 'bluetooth'], default: 'network' },
+        role: { type: String, enum: ['kitchen', 'receipt'], default: 'kitchen' },
+        ipAddress: { type: String, default: '192.168.1.100' },
+        port: { type: Number, default: 9100 },
+        enabled: { type: Boolean, default: false },
+        paperWidth: { type: Number, default: 80 }, // mm
+      }],
     },
     saloon: {
       qrServices: {

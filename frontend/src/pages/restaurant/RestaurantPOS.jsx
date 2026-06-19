@@ -6,6 +6,8 @@ import { useSearchParams } from 'react-router-dom'
 import api from '../../lib/api'
 import { toast } from 'react-hot-toast'
 import ThermalReceipt from '../../components/ui/ThermalReceipt'
+import KitchenTicket from '../../components/restaurant/KitchenTicket'
+import OrderReceipt from '../../components/restaurant/OrderReceipt'
 import CardPaymentModal from '../../components/pos/CardPaymentModal'
 
 export default function RestaurantPOS() {
@@ -39,6 +41,7 @@ export default function RestaurantPOS() {
   const [receiptType, setReceiptType] = useState('customer') // 'customer' or 'kitchen'
   const [showCardModal, setShowCardModal] = useState(false)
   const receiptRef = useRef(null)
+  const kitchenRef = useRef(null)
 
   // Half plate modal state
   const [selectedHalfPlateItem, setSelectedHalfPlateItem] = useState(null)
@@ -221,7 +224,13 @@ export default function RestaurantPOS() {
       
       setReceiptType('customer')
       setCompletedOrder(data)
-      
+
+      // Auto-print customer receipt + kitchen ticket
+      setTimeout(() => {
+        // Print customer receipt first
+        if (receiptRef.current) window.print()
+      }, 500)
+
       // Refresh tables if dine in to update status
       if (orderType === 'dine_in') {
         fetchData()
@@ -272,12 +281,19 @@ export default function RestaurantPOS() {
       
       setReceiptType('kitchen')
       setCompletedOrder(data)
-      
-      // Auto-print kitchen receipt
+
+      // Auto-print kitchen ticket first, then customer receipt
       setTimeout(() => {
-        if (receiptRef.current) window.print()
+        if (kitchenRef.current) window.print()
+        // After kitchen print, switch to customer receipt and print
+        setTimeout(() => {
+          setReceiptType('customer')
+          setTimeout(() => {
+            if (receiptRef.current) window.print()
+          }, 300)
+        }, 800)
       }, 500)
-      
+
       if (orderType === 'dine_in') fetchData()
     } catch (error) {
       toast.error(error.response?.data?.error || 'Kitchen dispatch failed')
@@ -349,7 +365,8 @@ export default function RestaurantPOS() {
   }
 
   const handlePrint = () => {
-    if (receiptRef.current) {
+    const activeRef = receiptType === 'kitchen' ? kitchenRef : receiptRef
+    if (activeRef.current) {
       window.print()
     }
   }
@@ -694,15 +711,35 @@ export default function RestaurantPOS() {
             </div>
             
             <div className="border border-gray-200 rounded-lg p-2 print:border-none print:p-0 flex justify-center">
-              <ThermalReceipt ref={receiptRef} order={completedOrder} type="restaurant" isKitchen={receiptType === 'kitchen'} isUpdated={!!editOrderId} />
+              {receiptType === 'kitchen' ? (
+                <KitchenTicket ref={kitchenRef} order={completedOrder} isUpdated={!!editOrderId} />
+              ) : (
+                <OrderReceipt ref={receiptRef} order={completedOrder} isUpdated={!!editOrderId} />
+              )}
             </div>
 
             <div className="mt-6 flex gap-3 print:hidden">
               <button onClick={handleCloseReceipt} className="flex-1 py-3 rounded-xl border border-gray-200 font-bold hover:bg-gray-50 dark:border-dark-600 dark:hover:bg-dark-700">
                 {isRtl ? 'إغلاق' : 'Close'}
               </button>
+              {receiptType === 'customer' && (
+                <button
+                  onClick={() => { setReceiptType('kitchen'); setTimeout(() => window.print(), 300) }}
+                  className="flex-1 py-3 rounded-xl border border-gray-200 font-bold hover:bg-gray-50 dark:border-dark-600 dark:hover:bg-dark-700"
+                >
+                  {isRtl ? 'طباعة للمطبخ' : 'Print Kitchen'}
+                </button>
+              )}
+              {receiptType === 'kitchen' && (
+                <button
+                  onClick={() => { setReceiptType('customer'); setTimeout(() => window.print(), 300) }}
+                  className="flex-1 py-3 rounded-xl border border-gray-200 font-bold hover:bg-gray-50 dark:border-dark-600 dark:hover:bg-dark-700"
+                >
+                  {isRtl ? 'طباعة الفاتورة' : 'Print Receipt'}
+                </button>
+              )}
               <button onClick={handlePrint} className="flex-1 py-3 rounded-xl bg-amber-600 text-white font-bold hover:bg-amber-700">
-                {isRtl ? 'طباعة' : 'Print Receipt'}
+                {isRtl ? 'طباعة' : 'Print'}
               </button>
             </div>
           </div>

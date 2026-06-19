@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector, useDispatch } from 'react-redux'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
-import { Building2, Shield, Globe, Palette, Bell, Save, Key, CheckCircle, Image, Database, Download, FileText, CreditCard, Terminal, Car } from 'lucide-react'
+import { Building2, Shield, Globe, Palette, Bell, Save, Key, CheckCircle, Image, Database, Download, FileText, CreditCard, Terminal, Car, UtensilsCrossed, Clock, Printer } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
@@ -74,6 +74,13 @@ export default function Settings() {
   const [showVision2030, setShowVision2030] = useState(true)
   const [vision2030LogoDataUrl, setVision2030LogoDataUrl] = useState('/saudi-vision-2030-logo.png')
   const [invoiceBrandingProfiles, setInvoiceBrandingProfiles] = useState(() => buildInvoiceBrandingProfilesState(null))
+  // Restaurant settings
+  const [restAutoStatus, setRestAutoStatus] = useState(false)
+  const [restOpenTime, setRestOpenTime] = useState('08:00')
+  const [restCloseTime, setRestCloseTime] = useState('23:00')
+  const [restNotify, setRestNotify] = useState(false)
+  const [restNotifyPhone, setRestNotifyPhone] = useState('')
+  const [restPrinters, setRestPrinters] = useState([])
 
   const { data: tenant } = useQuery({
     queryKey: ['tenant-settings'],
@@ -108,6 +115,14 @@ export default function Settings() {
     setShowVision2030(tenant.settings?.invoiceBranding?.showVision2030 !== false)
     setVision2030LogoDataUrl(tenant.settings?.invoiceBranding?.vision2030Logo || '/saudi-vision-2030-logo.png')
     setInvoiceBrandingProfiles(buildInvoiceBrandingProfilesState(tenant))
+    // Restaurant settings init
+    const rs = tenant.settings?.restaurant || {}
+    setRestAutoStatus(rs.autoStatusUpdate || false)
+    setRestOpenTime(rs.openingTime || '08:00')
+    setRestCloseTime(rs.closingTime || '23:00')
+    setRestNotify(rs.notifyOnStatusChange || false)
+    setRestNotifyPhone(rs.statusNotificationPhone || '')
+    setRestPrinters(rs.printers || [])
   }, [tenant])
 
   const { register, handleSubmit, reset, watch, setValue, control } = useForm()
@@ -199,12 +214,16 @@ export default function Settings() {
   }
 
 
+  const tenantBusinessTypes = tenant?.businessTypes || []
+  const hasRestaurant = tenantBusinessTypes.includes('restaurant')
+
   const tabs = [
     { id: 'company', label: t('companySettings'), icon: Building2 },
     { id: 'govIntegrations', label: language === 'ar' ? 'التكاملات الحكومية' : 'Government Integrations', icon: Shield },
     { id: 'preferences', label: language === 'ar' ? 'التفضيلات' : 'Preferences', icon: Palette },
     { id: 'setupMachine', label: language === 'ar' ? 'إعداد الدفع الإلكتروني' : 'Payment Terminal', icon: CreditCard },
     { id: 'hardware', label: language === 'ar' ? 'الأجهزة والطباعة' : 'Hardware & Printers', icon: Terminal },
+    ...(hasRestaurant ? [{ id: 'restaurant', label: language === 'ar' ? 'إعدادات المطعم' : 'Restaurant', icon: UtensilsCrossed }] : []),
     { id: 'backup', label: language === 'ar' ? 'النسخ الاحتياطي' : 'Backup', icon: Database },
   ]
 
@@ -599,6 +618,190 @@ export default function Settings() {
           {activeTab === 'carRentalApis' && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card p-6">
               <CarRentalApiSettings tenant={tenant} isAr={language === 'ar'} />
+            </motion.div>
+          )}
+
+          {activeTab === 'restaurant' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card p-6 space-y-8">
+              {/* Auto Open/Close */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-primary-500" />
+                  {language === 'ar' ? 'الفتح والإغلاق التلقائي' : 'Auto Open / Close'}
+                </h3>
+                <div className="space-y-4">
+                  <label className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={restAutoStatus}
+                      onChange={(e) => setRestAutoStatus(e.target.checked)}
+                      className="w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                      {language === 'ar' ? 'تفعيل التحديث التلقائي للحالة (مفتوح/مغلق)' : 'Enable automatic status update (Open/Closed)'}
+                    </span>
+                  </label>
+                  {restAutoStatus && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-8">
+                      <div>
+                        <label className="label text-sm">{language === 'ar' ? 'وقت الفتح' : 'Opening Time'}</label>
+                        <input type="time" value={restOpenTime} onChange={(e) => setRestOpenTime(e.target.value)} className="input" />
+                      </div>
+                      <div>
+                        <label className="label text-sm">{language === 'ar' ? 'وقت الإغلاق' : 'Closing Time'}</label>
+                        <input type="time" value={restCloseTime} onChange={(e) => setRestCloseTime(e.target.value)} className="input" />
+                      </div>
+                      <label className="flex items-center gap-3 sm:col-span-2">
+                        <input
+                          type="checkbox"
+                          checked={restNotify}
+                          onChange={(e) => setRestNotify(e.target.checked)}
+                          className="w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">
+                          {language === 'ar' ? 'إرسال إشعار عند تغيير الحالة' : 'Send notification on status change'}
+                        </span>
+                      </label>
+                      {restNotify && (
+                        <div className="sm:col-span-2">
+                          <label className="label text-sm">{language === 'ar' ? 'رقم الهاتف للإشعارات' : 'Notification Phone'}</label>
+                          <input
+                            type="tel"
+                            value={restNotifyPhone}
+                            onChange={(e) => setRestNotifyPhone(e.target.value)}
+                            placeholder={language === 'ar' ? 'مثال: 9665XXXXXXXX' : 'e.g. 9665XXXXXXXX'}
+                            className="input"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Printers */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <Printer className="w-5 h-5 text-primary-500" />
+                  {language === 'ar' ? 'إعدادات الطابعات' : 'Printer Settings'}
+                </h3>
+                <div className="space-y-4">
+                  {(restPrinters || []).map((printer, idx) => (
+                    <div key={idx} className="border rounded-xl p-4 space-y-3 bg-gray-50 dark:bg-dark-800">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium text-sm">{language === 'ar' ? `الطابعة ${idx + 1}` : `Printer ${idx + 1}`}</span>
+                        <button
+                          onClick={() => setRestPrinters(prev => prev.filter((_, i) => i !== idx))}
+                          className="text-red-500 hover:text-red-700 text-sm"
+                        >
+                          {language === 'ar' ? 'حذف' : 'Remove'}
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <input
+                          value={printer.name || ''}
+                          onChange={(e) => {
+                            const next = [...restPrinters]
+                            next[idx] = { ...next[idx], name: e.target.value }
+                            setRestPrinters(next)
+                          }}
+                          placeholder={language === 'ar' ? 'اسم الطابعة' : 'Printer Name'}
+                          className="input text-sm"
+                        />
+                        <select
+                          value={printer.role || 'kitchen'}
+                          onChange={(e) => {
+                            const next = [...restPrinters]
+                            next[idx] = { ...next[idx], role: e.target.value }
+                            setRestPrinters(next)
+                          }}
+                          className="input text-sm"
+                        >
+                          <option value="kitchen">{language === 'ar' ? 'مطبخ' : 'Kitchen'}</option>
+                          <option value="receipt">{language === 'ar' ? 'فاتورة' : 'Receipt'}</option>
+                        </select>
+                        <select
+                          value={printer.type || 'network'}
+                          onChange={(e) => {
+                            const next = [...restPrinters]
+                            next[idx] = { ...next[idx], type: e.target.value }
+                            setRestPrinters(next)
+                          }}
+                          className="input text-sm"
+                        >
+                          <option value="network">{language === 'ar' ? 'شبكة (IP)' : 'Network (IP)'}</option>
+                          <option value="usb">USB</option>
+                          <option value="bluetooth">Bluetooth</option>
+                        </select>
+                        <input
+                          value={printer.ipAddress || ''}
+                          onChange={(e) => {
+                            const next = [...restPrinters]
+                            next[idx] = { ...next[idx], ipAddress: e.target.value }
+                            setRestPrinters(next)
+                          }}
+                          placeholder={language === 'ar' ? 'عنوان IP' : 'IP Address'}
+                          className="input text-sm"
+                        />
+                        <input
+                          type="number"
+                          value={printer.port || 9100}
+                          onChange={(e) => {
+                            const next = [...restPrinters]
+                            next[idx] = { ...next[idx], port: Number(e.target.value) }
+                            setRestPrinters(next)
+                          }}
+                          placeholder="Port"
+                          className="input text-sm"
+                        />
+                        <label className="flex items-center gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={printer.enabled || false}
+                            onChange={(e) => {
+                              const next = [...restPrinters]
+                              next[idx] = { ...next[idx], enabled: e.target.checked }
+                              setRestPrinters(next)
+                            }}
+                            className="rounded"
+                          />
+                          {language === 'ar' ? 'مفعّلة' : 'Enabled'}
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => setRestPrinters([...restPrinters, { name: '', role: 'kitchen', type: 'network', ipAddress: '', port: 9100, enabled: false, paperWidth: 80 }])}
+                    className="btn btn-outline text-sm w-full"
+                  >
+                    + {language === 'ar' ? 'إضافة طابعة' : 'Add Printer'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Save */}
+              <div className="pt-4 border-t">
+                <button
+                  disabled={updateMutation.isPending}
+                  onClick={() => updateMutation.mutate({
+                    settings: {
+                      ...(tenant?.settings || {}),
+                      restaurant: {
+                        ...(tenant?.settings?.restaurant || {}),
+                        autoStatusUpdate: restAutoStatus,
+                        openingTime: restOpenTime,
+                        closingTime: restCloseTime,
+                        notifyOnStatusChange: restNotify,
+                        statusNotificationPhone: restNotifyPhone,
+                        printers: restPrinters,
+                      },
+                    },
+                  })}
+                  className="btn btn-primary"
+                >
+                  {updateMutation.isPending ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Save className="w-4 h-4" /> {t('save')}</>}
+                </button>
+              </div>
             </motion.div>
           )}
 
