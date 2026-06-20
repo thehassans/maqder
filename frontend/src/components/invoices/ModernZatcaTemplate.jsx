@@ -116,9 +116,21 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
           </div>
 
           <div className="flex flex-col gap-4 md:items-end">
-            <div className="inline-flex items-center rounded-full border bg-primary-50 px-3 py-1 text-sm font-medium text-primary-700 w-fit">
+            <div className={`inline-flex items-center rounded-full border px-3 py-1 text-sm font-medium w-fit ${
+              invoice?.businessContext === 'boutique'
+                ? invoice?.boutiqueDetails?.transactionType === 'sale'
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  : 'bg-rose-50 text-rose-700 border-rose-200'
+                : 'bg-primary-50 text-primary-700'
+            }`}>
               <FileText className="mr-2 h-4 w-4" />
-              {isQuotation ? 'Quotation / عرض سعر' : 'Tax Invoice / فاتورة ضريبية'}
+              {invoice?.businessContext === 'boutique'
+                ? invoice?.boutiqueDetails?.transactionType === 'sale'
+                  ? 'Boutique Sale Invoice / فاتورة بيع بوتيك'
+                  : 'Boutique Rental Invoice / فاتورة إيجار بوتيك'
+                : isQuotation
+                ? 'Quotation / عرض سعر'
+                : 'Tax Invoice / فاتورة ضريبية'}
             </div>
             
             <div className="mt-2 space-y-1 text-sm text-gray-600 md:text-right">
@@ -219,6 +231,42 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
                 <span className="font-semibold text-gray-900">{formatDate(invoice?.dueDate || invoice?.validUntil)}</span>
                 {bilingual && <span className="text-gray-500" dir="rtl">:تاريخ الاستحقاق</span>}
               </div>
+
+              {invoice?.businessContext === 'boutique' && invoice?.boutiqueDetails?.transactionType === 'rental' && (
+                <>
+                  <hr className="border-gray-200" />
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">Rental Start:</span>
+                    <span className="font-semibold text-gray-900">{formatDate(invoice.boutiqueDetails.startDate)}</span>
+                    {bilingual && <span className="text-gray-500" dir="rtl">:بداية الإيجار</span>}
+                  </div>
+                  <hr className="border-gray-200" />
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">Rental End:</span>
+                    <span className="font-semibold text-gray-900">{formatDate(invoice.boutiqueDetails.endDate)}</span>
+                    {bilingual && <span className="text-gray-500" dir="rtl">:نهاية الإيجار</span>}
+                  </div>
+                  <hr className="border-gray-200" />
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">Rental Days:</span>
+                    <span className="font-semibold text-gray-900">
+                      {(() => {
+                        const start = new Date(invoice.boutiqueDetails.startDate)
+                        const end = new Date(invoice.boutiqueDetails.endDate)
+                        const days = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)))
+                        return days
+                      })()}
+                    </span>
+                    {bilingual && <span className="text-gray-500" dir="rtl">:عدد أيام الإيجار</span>}
+                  </div>
+                  <hr className="border-gray-200" />
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">Security Deposit:</span>
+                    <span className="font-semibold text-gray-900">{renderMoney(toNumber(invoice.boutiqueDetails.totalDeposit))}</span>
+                    {bilingual && <span className="text-gray-500" dir="rtl">:تأمين</span>}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -235,12 +283,21 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
                     {bilingual && <span className="text-xs text-gray-500" dir="rtl">الوصف</span>}
                   </div>
                 </th>
-                <th className="px-4 py-3 text-center font-semibold text-gray-900">
-                  <div className="flex flex-col">
-                    <span>Qty</span>
-                    {bilingual && <span className="text-xs text-gray-500" dir="rtl">الكمية</span>}
-                  </div>
-                </th>
+                {invoice?.businessContext === 'boutique' && invoice?.boutiqueDetails?.transactionType === 'rental' ? (
+                  <th className="px-4 py-3 text-center font-semibold text-gray-900">
+                    <div className="flex flex-col">
+                      <span>Days</span>
+                      {bilingual && <span className="text-xs text-gray-500" dir="rtl">الأيام</span>}
+                    </div>
+                  </th>
+                ) : (
+                  <th className="px-4 py-3 text-center font-semibold text-gray-900">
+                    <div className="flex flex-col">
+                      <span>Qty</span>
+                      {bilingual && <span className="text-xs text-gray-500" dir="rtl">الكمية</span>}
+                    </div>
+                  </th>
+                )}
                 <th className="px-4 py-3 text-right font-semibold text-gray-900">
                   <div className="flex flex-col items-end">
                     <span>Unit Price</span>
@@ -279,7 +336,11 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-4 text-center">{item.quantity}</td>
+                    {invoice?.businessContext === 'boutique' && invoice?.boutiqueDetails?.transactionType === 'rental' ? (
+                      <td className="px-4 py-4 text-center">{item.rentalDays || item.quantity || 1}</td>
+                    ) : (
+                      <td className="px-4 py-4 text-center">{item.quantity}</td>
+                    )}
                     <td className="px-4 py-4 text-right font-mono text-gray-900">
                       {renderMoney(toNumber(item.unitPrice))}
                     </td>
@@ -347,6 +408,21 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
                 </span>
               </div>
               <hr className="border-gray-200" />
+
+              {invoice?.businessContext === 'boutique' && invoice?.boutiqueDetails?.transactionType === 'rental' && toNumber(invoice.boutiqueDetails.totalDeposit) > 0 && (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <div className="flex flex-col">
+                      <span className="text-gray-500">Security Deposit</span>
+                      {bilingual && <span className="text-xs text-gray-400" dir="rtl">تأمين</span>}
+                    </div>
+                    <span className="font-mono font-semibold text-gray-900">
+                      {renderMoney(toNumber(invoice.boutiqueDetails.totalDeposit))}
+                    </span>
+                  </div>
+                  <hr className="border-gray-200" />
+                </>
+              )}
               
               <div className="flex justify-between rounded-lg bg-primary-100/50 p-4 border border-primary-100">
                 <div className="flex flex-col">
@@ -387,72 +463,6 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
             </div>
           )}
         </div>
-
-        {/* Boutique Rental Terms & Acknowledgment */}
-        {invoice?.businessContext === 'boutique' && (
-          <div className="mt-6 rounded-xl border border-gray-200 bg-white p-5 text-sm print:break-inside-avoid">
-            <h4 className="mb-4 text-center text-base font-bold text-gray-900" dir="rtl">
-              حفاظاً على السلعة من التلف يرجى التزام العميل بالآتي :
-            </h4>
-            <ol className="mb-6 list-decimal list-inside space-y-2 text-gray-800" dir="rtl">
-              <li>لا يتم إرجاع العربون بعد تحرير الفاتورة.</li>
-              <li>في حال تأخير الفستان يحق للمحل مضاعفة مبلغ الايجار في كل يوم ٥٠٠ ريال وفي حال تعرض الفستان للتلف يخصم على العميل التأمين ويكمل قيمة الفستان كامل.</li>
-              <li>يرجى إحضار مبلغ التأمين قبل أخذ الفستان.</li>
-              <li>يخصم على العميل قيمة غسيل الفستان ٣٠٠ ريال ، غسيل ذيل ٢٠٠ ريال ، غسيل جيبكا ٢٠٠ ريال.</li>
-            </ol>
-
-            <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="flex items-end gap-2">
-                <span className="shrink-0 font-semibold text-gray-900">Name:</span>
-                <span className="mb-1 flex-1 border-b border-dotted border-gray-500"></span>
-              </div>
-              <div className="flex items-end gap-2">
-                <span className="shrink-0 font-semibold text-gray-900">Value / Amount:</span>
-                <span className="mb-1 flex-1 border-b border-dotted border-gray-500"></span>
-              </div>
-              <div className="flex items-end gap-2">
-                <span className="shrink-0 font-semibold text-gray-900">Mobile:</span>
-                <span className="mb-1 flex-1 border-b border-dotted border-gray-500"></span>
-              </div>
-              <div className="flex items-end gap-2">
-                <span className="shrink-0 font-semibold text-gray-900">Paid:</span>
-                <span className="mb-1 flex-1 border-b border-dotted border-gray-500"></span>
-              </div>
-              <div className="sm:col-span-2 flex items-end gap-2">
-                <span className="shrink-0 font-semibold text-gray-900">Note:</span>
-                <span className="mb-1 flex-1 border-b border-dotted border-gray-500"></span>
-              </div>
-              <div className="sm:col-span-2 flex items-end gap-2">
-                <span className="shrink-0 font-semibold text-gray-900">Value Added Tax (VAT) 15%:</span>
-                <span className="mb-1 flex-1 border-b border-dotted border-gray-500"></span>
-              </div>
-              <div className="flex items-end gap-2">
-                <span className="shrink-0 font-semibold text-gray-900">Remaining:</span>
-                <span className="mb-1 flex-1 border-b border-dotted border-gray-500"></span>
-              </div>
-              <div className="flex items-end gap-2">
-                <span className="shrink-0 font-semibold text-gray-900">Signature:</span>
-                <span className="mb-1 flex-1 border-b border-dotted border-gray-500"></span>
-              </div>
-              <div className="flex items-end gap-2">
-                <span className="shrink-0 font-semibold text-gray-900">Security Deposit:</span>
-                <span className="mb-1 flex-1 border-b border-dotted border-gray-500"></span>
-              </div>
-            </div>
-
-            <div className="border-t border-gray-200 pt-4">
-              <h4 className="mb-3 font-bold text-gray-900">
-                To protect the item from damage, the customer must adhere to the following:
-              </h4>
-              <ul className="list-disc list-inside space-y-2 text-gray-800">
-                <li>The down payment is non-refundable after the invoice is issued.</li>
-                <li>In the event of a delay in returning the dress, the store has the right to double the rental amount by 500 Riyals for each day. In the event the dress is damaged, the security deposit will be deducted from the customer, and they must pay the remaining amount to cover the full value of the dress.</li>
-                <li>Please bring the security deposit amount before taking the dress.</li>
-                <li>The customer will be charged for the washing of the dress at 300 Riyals, washing of the train (tail) at 200 Riyals, and washing of the petticoat (jipka) at 200 Riyals.</li>
-              </ul>
-            </div>
-          </div>
-        )}
 
       </div>
     </div>

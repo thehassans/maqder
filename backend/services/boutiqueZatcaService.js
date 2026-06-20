@@ -73,6 +73,7 @@ export async function generateBoutiqueThermalInvoice(rental, tenant, previousHas
       productName: line.productName,
       productNameAr: line.productNameAr,
       quantity: line.quantity,
+      rentalDays: line.rentalDays || 1,
       unitCode: 'PCE',
       unitPrice: line.dailyRate,
       discount: 0,

@@ -235,32 +235,28 @@ export default function BoutiquePOS() {
             </h1>
           </div>
           <div className="flex items-center gap-3">
-            {/* Mode Toggle — Ultra Premium Pill */}
-            <div className="relative inline-flex bg-gray-100/80 backdrop-blur-sm rounded-full p-1 border border-gray-200/60 shadow-inner">
-              <motion.div
-                layout
-                transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                className={`absolute top-1 bottom-1 rounded-full shadow-sm ${
-                  transactionMode === 'sale' ? 'bg-white left-1/2 right-1' : 'bg-white left-1 right-1/2'
-                }`}
-                style={{ borderRadius: '9999px' }}
-              />
+            {/* Mode Toggle — Ultra Premium Segmented Control */}
+            <div className="flex items-center gap-1.5 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100/80 p-1.5 border border-gray-200/80 shadow-sm backdrop-blur-sm">
               <button
                 onClick={() => { setTransactionMode('rental'); setCart([]) }}
-                className={`relative z-10 flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-colors ${
-                  transactionMode === 'rental' ? 'text-rose-700' : 'text-gray-400 hover:text-gray-600'
+                className={`relative flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
+                  transactionMode === 'rental'
+                    ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-lg shadow-rose-500/25'
+                    : 'text-gray-500 hover:text-rose-600 hover:bg-rose-50/60'
                 }`}
               >
-                <Clock className="w-3.5 h-3.5" />
+                <Clock className="w-4 h-4" />
                 {label('Rent', 'إيجار')}
               </button>
               <button
                 onClick={() => { setTransactionMode('sale'); setCart([]) }}
-                className={`relative z-10 flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold transition-colors ${
-                  transactionMode === 'sale' ? 'text-emerald-700' : 'text-gray-400 hover:text-gray-600'
+                className={`relative flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
+                  transactionMode === 'sale'
+                    ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/25'
+                    : 'text-gray-500 hover:text-emerald-600 hover:bg-emerald-50/60'
                 }`}
               >
-                <ShoppingBag className="w-3.5 h-3.5" />
+                <ShoppingBag className="w-4 h-4" />
                 {label('Sell', 'بيع')}
               </button>
             </div>
