@@ -466,7 +466,7 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
 
         {/* Boutique Rental Terms — compact single-page */}
         {invoice?.businessContext === 'boutique' && invoice?.boutiqueDetails?.transactionType === 'rental' && (
-          <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50/50 p-3 text-[11px] leading-tight print:break-inside-avoid">
+          <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50/50 p-3 text-[11px] leading-tight print:break-inside-avoid font-bold">
             <div className="flex items-center gap-2 mb-2">
               <Info className="w-3.5 h-3.5 text-rose-500 shrink-0" />
               <h4 className="font-bold text-gray-900">
@@ -482,13 +482,13 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
                   <li>The customer will be charged for the washing of the dress at 300 Riyals, washing of the train (tail) at 200 Riyals, and washing of the petticoat (jipka) at 200 Riyals.</li>
                 </ol>
               </div>
-              <div dir="rtl">
-                <ol className="list-decimal list-outside pr-4 space-y-1 text-gray-700 text-right [direction:rtl]">
-                  <li>لا يتم إرجاع العربون بعد تحرير الفاتورة.</li>
-                  <li>في حال تأخير الفستان يحق للمحل مضاعفة مبلغ الايجار في كل يوم ٥٠٠ ريال وفي حال تعرض الفستان للتلف يخصم على العميل التأمين ويكمل قيمة الفستان كامل.</li>
-                  <li>يرجى إحضار مبلغ التأمين قبل أخذ الفستان.</li>
-                  <li>يخصم على العميل غسيل الفستان ٣٠٠ ريال، غسيل ذيل ٢٠٠ ريال، غسيل جيبكا ٢٠٠ ريال.</li>
-                </ol>
+              <div dir="rtl" className="font-['Almarai']">
+                <div className="space-y-1 pr-4 [direction:rtl]">
+                  <div className="flex gap-2 text-right"><span className="shrink-0">١.</span><span>لا يتم إرجاع العربون بعد تحرير الفاتورة.</span></div>
+                  <div className="flex gap-2 text-right"><span className="shrink-0">٢.</span><span>في حال تأخير الفستان يحق للمحل مضاعفة مبلغ الايجار في كل يوم ٥٠٠ ريال وفي حال تعرض الفستان للتلف يخصم على العميل التأمين ويكمل قيمة الفستان كامل.</span></div>
+                  <div className="flex gap-2 text-right"><span className="shrink-0">٣.</span><span>يرجى إحضار مبلغ التأمين قبل أخذ الفستان.</span></div>
+                  <div className="flex gap-2 text-right"><span className="shrink-0">٤.</span><span>يخصم على العميل غسيل الفستان ٣٠٠ ريال، غسيل ذيل ٢٠٠ ريال، غسيل جيبكا ٢٠٠ ريال.</span></div>
+                </div>
               </div>
             </div>
           </div>
