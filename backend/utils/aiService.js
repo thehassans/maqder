@@ -2,8 +2,20 @@ import OpenAI from 'openai';
 import { GoogleGenAI } from '@google/genai';
 import SystemSettings from '../models/SystemSettings.js';
 
+const DEPRECATED_GROQ_MODELS = ['llama-3.2-90b-vision-preview', 'llama-3.2-11b-vision-preview', 'llama-3.2-1b-preview', 'llama-3.2-3b-preview'];
+const DEFAULT_GROQ_MODEL = 'llama-3.1-8b-instant';
+
+function normalizeGroqModel(model) {
+  const m = String(model || '').trim();
+  if (!m || DEPRECATED_GROQ_MODELS.includes(m)) return DEFAULT_GROQ_MODEL;
+  return m;
+}
+
 export const getAISettings = async () => {
   const settings = await SystemSettings.findOne({ key: 'global' }).select('gemini openai grok groq').lean();
+  if (settings?.groq?.model) {
+    settings.groq.model = normalizeGroqModel(settings.groq.model);
+  }
   return settings || {};
 };
 

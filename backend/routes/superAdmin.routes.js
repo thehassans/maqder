@@ -553,6 +553,9 @@ router.put('/settings/identity', async (req, res) => {
 router.get('/settings/ai', async (req, res) => {
   try {
     const settings = await getGlobalSettings();
+    const deprecatedGroqModels = ['llama-3.2-90b-vision-preview', 'llama-3.2-11b-vision-preview', 'llama-3.2-1b-preview', 'llama-3.2-3b-preview'];
+    let groqModel = settings.groq?.model || 'llama-3.1-8b-instant';
+    if (!groqModel || deprecatedGroqModels.includes(groqModel)) groqModel = 'llama-3.1-8b-instant';
     res.json({
       gemini: {
         enabled: settings.gemini?.enabled !== false,
@@ -574,7 +577,7 @@ router.get('/settings/ai', async (req, res) => {
       },
       groq: {
         enabled: settings.groq?.enabled !== false,
-        model: settings.groq?.model || 'llama-3.1-8b-instant',
+        model: groqModel,
         hasApiKey: !!settings.groq?.apiKey,
         apiKeyMasked: maskApiKey(settings.groq?.apiKey)
       },
@@ -637,9 +640,12 @@ router.put('/settings/ai', async (req, res) => {
     }
 
     if (groq) {
+      const deprecatedGroqModels = ['llama-3.2-90b-vision-preview', 'llama-3.2-11b-vision-preview', 'llama-3.2-1b-preview', 'llama-3.2-3b-preview'];
+      let groqModel = (groq.model || settings.groq?.model || 'llama-3.1-8b-instant').trim();
+      if (!groqModel || deprecatedGroqModels.includes(groqModel)) groqModel = 'llama-3.1-8b-instant';
       const nextGroq = {
         ...(settings.groq?.toObject?.() || settings.groq || {}),
-        model: (groq.model || settings.groq?.model || 'llama-3.1-8b-instant').trim(),
+        model: groqModel,
         enabled: groq.enabled !== undefined ? groq.enabled : settings.groq?.enabled
       };
       if (groq.apiKey !== undefined) {
@@ -756,7 +762,9 @@ router.post('/settings/ai/test', async (req, res) => {
       });
       text = response.choices?.[0]?.message?.content || '';
     } else if (provider === 'groq') {
+      const deprecatedGroqModels = ['llama-3.2-90b-vision-preview', 'llama-3.2-11b-vision-preview', 'llama-3.2-1b-preview', 'llama-3.2-3b-preview'];
       model = settings.groq?.model || 'llama-3.1-8b-instant';
+      if (!model || deprecatedGroqModels.includes(model)) model = 'llama-3.1-8b-instant';
       const client = new OpenAI({ apiKey: activeKey, baseURL: "https://api.groq.com/openai/v1" });
       const response = await client.chat.completions.create({
         model,
