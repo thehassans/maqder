@@ -82,6 +82,7 @@ const boutiqueRentalSchema = new mongoose.Schema({
   totalLateFee: { type: Number, default: 0 },
   totalDamageFee: { type: Number, default: 0 },
   totalCleaningFee: { type: Number, default: 0 },
+  vatApplicable: { type: Boolean, default: true },               // Whether 15% VAT was applied
   totalTax: { type: Number, default: 0 },                        // VAT 15%
   grandTotal: { type: Number, required: true, default: 0 },       // rentalSubtotal + fees + tax
 

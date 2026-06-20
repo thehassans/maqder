@@ -285,7 +285,7 @@ router.post('/rentals', checkPermission('boutique', 'write'), async (req, res) =
     const {
       customerName, customerPhone, customerEmail, customerIdNumber,
       startDate, endDate, lineItems, staffNotes, transactionType = 'rental',
-      discount = 0
+      discount = 0, vatApplicable = true
     } = req.body;
 
     const isSale = transactionType === 'sale';
@@ -304,11 +304,13 @@ router.post('/rentals', checkPermission('boutique', 'write'), async (req, res) =
     }
 
     // 3. Compute totals and apply discount
-    let totals = computeRentalTotals(enriched, 15);
+    const vatRate = vatApplicable === false ? 0 : 15;
+    let totals = computeRentalTotals(enriched, vatRate);
     const appliedDiscount = Math.max(0, Math.min(Number(discount) || 0, totals.rentalSubtotal));
     totals.discount = appliedDiscount;
-    totals.totalTax = Math.round(Math.max(0, totals.rentalSubtotal - appliedDiscount) * 0.15 * 100) / 100;
-    totals.grandTotal = Math.round((Math.max(0, totals.rentalSubtotal - appliedDiscount) + totals.totalTax + totals.totalDeposit) * 100) / 100;
+    const taxableBase = Math.max(0, totals.rentalSubtotal - appliedDiscount);
+    totals.totalTax = Math.round(taxableBase * (vatRate / 100) * 100) / 100;
+    totals.grandTotal = Math.round((taxableBase + totals.totalTax + totals.totalDeposit) * 100) / 100;
 
     // 4. Generate rental number
     const count = await BoutiqueRental.countDocuments(req.tenantFilter);
@@ -329,6 +331,7 @@ router.post('/rentals', checkPermission('boutique', 'write'), async (req, res) =
       endDate: isSale ? now : new Date(endDate),
       lineItems: enriched,
       ...totals,
+      vatApplicable,
       status: isSale ? 'closed' : 'reserved',
       createdBy: req.user._id,
       staffNotes,

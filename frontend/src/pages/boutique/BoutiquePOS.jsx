@@ -19,13 +19,12 @@ import {
   CheckCircle2,
   ArrowRight,
   Receipt,
-  FileDown,
 } from 'lucide-react'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import Money from '../../components/ui/Money'
 import InvoiceLivePreview from '../../components/invoices/InvoiceLivePreview'
-import { printInvoiceSnapshot, downloadInvoicePdf } from '../../lib/invoicePdf'
+import { printInvoiceSnapshot } from '../../lib/invoicePdf'
 
 /**
  * Boutique POS — Ladies Boutique & Dress Rental
@@ -57,6 +56,7 @@ export default function BoutiquePOS() {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [discountAmount, setDiscountAmount] = useState(0)
+  const [vatApplicable, setVatApplicable] = useState(true)
 
   // ─── Product Fetch ───
   const { data: productsData, isLoading } = useQuery({
@@ -148,8 +148,9 @@ export default function BoutiquePOS() {
     })
     const rentalSubtotal = lines.reduce((s, l) => s + l.rentalSubtotal, 0)
     const totalDeposit = lines.reduce((s, l) => s + l.deposit, 0)
-    const totalTax = Math.round(Math.max(0, rentalSubtotal - discountAmount) * 0.15 * 100) / 100
-    const grandTotal = Math.round(Math.max(0, rentalSubtotal - discountAmount + totalTax) * 100) / 100
+    const taxableBase = Math.max(0, rentalSubtotal - discountAmount)
+    const totalTax = vatApplicable ? Math.round(taxableBase * 0.15 * 100) / 100 : 0
+    const grandTotal = Math.round((taxableBase + totalTax + totalDeposit) * 100) / 100
     return { lines, rentalSubtotal, totalDeposit, totalTax, grandTotal, discountAmount }
   })()
 
@@ -199,6 +200,7 @@ export default function BoutiquePOS() {
       customerIdNumber: customerId,
       transactionType: transactionMode,
       discount: discountAmount || 0,
+      vatApplicable,
       ...(isSale ? {} : { startDate, endDate }),
       lineItems: cart.map((item) => ({
         productId: item.productId,
@@ -500,10 +502,12 @@ export default function BoutiquePOS() {
                         <Money value={cartTotals.totalDeposit} />
                       </div>
                     )}
-                    <div className="flex justify-between text-gray-500">
-                      <span>{label('VAT (15%)', 'الضريبة 15%')}</span>
-                      <Money value={cartTotals.totalTax} />
-                    </div>
+                    {vatApplicable && (
+                      <div className="flex justify-between text-gray-500">
+                        <span>{label('VAT (15%)', 'الضريبة 15%')}</span>
+                        <Money value={cartTotals.totalTax} />
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm font-bold text-gray-900 pt-2 border-t border-gray-100">
                       <span>{label('Total', 'الإجمالي')}</span>
                       <Money value={cartTotals.grandTotal} />
@@ -633,6 +637,28 @@ export default function BoutiquePOS() {
                     </div>
                   </div>
 
+                  {/* VAT Toggle */}
+                  <div className="flex items-center justify-between rounded-lg border border-gray-200 p-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-gray-700">
+                        {label('Apply VAT (15%)', 'تطبيق الضريبة 15%')}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setVatApplicable((v) => !v)}
+                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                        vatApplicable ? 'bg-rose-600' : 'bg-gray-300'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                          vatApplicable ? (isArabic ? '-translate-x-1' : 'translate-x-5') : (isArabic ? '-translate-x-5' : 'translate-x-1')
+                        }`}
+                      />
+                    </button>
+                  </div>
+
                   {/* Summary */}
                   <div className="bg-gray-50 rounded-xl p-3 space-y-1.5 text-xs">
                     <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
@@ -654,10 +680,12 @@ export default function BoutiquePOS() {
                         <Money value={cartTotals.totalDeposit} />
                       </div>
                     )}
-                    <div className="flex justify-between text-gray-500">
-                      <span>{label('VAT (15%)', 'الضريبة 15%')}</span>
-                      <Money value={cartTotals.totalTax} />
-                    </div>
+                    {vatApplicable && (
+                      <div className="flex justify-between text-gray-500">
+                        <span>{label('VAT (15%)', 'الضريبة 15%')}</span>
+                        <Money value={cartTotals.totalTax} />
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm font-bold text-gray-900 pt-1.5 border-t border-gray-200">
                       <span>{label('Grand Total', 'الإجمالي')}</span>
                       <Money value={cartTotals.grandTotal} />
@@ -729,24 +757,6 @@ export default function BoutiquePOS() {
                 >
                   {label('Close', 'إغلاق')}
                 </button>
-                {receiptData?.invoice?._id && (
-                  <>
-                    <button
-                      onClick={() => navigate(`/dashboard/invoices/${receiptData.invoice._id}`)}
-                      className="flex-1 py-3 rounded-xl border border-gray-200 font-bold hover:bg-gray-50 text-gray-700 flex items-center justify-center gap-2"
-                    >
-                      <Receipt className="w-4 h-4" />
-                      {label('Invoice', 'الفاتورة')}
-                    </button>
-                    <button
-                      onClick={() => downloadA4Invoice(receiptData.invoice)}
-                      className="flex-1 py-3 rounded-xl border border-gray-200 font-bold hover:bg-gray-50 text-gray-700 flex items-center justify-center gap-2"
-                    >
-                      <FileDown className="w-4 h-4" />
-                      {label('A4 Invoice', 'فاتورة A4')}
-                    </button>
-                  </>
-                )}
                 <button
                   onClick={handlePrint}
                   className="flex-1 py-3 rounded-xl bg-rose-600 text-white font-bold hover:bg-rose-700 flex items-center justify-center gap-2"

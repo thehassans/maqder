@@ -2,7 +2,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import { generateZatcaQrValue } from '../../lib/zatcaQr'
 import { calculateInvoiceSummary, toNumber } from '../../lib/invoiceDocument'
 import { getInvoiceBranding } from '../../lib/invoiceBranding'
-import { formatCurrency, formatCurrencyAmount, isSarCurrency } from '../../lib/currency'
+import { formatCurrencyAmount } from '../../lib/currency'
 import { Building2, Calendar, Hash, User, Phone, MapPin, CreditCard, FileText, Mail } from 'lucide-react'
 import { getAmountInWords } from '../../lib/amountInWords'
 
@@ -46,15 +46,6 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
   }
 
   const renderMoney = (value) => {
-    if (!isSarCurrency(currency)) {
-      return formatCurrency(value, {
-        language,
-        currency,
-        currencyDisplay: 'code',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })
-    }
     const amount = formatCurrencyAmount(value, {
       language,
       currency,
@@ -65,7 +56,7 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
     return (
       <span className="inline-flex items-center gap-[0.3em] whitespace-nowrap">
         <span className="tabular-nums">{amount}</span>
-        <span className="font-sans">SAR</span>
+        <span className="text-[0.85em] font-medium">{currency}</span>
       </span>
     )
   }
