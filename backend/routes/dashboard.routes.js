@@ -9,6 +9,8 @@ import TravelBooking from '../models/TravelBooking.js';
 import RestaurantOrder from '../models/RestaurantOrder.js';
 import RentalContract from '../models/RentalContract.js';
 import LaundryOrder from '../models/LaundryOrder.js';
+import BoutiqueRental from '../models/BoutiqueRental.js';
+import BoutiqueProduct from '../models/BoutiqueProduct.js';
 import { protect, tenantFilter } from '../middleware/auth.js';
 import { getTenantBusinessTypes } from '../utils/businessTypes.js';
 
@@ -272,7 +274,56 @@ router.get('/', async (req, res) => {
               }
             }
           ])
-        : Promise.resolve([{ totals: [{ total: 0, revenue: 0, open: 0 }], byStatus: [], recent: [] }])
+        : Promise.resolve([{ totals: [{ total: 0, revenue: 0, open: 0 }], byStatus: [], recent: [] }]),
+
+      businessTypes.includes('boutique')
+        ? BoutiqueRental.aggregate([
+            { $match: req.tenantFilter },
+            {
+              $facet: {
+                totals: [
+                  {
+                    $group: {
+                      _id: null,
+                      total: { $sum: 1 },
+                      revenue: { $sum: '$grandTotal' },
+                      pending: { $sum: { $cond: [{ $eq: ['$paymentStatus', 'pending'] }, 1, 0] } },
+                      pendingReturns: { $sum: { $cond: [{ $in: ['$status', ['reserved', 'picked_up', 'late_return']] }, 1, 0] } },
+                      overdueReturns: { $sum: { $cond: [{ $eq: ['$status', 'late_return'] }, 1, 0] } }
+                    }
+                  }
+                ],
+                today: [
+                  { $match: { createdAt: { $gte: today, $lt: tomorrow } } },
+                  { $group: { _id: null, count: { $sum: 1 }, revenue: { $sum: '$grandTotal' } } }
+                ],
+                thisMonth: [
+                  { $match: { createdAt: { $gte: new Date(currentYear, currentMonth - 1, 1) } } },
+                  { $group: { _id: null, count: { $sum: 1 }, revenue: { $sum: '$grandTotal' } } }
+                ],
+                byStatus: [{ $group: { _id: '$status', count: { $sum: 1 } } }],
+                recent: [
+                  { $sort: { createdAt: -1 } },
+                  { $limit: 5 },
+                  { $project: { rentalNumber: 1, status: 1, customerName: 1, grandTotal: 1, paymentStatus: 1, createdAt: 1 } }
+                ]
+              }
+            }
+          ])
+        : Promise.resolve([{ totals: [{ total: 0, revenue: 0, pending: 0, pendingReturns: 0, overdueReturns: 0 }], today: [{ count: 0, revenue: 0 }], thisMonth: [{ count: 0, revenue: 0 }], byStatus: [], recent: [] }]),
+
+      businessTypes.includes('boutique')
+        ? BoutiqueProduct.aggregate([
+            { $match: { ...req.tenantFilter, isActive: true } },
+            {
+              $facet: {
+                total: [{ $count: 'count' }],
+                available: [{ $match: { $expr: { $gt: ['$rentalQuantity', 0] } } }, { $count: 'count' }],
+                outOfStock: [{ $match: { $expr: { $lte: ['$rentalQuantity', 0] } } }, { $count: 'count' }]
+              }
+            }
+          ])
+        : Promise.resolve([{ total: [{ count: 0 }], available: [{ count: 0 }], outOfStock: [{ count: 0 }] }])
     ]);
     
     res.json({
@@ -302,7 +353,11 @@ router.get('/', async (req, res) => {
       topProducts,
       todayStats: todayStats[0] || { count: 0, revenue: 0 },
       travel: travelStats?.[0] || { totals: [{ total: 0, revenue: 0, open: 0 }], byStatus: [], recent: [] },
-      restaurant: restaurantStats?.[0] || { totals: [{ total: 0, revenue: 0, open: 0 }], byStatus: [], recent: [] }
+      restaurant: restaurantStats?.[0] || { totals: [{ total: 0, revenue: 0, open: 0 }], byStatus: [], recent: [] },
+      boutique: {
+        rentals: boutiqueRentalStats?.[0] || { totals: [{ total: 0, revenue: 0, pending: 0, pendingReturns: 0, overdueReturns: 0 }], today: [{ count: 0, revenue: 0 }], thisMonth: [{ count: 0, revenue: 0 }], byStatus: [], recent: [] },
+        products: boutiqueProductStats?.[0] || { total: [{ count: 0 }], available: [{ count: 0 }], outOfStock: [{ count: 0 }] }
+      }
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -91,6 +91,7 @@ import RestaurantBranches from './pages/restaurant/Branches'
 import CashierPanel from './pages/restaurant/CashierPanel'
 import QRMenu from './pages/restaurant/QRMenu'
 import BoutiquePOS from './pages/boutique/BoutiquePOS'
+import BoutiqueDashboard from './pages/boutique/BoutiqueDashboard'
 import BoutiqueProducts from './pages/boutique/BoutiqueProducts'
 import BoutiquePendingReturns from './pages/boutique/BoutiquePendingReturns'
 import Projects from './pages/Projects'
@@ -418,6 +419,7 @@ function App() {
         
         {/* Legacy / Alternate paths */}
         <Route path="restaurant/kitchen" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantKitchen /></BusinessTypeRoute>} />
+        <Route path="boutique" element={<BusinessTypeRoute allowedTypes={['boutique']}><BoutiqueDashboard /></BusinessTypeRoute>} />
         <Route path="boutique/pos" element={<BusinessTypeRoute allowedTypes={['boutique']}><BoutiquePOS /></BusinessTypeRoute>} />
         <Route path="boutique/dresses" element={<BusinessTypeRoute allowedTypes={['boutique']}><BoutiqueProducts /></BusinessTypeRoute>} />
         <Route path="boutique/pending-returns" element={<BusinessTypeRoute allowedTypes={['boutique']}><BoutiquePendingReturns /></BusinessTypeRoute>} />

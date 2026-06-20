@@ -48,7 +48,7 @@ import {
   Pie,
   Cell
 } from 'recharts'
-import { Link } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
 import Money from '../components/ui/Money'
@@ -67,6 +67,11 @@ export default function Dashboard() {
   const isTrading = businessTypes.includes('trading')
   const isTravelAgency = businessTypes.includes('travel_agency')
   const isRestaurant = businessTypes.includes('restaurant')
+  const isBoutique = businessTypes.includes('boutique')
+
+  if (isBoutique) {
+    return <Navigate to="/app/dashboard/boutique/pos" replace />
+  }
 
   const { data: dashboard, isLoading } = useQuery({
     queryKey: ['dashboard'],

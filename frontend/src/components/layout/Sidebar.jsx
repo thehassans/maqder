@@ -129,8 +129,10 @@ export default function Sidebar() {
     {
       title: language === 'ar' ? 'بوتيك وإيجار فساتين' : 'Boutique & Rentals',
       businessTypes: ['boutique'],
+      path: '/app/dashboard/boutique/pos',
       items: [
         { path: '/app/dashboard/boutique/pos', icon: Sparkles, label: language === 'ar' ? 'نقطة البيع' : 'POS', perm: { module: 'boutique', action: 'create' } },
+        { path: '/app/dashboard/boutique', icon: LayoutDashboard, label: language === 'ar' ? 'لوحة التحكم' : 'Dashboard', perm: { module: 'boutique', action: 'read' } },
         { path: '/app/dashboard/boutique/dresses', icon: Shirt, label: language === 'ar' ? 'الفساتين' : 'Dresses', perm: { module: 'boutique', action: 'read' } },
         { path: '/app/dashboard/boutique/pending-returns', icon: Package, label: language === 'ar' ? 'الإرجاعات المعلقة' : 'Pending Returns', perm: { module: 'boutique', action: 'read' } },
       ]
@@ -412,7 +414,17 @@ export default function Sidebar() {
           <div key={idx}>
             {!sidebarCollapsed && (
               <h3 className="px-3 mb-2 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-                {section.title}
+                {section.path ? (
+                  <NavLink
+                    to={section.path}
+                    onClick={() => dispatch(setMobileMenuOpen(false))}
+                    className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                  >
+                    {section.title}
+                  </NavLink>
+                ) : (
+                  section.title
+                )}
               </h3>
             )}
             <div className="space-y-1">
