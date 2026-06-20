@@ -53,10 +53,26 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })
+    const amountAr = formatCurrencyAmount(value, {
+      language: 'ar',
+      currency,
+      currencyDisplay: 'code',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+    const isBoutiqueRental = invoice?.businessContext === 'boutique' && invoice?.boutiqueDetails?.transactionType === 'rental'
     return (
       <span className="inline-flex items-center gap-[0.3em] whitespace-nowrap">
         <span className="tabular-nums">{amount}</span>
         <span className="text-[0.85em] font-medium">{currency}</span>
+        {isBoutiqueRental && (
+          <>
+            <span className="text-gray-400">/</span>
+            <span className="font-['Almarai'] text-[0.85em] font-medium" dir="rtl">
+              {amountAr} {currency === 'SAR' ? 'ر.س' : currency}
+            </span>
+          </>
+        )}
       </span>
     )
   }
@@ -71,9 +87,13 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
           <div className="flex-1">
             <div className="mb-2 flex items-center gap-4">
               {logoSrc ? (
-                <img src={logoSrc} alt="Logo" className="h-16 w-auto object-contain" />
+                <img
+                  src={logoSrc}
+                  alt="Logo"
+                  className={`w-auto object-contain ${invoice?.businessContext === 'boutique' && invoice?.boutiqueDetails?.transactionType === 'rental' ? 'h-32' : 'h-16'}`}
+                />
               ) : (
-                <Building2 className="h-8 w-8 text-primary-600" />
+                <Building2 className={`text-primary-600 ${invoice?.businessContext === 'boutique' && invoice?.boutiqueDetails?.transactionType === 'rental' ? 'h-16 w-16' : 'h-8 w-8'}`} />
               )}
               <h2 className="text-2xl font-bold text-gray-900">
                 {sellerName}
