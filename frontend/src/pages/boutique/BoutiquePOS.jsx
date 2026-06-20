@@ -24,7 +24,7 @@ import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import Money from '../../components/ui/Money'
 import InvoiceLivePreview from '../../components/invoices/InvoiceLivePreview'
-import { printInvoiceSnapshot } from '../../lib/invoicePdf'
+import { printInvoiceSnapshot, downloadInvoicePdf } from '../../lib/invoicePdf'
 
 /**
  * Boutique POS — Ladies Boutique & Dress Rental
@@ -187,12 +187,24 @@ export default function BoutiquePOS() {
         setTimeout(() => printA4Invoice(data.invoice), 800)
       }
     },
+    onError: (err) => {
+      console.error('Checkout failed', err)
+      const msg = err?.response?.data?.error || err?.message || label('Checkout failed', 'فشل إتمام الطلب')
+      alert(msg)
+    },
   })
 
   const handleCheckout = () => {
+    console.log('Confirm & Print clicked')
     const isSale = transactionMode === 'sale'
-    if (!customerName || !customerPhone || cart.length === 0) return
-    if (!isSale && (!startDate || !endDate)) return
+    if (!customerName || !customerPhone || cart.length === 0) {
+      console.warn('Checkout validation failed', { customerName, customerPhone, cartLength: cart.length })
+      return
+    }
+    if (!isSale && (!startDate || !endDate)) {
+      console.warn('Rental date validation failed', { startDate, endDate })
+      return
+    }
     const payload = {
       customerName,
       customerNameAr,
@@ -689,9 +701,10 @@ export default function BoutiquePOS() {
                   </div>
 
                   <button
+                    type="button"
                     onClick={handleCheckout}
                     disabled={checkoutMutation.isPending || !customerName || !customerPhone || (transactionMode === 'rental' && (!startDate || !endDate))}
-                    className={`w-full py-3 rounded-xl text-white text-sm font-bold disabled:opacity-50 transition-colors flex items-center justify-center gap-2 ${
+                    className={`w-full py-3 rounded-xl text-white text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 ${
                       transactionMode === 'sale' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-600 hover:bg-rose-700'
                     }`}
                   >

@@ -202,7 +202,7 @@ export const extractKhayyatMeasurements = async ({ base64Image, mimeType }) => {
     try {
       const client = new OpenAI({ apiKey: groqKey, baseURL: 'https://api.groq.com/openai/v1' });
       const response = await client.chat.completions.create({
-        model: settings?.groq?.model || 'llama-3.2-90b-vision-preview',
+        model: settings?.groq?.model || 'llama-3.1-8b-instant',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: [
