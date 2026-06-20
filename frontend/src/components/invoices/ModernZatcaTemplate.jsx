@@ -5,6 +5,7 @@ import { getInvoiceBranding } from '../../lib/invoiceBranding'
 import { formatCurrency, formatCurrencyAmount, isSarCurrency } from '../../lib/currency'
 import { Building2, Calendar, Hash, User, Phone, MapPin, CreditCard, FileText, Mail } from 'lucide-react'
 import { getAmountInWords } from '../../lib/amountInWords'
+import SarIcon from '../ui/SarIcon'
 
 const hasArabicText = (value = '') => /[\u0600-\u06FF]/.test(String(value || ''))
 const toEasternArabicNumerals = (str) => String(str || '').replace(/[0-9]/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d])
@@ -46,13 +47,28 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
   }
 
   const renderMoney = (value) => {
-    return formatCurrency(value, {
+    if (!isSarCurrency(currency)) {
+      return formatCurrency(value, {
+        language,
+        currency,
+        currencyDisplay: 'code',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
+    }
+    const amount = formatCurrencyAmount(value, {
       language,
       currency,
       currencyDisplay: 'code',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })
+    return (
+      <span className="inline-flex items-center gap-[0.15em] whitespace-nowrap">
+        <span className="tabular-nums">{amount}</span>
+        <SarIcon className="h-[0.85em] w-[0.85em] shrink-0" />
+      </span>
+    )
   }
 
   const isQuotation = documentType === 'quotation'

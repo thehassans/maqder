@@ -76,7 +76,7 @@ export default function InvoiceView() {
   const tenantBusinessTypes = getTenantBusinessTypes(tenant)
   const posTenants = ['bakala', 'super market', 'khayyat', 'saloon', 'laundry', 'restaurant']
   const isPosTenant = tenantBusinessTypes.some(t => posTenants.includes(t))
-  const isPosInvoice = ['restaurant', 'bakala', 'saloon', 'laundry', 'khayyat', 'boutique'].includes(invoice?.businessContext)
+  const isPosInvoice = ['restaurant', 'bakala', 'saloon', 'laundry', 'khayyat'].includes(invoice?.businessContext)
   const showThermal = isPosTenant || isPosInvoice
 
   const signMutation = useMutation({

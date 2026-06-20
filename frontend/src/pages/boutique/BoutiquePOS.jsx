@@ -24,7 +24,6 @@ import {
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import Money from '../../components/ui/Money'
-import BoutiqueThermalReceipt from '../../components/boutique/BoutiqueThermalReceipt'
 import InvoiceLivePreview from '../../components/invoices/InvoiceLivePreview'
 import { printInvoiceSnapshot, downloadInvoicePdf } from '../../lib/invoicePdf'
 
@@ -40,7 +39,6 @@ export default function BoutiquePOS() {
   const tenant = useSelector((state) => state.auth.tenant)
   const queryClient = useQueryClient()
   const navigate = useNavigate()
-  const printRef = useRef(null)
 
   // ─── UI State ───
   const [searchQuery, setSearchQuery] = useState('')
@@ -215,8 +213,6 @@ export default function BoutiquePOS() {
   const handlePrint = () => {
     if (receiptData?.invoice) {
       printA4Invoice(receiptData.invoice)
-    } else if (printRef.current) {
-      window.print()
     }
   }
 
@@ -715,21 +711,13 @@ export default function BoutiquePOS() {
               </div>
 
               <div className="border border-gray-200 rounded-lg p-2 print:border-none print:p-0 flex justify-center">
-                {receiptData?.invoice ? (
+                {receiptData?.invoice && (
                   <InvoiceLivePreview
                     invoice={receiptData.invoice}
                     tenant={tenant}
                     language={language}
                     bilingual
                     currencyRenderMode="icon"
-                  />
-                ) : (
-                  <BoutiqueThermalReceipt
-                    ref={printRef}
-                    rental={receiptData}
-                    tenant={tenant}
-                    invoice={receiptData?.invoice}
-                    qrDataUrl={receiptData?.qrDataUrl}
                   />
                 )}
               </div>
