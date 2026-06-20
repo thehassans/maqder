@@ -66,7 +66,7 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
   return (
     <div className="mx-auto max-w-5xl bg-white border rounded-[2rem] shadow-xl overflow-hidden font-sans">
       {/* Header */}
-      <div className={`border-b bg-white px-6 pb-6 ${invoice?.businessContext === 'boutique' && invoice?.boutiqueDetails?.transactionType === 'rental' ? 'pt-4' : 'pt-6'}`}>
+      <div className={`border-b bg-white px-6 pb-6 ${invoice?.businessContext === 'boutique' && invoice?.boutiqueDetails?.transactionType === 'rental' ? 'pt-2' : 'pt-6'}`}>
         <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
           <div className="flex-1">
             <div className="mb-2 flex items-center gap-4">
@@ -470,11 +470,9 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
         {/* Boutique Rental Terms — compact single-page */}
         {invoice?.businessContext === 'boutique' && invoice?.boutiqueDetails?.transactionType === 'rental' && (
           <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50/50 p-3 text-[11px] leading-tight print:break-inside-avoid font-bold">
-            <div className="flex items-center gap-2 mb-2" dir="rtl">
-              <h4 className="font-bold text-gray-900" dir="rtl">
-                شروط الإيجار / Rental Terms
-              </h4>
-              <Info className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+            <div className="flex justify-between items-center mb-2">
+              <h4 className="font-bold text-gray-900">Rental Terms</h4>
+              <h4 className="font-bold text-gray-900 font-['Almarai']" dir="rtl">شروط الإيجار</h4>
             </div>
             <div className="grid grid-cols-2 gap-4 items-start">
               <div dir="ltr">

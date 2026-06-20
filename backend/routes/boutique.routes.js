@@ -283,7 +283,7 @@ router.get('/rentals/:id', checkPermission('boutique', 'read'), async (req, res)
 router.post('/rentals', checkPermission('boutique', 'write'), async (req, res) => {
   try {
     const {
-      customerName, customerPhone, customerEmail, customerIdNumber,
+      customerName, customerNameAr, customerPhone, customerEmail, customerIdNumber,
       startDate, endDate, lineItems, staffNotes, transactionType = 'rental',
       discount = 0, vatApplicable = true
     } = req.body;
@@ -323,6 +323,7 @@ router.post('/rentals', checkPermission('boutique', 'write'), async (req, res) =
       tenantId: req.user.tenantId,
       rentalNumber,
       customerName,
+      customerNameAr,
       customerPhone,
       customerEmail,
       customerIdNumber,
