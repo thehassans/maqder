@@ -106,6 +106,8 @@ export async function generateBoutiqueThermalInvoice(rental, tenant, previousHas
 
     buyer: {
       name: rental.customerName,
+      nameAr: rental.customerNameAr || '',
+      contactPhone: rental.customerPhone || '',
       vatNumber: '', // B2C simplified: no buyer VAT
     },
 
