@@ -19,6 +19,7 @@ import {
   CheckCircle2,
   ArrowRight,
   Receipt,
+  AlertCircle,
 } from 'lucide-react'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
@@ -46,6 +47,7 @@ export default function BoutiquePOS() {
   const [showCheckout, setShowCheckout] = useState(false)
   const [showReceipt, setShowReceipt] = useState(false)
   const [receiptData, setReceiptData] = useState(null)
+  const [checkoutError, setCheckoutError] = useState(null)
   const [transactionMode, setTransactionMode] = useState('rental') // 'rental' | 'sale'
 
   // ─── Customer & Dates ───
@@ -190,7 +192,7 @@ export default function BoutiquePOS() {
     onError: (err) => {
       console.error('Checkout failed', err)
       const msg = err?.response?.data?.error || err?.message || label('Checkout failed', 'فشل إتمام الطلب')
-      alert(msg)
+      setCheckoutError(msg)
     },
   })
 
@@ -723,6 +725,47 @@ export default function BoutiquePOS() {
           )}
         </div>
       </div>
+
+      {/* ─── Checkout Error Modal ─── */}
+      <AnimatePresence>
+        {checkoutError && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-3xl shadow-2xl p-8 w-[440px] max-w-[90vw] text-center border border-rose-100"
+            >
+              <div className="w-16 h-16 rounded-full bg-rose-50 flex items-center justify-center mx-auto mb-5">
+                <AlertCircle className="w-8 h-8 text-rose-500" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">
+                {label('Unable to Complete', 'تعذر إتمام العملية')}
+              </h3>
+              <p className="text-sm text-gray-600 mb-1" dir="ltr">
+                {checkoutError}
+              </p>
+              <p className="text-sm text-gray-500 mb-6" dir="rtl">
+                {label(
+                  'Please check the selected dates or choose another dress.',
+                  'يرجى التحقق من التواريخ المختارة أو اختيار فستان آخر.'
+                )}
+              </p>
+              <button
+                onClick={() => setCheckoutError(null)}
+                className="w-full py-3 rounded-xl bg-gray-900 text-white font-bold hover:bg-gray-800 transition-colors"
+              >
+                {label('Got it', 'حسناً')}
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ─── Receipt Print Modal ─── */}
       <AnimatePresence>
