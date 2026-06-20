@@ -163,14 +163,58 @@ export default function BoutiqueProducts() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['boutique-products'] }),
   })
 
+  // Client-side image compression to reduce upload size/time
+  const compressImageFile = (file, { maxWidth = 1200, maxHeight = 1200, quality = 0.85, mimeType = 'image/jpeg' } = {}) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        const img = new Image()
+        img.onload = () => {
+          let { width, height } = img
+          if (width > maxWidth || height > maxHeight) {
+            const ratio = Math.min(maxWidth / width, maxHeight / height)
+            width = Math.round(width * ratio)
+            height = Math.round(height * ratio)
+          }
+          const canvas = document.createElement('canvas')
+          canvas.width = width
+          canvas.height = height
+          const ctx = canvas.getContext('2d')
+          ctx.fillStyle = '#ffffff'
+          ctx.fillRect(0, 0, width, height)
+          ctx.drawImage(img, 0, 0, width, height)
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) return reject(new Error('Canvas compression failed'))
+              const compressed = new File(
+                [blob],
+                file.name.replace(/\.[^.]+$/, '.jpg'),
+                { type: mimeType, lastModified: Date.now() }
+              )
+              resolve(compressed)
+            },
+            mimeType,
+            quality
+          )
+        }
+        img.onerror = () => reject(new Error('Failed to load image for compression'))
+        img.src = event.target.result
+      }
+      reader.onerror = () => reject(new Error('Failed to read image file'))
+      reader.readAsDataURL(file)
+    })
+  }
+
   // Image upload
   const handleFileChange = async (e) => {
     const file = e.target.files?.[0]
+    if (e.target) e.target.value = ''
     if (!file) return
     setUploading(true)
     try {
+      const compressedFile = await compressImageFile(file)
       const fd = new FormData()
-      fd.append('image', file)
+      fd.append('image', compressedFile)
       const res = await api.post('/boutique/upload-image', fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
         timeout: 120000,
