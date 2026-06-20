@@ -156,6 +156,24 @@ export default function BoutiquePOS() {
     return { lines, rentalSubtotal, totalDeposit, totalTax, grandTotal, discountAmount }
   })()
 
+  // ─── Auto-translate customer name between EN/AR ───
+  const autoTranslateName = async (text, fromLang) => {
+    if (!text || !text.trim()) return
+    const toLang = fromLang === 'ar' ? 'en' : 'ar'
+    const targetSetter = fromLang === 'ar' ? setCustomerName : setCustomerNameAr
+    try {
+      const res = await api.post('/ai/translate', {
+        text: text.trim(),
+        sourceLang: fromLang,
+        targetLang: toLang,
+      })
+      const translated = res.data?.translatedText
+      if (translated) targetSetter(translated)
+    } catch (err) {
+      console.warn('Auto-translate name failed', err)
+    }
+  }
+
   // ─── A4 PDF Print Helper (same template as trading invoices) ───
   const printA4Invoice = async (invoice) => {
     try {
@@ -558,6 +576,10 @@ export default function BoutiquePOS() {
                           <input
                             value={customerName}
                             onChange={(e) => setCustomerName(e.target.value)}
+                            onBlur={(e) => {
+                              const hasArabic = /[\u0600-\u06FF]/.test(e.target.value)
+                              if (!customerNameAr) autoTranslateName(e.target.value, hasArabic ? 'ar' : 'en')
+                            }}
                             className={`w-full ${isArabic ? 'pr-8 pl-2' : 'pl-8 pr-2'} py-2 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-rose-200 outline-none`}
                             placeholder={label('Customer name', 'اسم العميل')}
                           />
@@ -568,6 +590,10 @@ export default function BoutiquePOS() {
                         <input
                           value={customerNameAr}
                           onChange={(e) => setCustomerNameAr(e.target.value)}
+                          onBlur={(e) => {
+                            const hasArabic = /[\u0600-\u06FF]/.test(e.target.value)
+                            if (!customerName) autoTranslateName(e.target.value, hasArabic ? 'ar' : 'en')
+                          }}
                           className="w-full px-2 py-2 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-rose-200 outline-none text-right"
                           dir="rtl"
                           placeholder={label('اسم العميل', 'اسم العميل')}

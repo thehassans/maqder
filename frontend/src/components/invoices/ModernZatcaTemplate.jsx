@@ -473,21 +473,21 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
                 Rental Terms / شروط الإيجار
               </h4>
             </div>
-            <div className="grid md:grid-cols-2 gap-4 items-start">
-              <div className="text-left" dir="ltr">
-                <ol className="list-decimal list-inside space-y-1 text-gray-700" dir="ltr">
-                  <li dir="ltr">The down payment is non-refundable after the invoice is issued.</li>
-                  <li dir="ltr">In the event of a delay in returning the dress, the store has the right to double the rental amount by 500 Riyals for each day. In the event the dress is damaged, the security deposit will be deducted from the customer, and they must pay the remaining amount to cover the full value of the dress.</li>
-                  <li dir="ltr">Please bring the security deposit amount before taking the dress.</li>
-                  <li dir="ltr">The customer will be charged for the washing of the dress at 300 Riyals, washing of the train (tail) at 200 Riyals, and washing of the petticoat (jipka) at 200 Riyals.</li>
+            <div className="grid grid-cols-2 gap-4 items-start">
+              <div dir="ltr">
+                <ol className="list-decimal list-outside pl-4 space-y-1 text-gray-700 text-left">
+                  <li>The down payment is non-refundable after the invoice is issued.</li>
+                  <li>In the event of a delay in returning the dress, the store has the right to double the rental amount by 500 Riyals for each day. In the event the dress is damaged, the security deposit will be deducted from the customer, and they must pay the remaining amount to cover the full value of the dress.</li>
+                  <li>Please bring the security deposit amount before taking the dress.</li>
+                  <li>The customer will be charged for the washing of the dress at 300 Riyals, washing of the train (tail) at 200 Riyals, and washing of the petticoat (jipka) at 200 Riyals.</li>
                 </ol>
               </div>
-              <div className="text-right" dir="rtl">
-                <ol className="list-decimal list-inside space-y-1 text-gray-700 [direction:rtl]" dir="rtl">
-                  <li className="[direction:rtl]" dir="rtl">لا يتم إرجاع العربون بعد تحرير الفاتورة.</li>
-                  <li className="[direction:rtl]" dir="rtl">في حال تأخير الفستان يحق للمحل مضاعفة مبلغ الايجار في كل يوم ٥٠٠ ريال وفي حال تعرض الفستان للتلف يخصم على العميل التأمين ويكمل قيمة الفستان كامل.</li>
-                  <li className="[direction:rtl]" dir="rtl">يرجى إحضار مبلغ التأمين قبل أخذ الفستان.</li>
-                  <li className="[direction:rtl]" dir="rtl">يخصم على العميل غسيل الفستان ٣٠٠ ريال، غسيل ذيل ٢٠٠ ريال، غسيل جيبكا ٢٠٠ ريال.</li>
+              <div dir="rtl">
+                <ol className="list-decimal list-outside pr-4 space-y-1 text-gray-700 text-right [direction:rtl]">
+                  <li>لا يتم إرجاع العربون بعد تحرير الفاتورة.</li>
+                  <li>في حال تأخير الفستان يحق للمحل مضاعفة مبلغ الايجار في كل يوم ٥٠٠ ريال وفي حال تعرض الفستان للتلف يخصم على العميل التأمين ويكمل قيمة الفستان كامل.</li>
+                  <li>يرجى إحضار مبلغ التأمين قبل أخذ الفستان.</li>
+                  <li>يخصم على العميل غسيل الفستان ٣٠٠ ريال، غسيل ذيل ٢٠٠ ريال، غسيل جيبكا ٢٠٠ ريال.</li>
                 </ol>
               </div>
             </div>
