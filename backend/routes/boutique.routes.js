@@ -287,7 +287,9 @@ router.post('/rentals', checkPermission('boutique', 'write'), async (req, res) =
       customerIdNumber,
       startDate, endDate, lineItems, staffNotes, transactionType = 'rental',
       discount = 0, vatApplicable = true,
-      paymentStatus = 'paid'
+      paymentMethod = 'cash',
+      amountPaid = 0,
+      securityDeposit
     } = req.body;
 
     const isSale = transactionType === 'sale';
@@ -312,7 +314,13 @@ router.post('/rentals', checkPermission('boutique', 'write'), async (req, res) =
     totals.discount = appliedDiscount;
     const taxableBase = Math.max(0, totals.rentalSubtotal - appliedDiscount);
     totals.totalTax = Math.round(taxableBase * (vatRate / 100) * 100) / 100;
+    // Allow manual override of security deposit from the POS
+    if (securityDeposit !== undefined && securityDeposit !== null) {
+      totals.totalDeposit = Math.max(0, Number(securityDeposit) || 0);
+    }
     totals.grandTotal = Math.round((taxableBase + totals.totalTax + totals.totalDeposit) * 100) / 100;
+    const paidAmount = Math.max(0, Number(amountPaid) || 0);
+    const derivedPaymentStatus = paidAmount >= totals.grandTotal ? 'paid' : 'pending';
 
     // 4. Generate rental number
     const count = await BoutiqueRental.countDocuments(req.tenantFilter);
@@ -330,7 +338,9 @@ router.post('/rentals', checkPermission('boutique', 'write'), async (req, res) =
       customerEmail,
       customerIdType,
       customerIdNumber,
-      paymentStatus,
+      paymentMethod,
+      paymentStatus: derivedPaymentStatus,
+      amountPaid: paidAmount,
       transactionType,
       startDate: isSale ? now : new Date(startDate),
       endDate: isSale ? now : new Date(endDate),

@@ -56,7 +56,9 @@ export default function BoutiquePOS() {
   const [customerPhone, setCustomerPhone] = useState('')
   const [customerId, setCustomerId] = useState('')
   const [customerIdType, setCustomerIdType] = useState('iqama')
-  const [paymentStatus, setPaymentStatus] = useState('paid')
+  const [paymentMethod, setPaymentMethod] = useState('cash')
+  const [amountPaid, setAmountPaid] = useState(0)
+  const [securityDepositAmount, setSecurityDepositAmount] = useState(0)
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [discountAmount, setDiscountAmount] = useState(0)
@@ -151,12 +153,27 @@ export default function BoutiquePOS() {
       return { ...item, rentalSubtotal, deposit }
     })
     const rentalSubtotal = lines.reduce((s, l) => s + l.rentalSubtotal, 0)
-    const totalDeposit = lines.reduce((s, l) => s + l.deposit, 0)
+    const itemTotalDeposit = lines.reduce((s, l) => s + l.deposit, 0)
+    const totalDeposit = securityDepositAmount > 0 ? securityDepositAmount : itemTotalDeposit
     const taxableBase = Math.max(0, rentalSubtotal - discountAmount)
     const totalTax = vatApplicable ? Math.round(taxableBase * 0.15 * 100) / 100 : 0
     const grandTotal = Math.round((taxableBase + totalTax + totalDeposit) * 100) / 100
-    return { lines, rentalSubtotal, totalDeposit, totalTax, grandTotal, discountAmount }
+    const pendingAmount = Math.max(0, Math.round((grandTotal - (amountPaid || 0)) * 100) / 100)
+    return { lines, rentalSubtotal, itemTotalDeposit, totalDeposit, totalTax, grandTotal, pendingAmount, discountAmount }
   })()
+
+  // Auto-set defaults when totals change
+  useEffect(() => {
+    if (amountPaid === 0 && cartTotals.grandTotal > 0) {
+      setAmountPaid(cartTotals.grandTotal)
+    }
+  }, [cartTotals.grandTotal])
+
+  useEffect(() => {
+    if (securityDepositAmount === 0 && cartTotals.itemTotalDeposit > 0 && transactionMode !== 'sale') {
+      setSecurityDepositAmount(cartTotals.itemTotalDeposit)
+    }
+  }, [cartTotals.itemTotalDeposit, transactionMode])
 
   // ─── Auto-translate customer name between EN/AR ───
   const autoTranslateName = async (text, fromLang) => {
@@ -233,7 +250,9 @@ export default function BoutiquePOS() {
       customerPhone,
       customerIdNumber: customerId,
       customerIdType,
-      paymentStatus,
+      paymentMethod,
+      amountPaid,
+      securityDeposit: securityDepositAmount,
       transactionType: transactionMode,
       discount: discountAmount || 0,
       vatApplicable,
@@ -638,15 +657,31 @@ export default function BoutiquePOS() {
                         </div>
                       )}
                       <div>
-                        <label className="text-[10px] text-gray-500 mb-0.5 block">{label('Payment Status', 'حالة الدفع')}</label>
+                        <label className="text-[10px] text-gray-500 mb-0.5 block">{label('Payment Method', 'طريقة الدفع')}</label>
                         <select
-                          value={paymentStatus}
-                          onChange={(e) => setPaymentStatus(e.target.value)}
+                          value={paymentMethod}
+                          onChange={(e) => setPaymentMethod(e.target.value)}
                           className="w-full px-2 py-2 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-rose-200 outline-none bg-white"
                         >
-                          <option value="paid">{label('Paid', 'مدفوع')}</option>
-                          <option value="pending">{label('Pending', 'معلق')}</option>
+                          <option value="cash">{label('Cash', 'نقدي')}</option>
+                          <option value="card">{label('Card', 'بطاقة')}</option>
                         </select>
+                      </div>
+                      <div>
+                        <label className="text-[10px] text-gray-500 mb-0.5 block">{label('Amount Paid', 'المبلغ المدفوع')}</label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={amountPaid || ''}
+                          onChange={(e) => setAmountPaid(Math.max(0, Number(e.target.value)))}
+                          className="w-full px-2 py-2 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-rose-200 outline-none"
+                        />
+                      </div>
+                      <div className="flex justify-between items-center text-[10px] text-gray-500">
+                        <span>{label('Pending Amount', 'المبلغ المتبقي')}</span>
+                        <span className="font-semibold text-rose-600">
+                          <Money value={cartTotals.pendingAmount} />
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -721,6 +756,20 @@ export default function BoutiquePOS() {
                     </button>
                   </div>
 
+                  {/* Security Deposit Input */}
+                  {transactionMode !== 'sale' && (
+                    <div>
+                      <label className="text-[10px] text-gray-500 mb-0.5 block">{label('Security Deposit', 'تأمين')}</label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={securityDepositAmount || ''}
+                        onChange={(e) => setSecurityDepositAmount(Math.max(0, Number(e.target.value)))}
+                        className="w-full px-2 py-2 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-rose-200 outline-none"
+                      />
+                    </div>
+                  )}
+
                   {/* Summary */}
                   <div className="bg-gray-50 rounded-xl p-3 space-y-1.5 text-xs">
                     <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
@@ -752,6 +801,16 @@ export default function BoutiquePOS() {
                       <span>{label('Grand Total', 'الإجمالي')}</span>
                       <Money value={cartTotals.grandTotal} />
                     </div>
+                    <div className="flex justify-between text-gray-500 pt-1 border-t border-gray-200">
+                      <span>{label('Amount Paid', 'المبلغ المدفوع')}</span>
+                      <Money value={amountPaid || 0} />
+                    </div>
+                    {cartTotals.pendingAmount > 0 && (
+                      <div className="flex justify-between text-rose-600">
+                        <span>{label('Pending Amount', 'المبلغ المتبقي')}</span>
+                        <Money value={cartTotals.pendingAmount} />
+                      </div>
+                    )}
                   </div>
 
                   <button

@@ -286,16 +286,30 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
                   </div>
                   <hr className="border-gray-200" />
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-500">Payment Status:</span>
-                    <span className={`font-semibold ${invoice.boutiqueDetails.paymentStatus === 'pending' ? 'text-amber-600' : 'text-emerald-600'}`}>
-                      {invoice.boutiqueDetails.paymentStatus === 'pending' ? 'Pending' : 'Paid'}
-                    </span>
+                    <span className="text-gray-500">Payment Method:</span>
+                    <span className="font-semibold text-gray-900 capitalize">{invoice.boutiqueDetails.paymentMethod === 'card' ? 'Card' : 'Cash'}</span>
                     {bilingual && (
-                      <span className={`font-semibold ${invoice.boutiqueDetails.paymentStatus === 'pending' ? 'text-amber-600' : 'text-emerald-600'}`} dir="rtl">
-                        {invoice.boutiqueDetails.paymentStatus === 'pending' ? 'معلق' : 'مدفوع'}:حالة الدفع
+                      <span className="font-semibold text-gray-900" dir="rtl">
+                        {invoice.boutiqueDetails.paymentMethod === 'card' ? 'بطاقة' : 'نقدي'}:طريقة الدفع
                       </span>
                     )}
                   </div>
+                  <hr className="border-gray-200" />
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">Amount Paid:</span>
+                    <span className="font-semibold text-gray-900">{renderMoney(toNumber(invoice.boutiqueDetails.amountPaid))}</span>
+                    {bilingual && <span className="text-gray-500" dir="rtl">:المبلغ المدفوع</span>}
+                  </div>
+                  {toNumber(invoice.boutiqueDetails.amountPaid) < toNumber(invoice.grandTotal) && (
+                    <>
+                      <hr className="border-gray-200" />
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-500">Pending Amount:</span>
+                        <span className="font-semibold text-rose-600">{renderMoney(toNumber(invoice.grandTotal) - toNumber(invoice.boutiqueDetails.amountPaid))}</span>
+                        {bilingual && <span className="text-gray-500" dir="rtl">:المبلغ المتبقي</span>}
+                      </div>
+                    </>
+                  )}
                 </>
               )}
             </div>
@@ -505,18 +519,20 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
             <div className="grid grid-cols-2 gap-4 items-start">
               <div dir="ltr">
                 <div className="space-y-1 text-left">
+                  <div className="text-gray-700">To protect the item from damage, the customer must adhere to the following:</div>
                   <div className="flex gap-2"><span className="shrink-0 w-4">1.</span><span>The down payment is non-refundable after the invoice is issued.</span></div>
                   <div className="flex gap-2"><span className="shrink-0 w-4">2.</span><span>In the event of a delay in returning the dress, the store has the right to double the rental amount by 500 Riyals for each day. In the event the dress is damaged, the security deposit will be deducted from the customer, and they must pay the remaining amount to cover the full value of the dress.</span></div>
                   <div className="flex gap-2"><span className="shrink-0 w-4">3.</span><span>Please bring the security deposit amount before taking the dress.</span></div>
-                  <div className="flex gap-2"><span className="shrink-0 w-4">4.</span><span>The customer will be charged for the washing of the dress at 300 Riyals, washing of the train (tail) at 200 Riyals, and washing of the petticoat (jipka) at 200 Riyals.</span></div>
+                  <div className="flex gap-2"><span className="shrink-0 w-4">4.</span><span>The customer will be charged 200 Riyals for washing the Maleka (Engagement) dress, and 200 Riyals for washing the Meel (Train).</span></div>
                 </div>
               </div>
               <div dir="rtl" className="font-['Almarai']">
                 <div className="space-y-1 pr-0 [direction:rtl]">
+                  <div className="text-right text-gray-700">حفاظاً على السلعة من التلف يرجى التزام العميل بالآتي:</div>
                   <div className="flex gap-2 text-right"><span className="shrink-0 w-4">١.</span><span>لا يتم إرجاع العربون بعد تحرير الفاتورة.</span></div>
-                  <div className="flex gap-2 text-right"><span className="shrink-0 w-4">٢.</span><span>في حال تأخير الفستان يحق للمحل مضاعفة مبلغ الايجار في كل يوم ٥٠٠ ريال وفي حال تعرض الفستان للتلف يخصم على العميل التأمين ويكمل قيمة الفستان كامل.</span></div>
+                  <div className="flex gap-2 text-right"><span className="shrink-0 w-4">٢.</span><span>في حال تأخير الفستان يحق للمحل مضاعفة مبلغ الايجار في كل يوم ٥٠٠ ريال، وفي حال تعرض الفستان للتلف يخصم على العميل التأمين ويكمل قيمة الفستان كامل.</span></div>
                   <div className="flex gap-2 text-right"><span className="shrink-0 w-4">٣.</span><span>يرجى إحضار مبلغ التأمين قبل أخذ الفستان.</span></div>
-                  <div className="flex gap-2 text-right"><span className="shrink-0 w-4">٤.</span><span>يخصم على العميل غسيل الفستان ٣٠٠ ريال، غسيل ذيل ٢٠٠ ريال، غسيل جيبكا ٢٠٠ ريال.</span></div>
+                  <div className="flex gap-2 text-right"><span className="shrink-0 w-4">٤.</span><span>يخصم على العميل قيمة غسيل فستان الملكة ٢٠٠ ريال، وغسيل الميل ٢٠٠ ريال.</span></div>
                 </div>
               </div>
             </div>

@@ -150,6 +150,7 @@ export async function generateBoutiqueThermalInvoice(rental, tenant, previousHas
       amountRefunded: rental.amountRefunded,
       depositStatus: rental.depositStatus,
       paymentStatus: rental.paymentStatus || 'paid',
+      paymentMethod: rental.paymentMethod || 'cash',
       transactionType: rental.transactionType,
     },
   };
