@@ -56,6 +56,7 @@ export default function BoutiquePOS() {
   const [customerPhone, setCustomerPhone] = useState('')
   const [customerId, setCustomerId] = useState('')
   const [customerIdType, setCustomerIdType] = useState('iqama')
+  const [paymentStatus, setPaymentStatus] = useState('paid')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [discountAmount, setDiscountAmount] = useState(0)
@@ -232,6 +233,7 @@ export default function BoutiquePOS() {
       customerPhone,
       customerIdNumber: customerId,
       customerIdType,
+      paymentStatus,
       transactionType: transactionMode,
       discount: discountAmount || 0,
       vatApplicable,
@@ -635,6 +637,17 @@ export default function BoutiquePOS() {
                           </div>
                         </div>
                       )}
+                      <div>
+                        <label className="text-[10px] text-gray-500 mb-0.5 block">{label('Payment Status', 'حالة الدفع')}</label>
+                        <select
+                          value={paymentStatus}
+                          onChange={(e) => setPaymentStatus(e.target.value)}
+                          className="w-full px-2 py-2 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-rose-200 outline-none bg-white"
+                        >
+                          <option value="paid">{label('Paid', 'مدفوع')}</option>
+                          <option value="pending">{label('Pending', 'معلق')}</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
 

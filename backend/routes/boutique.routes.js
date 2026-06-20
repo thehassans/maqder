@@ -286,7 +286,8 @@ router.post('/rentals', checkPermission('boutique', 'write'), async (req, res) =
       customerName, customerNameAr, customerPhone, customerEmail, customerIdType,
       customerIdNumber,
       startDate, endDate, lineItems, staffNotes, transactionType = 'rental',
-      discount = 0, vatApplicable = true
+      discount = 0, vatApplicable = true,
+      paymentStatus = 'paid'
     } = req.body;
 
     const isSale = transactionType === 'sale';
@@ -329,6 +330,7 @@ router.post('/rentals', checkPermission('boutique', 'write'), async (req, res) =
       customerEmail,
       customerIdType,
       customerIdNumber,
+      paymentStatus,
       transactionType,
       startDate: isSale ? now : new Date(startDate),
       endDate: isSale ? now : new Date(endDate),

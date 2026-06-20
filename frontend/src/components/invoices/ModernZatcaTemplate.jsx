@@ -64,7 +64,7 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
   const isQuotation = documentType === 'quotation'
 
   return (
-    <div className="mx-auto max-w-5xl bg-white border rounded-[2rem] shadow-xl overflow-hidden font-sans">
+    <div dir="ltr" className="mx-auto max-w-5xl bg-white border rounded-[2rem] shadow-xl overflow-hidden font-sans">
       {/* Header */}
       <div className={`border-b bg-white px-6 pb-6 ${invoice?.businessContext === 'boutique' && invoice?.boutiqueDetails?.transactionType === 'rental' ? 'pt-2' : 'pt-6'}`}>
         <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
@@ -283,6 +283,18 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
                     <span className="text-gray-500">Security Deposit:</span>
                     <span className="font-semibold text-gray-900">{renderMoney(toNumber(invoice.boutiqueDetails.totalDeposit))}</span>
                     {bilingual && <span className="text-gray-500" dir="rtl">:تأمين</span>}
+                  </div>
+                  <hr className="border-gray-200" />
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">Payment Status:</span>
+                    <span className={`font-semibold ${invoice.boutiqueDetails.paymentStatus === 'pending' ? 'text-amber-600' : 'text-emerald-600'}`}>
+                      {invoice.boutiqueDetails.paymentStatus === 'pending' ? 'Pending' : 'Paid'}
+                    </span>
+                    {bilingual && (
+                      <span className={`font-semibold ${invoice.boutiqueDetails.paymentStatus === 'pending' ? 'text-amber-600' : 'text-emerald-600'}`} dir="rtl">
+                        {invoice.boutiqueDetails.paymentStatus === 'pending' ? 'معلق' : 'مدفوع'}:حالة الدفع
+                      </span>
+                    )}
                   </div>
                 </>
               )}

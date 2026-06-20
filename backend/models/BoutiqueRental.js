@@ -89,6 +89,7 @@ const boutiqueRentalSchema = new mongoose.Schema({
   grandTotal: { type: Number, required: true, default: 0 },       // rentalSubtotal + fees + tax
 
   // --- Payments ---
+  paymentStatus: { type: String, enum: ['paid', 'pending'], default: 'paid' },
   payments: { type: [paymentSnapshotSchema], default: [] },
   amountPaid: { type: Number, default: 0 },
   amountRefunded: { type: Number, default: 0 },               // Deposit refunds (full or partial)
