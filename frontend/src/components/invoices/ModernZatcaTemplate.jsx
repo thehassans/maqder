@@ -492,19 +492,19 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
             </div>
             <div className="grid grid-cols-2 gap-4 items-start">
               <div dir="ltr">
-                <ol className="list-decimal list-outside pl-4 space-y-1 text-gray-700 text-left">
-                  <li>The down payment is non-refundable after the invoice is issued.</li>
-                  <li>In the event of a delay in returning the dress, the store has the right to double the rental amount by 500 Riyals for each day. In the event the dress is damaged, the security deposit will be deducted from the customer, and they must pay the remaining amount to cover the full value of the dress.</li>
-                  <li>Please bring the security deposit amount before taking the dress.</li>
-                  <li>The customer will be charged for the washing of the dress at 300 Riyals, washing of the train (tail) at 200 Riyals, and washing of the petticoat (jipka) at 200 Riyals.</li>
-                </ol>
+                <div className="space-y-1 text-left">
+                  <div className="flex gap-2"><span className="shrink-0 w-4">1.</span><span>The down payment is non-refundable after the invoice is issued.</span></div>
+                  <div className="flex gap-2"><span className="shrink-0 w-4">2.</span><span>In the event of a delay in returning the dress, the store has the right to double the rental amount by 500 Riyals for each day. In the event the dress is damaged, the security deposit will be deducted from the customer, and they must pay the remaining amount to cover the full value of the dress.</span></div>
+                  <div className="flex gap-2"><span className="shrink-0 w-4">3.</span><span>Please bring the security deposit amount before taking the dress.</span></div>
+                  <div className="flex gap-2"><span className="shrink-0 w-4">4.</span><span>The customer will be charged for the washing of the dress at 300 Riyals, washing of the train (tail) at 200 Riyals, and washing of the petticoat (jipka) at 200 Riyals.</span></div>
+                </div>
               </div>
               <div dir="rtl" className="font-['Almarai']">
-                <div className="space-y-1 pr-4 [direction:rtl]">
-                  <div className="flex gap-2 text-right"><span className="shrink-0">١.</span><span>لا يتم إرجاع العربون بعد تحرير الفاتورة.</span></div>
-                  <div className="flex gap-2 text-right"><span className="shrink-0">٢.</span><span>في حال تأخير الفستان يحق للمحل مضاعفة مبلغ الايجار في كل يوم ٥٠٠ ريال وفي حال تعرض الفستان للتلف يخصم على العميل التأمين ويكمل قيمة الفستان كامل.</span></div>
-                  <div className="flex gap-2 text-right"><span className="shrink-0">٣.</span><span>يرجى إحضار مبلغ التأمين قبل أخذ الفستان.</span></div>
-                  <div className="flex gap-2 text-right"><span className="shrink-0">٤.</span><span>يخصم على العميل غسيل الفستان ٣٠٠ ريال، غسيل ذيل ٢٠٠ ريال، غسيل جيبكا ٢٠٠ ريال.</span></div>
+                <div className="space-y-1 pr-0 [direction:rtl]">
+                  <div className="flex gap-2 text-right"><span className="shrink-0 w-4">١.</span><span>لا يتم إرجاع العربون بعد تحرير الفاتورة.</span></div>
+                  <div className="flex gap-2 text-right"><span className="shrink-0 w-4">٢.</span><span>في حال تأخير الفستان يحق للمحل مضاعفة مبلغ الايجار في كل يوم ٥٠٠ ريال وفي حال تعرض الفستان للتلف يخصم على العميل التأمين ويكمل قيمة الفستان كامل.</span></div>
+                  <div className="flex gap-2 text-right"><span className="shrink-0 w-4">٣.</span><span>يرجى إحضار مبلغ التأمين قبل أخذ الفستان.</span></div>
+                  <div className="flex gap-2 text-right"><span className="shrink-0 w-4">٤.</span><span>يخصم على العميل غسيل الفستان ٣٠٠ ريال، غسيل ذيل ٢٠٠ ريال، غسيل جيبكا ٢٠٠ ريال.</span></div>
                 </div>
               </div>
             </div>
