@@ -90,10 +90,10 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
                 <img
                   src={logoSrc}
                   alt="Logo"
-                  className={`w-auto object-contain ${invoice?.businessContext === 'boutique' && invoice?.boutiqueDetails?.transactionType === 'rental' ? 'h-32' : 'h-16'}`}
+                  className={`w-auto object-contain ${invoice?.businessContext === 'boutique' && invoice?.boutiqueDetails?.transactionType === 'rental' ? 'h-24' : 'h-16'}`}
                 />
               ) : (
-                <Building2 className={`text-primary-600 ${invoice?.businessContext === 'boutique' && invoice?.boutiqueDetails?.transactionType === 'rental' ? 'h-16 w-16' : 'h-8 w-8'}`} />
+                <Building2 className={`text-primary-600 ${invoice?.businessContext === 'boutique' && invoice?.boutiqueDetails?.transactionType === 'rental' ? 'h-12 w-12' : 'h-8 w-8'}`} />
               )}
               <h2 className="text-2xl font-bold text-gray-900">
                 {sellerName}
@@ -181,19 +181,19 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
 
       <div className="p-6">
         {/* Bill To & Invoice Details Grid */}
-        <div className="mb-6 grid gap-6 md:grid-cols-2">
-          <div className="rounded-xl border bg-gray-50 p-5">
-            <h3 className="mb-4 flex items-center gap-2 font-semibold text-gray-900 border-b pb-2">
+        <div className="mb-4 grid gap-4 md:grid-cols-2">
+          <div className="rounded-xl border bg-gray-50 p-3">
+            <h3 className="mb-2 flex items-center gap-2 font-semibold text-gray-900 border-b pb-1 text-sm">
               <User className="h-4 w-4 text-primary-600" />
               Bill To / الفاتورة إلى
             </h3>
             <div className="space-y-1 text-sm text-gray-700">
-              <p className="font-bold text-gray-900 text-lg">{buyerName}</p>
+              <p className="font-bold text-gray-900 text-base">{buyerName}</p>
               {bilingual && buyerNameAr && (
                 <p className="font-bold text-gray-500" dir="rtl">{buyerNameAr}</p>
               )}
-              
-              <div className="mt-3 space-y-2">
+
+              <div className="mt-2 space-y-1.5">
                 {(invoice?.buyer?.address?.street || invoice?.buyer?.address?.city) && (
                   <div className="flex flex-col gap-1">
                     <p>{[invoice.buyer.address.street, invoice.buyer.address.district, invoice.buyer.address.city, invoice.buyer.address.country].filter(Boolean).join(', ')}</p>
@@ -242,12 +242,12 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
             </div>
           </div>
 
-          <div className="rounded-xl border bg-gray-50 p-5">
-            <h3 className="mb-4 flex items-center gap-2 font-semibold text-gray-900 border-b pb-2">
+          <div className="rounded-xl border bg-gray-50 p-3">
+            <h3 className="mb-2 flex items-center gap-2 font-semibold text-gray-900 border-b pb-1 text-sm">
               <Calendar className="h-4 w-4 text-primary-600" />
               Details / التفاصيل
             </h3>
-            <div className="space-y-3 text-sm">
+            <div className="space-y-2 text-sm">
               <div className="flex justify-between items-center">
                 <span className="text-gray-500">No:</span>
                 <span className="font-mono font-bold text-gray-900">{documentNumber}</span>
@@ -337,45 +337,45 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
         </div>
 
         {/* Table */}
-        <div className="mb-6 overflow-hidden rounded-xl border border-gray-200">
+        <div className="mb-4 overflow-hidden rounded-xl border border-gray-200">
           <table className="min-w-full divide-y divide-gray-200 text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-start font-semibold text-gray-900">#</th>
-                <th className="px-4 py-3 text-start font-semibold text-gray-900">
+                <th className="px-3 py-2 text-start font-semibold text-gray-900">#</th>
+                <th className="px-3 py-2 text-start font-semibold text-gray-900">
                   <div className="flex flex-col">
                     <span>Description</span>
                     {bilingual && <span className="text-xs text-gray-500" dir="rtl">الوصف</span>}
                   </div>
                 </th>
                 {invoice?.businessContext === 'boutique' && invoice?.boutiqueDetails?.transactionType === 'rental' ? (
-                  <th className="px-4 py-3 text-center font-semibold text-gray-900">
+                  <th className="px-3 py-2 text-center font-semibold text-gray-900">
                     <div className="flex flex-col">
                       <span>Days</span>
                       {bilingual && <span className="text-xs text-gray-500" dir="rtl">الأيام</span>}
                     </div>
                   </th>
                 ) : (
-                  <th className="px-4 py-3 text-center font-semibold text-gray-900">
+                  <th className="px-3 py-2 text-center font-semibold text-gray-900">
                     <div className="flex flex-col">
                       <span>Qty</span>
                       {bilingual && <span className="text-xs text-gray-500" dir="rtl">الكمية</span>}
                     </div>
                   </th>
                 )}
-                <th className="px-4 py-3 text-right font-semibold text-gray-900">
+                <th className="px-3 py-2 text-right font-semibold text-gray-900">
                   <div className="flex flex-col items-end">
                     <span>Unit Price</span>
                     {bilingual && <span className="text-xs text-gray-500" dir="rtl">سعر الوحدة</span>}
                   </div>
                 </th>
-                <th className="px-4 py-3 text-right font-semibold text-gray-900">
+                <th className="px-3 py-2 text-right font-semibold text-gray-900">
                   <div className="flex flex-col items-end">
                     <span>Tax</span>
                     {bilingual && <span className="text-xs text-gray-500" dir="rtl">الضريبة</span>}
                   </div>
                 </th>
-                <th className="px-4 py-3 text-right font-semibold text-gray-900">
+                <th className="px-3 py-2 text-right font-semibold text-gray-900">
                   <div className="flex flex-col items-end">
                     <span>Total</span>
                     {bilingual && <span className="text-xs text-gray-500" dir="rtl">المجموع</span>}
@@ -430,28 +430,34 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
         </div>
 
         {/* Footer Summary & Notes */}
-        <div className="flex flex-col gap-6 md:flex-row">
-          <div className="flex-1 rounded-xl border bg-gray-50 p-5">
-            <h4 className="mb-3 font-semibold text-gray-900 border-b pb-2">Notes / ملاحظات</h4>
-            <p className="text-sm text-gray-600 whitespace-pre-wrap">{invoice?.notes || '—'}</p>
-            {bilingual && invoice?.notesAr && (
-              <p className="mt-2 text-sm text-gray-600 whitespace-pre-wrap" dir="rtl">{invoice?.notesAr}</p>
-            )}
-            
-            {invoice?.paymentMethod && (
-              <>
-                <hr className="my-4 border-gray-200" />
-                <div className="flex items-center gap-2 text-sm">
-                  <CreditCard className="h-4 w-4 text-gray-400" />
-                  <span className="font-semibold text-gray-900">Payment Method:</span>
-                  <span className="text-gray-700">{invoice.paymentMethod}</span>
-                </div>
-              </>
-            )}
-          </div>
+        <div className="flex flex-col gap-4 md:flex-row">
+          {(invoice?.notes || invoice?.notesAr || invoice?.paymentMethod) && (
+            <div className="flex-1 rounded-xl border bg-gray-50 p-3">
+              {(invoice?.notes || invoice?.notesAr) && (
+                <>
+                  <h4 className="mb-2 font-semibold text-gray-900 border-b pb-1 text-sm">Notes / ملاحظات</h4>
+                  <p className="text-sm text-gray-600 whitespace-pre-wrap">{invoice?.notes || '—'}</p>
+                  {bilingual && invoice?.notesAr && (
+                    <p className="mt-2 text-sm text-gray-600 whitespace-pre-wrap" dir="rtl">{invoice?.notesAr}</p>
+                  )}
+                </>
+              )}
 
-          <div className="w-full rounded-xl border bg-gray-50 p-5 md:w-80">
-            <div className="space-y-4">
+              {invoice?.paymentMethod && (
+                <>
+                  {(invoice?.notes || invoice?.notesAr) && <hr className="my-3 border-gray-200" />}
+                  <div className="flex items-center gap-2 text-sm">
+                    <CreditCard className="h-4 w-4 text-gray-400" />
+                    <span className="font-semibold text-gray-900">Payment Method:</span>
+                    <span className="text-gray-700">{invoice.paymentMethod}</span>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          <div className="w-full rounded-xl border bg-gray-50 p-3 md:w-80">
+            <div className="space-y-3">
               <div className="flex justify-between text-sm">
                 <div className="flex flex-col">
                   <span className="text-gray-500">Subtotal</span>
@@ -489,7 +495,7 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
                 </>
               )}
               
-              <div className="flex justify-between rounded-lg bg-primary-100/50 p-4 border border-primary-100">
+              <div className="flex justify-between rounded-lg bg-primary-100/50 p-3 border border-primary-100">
                 <div className="flex flex-col">
                   <span className="font-bold text-gray-900">Total</span>
                   {bilingual && <span className="text-xs font-semibold text-gray-600" dir="rtl">الإجمالي</span>}
@@ -503,12 +509,12 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
         </div>
 
         {/* Amount In Words & ZATCA QR */}
-        <div className="mt-6 flex flex-col md:flex-row gap-6">
-          <div className="flex-1 rounded-xl border border-dashed border-gray-300 bg-gray-50/50 p-5">
+        <div className="mt-4 flex flex-col md:flex-row gap-4">
+          <div className="flex-1 rounded-xl border border-dashed border-gray-300 bg-gray-50/50 p-3">
             <div className="flex items-start gap-3">
               <Hash className="mt-0.5 h-5 w-5 shrink-0 text-gray-400" />
               <div className="flex-1 text-sm text-gray-600">
-                <p className="mb-2 font-semibold text-gray-900">
+                <p className="mb-1 font-semibold text-gray-900">
                   Amount in Words / المبلغ كتابةً
                 </p>
                 <p className="font-medium text-gray-800">{getAmountInWords(totals.grandTotal, currency, 'en')}</p>
@@ -520,39 +526,41 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
               </div>
             </div>
           </div>
-          
+
           {!isQuotation && (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50/50 p-5 w-full md:w-64">
-              <QRCodeSVG value={qrValue} size={110} bgColor="transparent" fgColor="#111827" />
-              <p className="mt-3 text-xs text-center text-gray-500">ZATCA Compliant QR</p>
+            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50/50 p-3 w-full md:w-56">
+              <QRCodeSVG value={qrValue} size={100} bgColor="transparent" fgColor="#111827" />
+              <p className="mt-2 text-xs text-center text-gray-500">ZATCA Compliant QR</p>
             </div>
           )}
         </div>
 
         {/* Boutique Rental Terms — compact single-page */}
         {invoice?.businessContext === 'boutique' && invoice?.boutiqueDetails?.transactionType === 'rental' && (
-          <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50/50 p-3 text-[11px] leading-tight print:break-inside-avoid font-bold">
-            <div className="flex justify-between items-center mb-2">
+          <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50/50 p-2 text-[10px] leading-[1.25] print:break-inside-avoid font-bold">
+            <div className="flex justify-between items-center mb-1">
               <h4 className="font-bold text-gray-900">Rental Terms</h4>
               <h4 className="font-bold text-gray-900 font-['Almarai']" dir="rtl">شروط الإيجار</h4>
             </div>
-            <div className="grid grid-cols-2 gap-4 items-start">
+            <div className="text-[9px] text-gray-700 mb-1">
+              <span className="block">To protect the item from damage, the customer must adhere to the following:</span>
+              <span className="block font-['Almarai']" dir="rtl">حفاظاً على السلعة من التلف يرجى التزام العميل بالآتي:</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3 items-start">
               <div dir="ltr">
-                <div className="space-y-1 text-left">
-                  <div className="text-gray-700">To protect the item from damage, the customer must adhere to the following:</div>
-                  <div className="flex gap-2"><span className="shrink-0 w-4">1.</span><span>The down payment is non-refundable after the invoice is issued.</span></div>
-                  <div className="flex gap-2"><span className="shrink-0 w-4">2.</span><span>In the event of a delay in returning the dress, the store has the right to double the rental amount by 500 Riyals for each day. In the event the dress is damaged, the security deposit will be deducted from the customer, and they must pay the remaining amount to cover the full value of the dress.</span></div>
-                  <div className="flex gap-2"><span className="shrink-0 w-4">3.</span><span>Please bring the security deposit amount before taking the dress.</span></div>
-                  <div className="flex gap-2"><span className="shrink-0 w-4">4.</span><span>The customer will be charged 200 Riyals for washing the Maleka (Engagement) dress, and 200 Riyals for washing the Meel (Train).</span></div>
+                <div className="space-y-0.5 text-left">
+                  <div className="flex gap-1.5"><span className="shrink-0 w-3">1.</span><span>The down payment is non-refundable after the invoice is issued.</span></div>
+                  <div className="flex gap-1.5"><span className="shrink-0 w-3">2.</span><span>In the event of a delay in returning the dress, the store has the right to double the rental amount by 500 Riyals for each day. In the event the dress is damaged, the security deposit will be deducted from the customer, and they must pay the remaining amount to cover the full value of the dress.</span></div>
+                  <div className="flex gap-1.5"><span className="shrink-0 w-3">3.</span><span>Please bring the security deposit amount before taking the dress.</span></div>
+                  <div className="flex gap-1.5"><span className="shrink-0 w-3">4.</span><span>The customer will be charged 200 Riyals for washing the Maleka (Engagement) dress, and 200 Riyals for washing the Meel (Train).</span></div>
                 </div>
               </div>
               <div dir="rtl" className="font-['Almarai']">
-                <div className="space-y-1 pr-0 [direction:rtl]">
-                  <div className="text-right text-gray-700">حفاظاً على السلعة من التلف يرجى التزام العميل بالآتي:</div>
-                  <div className="flex gap-2 text-right"><span className="shrink-0 w-4">١.</span><span>لا يتم إرجاع العربون بعد تحرير الفاتورة.</span></div>
-                  <div className="flex gap-2 text-right"><span className="shrink-0 w-4">٢.</span><span>في حال تأخير الفستان يحق للمحل مضاعفة مبلغ الايجار في كل يوم ٥٠٠ ريال، وفي حال تعرض الفستان للتلف يخصم على العميل التأمين ويكمل قيمة الفستان كامل.</span></div>
-                  <div className="flex gap-2 text-right"><span className="shrink-0 w-4">٣.</span><span>يرجى إحضار مبلغ التأمين قبل أخذ الفستان.</span></div>
-                  <div className="flex gap-2 text-right"><span className="shrink-0 w-4">٤.</span><span>يخصم على العميل قيمة غسيل فستان الملكة ٢٠٠ ريال، وغسيل الميل ٢٠٠ ريال.</span></div>
+                <div className="space-y-0.5 pr-0 [direction:rtl]">
+                  <div className="flex gap-1.5 text-right"><span className="shrink-0 w-3">١.</span><span>لا يتم إرجاع العربون بعد تحرير الفاتورة.</span></div>
+                  <div className="flex gap-1.5 text-right"><span className="shrink-0 w-3">٢.</span><span>في حال تأخير الفستان يحق للمحل مضاعفة مبلغ الايجار في كل يوم ٥٠٠ ريال، وفي حال تعرض الفستان للتلف يخصم على العميل التأمين ويكمل قيمة الفستان كامل.</span></div>
+                  <div className="flex gap-1.5 text-right"><span className="shrink-0 w-3">٣.</span><span>يرجى إحضار مبلغ التأمين قبل أخذ الفستان.</span></div>
+                  <div className="flex gap-1.5 text-right"><span className="shrink-0 w-3">٤.</span><span>يخصم على العميل قيمة غسيل فستان الملكة ٢٠٠ ريال، وغسيل الميل ٢٠٠ ريال.</span></div>
                 </div>
               </div>
             </div>
