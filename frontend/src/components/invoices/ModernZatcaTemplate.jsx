@@ -188,6 +188,22 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
                     {invoice.buyer.contactPhone}
                   </p>
                 )}
+                {(invoice?.buyer?.idNumber || invoice?.buyer?.customerIdNumber) && (
+                  <div className="flex flex-col gap-1">
+                    <p className="flex items-center gap-2">
+                      <span className="font-semibold text-gray-900">{invoice?.buyer?.idType === 'vat' ? 'VAT No' : invoice?.buyer?.idType === 'id' ? 'ID' : 'Iqama'}:</span>
+                      <span className="font-mono">{invoice.buyer.idNumber || invoice.buyer.customerIdNumber}</span>
+                    </p>
+                    {bilingual && (
+                      <p className="flex gap-2" dir="rtl">
+                        <span className="font-semibold text-gray-900">
+                          {invoice?.buyer?.idType === 'vat' ? 'الرقم الضريبي' : invoice?.buyer?.idType === 'id' ? 'الهوية' : 'الإقامة'}:
+                        </span>
+                        <span className="font-sans">{toEasternArabicNumerals(invoice.buyer.idNumber || invoice.buyer.customerIdNumber)}</span>
+                      </p>
+                    )}
+                  </div>
+                )}
                 {invoice?.buyer?.vatNumber && (
                   <div className="mt-2 flex flex-col gap-1">
                     <p>

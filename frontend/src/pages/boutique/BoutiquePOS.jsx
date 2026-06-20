@@ -55,6 +55,7 @@ export default function BoutiquePOS() {
   const [customerNameAr, setCustomerNameAr] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
   const [customerId, setCustomerId] = useState('')
+  const [customerIdType, setCustomerIdType] = useState('iqama')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [discountAmount, setDiscountAmount] = useState(0)
@@ -177,7 +178,7 @@ export default function BoutiquePOS() {
   // ─── A4 PDF Print Helper (same template as trading invoices) ───
   const printA4Invoice = async (invoice) => {
     try {
-      await printInvoiceSnapshot({ invoice, language, tenant, documentType: 'invoice' })
+      await printInvoiceSnapshot({ invoice, language: 'en', tenant, documentType: 'invoice' })
     } catch (err) {
       console.error('Failed to print A4 invoice', err)
     }
@@ -186,7 +187,7 @@ export default function BoutiquePOS() {
   // ─── A4 PDF Download Helper (same template as trading invoices) ───
   const downloadA4Invoice = async (invoice) => {
     try {
-      await downloadInvoicePdf({ invoice, language, tenant, documentType: 'invoice' })
+      await downloadInvoicePdf({ invoice, language: 'en', tenant, documentType: 'invoice' })
     } catch (err) {
       console.error('Failed to download A4 invoice', err)
       alert(label('Failed to download PDF. Please try again.', 'فشل تحميل ملف PDF. حاول مرة أخرى.'))
@@ -230,6 +231,7 @@ export default function BoutiquePOS() {
       customerNameAr,
       customerPhone,
       customerIdNumber: customerId,
+      customerIdType,
       transactionType: transactionMode,
       discount: discountAmount || 0,
       vatApplicable,
@@ -613,13 +615,24 @@ export default function BoutiquePOS() {
                       </div>
                       {transactionMode !== 'sale' && (
                         <div>
-                          <label className="text-[10px] text-gray-500 mb-0.5 block">{label('ID / Iqama', 'الهوية')}</label>
-                          <input
-                            value={customerId}
-                            onChange={(e) => setCustomerId(e.target.value)}
-                            className="w-full px-2 py-2 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-rose-200 outline-none"
-                            placeholder="1xxxxxxxx"
-                          />
+                          <label className="text-[10px] text-gray-500 mb-0.5 block">{label('ID / Iqama / VAT', 'الهوية / الضريبة')}</label>
+                          <div className="flex gap-2">
+                            <select
+                              value={customerIdType}
+                              onChange={(e) => setCustomerIdType(e.target.value)}
+                              className="px-2 py-2 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-rose-200 outline-none bg-white"
+                            >
+                              <option value="iqama">{label('Iqama', 'إقامة')}</option>
+                              <option value="id">{label('ID', 'هوية')}</option>
+                              <option value="vat">{label('VAT', 'ضريبة')}</option>
+                            </select>
+                            <input
+                              value={customerId}
+                              onChange={(e) => setCustomerId(e.target.value)}
+                              className="flex-1 px-2 py-2 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-rose-200 outline-none"
+                              placeholder="1xxxxxxxx"
+                            />
+                          </div>
                         </div>
                       )}
                     </div>
@@ -821,7 +834,7 @@ export default function BoutiquePOS() {
                   <InvoiceLivePreview
                     invoice={receiptData.invoice}
                     tenant={tenant}
-                    language={language}
+                    language="en"
                     bilingual
                     currencyRenderMode="icon"
                   />

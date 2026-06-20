@@ -61,6 +61,7 @@ const boutiqueRentalSchema = new mongoose.Schema({
   customerNameAr: { type: String },
   customerPhone: { type: String, required: true },
   customerEmail: { type: String },
+  customerIdType: { type: String, enum: ['iqama', 'id', 'vat'], default: 'iqama' },
   customerIdNumber: { type: String },                 // Saudi ID / Iqama for contract
 
   // --- Transaction type ---

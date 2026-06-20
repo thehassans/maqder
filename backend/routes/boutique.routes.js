@@ -283,7 +283,8 @@ router.get('/rentals/:id', checkPermission('boutique', 'read'), async (req, res)
 router.post('/rentals', checkPermission('boutique', 'write'), async (req, res) => {
   try {
     const {
-      customerName, customerNameAr, customerPhone, customerEmail, customerIdNumber,
+      customerName, customerNameAr, customerPhone, customerEmail, customerIdType,
+      customerIdNumber,
       startDate, endDate, lineItems, staffNotes, transactionType = 'rental',
       discount = 0, vatApplicable = true
     } = req.body;
@@ -326,6 +327,7 @@ router.post('/rentals', checkPermission('boutique', 'write'), async (req, res) =
       customerNameAr,
       customerPhone,
       customerEmail,
+      customerIdType,
       customerIdNumber,
       transactionType,
       startDate: isSale ? now : new Date(startDate),
