@@ -17,6 +17,7 @@ import {
 } from '../services/boutiqueCalendarService.js';
 import { generateBoutiqueThermalInvoice, queueZatcaReporting } from '../services/boutiqueZatcaService.js';
 import { sendPaymentConfirmation } from '../services/boutiqueWhatsAppService.js';
+import { buildInvoicePdfAttachment } from '../utils/invoicePdfService.js';
 import { generateZatcaQr } from '../lib/zatcaQr.js';
 import QRCode from 'qrcode';
 import { protect, checkPermission } from '../middleware/auth.js';
@@ -442,6 +443,36 @@ router.post('/rentals', checkPermission('boutique', 'write'), async (req, res) =
       } catch (invoiceErr) {
         console.error('Invoice persistence failed:', invoiceErr.message);
       }
+    }
+
+    // 8. Auto-send invoice PDF via WhatsApp if connected
+    try {
+      if (invoice && rental.customerPhone) {
+        const pdfDir = path.join(process.cwd(), 'public', 'uploads', 'boutique-invoices');
+        if (!fs.existsSync(pdfDir)) {
+          fs.mkdirSync(pdfDir, { recursive: true });
+        }
+
+        const attachment = await buildInvoicePdfAttachment({
+          invoice,
+          tenant,
+          customerName: rental.customerName,
+          language: 'bilingual',
+        });
+
+        const pdfFilename = `${invoice._id}.pdf`;
+        const pdfPath = path.join(pdfDir, pdfFilename);
+        fs.writeFileSync(pdfPath, attachment.content);
+
+        const host = req.get('host') || 'maqder.com';
+        const protocol = req.get('x-forwarded-proto') || req.protocol || 'https';
+        const invoicePdfUrl = `${protocol}://${host}/uploads/boutique-invoices/${pdfFilename}`;
+
+        const language = tenant?.settings?.language || 'ar';
+        await sendPaymentConfirmation(rental._id, invoicePdfUrl, language);
+      }
+    } catch (waErr) {
+      console.error('[BoutiqueWhatsApp] Auto-send failed:', waErr.message);
     }
 
     res.status(201).json({ ...rental.toObject(), invoice, qrDataUrl, qrPayload });
