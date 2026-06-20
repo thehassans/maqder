@@ -464,6 +464,33 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
           )}
         </div>
 
+        {/* Boutique Rental Terms */}
+        {invoice?.businessContext === 'boutique' && invoice?.boutiqueDetails?.transactionType === 'rental' && (
+          <div className="mt-6 rounded-xl border border-rose-100 bg-rose-50/30 p-5 text-sm print:break-inside-avoid">
+            <h4 className="mb-3 text-center text-base font-bold text-gray-900" dir="rtl">
+              حفاظاً على السلعة من التلف يرجى التزام العميل بالآتي :
+            </h4>
+            <ol className="mb-5 list-decimal list-inside space-y-2 text-gray-800" dir="rtl">
+              <li>لا يتم إرجاع العربون بعد تحرير الفاتورة.</li>
+              <li>في حال تأخير الفستان يحق للمحل مضاعفة مبلغ الايجار في كل يوم ٥٠٠ ريال وفي حال تعرض الفستان للتلف يخصم على العميل التأمين ويكمل قيمة الفستان كامل.</li>
+              <li>يرجى إحضار مبلغ التأمين قبل أخذ الفستان.</li>
+              <li>يخصم على العميل قيمة غسيل الفستان ٣٠٠ ريال ، غسيل ذيل ٢٠٠ ريال ، غسيل جيبكا ٢٠٠ ريال.</li>
+            </ol>
+
+            <div className="border-t border-rose-100 pt-4">
+              <h4 className="mb-3 text-sm font-bold text-gray-900">
+                To protect the item from damage, the customer must adhere to the following:
+              </h4>
+              <ul className="list-disc list-inside space-y-2 text-gray-700">
+                <li>The down payment is non-refundable after the invoice is issued.</li>
+                <li>In the event of a delay in returning the dress, the store has the right to double the rental amount by 500 Riyals for each day. In the event the dress is damaged, the security deposit will be deducted from the customer, and they must pay the remaining amount to cover the full value of the dress.</li>
+                <li>Please bring the security deposit amount before taking the dress.</li>
+                <li>The customer will be charged for the washing of the dress at 300 Riyals, washing of the train (tail) at 200 Riyals, and washing of the petticoat (jipka) at 200 Riyals.</li>
+              </ul>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   )
