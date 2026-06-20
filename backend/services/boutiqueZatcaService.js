@@ -65,21 +65,25 @@ export async function generateBoutiqueThermalInvoice(rental, tenant, previousHas
   const issueDate = rental.createdAt || new Date();
 
   // Build simplified tax invoice line items
-  const lineItems = rental.lineItems.map((line, index) => ({
-    lineNumber: index + 1,
-    productName: line.productName,
-    productNameAr: line.productNameAr,
-    quantity: line.quantity,
-    unitCode: 'PCE',
-    unitPrice: line.dailyRate,
-    discount: 0,
-    discountType: 'fixed',
-    taxCategory: 'S',
-    taxRate: 15,
-    taxAmount: Math.round((line.rentalSubtotal * 0.15) * 100) / 100,
-    lineTotal: line.rentalSubtotal,
-    lineTotalWithTax: Math.round((line.rentalSubtotal * 1.15) * 100) / 100,
-  }));
+  const vatRate = rental.vatApplicable === false ? 0 : 15;
+  const lineItems = rental.lineItems.map((line, index) => {
+    const taxAmount = Math.round((line.rentalSubtotal * (vatRate / 100)) * 100) / 100;
+    return {
+      lineNumber: index + 1,
+      productName: line.productName,
+      productNameAr: line.productNameAr,
+      quantity: line.quantity,
+      unitCode: 'PCE',
+      unitPrice: line.dailyRate,
+      discount: 0,
+      discountType: 'fixed',
+      taxCategory: vatRate === 0 ? 'O' : 'S',
+      taxRate: vatRate,
+      taxAmount,
+      lineTotal: line.rentalSubtotal,
+      lineTotalWithTax: Math.round((line.rentalSubtotal + taxAmount) * 100) / 100,
+    };
+  });
 
   const invoiceData = {
     tenantId: rental.tenantId,

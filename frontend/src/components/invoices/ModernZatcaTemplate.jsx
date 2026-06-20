@@ -388,6 +388,72 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
           )}
         </div>
 
+        {/* Boutique Rental Terms & Acknowledgment */}
+        {invoice?.businessContext === 'boutique' && (
+          <div className="mt-6 rounded-xl border border-gray-200 bg-white p-5 text-sm print:break-inside-avoid">
+            <h4 className="mb-4 text-center text-base font-bold text-gray-900" dir="rtl">
+              حفاظاً على السلعة من التلف يرجى التزام العميل بالآتي :
+            </h4>
+            <ol className="mb-6 list-decimal list-inside space-y-2 text-gray-800" dir="rtl">
+              <li>لا يتم إرجاع العربون بعد تحرير الفاتورة.</li>
+              <li>في حال تأخير الفستان يحق للمحل مضاعفة مبلغ الايجار في كل يوم ٥٠٠ ريال وفي حال تعرض الفستان للتلف يخصم على العميل التأمين ويكمل قيمة الفستان كامل.</li>
+              <li>يرجى إحضار مبلغ التأمين قبل أخذ الفستان.</li>
+              <li>يخصم على العميل قيمة غسيل الفستان ٣٠٠ ريال ، غسيل ذيل ٢٠٠ ريال ، غسيل جيبكا ٢٠٠ ريال.</li>
+            </ol>
+
+            <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="flex items-end gap-2">
+                <span className="shrink-0 font-semibold text-gray-900">Name:</span>
+                <span className="mb-1 flex-1 border-b border-dotted border-gray-500"></span>
+              </div>
+              <div className="flex items-end gap-2">
+                <span className="shrink-0 font-semibold text-gray-900">Value / Amount:</span>
+                <span className="mb-1 flex-1 border-b border-dotted border-gray-500"></span>
+              </div>
+              <div className="flex items-end gap-2">
+                <span className="shrink-0 font-semibold text-gray-900">Mobile:</span>
+                <span className="mb-1 flex-1 border-b border-dotted border-gray-500"></span>
+              </div>
+              <div className="flex items-end gap-2">
+                <span className="shrink-0 font-semibold text-gray-900">Paid:</span>
+                <span className="mb-1 flex-1 border-b border-dotted border-gray-500"></span>
+              </div>
+              <div className="sm:col-span-2 flex items-end gap-2">
+                <span className="shrink-0 font-semibold text-gray-900">Note:</span>
+                <span className="mb-1 flex-1 border-b border-dotted border-gray-500"></span>
+              </div>
+              <div className="sm:col-span-2 flex items-end gap-2">
+                <span className="shrink-0 font-semibold text-gray-900">Value Added Tax (VAT) 15%:</span>
+                <span className="mb-1 flex-1 border-b border-dotted border-gray-500"></span>
+              </div>
+              <div className="flex items-end gap-2">
+                <span className="shrink-0 font-semibold text-gray-900">Remaining:</span>
+                <span className="mb-1 flex-1 border-b border-dotted border-gray-500"></span>
+              </div>
+              <div className="flex items-end gap-2">
+                <span className="shrink-0 font-semibold text-gray-900">Signature:</span>
+                <span className="mb-1 flex-1 border-b border-dotted border-gray-500"></span>
+              </div>
+              <div className="flex items-end gap-2">
+                <span className="shrink-0 font-semibold text-gray-900">Security Deposit:</span>
+                <span className="mb-1 flex-1 border-b border-dotted border-gray-500"></span>
+              </div>
+            </div>
+
+            <div className="border-t border-gray-200 pt-4">
+              <h4 className="mb-3 font-bold text-gray-900">
+                To protect the item from damage, the customer must adhere to the following:
+              </h4>
+              <ul className="list-disc list-inside space-y-2 text-gray-800">
+                <li>The down payment is non-refundable after the invoice is issued.</li>
+                <li>In the event of a delay in returning the dress, the store has the right to double the rental amount by 500 Riyals for each day. In the event the dress is damaged, the security deposit will be deducted from the customer, and they must pay the remaining amount to cover the full value of the dress.</li>
+                <li>Please bring the security deposit amount before taking the dress.</li>
+                <li>The customer will be charged for the washing of the dress at 300 Riyals, washing of the train (tail) at 200 Riyals, and washing of the petticoat (jipka) at 200 Riyals.</li>
+              </ul>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   )
