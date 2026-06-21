@@ -71,6 +71,7 @@ export default function PurchaseOrderForm() {
     control,
     handleSubmit,
     reset,
+    setValue,
     watch,
     formState: { errors },
   } = useForm({
