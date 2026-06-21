@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { useForm, useFieldArray } from 'react-hook-form'
@@ -16,6 +16,8 @@ import {
   XCircle,
   FileText,
   Warehouse as WarehouseIcon,
+  UserPlus,
+  X,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
@@ -25,6 +27,7 @@ import Money from '../components/ui/Money'
 export default function PurchaseOrderForm() {
   const { id } = useParams()
   const isEdit = Boolean(id)
+  const [searchParams] = useSearchParams()
 
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -36,6 +39,16 @@ export default function PurchaseOrderForm() {
   const [receiveWarehouseId, setReceiveWarehouseId] = useState('')
   const [receiveQty, setReceiveQty] = useState({})
   const [manualModes, setManualModes] = useState([])
+  const [showSupplierModal, setShowSupplierModal] = useState(false)
+  const [supplierForm, setSupplierForm] = useState({
+    code: '',
+    nameEn: '',
+    nameAr: '',
+    contactPerson: '',
+    phone: '',
+    email: '',
+    type: 'company',
+  })
 
   const toggleManualMode = (index) => {
     setManualModes((prev) => {
@@ -80,6 +93,12 @@ export default function PurchaseOrderForm() {
     queryFn: () => api.get('/suppliers', { params: { limit: 200 } }).then((res) => res.data.suppliers),
   })
 
+  useEffect(() => {
+    if (!isEdit && searchParams.get('supplierId')) {
+      setValue('supplierId', searchParams.get('supplierId'), { shouldValidate: true })
+    }
+  }, [isEdit, searchParams, setValue, suppliers])
+
   const { data: products } = useQuery({
     queryKey: ['products-list'],
     queryFn: () => api.get('/products', { params: { limit: 200 } }).then((res) => res.data.products),
@@ -89,6 +108,27 @@ export default function PurchaseOrderForm() {
     queryKey: ['warehouses'],
     queryFn: () => api.get('/warehouses').then((res) => res.data),
   })
+
+  const addSupplierMutation = useMutation({
+    mutationFn: (data) => api.post('/suppliers', data),
+    onSuccess: (res) => {
+      toast.success(language === 'ar' ? 'تم إضافة المورد' : 'Supplier added')
+      queryClient.invalidateQueries(['suppliers-lookup'])
+      queryClient.invalidateQueries(['suppliers'])
+      setShowSupplierModal(false)
+      setValue('supplierId', res.data._id, { shouldValidate: true })
+      setSupplierForm({ code: '', nameEn: '', nameAr: '', contactPerson: '', phone: '', email: '', type: 'company' })
+    },
+    onError: (err) => toast.error(err.response?.data?.error || 'Error'),
+  })
+
+  const submitInlineSupplier = () => {
+    if (!supplierForm.nameEn?.trim()) {
+      toast.error(language === 'ar' ? 'اسم المورد مطلوب' : 'Supplier name is required')
+      return
+    }
+    addSupplierMutation.mutate(supplierForm)
+  }
 
   const { data: order, isLoading } = useQuery({
     queryKey: ['purchase-order', id],
@@ -369,18 +409,30 @@ export default function PurchaseOrderForm() {
 
             <div>
               <label className="label">{language === 'ar' ? 'المورد' : 'Supplier'} *</label>
-              <select
-                {...register('supplierId', { required: true })}
-                className="select"
-                disabled={isLocked}
-              >
-                <option value="">{language === 'ar' ? 'اختر مورد' : 'Select supplier'}</option>
-                {(suppliers || []).map((s) => (
-                  <option key={s._id} value={s._id}>
-                    {(language === 'ar' ? s.nameAr || s.nameEn : s.nameEn) || s.code}
-                  </option>
-                ))}
-              </select>
+              <div className="flex gap-2">
+                <select
+                  {...register('supplierId', { required: true })}
+                  className="select flex-1"
+                  disabled={isLocked}
+                >
+                  <option value="">{language === 'ar' ? 'اختر مورد' : 'Select supplier'}</option>
+                  {(suppliers || []).map((s) => (
+                    <option key={s._id} value={s._id}>
+                      {(language === 'ar' ? s.nameAr || s.nameEn : s.nameEn) || s.code}
+                    </option>
+                  ))}
+                </select>
+                {!isLocked && (
+                  <button
+                    type="button"
+                    onClick={() => setShowSupplierModal(true)}
+                    className="btn btn-secondary shrink-0"
+                    title={language === 'ar' ? 'إضافة مورد جديد' : 'Add new supplier'}
+                  >
+                    <UserPlus className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
               {errors.supplierId && <p className="text-xs text-red-600 mt-1">{language === 'ar' ? 'المورد مطلوب' : 'Supplier is required'}</p>}
             </div>
 
@@ -710,6 +762,116 @@ export default function PurchaseOrderForm() {
             </div>
           </div>
         </motion.div>
+      )}
+
+      {showSupplierModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="card p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary-100 dark:bg-primary-900/30 rounded-lg">
+                  <UserPlus className="w-5 h-5 text-primary-600" />
+                </div>
+                <h3 className="text-lg font-semibold">{language === 'ar' ? 'إضافة مورد سريع' : 'Quick Add Supplier'}</h3>
+              </div>
+              <button type="button" onClick={() => setShowSupplierModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="label">{language === 'ar' ? 'الرمز' : 'Code'}</label>
+                <input
+                  className="input"
+                  placeholder="SUP-001"
+                  value={supplierForm.code}
+                  onChange={(e) => setSupplierForm((p) => ({ ...p, code: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'النوع' : 'Type'}</label>
+                <select
+                  className="select"
+                  value={supplierForm.type}
+                  onChange={(e) => setSupplierForm((p) => ({ ...p, type: e.target.value }))}
+                >
+                  <option value="company">{language === 'ar' ? 'شركة' : 'Company'}</option>
+                  <option value="individual">{language === 'ar' ? 'فرد' : 'Individual'}</option>
+                </select>
+              </div>
+              <div className="md:col-span-2">
+                <label className="label">{language === 'ar' ? 'الاسم (EN)' : 'Name (EN)'} *</label>
+                <input
+                  className="input"
+                  value={supplierForm.nameEn}
+                  onChange={(e) => setSupplierForm((p) => ({ ...p, nameEn: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'الاسم (AR)' : 'Name (AR)'}</label>
+                <input
+                  className="input"
+                  dir="rtl"
+                  value={supplierForm.nameAr}
+                  onChange={(e) => setSupplierForm((p) => ({ ...p, nameAr: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'الشخص المسؤول' : 'Contact Person'}</label>
+                <input
+                  className="input"
+                  value={supplierForm.contactPerson}
+                  onChange={(e) => setSupplierForm((p) => ({ ...p, contactPerson: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'الهاتف' : 'Phone'}</label>
+                <input
+                  className="input"
+                  placeholder="+9665xxxxxxxx"
+                  value={supplierForm.phone}
+                  onChange={(e) => setSupplierForm((p) => ({ ...p, phone: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'البريد الإلكتروني' : 'Email'}</label>
+                <input
+                  type="email"
+                  className="input"
+                  placeholder="supplier@email.com"
+                  value={supplierForm.email}
+                  onChange={(e) => setSupplierForm((p) => ({ ...p, email: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button type="button" onClick={() => setShowSupplierModal(false)} className="btn btn-secondary">
+                {t('cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={submitInlineSupplier}
+                disabled={addSupplierMutation.isPending}
+                className="btn btn-primary"
+              >
+                {addSupplierMutation.isPending ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    {language === 'ar' ? 'حفظ المورد' : 'Save Supplier'}
+                  </>
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </div>
       )}
     </div>
   )

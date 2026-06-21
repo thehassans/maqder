@@ -1,0 +1,373 @@
+import React, { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
+import {
+  ScanLine, Camera, Plus, Save, PackageCheck, ArrowLeft, Loader2,
+  Barcode as BarcodeIcon, Tag, Layers, Boxes, CheckCircle2, AlertTriangle, Edit2,
+} from 'lucide-react'
+import api from '../../lib/api'
+import toast from 'react-hot-toast'
+import BarcodeScanner from '../../components/ui/BarcodeScanner'
+
+const EMPTY_FORM = {
+  name: '', nameAr: '', primaryBarcode: '', category: '', brand: '',
+  unit: 'PCS', costPrice: '', retailPrice: '', minimumStockAlertLevel: 10,
+  stockQuantity: 0, expiryDate: '', batchNumber: '', isActive: true,
+}
+
+export default function BakalaAddProduct() {
+  const navigate = useNavigate()
+  const [form, setForm] = useState(EMPTY_FORM)
+  const [categories, setCategories] = useState([])
+  const [brands, setBrands] = useState([])
+  const [units, setUnits] = useState([])
+  const [saving, setSaving] = useState(false)
+  const [showScanner, setShowScanner] = useState(false)
+  const [checkingBarcode, setCheckingBarcode] = useState(false)
+  const [existingProduct, setExistingProduct] = useState(null)
+  const [recentlyAdded, setRecentlyAdded] = useState([])
+  const [noBarcode, setNoBarcode] = useState(false)
+
+  const barcodeRef = useRef(null)
+  const nameRef = useRef(null)
+
+  const update = (patch) => setForm((prev) => ({ ...prev, ...patch }))
+
+  const fetchDropdowns = async () => {
+    try {
+      const [catRes, brandRes, unitRes] = await Promise.all([
+        api.get('/bakala-products/categories'),
+        api.get('/bakala-products/brands'),
+        api.get('/bakala-products/units'),
+      ])
+      setCategories(catRes.data || [])
+      setBrands(brandRes.data || [])
+      setUnits(unitRes.data || [])
+    } catch {
+      // non-fatal
+    }
+  }
+
+  useEffect(() => {
+    fetchDropdowns()
+    setTimeout(() => barcodeRef.current?.focus(), 200)
+  }, [])
+
+  // Look up a scanned/typed barcode to detect duplicates
+  const lookupBarcode = async (code) => {
+    const value = String(code || '').trim()
+    if (!value) return
+    setCheckingBarcode(true)
+    setExistingProduct(null)
+    try {
+      const res = await api.get(`/bakala-products/barcode/${encodeURIComponent(value)}`)
+      if (res.data?.found) {
+        setExistingProduct(res.data.product)
+        toast.error('This barcode already exists. You can edit it instead.')
+      } else {
+        // free to use — move focus to name
+        setTimeout(() => nameRef.current?.focus(), 50)
+      }
+    } catch (err) {
+      if (err.response?.status === 404) {
+        setTimeout(() => nameRef.current?.focus(), 50)
+      }
+    } finally {
+      setCheckingBarcode(false)
+    }
+  }
+
+  const handleScanDetected = (code) => {
+    setShowScanner(false)
+    setNoBarcode(false)
+    update({ primaryBarcode: code })
+    lookupBarcode(code)
+  }
+
+  const handleBarcodeKeyDown = (e) => {
+    // USB scanners send an Enter at the end of the code
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      lookupBarcode(form.primaryBarcode)
+    }
+  }
+
+  // Quick-add helpers for category / brand / unit
+  const quickAdd = async (type) => {
+    const labelMap = { categories: 'Category', brands: 'Brand', units: 'Unit' }
+    const name = window.prompt(`New ${labelMap[type]} name:`)
+    if (!name || !name.trim()) return
+    try {
+      const res = await api.post(`/bakala-products/${type}`, { name: name.trim() })
+      toast.success(`${labelMap[type]} added`)
+      if (type === 'categories') {
+        setCategories((p) => [...p, res.data])
+        update({ category: res.data.name })
+      } else if (type === 'brands') {
+        setBrands((p) => [...p, res.data])
+        update({ brand: res.data.name })
+      } else {
+        setUnits((p) => [...p, res.data])
+        update({ unit: res.data.name })
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.error || `Failed to add ${labelMap[type]}`)
+    }
+  }
+
+  const resetForNext = () => {
+    setForm(EMPTY_FORM)
+    setExistingProduct(null)
+    setNoBarcode(false)
+    setTimeout(() => barcodeRef.current?.focus(), 100)
+  }
+
+  const handleSubmit = async (e) => {
+    e?.preventDefault?.()
+    if (!form.name.trim()) return toast.error('Product name is required')
+    if (form.retailPrice === '' || Number(form.retailPrice) <= 0) return toast.error('Retail price is required')
+    if (!noBarcode && !form.primaryBarcode.trim()) return toast.error('Scan or enter a barcode, or mark as "no barcode"')
+
+    setSaving(true)
+    try {
+      const payload = {
+        ...form,
+        primaryBarcode: noBarcode ? '' : form.primaryBarcode.trim(),
+        costPrice: Number(form.costPrice) || 0,
+        retailPrice: Number(form.retailPrice) || 0,
+        stockQuantity: Number(form.stockQuantity) || 0,
+        minimumStockAlertLevel: Number(form.minimumStockAlertLevel) || 0,
+        expiryDate: form.expiryDate || null,
+      }
+      const res = await api.post('/bakala-products', payload)
+      toast.success(`${res.data.name} added`)
+      setRecentlyAdded((p) => [res.data, ...p].slice(0, 8))
+      resetForNext()
+    } catch (err) {
+      if (err.response?.status === 409) {
+        toast.error('A product with this barcode already exists.')
+        if (err.response?.data?.product) setExistingProduct(err.response.data.product)
+      } else {
+        toast.error(err.response?.data?.error || 'Failed to save product')
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const margin = (() => {
+    const c = Number(form.costPrice) || 0
+    const r = Number(form.retailPrice) || 0
+    if (!r || !c) return null
+    return Math.round(((r - c) / r) * 100)
+  })()
+
+  return (
+    <div className="p-6 max-w-6xl mx-auto">
+      {showScanner && (
+        <BarcodeScanner onDetected={handleScanDetected} onClose={() => setShowScanner(false)} />
+      )}
+
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate('/app/dashboard/bakala/products')} className="p-2 hover:bg-gray-100 rounded-xl">
+            <ArrowLeft className="w-5 h-5 text-gray-500" />
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Add Product</h1>
+            <p className="text-gray-500 text-sm">Scan a barcode or add manually. Items are saved instantly so you can keep scanning.</p>
+          </div>
+        </div>
+        <button
+          onClick={() => navigate('/app/dashboard/bakala/products')}
+          className="text-sm font-semibold text-gray-500 hover:text-gray-900"
+        >
+          View all products
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main form */}
+        <form onSubmit={handleSubmit} className="lg:col-span-2 space-y-6">
+          {/* Barcode scan zone */}
+          <div className="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100 rounded-2xl p-5">
+            <label className="flex items-center gap-2 text-sm font-bold text-emerald-800 mb-3">
+              <BarcodeIcon className="w-4 h-4" /> Barcode
+            </label>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <ScanLine className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />
+                <input
+                  ref={barcodeRef}
+                  type="text"
+                  value={form.primaryBarcode}
+                  disabled={noBarcode}
+                  onChange={(e) => update({ primaryBarcode: e.target.value })}
+                  onKeyDown={handleBarcodeKeyDown}
+                  onBlur={() => form.primaryBarcode && lookupBarcode(form.primaryBarcode)}
+                  placeholder="Scan with USB scanner or type, then press Enter"
+                  className="w-full pl-11 pr-4 py-3 bg-white border border-emerald-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 font-mono disabled:bg-gray-100 disabled:text-gray-400"
+                />
+                {checkingBarcode && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-emerald-500" />}
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowScanner(true)}
+                className="flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 font-semibold"
+              >
+                <Camera className="w-4 h-4" /> Camera
+              </button>
+            </div>
+            <label className="mt-3 flex items-center gap-2 text-sm text-emerald-800 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={noBarcode}
+                onChange={(e) => { setNoBarcode(e.target.checked); if (e.target.checked) { update({ primaryBarcode: '' }); setExistingProduct(null) } }}
+                className="w-4 h-4 accent-emerald-600"
+              />
+              This item has no barcode (generate one automatically)
+            </label>
+
+            {existingProduct && (
+              <div className="mt-3 flex items-center justify-between gap-3 bg-amber-50 border border-amber-200 rounded-xl p-3">
+                <div className="flex items-center gap-2 text-sm text-amber-800">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span><b>{existingProduct.name}</b> already uses this barcode.</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate('/app/dashboard/bakala/products')}
+                  className="flex items-center gap-1 text-xs font-bold text-amber-700 hover:text-amber-900 whitespace-nowrap"
+                >
+                  <Edit2 className="w-3 h-3" /> Edit it
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Details */}
+          <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name (English) *</label>
+                <input ref={nameRef} type="text" value={form.name} onChange={(e) => update({ name: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name (Arabic)</label>
+                <input type="text" dir="rtl" value={form.nameAr} onChange={(e) => update({ nameAr: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-right" />
+              </div>
+
+              <div>
+                <label className="flex items-center justify-between text-sm font-medium text-gray-700 mb-1">
+                  <span className="flex items-center gap-1"><Tag className="w-3.5 h-3.5" /> Category</span>
+                  <button type="button" onClick={() => quickAdd('categories')} className="text-xs text-emerald-600 hover:text-emerald-700 font-semibold flex items-center gap-0.5"><Plus className="w-3 h-3" /> New</button>
+                </label>
+                <select value={form.category} onChange={(e) => update({ category: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
+                  <option value="">None</option>
+                  {categories.map((c) => <option key={c._id} value={c.name}>{c.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="flex items-center justify-between text-sm font-medium text-gray-700 mb-1">
+                  <span className="flex items-center gap-1"><Layers className="w-3.5 h-3.5" /> Brand</span>
+                  <button type="button" onClick={() => quickAdd('brands')} className="text-xs text-emerald-600 hover:text-emerald-700 font-semibold flex items-center gap-0.5"><Plus className="w-3 h-3" /> New</button>
+                </label>
+                <select value={form.brand} onChange={(e) => update({ brand: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
+                  <option value="">None</option>
+                  {brands.map((b) => <option key={b._id} value={b.name}>{b.name}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="flex items-center justify-between text-sm font-medium text-gray-700 mb-1">
+                  <span className="flex items-center gap-1"><Boxes className="w-3.5 h-3.5" /> Unit</span>
+                  <button type="button" onClick={() => quickAdd('units')} className="text-xs text-emerald-600 hover:text-emerald-700 font-semibold flex items-center gap-0.5"><Plus className="w-3 h-3" /> New</button>
+                </label>
+                <select value={form.unit} onChange={(e) => update({ unit: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
+                  <option value="PCS">PCS</option>
+                  {units.map((u) => <option key={u._id} value={u.name}>{u.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Opening Stock Qty</label>
+                <input type="number" value={form.stockQuantity} onChange={(e) => update({ stockQuantity: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cost Price (SAR)</label>
+                <input type="number" step="0.01" min="0" value={form.costPrice} onChange={(e) => update({ costPrice: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Retail Price (SAR) *</label>
+                <input type="number" step="0.01" min="0" value={form.retailPrice} onChange={(e) => update({ retailPrice: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" />
+                {margin != null && <p className="text-xs text-gray-400 mt-1">Margin: <span className={margin < 0 ? 'text-red-500' : 'text-emerald-600'}>{margin}%</span></p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Min. Stock Alert Level</label>
+                <input type="number" min="0" value={form.minimumStockAlertLevel} onChange={(e) => update({ minimumStockAlertLevel: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
+                  <input type="date" value={form.expiryDate} onChange={(e) => update({ expiryDate: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Batch No.</label>
+                  <input type="text" value={form.batchNumber} onChange={(e) => update({ batchNumber: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-100">
+              <button type="button" onClick={resetForNext} className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 font-semibold">Clear</button>
+              <button type="submit" disabled={saving} className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 font-bold disabled:opacity-60">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                Save & Add Another
+              </button>
+            </div>
+          </div>
+        </form>
+
+        {/* Recently added sidebar */}
+        <div className="space-y-4">
+          <div className="bg-white border border-gray-200 rounded-2xl p-5">
+            <h3 className="font-bold text-gray-900 flex items-center gap-2 mb-3">
+              <PackageCheck className="w-5 h-5 text-emerald-600" /> Added this session
+              <span className="ml-auto text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">{recentlyAdded.length}</span>
+            </h3>
+            {recentlyAdded.length === 0 ? (
+              <div className="text-center py-8 text-gray-400">
+                <Boxes className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                <p className="text-sm">Products you add will appear here.</p>
+              </div>
+            ) : (
+              <ul className="space-y-2 max-h-[460px] overflow-y-auto">
+                {recentlyAdded.map((p) => (
+                  <li key={p._id} className="flex items-center gap-3 p-2 rounded-xl bg-gray-50">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{p.name}</p>
+                      <p className="text-xs text-gray-400 font-mono truncate">{p.primaryBarcode}</p>
+                    </div>
+                    <span className="text-xs font-bold text-gray-700">SAR {Number(p.retailPrice).toFixed(2)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="bg-gray-900 text-white rounded-2xl p-5">
+            <h4 className="font-bold mb-2 flex items-center gap-2"><ScanLine className="w-4 h-4" /> Fast entry tips</h4>
+            <ul className="text-sm text-white/70 space-y-1.5 list-disc list-inside">
+              <li>Focus the barcode box and scan with a USB scanner — it auto-fills.</li>
+              <li>No scanner? Tap <b>Camera</b> to scan with your device.</li>
+              <li>Existing barcodes are detected to prevent duplicates.</li>
+              <li>After saving, the form resets so you can scan the next item.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

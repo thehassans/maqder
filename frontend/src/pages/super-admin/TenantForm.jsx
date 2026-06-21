@@ -1,10 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Save, Building2, CreditCard, User, Shield, FileText, Image, MapPin, Briefcase, Receipt } from 'lucide-react'
+import { ArrowLeft, Save, Building2, CreditCard, User, Shield, FileText, Image, MapPin, Briefcase, Receipt, KeyRound, Eye, EyeOff } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
@@ -27,6 +27,10 @@ export default function TenantForm() {
   const { language } = useSelector((state) => state.ui)
   const { t } = useTranslation(language)
   const isEdit = Boolean(id)
+
+  const [passwordModal, setPasswordModal] = useState(null)
+  const [newPassword, setNewPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
 
   const { register, handleSubmit, reset, setValue, watch } = useForm({
     defaultValues: {
@@ -194,6 +198,17 @@ export default function TenantForm() {
       toast.success(language === 'ar' ? 'تم تحديث الحالة' : 'Status updated')
       queryClient.invalidateQueries(['tenant', id])
     }
+  })
+
+  const changePasswordMutation = useMutation({
+    mutationFn: ({ userId, password }) => api.put(`/super-admin/users/${userId}`, { password }),
+    onSuccess: () => {
+      toast.success(language === 'ar' ? 'تم تغيير كلمة المرور' : 'Password changed')
+      setPasswordModal(null)
+      setNewPassword('')
+      setShowPassword(false)
+    },
+    onError: (err) => toast.error(err.response?.data?.error || 'Error'),
   })
 
   if (isEdit && isLoading) {
@@ -816,6 +831,44 @@ export default function TenantForm() {
           </motion.div>
         )}
 
+        {/* User Password Management (Edit only) */}
+        {isEdit && tenant?.users && tenant.users.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.22 }} className="card p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg"><KeyRound className="w-5 h-5 text-amber-600" /></div>
+              <h3 className="text-lg font-semibold">{language === 'ar' ? 'إدارة المستخدمين وكلمات المرور' : 'User Password Management'}</h3>
+            </div>
+            <div className="space-y-3">
+              {(tenant.users || []).map((user) => (
+                <div key={user._id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-dark-700 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+                      <User className="w-5 h-5 text-primary-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">
+                        {user.firstName} {user.lastName}
+                      </p>
+                      <p className="text-sm text-gray-500">{user.email}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {language === 'ar' ? 'الدور' : 'Role'}: {user.role}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setPasswordModal(user); setNewPassword(''); setShowPassword(false) }}
+                    className="btn btn-secondary"
+                  >
+                    <KeyRound className="w-4 h-4" />
+                    {language === 'ar' ? 'تغيير كلمة المرور' : 'Change Password'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
         {/* Submit */}
         <div className="flex justify-end gap-3">
           <button type="button" onClick={() => navigate(-1)} className="btn btn-secondary">{t('cancel')}</button>
@@ -824,6 +877,87 @@ export default function TenantForm() {
           </button>
         </div>
       </form>
+
+      {passwordModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="card p-6 w-full max-w-md"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+                  <KeyRound className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">{language === 'ar' ? 'تغيير كلمة المرور' : 'Change Password'}</h3>
+                  <p className="text-sm text-gray-500">{passwordModal.firstName} {passwordModal.lastName}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setPasswordModal(null); setNewPassword(''); setShowPassword(false) }}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg"
+              >
+                <ArrowLeft className="w-5 h-5 rotate-45" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="label">{language === 'ar' ? 'كلمة المرور الجديدة' : 'New Password'} *</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    className="input pe-10"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder={language === 'ar' ? 'أدخل كلمة المرور الجديدة' : 'Enter new password'}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((p) => !p)}
+                    className="absolute end-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                {newPassword && newPassword.length < 6 && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    {language === 'ar' ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password must be at least 6 characters'}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => { setPasswordModal(null); setNewPassword(''); setShowPassword(false) }}
+                className="btn btn-secondary"
+              >
+                {t('cancel')}
+              </button>
+              <button
+                type="button"
+                disabled={!newPassword || newPassword.length < 6 || changePasswordMutation.isPending}
+                onClick={() => changePasswordMutation.mutate({ userId: passwordModal._id, password: newPassword })}
+                className="btn btn-primary"
+              >
+                {changePasswordMutation.isPending ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <KeyRound className="w-4 h-4" />
+                    {language === 'ar' ? 'تحديث كلمة المرور' : 'Update Password'}
+                  </>
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   )
 }

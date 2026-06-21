@@ -134,7 +134,7 @@ router.post('/login', async (req, res) => {
       // Login with specific tenant
       tenant = await withQueryTimeout(Tenant.findOne({ slug: normalizedTenantSlug }).select(authTenantSelect));
       if (!tenant) {
-        return res.status(401).json({ error: 'Invalid tenant code' });
+        return res.status(404).json({ error: 'Account does not exist', code: 'account_not_found' });
       }
       // Always set tenantId for user lookup regardless of active status.
       // If inactive, we still issue a token — the frontend InactiveBlocker handles it.
@@ -206,7 +206,7 @@ router.post('/login', async (req, res) => {
         
         passwordAlreadyVerified = true;
       } else {
-        return res.status(401).json({ error: 'Invalid credentials' });
+        return res.status(404).json({ error: 'Account does not exist', code: 'account_not_found' });
       }
     }
     

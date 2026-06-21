@@ -100,6 +100,7 @@ import TaskForm from './pages/TaskForm'
 import BakalaPOS from './pages/bakala/BakalaPOS'
 import BakalaDashboard from './pages/bakala/BakalaDashboard'
 import BakalaProducts from './pages/bakala/BakalaProducts'
+import BakalaAddProduct from './pages/bakala/BakalaAddProduct'
 import BakalaProduce from './pages/bakala/BakalaProduce'
 import WeightScale from './pages/bakala/WeightScale'
 import InventoryAlerts from './pages/bakala/InventoryAlerts'
@@ -485,6 +486,7 @@ function App() {
         <Route path="bakala/returns" element={<BusinessTypeRoute allowedTypes={['bakala']}><BakalaReturns /></BusinessTypeRoute>} />
         <Route path="bakala/dashboard" element={<BusinessTypeRoute allowedTypes={['bakala']}><BakalaDashboard /></BusinessTypeRoute>} />
         <Route path="bakala/products/*" element={<BusinessTypeRoute allowedTypes={['bakala']}><BakalaProducts /></BusinessTypeRoute>} />
+        <Route path="bakala/add-product" element={<BusinessTypeRoute allowedTypes={['bakala']}><BakalaAddProduct /></BusinessTypeRoute>} />
         <Route path="bakala/produce" element={<BusinessTypeRoute allowedTypes={['bakala']}><BakalaProduce /></BusinessTypeRoute>} />
         <Route path="bakala/weight-scale" element={<BusinessTypeRoute allowedTypes={['bakala']}><WeightScale /></BusinessTypeRoute>} />
         <Route path="bakala/alerts" element={<BusinessTypeRoute allowedTypes={['bakala']}><InventoryAlerts /></BusinessTypeRoute>} />

@@ -37,6 +37,8 @@ export default function Login() {
 
   const location = useLocation()
 
+  const isAccountNotFound = typeof error === 'string' && /account does not exist|الحساب غير موجود/i.test(error)
+
   const demoEmail = searchParams.get('demoEmail')
   const demoPassword = searchParams.get('demoPassword')
   const autoLogin = searchParams.get('autoLogin') === 'true'
@@ -236,18 +238,52 @@ export default function Login() {
 
           {/* Error */}
           {error && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3"
-            >
-              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <p className="text-sm text-red-600 font-medium">{error}</p>
-            </motion.div>
+            isAccountNotFound ? (
+              <motion.div
+                initial={{ opacity: 0, y: 12, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ type: 'spring', stiffness: 220, damping: 20 }}
+                className="mb-6 relative overflow-hidden rounded-3xl border border-[#244D33]/15 bg-gradient-to-br from-white via-[#f5f9f6] to-[#eef4ef] shadow-xl shadow-[#244D33]/5"
+              >
+                <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-[#244D33]/5 blur-2xl" />
+                <div className="relative p-6 flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#244D33] to-[#1e3f2a] flex items-center justify-center shrink-0 shadow-lg shadow-[#244D33]/20">
+                    <Shield className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-gray-900 tracking-tight">
+                      {language === 'ar' ? 'الحساب غير موجود' : 'Account does not exist'}
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-500 leading-relaxed">
+                      {language === 'ar'
+                        ? 'لم نتمكن من العثور على حساب بهذه البيانات. تحقق من بريدك الإلكتروني أو تواصل مع فريق المبيعات لإنشاء حسابك.'
+                        : "We couldn't find an account with these details. Please check your email or contact our sales team to get you set up."}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setShowContactOptions(true)}
+                      className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-[#244D33] hover:text-[#1e3f2a] transition-colors"
+                    >
+                      {language === 'ar' ? 'تواصل مع المبيعات' : 'Contact Sales'}
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="mb-6 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3"
+              >
+                <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <p className="text-sm text-red-600 font-medium">{error}</p>
+              </motion.div>
+            )
           )}
 
           {/* Form */}

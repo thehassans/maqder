@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Search, Loader, Download, QrCode } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Edit2, Trash2, Search, Loader, Download, QrCode, PackagePlus, Boxes } from 'lucide-react';
 import Barcode from 'react-barcode';
 import api from '../../../lib/api';
 import toast from 'react-hot-toast';
 
 export default function ProductList() {
+  const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [viewBarcodeProduct, setViewBarcodeProduct] = useState(null);
+  const [stockProduct, setStockProduct] = useState(null);
+  const [stockForm, setStockForm] = useState({ quantity: '', costPrice: '', expiryDate: '', batchNumber: '' });
+  const [stockSaving, setStockSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
     name: '', nameAr: '', primaryBarcode: '', category: '', brand: '', 
@@ -101,6 +106,34 @@ export default function ProductList() {
     }
   };
 
+  const openStockModal = (product) => {
+    setStockForm({ quantity: '', costPrice: product.costPrice || '', expiryDate: '', batchNumber: '' });
+    setStockProduct(product);
+  };
+
+  const handleAddStock = async (e) => {
+    e.preventDefault();
+    if (!stockForm.quantity || Number(stockForm.quantity) <= 0) {
+      return toast.error('Enter a quantity greater than zero');
+    }
+    setStockSaving(true);
+    try {
+      await api.post(`/bakala-products/${stockProduct._id}/add-stock`, {
+        quantity: Number(stockForm.quantity),
+        costPrice: stockForm.costPrice === '' ? undefined : Number(stockForm.costPrice),
+        expiryDate: stockForm.expiryDate || undefined,
+        batchNumber: stockForm.batchNumber || undefined,
+      });
+      toast.success('Stock added');
+      setStockProduct(null);
+      fetchItems();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to add stock');
+    } finally {
+      setStockSaving(false);
+    }
+  };
+
   const filteredItems = items.filter(i => 
     i.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
     i.primaryBarcode?.includes(searchQuery)
@@ -135,19 +168,11 @@ export default function ProductList() {
           >
             <Download className="w-4 h-4" /> Import CSV
           </button>
-          <button 
+          <button
             className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium"
-            onClick={() => {
-              setFormData({
-                name: '', nameAr: '', primaryBarcode: '', category: '', brand: '', 
-                unit: 'PCS', costPrice: 0, retailPrice: 0, minimumStockAlertLevel: 10,
-                stockQuantity: 0, expiryDate: '', batchNumber: '', isActive: true
-              });
-              setEditingId(null);
-              setIsModalOpen(true);
-            }}
+            onClick={() => navigate('/app/dashboard/bakala/add-product')}
           >
-            <Plus className="w-4 h-4" /> Add Product
+            <PackagePlus className="w-4 h-4" /> Add Product
           </button>
         </div>
       </div>
@@ -161,6 +186,7 @@ export default function ProductList() {
               <th className="px-6 py-3 font-medium">Category</th>
               <th className="px-6 py-3 font-medium text-right">Cost Price</th>
               <th className="px-6 py-3 font-medium text-right">Retail Price</th>
+              <th className="px-6 py-3 font-medium text-center">In Stock</th>
               <th className="px-6 py-3 font-medium text-center">Unit</th>
               <th className="px-6 py-3 font-medium text-right">Actions</th>
             </tr>
@@ -168,14 +194,14 @@ export default function ProductList() {
           <tbody className="divide-y divide-gray-100">
             {loading ? (
               <tr>
-                <td colSpan="7" className="px-6 py-10 text-center text-gray-500">
+                <td colSpan="8" className="px-6 py-10 text-center text-gray-500">
                   <Loader className="w-6 h-6 animate-spin mx-auto mb-2 text-emerald-600" />
                   Loading...
                 </td>
               </tr>
             ) : filteredItems.length === 0 ? (
               <tr>
-                <td colSpan="7" className="px-6 py-10 text-center text-gray-500">
+                <td colSpan="8" className="px-6 py-10 text-center text-gray-500">
                   No products found.
                 </td>
               </tr>
@@ -191,9 +217,15 @@ export default function ProductList() {
                   <td className="px-6 py-3 text-right text-gray-500">SAR {item.costPrice?.toFixed(2)}</td>
                   <td className="px-6 py-3 text-right font-medium text-gray-900">SAR {item.retailPrice?.toFixed(2)}</td>
                   <td className="px-6 py-3 text-center">
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${(item.stockQuantity || 0) <= 0 ? 'bg-red-50 text-red-600' : (item.stockQuantity || 0) <= (item.minimumStockAlertLevel || 0) ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600'}`}>{item.stockQuantity ?? 0}</span>
+                  </td>
+                  <td className="px-6 py-3 text-center">
                     <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">{item.unit || 'PCS'}</span>
                   </td>
                   <td className="px-6 py-3 text-right">
+                    <button onClick={() => openStockModal(item)} title="Add Stock" className="p-1 text-gray-500 hover:text-emerald-600 hover:bg-emerald-50 rounded mr-2">
+                      <Boxes className="w-4 h-4" />
+                    </button>
                     <button onClick={() => setViewBarcodeProduct(item)} title="View Barcode" className="p-1 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded mr-2">
                       <QrCode className="w-4 h-4" />
                     </button>
@@ -281,6 +313,51 @@ export default function ProductList() {
               <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">Cancel</button>
                 <button type="submit" className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">Save Product</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Stock Modal */}
+      {stockProduct && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setStockProduct(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">Add Stock</h3>
+                <p className="text-xs text-gray-500">{stockProduct.name} · {stockProduct.primaryBarcode}</p>
+              </div>
+              <button onClick={() => setStockProduct(null)} className="text-gray-400 hover:text-gray-600">&times;</button>
+            </div>
+            <form onSubmit={handleAddStock} className="p-6 space-y-4">
+              <div className="bg-gray-50 rounded-xl p-3 text-sm text-gray-600 flex justify-between">
+                <span>Current stock: <b>{stockProduct.stockQuantity ?? 0}</b></span>
+                <span>Unit: <b>{stockProduct.unit || 'PCS'}</b></span>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Quantity to add *</label>
+                <input type="number" min="1" autoFocus required value={stockForm.quantity} onChange={e => setStockForm({...stockForm, quantity: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cost Price (SAR) — updates product cost</label>
+                <input type="number" step="0.01" min="0" value={stockForm.costPrice} onChange={e => setStockForm({...stockForm, costPrice: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
+                  <input type="date" value={stockForm.expiryDate} onChange={e => setStockForm({...stockForm, expiryDate: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Batch Number</label>
+                  <input type="text" value={stockForm.batchNumber} onChange={e => setStockForm({...stockForm, batchNumber: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                <button type="button" onClick={() => setStockProduct(null)} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">Cancel</button>
+                <button type="submit" disabled={stockSaving} className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-60">
+                  {stockSaving ? <Loader className="w-4 h-4 animate-spin" /> : 'Add Stock'}
+                </button>
               </div>
             </form>
           </div>

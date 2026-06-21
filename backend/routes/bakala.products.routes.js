@@ -189,14 +189,75 @@ router.get('/inventory-alerts', protect, async (req, res) => {
   }
 });
 
+// GET product by barcode (for scan-to-find during product entry / stock-in)
+router.get('/barcode/:code', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    const code = String(req.params.code || '').trim();
+    if (!code) return res.status(400).json({ error: 'Barcode required' });
+    const product = await BakalaProduct.findOne({
+      tenantId,
+      $or: [{ primaryBarcode: code }, { barcodes: code }],
+    });
+    if (!product) return res.status(404).json({ error: 'Product not found', found: false });
+    res.json({ found: true, product });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.post('/', protect, async (req, res) => {
   try {
     const tenantId = await getTargetTenantId(req.user);
     if (!tenantId) return res.status(400).json({ error: 'No tenant found for this user.' });
-    
-    const product = new BakalaProduct({ ...req.body, tenantId, createdBy: req.user._id });
+
+    const body = { ...req.body };
+    // Auto-generate an internal barcode for items that don't have one
+    if (!body.primaryBarcode || !String(body.primaryBarcode).trim()) {
+      body.primaryBarcode = `INT${Date.now()}${Math.floor(Math.random() * 100)}`;
+    }
+    if (!Array.isArray(body.barcodes) || body.barcodes.length === 0) {
+      body.barcodes = [body.primaryBarcode];
+    }
+
+    // Prevent duplicate barcode within the tenant
+    const exists = await BakalaProduct.findOne({ tenantId, primaryBarcode: body.primaryBarcode });
+    if (exists) {
+      return res.status(409).json({ error: 'A product with this barcode already exists.', product: exists });
+    }
+
+    const product = new BakalaProduct({ ...body, tenantId, createdBy: req.user._id });
     await product.save();
     res.status(201).json(product);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// POST add stock (stock-in) — increments stock quantity and optionally updates cost/expiry/batch
+router.post('/:id/add-stock', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    const { quantity, costPrice, expiryDate, batchNumber } = req.body;
+    const qty = Number(quantity);
+    if (!qty || qty <= 0) return res.status(400).json({ error: 'Quantity must be greater than zero.' });
+
+    const product = await BakalaProduct.findOne({ _id: req.params.id, ...(tenantId ? { tenantId } : {}) });
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+
+    product.stockQuantity = (Number(product.stockQuantity) || 0) + qty;
+    if (costPrice !== undefined && costPrice !== null && costPrice !== '') {
+      product.costPrice = Number(costPrice) || product.costPrice;
+    }
+    if (expiryDate) product.expiryDate = expiryDate;
+    if (batchNumber) {
+      product.batchNumber = batchNumber;
+      product.batches = product.batches || [];
+      product.batches.push({ batchNumber, expiryDate: expiryDate || null, quantity: qty });
+    }
+    await product.save();
+    res.json({ success: true, product });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }

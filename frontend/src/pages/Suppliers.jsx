@@ -1,18 +1,25 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Search, Building, Phone, Mail, MapPin, Edit } from 'lucide-react'
+import { Plus, Search, Building, Phone, Mail, MapPin, Edit, PackagePlus, X, ShoppingCart } from 'lucide-react'
+import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
 import ExportMenu from '../components/ui/ExportMenu'
 
 export default function Suppliers() {
   const { language } = useSelector((state) => state.ui)
+  const { tenant } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
+  const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
+  const [stockInModal, setStockInModal] = useState(null)
+  const [stockForm, setStockForm] = useState({ productId: '', quantity: 1, costPrice: '', warehouseId: '', expiryDate: '', batchNumber: '' })
+
+  const isBakala = tenant?.businessType === 'bakala' || (tenant?.businessTypes || []).includes('bakala')
 
   const exportColumns = [
     {
@@ -81,6 +88,49 @@ export default function Suppliers() {
     queryKey: ['suppliers-stats'],
     queryFn: () => api.get('/suppliers/stats').then((res) => res.data)
   })
+
+  const { data: products } = useQuery({
+    queryKey: ['stock-in-products', isBakala],
+    queryFn: () => isBakala
+      ? api.get('/bakala-products', { params: { limit: 200 } }).then((res) => res.data.products || res.data)
+      : api.get('/products', { params: { limit: 200 } }).then((res) => res.data.products || res.data),
+    enabled: !!stockInModal,
+  })
+
+  const { data: warehouses } = useQuery({
+    queryKey: ['stock-in-warehouses'],
+    queryFn: () => api.get('/warehouses').then((res) => res.data),
+    enabled: !!stockInModal && !isBakala,
+  })
+
+  const stockInMutation = useMutation({
+    mutationFn: ({ productId, payload }) => isBakala
+      ? api.post(`/bakala-products/${productId}/add-stock`, payload)
+      : api.post(`/products/${productId}/stock`, payload),
+    onSuccess: () => {
+      toast.success(language === 'ar' ? 'تم إضافة المخزون' : 'Stock added successfully')
+      queryClient.invalidateQueries(['products'])
+      queryClient.invalidateQueries(['bakala-products'])
+      setStockInModal(null)
+      setStockForm({ productId: '', quantity: 1, costPrice: '', warehouseId: '', expiryDate: '', batchNumber: '' })
+    },
+    onError: (err) => toast.error(err.response?.data?.error || 'Error'),
+  })
+
+  const submitStockIn = () => {
+    if (!stockForm.productId) {
+      toast.error(language === 'ar' ? 'اختر منتج' : 'Select a product')
+      return
+    }
+    if (!stockForm.quantity || stockForm.quantity <= 0) {
+      toast.error(language === 'ar' ? 'الكمية يجب أن تكون أكبر من صفر' : 'Quantity must be greater than zero')
+      return
+    }
+    const payload = isBakala
+      ? { quantity: Number(stockForm.quantity), costPrice: stockForm.costPrice || undefined, expiryDate: stockForm.expiryDate || undefined, batchNumber: stockForm.batchNumber || undefined }
+      : { warehouseId: stockForm.warehouseId, quantity: Number(stockForm.quantity), type: 'add' }
+    stockInMutation.mutate({ productId: stockForm.productId, payload })
+  }
 
   const suppliers = data?.suppliers || []
   const pagination = data?.pagination
@@ -243,9 +293,23 @@ export default function Suppliers() {
                     </td>
                     <td>
                       <div className="flex items-center gap-2">
-                        <Link to={`/suppliers/${s._id}`} className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg">
+                        <Link to={`/suppliers/${s._id}`} className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg" title={language === 'ar' ? 'تعديل' : 'Edit'}>
                           <Edit className="w-4 h-4 text-gray-600" />
                         </Link>
+                        <Link
+                          to={`/purchase-orders/new?supplierId=${s._id}`}
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg"
+                          title={language === 'ar' ? 'طلب شراء جديد' : 'New Purchase Order'}
+                        >
+                          <ShoppingCart className="w-4 h-4 text-blue-600" />
+                        </Link>
+                        <button
+                          onClick={() => { setStockInModal(s); setStockForm({ productId: '', quantity: 1, costPrice: '', warehouseId: '', expiryDate: '', batchNumber: '' }) }}
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg"
+                          title={language === 'ar' ? 'إضافة مخزون سريع' : 'Quick Stock In'}
+                        >
+                          <PackagePlus className="w-4 h-4 text-emerald-600" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -275,6 +339,139 @@ export default function Suppliers() {
           >
             {language === 'ar' ? 'التالي' : 'Next'}
           </button>
+        </div>
+      )}
+
+      {stockInModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="card p-6 w-full max-w-md max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
+                  <PackagePlus className="w-5 h-5 text-emerald-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">{language === 'ar' ? 'إضافة مخزون سريع' : 'Quick Stock In'}</h3>
+                  <p className="text-sm text-gray-500">
+                    {language === 'ar' ? 'المورد:' : 'Supplier:'} {language === 'ar' ? stockInModal.nameAr || stockInModal.nameEn : stockInModal.nameEn}
+                  </p>
+                </div>
+              </div>
+              <button type="button" onClick={() => setStockInModal(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="label">{language === 'ar' ? 'المنتج' : 'Product'} *</label>
+                <select
+                  className="select"
+                  value={stockForm.productId}
+                  onChange={(e) => setStockForm((p) => ({ ...p, productId: e.target.value }))}
+                >
+                  <option value="">{language === 'ar' ? 'اختر منتج' : 'Select product'}</option>
+                  {(products || []).map((p) => (
+                    <option key={p._id} value={p._id}>
+                      {(language === 'ar' ? p.nameAr || p.nameEn : p.nameEn) || p.sku || p.primaryBarcode}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">{language === 'ar' ? 'الكمية' : 'Quantity'} *</label>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    className="input"
+                    value={stockForm.quantity}
+                    onChange={(e) => setStockForm((p) => ({ ...p, quantity: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label className="label">{language === 'ar' ? 'سعر التكلفة' : 'Cost Price'}</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    className="input"
+                    value={stockForm.costPrice}
+                    onChange={(e) => setStockForm((p) => ({ ...p, costPrice: e.target.value }))}
+                  />
+                </div>
+              </div>
+
+              {!isBakala && (
+                <div>
+                  <label className="label">{language === 'ar' ? 'المستودع' : 'Warehouse'} *</label>
+                  <select
+                    className="select"
+                    value={stockForm.warehouseId}
+                    onChange={(e) => setStockForm((p) => ({ ...p, warehouseId: e.target.value }))}
+                  >
+                    <option value="">{language === 'ar' ? 'اختر مستودع' : 'Select warehouse'}</option>
+                    {(warehouses || []).map((w) => (
+                      <option key={w._id} value={w._id}>
+                        {language === 'ar' ? w.nameAr || w.nameEn : w.nameEn}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {isBakala && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="label">{language === 'ar' ? 'تاريخ الانتهاء' : 'Expiry Date'}</label>
+                      <input
+                        type="date"
+                        className="input"
+                        value={stockForm.expiryDate}
+                        onChange={(e) => setStockForm((p) => ({ ...p, expiryDate: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="label">{language === 'ar' ? 'رقم التشغيلة' : 'Batch Number'}</label>
+                      <input
+                        className="input"
+                        value={stockForm.batchNumber}
+                        onChange={(e) => setStockForm((p) => ({ ...p, batchNumber: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button type="button" onClick={() => setStockInModal(null)} className="btn btn-secondary">
+                {t('cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={submitStockIn}
+                disabled={stockInMutation.isPending}
+                className="btn btn-primary"
+              >
+                {stockInMutation.isPending ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <PackagePlus className="w-4 h-4" />
+                    {language === 'ar' ? 'إضافة المخزون' : 'Add Stock'}
+                  </>
+                )}
+              </button>
+            </div>
+          </motion.div>
         </div>
       )}
     </div>

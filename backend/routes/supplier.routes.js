@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.use(protect);
 router.use(tenantFilter);
-router.use(requireBusinessType('trading', 'khayyat'));
+router.use(requireBusinessType('trading', 'khayyat', 'bakala'));
 
 // @route   GET /api/suppliers
 router.get('/', checkPermission('supply_chain', 'read'), async (req, res) => {
