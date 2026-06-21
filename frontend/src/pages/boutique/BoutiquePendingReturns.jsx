@@ -14,16 +14,70 @@ import {
   RefreshCw,
   Search,
   Filter,
+  Eye,
+  Trash2,
+  ArrowRight,
+  Box,
+  ClipboardCheck,
+  XCircle,
+  Ban,
+  Scissors,
 } from 'lucide-react'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import Money from '../../components/ui/Money'
 
 /**
- * BoutiquePendingReturns
- * Shows all rentals that are reserved, picked_up, or late_return.
- * Sorted by return date (closest first). Supports marking as returned.
+ * BoutiqueRentals — full rental lifecycle management
+ * Shows all rentals with status filtering and transition actions.
  */
+
+const STATUS_TABS = [
+  { key: 'all', label: 'All', labelAr: 'الكل' },
+  { key: 'reserved', label: 'Reserved', labelAr: 'محجوز' },
+  { key: 'picked_up', label: 'Picked Up', labelAr: 'تم الاستلام' },
+  { key: 'late_return', label: 'Late', labelAr: 'متأخر' },
+  { key: 'returned', label: 'Returned', labelAr: 'تم الإرجاع' },
+  { key: 'inspected', label: 'Inspected', labelAr: 'تم الفحص' },
+  { key: 'closed', label: 'Closed', labelAr: 'مغلق' },
+  { key: 'cancelled', label: 'Cancelled', labelAr: 'ملغى' },
+]
+
+const STATUS_CONFIG = {
+  draft: { color: 'bg-gray-100 text-gray-600', icon: Box },
+  reserved: { color: 'bg-amber-50 text-amber-700', icon: Clock },
+  picked_up: { color: 'bg-blue-50 text-blue-700', icon: RefreshCw },
+  late_return: { color: 'bg-red-50 text-red-700', icon: AlertTriangle },
+  returned: { color: 'bg-purple-50 text-purple-700', icon: Box },
+  inspected: { color: 'bg-teal-50 text-teal-700', icon: ClipboardCheck },
+  closed: { color: 'bg-emerald-50 text-emerald-700', icon: CheckCircle2 },
+  cancelled: { color: 'bg-gray-100 text-gray-500', icon: Ban },
+  disputed: { color: 'bg-orange-50 text-orange-700', icon: AlertTriangle },
+}
+
+// Allowed transitions per status (frontend mirror of backend logic)
+const ALLOWED_TRANSITIONS = {
+  reserved: [
+    { status: 'picked_up', label: 'Mark Picked Up', labelAr: 'تم الاستلام', color: 'bg-blue-50 text-blue-700 hover:bg-blue-100' },
+    { status: 'cancelled', label: 'Cancel', labelAr: 'إلغاء', color: 'bg-gray-50 text-gray-600 hover:bg-gray-100' },
+  ],
+  picked_up: [
+    { status: 'returned', label: 'Mark Returned', labelAr: 'تم الإرجاع', color: 'bg-purple-50 text-purple-700 hover:bg-purple-100' },
+  ],
+  late_return: [
+    { status: 'returned', label: 'Mark Returned', labelAr: 'تم الإرجاع', color: 'bg-purple-50 text-purple-700 hover:bg-purple-100' },
+  ],
+  returned: [
+    { status: 'inspected', label: 'Mark Inspected', labelAr: 'تم الفحص', color: 'bg-teal-50 text-teal-700 hover:bg-teal-100' },
+  ],
+  inspected: [
+    { status: 'closed', label: 'Close', labelAr: 'إغلاق', color: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' },
+    { status: 'disputed', label: 'Dispute', labelAr: 'نزاع', color: 'bg-orange-50 text-orange-700 hover:bg-orange-100' },
+  ],
+  disputed: [
+    { status: 'closed', label: 'Close', labelAr: 'إغلاق', color: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' },
+  ],
+}
 
 export default function BoutiquePendingReturns() {
   const { language } = useSelector((state) => state.ui)
@@ -33,15 +87,18 @@ export default function BoutiquePendingReturns() {
   const isArabic = language === 'ar'
   const label = (en, ar) => (isArabic ? ar : en)
 
-  const [filter, setFilter] = useState('all') // 'all' | 'overdue'
+  const [statusFilter, setStatusFilter] = useState('all')
   const [search, setSearch] = useState('')
 
   const { data, isLoading } = useQuery({
-    queryKey: ['boutique-pending-returns', filter],
+    queryKey: ['boutique-rentals', statusFilter],
     queryFn: () =>
       api
-        .get('/boutique/rentals/pending-returns', {
-          params: { overdue: filter === 'overdue' ? 'true' : 'false', limit: 200 },
+        .get('/boutique/rentals', {
+          params: {
+            status: statusFilter === 'all' ? undefined : statusFilter,
+            limit: 200,
+          },
         })
         .then((res) => res.data.rentals || []),
   })
@@ -58,12 +115,12 @@ export default function BoutiquePendingReturns() {
     )
   })
 
-  const returnMutation = useMutation({
-    mutationFn: ({ id, note }) =>
-      api.patch(`/boutique/rentals/${id}/status`, { status: 'returned', note }).then((res) => res.data),
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status, note }) =>
+      api.patch(`/boutique/rentals/${id}/status`, { status, note }).then((res) => res.data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['boutique-pending-returns'] })
       queryClient.invalidateQueries({ queryKey: ['boutique-rentals'] })
+      queryClient.invalidateQueries({ queryKey: ['boutique-pending-returns'] })
     },
   })
 
@@ -77,6 +134,17 @@ export default function BoutiquePendingReturns() {
     return diff
   }
 
+  const renderStatusBadge = (status) => {
+    const config = STATUS_CONFIG[status] || STATUS_CONFIG.draft
+    const Icon = config.icon
+    return (
+      <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${config.color}`}>
+        <Icon className="w-3 h-3" />
+        {label(status.replace(/_/g, ' '), status === 'picked_up' ? 'تم الاستلام' : status === 'late_return' ? 'متأخر' : status === 'reserved' ? 'محجوز' : status === 'returned' ? 'تم الإرجاع' : status === 'inspected' ? 'تم الفحص' : status === 'closed' ? 'مغلق' : status === 'cancelled' ? 'ملغى' : status === 'disputed' ? 'نزاع' : status)}
+      </span>
+    )
+  }
+
   return (
     <div className="space-y-6" dir={isArabic ? 'rtl' : 'ltr'}>
       {/* Header */}
@@ -84,10 +152,10 @@ export default function BoutiquePendingReturns() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Package className="w-6 h-6 text-rose-500" />
-            {label('Pending Returns', 'الإرجاعات المعلقة')}
+            {label('Rentals', 'الإيجارات')}
           </h1>
           <p className="text-gray-500 mt-1">
-            {label('Track active rentals and overdue items', 'تتبع الإيجارات النشطة والمتأخرة')}
+            {label('Track and manage all rental orders', 'تتبع وإدارة جميع أوامر الإيجار')}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -101,26 +169,24 @@ export default function BoutiquePendingReturns() {
               className="pl-9 pr-4 py-2 rounded-xl border border-gray-200 text-sm w-48 focus:ring-2 focus:ring-rose-200 outline-none"
             />
           </div>
-          <div className="flex bg-gray-100 rounded-xl p-1">
-            <button
-              onClick={() => setFilter('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-                filter === 'all' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
-              }`}
-            >
-              {label('All', 'الكل')}
-            </button>
-            <button
-              onClick={() => setFilter('overdue')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 ${
-                filter === 'overdue' ? 'bg-white text-red-600 shadow-sm' : 'text-gray-500'
-              }`}
-            >
-              <AlertTriangle className="w-3 h-3" />
-              {label('Overdue', 'متأخر')}
-            </button>
-          </div>
         </div>
+      </div>
+
+      {/* Status Tabs */}
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {STATUS_TABS.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setStatusFilter(tab.key)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${
+              statusFilter === tab.key
+                ? 'bg-rose-600 text-white shadow-sm'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            {label(tab.label, tab.labelAr)}
+          </button>
+        ))}
       </div>
 
       {/* Table */}
@@ -129,7 +195,7 @@ export default function BoutiquePendingReturns() {
       ) : filteredRentals.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
           <CheckCircle2 className="w-12 h-12 mb-3 opacity-30" />
-          <p>{label('No pending returns', 'لا توجد إرجاعات معلقة')}</p>
+          <p>{label('No rentals found', 'لا توجد إيجارات')}</p>
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
@@ -140,16 +206,17 @@ export default function BoutiquePendingReturns() {
                   <th className="px-4 py-3 text-left font-bold">{label('Rental #', 'رقم الإيجار')}</th>
                   <th className="px-4 py-3 text-left font-bold">{label('Customer', 'العميل')}</th>
                   <th className="px-4 py-3 text-left font-bold">{label('Items', 'المنتجات')}</th>
-                  <th className="px-4 py-3 text-left font-bold">{label('Return Date', 'تاريخ الإرجاع')}</th>
+                  <th className="px-4 py-3 text-left font-bold">{label('Dates', 'التواريخ')}</th>
                   <th className="px-4 py-3 text-left font-bold">{label('Status', 'الحالة')}</th>
                   <th className="px-4 py-3 text-right font-bold">{label('Total', 'الإجمالي')}</th>
-                  <th className="px-4 py-3 text-center font-bold">{label('Action', 'إجراء')}</th>
+                  <th className="px-4 py-3 text-center font-bold">{label('Actions', 'إجراءات')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {filteredRentals.map((rental) => {
                   const overdue = isOverdue(rental)
                   const daysLeft = daysUntil(rental)
+                  const transitions = ALLOWED_TRANSITIONS[rental.status] || []
                   return (
                     <motion.tr
                       key={rental._id}
@@ -159,6 +226,7 @@ export default function BoutiquePendingReturns() {
                     >
                       <td className="px-4 py-3">
                         <span className="font-mono text-xs font-bold text-gray-700">{rental.rentalNumber}</span>
+                        <div className="text-[10px] text-gray-400">{rental.transactionType}</div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="font-medium text-gray-900">{rental.customerName}</div>
@@ -181,34 +249,21 @@ export default function BoutiquePendingReturns() {
                         <div className="flex items-center gap-1.5">
                           <Calendar className={`w-3.5 h-3.5 ${overdue ? 'text-red-500' : 'text-gray-400'}`} />
                           <span className={`text-xs ${overdue ? 'text-red-600 font-bold' : 'text-gray-600'}`}>
-                            {new Date(rental.endDate).toLocaleDateString('en-GB')}
+                            {new Date(rental.startDate).toLocaleDateString('en-GB')} → {new Date(rental.endDate).toLocaleDateString('en-GB')}
                           </span>
                         </div>
-                        <span className={`text-[10px] ${overdue ? 'text-red-500' : daysLeft <= 1 ? 'text-amber-500' : 'text-gray-400'}`}>
-                          {overdue
-                            ? `${Math.abs(daysLeft)} ${label('days overdue', 'أيام متأخرة')}`
-                            : daysLeft === 0
-                            ? label('Due today', 'مستحق اليوم')
-                            : `${daysLeft} ${label('days left', 'أيام متبقية')}`}
-                        </span>
+                        {rental.status !== 'closed' && rental.status !== 'cancelled' && (
+                          <span className={`text-[10px] ${overdue ? 'text-red-500' : daysLeft <= 1 ? 'text-amber-500' : 'text-gray-400'}`}>
+                            {overdue
+                              ? `${Math.abs(daysLeft)} ${label('days overdue', 'أيام متأخرة')}`
+                              : daysLeft === 0
+                              ? label('Due today', 'مستحق اليوم')
+                              : `${daysLeft} ${label('days left', 'أيام متبقية')}`}
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                            rental.status === 'picked_up'
-                              ? 'bg-blue-50 text-blue-700'
-                              : rental.status === 'late_return'
-                              ? 'bg-red-50 text-red-700'
-                              : rental.status === 'reserved'
-                              ? 'bg-amber-50 text-amber-700'
-                              : 'bg-gray-100 text-gray-600'
-                          }`}
-                        >
-                          {rental.status === 'picked_up' && <RefreshCw className="w-3 h-3" />}
-                          {rental.status === 'late_return' && <AlertTriangle className="w-3 h-3" />}
-                          {rental.status === 'reserved' && <Clock className="w-3 h-3" />}
-                          {rental.status}
-                        </span>
+                        {renderStatusBadge(rental.status)}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <span className="font-bold text-gray-900">
@@ -216,18 +271,24 @@ export default function BoutiquePendingReturns() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        {rental.status !== 'returned' && rental.status !== 'closed' && (
-                          <button
-                            onClick={() =>
-                              returnMutation.mutate({ id: rental._id, note: 'Marked as returned from pending list' })
-                            }
-                            disabled={returnMutation.isPending}
-                            className="inline-flex items-center gap-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-lg transition-colors"
-                          >
-                            <CheckCircle2 className="w-3 h-3" />
-                            {label('Returned', 'تم الإرجاع')}
-                          </button>
-                        )}
+                        <div className="flex items-center justify-center gap-1 flex-wrap">
+                          {transitions.map((t) => (
+                            <button
+                              key={t.status}
+                              onClick={() =>
+                                statusMutation.mutate({ id: rental._id, status: t.status, note: `Marked as ${t.status}` })
+                              }
+                              disabled={statusMutation.isPending}
+                              className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg transition-colors ${t.color}`}
+                            >
+                              <ArrowRight className="w-3 h-3" />
+                              {label(t.label, t.labelAr)}
+                            </button>
+                          ))}
+                          {transitions.length === 0 && (
+                            <span className="text-[10px] text-gray-400">—</span>
+                          )}
+                        </div>
                       </td>
                     </motion.tr>
                   )

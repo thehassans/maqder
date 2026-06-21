@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { motion } from 'framer-motion'
@@ -48,7 +48,7 @@ import {
   Pie,
   Cell
 } from 'recharts'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
 import Money from '../components/ui/Money'
@@ -62,11 +62,20 @@ export default function Dashboard() {
   const { language } = useSelector((state) => state.ui)
   const { tenant } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
+  const navigate = useNavigate()
 
   const businessTypes = getTenantBusinessTypes(tenant)
   const isTrading = businessTypes.includes('trading')
   const isTravelAgency = businessTypes.includes('travel_agency')
   const isRestaurant = businessTypes.includes('restaurant')
+  const isBoutique = businessTypes.includes('boutique')
+
+  // Redirect boutique users directly to POS
+  useEffect(() => {
+    if (isBoutique) {
+      navigate('/app/dashboard/boutique/pos', { replace: true })
+    }
+  }, [isBoutique, navigate])
 
   const { data: dashboard, isLoading } = useQuery({
     queryKey: ['dashboard'],

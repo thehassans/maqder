@@ -63,6 +63,8 @@ export default function BoutiquePOS() {
   const [endDate, setEndDate] = useState('')
   const [discountAmount, setDiscountAmount] = useState(0)
   const [vatApplicable, setVatApplicable] = useState(true)
+  const [unavailableProductIds, setUnavailableProductIds] = useState(new Set())
+  const [availabilityError, setAvailabilityError] = useState(null)
 
   // ─── Product Fetch ───
   const { data: productsData, isLoading } = useQuery({
@@ -86,32 +88,87 @@ export default function BoutiquePOS() {
   // ─── Categories ───
   const categories = [...new Set(products.map((p) => p.category).filter(Boolean))]
 
-  // ─── Cart Logic ───
-  const addToCart = (product) => {
-    setCart((prev) => {
-      const existing = prev.find((item) => item.productId === product._id)
-      if (existing) return prev
-      return [
-        ...prev,
-        {
-          productId: product._id,
-          sku: product.sku,
-          name: product.name,
-          nameAr: product.nameAr,
-          size: product.size,
-          color: product.color,
-          image: product.primaryImage || product.images?.[0],
-          dailyRate: transactionMode === 'sale' ? product.salePrice : product.dailyRate,
-          salePrice: product.salePrice,
-          rentalRates: product.rentalRates,
-          securityDeposit: transactionMode === 'sale' ? 0 : product.securityDeposit,
-          quantity: 1,
-          rentalDays: 1,
-          mode: transactionMode,
-        },
-      ]
-    })
+  // ─── Availability Check ───
+  const checkProductAvailability = async (productId, start, end) => {
+    if (!start || !end || transactionMode === 'sale') return true
+    try {
+      const res = await api.post(`/boutique/availability/${productId}`, { startDate: start, endDate: end })
+      return res.data?.available === true
+    } catch (err) {
+      console.warn('Availability check failed', err)
+      return true
+    }
   }
+
+  const checkCartAvailability = async () => {
+    if (transactionMode === 'sale' || !startDate || !endDate || cart.length === 0) return
+    const unavailable = new Set()
+    for (const item of cart) {
+      const available = await checkProductAvailability(item.productId, startDate, endDate)
+      if (!available) unavailable.add(item.productId)
+    }
+    setUnavailableProductIds(unavailable)
+  }
+
+  // ─── Cart Logic ───
+  const addToCart = async (product) => {
+    const existing = cart.find((item) => item.productId === product._id)
+    if (existing) return
+
+    // Check availability for rental items before adding
+    if (transactionMode === 'rental' && startDate && endDate) {
+      const available = await checkProductAvailability(product._id, startDate, endDate)
+      if (!available) {
+        setAvailabilityError(`${isArabic ? product.nameAr || product.name : product.name} ${label('is not available for the selected dates', 'غير متاحة للتواريخ المحددة')}`)
+        setUnavailableProductIds((prev) => new Set([...prev, product._id]))
+        setTimeout(() => setAvailabilityError(null), 3000)
+        return
+      }
+    }
+
+    setAvailabilityError(null)
+    // Calculate rental days from dates if set
+    const calculatedDays = (transactionMode === 'rental' && startDate && endDate)
+      ? Math.max(1, Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)))
+      : 1
+
+    setCart((prev) => [
+      ...prev,
+      {
+        productId: product._id,
+        sku: product.sku,
+        name: product.name,
+        nameAr: product.nameAr,
+        size: product.size,
+        color: product.color,
+        image: product.primaryImage || product.images?.[0],
+        dailyRate: transactionMode === 'sale' ? product.salePrice : product.dailyRate,
+        salePrice: product.salePrice,
+        rentalRates: product.rentalRates,
+        securityDeposit: transactionMode === 'sale' ? 0 : product.securityDeposit,
+        quantity: 1,
+        rentalDays: calculatedDays,
+        mode: transactionMode,
+      },
+    ])
+  }
+
+  // Re-check availability when dates change
+  useEffect(() => {
+    if (transactionMode === 'rental' && startDate && endDate && cart.length > 0) {
+      checkCartAvailability()
+    }
+  }, [startDate, endDate])
+
+  // Auto-update cart rental days when dates change
+  useEffect(() => {
+    if (transactionMode === 'rental' && startDate && endDate) {
+      const days = Math.max(1, Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)))
+      setCart((prev) => prev.map((item) =>
+        item.mode === 'rental' ? { ...item, rentalDays: days } : item
+      ))
+    }
+  }, [startDate, endDate])
 
   const removeFromCart = (productId) => {
     setCart((prev) => prev.filter((item) => item.productId !== productId))
@@ -380,13 +437,28 @@ export default function BoutiquePOS() {
               <p>{label('No dresses found', 'لم يتم العثور على فساتين')}</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {products.map((product) => (
+            <>
+              {/* Availability Error Toast */}
+              {availabilityError && (
+                <div className="mb-4 bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700 flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  {availabilityError}
+                </div>
+              )}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {products.map((product) => {
+                const isUnavailable = unavailableProductIds.has(product._id)
+                const isInCart = cart.some((item) => item.productId === product._id)
+                return (
                 <motion.div
                   key={product._id}
                   layoutId={product._id}
                   onClick={() => addToCart(product)}
-                  className="group cursor-pointer bg-white rounded-2xl border border-gray-100 hover:border-rose-200 hover:shadow-lg transition-all duration-300 overflow-hidden"
+                  className={`group cursor-pointer bg-white rounded-2xl border transition-all duration-300 overflow-hidden ${
+                    isUnavailable || isInCart
+                      ? 'border-gray-200 opacity-60 cursor-not-allowed'
+                      : 'border-gray-100 hover:border-rose-200 hover:shadow-lg'
+                  }`}
                 >
                   <div className="aspect-[3/4] bg-gray-50 relative overflow-hidden">
                     {product.primaryImage ? (
@@ -442,8 +514,10 @@ export default function BoutiquePOS() {
                     </div>
                   </div>
                 </motion.div>
-              ))}
+                )
+              })}
             </div>
+          </>
           )}
         </div>
 

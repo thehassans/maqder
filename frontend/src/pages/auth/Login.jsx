@@ -65,6 +65,8 @@ export default function Login() {
       let redirectPath = '/app/dashboard';
       if (result.user?.role === 'super_admin') {
         redirectPath = '/super-admin';
+      } else if (businessTypes.includes('boutique')) {
+        redirectPath = '/app/dashboard/boutique/pos';
       } else if (businessTypes.includes('saloon')) {
         redirectPath = '/app/saloon/pos';
       } else if (businessTypes.includes('laundry')) {
