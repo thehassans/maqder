@@ -123,12 +123,16 @@ export async function generateBoutiqueThermalInvoice(rental, tenant, previousHas
     grandTotal: rental.grandTotal,
 
     // ZATCA metadata
+    status: 'approved',
+    submissionStatus: 'reported',
     zatca: {
       uuid: crypto.randomUUID(),
       invoiceCounter: await getNextInvoiceCounter(rental.tenantId),
       previousInvoiceHash: previousHash || 'NWZlY2ViNjZmZmM4NmYzOGQ5NTI3ODZjNmQ2OTZjNzljMmRiYzIzOWRkNGU5MWI0NjcyOWQ3M2EyN2ZiNTdlOQ==',
       qrCodeData: '', // populated below
-      status: 'reported', // simplified B2C auto-reported
+      status: 'reported',
+      submissionStatus: 'reported',
+      submittedAt: new Date(),
     },
 
     // Link back to rental
@@ -180,7 +184,7 @@ export async function generateBoutiqueThermalInvoice(rental, tenant, previousHas
 
   // Update invoice with QR and hash
   invoice.zatca.qrCodeData = qrPayload;
-  invoice.zatca.hash = xmlHash;
+  invoice.zatca.invoiceHash = xmlHash;
   invoice.zatca.signature = signature;
   await invoice.save();
 

@@ -419,6 +419,7 @@ router.post('/rentals', checkPermission('boutique', 'write'), async (req, res) =
       try {
         const result = await generateBoutiqueThermalInvoice(rental, tenant);
         invoice = result.invoice;
+        await queueZatcaReporting(invoice._id);
         // Link customer to invoice
         if (customer && invoice) {
           invoice.customerId = customer._id;
