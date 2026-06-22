@@ -5,7 +5,7 @@ import { existsSync, rmSync } from 'fs';
 import { execSync } from 'child_process';
 import path from 'path';
 import os from 'os';
-import { WhatsAppContact } from '../models/WhatsApp.js';
+import { WhatsAppContact, WhatsAppMessage } from '../models/WhatsApp.js';
 
 class WhatsAppService {
   constructor() {
@@ -179,6 +179,74 @@ class WhatsAppService {
       this.status.set(tenantId, { state: 'DISCONNECTED', error: String(reason) });
       this.qrCodes.delete(tenantId);
       this.clients.delete(tenantId);
+    });
+
+    // Capture messages sent/received from any device
+    client.on('message_create', async (msg) => {
+      try {
+        // Skip status broadcast messages
+        if (msg.from === 'status@broadcast') return;
+
+        const chatId = msg.fromMe ? msg.to : msg.from;
+        const isGroup = String(chatId).endsWith('@g.us');
+        const msgId = msg.id?._serialized;
+
+        // Find or create contact
+        let contact;
+        const contactQuery = isGroup
+          ? { tenantId, groupId: chatId }
+          : { tenantId, phoneNumber: chatId.replace('@c.us', '') };
+
+        contact = await WhatsAppContact.findOne(contactQuery);
+        if (!contact) {
+          const newContactData = {
+            tenantId,
+            source: 'webhook',
+            isGroup,
+            name: msg._data?.notifyName || chatId.replace('@c.us', '').replace('@g.us', '')
+          };
+          if (isGroup) {
+            newContactData.groupId = chatId;
+          } else {
+            const phone = chatId.replace('@c.us', '');
+            newContactData.phoneNumber = phone;
+            newContactData.formattedPhone = `+${phone}`;
+          }
+          contact = await WhatsAppContact.create(newContactData);
+        }
+
+        // Avoid duplicate saves (e.g. messages already saved by our own send routes)
+        const existing = await WhatsAppMessage.findOne({ tenantId, waMessageId: msgId });
+        if (existing) return;
+
+        // Map whatsapp-web.js types to schema enum
+        const typeMap = {
+          chat: 'text',
+          ptt: 'audio',
+          vcard: 'contact'
+        };
+        const messageType = typeMap[msg.type] || msg.type || 'text';
+
+        await WhatsAppMessage.create({
+          tenantId,
+          contactId: contact._id,
+          waMessageId: msgId,
+          direction: msg.fromMe ? 'outbound' : 'inbound',
+          type: messageType,
+          text: msg.body || null,
+          timestamp: new Date(msg.timestamp * 1000),
+          status: msg.fromMe ? 'sent' : 'delivered'
+        });
+
+        // Update contact
+        await WhatsAppContact.findByIdAndUpdate(contact._id, {
+          lastMessageAt: new Date(),
+          ...(msg.fromMe ? {} : { $inc: { unreadCount: 1 } }),
+          $inc: { totalMessages: 1 }
+        });
+      } catch (e) {
+        console.error(`[WhatsApp] message_create handler error for tenant ${tenantId}:`, e.message);
+      }
     });
 
     // Initialize with retry for shared-hosting crashes
