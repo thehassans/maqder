@@ -15,6 +15,7 @@ import { invoiceTemplateOptions } from '../lib/invoiceTemplates'
 import PosTerminalSettings from '../components/settings/PosTerminalSettings'
 import HardwareSettings from '../components/settings/HardwareSettings'
 import CarRentalApiSettings from '../components/settings/CarRentalApiSettings'
+import GovernmentIntegrations from './tenant-settings/GovernmentIntegrations'
 
 const invoiceBrandingContexts = [
   { key: 'trading', labelEn: 'Trading Invoice', labelAr: 'فاتورة تجارة' },
