@@ -33,11 +33,11 @@ export class ErrorBoundary extends Component {
             </p>
           </div>
           <button
-            onClick={() => this.setState({ hasError: false, error: null })}
+            onClick={() => window.location.reload()}
             className="btn btn-primary"
           >
             <RefreshCw className="w-4 h-4" />
-            Try Again
+            Reload Page
           </button>
           {process.env.NODE_ENV === 'development' && this.state.error && (
             <pre className="text-xs text-red-500 bg-red-50 dark:bg-red-900/20 p-4 rounded-xl max-w-full overflow-auto">

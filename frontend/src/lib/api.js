@@ -80,7 +80,12 @@ api.interceptors.response.use(
         window.dispatchEvent(new CustomEvent('tenant-inactive'))
       } else {
         localStorage.removeItem('token')
-        window.location.href = '/login'
+        // Avoid hard-reloading when already on the login page (prevents
+        // wiping the form when a stale token triggers a background getMe).
+        const alreadyOnLogin = window.location.pathname.includes('/login')
+        if (!alreadyOnLogin) {
+          window.location.href = '/login'
+        }
       }
     }
 
