@@ -70,17 +70,32 @@ export default function MarketingHome() {
 
       {/* ── HERO ── */}
       <section className="relative bg-[#030c06] text-white overflow-hidden">
-        <div className="pointer-events-none absolute -top-32 -left-32 h-[700px] w-[700px] rounded-full bg-emerald-500/[0.07] blur-[130px]" />
-        <div className="pointer-events-none absolute top-40 right-0 h-[500px] w-[500px] rounded-full bg-emerald-700/[0.07] blur-[110px]" />
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/25 to-transparent" />
+        {/* Grid texture */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 opacity-[0.18]"
+          style={{
+            backgroundImage:
+              'linear-gradient(to right, rgba(16,185,129,0.07) 1px, transparent 1px), linear-gradient(to bottom, rgba(16,185,129,0.07) 1px, transparent 1px)',
+            backgroundSize: '56px 56px',
+            maskImage: 'radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%)',
+            WebkitMaskImage: 'radial-gradient(ellipse 80% 60% at 50% 0%, black 40%, transparent 100%)',
+          }}
+        />
+        <div className="pointer-events-none absolute -top-32 -left-32 h-[700px] w-[700px] rounded-full bg-emerald-500/[0.09] blur-[130px]" />
+        <div className="pointer-events-none absolute top-40 right-0 h-[500px] w-[500px] rounded-full bg-emerald-700/[0.08] blur-[110px]" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/30 to-transparent" />
 
         <div className="relative mx-auto max-w-7xl px-4 pb-24 pt-16 sm:px-6 lg:px-8 lg:pb-32 lg:pt-24">
           <div className="grid items-center gap-14 lg:grid-cols-12">
 
             {/* Copy */}
             <motion.div initial={{ opacity: 0, y: 28 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.75 }} className="lg:col-span-5">
-              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-300">
-                <ShieldCheck className="h-4 w-4" />
+              <div className="inline-flex items-center gap-2.5 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-300 backdrop-blur-sm">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                </span>
                 {isArabic ? 'جاهز لـ ZATCA المرحلة الثانية' : 'ZATCA Phase 2 Certified'}
               </div>
 
@@ -102,10 +117,10 @@ export default function MarketingHome() {
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
                   to="/login"
-                  className="group inline-flex items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-7 py-4 font-semibold text-white shadow-[0_0_0_1px_rgba(52,211,153,0.15),0_8px_32px_-8px_rgba(52,211,153,0.45)] transition-all hover:shadow-[0_0_0_1px_rgba(52,211,153,0.3),0_12px_40px_-8px_rgba(52,211,153,0.6)]"
+                  className="group inline-flex items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-7 py-4 font-semibold text-white shadow-[0_0_0_1px_rgba(52,211,153,0.15),0_8px_32px_-8px_rgba(52,211,153,0.45)] transition-all hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_rgba(52,211,153,0.3),0_12px_40px_-8px_rgba(52,211,153,0.6)]"
                 >
                   {isArabic ? 'ابدأ الآن' : 'Get started'}
-                  <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
+                  <ArrowRight className={`h-5 w-5 transition-transform group-hover:translate-x-0.5 ${isArabic ? 'rotate-180 group-hover:-translate-x-0.5' : ''}`} />
                 </Link>
                 <a
                   href="#demos"
@@ -120,7 +135,26 @@ export default function MarketingHome() {
                 </a>
               </div>
 
-              <div className="mt-8 flex flex-wrap gap-2">
+              {/* Rating / social proof */}
+              <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex -space-x-2.5">
+                    {['A', 'S', 'K', 'M'].map((c, i) => (
+                      <div key={i} className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#030c06] bg-gradient-to-br from-emerald-400 to-emerald-600 text-[11px] font-bold text-white">
+                        {c}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="text-sm">
+                    <div className="flex items-center gap-1">
+                      {[...Array(5)].map((_, j) => <Star key={j} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />)}
+                    </div>
+                    <p className="text-white/45">{isArabic ? '500+ شركة تثق بنا' : 'Trusted by 500+ companies'}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-7 flex flex-wrap gap-2">
                 {[
                   { icon: Sparkles, label: isArabic ? 'واجهة أنيقة' : 'Clean UI' },
                   { icon: Globe, label: isArabic ? 'عربي / English' : 'Arabic / English' },
@@ -131,11 +165,6 @@ export default function MarketingHome() {
                     {item.label}
                   </div>
                 ))}
-              </div>
-
-              <div className="mt-6 flex items-center gap-2 text-sm text-white/35">
-                <Phone className="h-4 w-4" />
-                <a href={`tel:${phone.replace(/\s+/g, '')}`} className="transition hover:text-emerald-300">{phone}</a>
               </div>
             </motion.div>
 
@@ -203,19 +232,51 @@ export default function MarketingHome() {
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-white to-transparent" />
       </section>
 
+      {/* ── CERTIFICATIONS STRIP ── */}
+      <section className="border-b border-slate-100 bg-white py-10">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <p className="mb-7 text-center text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">
+            {isArabic ? 'معتمد ومتوافق مع' : 'Certified & compliant with'}
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
+            {[
+              { src: '/ZATCA_Logo.svg', alt: 'ZATCA', cls: 'h-12' },
+              { src: '/saudi-vision-2030-logo.png', alt: 'Saudi Vision 2030', cls: 'h-12' },
+              { src: '/saudi_tech_mob_en.svg', alt: 'Saudi Tech MOB', cls: 'h-10' },
+            ].map((logo) => (
+              <div
+                key={logo.alt}
+                className="flex h-20 min-w-[150px] items-center justify-center rounded-2xl border border-slate-200/70 bg-slate-50/50 px-6 grayscale transition-all duration-300 hover:grayscale-0 hover:border-emerald-200 hover:bg-white hover:shadow-md"
+              >
+                <img src={logo.src} alt={logo.alt} className={`${logo.cls} w-auto object-contain`} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── STATS ── */}
       <section className="bg-white py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-6">
             {[
               { value: '500+', label: isArabic ? 'شركة تثق بنا' : 'Companies trust us' },
               { value: '50K+', label: isArabic ? 'فاتورة يومياً' : 'Invoices processed daily' },
               { value: '99.9%', label: isArabic ? 'وقت تشغيل المنصة' : 'Platform uptime' },
               { value: '24/7', label: isArabic ? 'دعم فني متواصل' : 'Customer support' },
             ].map((stat, i) => (
-              <motion.div key={i} variants={fade} initial="initial" whileInView="animate" viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.08 }} className="text-center">
-                <p className="text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">{stat.value}</p>
-                <p className="mt-2 text-sm text-slate-500">{stat.label}</p>
+              <motion.div
+                key={i}
+                variants={fade}
+                initial="initial"
+                whileInView="animate"
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.08 }}
+                className="group relative overflow-hidden rounded-3xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50/60 p-6 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-emerald-300/60 hover:shadow-xl hover:shadow-emerald-100/50 sm:p-8"
+              >
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/40 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+                <p className="bg-gradient-to-b from-slate-900 to-slate-700 bg-clip-text text-4xl font-black tracking-tight text-transparent sm:text-5xl">{stat.value}</p>
+                <p className="mt-2 text-sm font-medium text-slate-500">{stat.label}</p>
               </motion.div>
             ))}
           </div>
@@ -245,12 +306,17 @@ export default function MarketingHome() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-5">
             {modules.map((m, idx) => (
               <motion.div key={idx} variants={fade} initial="initial" whileInView="animate" viewport={{ once: true }} transition={{ duration: 0.4, delay: (idx % 4) * 0.07 }}
-                className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-emerald-300/60 hover:shadow-xl hover:shadow-emerald-100/60">
-                <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-600 ring-1 ring-slate-200/80 transition-all duration-200 group-hover:bg-gradient-to-br group-hover:from-emerald-500 group-hover:to-emerald-600 group-hover:text-white group-hover:ring-emerald-500/20 group-hover:shadow-lg group-hover:shadow-emerald-500/25">
+                className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-emerald-300/60 hover:shadow-xl hover:shadow-emerald-100/60">
+                <div className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full bg-emerald-400/0 blur-2xl transition-all duration-500 group-hover:bg-emerald-400/20" />
+                <div className="relative mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-600 ring-1 ring-slate-200/80 transition-all duration-300 group-hover:bg-gradient-to-br group-hover:from-emerald-500 group-hover:to-emerald-600 group-hover:text-white group-hover:ring-emerald-500/20 group-hover:shadow-lg group-hover:shadow-emerald-500/25">
                   <m.icon className="h-5 w-5" />
                 </div>
-                <p className="font-bold text-slate-950">{isArabic ? m.titleAr : m.titleEn}</p>
-                <p className="mt-2 text-sm leading-relaxed text-slate-500">{isArabic ? m.descAr : m.descEn}</p>
+                <p className="relative font-bold text-slate-950">{isArabic ? m.titleAr : m.titleEn}</p>
+                <p className="relative mt-2 text-sm leading-relaxed text-slate-500">{isArabic ? m.descAr : m.descEn}</p>
+                <div className={`relative mt-4 flex items-center gap-1 text-sm font-semibold text-emerald-600 opacity-0 transition-all duration-300 group-hover:opacity-100 ${isArabic ? 'group-hover:-translate-x-1' : 'group-hover:translate-x-1'}`}>
+                  {isArabic ? 'اعرف المزيد' : 'Learn more'}
+                  <ArrowRight className={`h-3.5 w-3.5 ${isArabic ? 'rotate-180' : ''}`} />
+                </div>
               </motion.div>
             ))}
           </div>

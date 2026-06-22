@@ -38,6 +38,10 @@ export default function Login() {
   const location = useLocation()
 
   const isAccountNotFound = typeof error === 'string' && /account does not exist|الحساب غير موجود/i.test(error)
+  const isInvalidCredentials = typeof error === 'string' && /invalid credentials|بيانات الدخول غير صحيحة|incorrect/i.test(error)
+  const friendlyError = isInvalidCredentials
+    ? (language === 'ar' ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة. يرجى المحاولة مرة أخرى.' : 'Email or password may be incorrect. Please try again.')
+    : error
 
   const demoEmail = searchParams.get('demoEmail')
   const demoPassword = searchParams.get('demoPassword')
@@ -281,7 +285,7 @@ export default function Login() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <p className="text-sm text-red-600 font-medium">{error}</p>
+                <p className="text-sm text-red-600 font-medium">{friendlyError}</p>
               </motion.div>
             )
           )}
