@@ -8,6 +8,18 @@ import App from './App'
 import { store } from './store'
 import './index.css'
 import { registerSW } from 'virtual:pwa-register'
+import { ErrorBoundary } from './lib/errorBoundary'
+
+// Recover from stale PWA chunks after a new deploy: if a lazy chunk fails to
+// load (old index.html referencing purged hashed files), reload once to fetch
+// the fresh build instead of showing a white screen.
+window.addEventListener('vite:preloadError', () => {
+  const KEY = 'vite-preload-reloaded'
+  if (!sessionStorage.getItem(KEY)) {
+    sessionStorage.setItem(KEY, '1')
+    window.location.reload()
+  }
+})
 
 const updateSW = registerSW({
   onNeedRefresh() {
@@ -36,7 +48,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
-          <App />
+          <ErrorBoundary fallbackMessage="Something went wrong while loading the app. Please reload the page.">
+            <App />
+          </ErrorBoundary>
           <Toaster
             position="top-center"
             toastOptions={{

@@ -37,11 +37,15 @@ export default function Login() {
 
   const location = useLocation()
 
-  const isAccountNotFound = typeof error === 'string' && /account does not exist|الحساب غير موجود/i.test(error)
-  const isInvalidCredentials = typeof error === 'string' && /invalid credentials|بيانات الدخول غير صحيحة|incorrect/i.test(error)
+  const errorStr = typeof error === 'string' ? error : (error ? String(error?.message || error?.error || '') : '')
+  const isAccountNotFound = /account does not exist|الحساب غير موجود/i.test(errorStr)
+  const isInvalidCredentials = /invalid credentials|بيانات الدخول غير صحيحة|incorrect/i.test(errorStr)
+  const isAccountLocked = /temporarily locked|مؤقتاً مقفل|مؤقتاً مغلق/i.test(errorStr)
   const friendlyError = isInvalidCredentials
     ? (language === 'ar' ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة. يرجى المحاولة مرة أخرى.' : 'Email or password may be incorrect. Please try again.')
-    : error
+    : isAccountLocked
+    ? (language === 'ar' ? 'تم قفل الحساب مؤقتاً بسبب محاولات كثيرة. حاول مرة أخرى لاحقاً.' : 'Account is temporarily locked due to too many attempts. Please try again later.')
+    : errorStr
 
   const demoEmail = searchParams.get('demoEmail')
   const demoPassword = searchParams.get('demoPassword')
