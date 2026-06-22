@@ -39,7 +39,7 @@ const whatsappConfigSchema = new mongoose.Schema({
 const whatsappContactSchema = new mongoose.Schema({
   tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
   
-  phoneNumber: { type: String, required: true },
+  phoneNumber: { type: String, index: true },
   countryCode: { type: String, default: '+966' },
   formattedPhone: { type: String },
   
@@ -53,17 +53,28 @@ const whatsappContactSchema = new mongoose.Schema({
   
   labels: [{ type: String }],
   notes: { type: String },
+
+  // Group fields
+  isGroup: { type: Boolean, default: false },
+  groupId: { type: String, index: true },
+  groupDescription: { type: String },
+  participantCount: { type: Number },
+  groupOwner: { type: String },
   
   // Conversation stats
   lastMessageAt: { type: Date },
   unreadCount: { type: Number, default: 0 },
   totalMessages: { type: Number, default: 0 },
   
+  // Sync metadata
+  source: { type: String, enum: ['webhook', 'sync', 'manual'], default: 'webhook' },
+
   isBlocked: { type: Boolean, default: false },
   isStarred: { type: Boolean, default: false }
 }, { timestamps: true });
 
-whatsappContactSchema.index({ tenantId: 1, phoneNumber: 1 }, { unique: true });
+whatsappContactSchema.index({ tenantId: 1, phoneNumber: 1 }, { unique: true, sparse: true });
+whatsappContactSchema.index({ tenantId: 1, groupId: 1 }, { unique: true, sparse: true });
 
 // WhatsApp Message Schema
 const whatsappMessageSchema = new mongoose.Schema({

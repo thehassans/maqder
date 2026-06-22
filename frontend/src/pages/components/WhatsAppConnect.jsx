@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
-import { QrCode, LogOut, RefreshCw, Smartphone, CheckCircle } from 'lucide-react';
+import { QrCode, LogOut, RefreshCw, Smartphone, CheckCircle, Download, Users } from 'lucide-react';
 import api from '../../lib/api';
 
 export default function WhatsAppConnect() {
@@ -26,6 +26,24 @@ export default function WhatsAppConnect() {
     mutationFn: () => api.post('/whatsapp/client/logout').then(r => r.data),
     onSuccess: () => refetch()
   });
+
+  const syncMutation = useMutation({
+    mutationFn: () => api.post('/whatsapp/client/sync-contacts').then(r => r.data),
+    onSuccess: () => {
+      refetch();
+      window.dispatchEvent(new CustomEvent('whatsapp-contacts-synced'));
+    }
+  });
+
+  const exportContacts = (format = 'csv', type = 'all') => {
+    const url = `/whatsapp/contacts/export?format=${format}&type=${type}`;
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `whatsapp-contacts.${format}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const status = statusData?.status || 'DISCONNECTED';
   const qrCode = statusData?.qrCode;
@@ -68,19 +86,43 @@ export default function WhatsAppConnect() {
           <h3 className="text-lg font-bold text-green-800 dark:text-green-400 mb-2">
             {language === 'ar' ? 'تم الربط بنجاح' : 'Successfully Connected!'}
           </h3>
-          <p className="text-sm text-green-700 dark:text-green-500 mb-6 text-center">
-            {language === 'ar' 
-              ? 'واتساب الخاص بك جاهز لإرسال الفواتير.' 
-              : 'Your WhatsApp is ready to send invoices.'}
+          <p className="text-sm text-green-700 dark:text-green-500 mb-4 text-center">
+            {language === 'ar'
+              ? 'واتساب الخاص بك جاهز. يتم حفظ جهات الاتصال والمجموعات تلقائياً.'
+              : 'Your WhatsApp is ready. Contacts & groups are auto-saved.'}
           </p>
-          <button 
-            onClick={() => logoutMutation.mutate()}
-            disabled={logoutMutation.isPending}
-            className="flex items-center gap-2 px-6 py-2.5 bg-white dark:bg-dark-800 text-red-600 font-medium rounded-xl border border-red-200 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
-          >
-            <LogOut className="w-4 h-4" />
-            {language === 'ar' ? 'إلغاء الربط' : 'Disconnect'}
-          </button>
+          {syncMutation.isSuccess && (
+            <p className="text-xs text-green-600 mb-4">
+              {language === 'ar'
+                ? `تم مزامنة ${syncMutation.data?.individuals || 0} جهة اتصال و ${syncMutation.data?.groups || 0} مجموعة`
+                : `Synced ${syncMutation.data?.individuals || 0} contacts & ${syncMutation.data?.groups || 0} groups`}
+            </p>
+          )}
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <button
+              onClick={() => syncMutation.mutate()}
+              disabled={syncMutation.isPending}
+              className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-dark-800 text-green-700 font-medium rounded-xl border border-green-200 dark:border-green-900/30 hover:bg-green-50 dark:hover:bg-green-900/10 transition-colors"
+            >
+              {syncMutation.isPending ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Users className="w-4 h-4" />}
+              {language === 'ar' ? 'مزامنة جهات الاتصال' : 'Sync Contacts'}
+            </button>
+            <button
+              onClick={() => exportContacts('csv', 'all')}
+              className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-dark-800 text-blue-600 font-medium rounded-xl border border-blue-200 dark:border-blue-900/30 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              {language === 'ar' ? 'تصدير الكل' : 'Export All'}
+            </button>
+            <button
+              onClick={() => logoutMutation.mutate()}
+              disabled={logoutMutation.isPending}
+              className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-dark-800 text-red-600 font-medium rounded-xl border border-red-200 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              {language === 'ar' ? 'إلغاء الربط' : 'Disconnect'}
+            </button>
+          </div>
         </div>
       ) : status === 'QR_READY' && qrCode ? (
         <div className="flex flex-col items-center">

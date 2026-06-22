@@ -9,7 +9,7 @@ import {
   MessageCircle, Search, Send, Paperclip, Smile, MoreVertical,
   Phone, Video, Star, Archive, Trash2, Users, Settings, Plus,
   FileText, Zap, Radio, ChevronLeft, Check, CheckCheck, Clock,
-  Image, File, MapPin, X, RefreshCw, Copy, Edit2, AlertCircle
+  Image, File, MapPin, X, RefreshCw, Copy, Edit2, AlertCircle, Download
 } from 'lucide-react'
 import api from '../lib/api'
 import WhatsAppConnect from './components/WhatsAppConnect'
@@ -297,6 +297,22 @@ export default function WhatsApp() {
                             <RefreshCw className="w-4 h-4 text-emerald-600" />
                             {language === 'ar' ? 'تحديث البيانات' : 'Refresh Data'}
                           </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              close()
+                              const link = document.createElement('a')
+                              link.href = '/whatsapp/contacts/export?format=csv&type=all'
+                              link.download = 'whatsapp-contacts.csv'
+                              document.body.appendChild(link)
+                              link.click()
+                              document.body.removeChild(link)
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors text-sm text-gray-800 dark:text-gray-200"
+                          >
+                            <Download className="w-4 h-4 text-blue-600" />
+                            {language === 'ar' ? 'تصدير جهات الاتصال' : 'Export Contacts'}
+                          </button>
                         </div>
                       </div>
                     )}
@@ -307,10 +323,14 @@ export default function WhatsApp() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-2 mb-4">
+          <div className="grid grid-cols-4 gap-2 mb-4">
             <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-2 text-center">
               <div className="text-lg font-bold text-green-600">{stats?.totalContacts || 0}</div>
               <div className="text-xs text-gray-500">{language === 'ar' ? 'جهات اتصال' : 'Contacts'}</div>
+            </div>
+            <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-2 text-center">
+              <div className="text-lg font-bold text-purple-600">{stats?.totalGroups || 0}</div>
+              <div className="text-xs text-gray-500">{language === 'ar' ? 'مجموعات' : 'Groups'}</div>
             </div>
             <div className="bg-gray-50 dark:bg-dark-700 rounded-lg p-2 text-center">
               <div className="text-lg font-bold text-blue-600">{stats?.totalMessages || 0}</div>
@@ -378,8 +398,8 @@ export default function WhatsApp() {
                     }`}
                   >
                     <div className="relative">
-                      <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-white font-bold">
-                        {contact.name?.[0]?.toUpperCase() || contact.phoneNumber?.[0]}
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${contact.isGroup ? 'bg-gradient-to-br from-purple-400 to-purple-600' : 'bg-gradient-to-br from-green-400 to-green-600'}`}>
+                        {contact.isGroup ? <Users className="w-5 h-5" /> : (contact.name?.[0]?.toUpperCase() || contact.phoneNumber?.[0])}
                       </div>
                       {contact.isStarred && (
                         <Star className="absolute -top-1 -right-1 w-4 h-4 text-yellow-500 fill-yellow-500" />
@@ -387,13 +407,18 @@ export default function WhatsApp() {
                     </div>
                     <div className="flex-1 min-w-0 text-left">
                       <div className="flex items-center justify-between">
-                        <span className="font-medium truncate">{contact.name || contact.formattedPhone}</span>
+                        <span className="font-medium truncate flex items-center gap-1.5">
+                          {contact.name || contact.formattedPhone}
+                          {contact.isGroup && (
+                            <span className="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full font-semibold">{language === 'ar' ? 'مجموعة' : 'Group'}</span>
+                          )}
+                        </span>
                         <span className="text-xs text-gray-400">
                           {contact.lastMessageAt && formatTime(contact.lastMessageAt)}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-500 truncate">{contact.formattedPhone}</span>
+                        <span className="text-sm text-gray-500 truncate">{contact.isGroup ? (contact.groupId || '') : (contact.formattedPhone || '')}</span>
                         {contact.unreadCount > 0 && (
                           <span className="bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                             {contact.unreadCount}
@@ -486,12 +511,12 @@ export default function WhatsApp() {
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
-                <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-white font-bold">
-                  {selectedContact.name?.[0]?.toUpperCase() || selectedContact.phoneNumber?.[0]}
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${selectedContact.isGroup ? 'bg-gradient-to-br from-purple-400 to-purple-600' : 'bg-gradient-to-br from-green-400 to-green-600'}`}>
+                  {selectedContact.isGroup ? <Users className="w-5 h-5" /> : (selectedContact.name?.[0]?.toUpperCase() || selectedContact.phoneNumber?.[0])}
                 </div>
                 <div>
                   <h3 className="font-medium">{selectedContact.name || selectedContact.formattedPhone}</h3>
-                  <p className="text-sm text-gray-500">{selectedContact.formattedPhone}</p>
+                  <p className="text-sm text-gray-500">{selectedContact.isGroup ? (selectedContact.groupId || '') : (selectedContact.formattedPhone || '')}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">

@@ -5,6 +5,7 @@ import { existsSync, rmSync } from 'fs';
 import { execSync } from 'child_process';
 import path from 'path';
 import os from 'os';
+import { WhatsAppContact } from '../models/WhatsApp.js';
 
 class WhatsAppService {
   constructor() {
@@ -153,10 +154,12 @@ class WhatsAppService {
       }
     });
 
-    client.on('ready', () => {
+    client.on('ready', async () => {
       console.log(`[WhatsApp] Ready for tenant ${tenantId}`);
       this.status.set(tenantId, { state: 'READY', error: null });
       this.qrCodes.delete(tenantId);
+      // Auto-sync contacts and groups in background
+      try { await this.syncContacts(tenantId); } catch (e) { console.error(`[WhatsApp] Auto-sync error for tenant ${tenantId}:`, e.message); }
     });
 
     client.on('authenticated', () => {
@@ -253,6 +256,81 @@ class WhatsAppService {
     let phone = phoneNumber.replace(/\D/g, '');
     if (!phone.endsWith('@c.us')) phone = `${phone}@c.us`;
     return await client.sendMessage(phone, text);
+  }
+
+  async syncContacts(tenantId) {
+    tenantId = String(tenantId);
+    const client = this.clients.get(tenantId);
+    if (!client || this.status.get(tenantId)?.state !== 'READY') {
+      throw new Error('WhatsApp client is not ready');
+    }
+
+    let individuals = 0;
+    let groups = 0;
+
+    // 1. Sync individual contacts
+    try {
+      const contacts = await client.getContacts();
+      const validContacts = contacts.filter(c => c.isWAContact && !c.id._serialized.endsWith('@g.us'));
+      for (const c of validContacts) {
+        const cleanNumber = c.number ? c.number.replace(/\D/g, '') : c.id._serialized.replace('@c.us', '');
+        await WhatsAppContact.findOneAndUpdate(
+          { tenantId, phoneNumber: cleanNumber },
+          {
+            tenantId,
+            phoneNumber: cleanNumber,
+            formattedPhone: cleanNumber ? `+${cleanNumber}` : null,
+            name: c.name || c.pushname || cleanNumber,
+            profileName: c.pushname || null,
+            source: 'sync',
+            isGroup: false,
+            groupId: null
+          },
+          { upsert: true, new: true }
+        );
+        individuals++;
+      }
+    } catch (e) {
+      console.error(`[WhatsApp] Contact sync error for tenant ${tenantId}:`, e.message);
+    }
+
+    // 2. Sync groups
+    try {
+      const chats = await client.getChats();
+      const groupChats = chats.filter(c => c.isGroup);
+      for (const g of groupChats) {
+        const gid = g.id._serialized;
+        let participantCount = null;
+        try {
+          if (g.groupMetadata && g.groupMetadata.participants) {
+            participantCount = g.groupMetadata.participants.length;
+          }
+        } catch (_) {}
+        await WhatsAppContact.findOneAndUpdate(
+          { tenantId, groupId: gid },
+          {
+            tenantId,
+            phoneNumber: null,
+            formattedPhone: null,
+            name: g.name || gid,
+            profileName: null,
+            source: 'sync',
+            isGroup: true,
+            groupId: gid,
+            groupDescription: g.groupMetadata?.desc || null,
+            participantCount: participantCount,
+            groupOwner: g.groupMetadata?.owner?._serialized || null
+          },
+          { upsert: true, new: true }
+        );
+        groups++;
+      }
+    } catch (e) {
+      console.error(`[WhatsApp] Group sync error for tenant ${tenantId}:`, e.message);
+    }
+
+    console.log(`[WhatsApp] Synced ${individuals} contacts and ${groups} groups for tenant ${tenantId}`);
+    return { individuals, groups };
   }
 }
 

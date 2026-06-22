@@ -354,6 +354,16 @@ router.post('/client/logout', async (req, res) => {
   }
 });
 
+// Sync contacts from WhatsApp client
+router.post('/client/sync-contacts', async (req, res) => {
+  try {
+    const result = await whatsappService.syncContacts(req.user.tenantId);
+    res.json({ success: true, ...result });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.post('/client/send-pdf', upload.single('pdf'), async (req, res) => {
   try {
     const { phoneNumber, fileName, caption } = req.body;
@@ -500,6 +510,46 @@ router.get('/contacts', async (req, res) => {
     const total = await WhatsAppContact.countDocuments(query);
 
     res.json({ contacts, total, page: parseInt(page), limit: parseInt(limit) });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Export contacts (individuals + groups) as CSV/JSON
+router.get('/contacts/export', async (req, res) => {
+  try {
+    const { format = 'csv', type = 'all' } = req.query;
+    const query = { ...req.tenantFilter };
+    if (type === 'individuals') query.isGroup = false;
+    if (type === 'groups') query.isGroup = true;
+
+    const contacts = await WhatsAppContact.find(query).sort({ name: 1 }).lean();
+
+    if (format === 'json') {
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', 'attachment; filename="whatsapp-contacts.json"');
+      return res.json(contacts);
+    }
+
+    // CSV export
+    const headers = ['Name', 'Phone Number', 'Profile Name', 'Type', 'Group ID', 'Participants', 'Labels', 'Notes', 'Last Message', 'Created At'];
+    const rows = contacts.map(c => [
+      `"${(c.name || '').replace(/"/g, '""')}"`,
+      `"${(c.formattedPhone || c.phoneNumber || '').replace(/"/g, '""')}"`,
+      `"${(c.profileName || '').replace(/"/g, '""')}"`,
+      c.isGroup ? 'Group' : 'Individual',
+      `"${(c.groupId || '').replace(/"/g, '""')}"`,
+      c.participantCount || '',
+      `"${(c.labels || []).join(', ').replace(/"/g, '""')}"`,
+      `"${(c.notes || '').replace(/"/g, '""')}"`,
+      c.lastMessageAt ? new Date(c.lastMessageAt).toISOString() : '',
+      c.createdAt ? new Date(c.createdAt).toISOString() : ''
+    ]);
+
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="whatsapp-contacts.csv"');
+    res.send(csv);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1015,8 +1065,9 @@ router.get('/stats', async (req, res) => {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    const [contacts, messages, unread] = await Promise.all([
-      WhatsAppContact.countDocuments(req.tenantFilter),
+    const [contacts, groups, messages, unread] = await Promise.all([
+      WhatsAppContact.countDocuments({ ...req.tenantFilter, isGroup: false }),
+      WhatsAppContact.countDocuments({ ...req.tenantFilter, isGroup: true }),
       WhatsAppMessage.countDocuments({ ...req.tenantFilter, timestamp: { $gte: startDate } }),
       WhatsAppContact.aggregate([
         { $match: req.tenantFilter },
@@ -1025,11 +1076,11 @@ router.get('/stats', async (req, res) => {
     ]);
 
     const messagesByDay = await WhatsAppMessage.aggregate([
-      { 
-        $match: { 
-          ...req.tenantFilter, 
-          timestamp: { $gte: startDate } 
-        } 
+      {
+        $match: {
+          ...req.tenantFilter,
+          timestamp: { $gte: startDate }
+        }
       },
       {
         $group: {
@@ -1045,6 +1096,7 @@ router.get('/stats', async (req, res) => {
 
     res.json({
       totalContacts: contacts,
+      totalGroups: groups,
       totalMessages: messages,
       unreadMessages: unread[0]?.total || 0,
       messagesByDay
