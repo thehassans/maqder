@@ -753,6 +753,20 @@ export default function TenantForm() {
                   </div>
                   <input type="checkbox" {...register('subscription.hasWeightScaleAddon')} className="h-4 w-4 accent-teal-500" />
                 </label>
+                <label className="md:col-span-3 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 dark:border-amber-900/40 dark:bg-amber-950/20 flex items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'إضافة الفروع المتعددة' : 'Multi-Branch Add-on'}</p>
+                      <span className="px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[10px] font-bold uppercase">Restaurant</span>
+                    </div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{language === 'ar' ? 'يمكّن المستأجر من إنشاء وإدارة فروع متعددة مع مستخدمين مستقلين لكل فرع.' : 'Enables the tenant to create and manage multiple branches with independent users per branch.'}</p>
+                  </div>
+                  <input type="checkbox" {...register('subscription.hasBranchAddon')} className="h-4 w-4 accent-amber-500" />
+                </label>
+                <div>
+                  <label className="label">{language === 'ar' ? 'الحد الأقصى للفروع' : 'Max Branches'}</label>
+                  <input type="number" {...register('subscription.maxBranches', { valueAsNumber: true })} className="input" />
+                </div>
               </>
             )}
           </div>

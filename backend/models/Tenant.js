@@ -19,6 +19,8 @@ const subscriptionSchema = new mongoose.Schema({
   hasEmailAddon: { type: Boolean, default: false },
   hasIotAddon: { type: Boolean, default: false },
   hasWeightScaleAddon: { type: Boolean, default: false },
+  hasBranchAddon: { type: Boolean, default: false },
+  maxBranches: { type: Number, default: 0 },
   features: [{
     type: String,
     enum: ['hr', 'payroll', 'invoicing', 'inventory', 'ai', 'api_access', 'multi_warehouse', 'advanced_reports', 'email_automation']
@@ -296,6 +298,23 @@ const tenantSchema = new mongoose.Schema({
         enabled: { type: Boolean, default: false },
         paperWidth: { type: Number, default: 80 }, // mm
       }],
+      whatsapp: {
+        autoSendEnabled: { type: Boolean, default: false },
+        autoSendOnOpen: { type: Boolean, default: false },
+        autoSendOnOrderPlaced: { type: Boolean, default: false },
+        autoSendOnOrderReady: { type: Boolean, default: false },
+        autoSendOnOrderServed: { type: Boolean, default: false },
+        openMessageEn: { type: String, default: 'We are now open! Visit us today.' },
+        openMessageAr: { type: String, default: 'نحن الآن مفتوحون! زورنا اليوم.' },
+        orderPlacedMessageEn: { type: String, default: 'Your order has been placed. Order #: {{orderNumber}}' },
+        orderPlacedMessageAr: { type: String, default: 'تم استلام طلبك. رقم الطلب: {{orderNumber}}' },
+        orderReadyMessageEn: { type: String, default: 'Your order is ready for pickup/delivery. Order #: {{orderNumber}}' },
+        orderReadyMessageAr: { type: String, default: 'طلبك جاهز للاستلام/التوصيل. رقم الطلب: {{orderNumber}}' },
+        orderServedMessageEn: { type: String, default: 'Your order has been served. Thank you! Order #: {{orderNumber}}' },
+        orderServedMessageAr: { type: String, default: 'تم تقديم طلبك. شكراً لك! رقم الطلب: {{orderNumber}}' },
+        notifyPhoneList: [{ type: String }],
+        lastOpenNotificationSent: { type: Date },
+      },
     },
     saloon: {
       qrServices: {
@@ -364,16 +383,28 @@ tenantSchema.pre('validate', function(next) {
   const currentSubscription = this.subscription?.toObject?.() || this.subscription || {};
   const features = Array.isArray(currentSubscription.features) ? currentSubscription.features.filter(Boolean) : [];
   const hasEmailAddon = currentSubscription.hasEmailAddon === true;
+  const hasBranchAddon = currentSubscription.hasBranchAddon === true;
 
   const normalized = [...new Set(values.filter((value) => BUSINESS_TYPES.includes(value)))];
   this.businessTypes = normalized.length ? normalized : ['trading'];
 
+  let nextFeatures = features;
+  if (hasEmailAddon) {
+    nextFeatures = [...new Set([...nextFeatures, 'email_automation'])];
+  } else {
+    nextFeatures = nextFeatures.filter((feature) => feature !== 'email_automation');
+  }
+  if (hasBranchAddon) {
+    nextFeatures = [...new Set([...nextFeatures, 'multi_warehouse'])];
+  } else {
+    nextFeatures = nextFeatures.filter((feature) => feature !== 'multi_warehouse');
+  }
+
   this.subscription = {
     ...currentSubscription,
     hasEmailAddon,
-    features: hasEmailAddon
-      ? [...new Set([...features, 'email_automation'])]
-      : features.filter((feature) => feature !== 'email_automation'),
+    hasBranchAddon,
+    features: nextFeatures,
   };
 
   if (!this.businessType || !this.businessTypes.includes(this.businessType)) {

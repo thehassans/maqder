@@ -1,6 +1,7 @@
 import Tenant from '../models/Tenant.js';
 import { sendSms } from '../services/smsService.js';
 import whatsAppService from '../services/whatsappService.js';
+import { sendRestaurantOpenNotification } from '../services/restaurantWhatsAppService.js';
 
 /**
  * Check all tenants with restaurant business type and autoStatusUpdate enabled.
@@ -51,6 +52,13 @@ export async function checkRestaurantAutoStatus() {
           const msgEn = `${businessName} is now OPEN. Opening hours: ${openingTime} - ${closingTime}. We look forward to serving you!`;
           const msgAr = `مرحباً! ${businessNameAr} مفتوح الآن. ساعات العمل: من ${openingTime} إلى ${closingTime}. نتطلع لخدمتكم!`;
           await sendNotification(tenant._id, notifyPhone, msgEn, msgAr);
+
+          // Also send WhatsApp auto-open notification to notify list
+          try {
+            await sendRestaurantOpenNotification(tenant._id);
+          } catch (e) {
+            console.error('WhatsApp open notification failed:', e.message);
+          }
         } else {
           const msgEn = `${businessName} is now CLOSED. Thank you for visiting! We open tomorrow at ${openingTime}.`;
           const msgAr = `شكراً لزيارتكم! ${businessNameAr} مغلق الآن. نفتح غداً في الساعة ${openingTime}.`;

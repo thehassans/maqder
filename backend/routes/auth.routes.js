@@ -283,6 +283,7 @@ router.post('/login', async (req, res) => {
         firstNameAr: user.firstNameAr,
         lastNameAr: user.lastNameAr,
         role: user.role,
+        branchId: user.branchId,
         permissions: user.permissions,
         preferences: user.preferences,
         avatar: user.avatar
@@ -320,6 +321,7 @@ router.get('/me', protect, async (req, res) => {
         firstNameAr: user.firstNameAr,
         lastNameAr: user.lastNameAr,
         role: user.role,
+        branchId: user.branchId,
         permissions: user.permissions,
         preferences: user.preferences,
         avatar: user.avatar

@@ -78,6 +78,10 @@ router.put('/current', authorize('admin'), async (req, res) => {
           },
           // Printers array: replace entirely if provided, otherwise keep current
           ...(settings.restaurant?.printers !== undefined ? { printers: settings.restaurant.printers } : {}),
+          whatsapp: {
+            ...(currentSettings.restaurant?.whatsapp || {}),
+            ...(settings.restaurant?.whatsapp || {}),
+          },
         },
         saloon: {
           ...(currentSettings.saloon || {}),

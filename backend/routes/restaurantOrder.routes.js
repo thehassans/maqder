@@ -3,13 +3,23 @@ import RestaurantOrder from '../models/RestaurantOrder.js';
 import RestaurantMenuItem from '../models/RestaurantMenuItem.js';
 import Invoice from '../models/Invoice.js';
 import Tenant from '../models/Tenant.js';
+import Branch from '../models/Branch.js';
 import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
+import { sendRestaurantWhatsApp, sendRestaurantOpenNotification } from '../services/restaurantWhatsAppService.js';
 
 const router = express.Router();
 
 router.use(protect);
 router.use(tenantFilter);
 router.use(requireBusinessType('restaurant'));
+
+// Helper: build branch-scoped filter for non-admin users with a branchId
+function getBranchFilter(req) {
+  if (req.user?.branchId && req.user.role !== 'admin') {
+    return { branchId: req.user.branchId };
+  }
+  return {};
+}
 
 function toNumber(value, fallback = 0) {
   const n = Number(value);
@@ -103,7 +113,7 @@ router.get('/', checkPermission('restaurant', 'read'), async (req, res) => {
   try {
     const { page = 1, limit = 25, search, status } = req.query;
 
-    const query = { ...req.tenantFilter, isActive: true };
+    const query = { ...req.tenantFilter, ...getBranchFilter(req), isActive: true };
     if (status) query.status = status;
 
     if (search) {
@@ -296,8 +306,9 @@ router.post('/:id/create-invoice', checkPermission('restaurant', 'update'), chec
 
 router.get('/stats', checkPermission('restaurant', 'read'), async (req, res) => {
   try {
+    const branchMatch = getBranchFilter(req);
     const stats = await RestaurantOrder.aggregate([
-      { $match: { ...req.tenantFilter, isActive: true } },
+      { $match: { ...req.tenantFilter, ...branchMatch, isActive: true } },
       {
         $facet: {
           totals: [
@@ -342,6 +353,7 @@ router.get('/kitchen', checkPermission('restaurant', 'read'), async (req, res) =
 
     const query = {
       ...req.tenantFilter,
+      ...getBranchFilter(req),
       isActive: true,
       status: 'open',
       kitchenStatus: { $in: statusList.length ? statusList : ['new', 'preparing', 'ready'] },
@@ -375,6 +387,32 @@ router.put('/:id/kitchen-status', checkPermission('restaurant', 'update'), async
     );
 
     if (!updated) return res.status(404).json({ error: 'Order not found' });
+
+    // Auto WhatsApp on kitchen status change
+    try {
+      const tenant = await Tenant.findById(req.user.tenantId).select('settings.restaurant.whatsapp');
+      const wa = tenant?.settings?.restaurant?.whatsapp;
+      if (wa?.autoSendEnabled) {
+        if (nextStatus === 'ready' && wa.autoSendOnOrderReady) {
+          await sendRestaurantWhatsApp({
+            tenantId: req.user.tenantId,
+            phone: updated.customerPhone,
+            messageEn: wa.orderReadyMessageEn,
+            messageAr: wa.orderReadyMessageAr,
+            replacements: { orderNumber: updated.orderNumber },
+          });
+        } else if (nextStatus === 'served' && wa.autoSendOnOrderServed) {
+          await sendRestaurantWhatsApp({
+            tenantId: req.user.tenantId,
+            phone: updated.customerPhone,
+            messageEn: wa.orderServedMessageEn,
+            messageAr: wa.orderServedMessageAr,
+            replacements: { orderNumber: updated.orderNumber },
+          });
+        }
+      }
+    } catch {}
+
     res.json(updated);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -424,12 +462,28 @@ router.post('/', checkPermission('restaurant', 'create'), async (req, res) => {
       totalTax,
       grandTotal,
       tenantId: req.user.tenantId,
+      branchId: req.user?.branchId || req.body.branchId || undefined,
       createdBy: req.user._id,
     });
 
     if (order.status === 'paid') {
       await createInvoiceForOrder(order, req);
     }
+
+    // Auto WhatsApp on order placed
+    try {
+      const tenant = await Tenant.findById(req.user.tenantId).select('settings.restaurant.whatsapp');
+      const wa = tenant?.settings?.restaurant?.whatsapp;
+      if (wa?.autoSendEnabled && wa?.autoSendOnOrderPlaced) {
+        await sendRestaurantWhatsApp({
+          tenantId: req.user.tenantId,
+          phone: order.customerPhone,
+          messageEn: wa.orderPlacedMessageEn,
+          messageAr: wa.orderPlacedMessageAr,
+          replacements: { orderNumber: order.orderNumber },
+        });
+      }
+    } catch {}
 
     res.status(201).json(order);
   } catch (error) {
@@ -523,6 +577,16 @@ router.patch('/:id/payment', checkPermission('restaurant', 'update'), async (req
     }
 
     res.json(order);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/restaurant/orders/whatsapp/open-notification
+router.post('/whatsapp/open-notification', checkPermission('restaurant', 'update'), async (req, res) => {
+  try {
+    const result = await sendRestaurantOpenNotification(req.user.tenantId);
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

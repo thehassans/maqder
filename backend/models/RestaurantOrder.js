@@ -14,6 +14,7 @@ const orderLineSchema = new mongoose.Schema({
 
 const restaurantOrderSchema = new mongoose.Schema({
   tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
+  branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', index: true },
 
   orderNumber: { type: String, required: true },
   status: {

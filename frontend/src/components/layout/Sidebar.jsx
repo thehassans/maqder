@@ -404,6 +404,11 @@ export default function Sidebar() {
               VAT {tenant.business?.vatNumber}
             </div>
           )}
+          {user?.branchId && (
+            <div className="mt-2 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-semibold">
+              {language === 'ar' ? 'فرع' : 'Branch'}
+            </div>
+          )}
         </div>
       )}
 

@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 
 const userSchema = new mongoose.Schema({
   tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', index: true },
+  branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', index: true },
   email: { type: String, required: true, lowercase: true },
   password: { type: String, required: true, select: false },
   firstName: { type: String, required: true },

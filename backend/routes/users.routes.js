@@ -142,6 +142,7 @@ router.post('/', checkPermission('settings', 'create'), async (req, res) => {
 
     const created = await User.create({
       tenantId,
+      branchId: req.body?.branchId || undefined,
       email,
       password,
       firstName,
@@ -189,6 +190,7 @@ router.put('/:id', checkPermission('settings', 'update'), async (req, res) => {
     if (typeof req.body?.firstNameAr !== 'undefined') existing.firstNameAr = req.body.firstNameAr;
     if (typeof req.body?.lastNameAr !== 'undefined') existing.lastNameAr = req.body.lastNameAr;
     if (typeof req.body?.phone !== 'undefined') existing.phone = req.body.phone;
+    if (typeof req.body?.branchId !== 'undefined') existing.branchId = req.body.branchId || undefined;
 
     if (typeof req.body?.role !== 'undefined') {
       const role = String(req.body.role || 'viewer');

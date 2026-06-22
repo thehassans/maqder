@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector, useDispatch } from 'react-redux'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
-import { Building2, Shield, Globe, Palette, Bell, Save, Key, CheckCircle, Image, Database, Download, FileText, CreditCard, Terminal, Car, UtensilsCrossed, Clock, Printer, MapPin, Briefcase, Receipt } from 'lucide-react'
+import { Building2, Shield, Globe, Palette, Bell, Save, Key, CheckCircle, Image, Database, Download, FileText, CreditCard, Terminal, Car, UtensilsCrossed, Clock, Printer, MapPin, Briefcase, Receipt, MessageCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
@@ -81,6 +81,21 @@ export default function Settings() {
   const [restNotify, setRestNotify] = useState(false)
   const [restNotifyPhone, setRestNotifyPhone] = useState('')
   const [restPrinters, setRestPrinters] = useState([])
+  // WhatsApp auto-send settings
+  const [waAutoSend, setWaAutoSend] = useState(false)
+  const [waOnOpen, setWaOnOpen] = useState(false)
+  const [waOnOrderPlaced, setWaOnOrderPlaced] = useState(false)
+  const [waOnOrderReady, setWaOnOrderReady] = useState(false)
+  const [waOnOrderServed, setWaOnOrderServed] = useState(false)
+  const [waOpenMsgEn, setWaOpenMsgEn] = useState('We are now open! Visit us today.')
+  const [waOpenMsgAr, setWaOpenMsgAr] = useState('نحن الآن مفتوحون! زورنا اليوم.')
+  const [waOrderPlacedMsgEn, setWaOrderPlacedMsgEn] = useState('Your order has been placed. Order #: {{orderNumber}}')
+  const [waOrderPlacedMsgAr, setWaOrderPlacedMsgAr] = useState('تم استلام طلبك. رقم الطلب: {{orderNumber}}')
+  const [waOrderReadyMsgEn, setWaOrderReadyMsgEn] = useState('Your order is ready for pickup/delivery. Order #: {{orderNumber}}')
+  const [waOrderReadyMsgAr, setWaOrderReadyMsgAr] = useState('طلبك جاهز للاستلام/التوصيل. رقم الطلب: {{orderNumber}}')
+  const [waOrderServedMsgEn, setWaOrderServedMsgEn] = useState('Your order has been served. Thank you! Order #: {{orderNumber}}')
+  const [waOrderServedMsgAr, setWaOrderServedMsgAr] = useState('تم تقديم طلبك. شكراً لك! رقم الطلب: {{orderNumber}}')
+  const [waNotifyPhones, setWaNotifyPhones] = useState('')
 
   const { data: tenant } = useQuery({
     queryKey: ['tenant-settings'],
@@ -123,6 +138,22 @@ export default function Settings() {
     setRestNotify(rs.notifyOnStatusChange || false)
     setRestNotifyPhone(rs.statusNotificationPhone || '')
     setRestPrinters(rs.printers || [])
+    // WhatsApp auto-send init
+    const wa = rs.whatsapp || {}
+    setWaAutoSend(wa.autoSendEnabled || false)
+    setWaOnOpen(wa.autoSendOnOpen || false)
+    setWaOnOrderPlaced(wa.autoSendOnOrderPlaced || false)
+    setWaOnOrderReady(wa.autoSendOnOrderReady || false)
+    setWaOnOrderServed(wa.autoSendOnOrderServed || false)
+    setWaOpenMsgEn(wa.openMessageEn || 'We are now open! Visit us today.')
+    setWaOpenMsgAr(wa.openMessageAr || 'نحن الآن مفتوحون! زورنا اليوم.')
+    setWaOrderPlacedMsgEn(wa.orderPlacedMessageEn || 'Your order has been placed. Order #: {{orderNumber}}')
+    setWaOrderPlacedMsgAr(wa.orderPlacedMessageAr || 'تم استلام طلبك. رقم الطلب: {{orderNumber}}')
+    setWaOrderReadyMsgEn(wa.orderReadyMessageEn || 'Your order is ready for pickup/delivery. Order #: {{orderNumber}}')
+    setWaOrderReadyMsgAr(wa.orderReadyMessageAr || 'طلبك جاهز للاستلام/التوصيل. رقم الطلب: {{orderNumber}}')
+    setWaOrderServedMsgEn(wa.orderServedMessageEn || 'Your order has been served. Thank you! Order #: {{orderNumber}}')
+    setWaOrderServedMsgAr(wa.orderServedMessageAr || 'تم تقديم طلبك. شكراً لك! رقم الطلب: {{orderNumber}}')
+    setWaNotifyPhones(Array.isArray(wa.notifyPhoneList) ? wa.notifyPhoneList.join(', ') : '')
   }, [tenant])
 
   const { register, handleSubmit, reset, watch, setValue, control } = useForm()
@@ -836,6 +867,101 @@ export default function Settings() {
                 </div>
               </div>
 
+              {/* WhatsApp Auto-Send */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <MessageCircle className="w-5 h-5 text-green-500" />
+                  {language === 'ar' ? 'إرسال واتساب التلقائي' : 'WhatsApp Auto-Send'}
+                </h3>
+                <div className="space-y-4">
+                  <label className="flex items-center justify-between p-3 rounded-xl border border-gray-200 dark:border-dark-700">
+                    <span className="font-medium text-sm">{language === 'ar' ? 'تفعيل الإرسال التلقائي' : 'Enable Auto-Send'}</span>
+                    <input type="checkbox" checked={waAutoSend} onChange={(e) => setWaAutoSend(e.target.checked)} className="h-4 w-4 rounded" />
+                  </label>
+
+                  {waAutoSend && (
+                    <div className="space-y-3 pl-4 border-s-2 border-green-200 dark:border-green-900">
+                      <label className="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-dark-800">
+                        <span className="text-sm">{language === 'ar' ? 'إرسال عند فتح المطعم' : 'Send on Restaurant Open'}</span>
+                        <input type="checkbox" checked={waOnOpen} onChange={(e) => setWaOnOpen(e.target.checked)} className="h-4 w-4 rounded" />
+                      </label>
+                      <label className="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-dark-800">
+                        <span className="text-sm">{language === 'ar' ? 'إرسال عند إنشاء طلب' : 'Send on Order Placed'}</span>
+                        <input type="checkbox" checked={waOnOrderPlaced} onChange={(e) => setWaOnOrderPlaced(e.target.checked)} className="h-4 w-4 rounded" />
+                      </label>
+                      <label className="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-dark-800">
+                        <span className="text-sm">{language === 'ar' ? 'إرسال عند جاهزية الطلب' : 'Send on Order Ready'}</span>
+                        <input type="checkbox" checked={waOnOrderReady} onChange={(e) => setWaOnOrderReady(e.target.checked)} className="h-4 w-4 rounded" />
+                      </label>
+                      <label className="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-dark-800">
+                        <span className="text-sm">{language === 'ar' ? 'إرسال عند تقديم الطلب' : 'Send on Order Served'}</span>
+                        <input type="checkbox" checked={waOnOrderServed} onChange={(e) => setWaOnOrderServed(e.target.checked)} className="h-4 w-4 rounded" />
+                      </label>
+
+                      {waOnOpen && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="label text-xs">{language === 'ar' ? 'رسالة الفتح (EN)' : 'Open Message (EN)'}</label>
+                            <textarea className="input text-sm" rows={2} value={waOpenMsgEn} onChange={(e) => setWaOpenMsgEn(e.target.value)} />
+                          </div>
+                          <div>
+                            <label className="label text-xs">{language === 'ar' ? 'رسالة الفتح (AR)' : 'Open Message (AR)'}</label>
+                            <textarea className="input text-sm" rows={2} value={waOpenMsgAr} onChange={(e) => setWaOpenMsgAr(e.target.value)} dir="rtl" />
+                          </div>
+                        </div>
+                      )}
+
+                      {waOnOrderPlaced && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="label text-xs">{language === 'ar' ? 'رسالة الطلب (EN)' : 'Order Placed (EN)'}</label>
+                            <textarea className="input text-sm" rows={2} value={waOrderPlacedMsgEn} onChange={(e) => setWaOrderPlacedMsgEn(e.target.value)} />
+                          </div>
+                          <div>
+                            <label className="label text-xs">{language === 'ar' ? 'رسالة الطلب (AR)' : 'Order Placed (AR)'}</label>
+                            <textarea className="input text-sm" rows={2} value={waOrderPlacedMsgAr} onChange={(e) => setWaOrderPlacedMsgAr(e.target.value)} dir="rtl" />
+                          </div>
+                        </div>
+                      )}
+
+                      {waOnOrderReady && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="label text-xs">{language === 'ar' ? 'رسالة الجاهزية (EN)' : 'Order Ready (EN)'}</label>
+                            <textarea className="input text-sm" rows={2} value={waOrderReadyMsgEn} onChange={(e) => setWaOrderReadyMsgEn(e.target.value)} />
+                          </div>
+                          <div>
+                            <label className="label text-xs">{language === 'ar' ? 'رسالة الجاهزية (AR)' : 'Order Ready (AR)'}</label>
+                            <textarea className="input text-sm" rows={2} value={waOrderReadyMsgAr} onChange={(e) => setWaOrderReadyMsgAr(e.target.value)} dir="rtl" />
+                          </div>
+                        </div>
+                      )}
+
+                      {waOnOrderServed && (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label className="label text-xs">{language === 'ar' ? 'رسالة التقديم (EN)' : 'Order Served (EN)'}</label>
+                            <textarea className="input text-sm" rows={2} value={waOrderServedMsgEn} onChange={(e) => setWaOrderServedMsgEn(e.target.value)} />
+                          </div>
+                          <div>
+                            <label className="label text-xs">{language === 'ar' ? 'رسالة التقديم (AR)' : 'Order Served (AR)'}</label>
+                            <textarea className="input text-sm" rows={2} value={waOrderServedMsgAr} onChange={(e) => setWaOrderServedMsgAr(e.target.value)} dir="rtl" />
+                          </div>
+                        </div>
+                      )}
+
+                      {waOnOpen && (
+                        <div>
+                          <label className="label text-xs">{language === 'ar' ? 'أرقام الإشعار (مفصولة بفواصل)' : 'Notification Phones (comma-separated)'}</label>
+                          <input className="input text-sm" value={waNotifyPhones} onChange={(e) => setWaNotifyPhones(e.target.value)} placeholder="+9665xxxxxxxx, +9665yyyyyyyy" />
+                          <p className="text-xs text-gray-400 mt-1">{language === 'ar' ? 'سيتم إرسال رسالة الفتح لهذه الأرقام يومياً' : 'Open notification will be sent to these numbers daily'}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Printers */}
               <div>
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -951,6 +1077,22 @@ export default function Settings() {
                         notifyOnStatusChange: restNotify,
                         statusNotificationPhone: restNotifyPhone,
                         printers: restPrinters,
+                        whatsapp: {
+                          autoSendEnabled: waAutoSend,
+                          autoSendOnOpen: waOnOpen,
+                          autoSendOnOrderPlaced: waOnOrderPlaced,
+                          autoSendOnOrderReady: waOnOrderReady,
+                          autoSendOnOrderServed: waOnOrderServed,
+                          openMessageEn: waOpenMsgEn,
+                          openMessageAr: waOpenMsgAr,
+                          orderPlacedMessageEn: waOrderPlacedMsgEn,
+                          orderPlacedMessageAr: waOrderPlacedMsgAr,
+                          orderReadyMessageEn: waOrderReadyMsgEn,
+                          orderReadyMessageAr: waOrderReadyMsgAr,
+                          orderServedMessageEn: waOrderServedMsgEn,
+                          orderServedMessageAr: waOrderServedMsgAr,
+                          notifyPhoneList: waNotifyPhones.split(',').map(p => p.trim()).filter(Boolean),
+                        },
                       },
                     },
                   })}
