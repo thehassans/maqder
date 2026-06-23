@@ -5,7 +5,9 @@ export const normalizeBusinessTypes = (input, fallback = 'trading') => {
   const normalized = values
     .map((value) => {
       const val = String(value || '').trim().toLowerCase();
-      return val === 'tailoring' ? 'khayyat' : val;
+      if (val === 'tailoring') return 'khayyat';
+      if (val === 'supermarket' || val === 'super market') return 'bakala';
+      return val;
     })
     .filter((value) => BUSINESS_TYPES.includes(value))
 

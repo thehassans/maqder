@@ -9,6 +9,7 @@ import { useSelector } from 'react-redux';
 import PosSessions from './PosSessions';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
+import { generateZatcaQrValue } from '../../lib/zatcaQr';
 
 export default function BakalaPOS() {
   const navigate = useNavigate();
@@ -349,9 +350,106 @@ export default function BakalaPOS() {
 
     await saveOfflineInvoice(invoice);
     clearCart();
-    
-    // Simulate printing receipt here
+
+    // Auto-print receipt for cash payments
+    if (paymentMethod === 'cash') {
+      printReceipt(invoice);
+    }
   };
+
+  const printReceipt = (order) => {
+    const w = window.open('', '_blank', 'width=320,height=600,scrollbars=yes');
+    if (!w) return;
+
+    const businessNameEn = tenant?.business?.legalNameEn || tenant?.name || 'Maqder POS';
+    const businessNameAr = tenant?.business?.legalNameAr || tenant?.name || 'مقدر نقاط البيع';
+    const vatNumber = tenant?.business?.vatNumber || '';
+    const address = tenant?.business?.address;
+    const addressParts = address ? [address.buildingNumber, address.street, address.district, address.city, address.postalCode].filter(Boolean) : [];
+    const addressText = addressParts.join(', ');
+    const dateStr = new Date().toLocaleString('en-US');
+    const items = order.lineItems || [];
+
+    let zatcaQrPayload = '';
+    try {
+      zatcaQrPayload = generateZatcaQrValue({
+        sellerName: businessNameAr,
+        vatNumber,
+        timestamp: new Date().toISOString(),
+        totalWithVat: order.grandTotal || 0,
+        vatTotal: order.totalTax || 0
+      });
+    } catch (_) {}
+
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Receipt</title>
+<style>
+  @page { size: auto; margin: 0; }
+  body { margin: 0; padding: 8px; font-family: monospace; font-size: 11px; background: white; color: black; width: 80mm; }
+  .center { text-align: center; }
+  .bold { font-weight: bold; }
+  .divider { border-top: 1px dashed #999; margin: 6px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 10px; }
+  th { text-align: left; border-bottom: 1px dashed #999; padding: 2px 0; }
+  td { padding: 3px 0; vertical-align: top; }
+  .right { text-align: right; }
+  .total { font-weight: bold; font-size: 12px; border-top: 1px dashed #999; padding-top: 4px; margin-top: 4px; }
+  .qr { text-align: center; margin-top: 8px; }
+  .qr img { width: 80px; height: 80px; }
+</style>
+</head>
+<body>
+  <div class="center bold" style="font-size:13px;">${escapeHtml(businessNameEn)}</div>
+  <div class="center bold">${escapeHtml(businessNameAr)}</div>
+  <div class="center" style="font-size:9px; margin-top:4px;">SIMPLIFIED TAX INVOICE | فاتورة ضريبية مبسطة</div>
+  ${vatNumber ? `<div class="center" style="font-size:9px;">VAT: ${escapeHtml(vatNumber)}</div>` : ''}
+  ${addressText ? `<div class="center" style="font-size:9px;">${escapeHtml(addressText)}</div>` : ''}
+  <div class="divider"></div>
+  <div style="font-size:9px;">Date: ${escapeHtml(dateStr)}</div>
+  <div style="font-size:9px;">Payment: Cash | نقدي</div>
+  <div class="divider"></div>
+  <table>
+    <thead><tr><th>Item</th><th style="text-align:center;">Qty</th><th class="right">Total</th></tr></thead>
+    <tbody>
+      ${items.map(item => `
+        <tr>
+          <td>${escapeHtml(item.productName || item.name || '')}<br/><span style="font-size:8px;color:#666;">SAR ${Number(item.unitPrice).toFixed(2)} x ${item.quantity}</span></td>
+          <td style="text-align:center;">${item.quantity}</td>
+          <td class="right">SAR ${Number(item.lineTotalWithTax || (item.unitPrice * item.quantity)).toFixed(2)}</td>
+        </tr>
+      `).join('')}
+    </tbody>
+  </table>
+  <div class="divider"></div>
+  <div style="display:flex;justify-content:space-between;"><span>Subtotal:</span><span>SAR ${Number(order.subtotal || 0).toFixed(2)}</span></div>
+  <div style="display:flex;justify-content:space-between;"><span>VAT (15%):</span><span>SAR ${Number(order.totalTax || 0).toFixed(2)}</span></div>
+  <div class="total" style="display:flex;justify-content:space-between;"><span>Total:</span><span>SAR ${Number(order.grandTotal || 0).toFixed(2)}</span></div>
+  ${zatcaQrPayload ? `
+  <div class="qr">
+    <div style="font-size:7px;color:#666;margin-bottom:2px;">ZATCA | هيئة الزكاة</div>
+    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(zatcaQrPayload)}" />
+  </div>
+  ` : ''}
+  <div class="divider"></div>
+  <div class="center" style="font-size:9px; margin-top:6px;">Thank you for your visit! | شكراً لزيارتكم!</div>
+  <div class="center" style="font-size:8px; color:#999;">Maqder POS</div>
+  <script>window.onload=function(){setTimeout(function(){window.print();setTimeout(function(){window.close();},500);},300);};</script>
+</body>
+</html>`;
+
+    w.document.write(html);
+    w.document.close();
+  };
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
 
   // Keyboard Shortcuts Hook
   useEffect(() => {
