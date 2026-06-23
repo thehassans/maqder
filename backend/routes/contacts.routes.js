@@ -2,6 +2,7 @@ import express from 'express';
 import Customer from '../models/Customer.js';
 import Supplier from '../models/Supplier.js';
 import Employee from '../models/Employee.js';
+import { WhatsAppContact } from '../models/WhatsApp.js';
 import { protect, tenantFilter } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -49,8 +50,9 @@ router.get('/', async (req, res) => {
     const wantCustomers = (requestedTypes.length === 0 || requestedTypes.includes('customer') || requestedTypes.includes('customers')) && access.customers;
     const wantSuppliers = (requestedTypes.length === 0 || requestedTypes.includes('supplier') || requestedTypes.includes('suppliers')) && access.suppliers;
     const wantEmployees = (requestedTypes.length === 0 || requestedTypes.includes('employee') || requestedTypes.includes('employees')) && access.employees;
+    const wantWhatsApp = (requestedTypes.length === 0 || requestedTypes.includes('whatsapp'));
 
-    if (!wantCustomers && !wantSuppliers && !wantEmployees) {
+    if (!wantCustomers && !wantSuppliers && !wantEmployees && !wantWhatsApp) {
       return res.json({
         contacts: [],
         pagination: { page: toInt(page, 1), limit: toInt(limit, 50), total: 0, pages: 0 }
@@ -240,8 +242,53 @@ router.get('/', async (req, res) => {
 
     const [result] = await Customer.aggregate(pipeline);
 
-    const contacts = result?.contacts || [];
-    const total = result?.total?.[0]?.count || 0;
+    let contacts = result?.contacts || [];
+    let total = result?.total?.[0]?.count || 0;
+
+    // Fetch WhatsApp contacts if requested
+    if (wantWhatsApp) {
+      const waQuery = { ...req.tenantFilter };
+      if (q) {
+        waQuery.$or = [
+          { name: { $regex: q, $options: 'i' } },
+          { phoneNumber: { $regex: q, $options: 'i' } },
+          { formattedPhone: { $regex: q, $options: 'i' } }
+        ];
+      }
+      const waContacts = await WhatsAppContact.find(waQuery)
+        .select('name phoneNumber formattedPhone profileName isGroup groupId participantCount lastMessageAt totalMessages createdAt updatedAt')
+        .sort({ name: 1 })
+        .lean();
+
+      const mappedWa = waContacts.map((c) => ({
+        entityType: c.isGroup ? 'whatsapp_group' : 'whatsapp',
+        entityId: c._id.toString(),
+        displayName: c.name || c.formattedPhone || c.phoneNumber || 'Unknown',
+        displayNameAr: null,
+        email: null,
+        phone: c.isGroup ? `Group: ${c.participantCount || '?'} members` : (c.formattedPhone || c.phoneNumber),
+        vatNumber: null,
+        code: c.isGroup ? 'GROUP' : 'WA',
+        isActive: true,
+        createdAt: c.createdAt,
+        updatedAt: c.updatedAt,
+        _wa: { isGroup: c.isGroup, groupId: c.groupId, lastMessageAt: c.lastMessageAt, totalMessages: c.totalMessages }
+      }));
+
+      contacts = contacts.concat(mappedWa);
+      total += mappedWa.length;
+
+      // Re-sort combined results
+      const sortFn = (a, b) => {
+        const aName = (a.displayName || '').toString().toLowerCase();
+        const bName = (b.displayName || '').toString().toLowerCase();
+        return sortDirection * aName.localeCompare(bName);
+      };
+      contacts.sort(sortFn);
+
+      // Re-paginate combined results
+      contacts = contacts.slice(skip, skip + limitNum);
+    }
 
     res.json({
       contacts,
@@ -269,18 +316,22 @@ router.get('/stats', async (req, res) => {
 
     const activeMatch = getIsActiveMatch(isActive);
 
-    const [customers, suppliers, employees] = await Promise.all([
+    const [customers, suppliers, employees, waContacts, waGroups] = await Promise.all([
       access.customers ? Customer.countDocuments({ ...req.tenantFilter, ...activeMatch }) : 0,
       access.suppliers ? Supplier.countDocuments({ ...req.tenantFilter, ...activeMatch }) : 0,
-      access.employees ? Employee.countDocuments({ ...req.tenantFilter, ...activeMatch }) : 0
+      access.employees ? Employee.countDocuments({ ...req.tenantFilter, ...activeMatch }) : 0,
+      WhatsAppContact.countDocuments({ ...req.tenantFilter, isGroup: false }),
+      WhatsAppContact.countDocuments({ ...req.tenantFilter, isGroup: true })
     ]);
 
     res.json({
-      total: customers + suppliers + employees,
+      total: customers + suppliers + employees + waContacts + waGroups,
       byType: {
         customers,
         suppliers,
-        employees
+        employees,
+        whatsapp: waContacts,
+        whatsappGroups: waGroups
       }
     });
   } catch (error) {

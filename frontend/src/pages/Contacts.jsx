@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Search, Users, Building2, Briefcase, Edit, Phone, Mail, Hash } from 'lucide-react'
+import { Search, Users, Building2, Briefcase, Edit, Phone, Mail, Hash, MessageCircle, MessageSquare } from 'lucide-react'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
 import ExportMenu from '../components/ui/ExportMenu'
@@ -12,6 +12,8 @@ const typeMeta = {
   customer: { badge: 'badge-info', en: 'Customer', ar: 'عميل', icon: Building2 },
   supplier: { badge: 'badge-warning', en: 'Supplier', ar: 'مورد', icon: Briefcase },
   employee: { badge: 'badge-success', en: 'Employee', ar: 'موظف', icon: Users },
+  whatsapp: { badge: 'badge-success', en: 'WhatsApp', ar: 'واتساب', icon: MessageCircle, color: 'text-green-600', bg: 'bg-green-100 dark:bg-green-900/30' },
+  whatsapp_group: { badge: 'badge-info', en: 'Group', ar: 'مجموعة', icon: MessageSquare, color: 'text-purple-600', bg: 'bg-purple-100 dark:bg-purple-900/30' },
 }
 
 const getEntityRoute = (contact) => {
@@ -54,7 +56,7 @@ export default function Contacts() {
   const contacts = data?.contacts || []
   const pagination = data?.pagination
 
-  const totals = stats?.byType || { customers: 0, suppliers: 0, employees: 0 }
+  const totals = stats?.byType || { customers: 0, suppliers: 0, employees: 0, whatsapp: 0, whatsappGroups: 0 }
 
   const totalContacts = stats?.total || 0
 
@@ -171,7 +173,7 @@ export default function Contacts() {
         />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
         <div className="card p-4 flex items-center gap-4">
           <div className="p-3 bg-primary-100 dark:bg-primary-900/30 rounded-xl">
             <Users className="w-5 h-5 text-primary-600" />
@@ -208,6 +210,15 @@ export default function Contacts() {
             <p className="text-2xl font-bold">{(totals.employees || 0).toLocaleString()}</p>
           </div>
         </div>
+        <div className="card p-4 flex items-center gap-4">
+          <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-xl">
+            <MessageCircle className="w-5 h-5 text-green-600" />
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">{language === 'ar' ? 'واتساب' : 'WhatsApp'}</p>
+            <p className="text-2xl font-bold">{((totals.whatsapp || 0) + (totals.whatsappGroups || 0)).toLocaleString()}</p>
+          </div>
+        </div>
       </div>
 
       <div className="card p-4">
@@ -238,6 +249,7 @@ export default function Contacts() {
             <option value="customer">{language === 'ar' ? 'العملاء' : 'Customers'}</option>
             <option value="supplier">{language === 'ar' ? 'الموردين' : 'Suppliers'}</option>
             <option value="employee">{language === 'ar' ? 'الموظفين' : 'Employees'}</option>
+            <option value="whatsapp">{language === 'ar' ? 'واتساب' : 'WhatsApp'}</option>
           </select>
 
           <select
@@ -282,14 +294,19 @@ export default function Contacts() {
                   <tr key={`${c.entityType}-${c.entityId}`}>
                     <td>
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-dark-700 flex items-center justify-center">
-                          <c.Icon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${c.meta.bg || 'bg-gray-100 dark:bg-dark-700'}`}>
+                          <c.Icon className={`w-5 h-5 ${c.meta.color || 'text-gray-600 dark:text-gray-300'}`} />
                         </div>
                         <div>
                           <p className="font-medium text-gray-900 dark:text-white">{c.name || '-'}</p>
                           {c.displayNameAr && language !== 'ar' && (
                             <p className="text-xs text-gray-500" dir="rtl">
                               {c.displayNameAr}
+                            </p>
+                          )}
+                          {c._wa?.lastMessageAt && (
+                            <p className="text-xs text-gray-400">
+                              {c._wa.totalMessages || 0} {language === 'ar' ? 'رسالة' : 'messages'}
                             </p>
                           )}
                         </div>
@@ -338,6 +355,10 @@ export default function Contacts() {
                       {c.route ? (
                         <Link to={c.route} className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg inline-flex">
                           <Edit className="w-4 h-4 text-gray-600" />
+                        </Link>
+                      ) : c.entityType?.startsWith('whatsapp') ? (
+                        <Link to={`/whatsapp?contact=${c.entityId}`} className="p-2 hover:bg-green-100 dark:hover:bg-green-900/20 rounded-lg inline-flex">
+                          <MessageCircle className="w-4 h-4 text-green-600" />
                         </Link>
                       ) : (
                         <span className="text-gray-400">-</span>

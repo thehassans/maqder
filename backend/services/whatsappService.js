@@ -195,7 +195,7 @@ class WhatsAppService {
         let contact;
         const contactQuery = isGroup
           ? { tenantId, groupId: chatId }
-          : { tenantId, phoneNumber: chatId.replace('@c.us', '') };
+          : { tenantId, phoneNumber: this._cleanPhoneNumber(chatId) };
 
         contact = await WhatsAppContact.findOne(contactQuery);
         if (!contact) {
@@ -203,14 +203,14 @@ class WhatsAppService {
             tenantId,
             source: 'webhook',
             isGroup,
-            name: msg._data?.notifyName || chatId.replace('@c.us', '').replace('@g.us', '')
+            name: msg._data?.notifyName || this._cleanPhoneNumber(chatId)
           };
           if (isGroup) {
             newContactData.groupId = chatId;
           } else {
-            const phone = chatId.replace('@c.us', '');
+            const phone = this._cleanPhoneNumber(chatId);
             newContactData.phoneNumber = phone;
-            newContactData.formattedPhone = `+${phone}`;
+            newContactData.formattedPhone = this._formatPhone(phone);
           }
           contact = await WhatsAppContact.create(newContactData);
         }
@@ -290,6 +290,21 @@ class WhatsAppService {
     return this.getStatus(tenantId);
   }
 
+  _cleanPhoneNumber(raw) {
+    if (!raw) return '';
+    // Strip any @suffix like @c.us, @g.us, @lid, etc.
+    const withoutSuffix = String(raw).split('@')[0];
+    // Keep only digits
+    const digits = withoutSuffix.replace(/\D/g, '');
+    return digits;
+  }
+
+  _formatPhone(digits) {
+    if (!digits || digits.length < 7) return '';
+    // Only add + if it looks like a real phone number (not a short/internal ID)
+    return `+${digits}`;
+  }
+
   async logout(tenantId) {
     tenantId = String(tenantId);
     const client = this.clients.get(tenantId);
@@ -341,13 +356,15 @@ class WhatsAppService {
       const contacts = await client.getContacts();
       const validContacts = contacts.filter(c => c.isWAContact && !c.id._serialized.endsWith('@g.us'));
       for (const c of validContacts) {
-        const cleanNumber = c.number ? c.number.replace(/\D/g, '') : c.id._serialized.replace('@c.us', '');
+        const rawId = c.id?._serialized || c.number || '';
+        const cleanNumber = this._cleanPhoneNumber(rawId);
+        if (!cleanNumber) continue;
         await WhatsAppContact.findOneAndUpdate(
           { tenantId, phoneNumber: cleanNumber },
           {
             tenantId,
             phoneNumber: cleanNumber,
-            formattedPhone: cleanNumber ? `+${cleanNumber}` : null,
+            formattedPhone: this._formatPhone(cleanNumber),
             name: c.name || c.pushname || cleanNumber,
             profileName: c.pushname || null,
             source: 'sync',
