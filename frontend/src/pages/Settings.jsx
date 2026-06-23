@@ -97,6 +97,8 @@ export default function Settings() {
   const [waOrderServedMsgEn, setWaOrderServedMsgEn] = useState('Your order has been served. Thank you! Order #: {{orderNumber}}')
   const [waOrderServedMsgAr, setWaOrderServedMsgAr] = useState('تم تقديم طلبك. شكراً لك! رقم الطلب: {{orderNumber}}')
   const [waNotifyPhones, setWaNotifyPhones] = useState('')
+  // Bakala settings
+  const [bakalaRequireShift, setBakalaRequireShift] = useState(true)
 
   const { data: tenant } = useQuery({
     queryKey: ['tenant-settings'],
@@ -155,6 +157,8 @@ export default function Settings() {
     setWaOrderServedMsgEn(wa.orderServedMessageEn || 'Your order has been served. Thank you! Order #: {{orderNumber}}')
     setWaOrderServedMsgAr(wa.orderServedMessageAr || 'تم تقديم طلبك. شكراً لك! رقم الطلب: {{orderNumber}}')
     setWaNotifyPhones(Array.isArray(wa.notifyPhoneList) ? wa.notifyPhoneList.join(', ') : '')
+    // Bakala settings init
+    setBakalaRequireShift(tenant.settings?.bakala?.requireShift !== false)
   }, [tenant])
 
   const { register, handleSubmit, reset, watch, setValue, control } = useForm()
@@ -278,6 +282,7 @@ export default function Settings() {
 
   const tenantBusinessTypes = tenant?.businessTypes || []
   const hasRestaurant = tenantBusinessTypes.includes('restaurant')
+  const hasBakala = tenantBusinessTypes.includes('bakala')
 
   const tabs = [
     { id: 'company', label: t('companySettings'), icon: Building2 },
@@ -286,6 +291,7 @@ export default function Settings() {
     { id: 'setupMachine', label: language === 'ar' ? 'إعداد الدفع الإلكتروني' : 'Payment Terminal', icon: CreditCard },
     { id: 'hardware', label: language === 'ar' ? 'الأجهزة والطباعة' : 'Hardware & Printers', icon: Terminal },
     ...(hasRestaurant ? [{ id: 'restaurant', label: language === 'ar' ? 'إعدادات المطعم' : 'Restaurant', icon: UtensilsCrossed }] : []),
+    ...(hasBakala ? [{ id: 'bakala', label: language === 'ar' ? 'إعدادات البقالة' : 'Bakala', icon: Building2 }] : []),
     { id: 'backup', label: language === 'ar' ? 'النسخ الاحتياطي' : 'Backup', icon: Database },
   ]
 
@@ -1100,6 +1106,62 @@ export default function Settings() {
                   className="btn btn-primary"
                 >
                   {updateMutation.isPending ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Save className="w-4 h-4" /> {t('save')}</>}
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'bakala' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card p-6 space-y-8">
+              <div>
+                <h3 className="text-lg font-semibold mb-2">{language === 'ar' ? 'إعدادات البقالة' : 'Bakala Settings'}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                  {language === 'ar' ? 'إدارة إعدادات نقاط البيع والورديات' : 'Manage POS and shift settings'}
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-dark-700/50 rounded-xl">
+                  <div>
+                    <p className="font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'اشتراط فتح الوردية' : 'Require Shift Open'}</p>
+                    <p className="text-sm text-gray-500">
+                      {language === 'ar'
+                        ? 'عند التفعيل، يجب فتح الوردية قبل استخدام نقاط البيع'
+                        : 'When enabled, a shift must be opened before using the POS'}
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={bakalaRequireShift}
+                      onChange={(e) => setBakalaRequireShift(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600" />
+                  </label>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-gray-100 dark:border-dark-700">
+                <button
+                  onClick={() =>
+                    updateMutation.mutate({
+                      settings: {
+                        bakala: {
+                          requireShift: bakalaRequireShift,
+                        },
+                      },
+                    })
+                  }
+                  className="btn btn-primary"
+                >
+                  {updateMutation.isPending ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" /> {t('save')}
+                    </>
+                  )}
                 </button>
               </div>
             </motion.div>

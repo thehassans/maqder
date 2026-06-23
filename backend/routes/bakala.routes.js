@@ -174,10 +174,29 @@ export default router;
 
 router.get('/shift/current', protect, async (req, res) => {
   try {
-    const session = await PosSession.findOne({ 
-      tenantId: req.user.tenantId, 
-      userId: req.user._id, 
-      status: 'open' 
+    const tenant = await Tenant.findById(req.user.tenantId);
+    const requireShift = tenant?.settings?.bakala?.requireShift !== false;
+
+    if (!requireShift) {
+      // Return a mock session so POS works without forcing shift open
+      return res.json({
+        success: true,
+        session: {
+          _id: 'auto',
+          tenantId: req.user.tenantId,
+          userId: req.user._id,
+          status: 'open',
+          openingBalance: 0,
+          openedAt: new Date(),
+          cashDrops: []
+        }
+      });
+    }
+
+    const session = await PosSession.findOne({
+      tenantId: req.user.tenantId,
+      userId: req.user._id,
+      status: 'open'
     });
     res.json({ success: true, session });
   } catch (error) {

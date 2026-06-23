@@ -242,8 +242,11 @@ async function syncTravelBookingFromInvoice({ invoice, tenantFilterValue, userId
   });
 }
 
-function resolveInitialSellInvoiceStatus(requestedStatus) {
-  return normalizeText(requestedStatus).toLowerCase() === 'draft' ? 'draft' : 'pending';
+function resolveInitialSellInvoiceStatus(requestedStatus, tenant) {
+  if (normalizeText(requestedStatus).toLowerCase() === 'draft') return 'draft';
+  // ZATCA Phase 1: auto-finalize since only QR code is required (no XML signing/clearance)
+  if (tenant?.zatca?.phase === 1) return 'approved';
+  return 'pending';
 }
 
 async function attachDraftQr(invoice, seller) {
@@ -688,7 +691,7 @@ router.post('/', checkPermission('invoicing', 'create'), async (req, res) => {
       issueDate,
       buyer,
       customerId: customer?._id,
-      status: resolveInitialSellInvoiceStatus(req.body?.status),
+      status: resolveInitialSellInvoiceStatus(req.body?.status, tenant),
       seller: {
         name: tenant.business.legalNameEn,
         nameAr: tenant.business.legalNameAr,
@@ -876,7 +879,7 @@ router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) =>
       issueDate,
       buyer,
       customerId: customer?._id,
-      status: resolveInitialSellInvoiceStatus(req.body?.status),
+      status: resolveInitialSellInvoiceStatus(req.body?.status, tenant),
       seller: {
         name: tenant.business.legalNameEn,
         nameAr: tenant.business.legalNameAr,

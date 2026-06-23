@@ -322,6 +322,9 @@ const tenantSchema = new mongoose.Schema({
         defaultLanguage: { type: String, enum: ['en', 'ar'], default: 'ar' }
       }
     },
+    bakala: {
+      requireShift: { type: Boolean, default: true }
+    },
     carRentalIntegrations: {
       // ── Tamm (Amakin) ─ Saudi rental traffic registry integration
       tamm: {

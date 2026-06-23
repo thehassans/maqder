@@ -388,7 +388,7 @@ export default function BakalaPOS() {
   return (
     <div className="flex h-[calc(100vh-4rem)] bg-[#F8F9FA] text-gray-900 overflow-hidden font-sans">
       
-      {!activeSession && <PosSessions onSessionVerified={setActiveSession} />}
+      {tenant?.settings?.bakala?.requireShift !== false && !activeSession && <PosSessions onSessionVerified={setActiveSession} />}
 
       {/* LEFT PANEL: Cart View (60%) */}
       <div className="w-[60%] flex flex-col border-r border-gray-100 bg-white shadow-[2px_0_10px_rgba(0,0,0,0.02)] z-10 relative">
@@ -411,7 +411,7 @@ export default function BakalaPOS() {
             )}
             {pendingCount > 0 && <span className="text-amber-500">{pendingCount} Pending</span>}
             
-            {activeSession && (
+            {activeSession && activeSession._id !== 'auto' && (
               <button 
                 onClick={handleCloseSession}
                 className="ml-4 flex items-center gap-1 px-3 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg font-bold transition-colors"
