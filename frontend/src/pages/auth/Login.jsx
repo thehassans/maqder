@@ -68,10 +68,12 @@ export default function Login() {
         tenantSlug: String(data.tenantSlug || initialTenantSlug || '').trim().toLowerCase() || undefined,
       })).unwrap()
       const tenant = result.tenant;
-      const businessTypes = tenant?.business?.businessType 
-        ? (Array.isArray(tenant.business.businessType) ? tenant.business.businessType : [tenant.business.businessType])
-        : [];
-      
+      const businessTypes = Array.isArray(tenant?.businessTypes)
+        ? tenant.businessTypes
+        : (tenant?.business?.businessType
+            ? (Array.isArray(tenant.business.businessType) ? tenant.business.businessType : [tenant.business.businessType])
+            : []);
+
       let redirectPath = '/app/dashboard';
       if (result.user?.role === 'super_admin') {
         redirectPath = '/super-admin';
