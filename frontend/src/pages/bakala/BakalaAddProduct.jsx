@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ScanLine, Camera, Plus, Save, PackageCheck, ArrowLeft, Loader2,
@@ -29,6 +29,9 @@ export default function BakalaAddProduct() {
 
   const barcodeRef = useRef(null)
   const nameRef = useRef(null)
+  const retailPriceRef = useRef(null)
+  const barcodeTimerRef = useRef(null)
+  const checkingRef = useRef(false)
 
   const update = (patch) => setForm((prev) => ({ ...prev, ...patch }))
 
@@ -52,14 +55,20 @@ export default function BakalaAddProduct() {
     setTimeout(() => barcodeRef.current?.focus(), 200)
   }, [])
 
+  // Clean raw scanner input (some scanners inject whitespace/newlines)
+  const cleanBarcode = (raw) => String(raw || '').replace(/[\s\n\r\t]+/g, '').trim()
+
   // Look up a scanned/typed barcode to detect duplicates
-  const lookupBarcode = async (code) => {
-    const value = String(code || '').trim()
-    if (!value) return
+  const lookupBarcode = useCallback(async (raw) => {
+    const code = cleanBarcode(raw)
+    if (!code) return
+    if (checkingRef.current) return
+    checkingRef.current = true
     setCheckingBarcode(true)
     setExistingProduct(null)
+    update({ primaryBarcode: code })
     try {
-      const res = await api.get(`/bakala-products/barcode/${encodeURIComponent(value)}`)
+      const res = await api.get(`/bakala-products/barcode/${encodeURIComponent(code)}`)
       if (res.data?.found) {
         setExistingProduct(res.data.product)
         toast.error('This barcode already exists. You can edit it instead.')
@@ -72,23 +81,51 @@ export default function BakalaAddProduct() {
         setTimeout(() => nameRef.current?.focus(), 50)
       }
     } finally {
+      checkingRef.current = false
       setCheckingBarcode(false)
     }
+  }, [update])
+
+  // Debounce barcode lookup while typing/scanning
+  const scheduleBarcodeLookup = (raw) => {
+    if (barcodeTimerRef.current) clearTimeout(barcodeTimerRef.current)
+    const code = cleanBarcode(raw)
+    update({ primaryBarcode: code })
+    if (!code) return
+    barcodeTimerRef.current = setTimeout(() => {
+      lookupBarcode(code)
+    }, 250)
   }
 
   const handleScanDetected = (code) => {
     setShowScanner(false)
     setNoBarcode(false)
-    update({ primaryBarcode: code })
-    lookupBarcode(code)
+    const cleaned = cleanBarcode(code)
+    update({ primaryBarcode: cleaned })
+    lookupBarcode(cleaned)
+  }
+
+  const handleBarcodeChange = (e) => {
+    const raw = e.target.value || ''
+    const cleaned = cleanBarcode(raw)
+    // If the scanner injected a newline, it will appear as a single Enter keydown as well.
+    // Keep the cleaned value in state so the input always shows the sanitized barcode.
+    update({ primaryBarcode: cleaned })
+    scheduleBarcodeLookup(cleaned)
   }
 
   const handleBarcodeKeyDown = (e) => {
     // USB scanners send an Enter at the end of the code
     if (e.key === 'Enter') {
       e.preventDefault()
-      lookupBarcode(form.primaryBarcode)
+      if (barcodeTimerRef.current) clearTimeout(barcodeTimerRef.current)
+      lookupBarcode(e.currentTarget.value)
     }
+  }
+
+  const handleBarcodeBlur = () => {
+    if (barcodeTimerRef.current) clearTimeout(barcodeTimerRef.current)
+    if (form.primaryBarcode) lookupBarcode(form.primaryBarcode)
   }
 
   // Quick-add helpers for category / brand / unit
@@ -202,11 +239,13 @@ export default function BakalaAddProduct() {
                   type="text"
                   value={form.primaryBarcode}
                   disabled={noBarcode}
-                  onChange={(e) => update({ primaryBarcode: e.target.value })}
+                  onChange={handleBarcodeChange}
                   onKeyDown={handleBarcodeKeyDown}
-                  onBlur={() => form.primaryBarcode && lookupBarcode(form.primaryBarcode)}
+                  onBlur={handleBarcodeBlur}
                   placeholder="Scan with USB scanner or type, then press Enter"
                   className="w-full pl-11 pr-4 py-3 bg-white border border-emerald-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500 font-mono disabled:bg-gray-100 disabled:text-gray-400"
+                  inputMode="numeric"
+                  autoComplete="off"
                 />
                 {checkingBarcode && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-emerald-500" />}
               </div>
@@ -297,10 +336,13 @@ export default function BakalaAddProduct() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Cost Price (SAR)</label>
                 <input type="number" step="0.01" min="0" value={form.costPrice} onChange={(e) => update({ costPrice: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Retail Price (SAR) *</label>
-                <input type="number" step="0.01" min="0" value={form.retailPrice} onChange={(e) => update({ retailPrice: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" />
-                {margin != null && <p className="text-xs text-gray-400 mt-1">Margin: <span className={margin < 0 ? 'text-red-500' : 'text-emerald-600'}>{margin}%</span></p>}
+              <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-4">
+                <label className="block text-sm font-bold text-emerald-900 mb-1">Selling Price (SAR) *</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-700 font-bold">SAR</span>
+                  <input ref={retailPriceRef} type="number" step="0.01" min="0" value={form.retailPrice} onChange={(e) => update({ retailPrice: e.target.value })} className="w-full pl-12 pr-3 py-2.5 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-emerald-900" />
+                </div>
+                {margin != null && <p className="text-xs text-gray-500 mt-2">Margin: <span className={margin < 0 ? 'text-red-500' : 'text-emerald-600'}>{margin}%</span></p>}
               </div>
 
               <div>
