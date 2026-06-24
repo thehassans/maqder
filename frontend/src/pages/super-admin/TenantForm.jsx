@@ -72,6 +72,17 @@ export default function TenantForm() {
     }
   }, [setValue, watchedBusinessTypes, watchedPrimaryBusinessType])
 
+  // Auto-mirror bilingual legal names when one side is empty
+  const legalNameEn = watch('business.legalNameEn')
+  const legalNameAr = watch('business.legalNameAr')
+  useEffect(() => {
+    if (legalNameEn && !legalNameAr) {
+      setValue('business.legalNameAr', legalNameEn, { shouldValidate: false })
+    } else if (legalNameAr && !legalNameEn) {
+      setValue('business.legalNameEn', legalNameAr, { shouldValidate: false })
+    }
+  }, [legalNameEn, legalNameAr, setValue])
+
   const toggleBusinessType = (businessTypeId) => {
     const next = watchedBusinessTypes.includes(businessTypeId)
       ? watchedBusinessTypes.filter((item) => item !== businessTypeId)
