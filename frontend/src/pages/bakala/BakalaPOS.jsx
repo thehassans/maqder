@@ -351,13 +351,11 @@ export default function BakalaPOS() {
     await saveOfflineInvoice(invoice);
     clearCart();
 
-    // Auto-print receipt for cash payments
-    if (paymentMethod === 'cash') {
-      printReceipt(invoice);
-    }
+    // Auto-print receipt on every checkout
+    printReceipt(invoice, paymentMethod);
   };
 
-  const printReceipt = (order) => {
+  const printReceipt = (order, paymentMethod = 'cash') => {
     const w = window.open('', '_blank', 'width=320,height=600,scrollbars=yes');
     if (!w) return;
 
@@ -369,6 +367,7 @@ export default function BakalaPOS() {
     const addressText = addressParts.join(', ');
     const dateStr = new Date().toLocaleString('en-US');
     const items = order.lineItems || [];
+    const pmLabel = paymentMethod === 'cash' ? 'Cash | نقدي' : paymentMethod === 'card' ? 'Card | بطاقة' : paymentMethod === 'split' ? 'Split | مقسم' : paymentMethod === 'khata' ? 'Khata | خطة' : String(paymentMethod);
 
     let zatcaQrPayload = '';
     try {
@@ -406,28 +405,30 @@ export default function BakalaPOS() {
   <div class="center bold" style="font-size:13px;">${escapeHtml(businessNameEn)}</div>
   <div class="center bold">${escapeHtml(businessNameAr)}</div>
   <div class="center" style="font-size:9px; margin-top:4px;">SIMPLIFIED TAX INVOICE | فاتورة ضريبية مبسطة</div>
-  ${vatNumber ? `<div class="center" style="font-size:9px;">VAT: ${escapeHtml(vatNumber)}</div>` : ''}
+  ${vatNumber ? `<div class="center" style="font-size:9px;">VAT / الرقم الضريبي: ${escapeHtml(vatNumber)}</div>` : ''}
   ${addressText ? `<div class="center" style="font-size:9px;">${escapeHtml(addressText)}</div>` : ''}
   <div class="divider"></div>
-  <div style="font-size:9px;">Date: ${escapeHtml(dateStr)}</div>
-  <div style="font-size:9px;">Payment: Cash | نقدي</div>
+  <div style="font-size:9px;">Date / التاريخ: ${escapeHtml(dateStr)}</div>
+  <div style="font-size:9px;">Payment / الدفع: ${escapeHtml(pmLabel)}</div>
   <div class="divider"></div>
   <table>
-    <thead><tr><th>Item</th><th style="text-align:center;">Qty</th><th class="right">Total</th></tr></thead>
+    <thead><tr><th>Item / الصنف</th><th style="text-align:center;">Qty / الكمية</th><th class="right">Total / المجموع</th></tr></thead>
     <tbody>
-      ${items.map(item => `
+      ${items.map(item => {
+        const displayName = escapeHtml(item.productName || item.productNameAr || item.name || item.nameAr || item.nameEn || 'Item');
+        return `
         <tr>
-          <td>${escapeHtml(item.productName || item.name || '')}<br/><span style="font-size:8px;color:#666;">SAR ${Number(item.unitPrice).toFixed(2)} x ${item.quantity}</span></td>
+          <td><div style="font-weight:bold;">${displayName}</div><span style="font-size:8px;color:#666;">SAR ${Number(item.unitPrice).toFixed(2)} x ${item.quantity}</span></td>
           <td style="text-align:center;">${item.quantity}</td>
           <td class="right">SAR ${Number(item.lineTotalWithTax || (item.unitPrice * item.quantity)).toFixed(2)}</td>
         </tr>
-      `).join('')}
+      `}).join('')}
     </tbody>
   </table>
   <div class="divider"></div>
-  <div style="display:flex;justify-content:space-between;"><span>Subtotal:</span><span>SAR ${Number(order.subtotal || 0).toFixed(2)}</span></div>
-  <div style="display:flex;justify-content:space-between;"><span>VAT (15%):</span><span>SAR ${Number(order.totalTax || 0).toFixed(2)}</span></div>
-  <div class="total" style="display:flex;justify-content:space-between;"><span>Total:</span><span>SAR ${Number(order.grandTotal || 0).toFixed(2)}</span></div>
+  <div style="display:flex;justify-content:space-between;font-size:10px;"><span>Subtotal / المجموع الفرعي:</span><span>SAR ${Number(order.subtotal || 0).toFixed(2)}</span></div>
+  <div style="display:flex;justify-content:space-between;font-size:10px;"><span>VAT (15%) / ضريبة القيمة المضافة:</span><span>SAR ${Number(order.totalTax || 0).toFixed(2)}</span></div>
+  <div class="total" style="display:flex;justify-content:space-between;"><span>Total / الإجمالي:</span><span>SAR ${Number(order.grandTotal || 0).toFixed(2)}</span></div>
   ${zatcaQrPayload ? `
   <div class="qr">
     <div style="font-size:7px;color:#666;margin-bottom:2px;">ZATCA | هيئة الزكاة</div>

@@ -362,8 +362,8 @@ export default function InvoiceView() {
                     subtotal: invoice.subTotal || (invoice.grandTotal - invoice.totalTax),
                     zatcaQrCode: invoice.zatca?.qrCodeData,
                     items: invoice.lineItems?.map(item => ({
-                      nameEn: item.name,
-                      nameAr: item.nameAr,
+                      nameEn: item.productName || item.name,
+                      nameAr: item.productNameAr || item.nameAr,
                       quantity: item.quantity,
                       unitPrice: item.unitPrice,
                       total: item.taxableAmount || (item.quantity * item.unitPrice)
@@ -518,8 +518,8 @@ export default function InvoiceView() {
                   subtotal: invoice.subTotal || (invoice.grandTotal - invoice.totalTax),
                   zatcaQrCode: invoice.zatca?.qrCodeData,
                   items: invoice.lineItems?.map(item => ({
-                    nameEn: item.name,
-                    nameAr: item.nameAr,
+                    nameEn: item.productName || item.name,
+                    nameAr: item.productNameAr || item.nameAr,
                     quantity: item.quantity,
                     unitPrice: item.unitPrice,
                     total: item.taxableAmount || (item.quantity * item.unitPrice)

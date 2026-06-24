@@ -69,13 +69,25 @@ export default function Dashboard() {
   const isTravelAgency = businessTypes.includes('travel_agency')
   const isRestaurant = businessTypes.includes('restaurant')
   const isBoutique = businessTypes.includes('boutique')
+  const isBakala = businessTypes.includes('bakala')
+  const isSaloon = businessTypes.includes('saloon')
+  const isLaundry = businessTypes.includes('laundry')
+  const isKhayyat = businessTypes.includes('khayyat')
 
-  // Redirect boutique users directly to POS
+  // Redirect POS tenants directly to their checkout screen
   useEffect(() => {
     if (isBoutique) {
       navigate('/app/dashboard/boutique/pos', { replace: true })
+    } else if (isBakala) {
+      navigate('/app/dashboard/bakala/pos', { replace: true })
+    } else if (isSaloon) {
+      navigate('/app/saloon/pos', { replace: true })
+    } else if (isLaundry) {
+      navigate('/app/laundry/pos', { replace: true })
+    } else if (isKhayyat) {
+      navigate('/app/dashboard/khayyat', { replace: true })
     }
-  }, [isBoutique, navigate])
+  }, [isBoutique, isBakala, isSaloon, isLaundry, isKhayyat, navigate])
 
   const { data: dashboard, isLoading } = useQuery({
     queryKey: ['dashboard'],
