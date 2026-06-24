@@ -198,6 +198,24 @@ export default function BakalaAddProduct() {
     return Math.round(((r - c) / r) * 100)
   })()
 
+  // Mirror the other-language name when one is entered and the other is empty
+  const handleNameChange = (lang, value) => {
+    const patch = lang === 'en' ? { name: value } : { nameAr: value }
+    const otherKey = lang === 'en' ? 'nameAr' : 'name'
+    if (value && !form[otherKey]) {
+      patch[otherKey] = value
+    }
+    update(patch)
+  }
+
+  // Format price to 2 decimals on blur
+  const formatPrice = (field) => {
+    const num = Number(form[field])
+    if (!isNaN(num) && form[field] !== '') {
+      update({ [field]: num.toFixed(2) })
+    }
+  }
+
   return (
     <div className="p-6 max-w-6xl mx-auto">
       {showScanner && (
@@ -289,11 +307,11 @@ export default function BakalaAddProduct() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Name (English) *</label>
-                <input ref={nameRef} type="text" value={form.name} onChange={(e) => update({ name: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" />
+                <input ref={nameRef} type="text" value={form.name} onChange={(e) => handleNameChange('en', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Name (Arabic)</label>
-                <input type="text" dir="rtl" value={form.nameAr} onChange={(e) => update({ nameAr: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-right" />
+                <input type="text" dir="rtl" value={form.nameAr} onChange={(e) => handleNameChange('ar', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-right" />
               </div>
 
               <div>
@@ -334,13 +352,13 @@ export default function BakalaAddProduct() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Cost Price (SAR)</label>
-                <input type="number" step="0.01" min="0" value={form.costPrice} onChange={(e) => update({ costPrice: e.target.value })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" />
+                <input type="number" step="0.01" min="0" value={form.costPrice} onChange={(e) => update({ costPrice: e.target.value })} onBlur={() => formatPrice('costPrice')} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" />
               </div>
               <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-4">
                 <label className="block text-sm font-bold text-emerald-900 mb-1">Selling Price (SAR) *</label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-700 font-bold">SAR</span>
-                  <input ref={retailPriceRef} type="number" step="0.01" min="0" value={form.retailPrice} onChange={(e) => update({ retailPrice: e.target.value })} className="w-full pl-12 pr-3 py-2.5 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-emerald-900" />
+                  <input ref={retailPriceRef} type="number" step="0.01" min="0" value={form.retailPrice} onChange={(e) => update({ retailPrice: e.target.value })} onBlur={() => formatPrice('retailPrice')} className="w-full pl-12 pr-3 py-2.5 border border-emerald-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-emerald-900" />
                 </div>
                 {margin != null && <p className="text-xs text-gray-500 mt-2">Margin: <span className={margin < 0 ? 'text-red-500' : 'text-emerald-600'}>{margin}%</span></p>}
               </div>
