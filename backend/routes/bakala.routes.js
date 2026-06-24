@@ -71,6 +71,13 @@ router.post('/sync', protect, async (req, res) => {
           }) || []
         };
 
+        // Determine initial status based on ZATCA phase (same logic as regular invoices)
+        const requestedStatus = cleanedInvoice.status;
+        const isDraft = String(requestedStatus || '').trim().toLowerCase() === 'draft';
+        const initialStatus = isDraft
+          ? 'draft'
+          : (tenant.zatca?.phase === 1 ? 'approved' : 'pending');
+
         const newInvoice = new Invoice({
           ...cleanedInvoice,
           tenantId,
@@ -78,7 +85,7 @@ router.post('/sync', protect, async (req, res) => {
           businessContext: 'bakala',
           transactionType: 'B2C',
           invoiceTypeCode: '0200000', // Simplified tax invoice
-          status: 'pending',
+          status: initialStatus,
           createdBy: req.user._id,
         });
 
