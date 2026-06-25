@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { motion } from 'framer-motion'
@@ -55,6 +55,8 @@ export default function RestaurantKitchen() {
   const [statuses, setStatuses] = useState(['new', 'preparing', 'ready'])
   const [autoPrint, setAutoPrint] = useState(() => localStorage.getItem('kitchenAutoPrint') === 'true')
   const [printingIds, setPrintingIds] = useState(new Set())
+  const firstLoadDoneRef = useRef(false)
+  const seenOrderIdsRef = useRef(new Set())
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['restaurant-kitchen', statuses],
@@ -86,11 +88,26 @@ export default function RestaurantKitchen() {
     localStorage.setItem('kitchenAutoPrint', autoPrint)
   }, [autoPrint])
 
+  // Mark all orders present on the first load as "already seen" so they are not auto-printed again.
+  useEffect(() => {
+    if (!isLoading && !firstLoadDoneRef.current) {
+      firstLoadDoneRef.current = true
+      orders.forEach(o => seenOrderIdsRef.current.add(o._id))
+    }
+  }, [isLoading, orders])
+
+  // Auto-print only new orders that arrive while this page is open, not orders that existed on load.
   useEffect(() => {
     if (!autoPrint) return
-    const unprinted = orders.filter(o => o.kitchenStatus === 'new' && !o.kitchenPrintedAt && !printingIds.has(o._id))
+    const unprinted = orders.filter(o =>
+      o.kitchenStatus === 'new' &&
+      !o.kitchenPrintedAt &&
+      !printingIds.has(o._id) &&
+      !seenOrderIdsRef.current.has(o._id)
+    )
     if (unprinted.length > 0) {
       unprinted.forEach(o => {
+        seenOrderIdsRef.current.add(o._id)
         setPrintingIds(prev => new Set([...prev, o._id]))
         try {
           printHtml(buildKitchenTicketHtml(o))
