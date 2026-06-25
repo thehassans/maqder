@@ -1,18 +1,19 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
+import api from '../../lib/api'
+import toast from 'react-hot-toast'
+import { updateTenant } from '../../store/slices/authSlice'
 import {
   Shield, Key, Lock, Users, Server, Globe, ExternalLink,
   CheckCircle2, AlertTriangle, AlertCircle, RefreshCw,
   Building, Sliders, Play, Check, X, FileText, WifiOff, HelpCircle, Eye
 } from 'lucide-react'
-import api from '../../lib/api'
-import toast from 'react-hot-toast'
 
 // ── ZOD VALIDATION SCHEMA (Saudi Structural Rules) ───────────────────────────
 const schema = z.object({
@@ -113,6 +114,7 @@ const Toggle = ({ checked, onChange }) => (
 
 export default function GovernmentIntegrations() {
   const queryClient = useQueryClient()
+  const dispatch = useDispatch()
   const { language } = useSelector(state => state.ui)
   const { tenant } = useSelector(state => state.auth)
   
@@ -285,6 +287,27 @@ export default function GovernmentIntegrations() {
     }
   })
 
+  // Per-service connection test mutation
+  const testConnectionMutation = useMutation({
+    mutationFn: (service) => api.post('/tenant/compliance/config/test-connection', { service }).then(res => res.data),
+    onSuccess: async (res) => {
+      if (res.success) {
+        toast.success(t('Connection test passed!', 'نجح اختبار الاتصال!'))
+        // Refresh tenant data so sidebar updates with new sub-menus
+        try {
+          const { data: tenantData } = await api.get('/auth/me')
+          if (tenantData?.tenant) dispatch(updateTenant(tenantData.tenant))
+        } catch (e) { /* best-effort */ }
+      } else {
+        toast.error(res.message || t('Connection test failed.', 'فشل اختبار الاتصال.'))
+      }
+      queryClient.invalidateQueries(['government-integrations-config'])
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.error || t('Connection test failed.', 'فشل اختبار الاتصال.'))
+    }
+  })
+
   // Background Sync simulator (BullMQ progress bar trigger)
   const triggerBulkSync = () => {
     setIsSyncing(true)
@@ -318,10 +341,12 @@ export default function GovernmentIntegrations() {
     
     switch (tabId) {
       case 'zatca':
+        if (config.zatca?.connectionStatus === 'connected') return 'connected'
         if (config.zatca?.isOnboarded) return 'connected'
         if (config.zatca?.hasPrivateKey) return 'action_required'
         return 'disconnected'
       case 'elm':
+        if (config.elm?.connectionStatus === 'connected') return 'connected'
         // Active if any of Tamm, NAJM, or Wathiq is enabled
         const cri = config.carRentalIntegrations || {}
         if (cri.tamm?.enabled || cri.najm?.enabled || cri.wathiq?.enabled) {
@@ -330,12 +355,14 @@ export default function GovernmentIntegrations() {
         if (config.elm?.clientId) return 'action_required'
         return 'disconnected'
       case 'qiwa':
+        if (config.qiwa?.connectionStatus === 'connected') return 'connected'
         if (config.qiwa?.establishmentId && config.qiwa?.hasAccessToken) {
           return config.qiwa.contractAuthAutomationEnabled ? 'connected' : 'action_required'
         }
         if (config.qiwa?.establishmentId) return 'action_required'
         return 'disconnected'
       case 'gosi':
+        if (config.gosi?.connectionStatus === 'connected') return 'connected'
         if (config.gosi?.registrationNumber && config.mudad?.hasClientCertificate) {
           return config.mudad.autoSifUploadEnabled ? 'connected' : 'action_required'
         }
@@ -516,10 +543,25 @@ export default function GovernmentIntegrations() {
                       {t('ZATCA E-Invoicing Phase 2 Integration', 'تكامل هيئة الزكاة والجمارك (المرحلة الثانية)')}
                     </h3>
                     {config?.zatca?.isOnboarded && (
-                      <Link to="/app/settings/government-integrations/zatca" className="btn btn-secondary btn-sm flex items-center gap-1.5 hover:scale-[1.02] transition-transform">
-                        <Eye className="w-4 h-4 text-emerald-500" />
-                        {t('View Dashboard', 'عرض لوحة التحكم')}
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => testConnectionMutation.mutate('zatca')}
+                          disabled={testConnectionMutation.isPending}
+                          className="btn btn-secondary btn-sm flex items-center gap-1.5 hover:scale-[1.02] transition-transform"
+                        >
+                          {testConnectionMutation.isPending ? (
+                            <RefreshCw className="w-4 h-4 animate-spin text-primary-500" />
+                          ) : (
+                            <Play className="w-4 h-4" />
+                          )}
+                          {t('Test', 'اختبار')}
+                        </button>
+                        <Link to="/app/settings/government-integrations/zatca" className="btn btn-secondary btn-sm flex items-center gap-1.5 hover:scale-[1.02] transition-transform">
+                          <Eye className="w-4 h-4 text-emerald-500" />
+                          {t('View Dashboard', 'عرض لوحة التحكم')}
+                        </Link>
+                      </div>
                     )}
                   </div>
                   <p className="text-sm text-gray-500 mt-1">
@@ -665,10 +707,25 @@ export default function GovernmentIntegrations() {
                         {t('Elm DevPortal Integration (Yakeen)', 'بوابة المطورين علم (يقين)')}
                       </h3>
                       {config?.elm?.clientId && (
-                        <Link to="/app/settings/government-integrations/elm" className="btn btn-secondary btn-sm flex items-center gap-1.5 hover:scale-[1.02] transition-transform">
-                          <Eye className="w-4 h-4 text-emerald-500" />
-                          {t('View Dashboard', 'عرض لوحة التحكم')}
-                        </Link>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => testConnectionMutation.mutate('elm')}
+                            disabled={testConnectionMutation.isPending}
+                            className="btn btn-secondary btn-sm flex items-center gap-1.5 hover:scale-[1.02] transition-transform"
+                          >
+                            {testConnectionMutation.isPending ? (
+                              <RefreshCw className="w-4 h-4 animate-spin text-primary-500" />
+                            ) : (
+                              <Play className="w-4 h-4" />
+                            )}
+                            {t('Test', 'اختبار')}
+                          </button>
+                          <Link to="/app/settings/government-integrations/elm" className="btn btn-secondary btn-sm flex items-center gap-1.5 hover:scale-[1.02] transition-transform">
+                            <Eye className="w-4 h-4 text-emerald-500" />
+                            {t('View Dashboard', 'عرض لوحة التحكم')}
+                          </Link>
+                        </div>
                       )}
                     </div>
                     <p className="text-xs text-gray-400">
@@ -1028,10 +1085,25 @@ export default function GovernmentIntegrations() {
                       {t('Qiwa & MHRSD Labor Integration', 'تكامل منصة قوى ووزارة الموارد البشرية')}
                     </h3>
                     {config?.qiwa?.establishmentId && (
-                      <Link to="/app/settings/government-integrations/qiwa" className="btn btn-secondary btn-sm flex items-center gap-1.5 hover:scale-[1.02] transition-transform">
-                        <Eye className="w-4 h-4 text-emerald-500" />
-                        {t('View Dashboard', 'عرض لوحة التحكم')}
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => testConnectionMutation.mutate('qiwa')}
+                          disabled={testConnectionMutation.isPending}
+                          className="btn btn-secondary btn-sm flex items-center gap-1.5 hover:scale-[1.02] transition-transform"
+                        >
+                          {testConnectionMutation.isPending ? (
+                            <RefreshCw className="w-4 h-4 animate-spin text-primary-500" />
+                          ) : (
+                            <Play className="w-4 h-4" />
+                          )}
+                          {t('Test', 'اختبار')}
+                        </button>
+                        <Link to="/app/settings/government-integrations/qiwa" className="btn btn-secondary btn-sm flex items-center gap-1.5 hover:scale-[1.02] transition-transform">
+                          <Eye className="w-4 h-4 text-emerald-500" />
+                          {t('View Dashboard', 'عرض لوحة التحكم')}
+                        </Link>
+                      </div>
                     )}
                   </div>
                   <p className="text-sm text-gray-500 mt-1">
@@ -1104,10 +1176,25 @@ export default function GovernmentIntegrations() {
                       {t('GOSI & Mudad WPS Integration', 'تكامل التأمينات الاجتماعية ومنصة مدد (حماية الأجور)')}
                     </h3>
                     {(config?.gosi?.registrationNumber || config?.mudad?.registrationNumber) && (
-                      <Link to="/app/settings/government-integrations/gosi" className="btn btn-secondary btn-sm flex items-center gap-1.5 hover:scale-[1.02] transition-transform">
-                        <Eye className="w-4 h-4 text-emerald-500" />
-                        {t('View Dashboard', 'عرض لوحة التحكم')}
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => testConnectionMutation.mutate('gosi')}
+                          disabled={testConnectionMutation.isPending}
+                          className="btn btn-secondary btn-sm flex items-center gap-1.5 hover:scale-[1.02] transition-transform"
+                        >
+                          {testConnectionMutation.isPending ? (
+                            <RefreshCw className="w-4 h-4 animate-spin text-primary-500" />
+                          ) : (
+                            <Play className="w-4 h-4" />
+                          )}
+                          {t('Test', 'اختبار')}
+                        </button>
+                        <Link to="/app/settings/government-integrations/gosi" className="btn btn-secondary btn-sm flex items-center gap-1.5 hover:scale-[1.02] transition-transform">
+                          <Eye className="w-4 h-4 text-emerald-500" />
+                          {t('View Dashboard', 'عرض لوحة التحكم')}
+                        </Link>
+                      </div>
                     )}
                   </div>
                   <p className="text-sm text-gray-500 mt-1">

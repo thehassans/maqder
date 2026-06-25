@@ -68,10 +68,11 @@ export default function Sidebar() {
   const { tenant, user } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
 
-  const hasZatca = tenant?.zatca?.isOnboarded;
-  const hasElm = !!tenant?.settings?.saudiIntegrations?.elm?.clientId;
-  const hasQiwa = !!tenant?.settings?.saudiIntegrations?.qiwa?.establishmentId;
-  const hasGosi = !!tenant?.settings?.saudiIntegrations?.gosi?.registrationNumber || !!tenant?.settings?.saudiIntegrations?.mudad?.registrationNumber;
+  const si = tenant?.settings?.saudiIntegrations || {};
+  const hasZatca = si.zatcaConnectionStatus === 'connected' || tenant?.zatca?.isOnboarded;
+  const hasElm = si.elmConnectionStatus === 'connected';
+  const hasQiwa = si.qiwaConnectionStatus === 'connected';
+  const hasGosi = si.gosiConnectionStatus === 'connected';
 
   const govChildren = [];
   if (hasZatca) govChildren.push({ path: '/app/dashboard/tenant-settings/government-integrations/zatca', label: language === 'ar' ? 'بوابة زاتكا' : 'ZATCA Portal' });
