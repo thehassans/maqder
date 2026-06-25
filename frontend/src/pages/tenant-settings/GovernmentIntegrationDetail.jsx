@@ -109,16 +109,22 @@ export default function GovernmentIntegrationDetail() {
   // Service metadata
   const getServiceMeta = () => {
     switch (service) {
-      case 'zatca':
+      case 'zatca': {
+        const isPhase2 = dashboard?.stats?.phase === 2;
         return {
-          title: t('ZATCA Integration (Fatoora Phase 2)', 'ربط هيئة الزكاة والضريبة والجمارك (فاتورة المرحلة 2)'),
-          subtitle: t('Monitor XML invoice clearance, cryptographic stamps, and compliance reports.', 'مراقبة اعتماد فواتير XML، الأختام الرقمية، وتقارير الامتثال.'),
+          title: isPhase2
+            ? t('ZATCA Integration (Fatoora Phase 2)', 'ربط هيئة الزكاة والضريبة والجمارك (فاتورة المرحلة 2)')
+            : t('ZATCA Integration (Fatoora Phase 1)', 'ربط هيئة الزكاة والضريبة والجمارك (فاتورة المرحلة الأولى)'),
+          subtitle: isPhase2
+            ? t('Monitor XML invoice clearance, cryptographic stamps, and compliance reports.', 'مراقبة اعتماد فواتير XML، الأختام الرقمية، وتقارير الامتثال.')
+            : t('Generate ZATCA-compliant QR codes and locally-signed XML invoices. No live portal submission required for Phase 1.', 'إنشاء رموز QR وفواتير XML موقعة محلياً متوافقة مع الزكاة. لا يتطلب المرحلة الأولى إرسالاً مباشراً للبوابة.'),
           icon: Shield,
           gradient: 'from-emerald-500 to-teal-600',
           accent: 'emerald',
           endpoint: 'zatca.gov.sa/fatoora',
-          protocol: 'OAuth 2.0 (mTLS)',
+          protocol: isPhase2 ? 'OAuth 2.0 (mTLS)' : 'Local XML / TLV QR',
         }
+      }
       case 'elm':
         return {
           title: t('Elm DevPortal (Yakeen & Tamm)', 'بوابة علم (خدمات يقين وتم)'),
@@ -188,9 +194,10 @@ export default function GovernmentIntegrationDetail() {
 
   // Service-specific stat card
   if (service === 'zatca') {
-    statCards[0] = { label: t('Onboarded', 'تم الربط'), value: stats.isOnboarded ? t('Yes', 'نعم') : t('No', 'لا'), icon: CheckCircle }
-    statCards[1] = { label: t('Environment', 'البيئة'), value: (stats.environment || 'sandbox').toUpperCase(), icon: Server }
-    statCards[2] = { label: t('Device ID', 'معرف الجهاز'), value: stats.deviceSerialNumber ? stats.deviceSerialNumber.slice(0, 12) : 'N/A', icon: Key }
+    const isPhase2 = stats.phase === 2;
+    statCards[0] = { label: t('Phase', 'المرحلة'), value: isPhase2 ? 'Phase 2' : 'Phase 1', icon: Shield }
+    statCards[1] = { label: isPhase2 ? t('Onboarded', 'تم الربط') : t('VAT Configured', 'ضريبة القيمة المضافة مهيأة'), value: isPhase2 ? (stats.isOnboarded ? t('Yes', 'نعم') : t('No', 'لا')) : (stats.hasVat ? t('Yes', 'نعم') : t('No', 'لا')), icon: CheckCircle }
+    statCards[2] = { label: isPhase2 ? t('Device ID', 'معرف الجهاز') : t('Environment', 'البيئة'), value: isPhase2 ? (stats.deviceSerialNumber ? stats.deviceSerialNumber.slice(0, 12) : 'N/A') : (stats.environment || 'sandbox').toUpperCase(), icon: isPhase2 ? Key : Server }
   } else if (service === 'elm') {
     statCards[0] = { label: t('Client ID', 'معرف العميل'), value: stats.clientId ? stats.clientId.slice(0, 8) + '...' : 'N/A', icon: Key }
     statCards[1] = { label: t('Nafath OTP', 'نفاذ OTP'), value: stats.nafathOtpEnabled ? t('Enabled', 'مفعّل') : t('Disabled', 'معطل'), icon: Shield }

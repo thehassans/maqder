@@ -78,6 +78,7 @@ router.get('/', async (req, res) => {
 
     res.json({
       zatca: {
+        phase: zatca.phase || 1,
         environment: zatca.environment || 'sandbox',
         complianceCsid: zatca.complianceCsid || '',
         hasPrivateKey: !!zatca.privateKey,
@@ -125,6 +126,12 @@ router.get('/', async (req, res) => {
         connectedAt: saudi.gosiConnectedAt || null,
         lastTestedAt: saudi.gosiLastTestedAt || null,
       },
+      industrySpecific: {
+        baladyApiKey: saudi.industrySpecific?.baladyApiKey || '',
+        saberToken: saudi.industrySpecific?.saberToken || '',
+        etimadUser: saudi.industrySpecific?.etimadUser || '',
+        etimadPassword: saudi.industrySpecific?.etimadPassword || '',
+      },
       carRentalIntegrations: {
         tamm: {
           enabled: cri.tamm?.enabled || false,
@@ -170,7 +177,7 @@ router.get('/', async (req, res) => {
 // @desc    Save/Update tenant compliance configs securely
 router.post('/', async (req, res) => {
   try {
-    const { zatca, elm, qiwa, mudad, gosi, carRentalIntegrations } = req.body;
+    const { zatca, elm, qiwa, mudad, gosi, industrySpecific, carRentalIntegrations } = req.body;
     const tenant = await Tenant.findById(req.user.tenantId);
     if (!tenant) {
       return res.status(404).json({ error: 'Tenant not found' });
@@ -184,6 +191,7 @@ router.post('/', async (req, res) => {
     if (!tenant.settings.saudiIntegrations.qiwa) tenant.settings.saudiIntegrations.qiwa = {};
     if (!tenant.settings.saudiIntegrations.mudad) tenant.settings.saudiIntegrations.mudad = {};
     if (!tenant.settings.saudiIntegrations.gosi) tenant.settings.saudiIntegrations.gosi = {};
+    if (!tenant.settings.saudiIntegrations.industrySpecific) tenant.settings.saudiIntegrations.industrySpecific = {};
     if (!tenant.settings.carRentalIntegrations) tenant.settings.carRentalIntegrations = {};
 
     // 1. ZATCA Environment & Keys
@@ -251,7 +259,23 @@ router.post('/', async (req, res) => {
       tenant.settings.saudiIntegrations.gosi.enabled = !!gosi.enabled;
     }
 
-    // 5. Car Rental Integrations
+    // 5. Industry-Specific Integrations (Balady, Saber, Etimad)
+    if (industrySpecific) {
+      if (industrySpecific.baladyApiKey && !industrySpecific.baladyApiKey.startsWith('*')) {
+        tenant.settings.saudiIntegrations.industrySpecific.baladyApiKey = industrySpecific.baladyApiKey;
+      }
+      if (industrySpecific.saberToken && !industrySpecific.saberToken.startsWith('*')) {
+        tenant.settings.saudiIntegrations.industrySpecific.saberToken = industrySpecific.saberToken;
+      }
+      if (industrySpecific.etimadUser && !industrySpecific.etimadUser.startsWith('*')) {
+        tenant.settings.saudiIntegrations.industrySpecific.etimadUser = industrySpecific.etimadUser;
+      }
+      if (industrySpecific.etimadPassword && !industrySpecific.etimadPassword.startsWith('*')) {
+        tenant.settings.saudiIntegrations.industrySpecific.etimadPassword = industrySpecific.etimadPassword;
+      }
+    }
+
+    // 6. Car Rental Integrations
     if (carRentalIntegrations) {
       // Tamm
       if (carRentalIntegrations.tamm) {
@@ -397,16 +421,32 @@ router.post('/test-connection', async (req, res) => {
 
     switch (service) {
       case 'zatca': {
-        checks = {
-          privateKeyLoaded: !!zatca.privateKey,
-          csidValid: !!zatca.complianceCsid,
-          vatConfigured: !!tenant.business?.vatNumber,
-          sslHandshake: true,
-        };
-        success = checks.privateKeyLoaded && checks.csidValid && checks.vatConfigured;
-        message = success 
-          ? 'ZATCA Fatoora API connection established successfully!' 
-          : 'ZATCA connection failed. Please verify private keys and certificate are correctly uploaded.';
+        const phase = zatca.phase === 2 ? 2 : 1;
+        const business = tenant.business || {};
+
+        if (phase === 1) {
+          checks = {
+            vatConfigured: !!business.vatNumber,
+            crConfigured: !!business.crNumber,
+            legalNameConfigured: !!(business.legalNameEn || business.legalNameAr),
+            addressConfigured: !!(business.address?.city && business.address?.country),
+          };
+          success = checks.vatConfigured && checks.legalNameConfigured && checks.addressConfigured;
+          message = success
+            ? 'ZATCA Phase 1 (QR/XML) readiness check passed.'
+            : 'ZATCA Phase 1 connection failed. Please ensure VAT, CR, legal name, and address are configured.';
+        } else {
+          checks = {
+            privateKeyLoaded: !!zatca.privateKey,
+            csidValid: !!zatca.complianceCsid,
+            vatConfigured: !!business.vatNumber,
+            sslHandshake: true,
+          };
+          success = checks.privateKeyLoaded && checks.csidValid && checks.vatConfigured;
+          message = success
+            ? 'ZATCA Phase 2 (Fatoora API) connection established successfully!'
+            : 'ZATCA Phase 2 connection failed. Please verify private keys and certificate are correctly uploaded.';
+        }
         break;
       }
       case 'elm': {
@@ -527,12 +567,15 @@ router.get('/:service/dashboard', async (req, res) => {
     switch (service) {
       case 'zatca':
         serviceStats = {
+          phase: zatca.phase || 1,
           environment: zatca.environment || 'sandbox',
           isOnboarded: zatca.isOnboarded || false,
           deviceSerialNumber: zatca.deviceSerialNumber || '',
           onboardedAt: zatca.onboardedAt || null,
           hasPrivateKey: !!zatca.privateKey,
           hasComplianceCsid: !!zatca.complianceCsid,
+          hasVat: !!tenant.business?.vatNumber,
+          hasCr: !!tenant.business?.crNumber,
         };
         break;
       case 'elm':

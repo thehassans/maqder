@@ -336,15 +336,31 @@ export default function GovernmentIntegrations() {
   }
 
   // ── DYNAMIC STATUS CALCULATIONS ─────────────────────────────────────────────
+  const hasIndustrySpecificConfig = () => {
+    if (!config?.industrySpecific) return false
+    const { baladyApiKey, saberToken, etimadUser, etimadPassword } = config.industrySpecific
+    return !!(baladyApiKey || saberToken || etimadUser || etimadPassword)
+  }
+
   const getStatus = (tabId) => {
     if (!config) return 'disconnected'
     
     switch (tabId) {
-      case 'zatca':
+      case 'zatca': {
         if (config.zatca?.connectionStatus === 'connected') return 'connected'
+        // Phase 1 only needs business VAT/name/address to generate QR/XML locally
+        const isPhase1 = config.zatca?.phase === 1 || tenant?.zatca?.phase === 1
+        if (isPhase1) {
+          const business = tenant?.business || {}
+          const hasVat = !!business.vatNumber
+          const hasName = !!(business.legalNameEn || business.legalNameAr)
+          const hasAddress = !!(business.address?.city && business.address?.country)
+          if (hasVat && hasName && hasAddress) return 'connected'
+        }
         if (config.zatca?.isOnboarded) return 'connected'
         if (config.zatca?.hasPrivateKey) return 'action_required'
         return 'disconnected'
+      }
       case 'elm':
         if (config.elm?.connectionStatus === 'connected') return 'connected'
         // Active if any of Tamm, NAJM, or Wathiq is enabled
@@ -369,7 +385,7 @@ export default function GovernmentIntegrations() {
         if (config.gosi?.registrationNumber) return 'action_required'
         return 'disconnected'
       case 'industry':
-        return 'connected'
+        return hasIndustrySpecificConfig() ? 'connected' : 'disconnected'
       default:
         return 'disconnected'
     }
@@ -540,9 +556,12 @@ export default function GovernmentIntegrations() {
                   <div className="flex items-center justify-between">
                     <h3 className="text-xl font-bold flex items-center gap-2">
                       <Shield className="w-6 h-6 text-primary-500" />
-                      {t('ZATCA E-Invoicing Phase 2 Integration', 'تكامل هيئة الزكاة والجمارك (المرحلة الثانية)')}
+                      {(config?.zatca?.phase === 2 || tenant?.zatca?.phase === 2)
+                        ? t('ZATCA E-Invoicing Phase 2 Integration', 'تكامل هيئة الزكاة والجمارك (المرحلة الثانية)')
+                        : t('ZATCA E-Invoicing Phase 1 Integration', 'تكامل هيئة الزكاة والجمارك (المرحلة الأولى)')
+                      }
                     </h3>
-                    {config?.zatca?.isOnboarded && (
+                    {(config?.zatca?.isOnboarded || getStatus('zatca') === 'connected') && (
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
@@ -565,8 +584,12 @@ export default function GovernmentIntegrations() {
                     )}
                   </div>
                   <p className="text-sm text-gray-500 mt-1">
-                    {t('ZATCA Phase 2 (Fatoora) integration ensures complete compliance with the Saudi e-invoicing mandate. It automatically generates ZATCA-compliant QR codes, digitally signs invoices using your cryptographic stamp, and transmits B2B invoices for clearance and B2C invoices for reporting in real-time. This eliminates manual tax filing errors and protects your business from compliance penalties.',
-                       'تكامل هيئة الزكاة والجمارك (المرحلة الثانية) يضمن الامتثال الكامل لمتطلبات الفوترة الإلكترونية السعودية. يقوم تلقائياً بإنشاء رموز QR المتوافقة، ويوقع الفواتير رقمياً باستخدام ختم التشفير، ويرسل الفواتير الضريبية (B2B) للاعتماد والمبسطة (B2C) للإبلاغ في الوقت الفعلي. هذا يقضي على أخطاء تقديم الضرائب اليدوية ويحمي عملك من غرامات عدم الامتثال.')}
+                    {(config?.zatca?.phase === 2 || tenant?.zatca?.phase === 2)
+                      ? t('ZATCA Phase 2 (Fatoora) integration ensures complete compliance with the Saudi e-invoicing mandate. It automatically generates ZATCA-compliant QR codes, digitally signs invoices using your cryptographic stamp, and transmits B2B invoices for clearance and B2C invoices for reporting in real-time.',
+                          'تكامل هيئة الزكاة والجمارك (المرحلة الثانية) يضمن الامتثال الكامل لمتطلبات الفوترة الإلكترونية السعودية. يقوم تلقائياً بإنشاء رموز QR المتوافقة، ويوقع الفواتير رقمياً باستخدام ختم التشفير، ويرسل الفواتير الضريبية (B2B) للاعتماد والمبسطة (B2C) للإبلاغ في الوقت الفعلي.')
+                      : t('ZATCA Phase 1 (Fatoora) integration generates ZATCA-compliant QR codes and locally-signed XML invoices using your company VAT and address. No live portal submission is required for Phase 1. This protects your business from compliance penalties while operating under the Phase 1 mandate.',
+                          'تكامل هيئة الزكاة والجمارك (المرحلة الأولى) ينشئ رموز QR متوافقة وفواتير XML موقعة محلياً باستخدام ضريبة القيمة المضافة وعنوان الشركة. لا يتطلب المرحلة الأولى إرسال مباشر للبوابة. هذا يحمي عملك من غرامات عدم الامتثال أثناء العمل بموجب متطلبات المرحلة الأولى.')
+                    }
                   </p>
                 </div>
 

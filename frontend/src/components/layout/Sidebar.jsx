@@ -69,13 +69,16 @@ export default function Sidebar() {
   const { t } = useTranslation(language)
 
   const si = tenant?.settings?.saudiIntegrations || {};
-  const hasZatca = si.zatcaConnectionStatus === 'connected' || tenant?.zatca?.isOnboarded;
+  const isZatcaPhase1 = (tenant?.zatca?.phase || 1) === 1;
+  const business = tenant?.business || {};
+  const isZatcaPhase1Ready = isZatcaPhase1 && !!business.vatNumber && !!(business.legalNameEn || business.legalNameAr) && !!(business.address?.city && business.address?.country);
+  const hasZatca = si.zatcaConnectionStatus === 'connected' || tenant?.zatca?.isOnboarded || isZatcaPhase1Ready;
   const hasElm = si.elmConnectionStatus === 'connected';
   const hasQiwa = si.qiwaConnectionStatus === 'connected';
   const hasGosi = si.gosiConnectionStatus === 'connected';
 
   const govChildren = [];
-  if (hasZatca) govChildren.push({ path: '/app/dashboard/tenant-settings/government-integrations/zatca', label: language === 'ar' ? 'بوابة زاتكا' : 'ZATCA Portal' });
+  if (hasZatca) govChildren.push({ path: '/app/dashboard/tenant-settings/government-integrations/zatca', label: language === 'ar' ? `بوابة زاتكا ${isZatcaPhase1 ? '(المرحلة 1)' : ''}` : `ZATCA${isZatcaPhase1 ? ' Phase 1' : ''} Portal` });
   if (hasElm) govChildren.push({ path: '/app/dashboard/tenant-settings/government-integrations/elm', label: language === 'ar' ? 'بوابة علم / يقين' : 'Elm Portal' });
   if (hasQiwa) govChildren.push({ path: '/app/dashboard/tenant-settings/government-integrations/qiwa', label: language === 'ar' ? 'بوابة قوى' : 'Qiwa Portal' });
   if (hasGosi) govChildren.push({ path: '/app/dashboard/tenant-settings/government-integrations/gosi', label: language === 'ar' ? 'بوابة التأمينات / مدد' : 'GOSI/Mudad Portal' });
