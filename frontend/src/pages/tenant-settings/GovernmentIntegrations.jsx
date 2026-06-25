@@ -576,7 +576,7 @@ export default function GovernmentIntegrations() {
                           )}
                           {t('Test', 'اختبار')}
                         </button>
-                        <Link to="/app/settings/government-integrations/zatca" className="btn btn-secondary btn-sm flex items-center gap-1.5 hover:scale-[1.02] transition-transform">
+                        <Link to="/app/dashboard/tenant-settings/government-integrations/zatca" className="btn btn-secondary btn-sm flex items-center gap-1.5 hover:scale-[1.02] transition-transform">
                           <Eye className="w-4 h-4 text-emerald-500" />
                           {t('View Dashboard', 'عرض لوحة التحكم')}
                         </Link>
@@ -744,7 +744,7 @@ export default function GovernmentIntegrations() {
                             )}
                             {t('Test', 'اختبار')}
                           </button>
-                          <Link to="/app/settings/government-integrations/elm" className="btn btn-secondary btn-sm flex items-center gap-1.5 hover:scale-[1.02] transition-transform">
+                          <Link to="/app/dashboard/tenant-settings/government-integrations/elm" className="btn btn-secondary btn-sm flex items-center gap-1.5 hover:scale-[1.02] transition-transform">
                             <Eye className="w-4 h-4 text-emerald-500" />
                             {t('View Dashboard', 'عرض لوحة التحكم')}
                           </Link>
@@ -1122,7 +1122,7 @@ export default function GovernmentIntegrations() {
                           )}
                           {t('Test', 'اختبار')}
                         </button>
-                        <Link to="/app/settings/government-integrations/qiwa" className="btn btn-secondary btn-sm flex items-center gap-1.5 hover:scale-[1.02] transition-transform">
+                        <Link to="/app/dashboard/tenant-settings/government-integrations/qiwa" className="btn btn-secondary btn-sm flex items-center gap-1.5 hover:scale-[1.02] transition-transform">
                           <Eye className="w-4 h-4 text-emerald-500" />
                           {t('View Dashboard', 'عرض لوحة التحكم')}
                         </Link>
@@ -1213,7 +1213,7 @@ export default function GovernmentIntegrations() {
                           )}
                           {t('Test', 'اختبار')}
                         </button>
-                        <Link to="/app/settings/government-integrations/gosi" className="btn btn-secondary btn-sm flex items-center gap-1.5 hover:scale-[1.02] transition-transform">
+                        <Link to="/app/dashboard/tenant-settings/government-integrations/gosi" className="btn btn-secondary btn-sm flex items-center gap-1.5 hover:scale-[1.02] transition-transform">
                           <Eye className="w-4 h-4 text-emerald-500" />
                           {t('View Dashboard', 'عرض لوحة التحكم')}
                         </Link>

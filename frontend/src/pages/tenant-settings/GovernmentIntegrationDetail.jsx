@@ -167,7 +167,7 @@ export default function GovernmentIntegrationDetail() {
       <div className="card p-8 text-center space-y-4">
         <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto" />
         <h3 className="text-lg font-bold">{t('Integration Not Found', 'التكامل غير موجود')}</h3>
-        <button onClick={() => navigate('/app/settings/government-integrations')} className="btn btn-primary">{t('Go Back', 'الرجوع')}</button>
+        <button onClick={() => navigate('/app/dashboard/tenant-settings/government-integrations')} className="btn btn-primary">{t('Go Back', 'الرجوع')}</button>
       </div>
     )
   }
@@ -222,7 +222,7 @@ export default function GovernmentIntegrationDetail() {
         <div className="relative p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => navigate('/app/settings/government-integrations')}
+              onClick={() => navigate('/app/dashboard/tenant-settings/government-integrations')}
               className="p-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-dark-750 transition-all shadow-sm flex-shrink-0"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -256,7 +256,7 @@ export default function GovernmentIntegrationDetail() {
               {syncMutation.isPending ? t('Syncing...', 'جارٍ المزامنة...') : t('Sync Now', 'مزامنة الآن')}
             </button>
             <Link
-              to="/app/settings/government-integrations"
+              to="/app/dashboard/tenant-settings/government-integrations"
               className="btn btn-primary flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md hover:scale-[1.01] transition-transform"
             >
               <Key className="w-4 h-4" />
@@ -281,7 +281,7 @@ export default function GovernmentIntegrationDetail() {
             <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
               {dashboard?.lastError || t('Go to the configuration page to set up credentials and test the connection.', 'انتقل إلى صفحة الإعدادات لإدخال بيانات الاعتماد واختبار الاتصال.')}
             </p>
-            <Link to="/app/settings/government-integrations" className="inline-flex items-center gap-1 text-xs font-bold text-amber-700 dark:text-amber-400 mt-2 hover:underline">
+            <Link to="/app/dashboard/tenant-settings/government-integrations" className="inline-flex items-center gap-1 text-xs font-bold text-amber-700 dark:text-amber-400 mt-2 hover:underline">
               {t('Configure now →', 'إعداد الآن ←')}
             </Link>
           </div>
