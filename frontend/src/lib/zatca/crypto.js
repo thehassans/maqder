@@ -12,7 +12,7 @@ function parsePemToHex(pem) {
     .replace(/-----END PRIVATE KEY-----/g, '')
     .replace(/-----BEGIN EC PRIVATE KEY-----/g, '')
     .replace(/-----END EC PRIVATE KEY-----/g, '')
-    .replace(/\\s/g, ''); // remove newlines and spaces
+    .replace(/\s/g, ''); // remove newlines and spaces
 
   const binaryString = atob(base64);
   const bytes = new Uint8Array(binaryString.length);
@@ -115,7 +115,7 @@ export function getPublicKeyFromPem(privateKeyPem) {
  */
 function encodeTLV(tag, valueBytes) {
   const length = valueBytes.length;
-  if (length > 255) throw new Error(\`TLV Tag \${tag} value is too long (\${length} bytes)\`);
+  if (length > 255) throw new Error(`TLV Tag ${tag} value is too long (${length} bytes)`);
   
   const buffer = new Uint8Array(2 + length);
   buffer[0] = tag;

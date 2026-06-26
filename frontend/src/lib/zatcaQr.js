@@ -7,25 +7,128 @@ const toNumber = (value, fallback = 0) => {
 
 const encodeTlvField = (tag, value) => {
   const buffer = encoder.encode(String(value || ''))
+  if (buffer.length > 255) {
+    throw new Error(`ZATCA QR field ${tag} exceeds 255 bytes (${buffer.length})`)
+  }
   return [tag, buffer.length, ...buffer]
 }
 
 const bytesToBase64 = (bytes) => {
+  const chunkSize = 8192
   let binary = ''
-  bytes.forEach((byte) => {
-    binary += String.fromCharCode(byte)
-  })
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.slice(i, i + chunkSize)
+    binary += String.fromCharCode.apply(null, chunk)
+  }
   return btoa(binary)
 }
 
-export const generateZatcaQrValue = ({ sellerName, vatNumber, timestamp, totalWithVat, vatTotal }) => {
-  const fields = [
-    encodeTlvField(1, sellerName || ''),
-    encodeTlvField(2, vatNumber || ''),
-    encodeTlvField(3, timestamp || new Date().toISOString()),
-    encodeTlvField(4, toNumber(totalWithVat).toFixed(2)),
-    encodeTlvField(5, toNumber(vatTotal).toFixed(2)),
-  ]
+const VAT_NUMBER_REGEX = /^[0-9]{15}$/
 
-  return bytesToBase64(fields.flat())
+export const validateZatcaQrFields = ({ sellerName, vatNumber, totalWithVat, vatTotal }) => {
+  const errors = []
+
+  if (!sellerName || String(sellerName).trim().length === 0) {
+    errors.push('Seller name is required')
+  }
+  if (!vatNumber || !VAT_NUMBER_REGEX.test(String(vatNumber))) {
+    errors.push('VAT number must be exactly 15 digits')
+  }
+  const total = toNumber(totalWithVat, null)
+  if (total === null || total < 0) {
+    errors.push('Total with VAT must be a non-negative number')
+  }
+  const vat = toNumber(vatTotal, null)
+  if (vat === null || vat < 0) {
+    errors.push('VAT total must be a non-negative number')
+  }
+  if (total !== null && vat !== null && vat > total) {
+    errors.push('VAT total cannot exceed invoice total')
+  }
+
+  return { valid: errors.length === 0, errors }
+}
+
+export const generateZatcaQrValue = ({ sellerName, vatNumber, timestamp, totalWithVat, vatTotal }) => {
+  try {
+    const validation = validateZatcaQrFields({ sellerName, vatNumber, totalWithVat, vatTotal })
+    if (!validation.valid) {
+      throw new Error(`ZATCA QR validation failed: ${validation.errors.join(', ')}`)
+    }
+
+    const ts = timestamp || new Date().toISOString()
+    const isoTimestamp = ts instanceof Date ? ts.toISOString() : new Date(ts).toISOString()
+
+    const fields = [
+      encodeTlvField(1, sellerName || ''),
+      encodeTlvField(2, vatNumber || ''),
+      encodeTlvField(3, isoTimestamp),
+      encodeTlvField(4, toNumber(totalWithVat).toFixed(2)),
+      encodeTlvField(5, toNumber(vatTotal).toFixed(2)),
+    ]
+
+    return bytesToBase64(fields.flat())
+  } catch (error) {
+    console.error('[ZATCA QR] Generation failed:', error.message)
+    throw error
+  }
+}
+
+export const decodeZatcaQrValue = (base64) => {
+  try {
+    const binary = atob(base64)
+    const bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i)
+    }
+
+    const tagNames = {
+      1: 'sellerName',
+      2: 'vatNumber',
+      3: 'timestamp',
+      4: 'totalWithVat',
+      5: 'vatTotal',
+    }
+    const result = {}
+    let offset = 0
+
+    while (offset < bytes.length) {
+      if (offset + 2 > bytes.length) break
+      const tag = bytes[offset]
+      const length = bytes[offset + 1]
+      if (offset + 2 + length > bytes.length) break
+      const value = new TextDecoder().decode(bytes.slice(offset + 2, offset + 2 + length))
+      result[tagNames[tag] || `tag_${tag}`] = value
+      offset += 2 + length
+    }
+
+    return result
+  } catch (error) {
+    console.error('[ZATCA QR] Decode failed:', error.message)
+    throw new Error('Invalid ZATCA QR payload')
+  }
+}
+
+export const verifyQrIntegrity = (base64) => {
+  try {
+    const decoded = decodeZatcaQrValue(base64)
+    const validation = validateZatcaQrFields({
+      sellerName: decoded.sellerName,
+      vatNumber: decoded.vatNumber,
+      totalWithVat: decoded.totalWithVat,
+      vatTotal: decoded.vatTotal,
+    })
+
+    return {
+      valid: validation.valid,
+      errors: validation.errors,
+      decoded,
+    }
+  } catch (error) {
+    return {
+      valid: false,
+      errors: [error.message],
+      decoded: null,
+    }
+  }
 }

@@ -1,3 +1,5 @@
+import crypto from 'crypto';
+
 /**
  * ZATCA Phase 2 QR Code Helper
  * Implements the TLMV (Tag-Length-Value Minimum) encoding specified in
@@ -17,6 +19,37 @@
  * invoices (simplified tax invoices). B2B (standard) invoices require
  * additional fields and cryptographic signing via the Phase 2 APIs.
  */
+
+const VAT_NUMBER_REGEX = /^[0-9]{15}$/;
+
+/**
+ * Validate ZATCA QR input fields before encoding.
+ * @param {object} params
+ * @returns {{ valid: boolean, errors: string[] }}
+ */
+export function validateZatcaQrFields({ sellerName, vatNumber, totalAmount, vatAmount }) {
+  const errors = [];
+
+  if (!sellerName || String(sellerName).trim().length === 0) {
+    errors.push('Seller name is required');
+  }
+  if (!vatNumber || !VAT_NUMBER_REGEX.test(String(vatNumber))) {
+    errors.push('VAT number must be exactly 15 digits');
+  }
+  const total = Number(totalAmount);
+  if (!Number.isFinite(total) || total < 0) {
+    errors.push('Total amount must be a non-negative number');
+  }
+  const vat = Number(vatAmount);
+  if (!Number.isFinite(vat) || vat < 0) {
+    errors.push('VAT amount must be a non-negative number');
+  }
+  if (Number.isFinite(total) && Number.isFinite(vat) && vat > total) {
+    errors.push('VAT amount cannot exceed total amount');
+  }
+
+  return { valid: errors.length === 0, errors };
+}
 
 /**
  * Encode a single TLMV field.
@@ -56,6 +89,11 @@ function encodeTLVField(tag, value) {
 export function generateZatcaQr({ sellerName, vatNumber, invoiceDate, totalAmount, vatAmount }) {
   if (!sellerName || !vatNumber || !invoiceDate || totalAmount == null || vatAmount == null) {
     throw new Error('generateZatcaQr: all parameters are required');
+  }
+
+  const validation = validateZatcaQrFields({ sellerName, vatNumber, totalAmount, vatAmount });
+  if (!validation.valid) {
+    throw new Error(`generateZatcaQr validation failed: ${validation.errors.join(', ')}`);
   }
 
   // Format timestamp as ISO 8601 (ZATCA spec)
@@ -113,12 +151,122 @@ export function decodeZatcaQr(base64) {
   let offset = 0;
 
   while (offset < buf.length) {
+    if (offset + 2 > buf.length) break;
     const tag = buf.readUInt8(offset);
     const length = buf.readUInt8(offset + 1);
+    if (offset + 2 + length > buf.length) break;
     const value = buf.slice(offset + 2, offset + 2 + length).toString('utf8');
     result[tagNames[tag] || `tag_${tag}`] = value;
     offset += 2 + length;
   }
 
   return result;
+}
+
+/**
+ * Verify the integrity of a ZATCA QR payload by decoding and validating its fields.
+ * @param {string} base64 - Base64-encoded TLMV payload
+ * @returns {{ valid: boolean, errors: string[], decoded: object|null }}
+ */
+export function verifyQrIntegrity(base64) {
+  try {
+    const decoded = decodeZatcaQr(base64);
+    const validation = validateZatcaQrFields({
+      sellerName: decoded.sellerName,
+      vatNumber: decoded.vatNumber,
+      totalAmount: decoded.totalAmount,
+      vatAmount: decoded.vatAmount,
+    });
+    return { valid: validation.valid, errors: validation.errors, decoded };
+  } catch (error) {
+    return { valid: false, errors: [error.message], decoded: null };
+  }
+}
+
+/**
+ * Compute a SHA-256 hash of a canonical invoice representation for chain linking.
+ * @param {object} invoice - Invoice document or POJO
+ * @returns {string} Base64-encoded hash
+ */
+export function computeInvoiceHash(invoice) {
+  const canonical = JSON.stringify({
+    invoiceNumber: invoice.invoiceNumber,
+    issueDate: invoice.issueDate,
+    sellerVat: invoice.seller?.vatNumber || invoice.seller?.vatRegistrationNumber,
+    total: invoice.grandTotal,
+    tax: invoice.totalTax,
+    lines: (invoice.lineItems || []).map((l) => ({
+      name: l.productName || l.name,
+      qty: l.quantity,
+      total: l.lineTotal,
+    })),
+  });
+  return crypto.createHash('sha256').update(canonical).digest('base64');
+}
+
+/**
+ * Verify the invoice hash chain by recomputing the current hash and
+ * comparing it against the stored previous hash.
+ *
+ * @param {object} invoice  - Current invoice with zatca.invoiceHash
+ * @param {string} previousHash - Base64 hash of the previous invoice
+ * @returns {{ valid: boolean, currentHash: string, expectedChainedHash: string }}
+ */
+export function verifyHashChain(invoice, previousHash) {
+  const currentHash = computeInvoiceHash(invoice);
+  const combinedData = (previousHash || '') + currentHash;
+  const expectedChainedHash = crypto.createHash('sha256').update(combinedData).digest('base64');
+  const storedHash = invoice.zatca?.invoiceHash || invoice.zatca?.xmlHash || '';
+  return {
+    valid: storedHash === expectedChainedHash,
+    currentHash,
+    expectedChainedHash,
+  };
+}
+
+/**
+ * Disaster recovery: rebuild the invoice hash chain for a tenant.
+ * Given an array of invoices sorted by issueDate, recompute each invoice's
+ * hash and link it to the previous one. Returns the updated chain data.
+ *
+ * @param {Array} invoices - Array of invoice documents sorted by date
+ * @param {string} seedHash - Initial previous hash (default ZATCA seed)
+ * @returns {Array} Array of { invoiceId, invoiceNumber, invoiceHash, previousInvoiceHash }
+ */
+export function rebuildHashChain(invoices, seedHash) {
+  const DEFAULT_SEED = 'NWZlY2ViNjZmZmM4NmYzOGQ5NTI3ODZjNmQ2OTZjNzljMmRiYzIzOWRkNGU5MWI0NjcyOWQ3M2EyN2ZiNTdlOQ==';
+  let previousHash = seedHash || DEFAULT_SEED;
+  const results = [];
+
+  for (const invoice of invoices) {
+    const currentHash = computeInvoiceHash(invoice);
+    const combinedData = previousHash + currentHash;
+    const chainedHash = crypto.createHash('sha256').update(combinedData).digest('base64');
+
+    results.push({
+      invoiceId: invoice._id,
+      invoiceNumber: invoice.invoiceNumber,
+      invoiceHash: chainedHash,
+      previousInvoiceHash: previousHash,
+    });
+
+    previousHash = chainedHash;
+  }
+
+  return results;
+}
+
+/**
+ * Generate a new ECDSA key pair for ZATCA compliance.
+ * Returns PEM-encoded private and public keys.
+ *
+ * @returns {{ privateKey: string, publicKey: string }}
+ */
+export function generateKeyPair() {
+  const { privateKey, publicKey } = crypto.generateKeyPairSync('ec', {
+    namedCurve: 'secp256k1',
+    privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+    publicKeyEncoding: { type: 'spki', format: 'pem' },
+  });
+  return { privateKey, publicKey };
 }
