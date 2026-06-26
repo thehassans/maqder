@@ -35,6 +35,7 @@ export default function SuperAdminLayout() {
     { path: '/super-admin/identity', icon: ShieldCheck, label: t('identitySettings') },
     { path: '/super-admin/gemini', icon: Settings, label: t('geminiSettings') },
     { path: '/super-admin/system-settings', icon: Settings, label: t('systemSettings') },
+    { path: '/super-admin/zatca', icon: ShieldCheck, label: 'ZATCA' },
   ]
 
   return (

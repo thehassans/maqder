@@ -139,6 +139,7 @@ import ManpowerAssignments from './pages/manpower/ManpowerAssignments'
 import ManpowerAssignmentForm from './pages/manpower/ManpowerAssignmentForm'
 import ManpowerContractPrint from './pages/manpower/ManpowerContractPrint'
 import SystemSettings from './pages/super-admin/SystemSettings'
+import ZatcaManagement from './pages/super-admin/ZatcaManagement'
 import QueriesCRM from './pages/super-admin/QueriesCRM'
 import EmailCommunication from './pages/EmailCommunication'
 import FleetAssets from './pages/fleet/FleetAssets'
@@ -341,6 +342,7 @@ function App() {
         <Route path="identity" element={<IdentitySettings />} />
         <Route path="gemini" element={<GeminiSettings />} />
         <Route path="system-settings" element={<SystemSettings />} />
+        <Route path="zatca" element={<ZatcaManagement />} />
       </Route>
 
       {/* Main App Routes */}

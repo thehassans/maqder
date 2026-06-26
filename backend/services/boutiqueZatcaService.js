@@ -4,6 +4,7 @@ import { generateZatcaQr } from '../lib/zatcaQr.js';
 import BoutiqueRental from '../models/BoutiqueRental.js';
 import Invoice from '../models/Invoice.js';
 import ZatcaLog from '../models/ZatcaLog.js';
+import logger from '../utils/logger.js';
 
 /**
  * Boutique ZATCA Thermal Invoice Service
@@ -219,8 +220,21 @@ export async function generateBoutiqueThermalInvoice(rental, tenant, previousHas
  * Simplified B2C invoices must be reported within 24 hours.
  */
 export async function queueZatcaReporting(invoiceId) {
-  // In production this could push to a Bull/Redis queue.
-  // For now we mark it and a cron job will batch-report.
+  const invoice = await Invoice.findById(invoiceId).select('invoiceNumber tenantId transactionType zatca.reportStatus');
+  if (!invoice) {
+    logger.warn(`[ZATCA] queueZatcaReporting: invoice ${invoiceId} not found`);
+    return;
+  }
+
+  const { enqueueInvoice } = await import('../services/zatcaQueueProcessor.js');
+  await enqueueInvoice(
+    invoiceId,
+    invoice.tenantId,
+    invoice.invoiceNumber,
+    invoice.transactionType || 'B2C',
+    0
+  );
+
   await Invoice.findByIdAndUpdate(invoiceId, {
     'zatca.reportQueuedAt': new Date(),
     'zatca.reportStatus': 'queued',

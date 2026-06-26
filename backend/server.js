@@ -98,6 +98,7 @@ import { syncZatcaInvoices } from './jobs/zatcaSync.js';
 import { fetchImapEmails } from './jobs/imapFetcher.js';
 import { startBoutiqueReminderJobs } from './jobs/boutiqueReminderJob.js';
 import { checkRestaurantAutoStatus } from './jobs/restaurantAutoStatusJob.js';
+import { processQueue as processZatcaQueue } from './services/zatcaQueueProcessor.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 import logger from './utils/logger.js';
 import User from './models/User.js';
@@ -169,6 +170,11 @@ const startJobs = () => {
   cron.schedule('0 */6 * * *', () => {
     logger.info('Running ZATCA B2C invoice sync...');
     syncZatcaInvoices();
+  });
+
+  cron.schedule('*/2 * * * *', async () => {
+    logger.info('Running ZATCA queue processor...');
+    await processZatcaQueue(25);
   });
 
   cron.schedule('*/15 * * * *', async () => {
