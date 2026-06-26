@@ -68,6 +68,7 @@ import Finance from './pages/Finance'
 import Backup from './pages/Backup'
 import Suppliers from './pages/Suppliers'
 import SupplierForm from './pages/SupplierForm'
+import SupplierPerformance from './pages/trading/SupplierPerformance'
 import PurchaseOrders from './pages/PurchaseOrders'
 import PurchaseOrderForm from './pages/PurchaseOrderForm'
 import GoodsReceiptNote from './pages/inventory/GoodsReceiptNote'
@@ -459,6 +460,7 @@ function App() {
         <Route path="suppliers" element={<BusinessTypeRoute allowedTypes={['trading']}><Suppliers /></BusinessTypeRoute>} />
         <Route path="suppliers/new" element={<BusinessTypeRoute allowedTypes={['trading']}><SupplierForm /></BusinessTypeRoute>} />
         <Route path="suppliers/:id" element={<BusinessTypeRoute allowedTypes={['trading']}><SupplierForm /></BusinessTypeRoute>} />
+        <Route path="supplier-performance" element={<BusinessTypeRoute allowedTypes={['trading']}><SupplierPerformance /></BusinessTypeRoute>} />
         <Route path="purchase-orders" element={<PurchaseOrders />} />
         <Route path="purchase-orders/new" element={<PurchaseOrderForm />} />
         <Route path="purchase-orders/:id" element={<PurchaseOrderForm />} />
