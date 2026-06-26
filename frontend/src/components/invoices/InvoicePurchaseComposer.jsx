@@ -14,6 +14,7 @@ import { getInvoiceTemplateId } from '../../lib/invoiceBranding'
 import InvoiceLivePreview from './InvoiceLivePreview'
 import InvoiceTemplateSelector from './InvoiceTemplateSelector'
 import TravelInvoiceFields from './TravelInvoiceFields'
+import ZatcaPreValidationPanel from '../zatca/ZatcaPreValidationPanel'
 
 const emptyLine = { productId: '', productName: '', productNameAr: '', unitCode: 'PCE', quantity: 1, unitPrice: '', taxRate: 15 }
 const purchaseContexts = ['trading', 'construction', 'travel_agency']
@@ -362,6 +363,9 @@ export default function InvoicePurchaseComposer({ invoiceId = '', initialInvoice
             <div><label className="label">{language === 'ar' ? 'ملاحظات' : 'Notes'}</label><textarea {...register('notes')} className="input" rows={3} /></div>
             <div className="mt-6 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
               <div className="space-y-2 md:w-64"><div className="flex justify-between text-sm"><span className="text-gray-500">{t('subtotal')}</span><span><Money value={totals.subtotal} /></span></div><div className="flex justify-between text-sm"><span className="text-gray-500">{t('tax')}</span><span><Money value={totals.totalTax} /></span></div><div className="flex justify-between border-t border-gray-200 pt-2 text-lg font-bold dark:border-dark-600"><span>{t('total')}</span><span className="text-primary-600"><Money value={totals.grandTotal} /></span></div></div>
+              <div className="mb-4">
+                <ZatcaPreValidationPanel invoiceData={previewInvoice} language={language} />
+              </div>
               <div className="flex gap-3"><button type="button" onClick={() => navigate(isEdit ? `/app/dashboard/invoices/${invoiceId}` : '/app/dashboard/invoices/new')} className="btn btn-secondary">{t('cancel')}</button><button type="submit" disabled={saveMutation.isPending} className="btn btn-action-dark">{saveMutation.isPending ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" /> : <><Save className="w-4 h-4" />{isEdit ? (language === 'ar' ? 'حفظ التعديلات' : 'Save Changes') : t('save')}</>}</button></div>
             </div>
           </div>

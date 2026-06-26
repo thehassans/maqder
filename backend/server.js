@@ -48,6 +48,7 @@ import restaurantTableRoutes from './routes/restaurantTable.routes.js';
 import restaurantInventoryRoutes from './routes/restaurantInventory.routes.js';
 import emailRoutes from './routes/email.routes.js';
 import webhookRoutes from './routes/webhook.routes.js';
+import zatcaWebhookRoutes from './routes/zatcaWebhook.routes.js';
 import fleetRoutes from './routes/fleet.routes.js';
 import contractRoutes from './routes/contract.routes.js';
 import landedCostRoutes from './routes/landedCost.routes.js';
@@ -405,6 +406,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 // API Routes
 app.use('/api/public', publicRoutes);
 app.use('/api/webhooks', ensureDatabaseReady, webhookRoutes);
+app.use('/api/webhooks/zatca', ensureDatabaseReady, zatcaWebhookRoutes);
 app.use('/api/auth', ensureDatabaseReady, authRoutes);
 app.use('/api/tenants', ensureDatabaseReady, tenantRoutes);
 app.use('/api/email', ensureDatabaseReady, emailRoutes);

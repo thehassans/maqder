@@ -965,4 +965,54 @@ router.get('/queue/tenant/:id', async (req, res) => {
   }
 });
 
+// @route   GET /api/super-admin/zatca/queue/stream
+// @desc    SSE stream for live queue status updates
+router.get('/queue/stream', async (req, res) => {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+
+  res.write('data: ' + JSON.stringify({ type: 'connected', timestamp: new Date().toISOString() }) + '\n\n');
+
+  const sendUpdate = async () => {
+    try {
+      const [
+        queued, processing, reported, cleared, failed, cancelled,
+      ] = await Promise.all([
+        ZatcaQueue.countDocuments({ status: 'queued' }),
+        ZatcaQueue.countDocuments({ status: 'processing' }),
+        ZatcaQueue.countDocuments({ status: 'reported' }),
+        ZatcaQueue.countDocuments({ status: 'cleared' }),
+        ZatcaQueue.countDocuments({ status: 'failed' }),
+        ZatcaQueue.countDocuments({ status: 'cancelled' }),
+      ]);
+
+      const circuitBreakers = getCircuitBreakerStatus();
+      const tripped = circuitBreakers.filter((cb) => cb.tripped);
+
+      const data = {
+        type: 'queue-status',
+        timestamp: new Date().toISOString(),
+        queue: { queued, processing, reported, cleared, failed, cancelled },
+        circuitBreakers: { total: circuitBreakers.length, tripped: tripped.length, details: tripped },
+      };
+
+      res.write('data: ' + JSON.stringify(data) + '\n\n');
+    } catch (error) {
+      res.write('data: ' + JSON.stringify({ type: 'error', error: error.message }) + '\n\n');
+    }
+  };
+
+  sendUpdate();
+  const interval = setInterval(sendUpdate, 5000);
+
+  req.on('close', () => {
+    clearInterval(interval);
+    res.end();
+  });
+});
+
 export default router;

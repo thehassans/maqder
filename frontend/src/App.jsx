@@ -155,6 +155,7 @@ import Communicate from './pages/Communicate'
 import SaudiCompliance from './pages/compliance/SaudiCompliance'
 import GovernmentIntegrations from './pages/tenant-settings/GovernmentIntegrations'
 import GovernmentIntegrationDetail from './pages/tenant-settings/GovernmentIntegrationDetail'
+import ZatcaDashboard from './pages/tenant-settings/ZatcaDashboard'
 import CarRentalLayout from './layouts/CarRentalLayout'
 import WorkshopLayout from './layouts/WorkshopLayout'
 import FleetList from './pages/car-rental/FleetList'
@@ -505,6 +506,7 @@ function App() {
         <Route path="settings/government-integrations/:service" element={<GovernmentIntegrationDetail />} />
         <Route path="tenant-settings/government-integrations" element={<GovernmentIntegrations />} />
         <Route path="tenant-settings/government-integrations/:service" element={<GovernmentIntegrationDetail />} />
+        <Route path="tenant-settings/zatca-dashboard" element={<ZatcaDashboard />} />
         <Route path="backup" element={<Backup />} />
         <Route path="super-admin" element={<BusinessTypeRoute allowedTypes={['super_admin']}><SuperAdminDashboard /></BusinessTypeRoute>} />
         <Route path="job-costing" element={<BusinessTypeRoute allowedTypes={['construction']}><JobCosting /></BusinessTypeRoute>} />

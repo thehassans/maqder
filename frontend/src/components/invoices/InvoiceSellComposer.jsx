@@ -15,6 +15,7 @@ import { getInvoiceTemplateId } from '../../lib/invoiceBranding'
 import InvoiceLivePreview from './InvoiceLivePreview'
 import InvoiceTemplateSelector from './InvoiceTemplateSelector'
 import TravelInvoiceFields from './TravelInvoiceFields'
+import ZatcaPreValidationPanel from '../zatca/ZatcaPreValidationPanel'
 
 const emptyLine = { productId: '', productName: '', productNameAr: '', unitCode: 'PCE', quantity: 1, unitPrice: '', customerPrice: '', taxRate: 15, agencyPrice: '', isTravelMargin: false }
 const selectableContexts = ['trading', 'construction', 'travel_agency', 'restaurant', 'manpower']
@@ -918,6 +919,9 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
                 <div className="flex justify-between text-sm"><span className="text-gray-500">{language === 'ar' ? 'المبلغ الخاضع للضريبة' : 'Taxable Amount'}</span><span><Money value={totals.taxableAmount} /></span></div>
                 <div className="flex justify-between text-sm"><span className="text-gray-500">{t('tax')}</span><span><Money value={totals.totalTax} /></span></div>
                 <div className="flex justify-between border-t border-gray-200 pt-2 text-lg font-bold dark:border-dark-600"><span>{t('total')}</span><span className="text-primary-600"><Money value={totals.grandTotal} /></span></div>
+              </div>
+              <div className="mb-4">
+                <ZatcaPreValidationPanel invoiceData={previewInvoice} language={language} />
               </div>
               <div className="flex gap-3">
                 <button type="button" onClick={() => navigate(isEdit ? `/app/dashboard/invoices/${invoiceId}` : '/app/dashboard/invoices/new')} className="btn btn-secondary">{t('cancel')}</button>

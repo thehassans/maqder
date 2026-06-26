@@ -873,4 +873,196 @@ router.post('/zatca-validate', async (req, res) => {
   }
 });
 
+// @route   GET /api/tenant/compliance/config/zatca-queue
+// @desc    Get ZATCA queue items for the current tenant
+router.get('/zatca-queue', async (req, res) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) {
+      return res.status(400).json({ error: 'Tenant ID required' });
+    }
+
+    const { page = 1, limit = 50, status } = req.query;
+    const query = { tenantId };
+    if (status) query.status = status;
+
+    const [items, total, stats] = await Promise.all([
+      ZatcaQueue.find(query)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(parseInt(limit))
+        .populate('invoiceId', 'invoiceNumber issueDate grandTotal')
+        .lean(),
+      ZatcaQueue.countDocuments(query),
+      ZatcaQueue.aggregate([
+        { $match: { tenantId } },
+        { $group: { _id: '$status', count: { $sum: 1 } } },
+      ]),
+    ]);
+
+    const statsMap = stats.reduce((acc, s) => { acc[s._id] = s.count; return acc; }, {});
+
+    res.json({
+      items,
+      stats: statsMap,
+      pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / limit) },
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   POST /api/tenant/compliance/config/zatca-queue/:id/retry
+// @desc    Retry a failed ZATCA queue item (tenant-facing)
+router.post('/zatca-queue/:id/retry', async (req, res) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) {
+      return res.status(400).json({ error: 'Tenant ID required' });
+    }
+
+    const queueItem = await ZatcaQueue.findOne({ _id: req.params.id, tenantId });
+    if (!queueItem) {
+      return res.status(404).json({ error: 'Queue item not found' });
+    }
+
+    if (queueItem.status !== 'failed' && queueItem.status !== 'cancelled') {
+      return res.status(400).json({ error: 'Only failed or cancelled items can be retried' });
+    }
+
+    queueItem.status = 'queued';
+    queueItem.retryCount = 0;
+    queueItem.lastError = '';
+    queueItem.nextRetryAt = null;
+    queueItem.circuitBreakerTripped = false;
+    await queueItem.save();
+
+    res.json({ success: true, message: `Invoice ${queueItem.invoiceNumber} queued for retry` });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   GET /api/tenant/compliance/config/zatca-report
+// @desc    Get monthly ZATCA compliance report for the current tenant
+router.get('/zatca-report', async (req, res) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) {
+      return res.status(400).json({ error: 'Tenant ID required' });
+    }
+
+    const { month, year } = req.query;
+    const now = new Date();
+    const reportMonth = month ? parseInt(month) - 1 : now.getMonth();
+    const reportYear = year ? parseInt(year) : now.getFullYear();
+
+    const startDate = new Date(reportYear, reportMonth, 1);
+    const endDate = new Date(reportYear, reportMonth + 1, 0, 23, 59, 59);
+
+    const tenant = await Tenant.findById(tenantId).select('name business vatCertificate').lean();
+
+    const [invoiceStats, queueStats, auditStats] = await Promise.all([
+      Invoice.aggregate([
+        {
+          $match: {
+            tenantId,
+            issueDate: { $gte: startDate, $lte: endDate },
+            'zatca.qrCodeData': { $exists: true, $ne: '' },
+          },
+        },
+        {
+          $group: {
+            _id: '$zatca.submissionStatus',
+            count: { $sum: 1 },
+            totalAmount: { $sum: '$grandTotal' },
+            totalTax: { $sum: '$totalTax' },
+          },
+        },
+      ]),
+      ZatcaQueue.aggregate([
+        {
+          $match: {
+            tenantId,
+            createdAt: { $gte: startDate, $lte: endDate },
+          },
+        },
+        {
+          $group: {
+            _id: '$status',
+            count: { $sum: 1 },
+            avgRetries: { $avg: '$retryCount' },
+          },
+        },
+      ]),
+      ZatcaAuditLog.aggregate([
+        {
+          $match: {
+            tenantId,
+            createdAt: { $gte: startDate, $lte: endDate },
+          },
+        },
+        {
+          $group: {
+            _id: { action: '$action', status: '$status' },
+            count: { $sum: 1 },
+          },
+        },
+      ]),
+    ]);
+
+    const statusMap = invoiceStats.reduce((acc, s) => {
+      acc[s._id || 'unknown'] = { count: s.count, totalAmount: s.totalAmount, totalTax: s.totalTax };
+      return acc;
+    }, {});
+
+    const totalInvoices = Object.values(statusMap).reduce((sum, s) => sum + s.count, 0);
+    const syncedInvoices = (statusMap.cleared?.count || 0) + (statusMap.reported?.count || 0) + (statusMap.submitted?.count || 0);
+    const failedInvoices = (statusMap.rejected?.count || 0) + (statusMap.failed?.count || 0);
+    const pendingInvoices = statusMap.pending?.count || 0;
+    const totalAmount = Object.values(statusMap).reduce((sum, s) => sum + (s.totalAmount || 0), 0);
+    const totalTax = Object.values(statusMap).reduce((sum, s) => sum + (s.totalTax || 0), 0);
+    const complianceRate = totalInvoices > 0 ? Math.round((syncedInvoices / totalInvoices) * 100) : 100;
+
+    const queueMap = queueStats.reduce((acc, s) => {
+      acc[s._id] = { count: s.count, avgRetries: Math.round(s.avgRetries || 0) };
+      return acc;
+    }, {});
+
+    const auditEvents = auditStats.map((s) => ({
+      action: s._id.action,
+      status: s._id.status,
+      count: s.count,
+    }));
+
+    res.json({
+      tenant: {
+        name: tenant?.name,
+        vatNumber: tenant?.business?.vatNumber,
+      },
+      period: {
+        month: reportMonth + 1,
+        year: reportYear,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+      },
+      summary: {
+        totalInvoices,
+        syncedInvoices,
+        pendingInvoices,
+        failedInvoices,
+        totalAmount,
+        totalTax,
+        complianceRate,
+      },
+      invoiceStatusBreakdown: statusMap,
+      queueStats: queueMap,
+      auditEvents,
+      generatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

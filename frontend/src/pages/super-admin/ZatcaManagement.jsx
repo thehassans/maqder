@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
+import { useZatcaQueueStream } from '../../hooks/useZatcaQueueStream'
 
 const STATUS_COLORS = {
   queued: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -187,6 +188,7 @@ export default function ZatcaManagement() {
   const [auditFilters, setAuditFilters] = useState({ action: '', severity: '', page: 1 })
   const [actionLoading, setActionLoading] = useState(null)
   const [actionResult, setActionResult] = useState(null)
+  const liveQueue = useZatcaQueueStream()
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['zatca-stats'],
@@ -340,15 +342,21 @@ export default function ZatcaManagement() {
               <div className="flex items-center gap-2 mb-3">
                 <Zap className="w-4 h-4 text-amber-600" />
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Queue Status</h3>
+                {liveQueue.connected && (
+                  <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    LIVE
+                  </span>
+                )}
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Queued</span>
-                  <span className="font-medium text-blue-600">{queueStatus?.queue?.queued || 0}</span>
+                  <span className="font-medium text-blue-600">{(liveQueue.data?.queue?.queued ?? queueStatus?.queue?.queued) || 0}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Processing</span>
-                  <span className="font-medium text-amber-600">{queueStatus?.queue?.processing || 0}</span>
+                  <span className="font-medium text-amber-600">{(liveQueue.data?.queue?.processing ?? queueStatus?.queue?.processing) || 0}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Failed</span>
