@@ -56,6 +56,7 @@ import Hiring from './pages/hr/Hiring'
 import Leaves from './pages/hr/Leaves'
 import Performance from './pages/hr/Performance'
 import HRReports from './pages/hr/HRReports'
+import ExpenseClaims from './pages/hr/ExpenseClaims'
 import Products from './pages/inventory/Products'
 import ProductForm from './pages/inventory/ProductForm'
 import Warehouses from './pages/inventory/Warehouses'
@@ -443,6 +444,7 @@ function App() {
         <Route path="hr/leaves" element={<Leaves />} />
         <Route path="hr/performance" element={<Performance />} />
         <Route path="hr/reports" element={<HRReports />} />
+        <Route path="hr/expense-claims" element={<ExpenseClaims />} />
         <Route path="payroll" element={<Payroll />} />
         <Route path="payroll/calculators" element={<PayrollCalculators />} />
 
