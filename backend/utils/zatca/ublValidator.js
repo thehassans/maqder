@@ -154,15 +154,17 @@ export function validateInvoiceForZatca(invoice, tenant) {
     );
   }
 
-  if (!tenant?.zatca?.isOnboarded) {
+  const isPhase2 = tenant?.zatca?.phase === 2;
+
+  if (isPhase2 && !tenant?.zatca?.isOnboarded) {
     errors.push('Tenant is not onboarded for ZATCA Phase 2');
   }
 
-  if (!tenant?.zatca?.productionCsid && tenant?.zatca?.environment === 'production') {
+  if (isPhase2 && !tenant?.zatca?.productionCsid && tenant?.zatca?.environment === 'production') {
     errors.push('Tenant missing production CSID for production environment');
   }
 
-  if (!tenant?.zatca?.privateKey) {
+  if (isPhase2 && !tenant?.zatca?.privateKey) {
     errors.push('Tenant missing ECDSA private key for signing');
   }
 
