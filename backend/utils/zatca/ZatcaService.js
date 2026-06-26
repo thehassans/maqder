@@ -4,12 +4,14 @@ import QRCode from 'qrcode';
 import { v4 as uuidv4 } from 'uuid';
 import Handlebars from 'handlebars';
 import momentHijri from 'moment-hijri';
+import { consumeRateLimit } from '../zatcaRateLimiter.js';
 
 class ZatcaService {
   constructor(config = {}) {
     this.privateKey = config.privateKey || null;
     this.certificate = config.certificate || null;
     this.csid = config.csid || null;
+    this.tenantId = config.tenantId || null;
     this.previousInvoiceHash = config.previousInvoiceHash || 'NWZlY2ViNjZmZmM4NmYzOGQ5NTI3ODZjNmQ2OTZjNzljMmRiYzIzOWRkNGU5MWI0NjcyOWQ3M2EyN2ZiNTdlOQ==';
   }
 
@@ -308,6 +310,7 @@ class ZatcaService {
    * Submit invoice to ZATCA for clearance (B2B)
    */
   async submitForClearance(signedXml, invoiceHash, uuid) {
+    if (this.tenantId) consumeRateLimit(this.tenantId);
     const apiUrl = process.env.ZATCA_API_URL || 'https://gw-fatoora.zatca.gov.sa/e-invoicing/developer-portal';
     
     const payload = {
@@ -354,6 +357,7 @@ class ZatcaService {
    * Submit invoice to ZATCA for reporting (B2C batch)
    */
   async submitForReporting(signedXml, invoiceHash, uuid) {
+    if (this.tenantId) consumeRateLimit(this.tenantId);
     const apiUrl = process.env.ZATCA_API_URL || 'https://gw-fatoora.zatca.gov.sa/e-invoicing/developer-portal';
     
     const payload = {

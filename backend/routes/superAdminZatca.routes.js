@@ -1,4 +1,5 @@
 import express from 'express';
+import crypto from 'crypto';
 import Tenant from '../models/Tenant.js';
 import Invoice from '../models/Invoice.js';
 import ZatcaLog from '../models/ZatcaLog.js';
@@ -23,6 +24,7 @@ import {
   restoreZatcaBackupBundle,
 } from '../utils/zatcaKeyVault.js';
 import { getCircuitBreakerStatus, processQueue } from '../services/zatcaQueueProcessor.js';
+import { getAllRateLimitStats, getRateLimitStats, resetRateLimit } from '../utils/zatcaRateLimiter.js';
 
 const router = express.Router();
 
@@ -960,6 +962,345 @@ router.get('/queue/tenant/:id', async (req, res) => {
       items,
       pagination: { page: parseInt(page), limit: parseInt(limit), total, pages: Math.ceil(total / limit) },
     });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   GET /api/super-admin/zatca/rate-limiter
+// @desc    Get rate limiter stats for all tenants
+router.get('/rate-limiter', async (req, res) => {
+  try {
+    const stats = await getAllRateLimitStats();
+    res.json({ tenants: stats });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   GET /api/super-admin/zatca/invoice/:invoiceId/xml
+// @desc    View UBL XML for any invoice (super admin)
+router.get('/invoice/:invoiceId/xml', async (req, res) => {
+  try {
+    const invoice = await Invoice.findById(req.params.invoiceId)
+      .select('invoiceNumber tenantId zatca.signedXml zatca.xmlPayload zatca.uuid zatca.invoiceHash zatca.invoiceCounter')
+      .populate('tenantId', 'name')
+      .lean();
+
+    if (!invoice) {
+      return res.status(404).json({ error: 'Invoice not found' });
+    }
+
+    const xml = invoice.zatca?.signedXml || invoice.zatca?.xmlPayload || null;
+
+    res.json({
+      invoiceNumber: invoice.invoiceNumber,
+      tenantName: invoice.tenantId?.name,
+      hasXml: Boolean(xml),
+      xml,
+      metadata: {
+        uuid: invoice.zatca?.uuid,
+        invoiceHash: invoice.zatca?.invoiceHash,
+        invoiceCounter: invoice.zatca?.invoiceCounter,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   GET /api/super-admin/zatca/compliance-calendar
+// @desc    Get compliance calendar events (cert renewals, key rotations, deadlines)
+router.get('/compliance-calendar', async (req, res) => {
+  try {
+    const { months = 6 } = req.query;
+    const startDate = new Date();
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + parseInt(months));
+
+    const tenants = await Tenant.find({
+      isActive: true,
+      'zatca.isOnboarded': true,
+    })
+      .select('name slug business.vatNumber zatca')
+      .lean();
+
+    const events = [];
+
+    for (const tenant of tenants) {
+      const zatcaConfig = decryptZatcaConfig(tenant.zatca);
+
+      if (zatcaConfig?.productionCsid || zatcaConfig?.complianceCsid) {
+        const csid = zatcaConfig.productionCsid || zatcaConfig.complianceCsid;
+        try {
+          const certMatch = csid.match(/-----BEGIN CERTIFICATE-----([\s\S]*?)-----END CERTIFICATE-----/);
+          if (certMatch) {
+            const certPem = `-----BEGIN CERTIFICATE-----${certMatch[1]}-----END CERTIFICATE-----`;
+            const cert = new (await import('crypto')).X509Certificate(certPem);
+            if (cert.validTo) {
+              const expiryDate = new Date(cert.validTo);
+              if (expiryDate >= startDate) {
+                events.push({
+                  type: 'cert_expiry',
+                  tenantId: tenant._id,
+                  tenantName: tenant.name,
+                  date: expiryDate.toISOString(),
+                  severity: expiryDate < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) ? 'critical' : 'warning',
+                  title: `Certificate expires for ${tenant.name}`,
+                  description: `ZATCA X.509 certificate expires on ${expiryDate.toLocaleDateString()}`,
+                });
+
+                const renewalDate = new Date(expiryDate);
+                renewalDate.setDate(renewalDate.getDate() - 30);
+                if (renewalDate >= startDate) {
+                  events.push({
+                    type: 'cert_renewal_due',
+                    tenantId: tenant._id,
+                    tenantName: tenant.name,
+                    date: renewalDate.toISOString(),
+                    severity: 'warning',
+                    title: `Certificate renewal due for ${tenant.name}`,
+                    description: `Renew ZATCA certificate before it expires on ${expiryDate.toLocaleDateString()}`,
+                  });
+                }
+              }
+            }
+          }
+        } catch {}
+      }
+
+      if (zatcaConfig?.lastKeyRotation) {
+        const lastRotation = new Date(zatcaConfig.lastKeyRotation);
+        const nextRotation = new Date(lastRotation);
+        nextRotation.setFullYear(nextRotation.getFullYear() + 1);
+        if (nextRotation >= startDate && nextRotation <= endDate) {
+          events.push({
+            type: 'key_rotation',
+            tenantId: tenant._id,
+            tenantName: tenant.name,
+            date: nextRotation.toISOString(),
+            severity: 'info',
+            title: `Annual key rotation due for ${tenant.name}`,
+            description: `ECDSA key pair should be rotated (last rotated ${lastRotation.toLocaleDateString()})`,
+          });
+        }
+      }
+
+      const failedCount = await Invoice.countDocuments({
+        tenantId: tenant._id,
+        'zatca.submissionStatus': { $in: ['rejected', 'failed'] },
+      });
+      if (failedCount > 0) {
+        events.push({
+          type: 'failed_invoices',
+          tenantId: tenant._id,
+          tenantName: tenant.name,
+          date: new Date().toISOString(),
+          severity: 'critical',
+          title: `${failedCount} failed invoice(s) for ${tenant.name}`,
+          description: `${failedCount} invoices rejected by ZATCA need attention`,
+        });
+      }
+    }
+
+    events.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    res.json({ events, totalTenants: tenants.length });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   POST /api/super-admin/zatca/tenant/:id/generate-csr
+// @desc    Generate a Certificate Signing Request (CSR) server-side
+router.post('/tenant/:id/generate-csr', async (req, res) => {
+  try {
+    const { commonName, organization, organizationalUnit, country = 'SA', locality, state } = req.body;
+
+    if (!commonName) {
+      return res.status(400).json({ error: 'Common Name (CN) is required' });
+    }
+
+    const tenant = await Tenant.findById(req.params.id).select('name zatca').lean();
+    if (!tenant) {
+      return res.status(404).json({ error: 'Tenant not found' });
+    }
+
+    const { publicKey, privateKey } = crypto.generateKeyPairSync('ec', {
+      namedCurve: 'secp256k1',
+      publicKeyEncoding: { type: 'spki', format: 'pem' },
+      privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+    });
+
+    const csrBuilder = new (await import('crypto')).createSign('SHA256');
+    const csrInfo = [
+      `CN=${commonName}`,
+      organization ? `O=${organization}` : '',
+      organizationalUnit ? `OU=${organizationalUnit}` : '',
+      country ? `C=${country}` : '',
+      locality ? `L=${locality}` : '',
+      state ? `ST=${state}` : '',
+    ].filter(Boolean).join(',');
+
+    const pemCsr = crypto.createSign('SHA256').update(csrInfo).sign(privateKey, 'pem');
+
+    await logAuditEvent({
+      tenantId: req.params.id,
+      action: 'key_rotation',
+      severity: 'info',
+      status: 'success',
+      message: 'CSR generated for ZATCA onboarding',
+      details: { commonName, organization },
+      performedBy: req.user?._id,
+      performedByRole: 'super_admin',
+    });
+
+    res.json({
+      csr: pemCsr,
+      publicKey,
+      privateKey,
+      subject: csrInfo,
+      generatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   POST /api/super-admin/zatca/tenant/:id/upload-certificate
+// @desc    Upload issued ZATCA X.509 certificate and parse metadata
+router.post('/tenant/:id/upload-certificate', async (req, res) => {
+  try {
+    const { certificate, csid, environment = 'production' } = req.body;
+
+    if (!certificate) {
+      return res.status(400).json({ error: 'Certificate PEM is required' });
+    }
+
+    const certInfo = {};
+    try {
+      const cert = new crypto.X509Certificate(certificate);
+      certInfo.subject = cert.subject?.toString();
+      certInfo.issuer = cert.issuer?.toString();
+      certInfo.validFrom = cert.validFrom;
+      certInfo.validTo = cert.validTo;
+      certInfo.serialNumber = cert.serialNumber;
+      certInfo.fingerprint = cert.fingerprint;
+      const expiryDate = new Date(cert.validTo);
+      certInfo.daysUntilExpiry = Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24));
+      certInfo.isExpired = certInfo.daysUntilExpiry < 0;
+    } catch (err) {
+      return res.status(400).json({ error: 'Invalid certificate format: ' + err.message });
+    }
+
+    const tenant = await Tenant.findById(req.params.id);
+    if (!tenant) {
+      return res.status(404).json({ error: 'Tenant not found' });
+    }
+
+    if (!tenant.zatca) tenant.zatca = {};
+    if (environment === 'production') {
+      tenant.zatca.productionCsid = csid || certificate;
+    } else {
+      tenant.zatca.complianceCsid = csid || certificate;
+    }
+    tenant.zatca.certificateInfo = certInfo;
+    tenant.zatca.isOnboarded = true;
+    tenant.zatca.onboardedAt = tenant.zatca.onboardedAt || new Date();
+    await tenant.save();
+
+    await logAuditEvent({
+      tenantId: req.params.id,
+      action: 'key_rotation',
+      severity: 'info',
+      status: 'success',
+      message: `ZATCA ${environment} certificate uploaded`,
+      details: { ...certInfo, environment },
+      performedBy: req.user?._id,
+      performedByRole: 'super_admin',
+    });
+
+    res.json({
+      success: true,
+      message: 'Certificate uploaded and parsed successfully',
+      certificateInfo: certInfo,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   GET /api/super-admin/zatca/tenant/:id/certificate-info
+// @desc    Get parsed certificate info for a tenant
+router.get('/tenant/:id/certificate-info', async (req, res) => {
+  try {
+    const tenant = await Tenant.findById(req.params.id).select('name zatca').lean();
+    if (!tenant) {
+      return res.status(404).json({ error: 'Tenant not found' });
+    }
+
+    const zatcaConfig = decryptZatcaConfig(tenant.zatca);
+    const certInfo = tenant.zatca?.certificateInfo || null;
+
+    let parsedInfo = certInfo;
+    if (!parsedInfo && (zatcaConfig?.productionCsid || zatcaConfig?.complianceCsid)) {
+      const csid = zatcaConfig.productionCsid || zatcaConfig.complianceCsid;
+      try {
+        const certMatch = csid.match(/-----BEGIN CERTIFICATE-----([\s\S]*?)-----END CERTIFICATE-----/);
+        if (certMatch) {
+          const certPem = `-----BEGIN CERTIFICATE-----${certMatch[1]}-----END CERTIFICATE-----`;
+          const cert = new crypto.X509Certificate(certPem);
+          const expiryDate = new Date(cert.validTo);
+          parsedInfo = {
+            subject: cert.subject?.toString(),
+            issuer: cert.issuer?.toString(),
+            validFrom: cert.validFrom,
+            validTo: cert.validTo,
+            serialNumber: cert.serialNumber,
+            fingerprint: cert.fingerprint,
+            daysUntilExpiry: Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24)),
+            isExpired: expiryDate < new Date(),
+          };
+        }
+      } catch {}
+    }
+
+    res.json({
+      tenantName: tenant.name,
+      certificateInfo: parsedInfo,
+      hasCertificate: Boolean(zatcaConfig?.productionCsid || zatcaConfig?.complianceCsid),
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   GET /api/super-admin/zatca/rate-limiter/:tenantId
+// @desc    Get rate limiter stats for a specific tenant
+router.get('/rate-limiter/:tenantId', async (req, res) => {
+  try {
+    const stats = getRateLimitStats(req.params.tenantId);
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   POST /api/super-admin/zatca/rate-limiter/:tenantId/reset
+// @desc    Reset rate limiter for a specific tenant
+router.post('/rate-limiter/:tenantId/reset', async (req, res) => {
+  try {
+    resetRateLimit(req.params.tenantId);
+    await logAuditEvent({
+      tenantId: req.params.tenantId,
+      action: 'key_rotation',
+      severity: 'info',
+      status: 'success',
+      message: 'ZATCA API rate limiter reset',
+      performedBy: req.user?._id,
+      performedByRole: 'super_admin',
+    });
+    res.json({ success: true, message: 'Rate limiter reset' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

@@ -10,6 +10,8 @@ import {
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import { useZatcaQueueStream } from '../../hooks/useZatcaQueueStream'
+import ZatcaComplianceCalendar from '../../components/zatca/ZatcaComplianceCalendar'
+import ZatcaOnboardingWizard from '../../components/zatca/ZatcaOnboardingWizard'
 
 const STATUS_COLORS = {
   queued: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -45,7 +47,7 @@ function StatCard({ icon: Icon, label, value, color, delay = 0 }) {
   )
 }
 
-function TenantRow({ tenant, onAction }) {
+function TenantRow({ tenant, onAction, onOnboard }) {
   const [expanded, setExpanded] = useState(false)
   const { language } = useSelector((state) => state.ui)
 
@@ -120,6 +122,15 @@ function TenantRow({ tenant, onAction }) {
             >
               <Download className="w-4 h-4" />
             </button>
+            {!tenant.zatca?.isOnboarded && onOnboard && (
+              <button
+                onClick={() => onOnboard(tenant)}
+                className="p-1.5 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/30 text-primary-600 dark:text-primary-400"
+                title="Onboard (Phase 2 Wizard)"
+              >
+                <ShieldCheck className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </td>
       </tr>
@@ -188,6 +199,7 @@ export default function ZatcaManagement() {
   const [auditFilters, setAuditFilters] = useState({ action: '', severity: '', page: 1 })
   const [actionLoading, setActionLoading] = useState(null)
   const [actionResult, setActionResult] = useState(null)
+  const [showOnboarding, setShowOnboarding] = useState(null)
   const liveQueue = useZatcaQueueStream()
 
   const { data: stats, isLoading: statsLoading } = useQuery({
@@ -292,6 +304,7 @@ export default function ZatcaManagement() {
           { id: 'tenants', label: language === 'ar' ? 'المستأجرون' : 'Tenants' },
           { id: 'queue', label: language === 'ar' ? 'الطابور' : 'Queue' },
           { id: 'audit', label: language === 'ar' ? 'سجل التدقيق' : 'Audit Logs' },
+          { id: 'calendar', label: language === 'ar' ? 'التقويم' : 'Calendar' },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -437,7 +450,7 @@ export default function ZatcaManagement() {
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-dark-700">
                   {tenants.map((tenant) => (
-                    <TenantRow key={tenant._id} tenant={tenant} onAction={handleAction} />
+                    <TenantRow key={tenant._id} tenant={tenant} onAction={handleAction} onOnboard={(t) => setShowOnboarding({ tenantId: t._id, tenantName: t.name })} />
                   ))}
                 </tbody>
               </table>
@@ -623,6 +636,25 @@ export default function ZatcaManagement() {
             </div>
           )}
         </motion.div>
+      )}
+
+      {activeTab === 'calendar' && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+          <ZatcaComplianceCalendar />
+        </motion.div>
+      )}
+
+      {showOnboarding && (
+        <ZatcaOnboardingWizard
+          tenantId={showOnboarding.tenantId}
+          tenantName={showOnboarding.tenantName}
+          onClose={() => setShowOnboarding(null)}
+          onComplete={() => {
+            setShowOnboarding(null)
+            queryClient.invalidateQueries({ queryKey: ['zatca-tenants'] })
+            queryClient.invalidateQueries({ queryKey: ['zatca-stats'] })
+          }}
+        />
       )}
     </div>
   )
