@@ -1,8 +1,13 @@
 import express from 'express';
 import Tenant from '../models/Tenant.js';
+import Invoice from '../models/Invoice.js';
+import ZatcaQueue from '../models/ZatcaQueue.js';
 import GovIntegrationLog from '../models/GovIntegrationLog.js';
 import { protect, authorize } from '../middleware/auth.js';
 import ZatcaService from '../utils/zatca/ZatcaService.js';
+import { verifyQrIntegrity, verifyHashChain } from '../lib/zatcaQr.js';
+import { preSubmissionValidation } from '../utils/zatca/ublValidator.js';
+import { isKeyEncrypted } from '../utils/zatcaKeyVault.js';
 
 const router = express.Router();
 
@@ -744,6 +749,125 @@ router.get('/sync-status', async (req, res) => {
         failed: failedSyncs,
       },
     });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   GET /api/tenant/compliance/config/zatca-health
+// @desc    Get ZATCA health status for the current tenant
+router.get('/zatca-health', async (req, res) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) {
+      return res.status(400).json({ error: 'Tenant ID required' });
+    }
+
+    const tenant = await Tenant.findById(tenantId).select('name business zatca settings.saudiIntegrations').lean();
+    if (!tenant) {
+      return res.status(404).json({ error: 'Tenant not found' });
+    }
+
+    const invoiceStats = await Invoice.aggregate([
+      { $match: { tenantId: tenant._id, 'zatca.qrCodeData': { $exists: true, $ne: '' } } },
+      { $group: { _id: '$zatca.submissionStatus', count: { $sum: 1 } } },
+    ]);
+    const statsMap = invoiceStats.reduce((acc, s) => { acc[s._id || 'unknown'] = s.count; return acc; }, {});
+
+    const lastInvoice = await Invoice.findOne({ tenantId: tenant._id })
+      .sort({ issueDate: -1 })
+      .select('invoiceNumber issueDate zatca.submissionStatus zatca.qrCodeData zatca.invoiceHash')
+      .lean();
+
+    let qrIntegrity = null;
+    if (lastInvoice?.zatca?.qrCodeData) {
+      qrIntegrity = verifyQrIntegrity(lastInvoice.zatca.qrCodeData);
+    }
+
+    const queueStats = await ZatcaQueue.aggregate([
+      { $match: { tenantId: tenant._id } },
+      { $group: { _id: '$status', count: { $sum: 1 } } },
+    ]);
+    const queueMap = queueStats.reduce((acc, s) => { acc[s._id] = s.count; return acc; }, {});
+
+    const keyEncrypted = isKeyEncrypted(tenant.zatca?.privateKey);
+
+    const totalInvoices = Object.values(statsMap).reduce((a, b) => a + b, 0);
+    const syncedInvoices = (statsMap.cleared || 0) + (statsMap.reported || 0) + (statsMap.submitted || 0);
+    const failedInvoices = (statsMap.rejected || 0) + (statsMap.failed || 0);
+    const pendingInvoices = statsMap.pending || 0;
+
+    const healthScore = totalInvoices > 0
+      ? Math.round((syncedInvoices / totalInvoices) * 100)
+      : 100;
+
+    const issues = [];
+    if (!tenant.zatca?.isOnboarded) issues.push('Tenant not onboarded for ZATCA');
+    if (!tenant.zatca?.privateKey) issues.push('No ECDSA private key configured');
+    if (!keyEncrypted && tenant.zatca?.privateKey) issues.push('Private key not encrypted at rest');
+    if (failedInvoices > 0) issues.push(`${failedInvoices} failed invoice submissions`);
+    if (qrIntegrity && !qrIntegrity.valid) issues.push('Last invoice QR code failed integrity check');
+    if (queueMap.failed > 0) issues.push(`${queueMap.failed} items permanently failed in queue`);
+
+    res.json({
+      tenant: {
+        name: tenant.name,
+        phase: tenant.zatca?.phase || 1,
+        isOnboarded: tenant.zatca?.isOnboarded || false,
+        environment: tenant.zatca?.environment || 'sandbox',
+        keyEncrypted,
+        onboardedAt: tenant.zatca?.onboardedAt || null,
+      },
+      invoices: {
+        total: totalInvoices,
+        synced: syncedInvoices,
+        pending: pendingInvoices,
+        failed: failedInvoices,
+        statsByStatus: statsMap,
+      },
+      queue: queueMap,
+      lastInvoice,
+      qrIntegrity,
+      healthScore,
+      issues,
+      status: issues.length === 0 ? 'healthy' : issues.length <= 2 ? 'warning' : 'critical',
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   POST /api/tenant/compliance/config/zatca-validate
+// @desc    Pre-validate an invoice for ZATCA compliance before submission
+router.post('/zatca-validate', async (req, res) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) {
+      return res.status(400).json({ error: 'Tenant ID required' });
+    }
+
+    const { invoiceId, invoiceData, xml } = req.body;
+    let invoice = invoiceData;
+
+    if (invoiceId) {
+      invoice = await Invoice.findById(invoiceId).lean();
+      if (!invoice) {
+        return res.status(404).json({ error: 'Invoice not found' });
+      }
+    }
+
+    if (!invoice) {
+      return res.status(400).json({ error: 'Either invoiceId or invoiceData is required' });
+    }
+
+    const tenant = await Tenant.findById(tenantId).select('name business zatca settings').lean();
+    if (!tenant) {
+      return res.status(404).json({ error: 'Tenant not found' });
+    }
+
+    const validation = preSubmissionValidation(invoice, tenant, xml);
+
+    res.json(validation);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

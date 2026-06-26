@@ -14,6 +14,7 @@ import {
   CheckCircle2, AlertTriangle, AlertCircle, RefreshCw,
   Building, Sliders, Play, Check, X, FileText, WifiOff, HelpCircle, Eye
 } from 'lucide-react'
+import ZatcaHealthPanel from '../../components/zatca/ZatcaHealthPanel'
 
 // ── ZOD VALIDATION SCHEMA (Saudi Structural Rules) ───────────────────────────
 const schema = z.object({
@@ -591,6 +592,11 @@ export default function GovernmentIntegrations() {
                           'تكامل هيئة الزكاة والجمارك (المرحلة الأولى) ينشئ رموز QR متوافقة وفواتير XML موقعة محلياً باستخدام ضريبة القيمة المضافة وعنوان الشركة. لا يتطلب المرحلة الأولى إرسال مباشر للبوابة. هذا يحمي عملك من غرامات عدم الامتثال أثناء العمل بموجب متطلبات المرحلة الأولى.')
                     }
                   </p>
+                </div>
+
+                {/* ZATCA Health Panel */}
+                <div className="mt-4">
+                  <ZatcaHealthPanel />
                 </div>
 
                 {/* Restaurant & Grocery Offline signing banner */}
