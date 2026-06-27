@@ -65,7 +65,8 @@ import {
   Navigation,
   History,
   Scissors,
-  Ruler
+  Ruler,
+  Bike
 } from 'lucide-react'
 import { toggleSidebarCollapse, setMobileMenuOpen } from '../../store/slices/uiSlice'
 import { useTranslation } from '../../lib/translations'
@@ -149,6 +150,7 @@ export default function Sidebar() {
         { path: '/app/dashboard/restaurant/combos', icon: Tag, label: language === 'ar' ? 'العروض والباقات' : 'Combos & Deals', perm: { module: 'restaurant', action: 'read' } },
         { path: '/app/dashboard/restaurant/analytics', icon: TrendingUp, label: language === 'ar' ? 'تحليلات المبيعات' : 'Analytics', perm: { module: 'restaurant', action: 'read' } },
         { path: '/app/dashboard/restaurant/mess', icon: UtensilsCrossed, label: language === 'ar' ? 'المطعم الجماعي' : 'Mess / Cafeteria', perm: { module: 'restaurant', action: 'read' } },
+        { path: '/app/dashboard/restaurant/delivery', icon: Bike, label: language === 'ar' ? 'منصات التوصيل' : 'Delivery Platforms', perm: { module: 'restaurant', action: 'read' } },
       ]
     },
     {

@@ -124,6 +124,7 @@ import RestaurantCombos from './pages/restaurant/RestaurantCombos'
 import RestaurantAnalytics from './pages/restaurant/RestaurantAnalytics'
 import RestaurantKDS from './pages/restaurant/RestaurantKDS'
 import RestaurantMess from './pages/restaurant/RestaurantMess'
+import RestaurantDelivery from './pages/restaurant/RestaurantDelivery'
 import BakalaShiftManagement from './pages/bakala/BakalaShiftManagement'
 import BakalaReturns from './pages/bakala/BakalaReturns'
 import IoT from './pages/IoT'
@@ -533,6 +534,7 @@ function App() {
         <Route path="restaurant/analytics" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantAnalytics /></BusinessTypeRoute>} />
         <Route path="restaurant/kds" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantKDS /></BusinessTypeRoute>} />
         <Route path="restaurant/mess" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantMess /></BusinessTypeRoute>} />
+        <Route path="restaurant/delivery" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantDelivery /></BusinessTypeRoute>} />
 
         <Route path="iot" element={<BusinessTypeRoute allowedTypes={['trading']}><IoT /></BusinessTypeRoute>} />
         <Route path="iot/devices/new" element={<BusinessTypeRoute allowedTypes={['trading']}><IoTDeviceForm /></BusinessTypeRoute>} />

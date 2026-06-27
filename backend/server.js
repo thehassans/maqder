@@ -78,6 +78,7 @@ import khayyatMeasurementRoutes from './routes/khayyatMeasurement.routes.js';
 import restaurantComboRoutes from './routes/restaurantCombo.routes.js';
 import restaurantKDSRoutes from './routes/restaurantKDS.routes.js';
 import restaurantMessRoutes from './routes/restaurantMess.routes.js';
+import restaurantDeliveryRoutes, { webhookRouter as deliveryWebhookRouter } from './routes/restaurantDelivery.routes.js';
 import posSessionsRoutes from './routes/posSessions.routes.js';
 import khataRoutes from './routes/khata.routes.js';
 import grnRoutes from './routes/grn.routes.js';
@@ -488,6 +489,8 @@ app.use('/api/khayyat/measurements', ensureDatabaseReady, khayyatMeasurementRout
 app.use('/api/restaurant/combos', ensureDatabaseReady, restaurantComboRoutes);
 app.use('/api/restaurant/kds', ensureDatabaseReady, restaurantKDSRoutes);
 app.use('/api/restaurant/mess', ensureDatabaseReady, restaurantMessRoutes);
+app.use('/api/restaurant/delivery', ensureDatabaseReady, restaurantDeliveryRoutes);
+app.use('/api/restaurant/delivery', deliveryWebhookRouter);
 app.use('/api/pos-sessions', ensureDatabaseReady, posSessionsRoutes);
 app.use('/api/khata', ensureDatabaseReady, khataRoutes);
 app.use('/api/grn', ensureDatabaseReady, grnRoutes);
