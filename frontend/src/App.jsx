@@ -120,6 +120,8 @@ import BoutiqueRentalCalendar from './pages/boutique/BoutiqueRentalCalendar'
 import ManpowerTimesheets from './pages/manpower/ManpowerTimesheets'
 import WorkshopServiceHistory from './pages/car_workshop/WorkshopServiceHistory'
 import KhayyatMeasurements from './pages/khayyat/KhayyatMeasurements'
+import RestaurantCombos from './pages/restaurant/RestaurantCombos'
+import RestaurantAnalytics from './pages/restaurant/RestaurantAnalytics'
 import BakalaShiftManagement from './pages/bakala/BakalaShiftManagement'
 import BakalaReturns from './pages/bakala/BakalaReturns'
 import IoT from './pages/IoT'
@@ -525,6 +527,8 @@ function App() {
         <Route path="manpower/timesheets" element={<BusinessTypeRoute allowedTypes={['manpower']}><ManpowerTimesheets /></BusinessTypeRoute>} />
         <Route path="workshop/service-history" element={<BusinessTypeRoute allowedTypes={['car_workshop']}><WorkshopServiceHistory /></BusinessTypeRoute>} />
         <Route path="khayyat/measurements" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatMeasurements /></BusinessTypeRoute>} />
+        <Route path="restaurant/combos" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantCombos /></BusinessTypeRoute>} />
+        <Route path="restaurant/analytics" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantAnalytics /></BusinessTypeRoute>} />
 
         <Route path="iot" element={<BusinessTypeRoute allowedTypes={['trading']}><IoT /></BusinessTypeRoute>} />
         <Route path="iot/devices/new" element={<BusinessTypeRoute allowedTypes={['trading']}><IoTDeviceForm /></BusinessTypeRoute>} />
