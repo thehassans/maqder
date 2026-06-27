@@ -56,7 +56,10 @@ import {
   AlertTriangle,
   CalendarDays,
   Target,
-  Sparkles
+  Sparkles,
+  Printer,
+  CalendarClock,
+  Tag
 } from 'lucide-react'
 import { toggleSidebarCollapse, setMobileMenuOpen } from '../../store/slices/uiSlice'
 import { useTranslation } from '../../lib/translations'
@@ -112,6 +115,7 @@ export default function Sidebar() {
         { path: '/app/dashboard/bakala/promotions', icon: Tag, label: language === 'ar' ? 'العروض' : 'Promotions' },
         { path: '/app/dashboard/bakala/profit-margins', icon: TrendingUp, label: language === 'ar' ? 'هوامش الربح' : 'Profit Margins' },
         { path: '/app/dashboard/bakala/auto-reorder', icon: ShoppingCart, label: language === 'ar' ? 'إعادة الطلب' : 'Auto-Reorder' },
+        { path: '/app/dashboard/bakala/label-printing', icon: Printer, label: language === 'ar' ? 'طباعة الملصقات' : 'Label Printing' },
         { path: '/app/dashboard/bakala/produce', icon: Leaf, label: language === 'ar' ? 'الفواكه والخضروات' : 'Fruits & Vegetables', requireAddon: 'hasWeightScaleAddon' },
         { path: '/app/dashboard/bakala/weight-scale', icon: Scale, label: language === 'ar' ? 'الميزان' : 'Weight Scale', requireAddon: 'hasWeightScaleAddon' },
         { path: '/app/dashboard/bakala/shift', icon: Wallet, label: language === 'ar' ? 'إدارة الوردية' : 'Shift Management' },
