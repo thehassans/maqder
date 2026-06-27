@@ -111,6 +111,7 @@ import Promotions from './pages/bakala/Promotions'
 import ProfitMargins from './pages/bakala/ProfitMargins'
 import AutoReorder from './pages/bakala/AutoReorder'
 import BarcodeLabelPrinting from './pages/bakala/BarcodeLabelPrinting'
+import DailyPnL from './pages/bakala/DailyPnL'
 import BakalaShiftManagement from './pages/bakala/BakalaShiftManagement'
 import BakalaReturns from './pages/bakala/BakalaReturns'
 import IoT from './pages/IoT'
@@ -507,6 +508,7 @@ function App() {
         <Route path="bakala/profit-margins" element={<BusinessTypeRoute allowedTypes={['bakala']}><ProfitMargins /></BusinessTypeRoute>} />
         <Route path="bakala/auto-reorder" element={<BusinessTypeRoute allowedTypes={['bakala']}><AutoReorder /></BusinessTypeRoute>} />
         <Route path="bakala/label-printing" element={<BusinessTypeRoute allowedTypes={['bakala']}><BarcodeLabelPrinting /></BusinessTypeRoute>} />
+        <Route path="bakala/pnl" element={<BusinessTypeRoute allowedTypes={['bakala']}><DailyPnL /></BusinessTypeRoute>} />
 
         <Route path="iot" element={<BusinessTypeRoute allowedTypes={['trading']}><IoT /></BusinessTypeRoute>} />
         <Route path="iot/devices/new" element={<BusinessTypeRoute allowedTypes={['trading']}><IoTDeviceForm /></BusinessTypeRoute>} />
