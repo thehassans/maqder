@@ -6,7 +6,7 @@ import {
   Plus, Search, FileText, Clock, CheckCircle2, XCircle, Wallet,
   Trash2, Send, Check, X, Car, Utensils, Plane, Building, Phone,
   BookOpen, Coffee, Package, Calculator, ChevronDown, ChevronRight,
-  TrendingUp, AlertCircle,
+  TrendingUp, AlertCircle, Upload, Image as ImageIcon, Loader2,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
@@ -133,6 +133,28 @@ function ClaimFormModal({ claim, onClose }) {
     const lines = [...form.lines]
     lines[idx] = { ...lines[idx], [field]: value }
     setForm({ ...form, lines })
+  }
+
+  const [uploadingIdx, setUploadingIdx] = useState(null)
+
+  const handleReceiptUpload = async (idx, file) => {
+    if (!file) return
+    setUploadingIdx(idx)
+    try {
+      const fd = new FormData()
+      fd.append('image', file)
+      const res = await api.post('/expense-claims/upload-receipt', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 120000,
+      })
+      updateLine(idx, 'receiptUrl', res.data.imageUrl)
+      updateLine(idx, 'receiptFileName', file.name)
+      toast.success('Receipt uploaded')
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Upload failed')
+    } finally {
+      setUploadingIdx(null)
+    }
   }
 
   const totalAmount = form.lines.reduce((sum, l) => {
@@ -280,8 +302,30 @@ function ClaimFormModal({ claim, onClose }) {
                           <input type="number" value={line.taxAmount || ''} onChange={(e) => updateLine(idx, 'taxAmount', e.target.value)} className="input text-sm" placeholder="0.00" />
                         </div>
                         <div>
-                          <label className="text-xs text-gray-400">Receipt URL</label>
-                          <input value={line.receiptUrl || ''} onChange={(e) => updateLine(idx, 'receiptUrl', e.target.value)} className="input text-sm" placeholder="https://..." />
+                          <label className="text-xs text-gray-400">Receipt</label>
+                          {line.receiptUrl ? (
+                            <div className="flex items-center gap-2">
+                              <img src={line.receiptUrl} alt="receipt" className='w-10 h-10 rounded-lg object-cover border border-gray-200 dark:border-dark-700' />
+                              <span className='text-xs text-gray-500 truncate flex-1'>{line.receiptFileName || 'receipt.webp'}</span>
+                              <button type='button' onClick={() => { updateLine(idx, 'receiptUrl', ''); updateLine(idx, 'receiptFileName', '') }} className='p-1 rounded text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'>
+                                <X className='w-3.5 h-3.5' />
+                              </button>
+                            </div>
+                          ) : (
+                            <label className='flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-dashed border-gray-300 dark:border-dark-600 cursor-pointer hover:border-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/10 transition-colors text-xs text-gray-500'>
+                              {uploadingIdx === idx ? (
+                                <><Loader2 className='w-3.5 h-3.5 animate-spin' /> Uploading...</>
+                              ) : (
+                                <><Upload className='w-3.5 h-3.5' /> Upload receipt</>
+                              )}
+                              <input
+                                type='file'
+                                accept='image/*'
+                                className='hidden'
+                                onChange={(e) => handleReceiptUpload(idx, e.target.files?.[0])}
+                              />
+                            </label>
+                          )}
                         </div>
                       </div>
                     )}
@@ -402,6 +446,11 @@ function ClaimDetailModal({ claimId, onClose, onAction }) {
                         <div className="text-right">
                           <p className="text-sm font-semibold text-gray-900 dark:text-white">{line.totalAmount?.toLocaleString()} SAR</p>
                           {line.taxAmount > 0 && <p className="text-xs text-gray-400">incl. {line.taxAmount} VAT</p>}
+                          {line.receiptUrl && (
+                            <a href={line.receiptUrl} target="_blank" rel="noopener noreferrer" className="inline-block mt-1">
+                              <img src={line.receiptUrl} alt="receipt" className="w-12 h-12 rounded-lg object-cover border border-gray-200 dark:border-dark-700 hover:opacity-80 transition-opacity" />
+                            </a>
+                          )}
                         </div>
                       </div>
                     )

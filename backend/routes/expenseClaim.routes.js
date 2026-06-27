@@ -1,9 +1,14 @@
 import express from 'express';
+import multer from 'multer';
+import sharp from 'sharp';
+import path from 'path';
+import fs from 'fs';
 import ExpenseClaim from '../models/ExpenseClaim.js';
 import Employee from '../models/Employee.js';
 import { protect, tenantFilter, checkPermission } from '../middleware/auth.js';
 
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 router.use(protect);
 router.use(tenantFilter);
@@ -323,6 +328,33 @@ router.delete('/:id', checkPermission('hr', 'delete'), async (req, res) => {
     res.json({ message: 'Expense claim deleted' });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   POST /api/expense-claims/upload-receipt
+router.post('/upload-receipt', checkPermission('hr', 'create'), upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
+
+    const tenantIdStr = req.user.tenantId.toString();
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'expense-receipts', tenantIdStr);
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    const filename = `receipt-${Date.now()}-${Math.round(Math.random() * 1E9)}.webp`;
+    const filepath = path.join(uploadsDir, filename);
+
+    await sharp(req.file.buffer)
+      .resize({ width: 1000, withoutEnlargement: true })
+      .webp({ quality: 80 })
+      .toFile(filepath);
+
+    const imageUrl = `/uploads/expense-receipts/${tenantIdStr}/${filename}`;
+    res.json({ imageUrl });
+  } catch (error) {
+    console.error('Receipt upload error:', error);
+    res.status(500).json({ error: 'Failed to process image' });
   }
 });
 
