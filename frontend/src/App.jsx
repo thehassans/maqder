@@ -116,6 +116,9 @@ import RestaurantReservations from './pages/restaurant/RestaurantReservations'
 import SaloonAppointments from './pages/saloon/SaloonAppointments'
 import LaundryDelivery from './pages/laundry/LaundryDelivery'
 import RentalMaintenance from './pages/car_rental/RentalMaintenance'
+import BoutiqueRentalCalendar from './pages/boutique/BoutiqueRentalCalendar'
+import ManpowerTimesheets from './pages/manpower/ManpowerTimesheets'
+import WorkshopServiceHistory from './pages/car_workshop/WorkshopServiceHistory'
 import BakalaShiftManagement from './pages/bakala/BakalaShiftManagement'
 import BakalaReturns from './pages/bakala/BakalaReturns'
 import IoT from './pages/IoT'
@@ -517,6 +520,9 @@ function App() {
         <Route path="saloon/appointments" element={<BusinessTypeRoute allowedTypes={['saloon']}><SaloonAppointments /></BusinessTypeRoute>} />
         <Route path="laundry/delivery" element={<BusinessTypeRoute allowedTypes={['laundry']}><LaundryDelivery /></BusinessTypeRoute>} />
         <Route path="rental/maintenance" element={<BusinessTypeRoute allowedTypes={['car_rental']}><RentalMaintenance /></BusinessTypeRoute>} />
+        <Route path="boutique/rental-calendar" element={<BusinessTypeRoute allowedTypes={['boutique']}><BoutiqueRentalCalendar /></BusinessTypeRoute>} />
+        <Route path="manpower/timesheets" element={<BusinessTypeRoute allowedTypes={['manpower']}><ManpowerTimesheets /></BusinessTypeRoute>} />
+        <Route path="workshop/service-history" element={<BusinessTypeRoute allowedTypes={['car_workshop']}><WorkshopServiceHistory /></BusinessTypeRoute>} />
 
         <Route path="iot" element={<BusinessTypeRoute allowedTypes={['trading']}><IoT /></BusinessTypeRoute>} />
         <Route path="iot/devices/new" element={<BusinessTypeRoute allowedTypes={['trading']}><IoTDeviceForm /></BusinessTypeRoute>} />

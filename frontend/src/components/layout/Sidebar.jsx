@@ -62,7 +62,9 @@ import {
   Tag,
   Calendar,
   Clock,
-  Navigation
+  Navigation,
+  History,
+  Scissors
 } from 'lucide-react'
 import { toggleSidebarCollapse, setMobileMenuOpen } from '../../store/slices/uiSlice'
 import { useTranslation } from '../../lib/translations'
@@ -151,6 +153,7 @@ export default function Sidebar() {
         { path: '/app/dashboard/boutique/pos', icon: Sparkles, label: language === 'ar' ? 'نقطة البيع' : 'POS', perm: { module: 'boutique', action: 'create' } },
         { path: '/app/dashboard/boutique/dresses', icon: Shirt, label: language === 'ar' ? 'الفساتين' : 'Dresses', perm: { module: 'boutique', action: 'read' } },
         { path: '/app/dashboard/boutique/pending-returns', icon: Package, label: language === 'ar' ? 'الإرجاعات المعلقة' : 'Pending Returns', perm: { module: 'boutique', action: 'read' } },
+        { path: '/app/dashboard/boutique/rental-calendar', icon: Calendar, label: language === 'ar' ? 'تقويم الإيجار' : 'Rental Calendar', perm: { module: 'boutique', action: 'read' } },
       ]
     },
     {
@@ -240,6 +243,7 @@ export default function Sidebar() {
         { path: '/app/workshop/job-cards', icon: ClipboardList, label: language === 'ar' ? 'بطاقات الإصلاح' : 'Job Cards', perm: { module: 'workshop', action: 'read' } },
         { path: '/app/workshop/vehicles', icon: Car, label: language === 'ar' ? 'السيارات' : 'Vehicles', perm: { module: 'workshop', action: 'read' } },
         { path: '/app/workshop/inventory', icon: Package, label: language === 'ar' ? 'قطع الغيار' : 'Spare Parts', perm: { module: 'workshop', action: 'read' } },
+        { path: '/app/dashboard/workshop/service-history', icon: History, label: language === 'ar' ? 'سجل الخدمة' : 'Service History', perm: { module: 'workshop', action: 'read' } },
       ]
     },
     {
@@ -271,6 +275,7 @@ export default function Sidebar() {
         { path: '/app/dashboard/contracts', icon: FileSignature, label: language === 'ar' ? 'العقود' : 'Contracts' },
         { path: '/app/dashboard/projects', icon: FolderKanban, label: language === 'ar' ? 'المشاريع' : 'Projects' },
         { path: '/app/dashboard/tasks', icon: ClipboardList, label: language === 'ar' ? 'المهام' : 'Tasks' },
+        { path: '/app/dashboard/manpower/timesheets', icon: Clock, label: language === 'ar' ? 'سجلات الوقت' : 'Timesheets', perm: { module: 'hr', action: 'read' } },
       ]
     },
 

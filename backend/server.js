@@ -71,6 +71,9 @@ import restaurantReservationRoutes from './routes/restaurantReservation.routes.j
 import saloonAppointmentRoutes from './routes/saloonAppointment.routes.js';
 import laundryDeliveryRoutes from './routes/laundryDelivery.routes.js';
 import rentalMaintenanceRoutes from './routes/rentalMaintenance.routes.js';
+import boutiqueCalendarRoutes from './routes/boutiqueCalendar.routes.js';
+import manpowerTimesheetRoutes from './routes/manpowerTimesheet.routes.js';
+import workshopServiceRoutes from './routes/workshopService.routes.js';
 import posSessionsRoutes from './routes/posSessions.routes.js';
 import khataRoutes from './routes/khata.routes.js';
 import grnRoutes from './routes/grn.routes.js';
@@ -474,6 +477,9 @@ app.use('/api/restaurant/reservations', ensureDatabaseReady, restaurantReservati
 app.use('/api/saloon/appointments', ensureDatabaseReady, saloonAppointmentRoutes);
 app.use('/api/laundry/routes', ensureDatabaseReady, laundryDeliveryRoutes);
 app.use('/api/rental/maintenance', ensureDatabaseReady, rentalMaintenanceRoutes);
+app.use('/api/boutique/calendar', ensureDatabaseReady, boutiqueCalendarRoutes);
+app.use('/api/manpower/timesheets', ensureDatabaseReady, manpowerTimesheetRoutes);
+app.use('/api/workshop/service', ensureDatabaseReady, workshopServiceRoutes);
 app.use('/api/pos-sessions', ensureDatabaseReady, posSessionsRoutes);
 app.use('/api/khata', ensureDatabaseReady, khataRoutes);
 app.use('/api/grn', ensureDatabaseReady, grnRoutes);
