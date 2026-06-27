@@ -59,7 +59,10 @@ import {
   Sparkles,
   Printer,
   CalendarClock,
-  Tag
+  Tag,
+  Calendar,
+  Clock,
+  Navigation
 } from 'lucide-react'
 import { toggleSidebarCollapse, setMobileMenuOpen } from '../../store/slices/uiSlice'
 import { useTranslation } from '../../lib/translations'
@@ -138,6 +141,7 @@ export default function Sidebar() {
         { path: '/app/dashboard/restaurant/kitchen', icon: ChefHat, label: language === 'ar' ? 'المطبخ' : 'Kitchen', perm: { module: 'restaurant', action: 'read' } },
         { path: '/app/dashboard/restaurant/branches', icon: Building, label: language === 'ar' ? 'الفروع' : 'Branches', perm: { module: 'restaurant', action: 'read' } },
         { path: '/app/dashboard/restaurant/qr-menu', icon: QrCode, label: language === 'ar' ? 'رمز القائمة (QR)' : 'QR Menu', perm: { module: 'restaurant', action: 'read' } },
+        { path: '/app/dashboard/restaurant/reservations', icon: Calendar, label: language === 'ar' ? 'الحجوزات' : 'Reservations', perm: { module: 'restaurant', action: 'read' } },
       ]
     },
     {
@@ -188,6 +192,7 @@ export default function Sidebar() {
         { path: '/app/saloon/services', icon: Package, label: language === 'ar' ? 'قائمة الخدمات' : 'Services Catalog', perm: { module: 'saloon', action: 'read' } },
         { path: '/app/saloon/barbers', icon: Users, label: language === 'ar' ? 'الحلاقين' : 'Barbers', perm: { module: 'saloon', action: 'read' } },
         { path: '/app/saloon/qr', icon: QrCode, label: language === 'ar' ? 'كتالوج QR' : 'QR Catalog', perm: { module: 'saloon', action: 'read' } },
+        { path: '/app/dashboard/saloon/appointments', icon: Clock, label: language === 'ar' ? 'المواعيد والعمولات' : 'Appointments & Commissions', perm: { module: 'saloon', action: 'read' } },
       ]
     },
     {
@@ -210,6 +215,7 @@ export default function Sidebar() {
         { path: '/app/laundry/customers', icon: Users, label: language === 'ar' ? 'العملاء' : 'Customers', perm: { module: 'laundry', action: 'read' } },
         { path: '/app/laundry/inventory', icon: Package, label: language === 'ar' ? 'مخزون المستلزمات' : 'Supplies Inventory', perm: { module: 'laundry', action: 'read' } },
         { path: '/app/laundry/catalog', icon: Shirt, label: language === 'ar' ? 'قائمة الخدمات' : 'Service Catalog', perm: { module: 'laundry', action: 'read' } },
+        { path: '/app/dashboard/laundry/delivery', icon: Navigation, label: language === 'ar' ? 'التوصيل والمسارات' : 'Delivery & Routes', perm: { module: 'laundry', action: 'read' } },
       ]
     },
 
@@ -223,6 +229,7 @@ export default function Sidebar() {
         { path: '/app/rental/fleet', icon: Car, label: language === 'ar' ? 'الأسطول' : 'All Cars', perm: { module: 'car_rental', action: 'read' } },
         { path: '/app/rental/customers', icon: Users, label: language === 'ar' ? 'العملاء' : 'Customer Registry', perm: { module: 'car_rental', action: 'read' } },
         { path: '/app/rental/contracts', icon: FileText, label: language === 'ar' ? 'العقود' : 'All Contracts', perm: { module: 'car_rental', action: 'read' } },
+        { path: '/app/dashboard/rental/maintenance', icon: Wrench, label: language === 'ar' ? 'الصيانة والأسطول' : 'Maintenance & Fleet', perm: { module: 'car_rental', action: 'read' } },
       ]
     },
     {
