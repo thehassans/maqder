@@ -172,8 +172,6 @@ export default function RestaurantPOS() {
 
   const handleCheckout = async () => {
     if (cart.length === 0) return toast.error('Cart is empty')
-    if (orderType === 'dine_in' && !selectedTable) return toast.error(isRtl ? 'الرجاء اختيار الطاولة' : 'Please select a table')
-
     // Route card payments through the physical terminal when configured.
     if (paymentMethod === 'card' && cardTerminalEnabled) {
       setShowCardModal(true)
@@ -244,8 +242,6 @@ export default function RestaurantPOS() {
 
   const handleSendToKitchen = async () => {
     if (cart.length === 0) return toast.error('Cart is empty')
-    if (orderType === 'dine_in' && !selectedTable) return toast.error(isRtl ? 'الرجاء اختيار الطاولة' : 'Please select a table')
-    
     setIsProcessing(true)
     try {
       const payload = {
