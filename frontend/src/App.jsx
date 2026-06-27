@@ -106,6 +106,7 @@ import BakalaAddProduct from './pages/bakala/BakalaAddProduct'
 import BakalaProduce from './pages/bakala/BakalaProduce'
 import WeightScale from './pages/bakala/WeightScale'
 import InventoryAlerts from './pages/bakala/InventoryAlerts'
+import ExpiryWasteManagement from './pages/bakala/ExpiryWasteManagement'
 import BakalaShiftManagement from './pages/bakala/BakalaShiftManagement'
 import BakalaReturns from './pages/bakala/BakalaReturns'
 import IoT from './pages/IoT'
@@ -497,6 +498,7 @@ function App() {
         <Route path="bakala/produce" element={<BusinessTypeRoute allowedTypes={['bakala']}><BakalaProduce /></BusinessTypeRoute>} />
         <Route path="bakala/weight-scale" element={<BusinessTypeRoute allowedTypes={['bakala']}><WeightScale /></BusinessTypeRoute>} />
         <Route path="bakala/alerts" element={<BusinessTypeRoute allowedTypes={['bakala']}><InventoryAlerts /></BusinessTypeRoute>} />
+        <Route path="bakala/expiry-waste" element={<BusinessTypeRoute allowedTypes={['bakala']}><ExpiryWasteManagement /></BusinessTypeRoute>} />
 
         <Route path="iot" element={<BusinessTypeRoute allowedTypes={['trading']}><IoT /></BusinessTypeRoute>} />
         <Route path="iot/devices/new" element={<BusinessTypeRoute allowedTypes={['trading']}><IoTDeviceForm /></BusinessTypeRoute>} />

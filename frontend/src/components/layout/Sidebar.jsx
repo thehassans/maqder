@@ -108,6 +108,7 @@ export default function Sidebar() {
         { path: '/app/dashboard/bakala/products', icon: Package, label: language === 'ar' ? 'المنتجات' : 'Products' },
         { path: '/app/dashboard/bakala/add-product', icon: PlusCircle, label: language === 'ar' ? 'إضافة منتج' : 'Add Product' },
         { path: '/app/dashboard/bakala/alerts', icon: AlertTriangle, label: language === 'ar' ? 'تنبيهات المخزون' : 'Stock Alerts' },
+        { path: '/app/dashboard/bakala/expiry-waste', icon: CalendarClock, label: language === 'ar' ? 'الانتهاء والهدر' : 'Expiry & Waste' },
         { path: '/app/dashboard/bakala/produce', icon: Leaf, label: language === 'ar' ? 'الفواكه والخضروات' : 'Fruits & Vegetables', requireAddon: 'hasWeightScaleAddon' },
         { path: '/app/dashboard/bakala/weight-scale', icon: Scale, label: language === 'ar' ? 'الميزان' : 'Weight Scale', requireAddon: 'hasWeightScaleAddon' },
         { path: '/app/dashboard/bakala/shift', icon: Wallet, label: language === 'ar' ? 'إدارة الوردية' : 'Shift Management' },
