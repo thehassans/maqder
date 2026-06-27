@@ -74,6 +74,7 @@ import rentalMaintenanceRoutes from './routes/rentalMaintenance.routes.js';
 import boutiqueCalendarRoutes from './routes/boutiqueCalendar.routes.js';
 import manpowerTimesheetRoutes from './routes/manpowerTimesheet.routes.js';
 import workshopServiceRoutes from './routes/workshopService.routes.js';
+import khayyatMeasurementRoutes from './routes/khayyatMeasurement.routes.js';
 import posSessionsRoutes from './routes/posSessions.routes.js';
 import khataRoutes from './routes/khata.routes.js';
 import grnRoutes from './routes/grn.routes.js';
@@ -480,6 +481,7 @@ app.use('/api/rental/maintenance', ensureDatabaseReady, rentalMaintenanceRoutes)
 app.use('/api/boutique/calendar', ensureDatabaseReady, boutiqueCalendarRoutes);
 app.use('/api/manpower/timesheets', ensureDatabaseReady, manpowerTimesheetRoutes);
 app.use('/api/workshop/service', ensureDatabaseReady, workshopServiceRoutes);
+app.use('/api/khayyat/measurements', ensureDatabaseReady, khayyatMeasurementRoutes);
 app.use('/api/pos-sessions', ensureDatabaseReady, posSessionsRoutes);
 app.use('/api/khata', ensureDatabaseReady, khataRoutes);
 app.use('/api/grn', ensureDatabaseReady, grnRoutes);

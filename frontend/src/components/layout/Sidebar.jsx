@@ -64,7 +64,8 @@ import {
   Clock,
   Navigation,
   History,
-  Scissors
+  Scissors,
+  Ruler
 } from 'lucide-react'
 import { toggleSidebarCollapse, setMobileMenuOpen } from '../../store/slices/uiSlice'
 import { useTranslation } from '../../lib/translations'
@@ -183,6 +184,7 @@ export default function Sidebar() {
           { path: '/app/dashboard/khayyat/fabrics', icon: Package, label: language === 'ar' ? 'الأقمشة' : 'Fabrics' },
           { path: '/app/dashboard/khayyat/laundry', icon: ShoppingBag, label: language === 'ar' ? 'المغسلة' : 'Laundry' },
           { path: '/app/dashboard/khayyat/loyalty', icon: Landmark, label: language === 'ar' ? 'نقاط الولاء' : 'Loyalty' },
+        { path: '/app/dashboard/khayyat/measurements', icon: Ruler, label: language === 'ar' ? 'القياسات والتوصيل' : 'Measurements & Delivery' },
         ]
       },
     {
