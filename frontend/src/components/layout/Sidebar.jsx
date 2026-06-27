@@ -142,6 +142,7 @@ export default function Sidebar() {
         { path: '/app/dashboard/restaurant/orders', icon: Receipt, label: language === 'ar' ? 'الطلبات' : 'Orders', perm: { module: 'restaurant', action: 'read' } },
         { path: '/app/dashboard/restaurant/cashier', icon: MonitorPlay, label: language === 'ar' ? 'لوحة الكاشير' : 'Cashier Panel', perm: { module: 'restaurant', action: 'update' } },
         { path: '/app/dashboard/restaurant/kitchen', icon: ChefHat, label: language === 'ar' ? 'المطبخ' : 'Kitchen', perm: { module: 'restaurant', action: 'read' } },
+        { path: '/app/dashboard/restaurant/kds', icon: Monitor, label: language === 'ar' ? 'شاشة المطبخ' : 'KDS Board', perm: { module: 'restaurant', action: 'read' } },
         { path: '/app/dashboard/restaurant/branches', icon: Building, label: language === 'ar' ? 'الفروع' : 'Branches', perm: { module: 'restaurant', action: 'read' } },
         { path: '/app/dashboard/restaurant/qr-menu', icon: QrCode, label: language === 'ar' ? 'رمز القائمة (QR)' : 'QR Menu', perm: { module: 'restaurant', action: 'read' } },
         { path: '/app/dashboard/restaurant/reservations', icon: Calendar, label: language === 'ar' ? 'الحجوزات' : 'Reservations', perm: { module: 'restaurant', action: 'read' } },
