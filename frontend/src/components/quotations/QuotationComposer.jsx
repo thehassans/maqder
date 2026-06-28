@@ -38,6 +38,8 @@ const buildQuotationFormValues = ({ quotation, tenant, defaultBusinessContext })
   validUntil: formatDateForInput(quotation?.validUntil),
   transactionType: quotation?.transactionType || 'B2C',
   customerId: quotation?.customerId?._id || quotation?.customerId || '',
+  subject: quotation?.subject || '',
+  subjectAr: quotation?.subjectAr || '',
   notes: quotation?.notes || '',
   invoiceDiscount: Math.max(0, toNumber(quotation?.invoiceDiscount, 0)),
   buyer: quotation?.buyer || {},
@@ -208,6 +210,8 @@ export default function QuotationComposer({ quotationId = '', initialQuotation =
       taxableAmount: totals.taxableAmount,
       totalTax: totals.totalTax,
       grandTotal: totals.grandTotal,
+      subject: data?.subject || '',
+      subjectAr: data?.subjectAr || '',
       authorizedPersonName: data?.authorizedPersonName || '',
       authorizedPersonNameAr: data?.authorizedPersonNameAr || '',
       authorizedPersonDesignation: data?.authorizedPersonDesignation || '',
@@ -284,6 +288,20 @@ export default function QuotationComposer({ quotationId = '', initialQuotation =
                     <option value="B2B">{t('b2bInvoice')}</option>
                   </select>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="card p-6">
+            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'موضوع عرض السعر' : 'Quotation Subject'}</h3>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label className="label">{language === 'ar' ? 'الموضوع' : 'Subject'}</label>
+                <input {...register('subject')} className="input" placeholder={language === 'ar' ? 'مثال: أعمال استبدال ملفات الغاز...' : 'e.g. Coil replacement job in Ghazlan Power Plant'} />
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'الموضوع بالعربية' : 'Arabic Subject'}</label>
+                <input {...register('subjectAr')} className="input" dir="rtl" />
               </div>
             </div>
           </div>

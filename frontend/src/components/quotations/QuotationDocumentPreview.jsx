@@ -160,6 +160,20 @@ export default function QuotationDocumentPreview({ quotation, tenant, language =
           </div>
         </div>
 
+        {/* ── Section 1.5: Subject ─────────────────────────────── */}
+        {quotation?.subject && (
+          <div className="mt-6 rounded-[1.5rem] border border-slate-200 bg-white p-5">
+            <p className="text-[10px] uppercase tracking-[0.25em] text-slate-400 mb-2">
+              {language === 'ar' ? 'الموضوع' : 'Subject'}
+            </p>
+            <p className="text-base font-semibold text-slate-900">
+              {language === 'ar'
+                ? pickLocalizedText(quotation?.subjectAr, quotation?.subject)
+                : pickLocalizedText(quotation?.subject, quotation?.subjectAr)}
+            </p>
+          </div>
+        )}
+
         {/* ── Section 2: FROM / TO ─────────────────────────────── */}
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
 
@@ -344,22 +358,18 @@ export default function QuotationDocumentPreview({ quotation, tenant, language =
         </div>
 
         {/* ── Authorized Signature / Stamp ───────────────────── */}
-        {(quotation?.authorizedPersonName || quotation?.authorizedPersonSignature) && (
+        {quotation?.authorizedPersonSignature && (
           <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_220px]">
             <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5">
               <p className="text-[10px] uppercase tracking-[0.25em] text-slate-400 mb-3">
                 {language === 'ar' ? 'الموثّق / المفوّض' : 'Authorized By'}
               </p>
               <div className="flex items-start gap-4">
-                {quotation?.authorizedPersonSignature ? (
-                  <img
-                    src={quotation.authorizedPersonSignature}
-                    alt="Signature"
-                    className="h-20 max-w-[200px] object-contain"
-                  />
-                ) : (
-                  <div className="h-20 w-[160px] border-b border-slate-200" />
-                )}
+                <img
+                  src={quotation.authorizedPersonSignature}
+                  alt="Signature"
+                  className="h-20 max-w-[200px] object-contain"
+                />
                 <div>
                   <p className="font-bold text-slate-900">
                     {language === 'ar'
