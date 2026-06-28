@@ -121,6 +121,11 @@ const quotationSchema = new mongoose.Schema({
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   createdByName: { type: String },
   createdByNameAr: { type: String },
+  authorizedPersonName: { type: String },
+  authorizedPersonNameAr: { type: String },
+  authorizedPersonDesignation: { type: String },
+  authorizedPersonDesignationAr: { type: String },
+  authorizedPersonSignature: { type: String }, // data URL or URL of uploaded signature image
 }, {
   timestamps: true,
 });

@@ -343,15 +343,77 @@ export default function QuotationDocumentPreview({ quotation, tenant, language =
           </div>
         </div>
 
+        {/* ── Authorized Signature / Stamp ───────────────────── */}
+        {(quotation?.authorizedPersonName || quotation?.authorizedPersonSignature) && (
+          <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_220px]">
+            <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5">
+              <p className="text-[10px] uppercase tracking-[0.25em] text-slate-400 mb-3">
+                {language === 'ar' ? 'الموثّق / المفوّض' : 'Authorized By'}
+              </p>
+              <div className="flex items-start gap-4">
+                {quotation?.authorizedPersonSignature ? (
+                  <img
+                    src={quotation.authorizedPersonSignature}
+                    alt="Signature"
+                    className="h-20 max-w-[200px] object-contain"
+                  />
+                ) : (
+                  <div className="h-20 w-[160px] border-b border-slate-200" />
+                )}
+                <div>
+                  <p className="font-bold text-slate-900">
+                    {language === 'ar'
+                      ? pickLocalizedText(quotation?.authorizedPersonNameAr, quotation?.authorizedPersonName)
+                      : pickLocalizedText(quotation?.authorizedPersonName, quotation?.authorizedPersonNameAr)}
+                  </p>
+                  {quotation?.authorizedPersonDesignation && (
+                    <p className="text-sm text-slate-500 mt-1">
+                      {language === 'ar'
+                        ? pickLocalizedText(quotation?.authorizedPersonDesignationAr, quotation?.authorizedPersonDesignation)
+                        : pickLocalizedText(quotation?.authorizedPersonDesignation, quotation?.authorizedPersonDesignationAr)}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Electronic company stamp placeholder */}
+            <div className="rounded-[1.5rem] border border-dashed border-blue-200 bg-blue-50/40 p-4 flex flex-col items-center justify-center text-center">
+              <div className="w-24 h-24 rounded-full border-2 border-blue-500/40 flex items-center justify-center p-3 mb-2">
+                <span className="text-[10px] font-bold text-blue-600 uppercase text-center leading-tight">
+                  {language === 'ar' ? 'ختم الشركة الإلكتروني' : 'Electronic Company Stamp'}
+                </span>
+              </div>
+              <p className="text-xs font-semibold text-slate-700">{companyName}</p>
+              {tenant?.business?.crNumber && <p className="text-[10px] text-slate-400">C.R. {tenant.business.crNumber}</p>}
+            </div>
+          </div>
+        )}
+
         {/* ── Footer ───────────────────────────────────────────── */}
-        <div className="mt-6 flex items-center justify-between pt-4 border-t border-slate-100">
-          <p className="text-[10px] text-slate-400 truncate">
-            {companyName}
-            {tenant?.business?.vatNumber ? ` · VAT ${tenant.business.vatNumber}` : ''}
-          </p>
-          <p className="text-[10px] text-slate-400">
-            {language === 'ar' ? 'وثيقة سرية' : 'Confidential Document'}
-          </p>
+        <div className="mt-6 pt-4 border-t border-slate-100">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] text-slate-400">
+            <div className="space-y-1">
+              <p className="font-semibold text-slate-500">{companyName}</p>
+              <p>
+                {tenant?.business?.vatNumber ? `${language === 'ar' ? 'الرقم الضريبي' : 'VAT'}: ${tenant.business.vatNumber}` : ''}
+                {tenant?.business?.vatNumber && tenant?.business?.crNumber ? ' · ' : ''}
+                {tenant?.business?.crNumber ? `CR: ${tenant.business.crNumber}` : ''}
+              </p>
+              <p>
+                {tenant?.business?.contactPhone ? `${language === 'ar' ? 'الهاتف' : 'Phone'}: ${tenant.business.contactPhone}` : ''}
+              </p>
+            </div>
+            <div className={`space-y-1 ${language === 'ar' ? 'sm:text-start' : 'sm:text-end'}`}>
+              {tenant?.business?.contactEmail && (
+                <p>{language === 'ar' ? 'البريد' : 'Email'}: {tenant.business.contactEmail}</p>
+              )}
+              {tenant?.business?.website && (
+                <p>{language === 'ar' ? 'الموقع' : 'Website'}: {tenant.business.website}</p>
+              )}
+              <p>{language === 'ar' ? 'وثيقة سرية' : 'Confidential Document'}</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

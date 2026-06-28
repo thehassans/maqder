@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { useFieldArray, useForm } from 'react-hook-form'
-import { ArrowLeft, Plus, Save, Trash2 } from 'lucide-react'
+import { ArrowLeft, Plus, Save, Trash2, Upload, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
@@ -41,6 +41,11 @@ const buildQuotationFormValues = ({ quotation, tenant, defaultBusinessContext })
   notes: quotation?.notes || '',
   invoiceDiscount: Math.max(0, toNumber(quotation?.invoiceDiscount, 0)),
   buyer: quotation?.buyer || {},
+  authorizedPersonName: quotation?.authorizedPersonName || '',
+  authorizedPersonNameAr: quotation?.authorizedPersonNameAr || '',
+  authorizedPersonDesignation: quotation?.authorizedPersonDesignation || '',
+  authorizedPersonDesignationAr: quotation?.authorizedPersonDesignationAr || '',
+  authorizedPersonSignature: quotation?.authorizedPersonSignature || '',
   lineItems: Array.isArray(quotation?.lineItems) && quotation.lineItems.length > 0
     ? quotation.lineItems.map((line) => ({
         ...emptyLine,
@@ -203,6 +208,11 @@ export default function QuotationComposer({ quotationId = '', initialQuotation =
       taxableAmount: totals.taxableAmount,
       totalTax: totals.totalTax,
       grandTotal: totals.grandTotal,
+      authorizedPersonName: data?.authorizedPersonName || '',
+      authorizedPersonNameAr: data?.authorizedPersonNameAr || '',
+      authorizedPersonDesignation: data?.authorizedPersonDesignation || '',
+      authorizedPersonDesignationAr: data?.authorizedPersonDesignationAr || '',
+      authorizedPersonSignature: data?.authorizedPersonSignature || '',
       status: initialQuotation?.status || 'draft',
     }
 
@@ -407,6 +417,59 @@ export default function QuotationComposer({ quotationId = '', initialQuotation =
                   </div>
                 )
               })}
+            </div>
+          </div>
+
+          <div className="card p-6">
+            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'الموثّق / المفوّض' : 'Authorized Person'}</h3>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label className="label">{language === 'ar' ? 'الاسم' : 'Name'}</label>
+                <input {...register('authorizedPersonName')} className="input" placeholder={language === 'ar' ? 'مثال: Arthur Michael' : 'e.g. Arthur Michael'} />
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'الاسم بالعربية' : 'Arabic Name'}</label>
+                <input {...register('authorizedPersonNameAr')} className="input" dir="rtl" />
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'المسمى الوظيفي' : 'Designation'}</label>
+                <input {...register('authorizedPersonDesignation')} className="input" placeholder={language === 'ar' ? 'مثال: Coordinator' : 'e.g. Coordinator'} />
+              </div>
+              <div>
+                <label className="label">{language === 'ar' ? 'المسمى الوظيفي بالعربية' : 'Arabic Designation'}</label>
+                <input {...register('authorizedPersonDesignationAr')} className="input" dir="rtl" />
+              </div>
+              <div className="md:col-span-2">
+                <label className="label">{language === 'ar' ? 'التوقيع' : 'Signature'}</label>
+                <div className="flex items-center gap-3">
+                  <input type="file" accept="image/*" className="hidden" id="quotation-signature-upload" onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (!file) return
+                    if (file.size > 2 * 1024 * 1024) {
+                      toast.error(language === 'ar' ? 'حجم الصورة يجب أن يكون أقل من 2MB' : 'Image must be less than 2MB')
+                      return
+                    }
+                    const reader = new FileReader()
+                    reader.onload = () => setValue('authorizedPersonSignature', String(reader.result || ''))
+                    reader.readAsDataURL(file)
+                  }} />
+                  <label htmlFor="quotation-signature-upload" className="btn btn-secondary cursor-pointer">
+                    <Upload className="w-4 h-4" />
+                    {language === 'ar' ? 'رفع توقيع' : 'Upload Signature'}
+                  </label>
+                  {values?.authorizedPersonSignature ? (
+                    <div className="relative">
+                      <img src={values.authorizedPersonSignature} alt="Signature" className="h-16 max-w-[200px] object-contain border rounded-lg p-1 bg-white" />
+                      <button type="button" onClick={() => setValue('authorizedPersonSignature', '')} className="absolute -top-2 -end-2 p-1 bg-red-100 text-red-600 rounded-full">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="text-sm text-gray-400">{language === 'ar' ? 'لم يتم رفع توقيع' : 'No signature uploaded'}</span>
+                  )}
+                </div>
+                <p className="text-xs text-gray-400 mt-2">{language === 'ar' ? 'يجب أن تكون صورة التوقيع بخلفية شفافة أو بيضاء.' : 'Signature image should have a transparent or white background.'}</p>
+              </div>
             </div>
           </div>
 

@@ -116,12 +116,16 @@ const buildDefaultFooterText = (tenant, language = 'en') => {
     business?.address?.country,
   ].filter(Boolean).join(language === 'ar' ? '، ' : ', ')
 
+  const contactParts = []
+  if (business?.contactPhone) contactParts.push(business.contactPhone)
+  if (business?.contactEmail) contactParts.push(business.contactEmail)
+  if (business?.website) contactParts.push(business.website)
+  if (business?.webmail) contactParts.push(business.webmail)
+
   return [
     address,
-    business?.contactPhone,
-    business?.contactEmail,
-    business?.website,
-  ].filter(Boolean).join(' • ')
+    contactParts.join(' • '),
+  ].filter(Boolean).join('\n')
 }
 
 export const getInvoiceTemplateId = (tenant, businessContext = 'trading', explicitTemplateId) => {
