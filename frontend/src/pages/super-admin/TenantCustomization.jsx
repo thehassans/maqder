@@ -10,6 +10,7 @@ import { getTenantBusinessTypes } from '../../lib/businessTypes'
 
 import RestaurantMenuItems from '../restaurant/RestaurantMenuItems'
 import Tables from '../restaurant/Tables'
+import RestaurantBranchMenu from '../restaurant/RestaurantBranchMenu'
 import LaundryServices from '../laundry/LaundryServices'
 import KhayyatSeeder from './KhayyatSeeder'
 import SaloonSeeder from './SaloonSeeder'
@@ -49,6 +50,7 @@ export default function TenantCustomization() {
 
     return [
       { id: 'menu-items', label: language === 'ar' ? 'قائمة الطعام' : 'Menu Items', icon: UtensilsCrossed, component: RestaurantMenuItems, show: isRestaurant },
+      { id: 'branch-menu', label: language === 'ar' ? 'قائمة الفروع' : 'Branch Menu', icon: Building2, component: RestaurantBranchMenu, show: isRestaurant },
       { id: 'tables', label: language === 'ar' ? 'الطاولات' : 'Tables', icon: Grid2X2, component: Tables, show: isRestaurant },
       { id: 'laundry', label: language === 'ar' ? 'خدمات المغسلة' : 'Laundry Services', icon: Shirt, component: LaundryServices, show: isLaundry },
       { id: 'khayyat', label: language === 'ar' ? 'الخياط' : 'Tailoring', icon: Shirt, component: KhayyatSeeder, show: isTailoring },

@@ -21,13 +21,15 @@ const restaurantMenuItemSchema = new mongoose.Schema({
   taxRate: { type: Number, default: 15 },
 
   isActive: { type: Boolean, default: true },
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  branchIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Branch' }], // empty = available for all branches
 }, {
   timestamps: true
 });
 
 restaurantMenuItemSchema.index({ tenantId: 1, sku: 1 }, { unique: true, sparse: true });
 restaurantMenuItemSchema.index({ tenantId: 1, nameEn: 1 });
+restaurantMenuItemSchema.index({ tenantId: 1, branchIds: 1 });
 
 const RestaurantMenuItem = mongoose.model('RestaurantMenuItem', restaurantMenuItemSchema);
 export default RestaurantMenuItem;

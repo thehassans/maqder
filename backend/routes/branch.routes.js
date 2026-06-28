@@ -2,6 +2,8 @@ import express from 'express';
 import Branch from '../models/Branch.js';
 import User from '../models/User.js';
 import Tenant from '../models/Tenant.js';
+import RestaurantMenuItem from '../models/RestaurantMenuItem.js';
+import RestaurantTable from '../models/RestaurantTable.js';
 import { protect, tenantFilter, checkPermission, requireBusinessType, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -210,6 +212,70 @@ router.delete('/:id/users/:userId', checkPermission('settings', 'delete'), check
     );
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json({ message: 'User deactivated' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get branch menu assignment (all menu items with their branch availability for this branch)
+router.get('/:id/menu-items', checkPermission('settings', 'read'), checkBranchAddon, async (req, res) => {
+  try {
+    const branch = await Branch.findOne({ _id: req.params.id, ...req.tenantFilter, isActive: true });
+    if (!branch) return res.status(404).json({ error: 'Branch not found' });
+
+    const items = await RestaurantMenuItem.find({ ...req.tenantFilter, isActive: true })
+      .select('_id nameEn nameAr sku category sellingPrice branchIds')
+      .sort({ category: 1, nameEn: 1 });
+
+    res.json(items.map(it => ({
+      ...it.toObject(),
+      isAssigned: it.branchIds.length === 0 || it.branchIds.some(bid => bid.toString() === branch._id.toString())
+    })));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update branch menu assignment (assign/unassign many menu items to a branch)
+router.put('/:id/menu-items', checkPermission('settings', 'update'), checkBranchAddon, async (req, res) => {
+  try {
+    const tenantId = req.user.tenantId;
+    const branchId = req.params.id;
+    const { assignedItemIds } = req.body; // array of item IDs that should be available for this branch
+
+    const branch = await Branch.findOne({ _id: branchId, tenantId, isActive: true });
+    if (!branch) return res.status(404).json({ error: 'Branch not found' });
+
+    const allItems = await RestaurantMenuItem.find({ tenantId, isActive: true });
+    const assignedIds = new Set((assignedItemIds || []).map(id => id.toString()));
+
+    const updates = [];
+    for (const item of allItems) {
+      const itemBranches = (item.branchIds || []).map(bid => bid.toString());
+      const isAssigned = itemBranches.length === 0 || itemBranches.includes(branchId);
+      const shouldAssign = assignedIds.has(item._id.toString());
+
+      if (isAssigned === shouldAssign) continue;
+
+      let newBranchIds;
+      if (shouldAssign) {
+        // Add this branch to item's allowed list (excluding if already global)
+        newBranchIds = itemBranches.length === 0 ? [] : [...new Set([...itemBranches, branchId])];
+      } else {
+        // Remove this branch from item's allowed list
+        newBranchIds = itemBranches.filter(bid => bid !== branchId);
+        // If all specific branches removed, keep it global (empty)
+      }
+
+      updates.push(RestaurantMenuItem.updateOne(
+        { _id: item._id, tenantId },
+        { $set: { branchIds: newBranchIds } }
+      ));
+    }
+
+    await Promise.all(updates);
+
+    res.json({ message: 'Branch menu updated', updated: updates.length });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

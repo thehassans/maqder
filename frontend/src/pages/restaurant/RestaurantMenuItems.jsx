@@ -3,7 +3,7 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { Link, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Search, UtensilsCrossed, Edit } from 'lucide-react'
+import { Plus, Search, UtensilsCrossed, Edit, Trash2 } from 'lucide-react'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import Money from '../../components/ui/Money'
@@ -52,6 +52,17 @@ export default function RestaurantMenuItems() {
     },
     onError: (err) => {
       toast.error(err.response?.data?.error || 'Failed to seed food')
+    }
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => api.delete(`/restaurant/menu-items/${id}`),
+    onSuccess: () => {
+      toast.success(language === 'ar' ? 'تم حذف الصنف' : 'Menu item deleted')
+      queryClient.invalidateQueries(['restaurant-menu-items'])
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.error || 'Failed to delete item')
     }
   })
 
@@ -165,6 +176,17 @@ export default function RestaurantMenuItems() {
                         >
                           <Edit className="w-4 h-4 text-gray-600" />
                         </Link>
+                        <button
+                          onClick={() => {
+                            if (confirm(language === 'ar' ? 'هل أنت متأكد من حذف هذا الصنف؟' : 'Are you sure you want to delete this item?')) {
+                              deleteMutation.mutate(it._id)
+                            }
+                          }}
+                          disabled={deleteMutation.isPending}
+                          className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg text-red-600 disabled:opacity-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>
