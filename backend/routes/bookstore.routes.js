@@ -2,6 +2,7 @@ import express from 'express';
 import { protect } from '../middleware/auth.js';
 import BookStoreProduct from '../models/BookStoreProduct.js';
 import SchoolSupplyList from '../models/SchoolSupplyList.js';
+import BookRental from '../models/BookRental.js';
 import Invoice from '../models/Invoice.js';
 import Tenant from '../models/Tenant.js';
 import PosSession from '../models/PosSession.js';
@@ -664,6 +665,229 @@ router.delete('/supply-lists/:id', protect, async (req, res) => {
     );
     if (!list) return res.status(404).json({ error: 'Supply list not found' });
     res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- USED BOOKS / BUY-BACK ---
+
+router.post('/buyback', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+
+    const { isbn, title, author, publisher, condition, buyBackPrice, resalePrice, customerName, customerPhone, coverImage } = req.body;
+
+    if (!title) return res.status(400).json({ error: 'Book title is required' });
+    if (!buyBackPrice || buyBackPrice <= 0) return res.status(400).json({ error: 'Buy-back price must be greater than zero' });
+
+    const barcode = isbn || `USED-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+
+    const existing = await BookStoreProduct.findOne({ tenantId, primaryBarcode: barcode });
+    if (existing) {
+      existing.stockQuantity += 1;
+      existing.buyBackPrice = buyBackPrice;
+      existing.condition = condition || 'good';
+      existing.isUsedBook = true;
+      await existing.save();
+      return res.json({ success: true, product: existing, message: 'Stock added to existing used book' });
+    }
+
+    const product = new BookStoreProduct({
+      tenantId,
+      name: title,
+      isbn: isbn || '',
+      primaryBarcode: barcode,
+      barcodes: [barcode],
+      author: author || '',
+      publisher: publisher || '',
+      isUsedBook: true,
+      condition: condition || 'good',
+      buyBackPrice: Number(buyBackPrice),
+      costPrice: Number(buyBackPrice),
+      originalRetailPrice: Number(resalePrice) || 0,
+      retailPrice: Number(resalePrice) || Number(buyBackPrice) * 1.5,
+      stockQuantity: 1,
+      minimumStockAlertLevel: 1,
+      coverImage: coverImage || '',
+      createdBy: req.user._id,
+    });
+    await product.save();
+
+    const buyBackInvoice = new Invoice({
+      tenantId,
+      flow: 'purchase',
+      businessContext: 'bookstore',
+      invoiceNumber: `BUYBACK-${Date.now()}`,
+      issueDate: new Date(),
+      lineItems: [{
+        productId: product._id,
+        productName: title,
+        quantity: 1,
+        unitPrice: Number(buyBackPrice),
+        lineTotal: Number(buyBackPrice),
+        lineTotalWithTax: Number(buyBackPrice),
+        taxRate: 0,
+      }],
+      subtotal: Number(buyBackPrice),
+      totalTax: 0,
+      grandTotal: Number(buyBackPrice),
+      paymentMethod: 'cash',
+      customerName: customerName || 'Walk-in',
+      customerPhone: customerPhone || '',
+      notes: `Buy-back: ${condition || 'good'} condition`,
+      status: 'approved',
+      createdBy: req.user._id,
+    });
+    await buyBackInvoice.save();
+
+    res.status(201).json({ success: true, product, invoice: buyBackInvoice });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/used-books', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    const books = await BookStoreProduct.find({ tenantId, isUsedBook: true, isActive: true })
+      .sort('-createdAt')
+      .lean();
+    res.json(books);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- BOOK RENTAL / LENDING ---
+
+router.get('/rentals', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+
+    const { status } = req.query;
+    const filter = { tenantId };
+    if (status) filter.status = status;
+
+    const rentals = await BookRental.find(filter).sort('-createdAt').lean();
+    res.json(rentals);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/rentals', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+
+    const { productId, customerName, customerPhone, customerNameAr, rentalFee, depositAmount, rentalDays, notes } = req.body;
+
+    const product = await BookStoreProduct.findOne({ _id: productId, tenantId });
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+    if (product.stockQuantity <= 0) return res.status(400).json({ error: 'Book out of stock' });
+
+    const days = parseInt(rentalDays) || product.maxRentalDays || 14;
+    const rentDate = new Date();
+    const dueDate = new Date(rentDate);
+    dueDate.setDate(dueDate.getDate() + days);
+
+    const rental = new BookRental({
+      tenantId,
+      productId: product._id,
+      productName: product.name,
+      productIsbn: product.isbn,
+      customerName,
+      customerPhone: customerPhone || '',
+      customerNameAr: customerNameAr || '',
+      rentDate,
+      dueDate,
+      rentalFee: Number(rentalFee) || product.rentalPrice || 0,
+      depositAmount: Number(depositAmount) || product.rentalDeposit || 0,
+      lateFeePerDay: 5,
+      totalCharge: Number(rentalFee) || product.rentalPrice || 0,
+      notes: notes || '',
+      status: 'active',
+      createdBy: req.user._id,
+    });
+    await rental.save();
+
+    product.stockQuantity -= 1;
+    await product.save();
+
+    res.status(201).json({ success: true, rental });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/rentals/:id/return', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    const rental = await BookRental.findOne({ _id: req.params.id, tenantId });
+    if (!rental) return res.status(404).json({ error: 'Rental not found' });
+    if (rental.status === 'returned') return res.status(400).json({ error: 'Book already returned' });
+
+    const returnDate = new Date();
+    const dueDate = new Date(rental.dueDate);
+    const lateDays = Math.max(0, Math.ceil((returnDate - dueDate) / (1000 * 60 * 60 * 24)));
+    const lateFee = lateDays * (rental.lateFeePerDay || 5);
+
+    rental.returnDate = returnDate;
+    rental.lateFee = lateFee;
+    rental.totalCharge = rental.rentalFee + lateFee;
+    rental.depositRefunded = true;
+    rental.status = 'returned';
+    await rental.save();
+
+    await BookStoreProduct.findByIdAndUpdate(rental.productId, { $inc: { stockQuantity: 1 } });
+
+    res.json({ success: true, rental, lateDays, lateFee });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/rentals/:id/mark-lost', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    const rental = await BookRental.findOne({ _id: req.params.id, tenantId });
+    if (!rental) return res.status(404).json({ error: 'Rental not found' });
+    if (rental.status === 'returned') return res.status(400).json({ error: 'Book already returned' });
+
+    rental.status = 'lost';
+    rental.totalCharge = rental.rentalFee + rental.depositAmount;
+    rental.notes = (rental.notes || '') + ' | Marked as lost';
+    await rental.save();
+
+    res.json({ success: true, rental });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/rentals/overdue', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+
+    const now = new Date();
+    const overdue = await BookRental.find({
+      tenantId,
+      status: 'active',
+      dueDate: { $lt: now },
+    }).lean();
+
+    for (const r of overdue) {
+      const lateDays = Math.ceil((now - new Date(r.dueDate)) / (1000 * 60 * 60 * 24));
+      r.lateDays = lateDays;
+      r.estimatedLateFee = lateDays * (r.lateFeePerDay || 5);
+    }
+
+    res.json(overdue);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

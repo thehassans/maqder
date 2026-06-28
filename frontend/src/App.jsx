@@ -135,6 +135,8 @@ import BookStoreShiftManagement from './pages/bookstore/BookStoreShiftManagement
 import BookStoreImport from './pages/bookstore/BookStoreImport'
 import BookStoreBestsellers from './pages/bookstore/BookStoreBestsellers'
 import BookStoreSupplyLists from './pages/bookstore/BookStoreSupplyLists'
+import BookStoreBuyBack from './pages/bookstore/BookStoreBuyBack'
+import BookStoreRentals from './pages/bookstore/BookStoreRentals'
 import IoT from './pages/IoT'
 import IoTDeviceForm from './pages/IoTDeviceForm'
 import Khata from './pages/finance/Khata'
@@ -540,6 +542,8 @@ function App() {
         <Route path="bookstore/import" element={<BusinessTypeRoute allowedTypes={['bookstore']}><BookStoreImport /></BusinessTypeRoute>} />
         <Route path="bookstore/bestsellers" element={<BusinessTypeRoute allowedTypes={['bookstore']}><BookStoreBestsellers /></BusinessTypeRoute>} />
         <Route path="bookstore/supply-lists" element={<BusinessTypeRoute allowedTypes={['bookstore']}><BookStoreSupplyLists /></BusinessTypeRoute>} />
+        <Route path="bookstore/buyback" element={<BusinessTypeRoute allowedTypes={['bookstore']}><BookStoreBuyBack /></BusinessTypeRoute>} />
+        <Route path="bookstore/rentals" element={<BusinessTypeRoute allowedTypes={['bookstore']}><BookStoreRentals /></BusinessTypeRoute>} />
 
         <Route path="restaurant/reservations" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantReservations /></BusinessTypeRoute>} />
         <Route path="saloon/appointments" element={<BusinessTypeRoute allowedTypes={['saloon']}><SaloonAppointments /></BusinessTypeRoute>} />

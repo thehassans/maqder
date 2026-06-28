@@ -68,7 +68,9 @@ import {
   Ruler,
   Bike,
   FileSpreadsheet,
-  GraduationCap
+  GraduationCap,
+  Recycle,
+  BookMarked
 } from 'lucide-react'
 import { toggleSidebarCollapse, setMobileMenuOpen } from '../../store/slices/uiSlice'
 import { useTranslation } from '../../lib/translations'
@@ -143,6 +145,8 @@ export default function Sidebar() {
         { path: '/app/dashboard/bookstore/add-product', icon: PlusCircle, label: language === 'ar' ? 'إضافة منتج' : 'Add Product' },
         { path: '/app/dashboard/bookstore/import', icon: FileSpreadsheet, label: language === 'ar' ? 'استيراد' : 'Bulk Import' },
         { path: '/app/dashboard/bookstore/supply-lists', icon: GraduationCap, label: language === 'ar' ? 'قوائم المدارس' : 'Supply Lists' },
+        { path: '/app/dashboard/bookstore/buyback', icon: Recycle, label: language === 'ar' ? 'الكتب المستعملة' : 'Buy-Back' },
+        { path: '/app/dashboard/bookstore/rentals', icon: BookMarked, label: language === 'ar' ? 'الإعارة' : 'Rentals' },
         { path: '/app/dashboard/bookstore/bestsellers', icon: TrendingUp, label: language === 'ar' ? 'الأكثر مبيعاً' : 'Bestsellers' },
         { path: '/app/dashboard/bookstore/shift', icon: Wallet, label: language === 'ar' ? 'إدارة الوردية' : 'Shift Management' },
         { path: '/app/dashboard/khata', icon: Users, label: language === 'ar' ? 'العملاء (خاتا)' : 'Khata', perm: { module: 'finance', action: 'read' } },
