@@ -127,6 +127,11 @@ import RestaurantMess from './pages/restaurant/RestaurantMess'
 import RestaurantDelivery from './pages/restaurant/RestaurantDelivery'
 import BakalaShiftManagement from './pages/bakala/BakalaShiftManagement'
 import BakalaReturns from './pages/bakala/BakalaReturns'
+import BookStorePOS from './pages/bookstore/BookStorePOS'
+import BookStoreDashboard from './pages/bookstore/BookStoreDashboard'
+import BookStoreProducts from './pages/bookstore/BookStoreProducts'
+import BookStoreAddProduct from './pages/bookstore/BookStoreAddProduct'
+import BookStoreShiftManagement from './pages/bookstore/BookStoreShiftManagement'
 import IoT from './pages/IoT'
 import IoTDeviceForm from './pages/IoTDeviceForm'
 import Khata from './pages/finance/Khata'
@@ -522,6 +527,14 @@ function App() {
         <Route path="bakala/auto-reorder" element={<BusinessTypeRoute allowedTypes={['bakala']}><AutoReorder /></BusinessTypeRoute>} />
         <Route path="bakala/label-printing" element={<BusinessTypeRoute allowedTypes={['bakala']}><BarcodeLabelPrinting /></BusinessTypeRoute>} />
         <Route path="bakala/pnl" element={<BusinessTypeRoute allowedTypes={['bakala']}><DailyPnL /></BusinessTypeRoute>} />
+
+        {/* Bookstore Routes */}
+        <Route path="bookstore/pos" element={<BusinessTypeRoute allowedTypes={['bookstore']}><BookStorePOS /></BusinessTypeRoute>} />
+        <Route path="bookstore/dashboard" element={<BusinessTypeRoute allowedTypes={['bookstore']}><BookStoreDashboard /></BusinessTypeRoute>} />
+        <Route path="bookstore/products" element={<BusinessTypeRoute allowedTypes={['bookstore']}><BookStoreProducts /></BusinessTypeRoute>} />
+        <Route path="bookstore/add-product" element={<BusinessTypeRoute allowedTypes={['bookstore']}><BookStoreAddProduct /></BusinessTypeRoute>} />
+        <Route path="bookstore/shift" element={<BusinessTypeRoute allowedTypes={['bookstore']}><BookStoreShiftManagement /></BusinessTypeRoute>} />
+
         <Route path="restaurant/reservations" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantReservations /></BusinessTypeRoute>} />
         <Route path="saloon/appointments" element={<BusinessTypeRoute allowedTypes={['saloon']}><SaloonAppointments /></BusinessTypeRoute>} />
         <Route path="laundry/delivery" element={<BusinessTypeRoute allowedTypes={['laundry']}><LaundryDelivery /></BusinessTypeRoute>} />

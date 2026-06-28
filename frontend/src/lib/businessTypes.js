@@ -1,4 +1,4 @@
-export const BUSINESS_TYPES = ['trading', 'construction', 'travel_agency', 'restaurant', 'car_rental', 'laundry', 'saloon', 'khayyat', 'boutique', 'manpower', 'bakala', 'car_workshop']
+export const BUSINESS_TYPES = ['trading', 'construction', 'travel_agency', 'restaurant', 'car_rental', 'laundry', 'saloon', 'khayyat', 'boutique', 'manpower', 'bakala', 'car_workshop', 'bookstore']
 
 export const getBusinessTypeOptions = (language = 'en') => [
   {
@@ -60,6 +60,11 @@ export const getBusinessTypeOptions = (language = 'en') => [
     id: 'car_workshop',
     label: language === 'ar' ? 'مركز صيانة سيارات' : 'Car Workshop',
     description: language === 'ar' ? 'بطاقات إصلاح، التقدير، والتكامل مع الزكاة والمرور' : 'Job cards, Taqdeer, ZATCA & Absher integration',
+  },
+  {
+    id: 'bookstore',
+    label: language === 'ar' ? 'مكتبة' : 'Bookstore',
+    description: language === 'ar' ? 'نقطة بيع للمكتبات، الكتب، والقرطاسية مع طابعة حرارية' : 'Bookstore POS with ISBN scanning, inventory, and thermal printer',
   },
 ]
 

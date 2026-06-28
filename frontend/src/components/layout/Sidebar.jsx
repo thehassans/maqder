@@ -133,6 +133,18 @@ export default function Sidebar() {
       ]
     },
     {
+      title: language === 'ar' ? 'المكتبة' : 'Bookstore',
+      businessTypes: ['bookstore'],
+      items: [
+        { path: '/app/dashboard/bookstore/pos', icon: ShoppingCart, label: language === 'ar' ? 'نقطة البيع' : 'POS Checkout' },
+        { path: '/app/dashboard/bookstore/products', icon: Package, label: language === 'ar' ? 'المنتجات' : 'Products' },
+        { path: '/app/dashboard/bookstore/add-product', icon: PlusCircle, label: language === 'ar' ? 'إضافة منتج' : 'Add Product' },
+        { path: '/app/dashboard/bookstore/shift', icon: Wallet, label: language === 'ar' ? 'إدارة الوردية' : 'Shift Management' },
+        { path: '/app/dashboard/khata', icon: Users, label: language === 'ar' ? 'العملاء (خاتا)' : 'Khata', perm: { module: 'finance', action: 'read' } },
+        { path: '/app/dashboard/bookstore/dashboard', icon: ShieldCheck, label: language === 'ar' ? 'لوحة التحكم' : 'Administration' },
+      ]
+    },
+    {
       title: language === 'ar' ? 'المطعم' : 'Restaurant',
       businessTypes: ['restaurant'],
       items: [
