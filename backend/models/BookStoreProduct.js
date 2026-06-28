@@ -19,6 +19,9 @@ const bookStoreProductSchema = new mongoose.Schema({
   category: { type: String },
   subCategory: { type: String },
   series: { type: String },
+  seriesName: { type: String, index: true },
+  seriesNumber: { type: Number, default: null },
+  seriesTotal: { type: Number, default: null },
   volume: { type: String },
   description: { type: String },
   unit: { type: String, default: 'PCS' },
@@ -43,6 +46,7 @@ bookStoreProductSchema.pre('save', function(next) {
 
 bookStoreProductSchema.index({ tenantId: 1, primaryBarcode: 1 }, { unique: true });
 bookStoreProductSchema.index({ tenantId: 1, isbn: 1 });
+bookStoreProductSchema.index({ tenantId: 1, seriesName: 1, seriesNumber: 1 });
 bookStoreProductSchema.index({ tenantId: 1, name: 'text', author: 'text', publisher: 'text' });
 
 export default mongoose.models.BookStoreProduct || mongoose.model('BookStoreProduct', bookStoreProductSchema);

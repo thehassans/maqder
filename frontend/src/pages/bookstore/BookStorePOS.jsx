@@ -100,6 +100,7 @@ export default function BookStorePOS() {
   const [splitCard, setSplitCard] = useState('');
   const [heldBills, setHeldBills] = useState([]);
   const [showRecallModal, setShowRecallModal] = useState(false);
+  const [seriesSuggestion, setSeriesSuggestion] = useState(null);
   const barcodeInputRef = useRef(null);
 
   const totals = useMemo(() => {
@@ -133,12 +134,39 @@ export default function BookStorePOS() {
         primaryBarcode: product.primaryBarcode,
         isbn: product.isbn,
         author: product.author,
+        seriesName: product.seriesName || '',
+        seriesNumber: product.seriesNumber || null,
         quantity: 1,
         unitPrice: price,
         taxRate: product.taxRate || 15,
       }];
     });
+
+    if (product.seriesName) {
+      api.get(`/bookstore/series/${encodeURIComponent(product.seriesName)}/next-volume`)
+        .then(res => {
+          if (res.data?.nextVolume) {
+            const nextBook = res.data.books.find(b => b.seriesNumber === res.data.nextVolume);
+            if (nextBook) {
+              setSeriesSuggestion({
+                seriesName: product.seriesName,
+                nextVolume: res.data.nextVolume,
+                seriesTotal: res.data.seriesTotal,
+                book: nextBook,
+              });
+            }
+          }
+        })
+        .catch(() => {});
+    }
   }, []);
+
+  useEffect(() => {
+    if (seriesSuggestion) {
+      const timer = setTimeout(() => setSeriesSuggestion(null), 8000);
+      return () => clearTimeout(timer);
+    }
+  }, [seriesSuggestion]);
 
   const updateQuantity = useCallback((index, quantity) => {
     if (quantity <= 0) {
@@ -537,6 +565,9 @@ export default function BookStorePOS() {
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-sm text-gray-900 truncate">{item.productName}</p>
                     {item.author && <p className="text-xs text-gray-400 truncate">{item.author}</p>}
+                    {item.seriesName && (
+                      <p className="text-[10px] text-indigo-500 font-medium">{item.seriesName} #{item.seriesNumber || '?'}</p>
+                    )}
                     <p className="text-xs text-gray-400">SAR {item.unitPrice.toFixed(2)} each</p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -559,6 +590,34 @@ export default function BookStorePOS() {
             </div>
           )}
         </div>
+
+        {/* Series suggestion banner */}
+        {seriesSuggestion && (
+          <div className="mx-6 mb-3 p-3 bg-indigo-50 border border-indigo-200 rounded-2xl flex items-center gap-3">
+            <BookOpen className="w-5 h-5 text-indigo-500 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-indigo-700">Next in series: {seriesSuggestion.seriesName}</p>
+              <p className="text-sm font-bold text-gray-900 truncate">Book #{seriesSuggestion.nextVolume}: {seriesSuggestion.book?.name}</p>
+              {seriesSuggestion.book?.stockQuantity > 0 ? (
+                <p className="text-[10px] text-emerald-600 font-medium">In stock ({seriesSuggestion.book.stockQuantity})</p>
+              ) : (
+                <p className="text-[10px] text-amber-600 font-medium">Out of stock</p>
+              )}
+            </div>
+            <button
+              onClick={() => { addItem(seriesSuggestion.book); setSeriesSuggestion(null); }}
+              className="px-3 py-2 bg-indigo-600 text-white rounded-xl font-bold text-xs hover:bg-indigo-700 transition-colors whitespace-nowrap"
+            >
+              Add to cart
+            </button>
+            <button
+              onClick={() => setSeriesSuggestion(null)}
+              className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
         {/* Totals & checkout */}
         <div className="px-6 py-5 border-t border-gray-100 bg-white">

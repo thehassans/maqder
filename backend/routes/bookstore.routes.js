@@ -1,13 +1,23 @@
 import express from 'express';
 import { protect } from '../middleware/auth.js';
 import BookStoreProduct from '../models/BookStoreProduct.js';
+import SchoolSupplyList from '../models/SchoolSupplyList.js';
 import Invoice from '../models/Invoice.js';
 import Tenant from '../models/Tenant.js';
 import PosSession from '../models/PosSession.js';
 import ZatcaService from '../utils/zatca/ZatcaService.js';
 import mongoose from 'mongoose';
+import multer from 'multer';
+import sharp from 'sharp';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 const getTargetTenantId = async (user) => {
   if (user.tenantId) return user.tenantId;
@@ -25,7 +35,7 @@ router.get('/products', protect, async (req, res) => {
     const tenantId = await getTargetTenantId(req.user);
     const filter = tenantId ? { tenantId, isActive: true } : {};
     const products = await BookStoreProduct.find(filter)
-      .select('name nameAr isbn primaryBarcode author publisher genre language retailPrice discountPrice taxRate unit stockQuantity category coverImage')
+      .select('name nameAr isbn primaryBarcode author publisher genre language retailPrice discountPrice taxRate unit stockQuantity category coverImage seriesName seriesNumber seriesTotal')
       .lean();
     res.json({ success: true, products });
   } catch (error) {
@@ -373,6 +383,289 @@ router.post('/shift/close', protect, async (req, res) => {
     res.json({ success: true, session });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// --- COVER IMAGE UPLOAD ---
+
+router.post('/upload-cover', protect, upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
+
+    const tenantIdStr = req.user.tenantId.toString();
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'bookstore', tenantIdStr);
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    const filename = `cover-${Date.now()}-${Math.round(Math.random() * 1E9)}.webp`;
+    const filepath = path.join(uploadsDir, filename);
+
+    await sharp(req.file.buffer)
+      .resize({ width: 600, height: 900, fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: 80 })
+      .toFile(filepath);
+
+    const imageUrl = `/uploads/bookstore/${tenantIdStr}/${filename}`;
+    res.json({ imageUrl });
+  } catch (error) {
+    console.error('BookStore cover upload error:', error);
+    res.status(500).json({ error: 'Failed to process image' });
+  }
+});
+
+// --- CSV / EXCEL IMPORT ---
+
+router.post('/import-csv', protect, upload.single('file'), async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+    const results = [];
+    const buffer = req.file.buffer.toString('utf-8');
+    const lines = buffer.split(/\r?\n/);
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+
+    let count = 0;
+    let errors = 0;
+
+    for (let i = 1; i < lines.length; i++) {
+      if (!lines[i].trim()) continue;
+      const values = lines[i].split(',');
+      const row = {};
+      headers.forEach((h, idx) => { row[h] = (values[idx] || '').trim(); });
+
+      const name = row['name'] || row['title'] || row['english_name'] || '';
+      if (!name) { errors++; continue; }
+
+      const barcode = row['barcode'] || row['isbn'] || `INT${Date.now()}${Math.floor(Math.random() * 10000)}`;
+      const existing = await BookStoreProduct.findOne({ tenantId, primaryBarcode: barcode });
+      if (existing) { errors++; continue; }
+
+      try {
+        await BookStoreProduct.findOneAndUpdate(
+          { tenantId, primaryBarcode: barcode },
+          {
+            tenantId,
+            name,
+            nameAr: row['name_ar'] || row['arabic_name'] || '',
+            isbn: row['isbn'] || '',
+            primaryBarcode: barcode,
+            barcodes: [barcode],
+            author: row['author'] || '',
+            authorAr: row['author_ar'] || '',
+            publisher: row['publisher'] || '',
+            publisherAr: row['publisher_ar'] || '',
+            genre: row['genre'] || row['category'] || '',
+            category: row['category'] || '',
+            language: row['language'] || 'English',
+            edition: row['edition'] || '',
+            publicationYear: parseInt(row['publication_year']) || null,
+            coverType: row['cover_type'] || 'paperback',
+            seriesName: row['series_name'] || row['series'] || '',
+            seriesNumber: parseInt(row['series_number']) || null,
+            seriesTotal: parseInt(row['series_total']) || null,
+            isStationery: row['is_stationery'] === 'true' || row['is_stationery'] === '1',
+            costPrice: parseFloat(row['cost_price']) || 0,
+            retailPrice: parseFloat(row['retail_price']) || parseFloat(row['price']) || 0,
+            discountPrice: parseFloat(row['discount_price']) || 0,
+            stockQuantity: parseInt(row['stock_quantity']) || 0,
+            minimumStockAlertLevel: parseInt(row['min_stock_alert']) || 5,
+            taxRate: parseFloat(row['tax_rate']) || 15,
+            coverImage: row['cover_image_url'] || '',
+            createdBy: req.user._id,
+          },
+          { upsert: true, new: true }
+        );
+        count++;
+      } catch (err) {
+        console.error('Import error row', i, ':', err);
+        errors++;
+      }
+    }
+
+    res.json({ success: true, imported: count, errors, total: lines.length - 1 });
+  } catch (error) {
+    console.error('CSV import error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- SERIES TRACKING ---
+
+router.get('/series/:seriesName/next-volume', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+
+    const seriesName = decodeURIComponent(req.params.seriesName);
+    const books = await BookStoreProduct.find({ tenantId, seriesName })
+      .sort({ seriesNumber: 1 })
+      .select('name nameAr isbn primaryBarcode author seriesName seriesNumber seriesTotal retailPrice discountPrice coverImage stockQuantity')
+      .lean();
+
+    if (books.length === 0) return res.json({ books: [], nextVolume: null });
+
+    const maxNumber = Math.max(...books.map(b => b.seriesNumber || 0));
+    const seriesTotal = books[0]?.seriesTotal || null;
+    const nextVolume = seriesTotal && maxNumber < seriesTotal ? maxNumber + 1 : null;
+
+    res.json({ books, nextVolume, seriesTotal, currentMax: maxNumber });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/series', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+
+    const series = await BookStoreProduct.aggregate([
+      { $match: { tenantId: new mongoose.Types.ObjectId(tenantId), seriesName: { $exists: true, $ne: '' } } },
+      { $group: { _id: '$seriesName', count: { $sum: 1 }, books: { $push: { name: '$name', seriesNumber: '$seriesNumber', _id: '$_id' } } } },
+      { $sort: { _id: 1 } },
+    ]);
+
+    res.json({ series });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- BESTSELLER REPORT ---
+
+router.get('/reports/bestsellers', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+
+    const { startDate, endDate } = req.query;
+    const matchStage = {
+      tenantId: new mongoose.Types.ObjectId(tenantId),
+      businessContext: 'bookstore',
+    };
+    if (startDate || endDate) {
+      matchStage.issueDate = {};
+      if (startDate) matchStage.issueDate.$gte = new Date(startDate);
+      if (endDate) matchStage.issueDate.$lte = new Date(endDate);
+    }
+
+    const [byGenre, byAuthor, byProduct] = await Promise.all([
+      Invoice.aggregate([
+        { $match: matchStage },
+        { $unwind: '$lineItems' },
+        { $lookup: { from: 'bookstoreproducts', localField: 'lineItems.productId', foreignField: '_id', as: 'product' } },
+        { $unwind: { path: '$product', preserveNullAndEmptyArrays: true } },
+        { $group: {
+          _id: { $ifNull: ['$product.genre', 'Unknown'] },
+          totalSold: { $sum: '$lineItems.quantity' },
+          revenue: { $sum: '$lineItems.lineTotalWithTax' },
+          count: { $sum: 1 },
+        }},
+        { $sort: { totalSold: -1 } },
+        { $limit: 20 },
+      ]),
+      Invoice.aggregate([
+        { $match: matchStage },
+        { $unwind: '$lineItems' },
+        { $lookup: { from: 'bookstoreproducts', localField: 'lineItems.productId', foreignField: '_id', as: 'product' } },
+        { $unwind: { path: '$product', preserveNullAndEmptyArrays: true } },
+        { $group: {
+          _id: { $ifNull: ['$product.author', 'Unknown'] },
+          totalSold: { $sum: '$lineItems.quantity' },
+          revenue: { $sum: '$lineItems.lineTotalWithTax' },
+          count: { $sum: 1 },
+        }},
+        { $sort: { totalSold: -1 } },
+        { $limit: 20 },
+      ]),
+      Invoice.aggregate([
+        { $match: matchStage },
+        { $unwind: '$lineItems' },
+        { $group: {
+          _id: '$lineItems.productName',
+          totalSold: { $sum: '$lineItems.quantity' },
+          revenue: { $sum: '$lineItems.lineTotalWithTax' },
+          count: { $sum: 1 },
+        }},
+        { $sort: { totalSold: -1 } },
+        { $limit: 20 },
+      ]),
+    ]);
+
+    res.json({ byGenre, byAuthor, byProduct });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- SCHOOL SUPPLY LISTS ---
+
+router.get('/supply-lists', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    const lists = await SchoolSupplyList.find({ tenantId, isActive: true }).sort('schoolName grade').lean();
+    res.json(lists);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/supply-lists', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+
+    const items = req.body.items || [];
+    const totalEstimatedPrice = items.reduce((sum, item) => sum + (item.estimatedPrice || 0) * (item.quantity || 1), 0);
+
+    const list = new SchoolSupplyList({
+      ...req.body,
+      tenantId,
+      items,
+      totalEstimatedPrice,
+      createdBy: req.user._id,
+    });
+    await list.save();
+    res.status(201).json(list);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.put('/supply-lists/:id', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    const items = req.body.items || [];
+    const totalEstimatedPrice = items.reduce((sum, item) => sum + (item.estimatedPrice || 0) * (item.quantity || 1), 0);
+
+    const list = await SchoolSupplyList.findOneAndUpdate(
+      { _id: req.params.id, tenantId },
+      { ...req.body, items, totalEstimatedPrice },
+      { new: true, runValidators: true }
+    );
+    if (!list) return res.status(404).json({ error: 'Supply list not found' });
+    res.json(list);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.delete('/supply-lists/:id', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    const list = await SchoolSupplyList.findOneAndUpdate(
+      { _id: req.params.id, tenantId },
+      { isActive: false },
+      { new: true }
+    );
+    if (!list) return res.status(404).json({ error: 'Supply list not found' });
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 

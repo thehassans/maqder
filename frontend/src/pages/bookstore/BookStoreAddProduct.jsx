@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Save, BookOpen } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ArrowLeft, Save, BookOpen, Upload, Loader2 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
@@ -36,7 +36,12 @@ export default function BookStoreAddProduct() {
     taxRate: 15,
     isStationery: false,
     coverImage: '',
+    seriesName: '',
+    seriesNumber: '',
+    seriesTotal: '',
   });
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (editId) {
@@ -50,6 +55,25 @@ export default function BookStoreAddProduct() {
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+  };
+
+  const handleCoverUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await api.post('/bookstore/upload-cover', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setForm(prev => ({ ...prev, coverImage: res.data.imageUrl }));
+      toast.success('Cover image uploaded');
+    } catch (err) {
+      toast.error('Failed to upload image');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -153,8 +177,31 @@ export default function BookStoreAddProduct() {
               </select>
             </div>
             <div>
-              <label className="label">Cover Image URL</label>
-              <input name="coverImage" value={form.coverImage} onChange={handleChange} className="input" placeholder="https://..." />
+              <label className="label">Cover Image</label>
+              <div className="flex items-center gap-3">
+                {form.coverImage && (
+                  <img src={form.coverImage} alt="Cover" className="w-12 h-16 object-cover rounded-lg border border-gray-200" />
+                )}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-sm hover:bg-indigo-100 transition-colors disabled:opacity-50"
+                >
+                  {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                  Upload Cover
+                </button>
+                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleCoverUpload} className="hidden" />
+              </div>
+              <input name="coverImage" value={form.coverImage} onChange={handleChange} className="input mt-2" placeholder="Or paste URL..." />
+            </div>
+            <div className="md:col-span-2">
+              <label className="label">Series Tracking</label>
+              <div className="grid grid-cols-3 gap-3">
+                <input name="seriesName" value={form.seriesName} onChange={handleChange} className="input" placeholder="Series name (e.g. Harry Potter)" />
+                <input name="seriesNumber" type="number" value={form.seriesNumber} onChange={handleChange} className="input" placeholder="Book # in series" />
+                <input name="seriesTotal" type="number" value={form.seriesTotal} onChange={handleChange} className="input" placeholder="Total books in series" />
+              </div>
             </div>
             <div className="md:col-span-2">
               <label className="label">Description</label>
