@@ -67,6 +67,7 @@ import {
   Scissors,
   Ruler,
   Bike,
+  CreditCard,
   FileSpreadsheet,
   GraduationCap,
   Recycle,
@@ -166,6 +167,8 @@ export default function Sidebar() {
         { path: '/app/dashboard/ecommerce/products/new', icon: PlusCircle, label: language === 'ar' ? 'إضافة منتج' : 'Add Product' },
         { path: '/app/dashboard/ecommerce/theme', icon: Palette, label: language === 'ar' ? 'تصميم المتجر' : 'Theme Editor' },
         { path: '/app/dashboard/ecommerce/domains', icon: Globe, label: language === 'ar' ? 'النطاقات' : 'Domains' },
+        { path: '/app/dashboard/ecommerce/payments', icon: CreditCard, label: language === 'ar' ? 'بوابات الدفع' : 'Payments' },
+        { path: '/app/dashboard/ecommerce/couriers', icon: Truck, label: language === 'ar' ? 'شركات الشحن' : 'Couriers' },
         { path: '/app/dashboard/ecommerce/settings', icon: Settings, label: language === 'ar' ? 'الإعدادات' : 'Store Settings' },
       ]
     },

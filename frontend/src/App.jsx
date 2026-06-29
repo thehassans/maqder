@@ -148,6 +148,8 @@ import EcommerceDomains from './pages/ecommerce/EcommerceDomains'
 import EcommerceStoreSettings from './pages/ecommerce/EcommerceStoreSettings'
 import EcommerceProductDetail from './pages/ecommerce/EcommerceProductDetail'
 import EcommerceOrderDetail from './pages/ecommerce/EcommerceOrderDetail'
+import EcommercePayments from './pages/ecommerce/EcommercePayments'
+import EcommerceCouriers from './pages/ecommerce/EcommerceCouriers'
 import IoT from './pages/IoT'
 import IoTDeviceForm from './pages/IoTDeviceForm'
 import Khata from './pages/finance/Khata'
@@ -567,6 +569,8 @@ function App() {
         <Route path="ecommerce/products/:id" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceProductDetail /></BusinessTypeRoute>} />
         <Route path="ecommerce/theme" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceThemeEditor /></BusinessTypeRoute>} />
         <Route path="ecommerce/domains" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceDomains /></BusinessTypeRoute>} />
+        <Route path="ecommerce/payments" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommercePayments /></BusinessTypeRoute>} />
+        <Route path="ecommerce/couriers" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceCouriers /></BusinessTypeRoute>} />
         <Route path="ecommerce/settings" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceStoreSettings /></BusinessTypeRoute>} />
 
         <Route path="restaurant/reservations" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantReservations /></BusinessTypeRoute>} />
