@@ -122,6 +122,7 @@ router.get('/meta/analytics', protect, async (req, res) => {
       totalRevenueAll,
       aovResult,
       recentOrders,
+      categorySales,
     ] = await Promise.all([
       // Daily revenue series
       EcommerceOrder.aggregate([
@@ -170,6 +171,16 @@ router.get('/meta/analytics', protect, async (req, res) => {
         .limit(5)
         .select('orderNumber customer.name grandTotal status payment.status createdAt')
         .lean(),
+      // Sales by category
+      EcommerceOrder.aggregate([
+        { $match: { ...matchValid, createdAt: { $gte: startDate } } },
+        { $unwind: '$lineItems' },
+        { $lookup: { from: 'ecommerceproducts', localField: 'lineItems.productId', foreignField: '_id', as: 'product' } },
+        { $unwind: { path: '$product', preserveNullAndEmptyArrays: true } },
+        { $group: { _id: { $ifNull: ['$product.category', 'Uncategorized'] }, revenue: { $sum: '$lineItems.lineTotal' }, qty: { $sum: '$lineItems.quantity' }, orders: { $sum: 1 } } },
+        { $sort: { revenue: -1 } },
+        { $limit: 10 },
+      ]),
     ]);
 
     const currentRevenue = aovResult[0]?.totalRevenue || 0;
@@ -200,6 +211,7 @@ router.get('/meta/analytics', protect, async (req, res) => {
       totalRevenueAll: totalRevenueAll[0]?.total || 0,
       totalOrdersAll: totalRevenueAll[0]?.count || 0,
       recentOrders,
+      categorySales: categorySales.map(c => ({ category: c._id, revenue: c.revenue, qty: c.qty, orders: c.orders })),
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

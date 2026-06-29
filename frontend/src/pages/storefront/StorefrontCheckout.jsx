@@ -141,7 +141,7 @@ export default function StorefrontCheckout() {
 
       {error && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '12px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: '#dc2626', fontSize: '14px' }}><AlertCircle size={16} /> {error}</div>}
 
-      <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '32px' }} className="store-checkout-grid">
+      <form id="checkout-form" onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '32px' }} className="store-checkout-grid">
         {/* Left: Customer info */}
         <div>
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px' }}>Shipping Details</h2>
@@ -248,7 +248,28 @@ export default function StorefrontCheckout() {
         </div>
       </form>
 
-      <style>{`@media(max-width:768px){.store-checkout-grid{grid-template-columns:1fr!important}}`}</style>
+      <style>{`
+        @media(max-width:768px){.store-checkout-grid{grid-template-columns:1fr!important}}
+        @media(max-width:768px){.store-mobile-sticky-bar{display:flex!important}}
+      `}</style>
+
+      {/* Mobile sticky checkout bar */}
+      <div className="store-mobile-sticky-bar" style={{
+        display: 'none', position: 'fixed', bottom: '56px', left: 0, right: 0, zIndex: 90,
+        background: '#fff', borderTop: '1px solid #e5e7eb', padding: '10px 16px',
+        alignItems: 'center', gap: '12px', boxShadow: '0 -2px 12px rgba(0,0,0,0.06)',
+      }}>
+        <div style={{ flex: 1 }}>
+          <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>Total</p>
+          <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#059669', margin: 0 }}>{finalTotal} SAR</p>
+        </div>
+        <button type="submit" form="checkout-form" disabled={loading} style={{
+          padding: '12px 24px', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '8px',
+          fontWeight: 'bold', fontSize: '15px', cursor: 'pointer', opacity: loading ? 0.6 : 1,
+        }}>
+          {loading ? '...' : 'Place Order'}
+        </button>
+      </div>
     </div>
   );
 }

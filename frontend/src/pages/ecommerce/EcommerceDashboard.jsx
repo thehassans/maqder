@@ -232,8 +232,8 @@ export default function EcommerceDashboard() {
         </div>
       </div>
 
-      {/* Payment breakdown + Quick links */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Payment breakdown + Category sales + Quick links */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Payment breakdown */}
         <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-5">
           <h3 className="font-bold text-gray-900 dark:text-white mb-4">Payment Methods</h3>
@@ -254,6 +254,35 @@ export default function EcommerceDashboard() {
               <p className="text-sm text-gray-300 text-center py-4">No payment data</p>
             )}
           </div>
+        </div>
+
+        {/* Sales by category */}
+        <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-5">
+          <h3 className="font-bold text-gray-900 dark:text-white mb-4">Sales by Category</h3>
+          {(a.categorySales || []).length > 0 ? (
+            <div className="space-y-3">
+              {(() => {
+                const maxRev = Math.max(...a.categorySales.map(c => c.revenue), 1);
+                return a.categorySales.map((c, i) => (
+                  <div key={i}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-bold text-gray-700 dark:text-gray-300 truncate">{c.category}</span>
+                      <span className="text-xs font-bold text-gray-900 dark:text-white flex-shrink-0 ml-2">{fmtCurrency(c.revenue)}</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-gray-100 dark:bg-dark-700 overflow-hidden">
+                      <div className="h-full rounded-full transition-all" style={{
+                        width: `${(c.revenue / maxRev * 100)}%`,
+                        background: ['#4f46e5', '#059669', '#f59e0b', '#ec4899', '#06b6d4', '#8b5cf6', '#ef4444', '#14b8a6', '#f97316', '#6366f1'][i % 10],
+                      }} />
+                    </div>
+                    <p className="text-xs text-gray-400 mt-0.5">{c.qty} sold · {c.orders} orders</p>
+                  </div>
+                ));
+              })()}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-300 text-center py-4">No category data</p>
+          )}
         </div>
 
         {/* Quick links */}
