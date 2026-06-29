@@ -170,6 +170,7 @@ import StorefrontWishlist from './pages/storefront/StorefrontWishlist'
 import StorefrontOrderTracking from './pages/storefront/StorefrontOrderTracking'
 import StorefrontPrivacy from './pages/storefront/StorefrontPrivacy'
 import StorefrontTerms from './pages/storefront/StorefrontTerms'
+import StorefrontCategory from './pages/storefront/StorefrontCategory'
 import IoT from './pages/IoT'
 import IoTDeviceForm from './pages/IoTDeviceForm'
 import Khata from './pages/finance/Khata'
@@ -745,6 +746,7 @@ function App() {
       {/* ───── Public Storefront ───── */}
       <Route path="/store" element={<StorefrontI18nProvider><WishlistProvider><CartProvider><StorefrontLayout><StorefrontHome /></StorefrontLayout></CartProvider></WishlistProvider></StorefrontI18nProvider>} />
       <Route path="/store/products" element={<StorefrontI18nProvider><WishlistProvider><CartProvider><StorefrontLayout><StorefrontProducts /></StorefrontLayout></CartProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store/category/:slug" element={<StorefrontI18nProvider><WishlistProvider><CartProvider><StorefrontLayout><StorefrontCategory /></StorefrontLayout></CartProvider></WishlistProvider></StorefrontI18nProvider>} />
       <Route path="/store/products/:id" element={<StorefrontI18nProvider><WishlistProvider><CartProvider><StorefrontLayout><StorefrontProductDetail /></StorefrontLayout></CartProvider></WishlistProvider></StorefrontI18nProvider>} />
       <Route path="/store/checkout" element={<StorefrontI18nProvider><WishlistProvider><CartProvider><StorefrontLayout><StorefrontCheckout /></StorefrontLayout></CartProvider></WishlistProvider></StorefrontI18nProvider>} />
       <Route path="/store/wishlist" element={<StorefrontI18nProvider><WishlistProvider><CartProvider><StorefrontLayout><StorefrontWishlist /></StorefrontLayout></CartProvider></WishlistProvider></StorefrontI18nProvider>} />

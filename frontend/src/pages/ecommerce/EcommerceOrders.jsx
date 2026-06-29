@@ -111,23 +111,34 @@ export default function EcommerceOrders() {
 
   const exportCsv = () => {
     const rows = orders.filter(o => selected.size === 0 || selected.has(o._id));
-    const headers = ['Order Number', 'Customer', 'Email', 'Phone', 'Date', 'Items', 'Total', 'Currency', 'Payment Status', 'Payment Method', 'Shipping Status', 'Order Status'];
+    const headers = ['Order Number', 'Customer', 'Email', 'Phone', 'City', 'Date', 'Line Items', 'Item Details', 'Subtotal', 'Discount', 'Shipping Cost', 'Tax', 'Total', 'Currency', 'Payment Status', 'Payment Method', 'Shipping Status', 'Courier', 'Tracking Number', 'Order Status'];
     const csv = [
       headers.join(','),
-      ...rows.map(o => [
-        o.orderNumber,
-        `"${o.customer?.name || ''}"`,
-        `"${o.customer?.email || ''}"`,
-        `"${o.customer?.phone || ''}"`,
-        new Date(o.createdAt).toISOString(),
-        o.lineItems?.length || 0,
-        o.grandTotal || 0,
-        o.currency || 'SAR',
-        o.payment?.status || 'pending',
-        o.payment?.method || '',
-        o.shipping?.status || 'unfulfilled',
-        o.status,
-      ].join(',')),
+      ...rows.map(o => {
+        const itemDetails = (o.lineItems || []).map(i => `${i.quantity}x ${i.productTitle} (${i.price} ${o.currency})`).join('; ');
+        return [
+          o.orderNumber,
+          `"${o.customer?.name || ''}"`,
+          `"${o.customer?.email || ''}"`,
+          `"${o.customer?.phone || ''}"`,
+          `"${o.customer?.city || ''}"`,
+          new Date(o.createdAt).toISOString(),
+          o.lineItems?.length || 0,
+          `"${itemDetails.replace(/"/g, '""')}"`,
+          o.subtotal || 0,
+          o.discount || 0,
+          o.shippingCost || 0,
+          o.taxTotal || 0,
+          o.grandTotal || 0,
+          o.currency || 'SAR',
+          o.payment?.status || 'pending',
+          o.payment?.method || '',
+          o.shipping?.status || 'unfulfilled',
+          `"${o.shipping?.courier || ''}"`,
+          `"${o.shipping?.trackingNumber || ''}"`,
+          o.status,
+        ].join(',');
+      }),
     ].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);

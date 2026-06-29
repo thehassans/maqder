@@ -104,6 +104,36 @@ router.get('/review-stats', async (req, res) => {
   }
 });
 
+// --- CATEGORY LANDING PAGE DATA ---
+router.get('/category/:slug', async (req, res) => {
+  try {
+    const tenantId = req.storeTenant._id;
+    const { slug } = req.params;
+    const category = decodeURIComponent(slug);
+
+    const [products, total, subCategories] = await Promise.all([
+      EcommerceProduct.find({ tenantId, status: 'active', category })
+        .select('title titleAr basePrice compareAtPrice images category hasVariants variants.sku variants.price variants.stockQuantity seo.slug salesCount')
+        .sort({ salesCount: -1, createdAt: -1 })
+        .limit(24)
+        .lean(),
+      EcommerceProduct.countDocuments({ tenantId, status: 'active', category }),
+      EcommerceProduct.distinct('subcategory', { tenantId, status: 'active', category }),
+    ]);
+
+    if (total === 0) return res.status(404).json({ error: 'Category not found' });
+
+    res.json({
+      category,
+      products,
+      total,
+      subCategories: subCategories.filter(Boolean),
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // --- GET SINGLE PRODUCT (by ID or slug) ---
 router.get('/products/:id', async (req, res) => {
   try {
