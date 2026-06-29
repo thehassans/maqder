@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Store, Loader2, Save, Globe, Search as SearchIcon, Percent } from 'lucide-react';
+import { Store, Loader2, Save, Globe, Search as SearchIcon, Percent, Bell, AlertTriangle } from 'lucide-react';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 
@@ -12,10 +12,16 @@ export default function EcommerceStoreSettings() {
   const [form, setForm] = useState({
     storeStatus: 'draft', storeName: '', storeNameAr: '', subdomain: '',
     currency: 'SAR', defaultTaxRate: 15, pricesIncludeTax: true, weightUnit: 'g',
+    lowStockAlertEnabled: false, lowStockAlertEmail: '', lowStockThreshold: 5,
     seo: { metaTitle: '', metaTitleAr: '', metaDescription: '', metaDescriptionAr: '', ogImage: '', faviconUrl: '', googleAnalyticsId: '', metaPixelId: '', robotsIndex: true },
   });
+  const [lowStockItems, setLowStockItems] = useState([]);
 
   useEffect(() => { fetchSettings(); }, []);
+
+  useEffect(() => {
+    api.get('/ecommerce/low-stock').then(res => setLowStockItems(res.data?.products || [])).catch(() => {});
+  }, []);
 
   const fetchSettings = async () => {
     try {
@@ -32,6 +38,9 @@ export default function EcommerceStoreSettings() {
         defaultTaxRate: e.defaultTaxRate ?? 15,
         pricesIncludeTax: e.pricesIncludeTax ?? true,
         weightUnit: e.weightUnit || 'g',
+        lowStockAlertEnabled: e.lowStockAlertEnabled ?? false,
+        lowStockAlertEmail: e.lowStockAlertEmail || '',
+        lowStockThreshold: e.lowStockThreshold ?? 5,
         seo: { ...prev.seo, ...(e.seo || {}) },
       }));
     } catch (err) {
@@ -136,6 +145,40 @@ export default function EcommerceStoreSettings() {
             <label htmlFor="pricesIncludeTax" className="text-sm font-medium text-gray-700 dark:text-gray-300">Product prices include tax</label>
           </div>
         </div>
+      </div>
+
+      {/* Low stock alerts */}
+      <div className="bg-white dark:bg-dark-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-dark-700 space-y-4">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2"><Bell className="w-5 h-5 text-amber-500" /> Low Stock Alerts</h3>
+        <div className="flex items-center gap-3">
+          <input id="lowStockAlertEnabled" type="checkbox" checked={form.lowStockAlertEnabled} onChange={e => setForm({ ...form, lowStockAlertEnabled: e.target.checked })} className="w-5 h-5 rounded accent-indigo-600" />
+          <label htmlFor="lowStockAlertEnabled" className="text-sm font-medium text-gray-700 dark:text-gray-300">Enable low stock email notifications</label>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="label">Alert Email</label>
+            <input type="email" value={form.lowStockAlertEmail} onChange={e => setForm({ ...form, lowStockAlertEmail: e.target.value })} className="input" placeholder="alerts@yourstore.com" disabled={!form.lowStockAlertEnabled} />
+          </div>
+          <div>
+            <label className="label">Default Low Stock Threshold</label>
+            <input type="number" min="0" value={form.lowStockThreshold} onChange={e => setForm({ ...form, lowStockThreshold: Number(e.target.value) })} className="input" disabled={!form.lowStockAlertEnabled} />
+          </div>
+        </div>
+        {lowStockItems.length > 0 && (
+          <div className="mt-2">
+            <p className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-amber-500" /> {lowStockItems.length} products currently low on stock</p>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {lowStockItems.slice(0, 10).map(p => (
+                <div key={p._id} className="flex items-center gap-3 p-2 rounded-lg bg-amber-50 border border-amber-100">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-gray-700 truncate">{p.title}</p>
+                    <p className="text-xs text-gray-400">{p.sku ? `SKU: ${p.sku} · ` : ''}Stock: {p.stockQuantity} / Threshold: {p.lowStockThreshold || form.lowStockThreshold}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* SEO */}

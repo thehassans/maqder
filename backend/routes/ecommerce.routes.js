@@ -2,6 +2,7 @@ import express from 'express';
 import crypto from 'crypto';
 import { protect } from '../middleware/auth.js';
 import Tenant from '../models/Tenant.js';
+import EcommerceProduct from '../models/EcommerceProduct.js';
 import { clearTenantHostCache } from '../middleware/resolveTenantByHost.js';
 
 const router = express.Router();
@@ -66,7 +67,7 @@ router.put('/settings', protect, async (req, res) => {
     const tenantId = await getTargetTenantId(req.user);
     if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
 
-    const allowed = ['storeStatus', 'storeName', 'storeNameAr', 'subdomain', 'currency', 'defaultTaxRate', 'pricesIncludeTax', 'weightUnit', 'seo'];
+    const allowed = ['storeStatus', 'storeName', 'storeNameAr', 'subdomain', 'currency', 'defaultTaxRate', 'pricesIncludeTax', 'weightUnit', 'seo', 'lowStockAlertEnabled', 'lowStockAlertEmail', 'lowStockThreshold'];
     const update = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) update[`ecommerce.${key}`] = req.body[key];
@@ -78,6 +79,31 @@ router.put('/settings', protect, async (req, res) => {
     res.json({ slug: tenant.slug, ecommerce: sanitizeEcommerce(tenant.ecommerce) });
   } catch (error) {
     res.status(400).json({ error: error.message });
+  }
+});
+
+// --- LOW STOCK CHECK ---
+router.get('/low-stock', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+
+    const tenant = await Tenant.findById(tenantId).select('ecommerce.lowStockThreshold').lean();
+    const defaultThreshold = tenant?.ecommerce?.lowStockThreshold || 5;
+
+    const products = await EcommerceProduct.find({
+      tenantId,
+      status: 'active',
+      trackInventory: true,
+      $expr: { $lte: [
+        { $ifNull: ['$stockQuantity', 0] },
+        { $ifNull: ['$lowStockThreshold', defaultThreshold] }
+      ]},
+    }).select('title sku stockQuantity lowStockThreshold images category').lean();
+
+    res.json({ products, count: products.length, threshold: defaultThreshold });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 

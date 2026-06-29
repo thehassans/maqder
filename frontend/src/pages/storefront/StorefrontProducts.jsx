@@ -185,6 +185,11 @@ export default function StorefrontProducts() {
                   onMouseLeave={e => { e.currentTarget.querySelector('.card-thumbs')?.style.setProperty('opacity', '0'); const img = e.currentTarget.querySelector('.card-main-img'); if (img && images[0]) img.src = images[0].url; }}>
                   <Link to={`/store/products/${slug}`} style={{ textDecoration: 'none', display: 'block' }}>
                     <div style={{ aspectRatio: '1', background: c('borderColor', '#e5e7eb'), overflow: 'hidden', position: 'relative' }}>
+                      {p.compareAtPrice && p.compareAtPrice > p.basePrice && (
+                        <div style={{ position: 'absolute', top: '8px', left: '8px', background: c('salePriceColor', '#dc2626'), color: '#fff', fontSize: '11px', fontWeight: 'bold', padding: '3px 8px', borderRadius: '6px', zIndex: 3 }}>
+                          -{Math.round((1 - p.basePrice / p.compareAtPrice) * 100)}%
+                        </div>
+                      )}
                       {images[0]?.url ? (
                         <img src={images[0].url} alt={p.title} className="card-main-img" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
