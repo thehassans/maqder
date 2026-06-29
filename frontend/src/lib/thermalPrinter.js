@@ -4,7 +4,10 @@
  */
 
 export const DEFAULT_THERMAL_SETTINGS = {
+  printerModel: 'generic_80', // printer model preset key
   paperWidth: 80,       // 58 or 80 (mm)
+  charsPerLine: 48,     // character columns (32 for 58mm, 48 for 80mm)
+  dpi: 203,             // print resolution (203 or 300)
   fontSize: 11,         // base font size in px
   lineHeight: 1.4,      // line height multiplier
   padding: 4,           // padding in mm
@@ -17,7 +20,132 @@ export const DEFAULT_THERMAL_SETTINGS = {
   cutAtEnd: true,       // send paper cut command (for ESC/POS)
   copies: 1,            // number of receipt copies
   encoding: 'utf8',     // text encoding for ESC/POS
+  darkness: 2,          // print darkness 1-5 (ESC/POS)
+  beepOnComplete: false, // beep after print
 };
+
+/**
+ * Printer model presets.
+ * Each preset auto-configures paper width, chars per line, DPI, and encoding.
+ */
+export const PRINTER_MODELS = {
+  generic_80: {
+    label: 'Generic 80mm Thermal',
+    labelAr: 'طابعة حرارية 80mm',
+    paperWidth: 80,
+    charsPerLine: 48,
+    dpi: 203,
+    encoding: 'utf8',
+  },
+  generic_58: {
+    label: 'Generic 58mm Thermal',
+    labelAr: 'طابعة حرارية 58mm',
+    paperWidth: 58,
+    charsPerLine: 32,
+    dpi: 203,
+    encoding: 'utf8',
+  },
+  epson_tm_t20: {
+    label: 'Epson TM-T20 (80mm)',
+    labelAr: 'Epson TM-T20 (80mm)',
+    paperWidth: 80,
+    charsPerLine: 48,
+    dpi: 203,
+    encoding: 'utf8',
+  },
+  epson_tm_t88: {
+    label: 'Epson TM-T88VI (80mm)',
+    labelAr: 'Epson TM-T88VI (80mm)',
+    paperWidth: 80,
+    charsPerLine: 48,
+    dpi: 300,
+    encoding: 'utf8',
+  },
+  star_tsp100: {
+    label: 'Star TSP100III (80mm)',
+    labelAr: 'Star TSP100III (80mm)',
+    paperWidth: 80,
+    charsPerLine: 48,
+    dpi: 203,
+    encoding: 'utf8',
+  },
+  star_tsp143: {
+    label: 'Star TSP143IIIW (80mm)',
+    labelAr: 'Star TSP143IIIW (80mm)',
+    paperWidth: 80,
+    charsPerLine: 48,
+    dpi: 203,
+    encoding: 'utf8',
+  },
+  xprinter_xp58: {
+    label: 'Xprinter XP-58IIH (58mm)',
+    labelAr: 'Xprinter XP-58IIH (58mm)',
+    paperWidth: 58,
+    charsPerLine: 32,
+    dpi: 203,
+    encoding: 'cp864',
+  },
+  xprinter_xp80: {
+    label: 'Xprinter XP-80IIH (80mm)',
+    labelAr: 'Xprinter XP-80IIH (80mm)',
+    paperWidth: 80,
+    charsPerLine: 48,
+    dpi: 203,
+    encoding: 'cp864',
+  },
+  gprinter_gp58: {
+    label: 'Goojprt GP-58 (58mm)',
+    labelAr: 'Goojprt GP-58 (58mm)',
+    paperWidth: 58,
+    charsPerLine: 32,
+    dpi: 203,
+    encoding: 'cp864',
+  },
+  gprinter_gp80: {
+    label: 'Goojprt GP-80 (80mm)',
+    labelAr: 'Goojprt GP-80 (80mm)',
+    paperWidth: 80,
+    charsPerLine: 48,
+    dpi: 203,
+    encoding: 'cp864',
+  },
+  citizen_cts310: {
+    label: 'Citizen CT-S310II (80mm)',
+    labelAr: 'Citizen CT-S310II (80mm)',
+    paperWidth: 80,
+    charsPerLine: 48,
+    dpi: 203,
+    encoding: 'utf8',
+  },
+  rongta_rp80: {
+    label: 'Rongta RP-80USE (80mm)',
+    labelAr: 'Rongta RP-80USE (80mm)',
+    paperWidth: 80,
+    charsPerLine: 48,
+    dpi: 203,
+    encoding: 'cp864',
+  },
+};
+
+/**
+ * Apply a printer model preset to thermal settings.
+ * Updates paperWidth, charsPerLine, dpi, and encoding from the model.
+ * @param {string} modelKey - Key from PRINTER_MODELS.
+ * @param {object} currentThermal - Current thermal settings.
+ * @returns {object} Updated thermal settings.
+ */
+export function applyPrinterModel(modelKey, currentThermal) {
+  const model = PRINTER_MODELS[modelKey];
+  if (!model) return currentThermal;
+  return {
+    ...currentThermal,
+    printerModel: modelKey,
+    paperWidth: model.paperWidth,
+    charsPerLine: model.charsPerLine,
+    dpi: model.dpi,
+    encoding: model.encoding,
+  };
+}
 
 /**
  * Get thermal printer settings from tenant, merged with defaults.

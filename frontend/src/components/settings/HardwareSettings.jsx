@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Printer, Box, Camera, Save, Receipt } from 'lucide-react';
+import { Printer, Box, Camera, Save, Receipt, Wifi, Volume2 } from 'lucide-react';
 import { useTranslation } from '../../lib/translations';
-import { DEFAULT_THERMAL_SETTINGS } from '../../lib/thermalPrinter';
+import { DEFAULT_THERMAL_SETTINGS, PRINTER_MODELS, applyPrinterModel } from '../../lib/thermalPrinter';
+import api from '../../lib/api';
 
 export default function HardwareSettings({ tenant, language, onSave, isSaving }) {
   const { t } = useTranslation(language);
@@ -44,6 +45,29 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
     onSave({ ...hardware }, thermal);
   };
 
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState(null);
+
+  const handleTestConnection = async () => {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const res = await api.post('/tenants/test-printer', {
+        ipAddress: hardware.printerIpAddress,
+        port: hardware.printerPort,
+      });
+      setTestResult({ success: true, message: res.data?.message || 'Connection successful' });
+    } catch (err) {
+      setTestResult({ success: false, message: err.response?.data?.error || err.message || 'Connection failed' });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const handleModelChange = (modelKey) => {
+    setThermal(prev => applyPrinterModel(modelKey, prev));
+  };
+
   const Toggle = ({ name, label, desc }) => (
     <label className="flex items-center justify-between p-3 bg-gray-50 dark:bg-dark-700/50 rounded-xl cursor-pointer">
       <div>
@@ -64,6 +88,37 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
           <Printer className="w-5 h-5 text-indigo-500" />
           {language === 'ar' ? 'إعدادات الطابعة' : 'Printer Settings'}
         </h3>
+
+        {/* Printer Model Selection */}
+        <div className="mb-6">
+          <label className="label">{language === 'ar' ? 'موديل الطابعة' : 'Printer Model'}</label>
+          <select
+            value={thermal.printerModel || 'generic_80'}
+            onChange={(e) => handleModelChange(e.target.value)}
+            className="select"
+          >
+            {Object.entries(PRINTER_MODELS).map(([key, model]) => (
+              <option key={key} value={key}>
+                {language === 'ar' ? model.labelAr : model.label}
+              </option>
+            ))}
+          </select>
+          <div className="mt-2 flex flex-wrap gap-2 text-xs">
+            <span className="px-2 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg font-semibold">
+              {thermal.paperWidth}mm
+            </span>
+            <span className="px-2 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg font-semibold">
+              {thermal.charsPerLine} {language === 'ar' ? 'عمود' : 'cols'}
+            </span>
+            <span className="px-2 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg font-semibold">
+              {thermal.dpi} DPI
+            </span>
+            <span className="px-2 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg font-semibold">
+              {thermal.encoding}
+            </span>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="label">{language === 'ar' ? 'نوع الطابعة' : 'Printer Type'}</label>
@@ -71,6 +126,7 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
               <option value="none">{language === 'ar' ? 'بدون (طباعة المتصفح)' : 'None (Browser Print)'}</option>
               <option value="network">{language === 'ar' ? 'طابعة شبكة (ESC/POS)' : 'Network Printer (ESC/POS)'}</option>
               <option value="usb">{language === 'ar' ? 'طابعة USB' : 'USB Printer'}</option>
+              <option value="bluetooth">{language === 'ar' ? 'طابعة بلوتوث' : 'Bluetooth Printer'}</option>
             </select>
           </div>
 
@@ -84,7 +140,36 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
                 <label className="label">{language === 'ar' ? 'منفذ الطابعة' : 'Printer Port'}</label>
                 <input type="number" name="printerPort" value={hardware.printerPort} onChange={handleChange} className="input" placeholder="9100" />
               </div>
+              <div className="md:col-span-2">
+                <button
+                  type="button"
+                  onClick={handleTestConnection}
+                  disabled={testing}
+                  className="btn btn-outline text-sm"
+                >
+                  {testing ? (
+                    <><div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> {language === 'ar' ? 'جاري الاختبار...' : 'Testing...'}</>
+                  ) : (
+                    <><Wifi className="w-4 h-4" /> {language === 'ar' ? 'اختبار الاتصال' : 'Test Connection'}</>
+                  )}
+                </button>
+                {testResult && (
+                  <div className={`mt-2 text-sm font-semibold ${testResult.success ? 'text-green-600' : 'text-red-600'}`}>
+                    {testResult.success ? '✓ ' : '✗ '}{testResult.message}
+                  </div>
+                )}
+              </div>
             </>
+          )}
+
+          {hardware.receiptPrinterType === 'bluetooth' && (
+            <div className="md:col-span-2">
+              <label className="label">{language === 'ar' ? 'اسم جهاز البلوتوث' : 'Bluetooth Device Name'}</label>
+              <input type="text" name="bluetoothDeviceName" value={hardware.bluetoothDeviceName || ''} onChange={handleChange} className="input" placeholder="" />
+              <p className="text-xs text-gray-500 mt-1">
+                {language === 'ar' ? 'تأكد من اقتران الطابعة مع الجهاز أولاً' : 'Make sure the printer is paired with the device first'}
+              </p>
+            </div>
           )}
         </div>
       </div>
@@ -107,7 +192,7 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setThermal(prev => ({ ...prev, paperWidth: 58 }))}
+                onClick={() => setThermal(prev => ({ ...prev, paperWidth: 58, charsPerLine: 32 }))}
                 className={`flex-1 py-3 rounded-xl font-bold text-sm border-2 transition-all ${thermal.paperWidth === 58 ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-gray-200 text-gray-500 hover:border-amber-300'}`}
               >
                 58mm
@@ -115,13 +200,21 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
               </button>
               <button
                 type="button"
-                onClick={() => setThermal(prev => ({ ...prev, paperWidth: 80 }))}
+                onClick={() => setThermal(prev => ({ ...prev, paperWidth: 80, charsPerLine: 48 }))}
                 className={`flex-1 py-3 rounded-xl font-bold text-sm border-2 transition-all ${thermal.paperWidth === 80 ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-gray-200 text-gray-500 hover:border-amber-300'}`}
               >
                 80mm
                 <span className="block text-[10px] font-normal opacity-60">{language === 'ar' ? 'قياسي' : 'Standard'}</span>
               </button>
             </div>
+          </div>
+
+          <div>
+            <label className="label">{language === 'ar' ? 'عدد الأعمدة' : 'Characters per Line'}</label>
+            <input type="number" name="charsPerLine" min="24" max="64" value={thermal.charsPerLine} onChange={handleThermalChange} className="input" />
+            <p className="text-xs text-gray-500 mt-1">
+              {language === 'ar' ? '32 لورق 58mm، 48 لورق 80mm' : '32 for 58mm, 48 for 80mm'}
+            </p>
           </div>
 
           <div>
@@ -156,6 +249,24 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
           </div>
 
           <div>
+            <label className="label">{language === 'ar' ? 'دقة الطباعة (DPI)' : 'Print Resolution (DPI)'}</label>
+            <select name="dpi" value={thermal.dpi} onChange={handleThermalChange} className="select">
+              <option value={203}>203 DPI — {language === 'ar' ? 'عادية' : 'Standard'}</option>
+              <option value={300}>300 DPI — {language === 'ar' ? 'عالية' : 'High'}</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="label">{language === 'ar' ? 'كثافة الطباعة' : 'Print Darkness'}</label>
+            <input type="range" name="darkness" min="1" max="5" value={thermal.darkness} onChange={handleThermalChange} className="w-full accent-amber-500" />
+            <div className="flex justify-between text-xs text-gray-400 mt-1">
+              <span>{language === 'ar' ? 'فاتح' : 'Light'}</span>
+              <span className="font-bold text-amber-600">{thermal.darkness}/5</span>
+              <span>{language === 'ar' ? 'داكن' : 'Dark'}</span>
+            </div>
+          </div>
+
+          <div>
             <label className="label">{language === 'ar' ? 'عدد النسخ' : 'Receipt Copies'}</label>
             <input type="number" name="copies" min="1" max="5" value={thermal.copies} onChange={handleThermalChange} className="input" />
           </div>
@@ -177,6 +288,7 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
           <Toggle name="showQrCode" label={language === 'ar' ? 'إظهار رمز QR' : 'Show QR Code'} desc={language === 'ar' ? 'طباعة رمز ZATCA QR' : 'Print ZATCA QR code'} />
           <Toggle name="showFooter" label={language === 'ar' ? 'إظهار التذييل' : 'Show Footer'} desc={language === 'ar' ? 'رسالة شكر في أسفل الإيصال' : 'Thank you message at bottom'} />
           <Toggle name="cutAtEnd" label={language === 'ar' ? 'قص الورق في النهاية' : 'Paper Cut at End'} desc={language === 'ar' ? 'إرسال أمر قص الورق (ESC/POS)' : 'Send paper cut command (ESC/POS)'} />
+          <Toggle name="beepOnComplete" label={language === 'ar' ? 'صوت تنبيه بعد الطباعة' : 'Beep after print'} desc={language === 'ar' ? 'إرسال صوت تنبيه (ESC/POS)' : 'Send beep command (ESC/POS)'} />
         </div>
 
         {thermal.showFooter && (
