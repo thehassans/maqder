@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Package, Save, Loader2, X, Trash2, ArrowLeft, Plus, AlertCircle, CheckCircle, Archive, Eye, Image as ImageIcon, Tag } from 'lucide-react';
+import { Package, Save, Loader2, X, Trash2, ArrowLeft, Plus, AlertCircle, CheckCircle, Archive, Eye, Image as ImageIcon, Tag, Copy } from 'lucide-react';
 import api from '../../lib/api';
 
 const emptyVariant = () => ({
@@ -88,6 +88,26 @@ export default function EcommerceProductDetail() {
     }
   };
 
+  const handleClone = async () => {
+    setSaving(true);
+    setError('');
+    try {
+      const payload = { ...product, title: `${product.title} (Copy)`, status: 'draft', sku: '' };
+      delete payload._id;
+      delete payload.createdAt;
+      delete payload.updatedAt;
+      delete payload.__v;
+      if (payload.variants) {
+        payload.variants = payload.variants.map(v => { const { _id, ...rest } = v; return rest; });
+      }
+      const res = await api.post('/ecommerce/products', payload);
+      navigate(`/app/dashboard/ecommerce/products/${res.data._id}`);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to clone product');
+      setSaving(false);
+    }
+  };
+
   const handleStatusToggle = async () => {
     const newStatus = product.status === 'active' ? 'archived' : 'active';
     try {
@@ -144,6 +164,9 @@ export default function EcommerceProductDetail() {
           </button>
           <button onClick={() => setShowDelete(true)} className="flex items-center gap-2 px-4 py-2 rounded-full border border-red-200 text-red-600 font-bold text-sm hover:bg-red-50">
             <Trash2 className="w-4 h-4" /> Delete
+          </button>
+          <button onClick={handleClone} disabled={saving} className="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 dark:border-dark-600 font-bold text-sm hover:bg-gray-50 dark:hover:bg-dark-700 disabled:opacity-50">
+            <Copy className="w-4 h-4" /> Duplicate
           </button>
           <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-2 rounded-full font-bold hover:bg-indigo-700 disabled:opacity-50 text-sm">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}

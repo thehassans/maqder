@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Loader2, Save, X, AlertCircle, CheckCircle, Truck, CreditCard, MapPin, User, Package, Clock, Ban } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, X, AlertCircle, CheckCircle, Truck, CreditCard, MapPin, User, Package, Clock, Ban, Printer } from 'lucide-react';
 import api from '../../lib/api';
 
 const STATUS_STYLES = {
@@ -153,8 +153,18 @@ export default function EcommerceOrderDetail() {
           </div>
         </div>
         {!isTerminal && order.status !== 'cancelled' && (
-          <button onClick={() => setShowCancel(true)} className="flex items-center gap-2 px-4 py-2 rounded-full border border-red-200 text-red-600 font-bold text-sm hover:bg-red-50">
-            <Ban className="w-4 h-4" /> Cancel Order
+          <div className="flex items-center gap-2">
+            <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 dark:border-dark-600 font-bold text-sm hover:bg-gray-50 dark:hover:bg-dark-700">
+              <Printer className="w-4 h-4" /> Print Invoice
+            </button>
+            <button onClick={() => setShowCancel(true)} className="flex items-center gap-2 px-4 py-2 rounded-full border border-red-200 text-red-600 font-bold text-sm hover:bg-red-50">
+              <Ban className="w-4 h-4" /> Cancel Order
+            </button>
+          </div>
+        )}
+        {isTerminal && (
+          <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 dark:border-dark-600 font-bold text-sm hover:bg-gray-50 dark:hover:bg-dark-700">
+            <Printer className="w-4 h-4" /> Print Invoice
           </button>
         )}
       </div>

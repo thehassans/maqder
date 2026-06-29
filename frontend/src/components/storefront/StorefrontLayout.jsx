@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Search, ShoppingCart, X, Menu, Instagram, Twitter, Facebook, Heart } from 'lucide-react';
 import storeApi from '../../lib/storeApi';
@@ -100,7 +100,34 @@ export default function StorefrontLayout({ children }) {
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) navigate(`/store/products?search=${encodeURIComponent(searchQuery)}`);
+    setShowSuggestions(false);
   };
+
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchRef = useRef(null);
+  const debounceRef = useRef(null);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (searchQuery.trim().length < 2) { setSuggestions([]); return; }
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await storeApi.get(`/products?search=${encodeURIComponent(searchQuery)}&limit=5`);
+        setSuggestions(res.data.products || []);
+        setShowSuggestions(true);
+      } catch { setSuggestions([]); }
+    }, 300);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) setShowSuggestions(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   return (
     <div style={{ backgroundColor: c('background', '#ffffff'), color: c('text', '#111827'), minHeight: '100vh', fontFamily: theme.typography?.bodyFont || 'Inter, sans-serif' }}>
@@ -127,18 +154,49 @@ export default function StorefrontLayout({ children }) {
 
           {/* Search */}
           {header.showSearch !== false && (
-            <form onSubmit={handleSearch} style={{ flex: 1, maxWidth: '400px', display: 'none', ['@media(min-width:768px)']: { display: 'flex' } }} className="hidden md:flex">
-              <input
-                type="text"
-                placeholder="Search products..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                style={{ flex: 1, padding: '8px 12px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '8px 0 0 8px', fontSize: '14px', outline: 'none' }}
-              />
-              <button type="submit" style={{ padding: '8px 16px', backgroundColor: c('primary', '#4f46e5'), color: '#fff', border: 'none', borderRadius: '0 8px 8px 0', cursor: 'pointer' }}>
-                <Search size={16} />
-              </button>
-            </form>
+            <div ref={searchRef} style={{ flex: 1, maxWidth: '400px', position: 'relative' }} className="hidden md:block">
+              <form onSubmit={handleSearch} style={{ display: 'flex' }}>
+                <input
+                  type="text"
+                  placeholder="Search products..."
+                  value={searchQuery}
+                  onChange={e => { setSearchQuery(e.target.value); setShowSuggestions(true); }}
+                  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                  style={{ flex: 1, padding: '8px 12px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '8px 0 0 8px', fontSize: '14px', outline: 'none' }}
+                />
+                <button type="submit" style={{ padding: '8px 16px', backgroundColor: c('primary', '#4f46e5'), color: '#fff', border: 'none', borderRadius: '0 8px 8px 0', cursor: 'pointer' }}>
+                  <Search size={16} />
+                </button>
+              </form>
+              {/* Search suggestions */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div style={{
+                  position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '4px',
+                  background: '#fff', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '8px',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.1)', zIndex: 200, overflow: 'hidden',
+                }}>
+                  {suggestions.map(p => {
+                    const slug = p.seo?.slug || p._id;
+                    return (
+                      <Link key={p._id} to={`/store/products/${slug}`} onClick={() => { setShowSuggestions(false); setSearchQuery(''); }}
+                        style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', textDecoration: 'none', borderBottom: '1px solid #f3f4f6' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '6px', overflow: 'hidden', background: '#f3f4f6', flexShrink: 0 }}>
+                          {p.images?.[0]?.url ? <img src={p.images[0].url} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: '13px', fontWeight: 'bold', margin: 0, color: c('text', '#111'), overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</p>
+                          <p style={{ fontSize: '12px', color: c('priceColor', '#059669'), fontWeight: 'bold', margin: 0 }}>{p.basePrice} {storeInfo?.currency || 'SAR'}</p>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                  <Link to={`/store/products?search=${encodeURIComponent(searchQuery)}`} onClick={() => setShowSuggestions(false)}
+                    style={{ display: 'block', padding: '8px 12px', textAlign: 'center', fontSize: '13px', fontWeight: 'bold', color: c('primary', '#4f46e5'), textDecoration: 'none' }}>
+                    See all results →
+                  </Link>
+                </div>
+              )}
+            </div>
           )}
 
           {/* Nav */}
@@ -241,6 +299,8 @@ export default function StorefrontLayout({ children }) {
             <Link to="/store/products" style={{ display: 'block', color: c('footerText', '#9ca3af'), textDecoration: 'none', fontSize: '13px', marginBottom: '4px' }}>All Products</Link>
             <Link to="/store/wishlist" style={{ display: 'block', color: c('footerText', '#9ca3af'), textDecoration: 'none', fontSize: '13px', marginBottom: '4px' }}>Wishlist</Link>
             <Link to="/store/track-order" style={{ display: 'block', color: c('footerText', '#9ca3af'), textDecoration: 'none', fontSize: '13px', marginBottom: '4px' }}>Track Order</Link>
+            <Link to="/store/privacy" style={{ display: 'block', color: c('footerText', '#9ca3af'), textDecoration: 'none', fontSize: '13px', marginBottom: '4px' }}>Privacy Policy</Link>
+            <Link to="/store/terms" style={{ display: 'block', color: c('footerText', '#9ca3af'), textDecoration: 'none', fontSize: '13px', marginBottom: '4px' }}>Terms &amp; Conditions</Link>
           </div>
           {footer.showContact !== false && (
             <div>
