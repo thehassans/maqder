@@ -4,6 +4,7 @@ import EcommerceProduct from '../models/EcommerceProduct.js';
 import EcommerceOrder from '../models/EcommerceOrder.js';
 import { resolveTenantByHost } from '../middleware/resolveTenantByHost.js';
 import { createCheckoutSession } from '../services/paymentService.js';
+import { fireServerSideEvents, getPublicPixelConfig } from '../services/pixelService.js';
 
 const router = express.Router();
 
@@ -25,6 +26,7 @@ router.get('/info', async (req, res) => {
       seo: ecommerce.seo || {},
       logo: theme.header?.logoImageUrl || '',
       logoText: theme.header?.logoText || ecommerce.storeName || tenant.name,
+      pixels: getPublicPixelConfig(ecommerce.pixels),
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -213,6 +215,15 @@ router.post('/orders', async (req, res) => {
     });
 
     await order.save();
+
+    // Fire server-side pixel events (CAPI)
+    const pixelConfig = ecommerce.pixels || {};
+    fireServerSideEvents('Purchase', {
+      eventId: `purchase_${order.orderNumber}`,
+      customData: { value: order.grandTotal, currency: order.currency, content_ids: processedItems.map(i => i.productId.toString()), content_type: 'product', num_items: processedItems.length },
+      userData: { email: order.customer.email, phone: order.customer.phone },
+    }, pixelConfig).catch(() => {});
+
     res.status(201).json({ order, orderId: order._id, orderNumber: order.orderNumber });
   } catch (error) {
     res.status(400).json({ error: error.message });

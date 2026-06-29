@@ -40,6 +40,9 @@ const sanitizeEcommerce = (ecom) => {
       c.apiSecret = c.apiSecret ? mask(c.apiSecret) : '';
     }
   }
+  // Mask CAPI tokens
+  if (clone.pixels?.snapchatCapi?.token) clone.pixels.snapchatCapi.token = mask(clone.pixels.snapchatCapi.token);
+  if (clone.pixels?.tiktokCapi?.accessToken) clone.pixels.tiktokCapi.accessToken = mask(clone.pixels.tiktokCapi.accessToken);
   return clone;
 };
 
@@ -242,6 +245,55 @@ router.put('/couriers', protect, async (req, res) => {
 
     await tenant.save();
     res.json(sanitizeEcommerce(tenant.ecommerce).couriers);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// --- PIXELS (tracking pixel configuration) ---
+router.put('/pixels', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    const tenant = await Tenant.findById(tenantId);
+    if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+    tenant.ecommerce = tenant.ecommerce || {};
+    tenant.ecommerce.pixels = tenant.ecommerce.pixels || {};
+
+    const body = req.body || {};
+    const pixelKeys = ['googleAnalytics', 'facebookPixel', 'tiktokPixel', 'snapchatPixel', 'twitterPixel', 'googleAds', 'snapchatCapi', 'tiktokCapi'];
+
+    for (const key of pixelKeys) {
+      if (!body[key]) continue;
+      const incoming = body[key];
+      const current = tenant.ecommerce.pixels[key] || {};
+      current.enabled = incoming.enabled ?? current.enabled;
+      if (key === 'googleAnalytics') current.measurementId = incoming.measurementId ?? current.measurementId;
+      if (key === 'facebookPixel') current.pixelId = incoming.pixelId ?? current.pixelId;
+      if (key === 'tiktokPixel') current.pixelId = incoming.pixelId ?? current.pixelId;
+      if (key === 'snapchatPixel') current.pixelId = incoming.pixelId ?? current.pixelId;
+      if (key === 'twitterPixel') current.pixelId = incoming.pixelId ?? current.pixelId;
+      if (key === 'googleAds') {
+        current.conversionId = incoming.conversionId ?? current.conversionId;
+        current.conversionLabel = incoming.conversionLabel ?? current.conversionLabel;
+      }
+      if (key === 'snapchatCapi') {
+        current.pixelId = incoming.pixelId ?? current.pixelId;
+        if (incoming.token && !incoming.token.startsWith('••••')) current.token = incoming.token;
+      }
+      if (key === 'tiktokCapi') {
+        current.pixelCode = incoming.pixelCode ?? current.pixelCode;
+        if (incoming.accessToken && !incoming.accessToken.startsWith('••••')) current.accessToken = incoming.accessToken;
+      }
+      tenant.ecommerce.pixels[key] = current;
+    }
+
+    await tenant.save();
+    // Sanitize CAPI tokens before returning
+    const pixels = JSON.parse(JSON.stringify(tenant.ecommerce.pixels));
+    if (pixels.snapchatCapi?.token) pixels.snapchatCapi.token = mask(pixels.snapchatCapi.token);
+    if (pixels.tiktokCapi?.accessToken) pixels.tiktokCapi.accessToken = mask(pixels.tiktokCapi.accessToken);
+    res.json(pixels);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }

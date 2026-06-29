@@ -175,6 +175,44 @@ const ecommerceSchema = new mongoose.Schema({
     metaPixelId: { type: String, default: '' },
     robotsIndex: { type: Boolean, default: true },
   },
+  // Tracking pixels — injected into storefront <head> and fired on events
+  pixels: {
+    googleAnalytics: {
+      enabled: { type: Boolean, default: false },
+      measurementId: { type: String, default: '' }, // e.g. G-XXXXXXXXXX
+    },
+    facebookPixel: {
+      enabled: { type: Boolean, default: false },
+      pixelId: { type: String, default: '' },
+    },
+    tiktokPixel: {
+      enabled: { type: Boolean, default: false },
+      pixelId: { type: String, default: '' },
+    },
+    snapchatPixel: {
+      enabled: { type: Boolean, default: false },
+      pixelId: { type: String, default: '' },
+    },
+    twitterPixel: {
+      enabled: { type: Boolean, default: false },
+      pixelId: { type: String, default: '' },
+    },
+    googleAds: {
+      enabled: { type: Boolean, default: false },
+      conversionId: { type: String, default: '' }, // e.g. AW-XXXXXXXXX
+      conversionLabel: { type: String, default: '' },
+    },
+    snapchatCapi: {
+      enabled: { type: Boolean, default: false },
+      pixelId: { type: String, default: '' },
+      token: { type: String, default: '' },
+    },
+    tiktokCapi: {
+      enabled: { type: Boolean, default: false },
+      pixelCode: { type: String, default: '' },
+      accessToken: { type: String, default: '' },
+    },
+  },
   // Plug-and-play payment providers
   payments: {
     defaultProvider: { type: String, enum: ['', 'moyasar', 'tap', 'paytabs', 'stripe', 'cod'], default: '' },

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Loader2, CheckCircle, AlertCircle, ShoppingCart } from 'lucide-react';
 import storeApi from '../../lib/storeApi';
 import { useCart } from '../../store/storefrontCart';
+import { firePixelEvent } from '../../components/storefront/StorefrontLayout';
 
 export default function StorefrontCheckout() {
   const navigate = useNavigate();
@@ -11,12 +12,48 @@ export default function StorefrontCheckout() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('cod');
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState(null);
+  const [couponError, setCouponError] = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
   const [form, setForm] = useState({
     name: '', email: '', phone: '',
     addressLine1: '', addressLine2: '', city: '', region: '', postalCode: '', country: 'Saudi Arabia', notes: '',
   });
 
   const update = (key, value) => setForm(prev => ({ ...prev, [key]: value }));
+
+  // Fire InitiateCheckout pixel event
+  useEffect(() => {
+    if (items.length > 0) {
+      firePixelEvent('InitiateCheckout', {
+        content_ids: items.map(i => i.productId),
+        num_items: items.reduce((s, i) => s + i.quantity, 0),
+        value: cartTotal,
+        currency: 'SAR',
+      });
+    }
+  }, []); // fire once on mount
+
+  const handleApplyCoupon = async (e) => {
+    e.preventDefault();
+    if (!couponCode.trim()) return;
+    setCouponLoading(true);
+    setCouponError('');
+    try {
+      const res = await storeApi.post('/coupons/validate', { code: couponCode, subtotal: cartTotal });
+      setAppliedCoupon(res.data);
+    } catch (err) {
+      setCouponError(err.response?.data?.error || 'Invalid coupon');
+      setAppliedCoupon(null);
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const discountAmount = appliedCoupon?.discountAmount || 0;
+  const freeShipping = appliedCoupon?.freeShipping || false;
+  const finalTotal = Math.max(0, cartTotal - discountAmount);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -163,11 +200,23 @@ export default function StorefrontCheckout() {
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '4px' }}>
               <span>Subtotal</span><span style={{ fontWeight: 'bold' }}>{cartTotal} SAR</span>
             </div>
+            {/* Coupon input */}
+            <form onSubmit={handleApplyCoupon} style={{ display: 'flex', gap: '6px', margin: '8px 0' }}>
+              <input value={couponCode} onChange={e => setCouponCode(e.target.value)} placeholder="Coupon code" style={{ flex: 1, padding: '8px 10px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '13px' }} />
+              <button type="submit" disabled={couponLoading} style={{ padding: '8px 14px', background: '#6b7280', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}>{couponLoading ? '...' : 'Apply'}</button>
+            </form>
+            {couponError && <p style={{ fontSize: '12px', color: '#dc2626', margin: '0 0 8px' }}>{couponError}</p>}
+            {appliedCoupon && <p style={{ fontSize: '12px', color: '#059669', margin: '0 0 8px', fontWeight: 'bold' }}>✓ {appliedCoupon.code} applied — {appliedCoupon.type === 'percentage' ? `${appliedCoupon.value}% off` : appliedCoupon.type === 'fixed' ? `${appliedCoupon.value} SAR off` : 'Free shipping'}</p>}
+            {discountAmount > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '4px', color: '#059669' }}>
+                <span>Discount</span><span style={{ fontWeight: 'bold' }}>-{discountAmount} SAR</span>
+              </div>
+            )}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '4px', color: '#6b7280' }}>
-              <span>Shipping</span><span>Calculated at checkout</span>
+              <span>Shipping</span><span>{freeShipping ? 'Free' : 'Calculated at checkout'}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '18px', fontWeight: 'bold', paddingTop: '12px', borderTop: '1px solid #e5e7eb', marginTop: '8px' }}>
-              <span>Total</span><span style={{ color: '#059669' }}>{cartTotal} SAR</span>
+              <span>Total</span><span style={{ color: '#059669' }}>{finalTotal} SAR</span>
             </div>
             <button type="submit" disabled={loading} style={{
               width: '100%', marginTop: '20px', padding: '14px', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '8px',

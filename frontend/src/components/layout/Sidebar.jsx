@@ -169,6 +169,9 @@ export default function Sidebar() {
         { path: '/app/dashboard/ecommerce/domains', icon: Globe, label: language === 'ar' ? 'النطاقات' : 'Domains' },
         { path: '/app/dashboard/ecommerce/payments', icon: CreditCard, label: language === 'ar' ? 'بوابات الدفع' : 'Payments' },
         { path: '/app/dashboard/ecommerce/couriers', icon: Truck, label: language === 'ar' ? 'شركات الشحن' : 'Couriers' },
+        { path: '/app/dashboard/ecommerce/pixels', icon: BarChart3, label: language === 'ar' ? 'بيكسلات التتبع' : 'Tracking Pixels' },
+        { path: '/app/dashboard/ecommerce/coupons', icon: Tag, label: language === 'ar' ? 'كوبونات الخصم' : 'Coupons' },
+        { path: '/app/dashboard/ecommerce/reviews', icon: MessageSquare, label: language === 'ar' ? 'التقييمات' : 'Reviews' },
         { path: '/app/dashboard/ecommerce/settings', icon: Settings, label: language === 'ar' ? 'الإعدادات' : 'Store Settings' },
       ]
     },

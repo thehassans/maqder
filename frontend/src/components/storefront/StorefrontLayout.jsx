@@ -1,19 +1,91 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Search, ShoppingCart, X, Menu, Instagram, Twitter, Facebook } from 'lucide-react';
 import storeApi from '../../lib/storeApi';
 import { useCart } from '../../store/storefrontCart';
+
+// Inject pixel scripts into <head> based on store config
+function injectPixelScripts(pixels) {
+  if (!pixels) return;
+  const existing = document.getElementById('maqder-pixel-scripts');
+  if (existing) return; // already injected
+
+  let html = '';
+  // Google Analytics 4
+  if (pixels.googleAnalytics?.enabled && pixels.googleAnalytics?.measurementId) {
+    const id = pixels.googleAnalytics.measurementId;
+    html += `<script async src="https://www.googletagmanager.com/gtag/js?id=${id}"></script>`;
+    html += `<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${id}');</script>`;
+  }
+  // Facebook Pixel
+  if (pixels.facebookPixel?.enabled && pixels.facebookPixel?.pixelId) {
+    const id = pixels.facebookPixel.pixelId;
+    html += `<script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${id}');fbq('track','PageView');</script>`;
+  }
+  // TikTok Pixel
+  if (pixels.tiktokPixel?.enabled && pixels.tiktokPixel?.pixelId) {
+    const id = pixels.tiktokPixel.pixelId;
+    html += `<script>!function(w,d,t){w.TiktokAnalyticsObject=t;var ttq=w[t]=w[t]||[];ttq.methods=["page","track","identify","instances","debug","on","off","once","ready","alias","group","enableCookie","disableCookie"],ttq.setAndDefer=function(t,e){t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}};for(var i=0;i<ttq.methods.length;i++)ttq.setAndDefer(ttq,ttq.methods[i]);ttq.instance=function(t){for(var e=ttq._i[t]||[],n=0;n<ttq.methods.length;n++)ttq.setAndDefer(e,ttq.methods[n]);return e},ttq.load=function(e,n){var i="https://analytics.tiktok.com/i18n/pixel/events.js";ttq._i=ttq._i||{},ttq._i[e]=[],ttq._i[e]._u=i,ttq._t=ttq._t||{},ttq._t[e]=+new Date,ttq._o=ttq._o||{},ttq._o[e]=n||{};var o=d.createElement("script");o.type="text/javascript",o.async=!0,o.src=i+"?sdkid="+e+"&lib="+t;var a=d.getElementsByTagName("script")[0];a.parentNode.insertBefore(o,a)};ttq.load('${id}');ttq.page();</script>`;
+  }
+  // Snapchat Pixel
+  if (pixels.snapchatPixel?.enabled && pixels.snapchatPixel?.pixelId) {
+    const id = pixels.snapchatPixel.pixelId;
+    html += `<script>(function(e,t,n){if(e.snaptr)return;var a=e.snaptr=function(){a.handleRequest?a.handleRequest.apply(a,arguments):a.queue.push(arguments)};a.queue=[];var s='script';var r=t.createElement(s);r.async=!0;r.src=n;var u=t.getElementsByTagName(s)[0];u.parentNode.insertBefore(r,u)})(window,document,'https://sc-static.net/scevent.min.js');snaptr('init','${id}');snaptr('track','PAGE_VIEW');</script>`;
+  }
+  // Twitter Pixel
+  if (pixels.twitterPixel?.enabled && pixels.twitterPixel?.pixelId) {
+    const id = pixels.twitterPixel.pixelId;
+    html += `<script>!function(e,t,n,s,u,a){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments);},s.version='1.1',s.queue=[],u=t.createElement(n),u.async=!0,u.src='//static.ads-twitter.com/uwt.js',a=t.getElementsByTagName(n)[0],a.parentNode.insertBefore(u,a))}(window,document,'script');twq('init','${id}');twq('track','PageView');</script>`;
+  }
+  // Google Ads
+  if (pixels.googleAds?.enabled && pixels.googleAds?.conversionId) {
+    const cid = pixels.googleAds.conversionId;
+    html += `<script async src="https://www.googletagmanager.com/gtag/js?id=${cid}"></script>`;
+    html += `<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${cid}');</script>`;
+  }
+
+  if (html) {
+    const container = document.createElement('div');
+    container.id = 'maqder-pixel-scripts';
+    container.innerHTML = html;
+    document.head.appendChild(container);
+  }
+}
+
+// Fire a pixel event to all loaded pixels
+export function firePixelEvent(event, params) {
+  if (typeof window === 'undefined') return;
+  const p = params || {};
+  if (typeof window.fbq !== 'undefined') window.fbq('track', event, p);
+  if (typeof window.ttq !== 'undefined') window.ttq.track(event, p);
+  if (typeof window.snaptr !== 'undefined') window.snaptr('track', event.toUpperCase(), p);
+  if (typeof window.twq !== 'undefined') window.twq('track', event, p);
+  if (typeof window.gtag !== 'undefined') window.gtag('event', event, p);
+}
 
 export default function StorefrontLayout({ children }) {
   const [storeInfo, setStoreInfo] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { items, cartCount, cartTotal, isOpen, setIsOpen, removeItem } = useCart();
 
   useEffect(() => {
     storeApi.get('/info').then(res => setStoreInfo(res.data)).catch(() => {});
   }, []);
+
+  // Inject pixel scripts when store info loads
+  useEffect(() => {
+    if (storeInfo?.pixels) injectPixelScripts(storeInfo.pixels);
+  }, [storeInfo]);
+
+  // Fire PageView on route change
+  useEffect(() => {
+    if (storeInfo?.pixels) {
+      firePixelEvent('PageView', { page_path: location.pathname });
+    }
+  }, [location.pathname, storeInfo]);
 
   const theme = storeInfo?.theme || {};
   const colors = theme.colors || {};

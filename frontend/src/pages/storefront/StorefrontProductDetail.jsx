@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Loader2, ShoppingCart, Check, Minus, Plus, ChevronRight } from 'lucide-react';
+import { Loader2, ShoppingCart, Check, Minus, Plus, ChevronRight, Star } from 'lucide-react';
 import storeApi from '../../lib/storeApi';
 import { useCart } from '../../store/storefrontCart';
+import { firePixelEvent } from '../../components/storefront/StorefrontLayout';
 
 export default function StorefrontProductDetail() {
   const { id } = useParams();
@@ -13,6 +14,10 @@ export default function StorefrontProductDetail() {
   const [quantity, setQuantity] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [added, setAdded] = useState(false);
+  const [reviews, setReviews] = useState({ reviews: [], avgRating: 0, totalReviews: 0 });
+  const [reviewForm, setReviewForm] = useState({ customerName: '', customerEmail: '', rating: 5, title: '', body: '' });
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewMessage, setReviewMessage] = useState('');
   const { addItem } = useCart();
 
   useEffect(() => {
@@ -25,14 +30,53 @@ export default function StorefrontProductDetail() {
           const firstActive = res.data.product.variants.find(v => v.isActive);
           setSelectedVariant(firstActive?._id || null);
         }
+        // Fire ViewContent pixel event
+        firePixelEvent('ViewContent', {
+          content_ids: [res.data.product._id],
+          content_name: res.data.product.title,
+          content_type: 'product',
+          value: res.data.product.basePrice,
+          currency: 'SAR',
+        });
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
   }, [id]);
 
+  // Fetch reviews
+  useEffect(() => {
+    if (id) {
+      storeApi.get(`/reviews/product/${id}`).then(res => setReviews(res.data)).catch(() => {});
+    }
+  }, [id]);
+
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    if (!reviewForm.customerName || !reviewForm.rating) return;
+    setReviewSubmitting(true);
+    setReviewMessage('');
+    try {
+      await storeApi.post(`/reviews/product/${id}`, reviewForm);
+      setReviewMessage('Review submitted! It will appear after approval.');
+      setReviewForm({ customerName: '', customerEmail: '', rating: 5, title: '', body: '' });
+    } catch (err) {
+      setReviewMessage(err.response?.data?.error || 'Failed to submit review');
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
   const handleAddToCart = () => {
     const product = data.product;
     addItem(product, quantity, selectedVariant);
+    // Fire AddToCart pixel event
+    firePixelEvent('AddToCart', {
+      content_ids: [product._id],
+      content_name: product.title,
+      content_type: 'product',
+      value: product.basePrice * quantity,
+      currency: 'SAR',
+    });
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };
@@ -165,7 +209,65 @@ export default function StorefrontProductDetail() {
         </div>
       )}
 
-      <style>{`@media(max-width:768px){.store-pd-grid{grid-template-columns:1fr!important}}`}</style>
+      {/* Reviews section */}
+      <div style={{ marginTop: '60px' }}>
+        <h2 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '16px' }}>Customer Reviews</h2>
+        {reviews.totalReviews > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+            <div style={{ display: 'flex' }}>
+              {[1, 2, 3, 4, 5].map(n => (
+                <Star key={n} size={20} className={n <= Math.round(reviews.avgRating) ? 'text-amber-400 fill-amber-400' : 'text-gray-200'} />
+              ))}
+            </div>
+            <span style={{ fontWeight: 'bold', fontSize: '16px' }}>{reviews.avgRating.toFixed(1)}</span>
+            <span style={{ color: '#6b7280', fontSize: '14px' }}>({reviews.totalReviews} reviews)</span>
+          </div>
+        )}
+
+        {/* Review list */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }} className="store-reviews-grid">
+          {reviews.reviews.map(r => (
+            <div key={r._id} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <div style={{ display: 'flex' }}>
+                  {[1, 2, 3, 4, 5].map(n => (
+                    <Star key={n} size={12} className={n <= r.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-200'} />
+                  ))}
+                </div>
+                {r.verifiedPurchase && <span style={{ fontSize: '11px', background: '#d1fae5', color: '#059669', padding: '2px 6px', borderRadius: '999px', fontWeight: 'bold' }}>Verified</span>}
+              </div>
+              {r.title && <p style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>{r.title}</p>}
+              {r.body && <p style={{ fontSize: '13px', color: '#4b5563', marginBottom: '8px' }}>{r.body}</p>}
+              <p style={{ fontSize: '12px', color: '#9ca3af' }}>— {r.customerName} · {new Date(r.createdAt).toLocaleDateString()}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Review form */}
+        <form onSubmit={handleReviewSubmit} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px' }}>
+          <h3 style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '12px' }}>Write a Review</h3>
+          {reviewMessage && <p style={{ fontSize: '13px', color: reviewMessage.includes('Failed') || reviewMessage.includes('already') ? '#dc2626' : '#059669', marginBottom: '12px' }}>{reviewMessage}</p>}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+            <input placeholder="Your name *" required value={reviewForm.customerName} onChange={e => setReviewForm({ ...reviewForm, customerName: e.target.value })} style={{ padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }} />
+            <input placeholder="Email (optional)" type="email" value={reviewForm.customerEmail} onChange={e => setReviewForm({ ...reviewForm, customerEmail: e.target.value })} style={{ padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }} />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+            <span style={{ fontSize: '14px', fontWeight: 'bold' }}>Rating:</span>
+            {[1, 2, 3, 4, 5].map(n => (
+              <button key={n} type="button" onClick={() => setReviewForm({ ...reviewForm, rating: n })}>
+                <Star size={20} className={n <= reviewForm.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-300'} />
+              </button>
+            ))}
+          </div>
+          <input placeholder="Review title (optional)" value={reviewForm.title} onChange={e => setReviewForm({ ...reviewForm, title: e.target.value })} style={{ width: '100%', padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', marginBottom: '12px' }} />
+          <textarea placeholder="Your review (optional)" value={reviewForm.body} onChange={e => setReviewForm({ ...reviewForm, body: e.target.value })} style={{ width: '100%', padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', minHeight: '80px', marginBottom: '12px' }} />
+          <button type="submit" disabled={reviewSubmitting} style={{ padding: '10px 24px', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', opacity: reviewSubmitting ? 0.6 : 1 }}>
+            {reviewSubmitting ? 'Submitting...' : 'Submit Review'}
+          </button>
+        </form>
+      </div>
+
+      <style>{`@media(max-width:768px){.store-pd-grid{grid-template-columns:1fr!important}.store-reviews-grid{grid-template-columns:1fr!important}}`}</style>
     </div>
   );
 }
