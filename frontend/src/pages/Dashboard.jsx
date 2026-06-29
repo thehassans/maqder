@@ -74,6 +74,7 @@ export default function Dashboard() {
   const isLaundry = businessTypes.includes('laundry')
   const isKhayyat = businessTypes.includes('khayyat')
   const isBookstore = businessTypes.includes('bookstore')
+  const isEcommerce = businessTypes.includes('ecommerce')
 
   // Redirect POS tenants directly to their checkout screen
   useEffect(() => {
@@ -89,8 +90,10 @@ export default function Dashboard() {
       navigate('/app/dashboard/khayyat', { replace: true })
     } else if (isBookstore) {
       navigate('/app/dashboard/bookstore/pos', { replace: true })
+    } else if (isEcommerce) {
+      navigate('/app/dashboard/ecommerce', { replace: true })
     }
-  }, [isBoutique, isBakala, isSaloon, isLaundry, isKhayyat, isBookstore, navigate])
+  }, [isBoutique, isBakala, isSaloon, isLaundry, isKhayyat, isBookstore, isEcommerce, navigate])
 
   const { data: dashboard, isLoading } = useQuery({
     queryKey: ['dashboard'],

@@ -70,7 +70,9 @@ import {
   FileSpreadsheet,
   GraduationCap,
   Recycle,
-  BookMarked
+  BookMarked,
+  Store,
+  Palette
 } from 'lucide-react'
 import { toggleSidebarCollapse, setMobileMenuOpen } from '../../store/slices/uiSlice'
 import { useTranslation } from '../../lib/translations'
@@ -152,6 +154,19 @@ export default function Sidebar() {
         { path: '/app/dashboard/bookstore/shift', icon: Wallet, label: language === 'ar' ? 'إدارة الوردية' : 'Shift Management' },
         { path: '/app/dashboard/khata', icon: Users, label: language === 'ar' ? 'العملاء (خاتا)' : 'Khata', perm: { module: 'finance', action: 'read' } },
         { path: '/app/dashboard/bookstore/dashboard', icon: ShieldCheck, label: language === 'ar' ? 'لوحة التحكم' : 'Administration' },
+      ]
+    },
+    {
+      title: language === 'ar' ? 'المتجر الإلكتروني' : 'E-Commerce',
+      businessTypes: ['ecommerce'],
+      items: [
+        { path: '/app/dashboard/ecommerce', icon: LayoutDashboard, label: language === 'ar' ? 'لوحة التحكم' : 'Insights', end: true },
+        { path: '/app/dashboard/ecommerce/orders', icon: ListOrdered, label: language === 'ar' ? 'الطلبات' : 'Orders' },
+        { path: '/app/dashboard/ecommerce/products', icon: Package, label: language === 'ar' ? 'المنتجات' : 'Products' },
+        { path: '/app/dashboard/ecommerce/products/new', icon: PlusCircle, label: language === 'ar' ? 'إضافة منتج' : 'Add Product' },
+        { path: '/app/dashboard/ecommerce/theme', icon: Palette, label: language === 'ar' ? 'تصميم المتجر' : 'Theme Editor' },
+        { path: '/app/dashboard/ecommerce/domains', icon: Globe, label: language === 'ar' ? 'النطاقات' : 'Domains' },
+        { path: '/app/dashboard/ecommerce/settings', icon: Settings, label: language === 'ar' ? 'الإعدادات' : 'Store Settings' },
       ]
     },
     {

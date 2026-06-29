@@ -122,6 +122,82 @@ const invoiceTypographySchema = new mongoose.Schema({
   headingFontSize: { type: Number, min: 9, max: 40, default: 18 },
 }, { _id: false });
 
+const ecommerceDomainSchema = new mongoose.Schema({
+  hostname: { type: String, required: true, lowercase: true, trim: true },
+  type: { type: String, enum: ['subdomain', 'custom'], default: 'custom' },
+  status: { type: String, enum: ['pending', 'verifying', 'verified', 'failed'], default: 'pending' },
+  isPrimary: { type: Boolean, default: false },
+  verificationToken: { type: String, default: '' },
+  sslStatus: { type: String, enum: ['none', 'pending', 'active', 'error'], default: 'none' },
+  verifiedAt: { type: Date },
+}, { _id: true, timestamps: true });
+
+const ecommercePaymentProviderSchema = new mongoose.Schema({
+  enabled: { type: Boolean, default: false },
+  // Provider credentials are stored per tenant. Secrets should be masked in API responses.
+  publishableKey: { type: String, default: '' },
+  secretKey: { type: String, default: '' },
+  merchantId: { type: String, default: '' },
+  webhookSecret: { type: String, default: '' },
+  environment: { type: String, enum: ['test', 'live'], default: 'test' },
+}, { _id: false });
+
+const ecommerceCourierProviderSchema = new mongoose.Schema({
+  enabled: { type: Boolean, default: false },
+  accountNumber: { type: String, default: '' },
+  apiKey: { type: String, default: '' },
+  apiSecret: { type: String, default: '' },
+  environment: { type: String, enum: ['sandbox', 'production'], default: 'sandbox' },
+}, { _id: false });
+
+const ecommerceSchema = new mongoose.Schema({
+  // Storefront availability
+  storeStatus: { type: String, enum: ['draft', 'live', 'paused'], default: 'draft' },
+  storeName: { type: String, default: '' },
+  storeNameAr: { type: String, default: '' },
+  // The free platform subdomain slug → {slug}.shop.maqder.com (defaults to tenant.slug)
+  subdomain: { type: String, default: '', lowercase: true, trim: true },
+  domains: { type: [ecommerceDomainSchema], default: [] },
+  // Commerce defaults
+  currency: { type: String, default: 'SAR' },
+  defaultTaxRate: { type: Number, default: 15 },
+  pricesIncludeTax: { type: Boolean, default: true },
+  weightUnit: { type: String, enum: ['g', 'kg'], default: 'g' },
+  // SEO defaults (per-product overrides live on the Product model)
+  seo: {
+    metaTitle: { type: String, default: '' },
+    metaTitleAr: { type: String, default: '' },
+    metaDescription: { type: String, default: '' },
+    metaDescriptionAr: { type: String, default: '' },
+    ogImage: { type: String, default: '' },
+    faviconUrl: { type: String, default: '' },
+    googleAnalyticsId: { type: String, default: '' },
+    metaPixelId: { type: String, default: '' },
+    robotsIndex: { type: Boolean, default: true },
+  },
+  // Plug-and-play payment providers
+  payments: {
+    defaultProvider: { type: String, enum: ['', 'moyasar', 'tap', 'paytabs', 'stripe', 'cod'], default: '' },
+    codEnabled: { type: Boolean, default: true },
+    moyasar: { type: ecommercePaymentProviderSchema, default: () => ({}) },
+    tap: { type: ecommercePaymentProviderSchema, default: () => ({}) },
+    paytabs: { type: ecommercePaymentProviderSchema, default: () => ({}) },
+    stripe: { type: ecommercePaymentProviderSchema, default: () => ({}) },
+  },
+  // Courier integrations
+  couriers: {
+    smsa: { type: ecommerceCourierProviderSchema, default: () => ({}) },
+    aramex: { type: ecommerceCourierProviderSchema, default: () => ({}) },
+    naqel: { type: ecommerceCourierProviderSchema, default: () => ({}) },
+    imile: { type: ecommerceCourierProviderSchema, default: () => ({}) },
+    flatRate: {
+      enabled: { type: Boolean, default: true },
+      price: { type: Number, default: 25 },
+      freeShippingThreshold: { type: Number, default: 0 },
+    },
+  },
+}, { _id: false });
+
 const tenantSchema = new mongoose.Schema({
   name: { type: String, required: true },
   slug: { type: String, required: true, unique: true, lowercase: true },
@@ -139,6 +215,7 @@ const tenantSchema = new mongoose.Schema({
     reason: { type: String }
   },
   zatca: zatcaConfigSchema,
+  ecommerce: { type: ecommerceSchema, default: () => ({}) },
   settings: {
     language: { type: String, enum: ['en', 'ar'], default: 'ar' },
     currency: { type: String, default: 'SAR' },

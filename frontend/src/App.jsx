@@ -139,6 +139,13 @@ import BookStoreBuyBack from './pages/bookstore/BookStoreBuyBack'
 import BookStoreRentals from './pages/bookstore/BookStoreRentals'
 import BookStoreCourseEnrollments from './pages/bookstore/BookStoreCourseEnrollments'
 import BookStoreReports from './pages/bookstore/BookStoreReports'
+import EcommerceDashboard from './pages/ecommerce/EcommerceDashboard'
+import EcommerceOrders from './pages/ecommerce/EcommerceOrders'
+import EcommerceProducts from './pages/ecommerce/EcommerceProducts'
+import EcommerceAddProduct from './pages/ecommerce/EcommerceAddProduct'
+import EcommerceThemeEditor from './pages/ecommerce/EcommerceThemeEditor'
+import EcommerceDomains from './pages/ecommerce/EcommerceDomains'
+import EcommerceStoreSettings from './pages/ecommerce/EcommerceStoreSettings'
 import IoT from './pages/IoT'
 import IoTDeviceForm from './pages/IoTDeviceForm'
 import Khata from './pages/finance/Khata'
@@ -548,6 +555,15 @@ function App() {
         <Route path="bookstore/rentals" element={<BusinessTypeRoute allowedTypes={['bookstore']}><BookStoreRentals /></BusinessTypeRoute>} />
         <Route path="bookstore/courses/:courseId/enrollments" element={<BusinessTypeRoute allowedTypes={['bookstore']}><BookStoreCourseEnrollments /></BusinessTypeRoute>} />
         <Route path="bookstore/reports" element={<BusinessTypeRoute allowedTypes={['bookstore']}><BookStoreReports /></BusinessTypeRoute>} />
+
+        {/* E-Commerce */}
+        <Route path="ecommerce" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceDashboard /></BusinessTypeRoute>} end />
+        <Route path="ecommerce/orders" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceOrders /></BusinessTypeRoute>} />
+        <Route path="ecommerce/products" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceProducts /></BusinessTypeRoute>} />
+        <Route path="ecommerce/products/new" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceAddProduct /></BusinessTypeRoute>} />
+        <Route path="ecommerce/theme" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceThemeEditor /></BusinessTypeRoute>} />
+        <Route path="ecommerce/domains" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceDomains /></BusinessTypeRoute>} />
+        <Route path="ecommerce/settings" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceStoreSettings /></BusinessTypeRoute>} />
 
         <Route path="restaurant/reservations" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantReservations /></BusinessTypeRoute>} />
         <Route path="saloon/appointments" element={<BusinessTypeRoute allowedTypes={['saloon']}><SaloonAppointments /></BusinessTypeRoute>} />
