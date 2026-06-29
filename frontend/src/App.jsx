@@ -147,6 +147,7 @@ import EcommerceThemeEditor from './pages/ecommerce/EcommerceThemeEditor'
 import EcommerceDomains from './pages/ecommerce/EcommerceDomains'
 import EcommerceStoreSettings from './pages/ecommerce/EcommerceStoreSettings'
 import EcommerceProductDetail from './pages/ecommerce/EcommerceProductDetail'
+import EcommerceOrderDetail from './pages/ecommerce/EcommerceOrderDetail'
 import IoT from './pages/IoT'
 import IoTDeviceForm from './pages/IoTDeviceForm'
 import Khata from './pages/finance/Khata'
@@ -560,6 +561,7 @@ function App() {
         {/* E-Commerce */}
         <Route path="ecommerce" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceDashboard /></BusinessTypeRoute>} end />
         <Route path="ecommerce/orders" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceOrders /></BusinessTypeRoute>} />
+        <Route path="ecommerce/orders/:id" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceOrderDetail /></BusinessTypeRoute>} />
         <Route path="ecommerce/products" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceProducts /></BusinessTypeRoute>} />
         <Route path="ecommerce/products/new" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceAddProduct /></BusinessTypeRoute>} />
         <Route path="ecommerce/products/:id" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceProductDetail /></BusinessTypeRoute>} />
