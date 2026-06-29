@@ -4,7 +4,7 @@ import { protect } from '../middleware/auth.js';
 import Tenant from '../models/Tenant.js';
 import EcommerceProduct from '../models/EcommerceProduct.js';
 import { clearTenantHostCache } from '../middleware/resolveTenantByHost.js';
-import { provisionCloudflareDomain, verifyDomainViaCloudflare, removeCloudflareDomain, getSSLStatus, isCloudflareConfigured } from '../services/cloudflareService.js';
+import { provisionCloudflareDomain, verifyDomainViaCloudflare, removeCloudflareDomain, getSSLStatus, isCloudflareConfigured, verifyCloudflareCredentials } from '../services/cloudflareService.js';
 
 const router = express.Router();
 
@@ -13,6 +13,18 @@ const getTargetTenantId = async (user) => {
   if (user.role === 'super_admin') {
     const tenant = await Tenant.findOne({ businessTypes: 'ecommerce' });
     return tenant ? tenant._id : null;
+  }
+  return null;
+};
+
+const getTenantCloudflareConfig = (tenant) => {
+  const cf = tenant?.ecommerce?.cloudflare || {};
+  if (cf.apiToken && cf.zoneId) {
+    return {
+      apiToken: cf.apiToken,
+      zoneId: cf.zoneId,
+      fallbackOrigin: cf.fallbackOrigin || process.env.CLOUDFLARE_FALLBACK_ORIGIN || 'origin.maqder.com',
+    };
   }
   return null;
 };
@@ -45,6 +57,8 @@ const sanitizeEcommerce = (ecom) => {
   // Mask CAPI tokens
   if (clone.pixels?.snapchatCapi?.token) clone.pixels.snapchatCapi.token = mask(clone.pixels.snapchatCapi.token);
   if (clone.pixels?.tiktokCapi?.accessToken) clone.pixels.tiktokCapi.accessToken = mask(clone.pixels.tiktokCapi.accessToken);
+  // Mask Cloudflare API token
+  if (clone.cloudflare?.apiToken) clone.cloudflare.apiToken = mask(clone.cloudflare.apiToken);
   return clone;
 };
 
@@ -114,8 +128,10 @@ router.get('/domains', protect, async (req, res) => {
   try {
     const tenantId = await getTargetTenantId(req.user);
     if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
-    const tenant = await Tenant.findById(tenantId).select('ecommerce.domains').lean();
-    res.setHeader('x-cloudflare-configured', isCloudflareConfigured() ? 'true' : 'false');
+    const tenant = await Tenant.findById(tenantId).select('ecommerce.domains ecommerce.cloudflare').lean();
+    const tenantCf = getTenantCloudflareConfig(tenant);
+    res.setHeader('x-cloudflare-configured', (isCloudflareConfigured() || Boolean(tenantCf)) ? 'true' : 'false');
+    res.setHeader('x-tenant-cloudflare-connected', tenantCf ? 'true' : 'false');
     res.json(tenant?.ecommerce?.domains || []);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -153,10 +169,11 @@ router.post('/domains', protect, async (req, res) => {
     await tenant.save();
     clearTenantHostCache(hostname);
 
-    // Auto-provision via Cloudflare for SaaS if configured
-    if (isCloudflareConfigured()) {
+    // Auto-provision via Cloudflare for SaaS if configured (global or tenant-level)
+    const tenantCfConfig = getTenantCloudflareConfig(tenant);
+    if (isCloudflareConfigured() || tenantCfConfig) {
       try {
-        const cfResult = await provisionCloudflareDomain(hostname, verificationToken);
+        const cfResult = await provisionCloudflareDomain(hostname, verificationToken, tenantCfConfig || undefined);
         const d = tenant.ecommerce.domains.id(tenant.ecommerce.domains[tenant.ecommerce.domains.length - 1]._id);
         if (d) {
           if (cfResult?.configured && cfResult?.success) {
@@ -208,15 +225,16 @@ router.post('/domains/:id/verify', protect, async (req, res) => {
     let verified = false;
     let sslStatus = 'none';
 
-    if (isCloudflareConfigured()) {
+    const tenantCfConfig = getTenantCloudflareConfig(tenant);
+    if (isCloudflareConfigured() || tenantCfConfig) {
       try {
-        const cfResult = await verifyDomainViaCloudflare(domain.hostname, domain.verificationToken, domain.cfHostnameId);
+        const cfResult = await verifyDomainViaCloudflare(domain.hostname, domain.verificationToken, domain.cfHostnameId, tenantCfConfig || undefined);
         if (cfResult.configured) {
           verified = cfResult.verified;
           domain.cfStatus = cfResult.cfStatus || domain.cfStatus;
           if (cfResult.cfHostnameId) domain.cfHostnameId = cfResult.cfHostnameId;
           if (verified) {
-            const sslResult = await getSSLStatus(domain.hostname, domain.cfHostnameId);
+            const sslResult = await getSSLStatus(domain.hostname, domain.cfHostnameId, tenantCfConfig || undefined);
             sslStatus = sslResult.status || 'pending';
           }
         }
@@ -257,24 +275,25 @@ router.post('/domains/:id/retry-cloudflare', protect, async (req, res) => {
   try {
     const tenantId = await getTargetTenantId(req.user);
     if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
-    if (!isCloudflareConfigured()) return res.status(400).json({ error: 'Cloudflare not configured' });
-
     const tenant = await Tenant.findById(tenantId);
     if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+    const tenantCfConfig = getTenantCloudflareConfig(tenant);
+    if (!isCloudflareConfigured() && !tenantCfConfig) return res.status(400).json({ error: 'Cloudflare not configured' });
+
     const domain = tenant.ecommerce?.domains?.id(req.params.id);
     if (!domain) return res.status(404).json({ error: 'Domain not found' });
 
     // Clean up any existing CF custom hostname first
     if (domain.cfHostnameId) {
       try {
-        await removeCloudflareDomain(domain.hostname, domain.cfHostnameId);
+        await removeCloudflareDomain(domain.hostname, domain.cfHostnameId, tenantCfConfig || undefined);
       } catch {
         // ignore
       }
     }
 
     // Re-provision
-    const cfResult = await provisionCloudflareDomain(domain.hostname, domain.verificationToken);
+    const cfResult = await provisionCloudflareDomain(domain.hostname, domain.verificationToken, tenantCfConfig || undefined);
     if (cfResult?.configured && cfResult?.success) {
       domain.cfHostnameId = cfResult.cfHostnameId || '';
       domain.cfCnameTarget = cfResult.cnameTarget || '';
@@ -312,15 +331,46 @@ router.delete('/domains/:id', protect, async (req, res) => {
     clearTenantHostCache(hostname);
 
     // Clean up Cloudflare for SaaS custom hostname if configured
-    if (isCloudflareConfigured()) {
+    const tenantCfConfig = getTenantCloudflareConfig(tenant);
+    if (isCloudflareConfigured() || tenantCfConfig) {
       try {
-        await removeCloudflareDomain(hostname, domain.cfHostnameId);
+        await removeCloudflareDomain(hostname, domain.cfHostnameId, tenantCfConfig || undefined);
       } catch {
         // Non-critical — domain already removed from tenant
       }
     }
 
     res.json({ success: true });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Save tenant-level Cloudflare credentials for Connect with Cloudflare
+router.put('/domains/cloudflare', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+
+    const { apiToken, zoneId, fallbackOrigin } = req.body || {};
+    if (!apiToken || !zoneId) return res.status(400).json({ error: 'API token and zone ID are required' });
+
+    // Verify token works before saving
+    const verify = await verifyCloudflareCredentials({ apiToken, zoneId, fallbackOrigin });
+    if (!verify.valid) return res.status(400).json({ error: verify.error || 'Invalid Cloudflare credentials' });
+
+    const tenant = await Tenant.findById(tenantId);
+    if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+    tenant.ecommerce = tenant.ecommerce || {};
+    tenant.ecommerce.cloudflare = {
+      apiToken,
+      zoneId,
+      fallbackOrigin: fallbackOrigin || process.env.CLOUDFLARE_FALLBACK_ORIGIN || 'origin.maqder.com',
+      connectedAt: new Date(),
+    };
+    await tenant.save();
+
+    res.json({ success: true, cloudflare: sanitizeEcommerce(tenant.ecommerce).cloudflare });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
@@ -353,10 +403,11 @@ router.post('/domains/refresh-ssl', protect, async (req, res) => {
     const tenant = await Tenant.findById(tenantId);
     if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
     const domains = tenant.ecommerce?.domains || [];
+    const tenantCfConfig = getTenantCloudflareConfig(tenant);
     for (const domain of domains) {
-      if (domain.status === 'verified' && isCloudflareConfigured()) {
+      if (domain.status === 'verified' && (isCloudflareConfigured() || tenantCfConfig)) {
         try {
-          const sslResult = await getSSLStatus(domain.hostname, domain.cfHostnameId);
+          const sslResult = await getSSLStatus(domain.hostname, domain.cfHostnameId, tenantCfConfig || undefined);
           domain.sslStatus = sslResult.status || domain.sslStatus;
         } catch {
           // keep existing status

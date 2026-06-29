@@ -244,6 +244,13 @@ const ecommerceSchema = new mongoose.Schema({
       freeShippingThreshold: { type: Number, default: 0 },
     },
   },
+  // Tenant-level Cloudflare credentials (optional) for Connect with Cloudflare
+  cloudflare: {
+    apiToken: { type: String, default: '' },
+    zoneId: { type: String, default: '' },
+    fallbackOrigin: { type: String, default: '' },
+    connectedAt: { type: Date },
+  },
   // Newsletter subscribers
   newsletterSubscribers: [{
     email: { type: String, required: true },

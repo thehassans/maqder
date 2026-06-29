@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Globe, Plus, Trash2, Loader2, CheckCircle2, XCircle, Clock, RefreshCw, Cloud, ShieldCheck, AlertCircle, ExternalLink } from 'lucide-react';
+import { Globe, Plus, Trash2, Loader2, CheckCircle2, XCircle, Clock, RefreshCw, Cloud, ShieldCheck, AlertCircle, ExternalLink, X, KeyRound } from 'lucide-react';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 
@@ -15,6 +15,10 @@ export default function EcommerceDomains() {
   const [retryingId, setRetryingId] = useState(null);
   const [sslChecking, setSslChecking] = useState(false);
   const [cloudflareStatus, setCloudflareStatus] = useState(null);
+  const [tenantCloudflareConnected, setTenantCloudflareConnected] = useState(false);
+  const [showCfModal, setShowCfModal] = useState(false);
+  const [cfForm, setCfForm] = useState({ apiToken: '', zoneId: '', fallbackOrigin: '' });
+  const [connectingCf, setConnectingCf] = useState(false);
 
   useEffect(() => { fetchDomains(); }, []);
 
@@ -26,6 +30,7 @@ export default function EcommerceDomains() {
       setDomains(d.data || []);
       // Check Cloudflare config status from the domains response
       setCloudflareStatus(d.headers?.['x-cloudflare-configured'] || null);
+      setTenantCloudflareConnected(d.headers?.['x-tenant-cloudflare-connected'] === 'true');
     } catch {
       toast.error('Failed to load domains');
     } finally {
@@ -85,6 +90,22 @@ export default function EcommerceDomains() {
       toast.error(err.response?.data?.error || 'Failed to refresh SSL');
     } finally {
       setSslChecking(false);
+    }
+  };
+
+  const handleConnectCloudflare = async () => {
+    setConnectingCf(true);
+    try {
+      const res = await api.put('/ecommerce/domains/cloudflare', cfForm);
+      toast.success('Cloudflare account connected');
+      setTenantCloudflareConnected(true);
+      setShowCfModal(false);
+      setCfForm({ apiToken: '', zoneId: '', fallbackOrigin: '' });
+      fetchDomains();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to connect Cloudflare');
+    } finally {
+      setConnectingCf(false);
     }
   };
 
@@ -165,19 +186,33 @@ export default function EcommerceDomains() {
         <Cloud className={`w-5 h-5 ${cloudflareStatus ? 'text-blue-500' : 'text-gray-400'}`} />
         <div className="flex-1">
           <p className="text-sm font-bold text-gray-900 dark:text-white">
-            {cloudflareStatus ? 'Cloudflare DNS Auto-Provisioning Active' : 'Cloudflare Not Configured'}
+            {cloudflareStatus
+              ? (tenantCloudflareConnected ? 'Cloudflare Connected (Tenant Account)' : 'Cloudflare DNS Auto-Provisioning Active')
+              : 'Cloudflare Not Configured'}
           </p>
           <p className="text-xs text-gray-400">
             {cloudflareStatus
-              ? 'DNS records and SSL certificates are automatically provisioned when you add a domain.'
-              : 'Set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ZONE_ID in the server environment to enable automatic DNS provisioning.'}
+              ? (tenantCloudflareConnected
+                ? 'Your Cloudflare account is connected. DNS records and SSL are provisioned through your own zone.'
+                : 'DNS records and SSL certificates are automatically provisioned when you add a domain.')
+              : 'Connect your Cloudflare account or ask your admin to set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ZONE_ID on the server.'}
           </p>
         </div>
-        {cloudflareStatus && (
-          <div className="px-2.5 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold flex items-center gap-1">
-            <CheckCircle2 className="w-3 h-3" /> Auto
-          </div>
-        )}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {!cloudflareStatus && !tenantCloudflareConnected && (
+            <button
+              onClick={() => setShowCfModal(true)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors"
+            >
+              <KeyRound className="w-3.5 h-3.5" /> Connect Cloudflare
+            </button>
+          )}
+          {cloudflareStatus && (
+            <div className="px-2.5 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3" /> {tenantCloudflareConnected ? 'Tenant' : 'Auto'}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Platform subdomain card */}
@@ -350,6 +385,79 @@ export default function EcommerceDomains() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Connect Cloudflare Account Modal */}
+      {showCfModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <Cloud className="w-5 h-5 text-blue-500" /> Connect Cloudflare
+              </h3>
+              <button onClick={() => setShowCfModal(false)} className="p-1 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors">
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+            <p className="text-sm text-gray-500">
+              Connect your Cloudflare account to automatically provision DNS and SSL for your custom domain. Your token is only used to manage custom hostnames in your zone.
+            </p>
+            <a
+              href="https://dash.cloudflare.com/profile/api-tokens"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-sm text-blue-600 font-bold hover:underline"
+            >
+              <ExternalLink className="w-4 h-4" /> Get Cloudflare API Token
+            </a>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Cloudflare API Token</label>
+                <input
+                  type="password"
+                  value={cfForm.apiToken}
+                  onChange={e => setCfForm(prev => ({ ...prev, apiToken: e.target.value }))}
+                  placeholder="cfut_..."
+                  className="w-full input text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Zone ID</label>
+                <input
+                  value={cfForm.zoneId}
+                  onChange={e => setCfForm(prev => ({ ...prev, zoneId: e.target.value }))}
+                  placeholder="3b2ee2..."
+                  className="w-full input text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-1">Fallback Origin (optional)</label>
+                <input
+                  value={cfForm.fallbackOrigin}
+                  onChange={e => setCfForm(prev => ({ ...prev, fallbackOrigin: e.target.value }))}
+                  placeholder="origin.maqder.com"
+                  className="w-full input text-sm"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-3 pt-2">
+              <button
+                onClick={() => setShowCfModal(false)}
+                className="flex-1 px-4 py-2 rounded-lg text-sm font-bold text-gray-600 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConnectCloudflare}
+                disabled={connectingCf || !cfForm.apiToken || !cfForm.zoneId}
+                className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 disabled:opacity-60 transition-colors"
+              >
+                {connectingCf ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
+                Connect
+              </button>
+            </div>
           </div>
         </div>
       )}

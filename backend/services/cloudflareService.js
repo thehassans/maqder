@@ -17,23 +17,36 @@
 
 const CF_API = 'https://api.cloudflare.com/client/v4';
 
-const getToken = () => process.env.CLOUDFLARE_API_TOKEN || '';
-const getZoneId = () => process.env.CLOUDFLARE_ZONE_ID || '';
-const getFallbackOrigin = () => process.env.CLOUDFLARE_FALLBACK_ORIGIN || 'origin.maqder.com';
+const getGlobalToken = () => process.env.CLOUDFLARE_API_TOKEN || '';
+const getGlobalZoneId = () => process.env.CLOUDFLARE_ZONE_ID || '';
+const getGlobalFallbackOrigin = () => process.env.CLOUDFLARE_FALLBACK_ORIGIN || 'origin.maqder.com';
 
-export const isCloudflareConfigured = () => Boolean(getToken() && getZoneId());
+function resolveConfig(config = {}) {
+  return {
+    apiToken: config.apiToken || getGlobalToken(),
+    zoneId: config.zoneId || getGlobalZoneId(),
+    fallbackOrigin: config.fallbackOrigin || getGlobalFallbackOrigin(),
+  };
+}
+
+export const isCloudflareConfigured = (config = {}) => {
+  const { apiToken, zoneId } = resolveConfig(config);
+  return Boolean(apiToken && zoneId);
+};
+
+export const isGlobalCloudflareConfigured = () => isCloudflareConfigured();
 
 function formatCfErrors(errors) {
   if (!errors || errors.length === 0) return '';
   return errors.map(e => e.message || String(e)).join('; ');
 }
 
-async function cfRequest(path, method = 'GET', body = null) {
-  const token = getToken();
-  if (!token) return { success: false, errors: [{ message: 'Cloudflare not configured' }] };
+async function cfRequest(path, method = 'GET', body = null, config = {}) {
+  const { apiToken } = resolveConfig(config);
+  if (!apiToken) return { success: false, errors: [{ message: 'Cloudflare not configured' }] };
 
   const headers = {
-    'Authorization': `Bearer ${token}`,
+    'Authorization': `Bearer ${apiToken}`,
     'Content-Type': 'application/json',
   };
 
@@ -58,13 +71,13 @@ async function cfRequest(path, method = 'GET', body = null) {
  * @param {string} verificationToken - Internal verification token
  * @returns {Promise<object>} { configured, cfHostnameId, cnameTarget, txtName, txtValue, sslStatus, errors }
  */
-export async function provisionCloudflareDomain(hostname, verificationToken) {
-  if (!isCloudflareConfigured()) return { configured: false };
+export async function provisionCloudflareDomain(hostname, verificationToken, config = {}) {
+  if (!isCloudflareConfigured(config)) return { configured: false };
 
-  const zoneId = getZoneId();
+  const { zoneId, fallbackOrigin } = resolveConfig(config);
 
   // Check if a custom hostname already exists for this hostname
-  const existing = await cfRequest(`/zones/${zoneId}/custom_hostnames?hostname=${hostname}`);
+  const existing = await cfRequest(`/zones/${zoneId}/custom_hostnames?hostname=${hostname}`, 'GET', null, config);
   let ch;
 
   if (existing.success && existing.result?.length > 0) {
@@ -80,7 +93,7 @@ export async function provisionCloudflareDomain(hostname, verificationToken) {
         settings: { min_tls_version: '1.2' },
       },
       custom_metadata: { verification_token: verificationToken },
-    });
+    }, config);
 
     if (!createRes.success) {
       const errorMessage = formatCfErrors(createRes.errors) || 'Failed to create custom hostname';
@@ -90,10 +103,9 @@ export async function provisionCloudflareDomain(hostname, verificationToken) {
   }
 
   // Extract DNS records the client needs to add
-  // The custom domain must CNAME to the platform fallback origin (e.g. origin.maqder.com)
+  // The custom domain must CNAME to the fallback origin (e.g. origin.maqder.com)
   // Cloudflare may also require an ownership verification TXT record
   const ov = ch.ownership_verification || {};
-  const fallbackOrigin = getFallbackOrigin();
 
   const cnameTarget = fallbackOrigin;
   const txtName = ov.type === 'TXT' ? ov.name : '';
@@ -117,14 +129,14 @@ export async function provisionCloudflareDomain(hostname, verificationToken) {
  * Verify a domain by checking its Cloudflare for SaaS custom hostname status.
  * The custom hostname is verified when Cloudflare confirms ownership + SSL is active/pending.
  */
-export async function verifyDomainViaCloudflare(hostname, verificationToken, cfHostnameId) {
-  if (!isCloudflareConfigured()) return { configured: false, verified: false };
+export async function verifyDomainViaCloudflare(hostname, verificationToken, cfHostnameId, config = {}) {
+  if (!isCloudflareConfigured(config)) return { configured: false, verified: false };
 
-  const zoneId = getZoneId();
+  const { zoneId } = resolveConfig(config);
 
   // If we have a CF hostname ID, check its status directly
   if (cfHostnameId) {
-    const check = await cfRequest(`/zones/${zoneId}/custom_hostnames/${cfHostnameId}`);
+    const check = await cfRequest(`/zones/${zoneId}/custom_hostnames/${cfHostnameId}`, 'GET', null, config);
     if (check.success && check.result) {
       const ch = check.result;
       const verified = ch.status === 'active' || ch.ssl?.status === 'active' || ch.ssl?.status === 'pending_validation';
@@ -150,21 +162,21 @@ export async function verifyDomainViaCloudflare(hostname, verificationToken, cfH
 /**
  * Remove a custom hostname from Cloudflare for SaaS.
  */
-export async function removeCloudflareDomain(hostname, cfHostnameId) {
-  if (!isCloudflareConfigured()) return { configured: false };
+export async function removeCloudflareDomain(hostname, cfHostnameId, config = {}) {
+  if (!isCloudflareConfigured(config)) return { configured: false };
 
-  const zoneId = getZoneId();
+  const { zoneId } = resolveConfig(config);
 
   // If we have the CF hostname ID, delete directly
   if (cfHostnameId) {
-    const del = await cfRequest(`/zones/${zoneId}/custom_hostnames/${cfHostnameId}`, 'DELETE');
+    const del = await cfRequest(`/zones/${zoneId}/custom_hostnames/${cfHostnameId}`, 'DELETE', null, config);
     return { configured: true, success: del.success };
   }
 
   // Fallback: look up by hostname then delete
-  const lookup = await cfRequest(`/zones/${zoneId}/custom_hostnames?hostname=${hostname}`);
+  const lookup = await cfRequest(`/zones/${zoneId}/custom_hostnames?hostname=${hostname}`, 'GET', null, config);
   if (lookup.success && lookup.result?.length > 0) {
-    const del = await cfRequest(`/zones/${zoneId}/custom_hostnames/${lookup.result[0].id}`, 'DELETE');
+    const del = await cfRequest(`/zones/${zoneId}/custom_hostnames/${lookup.result[0].id}`, 'DELETE', null, config);
     return { configured: true, success: del.success };
   }
 
@@ -172,15 +184,25 @@ export async function removeCloudflareDomain(hostname, cfHostnameId) {
 }
 
 /**
- * Get SSL certificate status for a custom hostname via Cloudflare for SaaS.
+ * Verify that a Cloudflare API token is valid.
  */
-export async function getSSLStatus(hostname, cfHostnameId) {
-  if (!isCloudflareConfigured()) return { configured: false, status: 'none' };
+export async function verifyCloudflareCredentials(config = {}) {
+  if (!isCloudflareConfigured(config)) return { valid: false, error: 'Cloudflare not configured' };
 
-  const zoneId = getZoneId();
+  const res = await cfRequest('/user/tokens/verify', 'GET', null, config);
+  if (!res.success) {
+    return { valid: false, error: formatCfErrors(res.errors) || 'Invalid token' };
+  }
+  return { valid: true, result: res.result };
+}
+
+export async function getSSLStatus(hostname, cfHostnameId, config = {}) {
+  if (!isCloudflareConfigured(config)) return { configured: false, status: 'none' };
+
+  const { zoneId } = resolveConfig(config);
 
   if (cfHostnameId) {
-    const check = await cfRequest(`/zones/${zoneId}/custom_hostnames/${cfHostnameId}`);
+    const check = await cfRequest(`/zones/${zoneId}/custom_hostnames/${cfHostnameId}`, 'GET', null, config);
     if (check.success && check.result) {
       const sslStatus = check.result.ssl?.status || 'none';
       const statusMap = {
@@ -196,7 +218,7 @@ export async function getSSLStatus(hostname, cfHostnameId) {
   }
 
   // Fallback: look up by hostname
-  const lookup = await cfRequest(`/zones/${zoneId}/custom_hostnames?hostname=${hostname}`);
+  const lookup = await cfRequest(`/zones/${zoneId}/custom_hostnames?hostname=${hostname}`, 'GET', null, config);
   if (lookup.success && lookup.result?.length > 0) {
     const sslStatus = lookup.result[0].ssl?.status || 'none';
     const statusMap = {
