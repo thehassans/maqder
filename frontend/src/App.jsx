@@ -150,6 +150,12 @@ import EcommerceProductDetail from './pages/ecommerce/EcommerceProductDetail'
 import EcommerceOrderDetail from './pages/ecommerce/EcommerceOrderDetail'
 import EcommercePayments from './pages/ecommerce/EcommercePayments'
 import EcommerceCouriers from './pages/ecommerce/EcommerceCouriers'
+import StorefrontHome from './pages/storefront/StorefrontHome'
+import StorefrontProducts from './pages/storefront/StorefrontProducts'
+import StorefrontProductDetail from './pages/storefront/StorefrontProductDetail'
+import StorefrontCheckout from './pages/storefront/StorefrontCheckout'
+import StorefrontLayout from './components/storefront/StorefrontLayout'
+import { CartProvider } from './store/storefrontCart'
 import IoT from './pages/IoT'
 import IoTDeviceForm from './pages/IoTDeviceForm'
 import Khata from './pages/finance/Khata'
@@ -715,6 +721,12 @@ function App() {
         <Route path="qr" element={<QRServices />} />
         <Route path="queue" element={<SaloonQueue />} />
       </Route>
+
+      {/* ───── Public Storefront ───── */}
+      <Route path="/store" element={<CartProvider><StorefrontLayout><StorefrontHome /></StorefrontLayout></CartProvider>} />
+      <Route path="/store/products" element={<CartProvider><StorefrontLayout><StorefrontProducts /></StorefrontLayout></CartProvider>} />
+      <Route path="/store/products/:id" element={<CartProvider><StorefrontLayout><StorefrontProductDetail /></StorefrontLayout></CartProvider>} />
+      <Route path="/store/checkout" element={<CartProvider><StorefrontLayout><StorefrontCheckout /></StorefrontLayout></CartProvider>} />
 
       {/* Catch all */}
       <Route path="*" element={<Navigate to="/" replace />} />
