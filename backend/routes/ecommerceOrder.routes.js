@@ -98,6 +98,113 @@ router.get('/meta/stats', protect, async (req, res) => {
   }
 });
 
+// --- ANALYTICS (full dashboard analytics) ---
+router.get('/meta/analytics', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+
+    const now = new Date();
+    const days = parseInt(req.query.days) || 30;
+    const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+    const prevStartDate = new Date(now.getTime() - 2 * days * 24 * 60 * 60 * 1000);
+
+    const matchValid = { tenantId, status: { $nin: ['cancelled', 'returned'] } };
+
+    const [
+      revenueSeries,
+      prevRevenue,
+      topProducts,
+      paymentBreakdown,
+      statusCounts,
+      productCount,
+      totalRevenueAll,
+      aovResult,
+      recentOrders,
+    ] = await Promise.all([
+      // Daily revenue series
+      EcommerceOrder.aggregate([
+        { $match: { ...matchValid, createdAt: { $gte: startDate } } },
+        { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, revenue: { $sum: '$grandTotal' }, orders: { $sum: 1 } } },
+        { $sort: { _id: 1 } },
+      ]),
+      // Previous period revenue for comparison
+      EcommerceOrder.aggregate([
+        { $match: { ...matchValid, createdAt: { $gte: prevStartDate, $lt: startDate } } },
+        { $group: { _id: null, revenue: { $sum: '$grandTotal' }, orders: { $sum: 1 } } },
+      ]),
+      // Top products by revenue
+      EcommerceOrder.aggregate([
+        { $match: { ...matchValid, createdAt: { $gte: startDate } } },
+        { $unwind: '$lineItems' },
+        { $group: { _id: '$lineItems.productId', title: { $first: '$lineItems.productTitle' }, qty: { $sum: '$lineItems.quantity' }, revenue: { $sum: '$lineItems.lineTotal' } } },
+        { $sort: { revenue: -1 } },
+        { $limit: 10 },
+      ]),
+      // Payment method breakdown
+      EcommerceOrder.aggregate([
+        { $match: { tenantId, createdAt: { $gte: startDate } } },
+        { $group: { _id: '$payment.method', count: { $sum: 1 }, revenue: { $sum: '$grandTotal' } } },
+      ]),
+      // Status distribution
+      EcommerceOrder.aggregate([
+        { $match: { tenantId } },
+        { $group: { _id: '$status', count: { $sum: 1 } } },
+      ]),
+      // Product count
+      EcommerceProduct.countDocuments({ tenantId, status: 'active' }),
+      // All-time revenue
+      EcommerceOrder.aggregate([
+        { $match: matchValid },
+        { $group: { _id: null, total: { $sum: '$grandTotal' }, count: { $sum: 1 } } },
+      ]),
+      // AOV
+      EcommerceOrder.aggregate([
+        { $match: { ...matchValid, createdAt: { $gte: startDate } } },
+        { $group: { _id: null, avgOrderValue: { $avg: '$grandTotal' }, totalRevenue: { $sum: '$grandTotal' }, orderCount: { $sum: 1 } } },
+      ]),
+      // Recent orders
+      EcommerceOrder.find({ tenantId })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .select('orderNumber customer.name grandTotal status payment.status createdAt')
+        .lean(),
+    ]);
+
+    const currentRevenue = aovResult[0]?.totalRevenue || 0;
+    const currentOrders = aovResult[0]?.orderCount || 0;
+    const prevRev = prevRevenue[0]?.revenue || 0;
+    const prevOrd = prevRevenue[0]?.orders || 0;
+    const revenueChange = prevRev > 0 ? ((currentRevenue - prevRev) / prevRev * 100) : 0;
+    const ordersChange = prevOrd > 0 ? ((currentOrders - prevOrd) / prevOrd * 100) : 0;
+    const aov = aovResult[0]?.avgOrderValue || 0;
+
+    const statusMap = {};
+    statusCounts.forEach(s => { statusMap[s._id] = s.count; });
+
+    const paymentMap = {};
+    paymentBreakdown.forEach(p => { paymentMap[p._id] = { count: p.count, revenue: p.revenue }; });
+
+    res.json({
+      revenueSeries: revenueSeries.map(r => ({ date: r._id, revenue: r.revenue, orders: r.orders })),
+      currentRevenue,
+      currentOrders,
+      revenueChange: Math.round(revenueChange * 10) / 10,
+      ordersChange: Math.round(ordersChange * 10) / 10,
+      aov: Math.round(aov * 100) / 100,
+      topProducts,
+      paymentBreakdown: paymentMap,
+      statusCounts: statusMap,
+      activeProducts: productCount,
+      totalRevenueAll: totalRevenueAll[0]?.total || 0,
+      totalOrdersAll: totalRevenueAll[0]?.count || 0,
+      recentOrders,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // --- GET SINGLE ORDER ---
 router.get('/:id', protect, async (req, res) => {
   try {
