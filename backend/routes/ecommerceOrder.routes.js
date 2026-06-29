@@ -123,6 +123,7 @@ router.get('/meta/analytics', protect, async (req, res) => {
       aovResult,
       recentOrders,
       categorySales,
+      topCustomers,
     ] = await Promise.all([
       // Daily revenue series
       EcommerceOrder.aggregate([
@@ -181,6 +182,14 @@ router.get('/meta/analytics', protect, async (req, res) => {
         { $sort: { revenue: -1 } },
         { $limit: 10 },
       ]),
+      // Top customers by revenue
+      EcommerceOrder.aggregate([
+        { $match: { ...matchValid, createdAt: { $gte: startDate } } },
+        { $group: { _id: '$customer.email', name: { $first: '$customer.name' }, email: { $first: '$customer.email' }, phone: { $first: '$customer.phone' }, orderCount: { $sum: 1 }, revenue: { $sum: '$grandTotal' } } },
+        { $match: { _id: { $ne: null, $ne: '' } } },
+        { $sort: { revenue: -1 } },
+        { $limit: 10 },
+      ]),
     ]);
 
     const currentRevenue = aovResult[0]?.totalRevenue || 0;
@@ -212,6 +221,7 @@ router.get('/meta/analytics', protect, async (req, res) => {
       totalOrdersAll: totalRevenueAll[0]?.count || 0,
       recentOrders,
       categorySales: categorySales.map(c => ({ category: c._id, revenue: c.revenue, qty: c.qty, orders: c.orders })),
+      topCustomers,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });

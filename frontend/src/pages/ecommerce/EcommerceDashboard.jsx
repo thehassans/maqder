@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Store, Loader2, TrendingUp, TrendingDown, ShoppingBag, DollarSign, Package, ArrowUpRight, ArrowDownRight, CreditCard, Truck, Clock, CheckCircle, AlertTriangle, Download } from 'lucide-react';
+import { Store, Loader2, TrendingUp, TrendingDown, ShoppingBag, DollarSign, Package, ArrowUpRight, ArrowDownRight, CreditCard, Truck, Clock, CheckCircle, AlertTriangle, Download, Users } from 'lucide-react';
 import api from '../../lib/api';
 
 const STATUS_COLORS = {
@@ -110,6 +110,7 @@ export default function EcommerceDashboard() {
               Object.entries(a.paymentBreakdown || {}).forEach(([m, d]) => rows.push([`Payment: ${m}`, `${d.count} orders, ${d.revenue} revenue`]));
               Object.entries(a.statusCounts || {}).forEach(([s, c]) => rows.push([`Status: ${s}`, c]));
               (a.categorySales || []).forEach((c, i) => rows.push([`Category: ${c.category || c._id}`, `${c.qty} sold, ${c.revenue} revenue, ${c.orders} orders`]));
+              (a.topCustomers || []).forEach((c, i) => rows.push([`Top Customer ${i + 1}: ${c.name || c.email || c._id}`, `${c.orderCount} orders, ${c.revenue} revenue`]));
               const csv = [headers.join(','), ...rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(','))].join('\n');
               const blob = new Blob([csv], { type: 'text/csv' });
               const url = URL.createObjectURL(blob);
@@ -299,6 +300,32 @@ export default function EcommerceDashboard() {
               );
             });
           })()}
+        </div>
+      </div>
+
+      {/* Top customers by revenue */}
+      <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100 dark:border-dark-700 flex items-center gap-2">
+          <Users className="w-4 h-4 text-indigo-500" />
+          <h3 className="font-bold text-gray-900 dark:text-white">Top Customers by Revenue</h3>
+        </div>
+        <div className="divide-y divide-gray-50 dark:divide-dark-700/50">
+          {(a.topCustomers || []).map((c, idx) => (
+            <div key={idx} className="px-5 py-3 flex items-center gap-3">
+              <span className="w-6 h-6 rounded-full bg-indigo-50 text-indigo-600 text-xs font-bold flex items-center justify-center flex-shrink-0">{idx + 1}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{c.name || c.email || c._id}</p>
+                <p className="text-xs text-gray-400">{c.orderCount} order{c.orderCount !== 1 ? 's' : ''}{c.phone ? ` · ${c.phone}` : ''}</p>
+              </div>
+              <p className="text-sm font-bold text-emerald-600">{fmtCurrency(c.revenue)}</p>
+            </div>
+          ))}
+          {(a.topCustomers || []).length === 0 && (
+            <div className="px-5 py-12 text-center">
+              <Users className="w-10 h-10 text-gray-200 mx-auto mb-2" />
+              <p className="text-sm text-gray-400">No customer data yet</p>
+            </div>
+          )}
         </div>
       </div>
 

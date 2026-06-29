@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Package, Plus, Search, Loader2, Trash2, Eye, Archive, CheckCircle, AlertCircle, Tag, Download, Upload } from 'lucide-react';
+import { Package, Plus, Search, Loader2, Trash2, Eye, Archive, CheckCircle, AlertCircle, Tag, Download, Upload, Copy } from 'lucide-react';
 import api from '../../lib/api';
 
 export default function EcommerceProducts() {
@@ -378,6 +378,14 @@ export default function EcommerceProducts() {
                             title={product.status === 'active' ? 'Archive' : 'Activate'}
                           >
                             <Archive className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={async () => { setActionLoading(true); try { const payload = { ...product, title: `${product.title} (Copy)`, status: 'draft', sku: '' }; delete payload._id; delete payload.createdAt; delete payload.updatedAt; delete payload.__v; const res = await api.post('/ecommerce/products', payload); alert('Product duplicated!'); fetchProducts(); } catch (err) { alert(err.response?.data?.error || 'Failed to duplicate'); } finally { setActionLoading(false); } }}
+                            disabled={actionLoading}
+                            className="p-2 rounded-lg hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition-colors"
+                            title="Duplicate"
+                          >
+                            <Copy className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => setDeleteId(product._id)}
