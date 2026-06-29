@@ -44,6 +44,8 @@ const ecommerceProductSchema = new mongoose.Schema({
   taxRate: { type: Number, default: 15 },
   taxIncluded: { type: Boolean, default: true },
   currency: { type: String, default: 'SAR' },
+  // Bulk pricing tiers
+  priceTiers: { type: [{ minQty: Number, price: Number }], default: [] },
   // Variants
   hasVariants: { type: Boolean, default: false },
   option1Name: { type: String, default: '' },

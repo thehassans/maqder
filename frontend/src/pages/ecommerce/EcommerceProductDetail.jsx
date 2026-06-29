@@ -284,6 +284,37 @@ export default function EcommerceProductDetail() {
               </select>
             </div>
           </div>
+
+          {/* Bulk pricing tiers */}
+          <div className="border-t border-gray-100 dark:border-dark-700 pt-4">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-bold text-gray-900 dark:text-white">Bulk Pricing Tiers</h4>
+              <button type="button" onClick={() => update('priceTiers', [...(form.priceTiers || []), { minQty: 5, price: form.basePrice || 0 }])} className="flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-700">
+                <Plus className="w-3 h-3" /> Add Tier
+              </button>
+            </div>
+            {(form.priceTiers || []).length === 0 ? (
+              <p className="text-xs text-gray-400">No bulk pricing tiers set. Add tiers to offer quantity-based discounts.</p>
+            ) : (
+              <div className="space-y-2">
+                {form.priceTiers.map((tier, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="flex-1">
+                      <label className="text-xs text-gray-400">Min Quantity</label>
+                      <input type="number" min="1" className={inputCls} value={tier.minQty} onChange={e => { const tiers = [...form.priceTiers]; tiers[i] = { ...tier, minQty: parseInt(e.target.value) || 1 }; update('priceTiers', tiers); }} />
+                    </div>
+                    <div className="flex-1">
+                      <label className="text-xs text-gray-400">Price per unit</label>
+                      <input type="number" step="0.01" className={inputCls} value={tier.price} onChange={e => { const tiers = [...form.priceTiers]; tiers[i] = { ...tier, price: parseFloat(e.target.value) || 0 }; update('priceTiers', tiers); }} />
+                    </div>
+                    <button type="button" onClick={() => update('priceTiers', form.priceTiers.filter((_, idx) => idx !== i))} className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 mt-5">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 

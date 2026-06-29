@@ -219,6 +219,29 @@ export default function StorefrontProductDetail() {
             </div>
           )}
 
+          {/* Bulk pricing tiers */}
+          {product.priceTiers && product.priceTiers.length > 0 && (
+            <div style={{ marginBottom: '16px', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '14px' }}>
+              <p style={{ fontSize: '13px', fontWeight: 'bold', margin: '0 0 10px', color: '#374151' }}>Bulk Discount Tiers:</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {product.priceTiers.sort((a, b) => a.minQty - b.minQty).map((tier, i) => (
+                  <div key={i} style={{
+                    padding: '6px 12px', borderRadius: '8px', background: '#fff', border: '1px solid #e5e7eb',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '80px',
+                  }}>
+                    <span style={{ fontSize: '11px', color: '#6b7280' }}>{tier.minQty}+ qty</span>
+                    <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#059669' }}>{tier.price} {currency}</span>
+                    {tier.price < currentPrice && (
+                      <span style={{ fontSize: '10px', color: '#dc2626', fontWeight: 'bold' }}>
+                        Save {Math.round((1 - tier.price / currentPrice) * 100)}%
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Estimated delivery */}
           {product.status !== 'out_of_stock' && (
             <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>

@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingCart, X, Plus, Minus, Trash2 } from 'lucide-react';
+import { ShoppingCart, X, Plus, Minus, Trash2, Heart } from 'lucide-react';
 import { useCart } from '../../store/storefrontCart';
+import { useWishlist } from '../../store/storefrontWishlist';
 
 export default function MiniCartPreview() {
   const { items, cartCount, cartTotal, isOpen, setIsOpen, removeItem, updateQuantity } = useCart();
+  const { toggleWishlist, isInWishlist } = useWishlist();
 
   if (!isOpen) return null;
 
@@ -61,9 +63,14 @@ export default function MiniCartPreview() {
                       <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#059669' }}>{item.price * item.quantity} SAR</span>
                     </div>
                   </div>
-                  <button onClick={() => removeItem(item.key)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', padding: '4px', flexShrink: 0, alignSelf: 'flex-start' }}>
-                    <Trash2 size={16} />
-                  </button>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px', flexShrink: 0, alignSelf: 'flex-start' }}>
+                    <button onClick={() => removeItem(item.key)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', padding: '4px' }}>
+                      <Trash2 size={16} />
+                    </button>
+                    <button onClick={() => { toggleWishlist({ _id: item.productId, title: item.title, basePrice: item.price, images: item.image ? [{ url: item.image }] : [], seo: {} }); removeItem(item.key); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: isInWishlist(item.productId) ? '#ec4899' : '#9ca3af', padding: '4px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '2px' }} title="Save for later">
+                      <Heart size={14} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
