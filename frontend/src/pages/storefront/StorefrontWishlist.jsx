@@ -1,16 +1,29 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Trash2, ShoppingCart } from 'lucide-react';
+import { Heart, Trash2, ShoppingCart, Share2, Check } from 'lucide-react';
 import { useWishlist } from '../../store/storefrontWishlist';
 import { useCart } from '../../store/storefrontCart';
+import StorefrontSeo from '../../components/storefront/StorefrontSeo';
+import StorefrontBreadcrumbs from '../../components/storefront/StorefrontBreadcrumbs';
 
 export default function StorefrontWishlist() {
   const { items, removeItem, count } = useWishlist();
   const { addItem } = useCart();
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = () => {
+    const productIds = items.map(i => i.productId).join(',');
+    const shareUrl = `${window.location.origin}/store/wishlist?ids=${productIds}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   if (count === 0) {
     return (
       <div style={{ maxWidth: '500px', margin: '0 auto', padding: '60px 20px', textAlign: 'center' }}>
+        <StorefrontSeo title="My Wishlist" />
         <Heart size={64} style={{ color: '#d1d5db', margin: '0 auto 16px' }} />
         <h1 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '8px' }}>Your wishlist is empty</h1>
         <p style={{ color: '#6b7280', marginBottom: '24px' }}>Save items you love for later.</p>
@@ -21,8 +34,13 @@ export default function StorefrontWishlist() {
 
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '24px 20px' }}>
+      <StorefrontSeo title="My Wishlist" />
+      <StorefrontBreadcrumbs items={[{ label: 'Wishlist' }]} />
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
         <h1 style={{ fontSize: '28px', fontWeight: 'bold' }}>My Wishlist ({count})</h1>
+        <button onClick={handleShare} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', border: '1px solid #e5e7eb', borderRadius: '8px', background: '#fff', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold', color: '#4f46e5' }}>
+          {copied ? <><Check size={16} /> Copied!</> : <><Share2 size={16} /> Share Wishlist</>}
+        </button>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>

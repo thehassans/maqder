@@ -6,6 +6,7 @@ import { useCart } from '../../store/storefrontCart';
 import { useI18n } from '../../store/storefrontI18n';
 import MiniCartPreview from './MiniCartPreview';
 import CookieConsent from './CookieConsent';
+import MobileBottomNav from './MobileBottomNav';
 
 // Inject pixel scripts into <head> based on store config
 function injectPixelScripts(pixels) {
@@ -329,6 +330,12 @@ export default function StorefrontLayout({ children }) {
 
       {/* Cookie consent banner */}
       <CookieConsent />
+
+      {/* Mobile bottom navigation */}
+      <MobileBottomNav />
+
+      {/* Bottom padding for mobile nav */}
+      <div className="md:hidden" style={{ height: '60px' }} />
     </div>
   );
 }

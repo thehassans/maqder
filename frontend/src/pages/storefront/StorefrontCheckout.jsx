@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Loader2, CheckCircle, AlertCircle, ShoppingCart } from 'lucide-react';
+import { Loader2, CheckCircle, AlertCircle, ShoppingCart, Download, Printer } from 'lucide-react';
 import storeApi from '../../lib/storeApi';
 import { useCart } from '../../store/storefrontCart';
 import { firePixelEvent } from '../../components/storefront/StorefrontLayout';
+import StorefrontSeo from '../../components/storefront/StorefrontSeo';
+import StorefrontBreadcrumbs from '../../components/storefront/StorefrontBreadcrumbs';
 
 export default function StorefrontCheckout() {
   const navigate = useNavigate();
@@ -91,13 +93,26 @@ export default function StorefrontCheckout() {
 
   if (success) {
     return (
-      <div style={{ maxWidth: '500px', margin: '0 auto', padding: '60px 20px', textAlign: 'center' }}>
+      <div style={{ maxWidth: '600px', margin: '0 auto', padding: '60px 20px', textAlign: 'center' }}>
+        <StorefrontSeo title={`Order ${success.orderNumber} — Confirmed`} />
         <CheckCircle size={64} style={{ color: '#059669', margin: '0 auto 16px' }} />
-        <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px' }}>Order Placed!</h1>
+        <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px' }}>Order Placed Successfully!</h1>
         <p style={{ color: '#6b7280', marginBottom: '8px' }}>Your order number is</p>
         <p style={{ fontSize: '20px', fontWeight: 'bold', color: '#4f46e5', marginBottom: '24px' }}>{success.orderNumber}</p>
-        <p style={{ color: '#6b7280', marginBottom: '32px' }}>We'll contact you shortly to confirm your order.</p>
-        <Link to="/store" style={{ display: 'inline-block', padding: '12px 28px', background: '#4f46e5', color: '#fff', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold' }}>Continue Shopping</Link>
+        <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px', marginBottom: '24px', textAlign: 'left' }}>
+          <h3 style={{ fontSize: '15px', fontWeight: 'bold', marginBottom: '12px' }}>What happens next?</h3>
+          <ul style={{ fontSize: '14px', color: '#4b5563', lineHeight: 1.8, paddingLeft: '20px', margin: 0 }}>
+            <li>You'll receive a confirmation call/SMS shortly</li>
+            <li>Track your order anytime at our <Link to="/store/track-order" style={{ color: '#4f46e5', fontWeight: 'bold' }}>Order Tracking</Link> page</li>
+            <li>Use your order number <strong>{success.orderNumber}</strong> and phone number to check status</li>
+          </ul>
+        </div>
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button onClick={() => window.print()} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '12px 20px', border: '1px solid #e5e7eb', borderRadius: '8px', background: '#fff', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', color: '#374151' }}>
+            <Printer size={16} /> Print Receipt
+          </button>
+          <Link to="/store" style={{ display: 'inline-block', padding: '12px 28px', background: '#4f46e5', color: '#fff', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold' }}>Continue Shopping</Link>
+        </div>
       </div>
     );
   }
@@ -117,7 +132,12 @@ export default function StorefrontCheckout() {
 
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '24px 20px' }}>
-      <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '24px' }}>Checkout</h1>
+      <StorefrontSeo title="Checkout" />
+      <StorefrontBreadcrumbs items={[{ label: 'Checkout' }]} />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+        <h1 style={{ fontSize: '28px', fontWeight: 'bold' }}>Checkout</h1>
+        <span style={{ fontSize: '13px', color: '#6b7280', background: '#f3f4f6', padding: '4px 12px', borderRadius: '999px', fontWeight: 'bold' }}>Guest Checkout — No account needed</span>
+      </div>
 
       {error && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '12px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: '#dc2626', fontSize: '14px' }}><AlertCircle size={16} /> {error}</div>}
 

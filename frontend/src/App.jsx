@@ -153,6 +153,8 @@ import EcommerceCouriers from './pages/ecommerce/EcommerceCouriers'
 import EcommercePixels from './pages/ecommerce/EcommercePixels'
 import EcommerceReviews from './pages/ecommerce/EcommerceReviews'
 import EcommerceNewsletter from './pages/ecommerce/EcommerceNewsletter'
+import EcommerceInventory from './pages/ecommerce/EcommerceInventory'
+import EcommerceCustomers from './pages/ecommerce/EcommerceCustomers'
 import EcommerceCoupons from './pages/ecommerce/EcommerceCoupons'
 import StorefrontHome from './pages/storefront/StorefrontHome'
 import StorefrontProducts from './pages/storefront/StorefrontProducts'
@@ -593,6 +595,8 @@ function App() {
         <Route path="ecommerce/coupons" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceCoupons /></BusinessTypeRoute>} />
         <Route path="ecommerce/reviews" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceReviews /></BusinessTypeRoute>} />
         <Route path="ecommerce/newsletter" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceNewsletter /></BusinessTypeRoute>} />
+        <Route path="ecommerce/inventory" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceInventory /></BusinessTypeRoute>} />
+        <Route path="ecommerce/customers" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceCustomers /></BusinessTypeRoute>} />
         <Route path="ecommerce/settings" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceStoreSettings /></BusinessTypeRoute>} />
 
         <Route path="restaurant/reservations" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantReservations /></BusinessTypeRoute>} />
