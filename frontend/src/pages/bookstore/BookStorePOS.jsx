@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import { ShoppingCart, CreditCard, Wallet, Search, Plus, Minus, Trash2, LogOut, ArrowLeft, BookOpen, CheckCircle2, X } from 'lucide-react';
+import { ShoppingCart, CreditCard, Wallet, Search, Plus, Minus, Trash2, LogOut, ArrowLeft, BookOpen, CheckCircle2, X, Shirt, GraduationCap, Package } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -537,17 +537,23 @@ export default function BookStorePOS() {
                     <img src={product.coverImage} alt="" className="w-10 h-14 object-cover rounded" />
                   ) : (
                     <div className="w-10 h-14 bg-indigo-50 rounded flex items-center justify-center">
-                      <BookOpen className="w-5 h-5 text-indigo-300" />
+                      {(() => {
+                        const pt = product.productType || 'book';
+                        const Icon = pt === 'uniform' ? Shirt : pt === 'course' ? GraduationCap : pt === 'stationery' || pt === 'other' ? Package : BookOpen;
+                        return <Icon className="w-5 h-5 text-indigo-300" />;
+                      })()}
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-sm text-gray-900 truncate">{product.name}</p>
                     {product.author && <p className="text-xs text-gray-400 truncate">{product.author}</p>}
+                    {product.uniformSize && <p className="text-xs text-gray-400 truncate">Size: {product.uniformSize}</p>}
+                    {product.courseLevel && <p className="text-xs text-gray-400 truncate">Level: {product.courseLevel}</p>}
                     {product.isbn && <p className="text-[10px] text-gray-300">ISBN: {product.isbn}</p>}
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-sm text-indigo-600">SAR {Number(product.discountPrice > 0 ? product.discountPrice : product.retailPrice).toFixed(2)}</p>
-                    <p className="text-[10px] text-gray-400">Stock: {product.stockQuantity || 0}</p>
+                    <p className="text-[10px] text-gray-400">{product.productType === 'course' ? `${product.courseEnrolledCount || 0}/${product.courseCapacity || '∞'} enrolled` : `Stock: ${product.stockQuantity || 0}`}</p>
                   </div>
                 </button>
               ))}
@@ -561,7 +567,7 @@ export default function BookStorePOS() {
             <div className="flex flex-col items-center justify-center h-full text-gray-300">
               <ShoppingCart className="w-16 h-16 mb-4 opacity-30" />
               <p className="font-bold text-lg">Cart is empty</p>
-              <p className="text-sm">Scan a book or search to add items</p>
+              <p className="text-sm">Scan or search to add items</p>
             </div>
           ) : (
             <div className="space-y-2">

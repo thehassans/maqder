@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 
 const bookStoreProductSchema = new mongoose.Schema({
   tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
+  productType: { type: String, enum: ['book', 'uniform', 'stationery', 'course', 'other'], default: 'book', index: true },
   name: { type: String, required: true },
   nameAr: { type: String },
   isbn: { type: String, index: true },
@@ -40,6 +41,25 @@ const bookStoreProductSchema = new mongoose.Schema({
   rentalPrice: { type: Number, default: 0 },
   rentalDeposit: { type: Number, default: 0 },
   maxRentalDays: { type: Number, default: 14 },
+  // Uniform-specific fields
+  uniformSize: { type: String },
+  uniformColor: { type: String },
+  uniformGender: { type: String, enum: ['male', 'female', 'unisex'], default: 'unisex' },
+  uniformGradeLevel: { type: String },
+  uniformSchoolName: { type: String },
+  // Course-specific fields
+  courseName: { type: String },
+  courseLevel: { type: String },
+  courseSubject: { type: String },
+  courseDurationWeeks: { type: Number, default: null },
+  courseStartDate: { type: Date, default: null },
+  courseEndDate: { type: Date, default: null },
+  courseInstructor: { type: String },
+  courseSchedule: { type: String },
+  courseCapacity: { type: Number, default: 0 },
+  courseEnrolledCount: { type: Number, default: 0 },
+  courseLocation: { type: String },
+  courseIsComplete: { type: Boolean, default: false },
   isActive: { type: Boolean, default: true },
   coverImage: { type: String },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
