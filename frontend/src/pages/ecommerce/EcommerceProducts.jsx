@@ -16,6 +16,8 @@ export default function EcommerceProducts() {
   const [deleteId, setDeleteId] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [importLoading, setImportLoading] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkLoading, setBulkLoading] = useState(false);
   const fileInputRef = React.useRef(null);
 
   const fetchProducts = useCallback(async () => {
@@ -186,6 +188,28 @@ export default function EcommerceProducts() {
     }
   };
 
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === products.length) setSelectedIds([]);
+    else setSelectedIds(products.map(p => p._id));
+  };
+
+  const handleBulkStatus = async (newStatus) => {
+    setBulkLoading(true);
+    try {
+      await Promise.all(selectedIds.map(id => api.patch(`/ecommerce/products/${id}/status`, { status: newStatus })));
+      setSelectedIds([]);
+      fetchProducts();
+    } catch (err) {
+      alert(err.response?.data?.error || 'Bulk update failed');
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-12">
       <div className="flex items-center justify-between">
@@ -250,6 +274,22 @@ export default function EcommerceProducts() {
         )}
       </div>
 
+      {/* Bulk action bar */}
+      {selectedIds.length > 0 && (
+        <div className="flex items-center justify-between bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl px-4 py-3">
+          <span className="text-sm font-bold text-indigo-700 dark:text-indigo-300">{selectedIds.length} selected</span>
+          <div className="flex items-center gap-2">
+            <button onClick={() => handleBulkStatus('active')} disabled={bulkLoading} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 disabled:opacity-50">
+              <CheckCircle className="w-3 h-3" /> Activate
+            </button>
+            <button onClick={() => handleBulkStatus('archived')} disabled={bulkLoading} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-100 text-amber-700 text-xs font-bold hover:bg-amber-200 disabled:opacity-50">
+              <Archive className="w-3 h-3" /> Archive
+            </button>
+            <button onClick={() => setSelectedIds([])} className="px-3 py-1.5 rounded-lg text-gray-500 text-xs font-bold hover:bg-gray-100 dark:hover:bg-dark-700">Clear</button>
+          </div>
+        </div>
+      )}
+
       {/* Products table */}
       {loading ? (
         <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>
@@ -273,6 +313,9 @@ export default function EcommerceProducts() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 dark:border-dark-700 text-left text-xs text-gray-400 uppercase tracking-wider">
+                    <th className="px-4 py-3 font-bold w-10">
+                      <input type="checkbox" checked={selectedIds.length === products.length && products.length > 0} onChange={toggleSelectAll} className="rounded border-gray-300" />
+                    </th>
                     <th className="px-4 py-3 font-bold">Product</th>
                     <th className="px-4 py-3 font-bold">Status</th>
                     <th className="px-4 py-3 font-bold">Price</th>
@@ -283,7 +326,10 @@ export default function EcommerceProducts() {
                 </thead>
                 <tbody>
                   {products.map(product => (
-                    <tr key={product._id} className="border-b border-gray-50 dark:border-dark-700/50 hover:bg-gray-50 dark:hover:bg-dark-700/30 transition-colors">
+                    <tr key={product._id} className={`border-b border-gray-50 dark:border-dark-700/50 hover:bg-gray-50 dark:hover:bg-dark-700/30 transition-colors ${selectedIds.includes(product._id) ? 'bg-indigo-50/50 dark:bg-indigo-900/10' : ''}`}>
+                      <td className="px-4 py-3">
+                        <input type="checkbox" checked={selectedIds.includes(product._id)} onChange={() => toggleSelect(product._id)} className="rounded border-gray-300" />
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           {product.images?.[0]?.url ? (

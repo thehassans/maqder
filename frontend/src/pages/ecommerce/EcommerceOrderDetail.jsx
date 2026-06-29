@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Loader2, Save, X, AlertCircle, CheckCircle, Truck, CreditCard, MapPin, User, Package, Clock, Ban, Printer } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, X, AlertCircle, CheckCircle, Truck, CreditCard, MapPin, User, Package, Clock, Ban, Printer, StickyNote } from 'lucide-react';
 import api from '../../lib/api';
 
 const STATUS_STYLES = {
@@ -36,6 +36,8 @@ export default function EcommerceOrderDetail() {
   const [showCancel, setShowCancel] = useState(false);
   const [trackingInput, setTrackingInput] = useState('');
   const [courierInput, setCourierInput] = useState('');
+  const [notesInput, setNotesInput] = useState('');
+  const [notesSaving, setNotesSaving] = useState(false);
 
   useEffect(() => {
     api.get(`/ecommerce/orders/${id}`)
@@ -43,6 +45,7 @@ export default function EcommerceOrderDetail() {
         setOrder(res.data);
         setTrackingInput(res.data.shipping?.trackingNumber || '');
         setCourierInput(res.data.shipping?.courier || '');
+        setNotesInput(res.data.notes || '');
       })
       .catch(err => setError(err.response?.data?.error || 'Failed to load order'))
       .finally(() => setLoading(false));
@@ -114,6 +117,20 @@ export default function EcommerceOrderDetail() {
       setError(err.response?.data?.error || 'Failed to cancel order');
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const handleSaveNotes = async () => {
+    setNotesSaving(true);
+    try {
+      const res = await api.patch(`/ecommerce/orders/${id}/notes`, { notes: notesInput });
+      setOrder(res.data);
+      setSuccess('Internal notes saved');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to save notes');
+    } finally {
+      setNotesSaving(false);
     }
   };
 
@@ -232,9 +249,23 @@ export default function EcommerceOrderDetail() {
               ))}
             </div>
           </div>
-        </div>
 
-        {/* Right: Customer, Payment, Shipping, Actions */}
+          {/* Internal notes */}
+          <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-5">
+            <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-3"><StickyNote className="w-4 h-4 text-gray-400" /> Internal Notes</h3>
+            <textarea
+              value={notesInput}
+              onChange={e => setNotesInput(e.target.value)}
+              placeholder="Add internal notes (not visible to customer)..."
+              rows={3}
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+            />
+            <button onClick={handleSaveNotes} disabled={notesSaving} className="mt-2 flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 disabled:opacity-50">
+              {notesSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+              Save Notes
+            </button>
+          </div>
+        </div>
         <div className="space-y-6">
           {/* Customer */}
           <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-5">

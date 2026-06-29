@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Search, Loader2, ChevronLeft, ChevronRight, SlidersHorizontal, Eye } from 'lucide-react';
+import { Search, Loader2, ChevronLeft, ChevronRight, SlidersHorizontal, Eye, Star } from 'lucide-react';
 import storeApi from '../../lib/storeApi';
 import StorefrontSeo from '../../components/storefront/StorefrontSeo';
 import StorefrontBreadcrumbs from '../../components/storefront/StorefrontBreadcrumbs';
@@ -15,6 +15,7 @@ export default function StorefrontProducts() {
   const [quickViewProduct, setQuickViewProduct] = useState(null);
   const [allProducts, setAllProducts] = useState([]);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [reviewStats, setReviewStats] = useState({});
 
   const search = searchParams.get('search') || '';
   const category = searchParams.get('category') || '';
@@ -37,10 +38,19 @@ export default function StorefrontProducts() {
     if (maxPrice) params.set('maxPrice', maxPrice);
     if (inStock) params.set('inStock', inStock);
     storeApi.get(`/products?${params}`)
-      .then(res => { setData(res.data); setAllProducts(res.data.products); })
+      .then(res => { setData(res.data); setAllProducts(res.data.products); fetchReviewStats(res.data.products); })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [search, category, sort, page, minPrice, maxPrice, inStock]);
+
+  const fetchReviewStats = async (products) => {
+    if (!products?.length) return;
+    const ids = products.map(p => p._id).join(',');
+    try {
+      const res = await storeApi.get(`/review-stats?productIds=${ids}`);
+      setReviewStats(res.data);
+    } catch {}
+  };
 
   const updateParam = (key, value) => {
     const next = new URLSearchParams(searchParams);
@@ -180,6 +190,16 @@ export default function StorefrontProducts() {
                     </div>
                     <div style={{ padding: '12px' }}>
                       <p style={{ fontWeight: 'bold', fontSize: '14px', color: c('text', '#111'), margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</p>
+                      {reviewStats[p._id]?.count > 0 && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                          <div style={{ display: 'flex' }}>
+                            {[1,2,3,4,5].map(n => (
+                              <Star key={n} size={12} fill={n <= Math.round(reviewStats[p._id].avgRating) ? '#fbbf24' : 'none'} color={n <= Math.round(reviewStats[p._id].avgRating) ? '#fbbf24' : '#d1d5db'} />
+                            ))}
+                          </div>
+                          <span style={{ fontSize: '11px', color: c('textMuted', '#6b7280') }}>({reviewStats[p._id].count})</span>
+                        </div>
+                      )}
                       {p.compareAtPrice && p.compareAtPrice > p.basePrice && (
                         <span style={{ fontSize: '12px', color: c('salePriceColor', '#dc2626'), textDecoration: 'line-through', marginRight: '6px' }}>{p.compareAtPrice} {currency}</span>
                       )}

@@ -491,4 +491,22 @@ router.post('/:id/cancel', protect, async (req, res) => {
   }
 });
 
+// --- UPDATE INTERNAL NOTES ---
+router.patch('/:id/notes', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+
+    const order = await EcommerceOrder.findOneAndUpdate(
+      { _id: req.params.id, tenantId },
+      { notes: req.body.notes || '' },
+      { new: true }
+    );
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    res.json(order);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 export default router;

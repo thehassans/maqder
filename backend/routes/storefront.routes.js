@@ -1,7 +1,9 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Tenant from '../models/Tenant.js';
 import EcommerceProduct from '../models/EcommerceProduct.js';
 import EcommerceOrder from '../models/EcommerceOrder.js';
+import EcommerceReview from '../models/EcommerceReview.js';
 import { resolveTenantByHost } from '../middleware/resolveTenantByHost.js';
 import { createCheckoutSession } from '../services/paymentService.js';
 import { fireServerSideEvents, getPublicPixelConfig } from '../services/pixelService.js';
@@ -78,6 +80,25 @@ router.get('/products', async (req, res) => {
     const categories = await EcommerceProduct.distinct('category', { tenantId, status: 'active' });
 
     res.json({ products, total, page: Number(page), totalPages: Math.ceil(total / Number(limit)), categories });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- BATCH REVIEW STATS (for product cards) ---
+router.get('/review-stats', async (req, res) => {
+  try {
+    const tenantId = req.storeTenant._id;
+    const { productIds } = req.query;
+    if (!productIds) return res.json({});
+    const ids = productIds.split(',').filter(Boolean);
+    const stats = await EcommerceReview.aggregate([
+      { $match: { tenantId, productId: { $in: ids.map(id => new mongoose.Types.ObjectId(id)) }, status: 'approved' } },
+      { $group: { _id: '$productId', avgRating: { $avg: '$rating' }, count: { $sum: 1 } } },
+    ]);
+    const result = {};
+    stats.forEach(s => { result[s._id] = { avgRating: Math.round(s.avgRating * 10) / 10, count: s.count }; });
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

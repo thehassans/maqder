@@ -345,6 +345,25 @@ export default function StorefrontProductDetail() {
           <button onClick={() => setZoomed(false)} style={{ position: 'absolute', top: '20px', right: '20px', background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%', width: '40px', height: '40px', cursor: 'pointer', color: '#fff', fontSize: '20px' }}>×</button>
         </div>
       )}
+
+      {/* Sticky add-to-cart bar (mobile only) */}
+      <div className="md:hidden" style={{
+        position: 'fixed', bottom: '56px', left: 0, right: 0, zIndex: 90,
+        background: '#fff', borderTop: '1px solid #e5e7eb', padding: '8px 12px',
+        display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 -2px 12px rgba(0,0,0,0.06)',
+      }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontSize: '12px', color: '#6b7280', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.title}</p>
+          <p style={{ fontSize: '16px', fontWeight: 'bold', color: '#059669', margin: 0 }}>{currentPrice} {currency}</p>
+        </div>
+        <button onClick={handleAddToCart} disabled={outOfStock} style={{
+          padding: '10px 20px', background: added ? '#059669' : '#4f46e5', color: '#fff', border: 'none', borderRadius: '8px',
+          fontWeight: 'bold', fontSize: '14px', cursor: outOfStock ? 'not-allowed' : 'pointer', opacity: outOfStock ? 0.5 : 1,
+          display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0,
+        }}>
+          {added ? <><Check size={16} /> Added</> : <><ShoppingCart size={16} /> Add</>}
+        </button>
+      </div>
     </div>
   );
 }
