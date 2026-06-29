@@ -704,7 +704,7 @@ router.get('/books/list', protect, async (req, res) => {
   try {
     const tenantId = await getTargetTenantId(req.user);
     if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
-    const books = await BookStoreProduct.find({ tenantId, productType: 'book', isActive: true })
+    const books = await BookStoreProduct.find({ tenantId, isActive: true, $or: [{ productType: 'book' }, { productType: { $exists: false } }, { productType: null }] })
       .select('name nameAr isbn primaryBarcode author retailPrice discountPrice coverImage stockQuantity')
       .sort('name')
       .lean();

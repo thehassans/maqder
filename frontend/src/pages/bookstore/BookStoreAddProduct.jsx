@@ -83,7 +83,13 @@ export default function BookStoreAddProduct() {
 
   useEffect(() => {
     if (form.productType === 'course') {
-      api.get('/bookstore/books/list').then(res => setAvailableBooks(res.data || [])).catch(() => {});
+      api.get('/bookstore/books/list')
+        .then(res => {
+          setAvailableBooks(res.data || []);
+        })
+        .catch((err) => {
+          console.error('Failed to load books list:', err?.response?.data || err);
+        });
     }
   }, [form.productType]);
 
