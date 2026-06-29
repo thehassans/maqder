@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Store, Loader2, TrendingUp, TrendingDown, ShoppingBag, DollarSign, Package, ArrowUpRight, ArrowDownRight, CreditCard, Truck, Clock, CheckCircle, AlertTriangle, Download, Users } from 'lucide-react';
+import { Store, Loader2, TrendingUp, TrendingDown, ShoppingBag, DollarSign, Package, ArrowUpRight, ArrowDownRight, CreditCard, Truck, Clock, CheckCircle, AlertTriangle, Download, Users, ExternalLink, Eye, X } from 'lucide-react';
 import api from '../../lib/api';
 
 const STATUS_COLORS = {
@@ -20,6 +20,7 @@ export default function EcommerceDashboard() {
   const [analytics, setAnalytics] = useState(null);
   const [lowStockProducts, setLowStockProducts] = useState([]);
   const [days, setDays] = useState(30);
+  const [showPreview, setShowPreview] = useState(false);
 
   const fetchAnalytics = useCallback(async () => {
     try {
@@ -31,7 +32,7 @@ export default function EcommerceDashboard() {
   }, [days]);
 
   useEffect(() => {
-    api.get('/ecommerce/settings').then(res => setSettings(res.data?.ecommerce || {})).catch(() => {});
+    api.get('/ecommerce/settings').then(res => setSettings({ ...(res.data?.ecommerce || {}), slug: res.data?.slug || '' })).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -52,6 +53,14 @@ export default function EcommerceDashboard() {
 
   const storeLive = settings.storeStatus === 'live';
   const a = analytics || {};
+  const PLATFORM_BASE = 'shop.maqder.com';
+  const subdomain = settings.subdomain || settings.slug || '';
+  const verifiedDomain = (settings.domains || []).find(d => d.status === 'verified');
+  const storefrontUrl = verifiedDomain
+    ? `https://${verifiedDomain.hostname}`
+    : subdomain
+      ? `https://${subdomain}.${PLATFORM_BASE}`
+      : null;
 
   // Simple SVG sparkline for revenue chart
   const maxRevenue = Math.max(...(a.revenueSeries || []).map(d => d.revenue), 1);
@@ -83,8 +92,26 @@ export default function EcommerceDashboard() {
             </p>
           </div>
         </div>
-        {/* Period selector + export */}
+        {/* Period selector + export + preview */}
         <div className="flex items-center gap-2">
+          {storefrontUrl && (
+            <>
+              <button
+                onClick={() => setShowPreview(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+              >
+                <Eye className="w-3.5 h-3.5" /> Preview
+              </button>
+              <a
+                href={storefrontUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold border border-gray-200 dark:border-dark-600 text-gray-600 hover:bg-gray-50 dark:hover:bg-dark-700"
+              >
+                <ExternalLink className="w-3 h-3" /> Open
+              </a>
+            </>
+          )}
           <div className="flex gap-1 bg-gray-100 dark:bg-dark-700 rounded-full p-1">
             {[7, 30, 90].map(d => (
               <button key={d} onClick={() => setDays(d)} className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${days === d ? 'bg-indigo-600 text-white' : 'text-gray-500'}`}>
@@ -405,6 +432,32 @@ export default function EcommerceDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Live Preview Modal */}
+      {showPreview && storefrontUrl && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setShowPreview(false)}>
+          <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-dark-700">
+              <div className="flex items-center gap-2">
+                <Eye className="w-5 h-5 text-indigo-600" />
+                <span className="font-bold text-gray-900 dark:text-white">Store Preview</span>
+                <span className="text-xs text-gray-400 ml-2">{storefrontUrl.replace('https://', '')}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <a href={storefrontUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-colors">
+                  <ExternalLink className="w-3.5 h-3.5" /> Open in new tab
+                </a>
+                <button onClick={() => setShowPreview(false)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 bg-gray-50 dark:bg-dark-900">
+              <iframe src={storefrontUrl} className="w-full h-full border-0" title="Store Preview" sandbox="allow-same-origin allow-scripts allow-popups allow-forms" />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

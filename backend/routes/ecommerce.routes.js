@@ -4,6 +4,7 @@ import { protect } from '../middleware/auth.js';
 import Tenant from '../models/Tenant.js';
 import EcommerceProduct from '../models/EcommerceProduct.js';
 import { clearTenantHostCache } from '../middleware/resolveTenantByHost.js';
+import { provisionCloudflareDomain, verifyDomainViaCloudflare, removeCloudflareDomain, getSSLStatus, isCloudflareConfigured } from '../services/cloudflareService.js';
 
 const router = express.Router();
 
@@ -114,6 +115,7 @@ router.get('/domains', protect, async (req, res) => {
     const tenantId = await getTargetTenantId(req.user);
     if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
     const tenant = await Tenant.findById(tenantId).select('ecommerce.domains').lean();
+    res.setHeader('x-cloudflare-configured', isCloudflareConfigured() ? 'true' : 'false');
     res.json(tenant?.ecommerce?.domains || []);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -149,6 +151,30 @@ router.post('/domains', protect, async (req, res) => {
     });
     await tenant.save();
     clearTenantHostCache(hostname);
+
+    // Auto-provision DNS records via Cloudflare if configured
+    let cloudflareResult = null;
+    if (isCloudflareConfigured()) {
+      try {
+        cloudflareResult = await provisionCloudflareDomain(hostname, verificationToken);
+        if (cloudflareResult?.configured && cloudflareResult?.results?.cname?.success) {
+          // DNS records created automatically — domain can be auto-verified
+          const verifyResult = await verifyDomainViaCloudflare(hostname, verificationToken);
+          if (verifyResult.verified) {
+            const d = tenant.ecommerce.domains.id(tenant.ecommerce.domains[tenant.ecommerce.domains.length - 1]._id);
+            if (d) {
+              d.status = 'verified';
+              d.verifiedAt = new Date();
+              d.sslStatus = 'pending';
+              await tenant.save();
+            }
+          }
+        }
+      } catch {
+        // Cloudflare provisioning failed — user can still verify manually
+      }
+    }
+
     res.status(201).json(tenant.ecommerce.domains);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -166,22 +192,42 @@ router.post('/domains/:id/verify', protect, async (req, res) => {
     const domain = tenant.ecommerce?.domains?.id(req.params.id);
     if (!domain) return res.status(404).json({ error: 'Domain not found' });
 
-    // DNS verification via TXT record _maqder-verify.<hostname>
+    // Try Cloudflare verification first, fall back to DNS lookup
     let verified = false;
-    try {
-      const dns = await import('dns');
-      const resolveTxt = dns.promises.resolveTxt;
-      const records = await resolveTxt(`_maqder-verify.${domain.hostname}`).catch(() => []);
-      const flat = records.flat().join(' ');
-      verified = flat.includes(domain.verificationToken);
-    } catch {
-      verified = false;
+    let sslStatus = 'none';
+
+    if (isCloudflareConfigured()) {
+      try {
+        const cfResult = await verifyDomainViaCloudflare(domain.hostname, domain.verificationToken);
+        if (cfResult.configured) {
+          verified = cfResult.verified;
+          if (verified) {
+            const sslResult = await getSSLStatus(domain.hostname);
+            sslStatus = sslResult.status || 'pending';
+          }
+        }
+      } catch {
+        // Fall through to DNS lookup
+      }
+    }
+
+    // Fallback: DNS verification via TXT record _maqder-verify.<hostname>
+    if (!verified) {
+      try {
+        const dns = await import('dns');
+        const resolveTxt = dns.promises.resolveTxt;
+        const records = await resolveTxt(`_maqder-verify.${domain.hostname}`).catch(() => []);
+        const flat = records.flat().join(' ');
+        verified = flat.includes(domain.verificationToken);
+      } catch {
+        verified = false;
+      }
     }
 
     domain.status = verified ? 'verified' : 'failed';
     if (verified) {
       domain.verifiedAt = new Date();
-      domain.sslStatus = 'pending'; // SSL provisioning handled by Cloudflare-for-SaaS job
+      domain.sslStatus = sslStatus !== 'none' ? sslStatus : 'pending';
     }
     await tenant.save();
     clearTenantHostCache(domain.hostname);
@@ -203,7 +249,61 @@ router.delete('/domains/:id', protect, async (req, res) => {
     domain.deleteOne();
     await tenant.save();
     clearTenantHostCache(hostname);
+
+    // Clean up Cloudflare DNS records if configured
+    if (isCloudflareConfigured()) {
+      try {
+        await removeCloudflareDomain(hostname);
+      } catch {
+        // Non-critical — domain already removed from tenant
+      }
+    }
+
     res.json({ success: true });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Set a domain as primary
+router.put('/domains/:id/primary', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    const tenant = await Tenant.findById(tenantId);
+    if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+    const domain = tenant.ecommerce?.domains?.id(req.params.id);
+    if (!domain) return res.status(404).json({ error: 'Domain not found' });
+    if (domain.status !== 'verified') return res.status(400).json({ error: 'Domain must be verified first' });
+    tenant.ecommerce.domains.forEach(d => { d.isPrimary = (d._id.toString() === req.params.id); });
+    await tenant.save();
+    clearTenantHostCache();
+    res.json(tenant.ecommerce.domains);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Refresh SSL status for all domains
+router.post('/domains/refresh-ssl', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    const tenant = await Tenant.findById(tenantId);
+    if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+    const domains = tenant.ecommerce?.domains || [];
+    for (const domain of domains) {
+      if (domain.status === 'verified' && isCloudflareConfigured()) {
+        try {
+          const sslResult = await getSSLStatus(domain.hostname);
+          domain.sslStatus = sslResult.status || domain.sslStatus;
+        } catch {
+          // keep existing status
+        }
+      }
+    }
+    await tenant.save();
+    res.json(tenant.ecommerce.domains);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }

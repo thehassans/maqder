@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Globe, Plus, Trash2, Loader2, CheckCircle2, XCircle, Clock, RefreshCw } from 'lucide-react';
+import { Globe, Plus, Trash2, Loader2, CheckCircle2, XCircle, Clock, RefreshCw, Cloud, ShieldCheck, AlertCircle, ExternalLink } from 'lucide-react';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 
@@ -12,6 +12,8 @@ export default function EcommerceDomains() {
   const [newDomain, setNewDomain] = useState('');
   const [adding, setAdding] = useState(false);
   const [verifyingId, setVerifyingId] = useState(null);
+  const [sslChecking, setSslChecking] = useState(false);
+  const [cloudflareStatus, setCloudflareStatus] = useState(null);
 
   useEffect(() => { fetchDomains(); }, []);
 
@@ -21,6 +23,8 @@ export default function EcommerceDomains() {
       setSlug(res.data?.slug || '');
       const d = await api.get('/ecommerce/domains');
       setDomains(d.data || []);
+      // Check Cloudflare config status from the domains response
+      setCloudflareStatus(d.headers?.['x-cloudflare-configured'] || null);
     } catch {
       toast.error('Failed to load domains');
     } finally {
@@ -48,7 +52,7 @@ export default function EcommerceDomains() {
     try {
       const res = await api.post(`/ecommerce/domains/${id}/verify`);
       if (res.data.verified) {
-        toast.success('Domain verified successfully!');
+        toast.success('Domain verified successfully! SSL is being provisioned.');
       } else {
         toast.error('DNS record not found yet — please add the TXT record and try again');
       }
@@ -57,6 +61,29 @@ export default function EcommerceDomains() {
       toast.error(err.response?.data?.error || 'Verification failed');
     } finally {
       setVerifyingId(null);
+    }
+  };
+
+  const handleSetPrimary = async (id) => {
+    try {
+      await api.put(`/ecommerce/domains/${id}/primary`);
+      toast.success('Primary domain updated');
+      fetchDomains();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to set primary domain');
+    }
+  };
+
+  const handleCheckSSL = async () => {
+    setSslChecking(true);
+    try {
+      await api.post('/ecommerce/domains/refresh-ssl');
+      toast.success('SSL status refreshed');
+      fetchDomains();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to refresh SSL');
+    } finally {
+      setSslChecking(false);
     }
   };
 
@@ -94,10 +121,40 @@ export default function EcommerceDomains() {
         <div className="w-11 h-11 rounded-2xl bg-indigo-50 flex items-center justify-center">
           <Globe className="w-6 h-6 text-indigo-600" />
         </div>
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white">Domains</h1>
           <p className="text-sm text-gray-400">Connect a custom domain to your store</p>
         </div>
+        {domains.length > 0 && (
+          <button
+            onClick={handleCheckSSL}
+            disabled={sslChecking}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold border border-gray-200 dark:border-dark-600 text-gray-600 hover:bg-gray-50 dark:hover:bg-dark-700 disabled:opacity-60 transition-colors"
+          >
+            {sslChecking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
+            Refresh SSL
+          </button>
+        )}
+      </div>
+
+      {/* Cloudflare status badge */}
+      <div className={`rounded-2xl p-4 flex items-center gap-3 ${cloudflareStatus ? 'bg-blue-50 border border-blue-100' : 'bg-gray-50 border border-gray-100 dark:bg-dark-800 dark:border-dark-700'}`}>
+        <Cloud className={`w-5 h-5 ${cloudflareStatus ? 'text-blue-500' : 'text-gray-400'}`} />
+        <div className="flex-1">
+          <p className="text-sm font-bold text-gray-900 dark:text-white">
+            {cloudflareStatus ? 'Cloudflare DNS Auto-Provisioning Active' : 'Cloudflare Not Configured'}
+          </p>
+          <p className="text-xs text-gray-400">
+            {cloudflareStatus
+              ? 'DNS records and SSL certificates are automatically provisioned when you add a domain.'
+              : 'Set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ZONE_ID in the server environment to enable automatic DNS provisioning.'}
+          </p>
+        </div>
+        {cloudflareStatus && (
+          <div className="px-2.5 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold flex items-center gap-1">
+            <CheckCircle2 className="w-3 h-3" /> Auto
+          </div>
+        )}
       </div>
 
       {/* Platform subdomain card */}
@@ -137,16 +194,22 @@ export default function EcommerceDomains() {
         </div>
         <div className="mt-4 p-4 bg-amber-50 rounded-2xl text-sm text-amber-800 space-y-2">
           <p className="font-bold">How to connect your domain:</p>
-          <p>1. Add a <code className="bg-amber-100 px-1.5 py-0.5 rounded">CNAME</code> record in your DNS provider pointing <code className="bg-amber-100 px-1.5 py-0.5 rounded">store.example.com</code> → <code className="bg-amber-100 px-1.5 py-0.5 rounded">cname.{PLATFORM_BASE}</code></p>
-          <p>2. Add a <code className="bg-amber-100 px-1.5 py-0.5 rounded">TXT</code> record at <code className="bg-amber-100 px-1.5 py-0.5 rounded">_maqder-verify.store.example.com</code> with the verification token shown below</p>
-          <p>3. Click <strong>Verify</strong> — SSL is provisioned automatically once verified</p>
+          {cloudflareStatus ? (
+            <p className="flex items-center gap-1.5"><Cloud className="w-4 h-4 text-blue-500" /> Cloudflare will automatically create the DNS records and provision SSL — just click <strong>Add</strong> and we handle the rest.</p>
+          ) : (
+            <>
+              <p>1. Add a <code className="bg-amber-100 px-1.5 py-0.5 rounded">CNAME</code> record in your DNS provider pointing <code className="bg-amber-100 px-1.5 py-0.5 rounded">store.example.com</code> → <code className="bg-amber-100 px-1.5 py-0.5 rounded">cname.{PLATFORM_BASE}</code></p>
+              <p>2. Add a <code className="bg-amber-100 px-1.5 py-0.5 rounded">TXT</code> record at <code className="bg-amber-100 px-1.5 py-0.5 rounded">_maqder-verify.store.example.com</code> with the verification token shown below</p>
+              <p>3. Click <strong>Verify</strong> — SSL is provisioned automatically once verified</p>
+            </>
+          )}
         </div>
       </div>
 
       {/* Custom domains list */}
       {domains.length > 0 && (
         <div className="bg-white dark:bg-dark-800 rounded-3xl shadow-sm border border-gray-100 dark:border-dark-700 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100 dark:border-dark-700">
+          <div className="px-6 py-4 border-b border-gray-100 dark:border-dark-700 flex items-center justify-between">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white">Custom Domains ({domains.length})</h3>
           </div>
           <div className="divide-y divide-gray-50 dark:divide-dark-700">
@@ -156,12 +219,21 @@ export default function EcommerceDomains() {
                   {statusIcon(domain.status)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-sm text-gray-900 dark:text-white truncate">{domain.hostname}</p>
-                  <p className="text-xs text-gray-400">
-                    {statusLabel(domain.status)}
-                    {domain.sslStatus === 'active' && ' · SSL Active'}
-                    {domain.isPrimary && ' · Primary'}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-bold text-sm text-gray-900 dark:text-white truncate">{domain.hostname}</p>
+                    {domain.isPrimary && (
+                      <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[10px] font-bold">PRIMARY</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <p className="text-xs text-gray-400">{statusLabel(domain.status)}</p>
+                    {domain.sslStatus === 'active' && (
+                      <span className="flex items-center gap-0.5 text-xs text-emerald-600 font-bold"><ShieldCheck className="w-3 h-3" /> SSL Active</span>
+                    )}
+                    {domain.sslStatus === 'pending' && (
+                      <span className="flex items-center gap-0.5 text-xs text-amber-600 font-bold"><Clock className="w-3 h-3" /> SSL Pending</span>
+                    )}
+                  </div>
                   {domain.status !== 'verified' && domain.verificationToken && (
                     <div className="mt-1.5 flex items-center gap-2">
                       <code className="text-[10px] bg-gray-100 dark:bg-dark-700 px-2 py-1 rounded text-gray-600 dark:text-gray-400 break-all">
@@ -171,6 +243,14 @@ export default function EcommerceDomains() {
                   )}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  {domain.status === 'verified' && !domain.isPrimary && (
+                    <button
+                      onClick={() => handleSetPrimary(domain._id)}
+                      className="px-3 py-2 bg-gray-50 text-gray-600 rounded-lg text-xs font-bold hover:bg-gray-100 transition-colors"
+                    >
+                      Set Primary
+                    </button>
+                  )}
                   {domain.status !== 'verified' && (
                     <button
                       onClick={() => handleVerify(domain._id)}
@@ -180,6 +260,17 @@ export default function EcommerceDomains() {
                       {verifyingId === domain._id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
                       Verify
                     </button>
+                  )}
+                  {domain.status === 'verified' && (
+                    <a
+                      href={`https://${domain.hostname}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                      title="Open store"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
                   )}
                   <button
                     onClick={() => handleDelete(domain._id)}
