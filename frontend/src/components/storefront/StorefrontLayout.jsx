@@ -237,6 +237,8 @@ export default function StorefrontLayout({ children }) {
             <h4 style={{ color: '#fff', margin: '0 0 8px', fontSize: '14px' }}>Quick Links</h4>
             <Link to="/store" style={{ display: 'block', color: c('footerText', '#9ca3af'), textDecoration: 'none', fontSize: '13px', marginBottom: '4px' }}>Home</Link>
             <Link to="/store/products" style={{ display: 'block', color: c('footerText', '#9ca3af'), textDecoration: 'none', fontSize: '13px', marginBottom: '4px' }}>All Products</Link>
+            <Link to="/store/wishlist" style={{ display: 'block', color: c('footerText', '#9ca3af'), textDecoration: 'none', fontSize: '13px', marginBottom: '4px' }}>Wishlist</Link>
+            <Link to="/store/track-order" style={{ display: 'block', color: c('footerText', '#9ca3af'), textDecoration: 'none', fontSize: '13px', marginBottom: '4px' }}>Track Order</Link>
           </div>
           {footer.showContact !== false && (
             <div>

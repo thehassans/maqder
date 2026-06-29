@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Store, Loader2, TrendingUp, TrendingDown, ShoppingBag, DollarSign, Package, ArrowUpRight, ArrowDownRight, CreditCard, Truck, Clock, CheckCircle } from 'lucide-react';
+import { Store, Loader2, TrendingUp, TrendingDown, ShoppingBag, DollarSign, Package, ArrowUpRight, ArrowDownRight, CreditCard, Truck, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
 import api from '../../lib/api';
 
 const STATUS_COLORS = {
@@ -18,6 +18,7 @@ export default function EcommerceDashboard() {
   const [loading, setLoading] = useState(true);
   const [settings, setSettings] = useState(null);
   const [analytics, setAnalytics] = useState(null);
+  const [lowStockProducts, setLowStockProducts] = useState([]);
   const [days, setDays] = useState(30);
 
   const fetchAnalytics = useCallback(async () => {
@@ -36,6 +37,14 @@ export default function EcommerceDashboard() {
   useEffect(() => {
     Promise.all([fetchAnalytics()]).finally(() => setLoading(false));
   }, [fetchAnalytics]);
+
+  useEffect(() => {
+    api.get('/ecommerce/products?limit=200').then(res => {
+      const products = res.data.products || [];
+      const lowStock = products.filter(p => p.trackInventory && p.stockQuantity <= (p.lowStockThreshold || 5));
+      setLowStockProducts(lowStock);
+    }).catch(() => {});
+  }, []);
 
   if (loading) {
     return <div className="flex justify-center items-center h-[calc(100vh-8rem)]"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>;
@@ -93,6 +102,26 @@ export default function EcommerceDashboard() {
           <div className="flex-1">
             <p className="text-sm font-bold text-amber-800">Your store is not live yet</p>
             <p className="text-xs text-amber-600">Add products, customize your theme, and publish your store to start selling.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Low stock alert */}
+      {lowStockProducts.length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <AlertTriangle className="w-5 h-5 text-red-600" />
+            <p className="text-sm font-bold text-red-800">Low Stock Alert — {lowStockProducts.length} product{lowStockProducts.length !== 1 ? 's' : ''} need attention</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {lowStockProducts.slice(0, 8).map(p => (
+              <Link key={p._id} to={`/app/dashboard/ecommerce/products/${p._id}`} className="inline-flex items-center gap-2 bg-white border border-red-200 rounded-lg px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-50">
+                {p.title} — {p.stockQuantity} left
+              </Link>
+            ))}
+            {lowStockProducts.length > 8 && (
+              <span className="inline-flex items-center px-3 py-1.5 text-xs text-red-500">+{lowStockProducts.length - 8} more</span>
+            )}
           </div>
         </div>
       )}

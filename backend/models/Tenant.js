@@ -234,6 +234,14 @@ const ecommerceSchema = new mongoose.Schema({
       freeShippingThreshold: { type: Number, default: 0 },
     },
   },
+  // Newsletter subscribers
+  newsletterSubscribers: [{
+    email: { type: String, required: true },
+    subscribedAt: { type: Date, default: Date.now },
+    isActive: { type: Boolean, default: true },
+    unsubscribedAt: { type: Date, default: null },
+    resubscribedAt: { type: Date, default: null },
+  }],
   // Shopify-style JSON-driven theme customization
   theme: {
     // Currently published config (what the storefront renders)

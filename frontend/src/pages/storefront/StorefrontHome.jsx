@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import storeApi from '../../lib/storeApi';
+import StorefrontSeo from '../../components/storefront/StorefrontSeo';
+import { useRecentlyViewed } from '../../store/recentlyViewed';
 
 export default function StorefrontHome() {
   const [storeInfo, setStoreInfo] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { items: recentItems } = useRecentlyViewed();
 
   useEffect(() => {
     Promise.all([
@@ -19,6 +22,11 @@ export default function StorefrontHome() {
   }, []);
 
   if (loading) return <div className="flex justify-center py-40"><Loader2 className="w-8 h-8 animate-spin" /></div>;
+
+  const storeName = storeInfo?.storeName || 'Store';
+  const seoTitle = storeInfo?.seo?.metaTitle || `${storeName} — Online Store`;
+  const seoDesc = storeInfo?.seo?.metaDescription || `Shop at ${storeName}`;
+  const seoImage = storeInfo?.seo?.ogImage || '';
 
   const theme = storeInfo?.theme || {};
   const colors = theme.colors || {};
@@ -98,6 +106,7 @@ export default function StorefrontHome() {
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 20px' }}>
+      <StorefrontSeo title={seoTitle} description={seoDesc} image={seoImage} url={window.location.href} siteName={storeName} />
       {sections.length > 0 ? sections.map(renderSection) : (
         // Fallback if no theme configured
         <>
@@ -112,6 +121,26 @@ export default function StorefrontHome() {
             </div>
           </div>
         </>
+      )}
+
+      {/* Recently viewed products */}
+      {recentItems.length > 0 && (
+        <div style={{ marginBottom: '40px' }}>
+          <h3 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '16px' }}>Recently Viewed</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px' }}>
+            {recentItems.slice(0, 6).map(item => (
+              <Link key={item.productId} to={`/store/products/${item.slug}`} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '10px', overflow: 'hidden', textDecoration: 'none' }}>
+                <div style={{ aspectRatio: '1', background: '#e5e7eb', overflow: 'hidden' }}>
+                  {item.image ? <img src={item.image} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
+                </div>
+                <div style={{ padding: '8px' }}>
+                  <p style={{ fontSize: '12px', fontWeight: 'bold', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#111' }}>{item.title}</p>
+                  <p style={{ fontSize: '13px', fontWeight: 'bold', color: '#059669', margin: 0 }}>{item.price} {currency}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );

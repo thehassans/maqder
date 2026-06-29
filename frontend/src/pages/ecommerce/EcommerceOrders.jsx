@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { ListOrdered, Search, Loader2, Eye, Package, DollarSign, TrendingUp, ShoppingBag, X } from 'lucide-react';
+import { ListOrdered, Search, Loader2, Eye, Package, DollarSign, TrendingUp, ShoppingBag, X, Download, CheckSquare } from 'lucide-react';
 import api from '../../lib/api';
 
 const STATUS_STYLES = {
@@ -41,6 +41,9 @@ export default function EcommerceOrders() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [stats, setStats] = useState(null);
+  const [selected, setSelected] = useState(new Set());
+  const [bulkStatus, setBulkStatus] = useState('');
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -76,6 +79,63 @@ export default function EcommerceOrders() {
   const formatDate = (dateStr) => {
     const d = new Date(dateStr);
     return d.toLocaleDateString('en', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
+  const toggleSelect = (id) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selected.size === orders.length) setSelected(new Set());
+    else setSelected(new Set(orders.map(o => o._id)));
+  };
+
+  const handleBulkStatus = async () => {
+    if (!bulkStatus || selected.size === 0) return;
+    setBulkLoading(true);
+    try {
+      await Promise.all([...selected].map(id => api.patch(`/ecommerce/orders/${id}/status`, { status: bulkStatus })));
+      setSelected(new Set());
+      setBulkStatus('');
+      fetchOrders();
+    } catch (err) {
+      console.error('Bulk update failed', err);
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
+  const exportCsv = () => {
+    const rows = orders.filter(o => selected.size === 0 || selected.has(o._id));
+    const headers = ['Order Number', 'Customer', 'Email', 'Phone', 'Date', 'Items', 'Total', 'Currency', 'Payment Status', 'Payment Method', 'Shipping Status', 'Order Status'];
+    const csv = [
+      headers.join(','),
+      ...rows.map(o => [
+        o.orderNumber,
+        `"${o.customer?.name || ''}"`,
+        `"${o.customer?.email || ''}"`,
+        `"${o.customer?.phone || ''}"`,
+        new Date(o.createdAt).toISOString(),
+        o.lineItems?.length || 0,
+        o.grandTotal || 0,
+        o.currency || 'SAR',
+        o.payment?.status || 'pending',
+        o.payment?.method || '',
+        o.shipping?.status || 'unfulfilled',
+        o.status,
+      ].join(',')),
+    ].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `orders-${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const inputCls = "px-4 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500";
@@ -160,6 +220,35 @@ export default function EcommerceOrders() {
         )}
       </div>
 
+      {/* Bulk actions bar */}
+      {orders.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 px-1">
+          <button onClick={toggleSelectAll} className="flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-indigo-600">
+            <CheckSquare className="w-4 h-4" /> {selected.size === orders.length && orders.length > 0 ? 'Deselect All' : 'Select All'}
+          </button>
+          {selected.size > 0 && (
+            <>
+              <span className="text-sm text-gray-400">{selected.size} selected</span>
+              <select value={bulkStatus} onChange={e => setBulkStatus(e.target.value)} className={inputCls} style={{ width: 'auto' }}>
+                <option value="">Bulk update status...</option>
+                <option value="confirmed">Mark Confirmed</option>
+                <option value="processing">Mark Processing</option>
+                <option value="shipped">Mark Shipped</option>
+                <option value="delivered">Mark Delivered</option>
+                <option value="completed">Mark Completed</option>
+                <option value="cancelled">Mark Cancelled</option>
+              </select>
+              <button onClick={handleBulkStatus} disabled={!bulkStatus || bulkLoading} className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-bold disabled:opacity-40 hover:bg-indigo-700">
+                {bulkLoading ? 'Updating...' : 'Apply'}
+              </button>
+            </>
+          )}
+          <button onClick={exportCsv} className="flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-indigo-600 ml-auto">
+            <Download className="w-4 h-4" /> Export CSV {selected.size > 0 ? `(${selected.size})` : `(all on page)`}
+          </button>
+        </div>
+      )}
+
       {/* Orders table */}
       {loading ? (
         <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>
@@ -176,6 +265,7 @@ export default function EcommerceOrders() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 dark:border-dark-700 text-left text-xs text-gray-400 uppercase tracking-wider">
+                    <th className="px-4 py-3 font-bold"><input type="checkbox" checked={selected.size === orders.length && orders.length > 0} onChange={toggleSelectAll} className="rounded" /></th>
                     <th className="px-4 py-3 font-bold">Order</th>
                     <th className="px-4 py-3 font-bold">Customer</th>
                     <th className="px-4 py-3 font-bold">Date</th>
@@ -189,7 +279,8 @@ export default function EcommerceOrders() {
                 </thead>
                 <tbody>
                   {orders.map(order => (
-                    <tr key={order._id} className="border-b border-gray-50 dark:border-dark-700/50 hover:bg-gray-50 dark:hover:bg-dark-700/30 transition-colors">
+                    <tr key={order._id} className={`border-b border-gray-50 dark:border-dark-700/50 hover:bg-gray-50 dark:hover:bg-dark-700/30 transition-colors ${selected.has(order._id) ? 'bg-indigo-50/50 dark:bg-indigo-900/10' : ''}`}>
+                      <td className="px-4 py-3"><input type="checkbox" checked={selected.has(order._id)} onChange={() => toggleSelect(order._id)} className="rounded" /></td>
                       <td className="px-4 py-3">
                         <Link to={`/app/dashboard/ecommerce/orders/${order._id}`} className="font-bold text-indigo-600 hover:text-indigo-700">
                           {order.orderNumber}

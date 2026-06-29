@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Loader2, ShoppingCart, Check, Minus, Plus, ChevronRight, Star, Heart } from 'lucide-react';
+import { Loader2, ShoppingCart, Check, Minus, Plus, ChevronRight, Star, Heart, ZoomIn } from 'lucide-react';
 import storeApi from '../../lib/storeApi';
 import { useCart } from '../../store/storefrontCart';
 import { useWishlist } from '../../store/storefrontWishlist';
 import { firePixelEvent } from '../../components/storefront/StorefrontLayout';
+import StorefrontSeo from '../../components/storefront/StorefrontSeo';
+import StorefrontBreadcrumbs from '../../components/storefront/StorefrontBreadcrumbs';
+import { useRecentlyViewed } from '../../store/recentlyViewed';
 
 export default function StorefrontProductDetail() {
   const { id } = useParams();
@@ -21,6 +24,8 @@ export default function StorefrontProductDetail() {
   const [reviewMessage, setReviewMessage] = useState('');
   const { addItem } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
+  const { addProduct } = useRecentlyViewed();
+  const [zoomed, setZoomed] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -40,6 +45,8 @@ export default function StorefrontProductDetail() {
           value: res.data.product.basePrice,
           currency: 'SAR',
         });
+        // Add to recently viewed
+        addProduct(res.data.product);
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
@@ -96,21 +103,32 @@ export default function StorefrontProductDetail() {
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 20px' }}>
-      {/* Breadcrumbs */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#6b7280', marginBottom: '24px' }}>
-        <Link to="/store" style={{ color: '#6b7280', textDecoration: 'none' }}>Home</Link>
-        <ChevronRight size={14} />
-        <Link to="/store/products" style={{ color: '#6b7280', textDecoration: 'none' }}>Products</Link>
-        <ChevronRight size={14} />
-        <span style={{ color: '#111' }}>{product.title}</span>
-      </div>
+      <StorefrontSeo
+        title={`${product.title} — ${product.basePrice} ${currency}`}
+        description={product.seo?.metaDescription || product.description?.replace(/<[^>]*>/g, '').slice(0, 160) || product.title}
+        image={product.images?.[0]?.url}
+        url={window.location.href}
+        type="product"
+        siteName="Store"
+      />
+      <StorefrontBreadcrumbs items={[
+        { label: 'Products', href: '/store/products' },
+        { label: product.title },
+      ]} />
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px' }} className="store-pd-grid">
         {/* Images */}
         <div>
-          <div style={{ aspectRatio: '1', borderRadius: '12px', overflow: 'hidden', background: '#f3f4f6', marginBottom: '12px' }}>
+          <div style={{ aspectRatio: '1', borderRadius: '12px', overflow: 'hidden', background: '#f3f4f6', marginBottom: '12px', position: 'relative', cursor: 'zoom-in' }}
+            onClick={() => setZoomed(true)}
+          >
             {product.images?.[selectedImage]?.url ? (
-              <img src={product.images[selectedImage].url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <>
+                <img src={product.images[selectedImage].url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <div style={{ position: 'absolute', bottom: '12px', right: '12px', background: 'rgba(0,0,0,0.5)', borderRadius: '8px', padding: '6px 8px', display: 'flex', alignItems: 'center', gap: '4px', color: '#fff', fontSize: '12px' }}>
+                  <ZoomIn size={14} /> Zoom
+                </div>
+              </>
             ) : (
               <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>No image</div>
             )}
@@ -275,6 +293,16 @@ export default function StorefrontProductDetail() {
       </div>
 
       <style>{`@media(max-width:768px){.store-pd-grid{grid-template-columns:1fr!important}.store-reviews-grid{grid-template-columns:1fr!important}}`}</style>
+
+      {/* Image zoom modal */}
+      {zoomed && product.images?.[selectedImage]?.url && (
+        <div onClick={() => setZoomed(false)} style={{
+          position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'zoom-out', padding: '20px',
+        }}>
+          <img src={product.images[selectedImage].url} alt={product.title} style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', borderRadius: '8px' }} />
+          <button onClick={() => setZoomed(false)} style={{ position: 'absolute', top: '20px', right: '20px', background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%', width: '40px', height: '40px', cursor: 'pointer', color: '#fff', fontSize: '20px' }}>×</button>
+        </div>
+      )}
     </div>
   );
 }

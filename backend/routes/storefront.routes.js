@@ -272,4 +272,105 @@ router.post('/checkout/:orderId', async (req, res) => {
   }
 });
 
+// --- ORDER TRACKING (public, lookup by order number + phone/email) ---
+router.post('/track-order', async (req, res) => {
+  try {
+    const tenantId = req.storeTenant._id;
+    const { orderNumber, phone, email } = req.body;
+
+    if (!orderNumber) return res.status(400).json({ error: 'Order number is required' });
+
+    const order = await EcommerceOrder.findOne({ tenantId, orderNumber: orderNumber.trim() }).lean();
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    // Verify phone or email matches
+    const phoneMatch = phone && order.customer.phone && order.customer.phone.replace(/\s/g, '') === phone.replace(/\s/g, '');
+    const emailMatch = email && order.customer.email && order.customer.email.toLowerCase() === email.toLowerCase().trim();
+    if (!phoneMatch && !emailMatch) {
+      return res.status(403).json({ error: 'Phone or email does not match this order' });
+    }
+
+    // Return sanitized order info (no sensitive data)
+    res.json({
+      orderNumber: order.orderNumber,
+      status: order.status,
+      createdAt: order.createdAt,
+      total: order.grandTotal,
+      currency: order.currency || 'SAR',
+      itemCount: order.lineItems?.length || 0,
+      items: order.lineItems?.map(i => ({ title: i.title, quantity: i.quantity, price: i.price })) || [],
+      shippingStatus: order.shipping?.status || 'unfulfilled',
+      trackingNumber: order.shipping?.trackingNumber || '',
+      paymentStatus: order.payment?.status || 'pending',
+      paymentMethod: order.payment?.method || '',
+      statusHistory: order.statusHistory?.map(h => ({ status: h.status, date: h.changedAt, note: h.note })) || [],
+      estimatedDelivery: order.shipping?.estimatedDelivery || null,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- NEWSLETTER SUBSCRIPTION ---
+router.post('/newsletter/subscribe', async (req, res) => {
+  try {
+    const tenantId = req.storeTenant._id;
+    const { email } = req.body;
+
+    if (!email || !email.includes('@')) return res.status(400).json({ error: 'Valid email is required' });
+
+    // Store subscriber on tenant ecommerce config
+    const tenant = await Tenant.findById(tenantId);
+    if (!tenant) return res.status(404).json({ error: 'Store not found' });
+
+    tenant.ecommerce = tenant.ecommerce || {};
+    tenant.ecommerce.newsletterSubscribers = tenant.ecommerce.newsletterSubscribers || [];
+
+    const exists = tenant.ecommerce.newsletterSubscribers.find(s => s.email.toLowerCase() === email.toLowerCase().trim());
+    if (exists) {
+      if (!exists.isActive) {
+        exists.isActive = true;
+        exists.resubscribedAt = new Date();
+        await tenant.save();
+      }
+      return res.json({ subscribed: true, message: 'Already subscribed' });
+    }
+
+    tenant.ecommerce.newsletterSubscribers.push({
+      email: email.toLowerCase().trim(),
+      subscribedAt: new Date(),
+      isActive: true,
+    });
+
+    await tenant.save();
+    res.json({ subscribed: true, message: 'Subscribed successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- NEWSLETTER UNSUBSCRIBE ---
+router.post('/newsletter/unsubscribe', async (req, res) => {
+  try {
+    const tenantId = req.storeTenant._id;
+    const { email } = req.body;
+
+    if (!email) return res.status(400).json({ error: 'Email is required' });
+
+    const tenant = await Tenant.findById(tenantId);
+    if (!tenant) return res.status(404).json({ error: 'Store not found' });
+
+    const subscriber = (tenant.ecommerce?.newsletterSubscribers || []).find(s => s.email === email.toLowerCase().trim());
+    if (subscriber) {
+      subscriber.isActive = false;
+      subscriber.unsubscribedAt = new Date();
+      await tenant.save();
+    }
+
+    res.json({ unsubscribed: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Search, Loader2, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import storeApi from '../../lib/storeApi';
+import StorefrontSeo from '../../components/storefront/StorefrontSeo';
+import StorefrontBreadcrumbs from '../../components/storefront/StorefrontBreadcrumbs';
 
 export default function StorefrontProducts() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -44,6 +46,13 @@ export default function StorefrontProducts() {
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 20px' }}>
+      <StorefrontSeo
+        title={category ? `${category} — ${storeInfo?.storeName || 'Store'}` : search ? `Search: ${search}` : `All Products — ${storeInfo?.storeName || 'Store'}`}
+        description={category ? `Browse ${category} at ${storeInfo?.storeName || 'Store'}` : `Shop all products at ${storeInfo?.storeName || 'Store'}`}
+        url={window.location.href}
+        siteName={storeInfo?.storeName || 'Store'}
+      />
+      <StorefrontBreadcrumbs items={[{ label: 'Products' }]} />
       {/* Header */}
       <div style={{ marginBottom: '24px' }}>
         <h1 style={{ fontSize: '28px', fontWeight: 'bold', margin: '0 0 16px', color: c('text', '#111') }}>
