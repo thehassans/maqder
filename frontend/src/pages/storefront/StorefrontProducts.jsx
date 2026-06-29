@@ -175,17 +175,35 @@ export default function StorefrontProducts() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
             {allProducts.map(p => {
               const slug = p.seo?.slug || p._id;
+              const images = p.images?.filter(img => img.url) || [];
+              const hasMultiple = images.length > 1;
               return (
                 <div key={p._id} style={{
                   background: c('surface', '#f9fafb'), border: `1px solid ${c('borderColor', '#e5e7eb')}`,
                   borderRadius: '12px', overflow: 'hidden', position: 'relative',
-                }}>
+                }} className="product-card" onMouseEnter={e => e.currentTarget.querySelector('.card-thumbs')?.style.setProperty('opacity', '1')}
+                  onMouseLeave={e => { e.currentTarget.querySelector('.card-thumbs')?.style.setProperty('opacity', '0'); const img = e.currentTarget.querySelector('.card-main-img'); if (img && images[0]) img.src = images[0].url; }}>
                   <Link to={`/store/products/${slug}`} style={{ textDecoration: 'none', display: 'block' }}>
-                    <div style={{ aspectRatio: '1', background: c('borderColor', '#e5e7eb'), overflow: 'hidden' }}>
-                      {p.images?.[0]?.url ? (
-                        <img src={p.images[0].url} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <div style={{ aspectRatio: '1', background: c('borderColor', '#e5e7eb'), overflow: 'hidden', position: 'relative' }}>
+                      {images[0]?.url ? (
+                        <img src={images[0].url} alt={p.title} className="card-main-img" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
                         <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: c('textMuted', '#6b7280'), fontSize: '12px' }}>No image</div>
+                      )}
+                      {hasMultiple && (
+                        <div className="card-thumbs" style={{
+                          position: 'absolute', bottom: '8px', left: '50%', transform: 'translateX(-50%)',
+                          display: 'flex', gap: '4px', opacity: 0, transition: 'opacity 0.2s', zIndex: 2,
+                        }}>
+                          {images.slice(0, 5).map((img, i) => (
+                            <div key={i} onClick={(e) => { e.preventDefault(); e.stopPropagation(); const mainImg = e.currentTarget.closest('.product-card').querySelector('.card-main-img'); if (mainImg) mainImg.src = img.url; }} style={{
+                              width: '32px', height: '32px', borderRadius: '6px', overflow: 'hidden',
+                              border: '2px solid rgba(255,255,255,0.8)', cursor: 'pointer', background: '#fff',
+                            }}>
+                              <img src={img.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
                     <div style={{ padding: '12px' }}>

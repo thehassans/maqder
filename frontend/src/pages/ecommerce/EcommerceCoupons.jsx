@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Tag, Plus, Save, Loader2, Trash2, X, AlertCircle, CheckCircle, Copy } from 'lucide-react';
+import { Tag, Plus, Save, Loader2, Trash2, X, AlertCircle, CheckCircle, Copy, TrendingUp, DollarSign } from 'lucide-react';
 import api from '../../lib/api';
 
 export default function EcommerceCoupons() {
@@ -9,6 +9,7 @@ export default function EcommerceCoupons() {
   const [editing, setEditing] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [analytics, setAnalytics] = useState({});
   const [form, setForm] = useState({
     code: '', description: '', type: 'percentage', value: 10, minSubtotal: 0, maxDiscount: 0,
     usageLimit: 0, perCustomerLimit: 0, startsAt: '', endsAt: '', isActive: true,
@@ -17,8 +18,16 @@ export default function EcommerceCoupons() {
   const fetchCoupons = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get('/ecommerce/coupons?page=1&limit=50');
-      setData(res.data);
+      const [couponsRes, analyticsRes] = await Promise.all([
+        api.get('/ecommerce/coupons?page=1&limit=50'),
+        api.get('/ecommerce/coupons/analytics').catch(() => null),
+      ]);
+      setData(couponsRes.data);
+      if (analyticsRes?.data?.analytics) {
+        const map = {};
+        analyticsRes.data.analytics.forEach(a => { map[a.code] = a; });
+        setAnalytics(map);
+      }
     } catch {
       // ignore
     } finally {
@@ -195,6 +204,13 @@ export default function EcommerceCoupons() {
                     {coupon.usageLimit > 0 && ` · ${coupon.usedCount}/${coupon.usageLimit} used`}
                   </p>
                   {coupon.description && <p className="text-xs text-gray-400 mt-0.5">{coupon.description}</p>}
+                  {analytics[coupon.code] && analytics[coupon.code].orderCount > 0 && (
+                    <div className="flex items-center gap-3 mt-2">
+                      <span className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600"><TrendingUp size={12} /> {analytics[coupon.code].orderCount} orders</span>
+                      <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600"><DollarSign size={12} /> {analytics[coupon.code].totalRevenue.toLocaleString()} SAR revenue</span>
+                      <span className="inline-flex items-center gap-1 text-xs font-bold text-amber-600">−{analytics[coupon.code].totalDiscount.toLocaleString()} SAR discounted</span>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex gap-2">

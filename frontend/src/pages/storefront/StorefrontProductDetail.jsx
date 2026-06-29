@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Loader2, ShoppingCart, Check, Minus, Plus, ChevronRight, Star, Heart, ZoomIn, Truck } from 'lucide-react';
+import { Loader2, ShoppingCart, Check, Minus, Plus, ChevronRight, Star, Heart, ZoomIn, Truck, Share2, MessageCircle } from 'lucide-react';
 import storeApi from '../../lib/storeApi';
 import { useCart } from '../../store/storefrontCart';
 import { useWishlist } from '../../store/storefrontWishlist';
@@ -26,6 +26,7 @@ export default function StorefrontProductDetail() {
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { addProduct } = useRecentlyViewed();
   const [zoomed, setZoomed] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -150,6 +151,17 @@ export default function StorefrontProductDetail() {
         <div>
           {product.category && <p style={{ fontSize: '13px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>{product.category}</p>}
           <h1 style={{ fontSize: '28px', fontWeight: 'bold', margin: '0 0 12px' }}>{product.title}</h1>
+
+          {/* Share buttons */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+            <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 'bold' }}>Share:</span>
+            <a href={`https://wa.me/?text=${encodeURIComponent(product.title + ' - ' + currentPrice + ' ' + currency + ' ' + window.location.href)}`} target="_blank" rel="noopener" style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: '#25D366', color: '#fff', borderRadius: '8px', textDecoration: 'none', fontSize: '13px', fontWeight: 'bold' }}>
+              <MessageCircle size={14} /> WhatsApp
+            </a>
+            <button onClick={() => { navigator.clipboard.writeText(window.location.href); setLinkCopied(true); setTimeout(() => setLinkCopied(false), 2000); }} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: '#f3f4f6', color: '#374151', border: '1px solid #e5e7eb', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
+              {linkCopied ? <><Check size={14} /> Copied!</> : <><Share2 size={14} /> Copy Link</>}
+            </button>
+          </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
             {product.compareAtPrice && product.compareAtPrice > currentPrice && (

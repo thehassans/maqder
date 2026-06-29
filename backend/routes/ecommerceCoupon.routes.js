@@ -163,4 +163,45 @@ router.delete('/:id', protect, async (req, res) => {
   }
 });
 
+// --- COUPON ANALYTICS ---
+router.get('/analytics', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+
+    const coupons = await EcommerceCoupon.find({ tenantId }).lean();
+    const couponIds = coupons.map(c => c._id);
+
+    const orderStats = await EcommerceOrder.aggregate([
+      { $match: { tenantId: new mongoose.Types.ObjectId(tenantId), 'coupon.code': { $exists: true, $ne: null } } },
+      { $group: {
+        _id: '$coupon.code',
+        orderCount: { $sum: 1 },
+        totalRevenue: { $sum: '$grandTotal' },
+        totalDiscount: { $sum: { $ifNull: ['$discount', 0] } },
+      }},
+    ]);
+
+    const analyticsMap = {};
+    orderStats.forEach(s => { analyticsMap[s._id] = s; });
+
+    const result = coupons.map(c => ({
+      _id: c._id,
+      code: c.code,
+      usedCount: c.usedCount,
+      usageLimit: c.usageLimit,
+      isActive: c.isActive,
+      ...analyticsMap[c.code] ? {
+        orderCount: analyticsMap[c.code].orderCount,
+        totalRevenue: analyticsMap[c.code].totalRevenue,
+        totalDiscount: analyticsMap[c.code].totalDiscount,
+      } : { orderCount: 0, totalRevenue: 0, totalDiscount: 0 },
+    }));
+
+    res.json({ analytics: result });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

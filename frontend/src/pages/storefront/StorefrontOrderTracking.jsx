@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Search, Package, Truck, CheckCircle, Clock, XCircle, Loader2 } from 'lucide-react';
+import { Search, Package, Truck, CheckCircle, Clock, XCircle, Loader2, ListOrdered, ChevronRight } from 'lucide-react';
 import storeApi from '../../lib/storeApi';
+import StorefrontSeo from '../../components/storefront/StorefrontSeo';
+import StorefrontBreadcrumbs from '../../components/storefront/StorefrontBreadcrumbs';
 
 const STATUS_CONFIG = {
   pending: { icon: Clock, color: '#f59e0b', bg: '#fef3c7', label: 'Pending' },
@@ -18,6 +20,10 @@ export default function StorefrontOrderTracking() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [order, setOrder] = useState(null);
+  const [multiOrders, setMultiOrders] = useState(null);
+  const [multiLoading, setMultiLoading] = useState(false);
+  const [multiError, setMultiError] = useState('');
+  const [multiPhone, setMultiPhone] = useState('');
 
   const handleTrack = async (e) => {
     e.preventDefault();
@@ -36,10 +42,28 @@ export default function StorefrontOrderTracking() {
     }
   };
 
+  const handleMultiLookup = async (e) => {
+    e.preventDefault();
+    if (!multiPhone) { setMultiError('Phone number is required'); return; }
+    setMultiLoading(true);
+    setMultiError('');
+    setMultiOrders(null);
+    try {
+      const res = await storeApi.post('/track-orders', { phone: multiPhone });
+      setMultiOrders(res.data.orders);
+    } catch (err) {
+      setMultiError(err.response?.data?.error || 'No orders found');
+    } finally {
+      setMultiLoading(false);
+    }
+  };
+
   const inputStyle = { width: '100%', padding: '12px 16px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '15px' };
 
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 20px' }}>
+      <StorefrontSeo title="Track Your Order" />
+      <StorefrontBreadcrumbs items={[{ label: 'Home', path: '/store' }, { label: 'Track Order' }]} />
       <div style={{ textAlign: 'center', marginBottom: '32px' }}>
         <Package size={48} style={{ color: '#4f46e5', margin: '0 auto 12px' }} />
         <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '4px' }}>Track Your Order</h1>
@@ -69,6 +93,43 @@ export default function StorefrontOrderTracking() {
           {loading ? <Loader2 size={18} className="animate-spin" /> : <><Search size={18} /> Track Order</>}
         </button>
       </form>
+
+      {/* Multi-order lookup */}
+      <div style={{ borderTop: '1px solid #e5e7eb', margin: '24px 0', paddingTop: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+          <ListOrdered size={18} color="#4f46e5" />
+          <h2 style={{ fontSize: '16px', fontWeight: 'bold', margin: 0 }}>Find all my orders</h2>
+        </div>
+        <form onSubmit={handleMultiLookup} style={{ display: 'flex', gap: '8px' }}>
+          <input style={{ ...inputStyle, flex: 1 }} value={multiPhone} onChange={e => setMultiPhone(e.target.value)} placeholder="Enter your phone number" />
+          <button type="submit" disabled={multiLoading} style={{ padding: '12px 20px', background: '#6b7280', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', whiteSpace: 'nowrap', opacity: multiLoading ? 0.6 : 1 }}>
+            {multiLoading ? <Loader2 size={16} className="animate-spin" /> : 'Find Orders'}
+          </button>
+        </form>
+        {multiError && <p style={{ fontSize: '13px', color: '#dc2626', marginTop: '8px' }}>{multiError}</p>}
+        {multiOrders && (
+          <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {multiOrders.map(o => {
+              const cfg = STATUS_CONFIG[o.status] || STATUS_CONFIG.pending;
+              const Icon = cfg.icon;
+              return (
+                <div key={o.orderNumber} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '12px 16px' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: cfg.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Icon size={18} style={{ color: cfg.color }} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontWeight: 'bold', fontSize: '14px', margin: 0 }}>{o.orderNumber}</p>
+                    <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>{new Date(o.createdAt).toLocaleDateString()} · {o.itemCount} items · {o.total} {o.currency}</p>
+                  </div>
+                  <button onClick={() => { setForm({ ...form, orderNumber: o.orderNumber, phone: multiPhone }); setMultiOrders(null); window.scrollTo({ top: 0, behavior: 'smooth' }); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#4f46e5', flexShrink: 0 }}>
+                    <ChevronRight size={20} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {error && <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: '8px', padding: '12px 16px', color: '#dc2626', fontSize: '14px' }}>{error}</div>}
 

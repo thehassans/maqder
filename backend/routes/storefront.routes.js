@@ -374,6 +374,43 @@ router.post('/track-order', async (req, res) => {
   }
 });
 
+// --- BULK ORDER LOOKUP (find all orders by phone or email) ---
+router.post('/track-orders', async (req, res) => {
+  try {
+    const tenantId = req.storeTenant._id;
+    const { phone, email } = req.body;
+    if (!phone && !email) return res.status(400).json({ error: 'Phone or email is required' });
+
+    const filter = { tenantId };
+    if (phone) filter['customer.phone'] = { $regex: phone.replace(/\s/g, ''), $options: 'i' };
+    else if (email) filter['customer.email'] = email.toLowerCase().trim();
+
+    const orders = await EcommerceOrder.find(filter)
+      .select('orderNumber status createdAt grandTotal currency lineItems shipping.status shipping.trackingNumber payment.status')
+      .sort({ createdAt: -1 })
+      .limit(20)
+      .lean();
+
+    if (orders.length === 0) return res.status(404).json({ error: 'No orders found' });
+
+    res.json({
+      orders: orders.map(o => ({
+        orderNumber: o.orderNumber,
+        status: o.status,
+        createdAt: o.createdAt,
+        total: o.grandTotal,
+        currency: o.currency || 'SAR',
+        itemCount: o.lineItems?.length || 0,
+        shippingStatus: o.shipping?.status || 'unfulfilled',
+        trackingNumber: o.shipping?.trackingNumber || '',
+        paymentStatus: o.payment?.status || 'pending',
+      })),
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // --- NEWSLETTER SUBSCRIPTION ---
 router.post('/newsletter/subscribe', async (req, res) => {
   try {
