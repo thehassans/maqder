@@ -130,6 +130,12 @@ const ecommerceDomainSchema = new mongoose.Schema({
   verificationToken: { type: String, default: '' },
   sslStatus: { type: String, enum: ['none', 'pending', 'active', 'error'], default: 'none' },
   verifiedAt: { type: Date },
+  // Cloudflare for SaaS custom hostname ID
+  cfHostnameId: { type: String, default: '' },
+  // DNS records the client needs to add (returned by CF SaaS API)
+  cfCnameTarget: { type: String, default: '' },
+  cfTxtName: { type: String, default: '' },
+  cfTxtValue: { type: String, default: '' },
 }, { _id: true, timestamps: true });
 
 const ecommercePaymentProviderSchema = new mongoose.Schema({

@@ -152,22 +152,19 @@ router.post('/domains', protect, async (req, res) => {
     await tenant.save();
     clearTenantHostCache(hostname);
 
-    // Auto-provision DNS records via Cloudflare if configured
-    let cloudflareResult = null;
+    // Auto-provision via Cloudflare for SaaS if configured
     if (isCloudflareConfigured()) {
       try {
-        cloudflareResult = await provisionCloudflareDomain(hostname, verificationToken);
-        if (cloudflareResult?.configured && cloudflareResult?.results?.cname?.success) {
-          // DNS records created automatically — domain can be auto-verified
-          const verifyResult = await verifyDomainViaCloudflare(hostname, verificationToken);
-          if (verifyResult.verified) {
-            const d = tenant.ecommerce.domains.id(tenant.ecommerce.domains[tenant.ecommerce.domains.length - 1]._id);
-            if (d) {
-              d.status = 'verified';
-              d.verifiedAt = new Date();
-              d.sslStatus = 'pending';
-              await tenant.save();
-            }
+        const cfResult = await provisionCloudflareDomain(hostname, verificationToken);
+        if (cfResult?.configured && cfResult?.success) {
+          const d = tenant.ecommerce.domains.id(tenant.ecommerce.domains[tenant.ecommerce.domains.length - 1]._id);
+          if (d) {
+            d.cfHostnameId = cfResult.cfHostnameId || '';
+            d.cfCnameTarget = cfResult.cnameTarget || '';
+            d.cfTxtName = cfResult.txtName || '';
+            d.cfTxtValue = cfResult.txtValue || '';
+            d.sslStatus = cfResult.sslStatus || 'pending';
+            await tenant.save();
           }
         }
       } catch {
@@ -198,11 +195,11 @@ router.post('/domains/:id/verify', protect, async (req, res) => {
 
     if (isCloudflareConfigured()) {
       try {
-        const cfResult = await verifyDomainViaCloudflare(domain.hostname, domain.verificationToken);
+        const cfResult = await verifyDomainViaCloudflare(domain.hostname, domain.verificationToken, domain.cfHostnameId);
         if (cfResult.configured) {
           verified = cfResult.verified;
           if (verified) {
-            const sslResult = await getSSLStatus(domain.hostname);
+            const sslResult = await getSSLStatus(domain.hostname, domain.cfHostnameId);
             sslStatus = sslResult.status || 'pending';
           }
         }
@@ -250,10 +247,10 @@ router.delete('/domains/:id', protect, async (req, res) => {
     await tenant.save();
     clearTenantHostCache(hostname);
 
-    // Clean up Cloudflare DNS records if configured
+    // Clean up Cloudflare for SaaS custom hostname if configured
     if (isCloudflareConfigured()) {
       try {
-        await removeCloudflareDomain(hostname);
+        await removeCloudflareDomain(hostname, domain.cfHostnameId);
       } catch {
         // Non-critical — domain already removed from tenant
       }
@@ -295,7 +292,7 @@ router.post('/domains/refresh-ssl', protect, async (req, res) => {
     for (const domain of domains) {
       if (domain.status === 'verified' && isCloudflareConfigured()) {
         try {
-          const sslResult = await getSSLStatus(domain.hostname);
+          const sslResult = await getSSLStatus(domain.hostname, domain.cfHostnameId);
           domain.sslStatus = sslResult.status || domain.sslStatus;
         } catch {
           // keep existing status

@@ -234,11 +234,32 @@ export default function EcommerceDomains() {
                       <span className="flex items-center gap-0.5 text-xs text-amber-600 font-bold"><Clock className="w-3 h-3" /> SSL Pending</span>
                     )}
                   </div>
-                  {domain.status !== 'verified' && domain.verificationToken && (
-                    <div className="mt-1.5 flex items-center gap-2">
-                      <code className="text-[10px] bg-gray-100 dark:bg-dark-700 px-2 py-1 rounded text-gray-600 dark:text-gray-400 break-all">
-                        TXT _maqder-verify.{domain.hostname} = {domain.verificationToken}
-                      </code>
+                  {domain.status !== 'verified' && (
+                    <div className="mt-1.5 space-y-1">
+                      {domain.cfCnameTarget ? (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold text-gray-500">CNAME:</span>
+                            <code className="text-[10px] bg-gray-100 dark:bg-dark-700 px-2 py-1 rounded text-gray-600 dark:text-gray-400 break-all">
+                              {domain.hostname} → {domain.cfCnameTarget}
+                            </code>
+                          </div>
+                          {domain.cfTxtName && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-bold text-gray-500">TXT:</span>
+                              <code className="text-[10px] bg-gray-100 dark:bg-dark-700 px-2 py-1 rounded text-gray-600 dark:text-gray-400 break-all">
+                                {domain.cfTxtName} = {domain.cfTxtValue}
+                              </code>
+                            </div>
+                          )}
+                        </>
+                      ) : domain.verificationToken ? (
+                        <div className="flex items-center gap-2">
+                          <code className="text-[10px] bg-gray-100 dark:bg-dark-700 px-2 py-1 rounded text-gray-600 dark:text-gray-400 break-all">
+                            TXT _maqder-verify.{domain.hostname} = {domain.verificationToken}
+                          </code>
+                        </div>
+                      ) : null}
                     </div>
                   )}
                 </div>

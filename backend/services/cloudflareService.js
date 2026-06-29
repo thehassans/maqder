@@ -1,26 +1,24 @@
 /**
- * Cloudflare API integration for custom domain DNS + SSL provisioning.
+ * Cloudflare for SaaS integration for custom domain SSL + routing.
  *
- * Uses Cloudflare Zone API to:
- *  - Create/update CNAME records for custom domains
- *  - Create TXT verification records
- *  - Provision Universal SSL for custom hostnames
- *  - Clean up records when a domain is removed
+ * Uses Cloudflare Custom Hostnames API to:
+ *  - Create a custom hostname entry for the client's domain
+ *  - Return DNS records the client needs to add (CNAME + TXT for ownership)
+ *  - Auto-provision SSL certificates (DCV)
+ *  - Check verification + SSL status
+ *  - Clean up when a domain is removed
  *
- * Required env vars:
- *  - CLOUDFLARE_API_TOKEN: API token with Zone:Edit + DNS:Edit permissions
+ * Required env vars (server only):
+ *  - CLOUDFLARE_API_TOKEN: API token with "Cloudflare for SaaS" / Custom Hostname permissions
  *  - CLOUDFLARE_ZONE_ID: Zone ID for the platform domain (e.g. shop.maqder.com)
- *  - CLOUDFLARE_FALLBACK_ORIGIN: Origin IP or hostname the CNAME points to (e.g. cname.shop.maqder.com)
  *
- * If env vars are not set, all functions gracefully no-op (returns false),
- * and the system falls back to manual DNS verification.
+ * The client does NOT need Cloudflare. They just add DNS records in their own provider.
  */
 
 const CF_API = 'https://api.cloudflare.com/client/v4';
 
 const getToken = () => process.env.CLOUDFLARE_API_TOKEN || '';
 const getZoneId = () => process.env.CLOUDFLARE_ZONE_ID || '';
-const getFallbackOrigin = () => process.env.CLOUDFLARE_FALLBACK_ORIGIN || 'cname.shop.maqder.com';
 
 export const isCloudflareConfigured = () => Boolean(getToken() && getZoneId());
 
@@ -47,157 +45,152 @@ async function cfRequest(path, method = 'GET', body = null) {
 }
 
 /**
- * Create or update a CNAME record for a custom hostname pointing to the platform fallback origin.
- * Also creates the TXT verification record automatically.
+ * Create a Cloudflare for SaaS custom hostname for the client's domain.
+ * Returns the DNS records the client needs to add in their DNS provider.
+ *
+ * @param {string} hostname - The custom domain (e.g. store.example.com)
+ * @param {string} verificationToken - Internal verification token
+ * @returns {Promise<object>} { configured, cfHostnameId, cnameTarget, txtName, txtValue, sslStatus }
  */
 export async function provisionCloudflareDomain(hostname, verificationToken) {
   if (!isCloudflareConfigured()) return { configured: false };
 
   const zoneId = getZoneId();
-  const fallbackOrigin = getFallbackOrigin();
-  const results = { cname: null, txt: null, ssl: null, errors: [] };
 
-  // 1. Check if CNAME record already exists
-  const cnameCheck = await cfRequest(`/zones/${zoneId}/dns_records?type=CNAME&name=${hostname}`);
-  const existingCname = cnameCheck.success && cnameCheck.result?.find(r => r.name === hostname);
+  // Check if a custom hostname already exists for this hostname
+  const existing = await cfRequest(`/zones/${zoneId}/custom_hostnames?hostname=${hostname}`);
+  let ch;
 
-  if (existingCname) {
-    // Update existing record
-    results.cname = await cfRequest(`/zones/${zoneId}/dns_records/${existingCname.id}`, 'PUT', {
-      type: 'CNAME',
-      name: hostname,
-      content: fallbackOrigin,
-      proxied: true,
-      comment: 'Maqder e-commerce custom domain',
-    });
+  if (existing.success && existing.result?.length > 0) {
+    // Already exists — use it
+    ch = existing.result[0];
   } else {
-    // Create new CNAME record
-    results.cname = await cfRequest(`/zones/${zoneId}/dns_records`, 'POST', {
-      type: 'CNAME',
-      name: hostname,
-      content: fallbackOrigin,
-      proxied: true,
-      comment: 'Maqder e-commerce custom domain',
+    // Create a new custom hostname with DCV SSL
+    const createRes = await cfRequest(`/zones/${zoneId}/custom_hostnames`, 'POST', {
+      hostname,
+      ssl: {
+        method: 'http',
+        type: 'dv',
+        settings: { min_tls_version: '1.2' },
+      },
+      custom_metadata: { verification_token: verificationToken },
     });
+
+    if (!createRes.success) {
+      return { configured: true, success: false, errors: createRes.errors || ['Failed to create custom hostname'] };
+    }
+    ch = createRes.result;
   }
 
-  if (!results.cname?.success) {
-    results.errors.push('Failed to create CNAME record');
-  }
+  // Extract DNS records the client needs to add
+  const cnameTarget = ch.ownership_verification?.value || '';
+  const txtName = ch.ownership_verification?.name || '';
+  const txtValue = ch.ownership_verification?.value || '';
+  const sslStatus = ch.ssl?.status || 'pending';
 
-  // 2. Create TXT verification record at _maqder-verify.<hostname>
-  const txtName = `_maqder-verify.${hostname}`;
-  const txtCheck = await cfRequest(`/zones/${zoneId}/dns_records?type=TXT&name=${txtName}`);
-  const existingTxt = txtCheck.success && txtCheck.result?.find(r => r.name === txtName);
-
-  if (existingTxt) {
-    results.txt = await cfRequest(`/zones/${zoneId}/dns_records/${existingTxt.id}`, 'PUT', {
-      type: 'TXT',
-      name: txtName,
-      content: verificationToken,
-      ttl: 300,
-    });
-  } else {
-    results.txt = await cfRequest(`/zones/${zoneId}/dns_records`, 'POST', {
-      type: 'TXT',
-      name: txtName,
-      content: verificationToken,
-      ttl: 300,
-    });
-  }
-
-  if (!results.txt?.success) {
-    results.errors.push('Failed to create TXT verification record');
-  }
-
-  // 3. Check SSL status for the zone
-  const sslCheck = await cfRequest(`/zones/${zoneId}/ssl/verification`);
-  if (sslCheck.success) {
-    const cert = sslCheck.result?.find(c => c.certificat_status === 'active' || c.hostname === hostname);
-    results.ssl = cert ? 'active' : 'pending';
-  }
-
-  return { configured: true, results };
+  return {
+    configured: true,
+    success: true,
+    cfHostnameId: ch.id,
+    cnameTarget,
+    txtName,
+    txtValue,
+    sslStatus,
+  };
 }
 
 /**
- * Verify a domain by checking if the TXT record exists in Cloudflare DNS.
- * This is an alternative to manual DNS lookup — checks via Cloudflare API.
+ * Verify a domain by checking its Cloudflare for SaaS custom hostname status.
+ * The custom hostname is verified when Cloudflare confirms ownership + SSL is active/pending.
  */
-export async function verifyDomainViaCloudflare(hostname, verificationToken) {
+export async function verifyDomainViaCloudflare(hostname, verificationToken, cfHostnameId) {
   if (!isCloudflareConfigured()) return { configured: false, verified: false };
 
   const zoneId = getZoneId();
-  const txtName = `_maqder-verify.${hostname}`;
 
-  const check = await cfRequest(`/zones/${zoneId}/dns_records?type=TXT&name=${txtName}`);
-  if (!check.success) return { configured: true, verified: false };
+  // If we have a CF hostname ID, check its status directly
+  if (cfHostnameId) {
+    const check = await cfRequest(`/zones/${zoneId}/custom_hostnames/${cfHostnameId}`);
+    if (check.success && check.result) {
+      const ch = check.result;
+      const verified = ch.status === 'active' || ch.ssl?.status === 'active' || ch.ssl?.status === 'pending_validation';
+      return { configured: true, verified, sslStatus: ch.ssl?.status || 'pending' };
+    }
+  }
 
-  const record = check.result?.find(r => r.name === txtName);
-  const verified = record && record.content === verificationToken;
+  // Fallback: look up by hostname
+  const lookup = await cfRequest(`/zones/${zoneId}/custom_hostnames?hostname=${hostname}`);
+  if (lookup.success && lookup.result?.length > 0) {
+    const ch = lookup.result[0];
+    const verified = ch.status === 'active' || ch.ssl?.status === 'active' || ch.ssl?.status === 'pending_validation';
+    return { configured: true, verified, sslStatus: ch.ssl?.status || 'pending', cfHostnameId: ch.id };
+  }
 
-  return { configured: true, verified };
+  return { configured: true, verified: false };
 }
 
 /**
- * Remove DNS records (CNAME + TXT) for a hostname from Cloudflare.
+ * Remove a custom hostname from Cloudflare for SaaS.
  */
-export async function removeCloudflareDomain(hostname) {
+export async function removeCloudflareDomain(hostname, cfHostnameId) {
   if (!isCloudflareConfigured()) return { configured: false };
 
   const zoneId = getZoneId();
-  const results = { deleted: 0, errors: [] };
 
-  // Find and delete CNAME record
-  const cnameCheck = await cfRequest(`/zones/${zoneId}/dns_records?type=CNAME&name=${hostname}`);
-  if (cnameCheck.success) {
-    for (const record of cnameCheck.result || []) {
-      if (record.name === hostname) {
-        const del = await cfRequest(`/zones/${zoneId}/dns_records/${record.id}`, 'DELETE');
-        if (del.success) results.deleted++;
-        else results.errors.push('Failed to delete CNAME record');
-      }
-    }
+  // If we have the CF hostname ID, delete directly
+  if (cfHostnameId) {
+    const del = await cfRequest(`/zones/${zoneId}/custom_hostnames/${cfHostnameId}`, 'DELETE');
+    return { configured: true, success: del.success };
   }
 
-  // Find and delete TXT verification record
-  const txtName = `_maqder-verify.${hostname}`;
-  const txtCheck = await cfRequest(`/zones/${zoneId}/dns_records?type=TXT&name=${txtName}`);
-  if (txtCheck.success) {
-    for (const record of txtCheck.result || []) {
-      if (record.name === txtName) {
-        const del = await cfRequest(`/zones/${zoneId}/dns_records/${record.id}`, 'DELETE');
-        if (del.success) results.deleted++;
-        else results.errors.push('Failed to delete TXT record');
-      }
-    }
+  // Fallback: look up by hostname then delete
+  const lookup = await cfRequest(`/zones/${zoneId}/custom_hostnames?hostname=${hostname}`);
+  if (lookup.success && lookup.result?.length > 0) {
+    const del = await cfRequest(`/zones/${zoneId}/custom_hostnames/${lookup.result[0].id}`, 'DELETE');
+    return { configured: true, success: del.success };
   }
 
-  return { configured: true, results };
+  return { configured: true, success: false };
 }
 
 /**
- * Get SSL certificate status for a custom hostname.
+ * Get SSL certificate status for a custom hostname via Cloudflare for SaaS.
  */
-export async function getSSLStatus(hostname) {
+export async function getSSLStatus(hostname, cfHostnameId) {
   if (!isCloudflareConfigured()) return { configured: false, status: 'none' };
 
   const zoneId = getZoneId();
-  const sslCheck = await cfRequest(`/zones/${zoneId}/ssl/verification`);
 
-  if (!sslCheck.success) return { configured: true, status: 'none' };
+  if (cfHostnameId) {
+    const check = await cfRequest(`/zones/${zoneId}/custom_hostnames/${cfHostnameId}`);
+    if (check.success && check.result) {
+      const sslStatus = check.result.ssl?.status || 'none';
+      const statusMap = {
+        active: 'active',
+        pending_validation: 'pending',
+        pending_issuance: 'pending',
+        pending_deployment: 'pending',
+        expired: 'error',
+        error: 'error',
+      };
+      return { configured: true, status: statusMap[sslStatus] || 'pending' };
+    }
+  }
 
-  const cert = sslCheck.result?.find(c => c.hostname === hostname);
-  if (!cert) return { configured: true, status: 'none' };
+  // Fallback: look up by hostname
+  const lookup = await cfRequest(`/zones/${zoneId}/custom_hostnames?hostname=${hostname}`);
+  if (lookup.success && lookup.result?.length > 0) {
+    const sslStatus = lookup.result[0].ssl?.status || 'none';
+    const statusMap = {
+      active: 'active',
+      pending_validation: 'pending',
+      pending_issuance: 'pending',
+      pending_deployment: 'pending',
+      expired: 'error',
+      error: 'error',
+    };
+    return { configured: true, status: statusMap[sslStatus] || 'pending' };
+  }
 
-  const statusMap = {
-    active: 'active',
-    pending: 'pending',
-    pending_issuance: 'pending',
-    pending_deployment: 'pending',
-    expired: 'error',
-    error: 'error',
-  };
-
-  return { configured: true, status: statusMap[cert.certificat_status] || 'pending' };
+  return { configured: true, status: 'none' };
 }
