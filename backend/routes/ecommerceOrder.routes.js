@@ -503,6 +503,47 @@ router.post('/:id/cancel', protect, async (req, res) => {
   }
 });
 
+// --- PROCESS REFUND ---
+router.post('/:id/refund', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+
+    const { amount, reason, partial } = req.body;
+    const order = await EcommerceOrder.findOne({ _id: req.params.id, tenantId });
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    if (!['paid', 'partially_refunded'].includes(order.payment?.status)) {
+      return res.status(400).json({ error: `Cannot refund order with payment status: ${order.payment?.status}` });
+    }
+
+    const refundAmount = partial ? Number(amount) : order.grandTotal;
+    if (partial && (!refundAmount || refundAmount <= 0 || refundAmount > order.grandTotal)) {
+      return res.status(400).json({ error: 'Invalid refund amount' });
+    }
+
+    order.payment.status = partial ? 'partially_refunded' : 'refunded';
+    order.payment.refundedAmount = (order.payment.refundedAmount || 0) + refundAmount;
+    order.payment.refundedAt = new Date();
+    order.payment.refundReason = reason || '';
+    order.statusHistory.push({
+      status: partial ? 'partially_refunded' : 'refunded',
+      note: `Refund of ${refundAmount} ${order.currency || 'SAR'}${reason ? ': ' + reason : ''}`,
+      changedBy: req.user._id,
+      changedAt: new Date(),
+    });
+
+    if (!partial) {
+      order.status = 'returned';
+    }
+
+    await order.save();
+    res.json(order);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 // --- UPDATE INTERNAL NOTES ---
 router.patch('/:id/notes', protect, async (req, res) => {
   try {

@@ -232,6 +232,44 @@ export default function EcommerceDashboard() {
         </div>
       </div>
 
+      {/* Recent activity feed */}
+      <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-5">
+        <h3 className="font-bold text-gray-900 dark:text-white mb-4">Recent Activity</h3>
+        <div className="space-y-3">
+          {(() => {
+            const activities = [];
+            (a.recentOrders || []).slice(0, 4).forEach(o => {
+              activities.push({ type: 'order', date: o.createdAt, title: `New order ${o.orderNumber}`, sub: `${o.customer?.name || 'Guest'} · ${fmtCurrency(o.grandTotal)}`, color: 'indigo', icon: ShoppingBag, link: `/app/dashboard/ecommerce/orders/${o._id}` });
+            });
+            lowStockProducts.slice(0, 3).forEach(p => {
+              activities.push({ type: 'stock', date: null, title: `Low stock: ${p.title}`, sub: `${p.stockQuantity || 0} remaining`, color: 'amber', icon: AlertTriangle, link: `/app/dashboard/ecommerce/products/${p._id}` });
+            });
+            activities.sort((x, y) => {
+              if (!x.date) return 1;
+              if (!y.date) return -1;
+              return new Date(y.date) - new Date(x.date);
+            });
+            if (activities.length === 0) return <p className="text-sm text-gray-300 text-center py-4">No recent activity</p>;
+            return activities.slice(0, 8).map((act, i) => {
+              const Icon = act.icon;
+              const colorMap = { indigo: 'bg-indigo-50 text-indigo-600', amber: 'bg-amber-50 text-amber-600', emerald: 'bg-emerald-50 text-emerald-600' };
+              return (
+                <Link key={i} to={act.link} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-700/30 transition-colors">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${colorMap[act.color]}`}>
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{act.title}</p>
+                    <p className="text-xs text-gray-400">{act.sub}</p>
+                  </div>
+                  {act.date && <span className="text-xs text-gray-400 flex-shrink-0">{fmtDate(act.date)}</span>}
+                </Link>
+              );
+            });
+          })()}
+        </div>
+      </div>
+
       {/* Payment breakdown + Category sales + Quick links */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Payment breakdown */}
