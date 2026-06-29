@@ -196,6 +196,17 @@ const ecommerceSchema = new mongoose.Schema({
       freeShippingThreshold: { type: Number, default: 0 },
     },
   },
+  // Shopify-style JSON-driven theme customization
+  theme: {
+    // Currently published config (what the storefront renders)
+    published: { type: mongoose.Schema.Types.Mixed, default: () => ({}) },
+    // Draft config being edited in the theme editor
+    draft: { type: mongoose.Schema.Types.Mixed, default: () => ({}) },
+    // When the draft was last saved
+    draftUpdatedAt: { type: Date, default: null },
+    // When the theme was last published
+    publishedAt: { type: Date, default: null },
+  },
 }, { _id: false });
 
 const tenantSchema = new mongoose.Schema({
