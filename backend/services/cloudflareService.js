@@ -19,12 +19,18 @@ const CF_API = 'https://api.cloudflare.com/client/v4';
 
 const getToken = () => process.env.CLOUDFLARE_API_TOKEN || '';
 const getZoneId = () => process.env.CLOUDFLARE_ZONE_ID || '';
+const getFallbackOrigin = () => process.env.CLOUDFLARE_FALLBACK_ORIGIN || 'origin.maqder.com';
 
 export const isCloudflareConfigured = () => Boolean(getToken() && getZoneId());
 
+function formatCfErrors(errors) {
+  if (!errors || errors.length === 0) return '';
+  return errors.map(e => e.message || String(e)).join('; ');
+}
+
 async function cfRequest(path, method = 'GET', body = null) {
   const token = getToken();
-  if (!token) return { success: false, errors: ['Cloudflare not configured'] };
+  if (!token) return { success: false, errors: [{ message: 'Cloudflare not configured' }] };
 
   const headers = {
     'Authorization': `Bearer ${token}`,
@@ -40,7 +46,7 @@ async function cfRequest(path, method = 'GET', body = null) {
     const data = await res.json();
     return data;
   } catch (err) {
-    return { success: false, errors: [err.message] };
+    return { success: false, errors: [{ message: err.message }] };
   }
 }
 
@@ -50,7 +56,7 @@ async function cfRequest(path, method = 'GET', body = null) {
  *
  * @param {string} hostname - The custom domain (e.g. store.example.com)
  * @param {string} verificationToken - Internal verification token
- * @returns {Promise<object>} { configured, cfHostnameId, cnameTarget, txtName, txtValue, sslStatus }
+ * @returns {Promise<object>} { configured, cfHostnameId, cnameTarget, txtName, txtValue, sslStatus, errors }
  */
 export async function provisionCloudflareDomain(hostname, verificationToken) {
   if (!isCloudflareConfigured()) return { configured: false };
@@ -65,7 +71,7 @@ export async function provisionCloudflareDomain(hostname, verificationToken) {
     // Already exists — use it
     ch = existing.result[0];
   } else {
-    // Create a new custom hostname with DCV SSL
+    // Create a new custom hostname with HTTP DCV SSL
     const createRes = await cfRequest(`/zones/${zoneId}/custom_hostnames`, 'POST', {
       hostname,
       ssl: {
@@ -77,16 +83,23 @@ export async function provisionCloudflareDomain(hostname, verificationToken) {
     });
 
     if (!createRes.success) {
-      return { configured: true, success: false, errors: createRes.errors || ['Failed to create custom hostname'] };
+      const errorMessage = formatCfErrors(createRes.errors) || 'Failed to create custom hostname';
+      return { configured: true, success: false, errors: [errorMessage] };
     }
     ch = createRes.result;
   }
 
   // Extract DNS records the client needs to add
-  const cnameTarget = ch.ownership_verification?.value || '';
-  const txtName = ch.ownership_verification?.name || '';
-  const txtValue = ch.ownership_verification?.value || '';
+  // The custom domain must CNAME to the platform fallback origin (e.g. origin.maqder.com)
+  // Cloudflare may also require an ownership verification TXT record
+  const ov = ch.ownership_verification || {};
+  const fallbackOrigin = getFallbackOrigin();
+
+  const cnameTarget = fallbackOrigin;
+  const txtName = ov.type === 'TXT' ? ov.name : '';
+  const txtValue = ov.type === 'TXT' ? ov.value : '';
   const sslStatus = ch.ssl?.status || 'pending';
+  const cfStatus = ch.status || 'pending';
 
   return {
     configured: true,
@@ -96,6 +109,7 @@ export async function provisionCloudflareDomain(hostname, verificationToken) {
     txtName,
     txtValue,
     sslStatus,
+    cfStatus,
   };
 }
 
@@ -114,7 +128,9 @@ export async function verifyDomainViaCloudflare(hostname, verificationToken, cfH
     if (check.success && check.result) {
       const ch = check.result;
       const verified = ch.status === 'active' || ch.ssl?.status === 'active' || ch.ssl?.status === 'pending_validation';
-      return { configured: true, verified, sslStatus: ch.ssl?.status || 'pending' };
+      const sslStatus = ch.ssl?.status || 'pending';
+      const cfStatus = ch.status || 'pending';
+      return { configured: true, verified, sslStatus, cfStatus, cfHostnameId: ch.id };
     }
   }
 
@@ -123,7 +139,9 @@ export async function verifyDomainViaCloudflare(hostname, verificationToken, cfH
   if (lookup.success && lookup.result?.length > 0) {
     const ch = lookup.result[0];
     const verified = ch.status === 'active' || ch.ssl?.status === 'active' || ch.ssl?.status === 'pending_validation';
-    return { configured: true, verified, sslStatus: ch.ssl?.status || 'pending', cfHostnameId: ch.id };
+    const sslStatus = ch.ssl?.status || 'pending';
+    const cfStatus = ch.status || 'pending';
+    return { configured: true, verified, sslStatus, cfStatus, cfHostnameId: ch.id };
   }
 
   return { configured: true, verified: false };

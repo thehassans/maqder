@@ -136,6 +136,10 @@ const ecommerceDomainSchema = new mongoose.Schema({
   cfCnameTarget: { type: String, default: '' },
   cfTxtName: { type: String, default: '' },
   cfTxtValue: { type: String, default: '' },
+  // Cloudflare custom hostname status (pending, active, etc.)
+  cfStatus: { type: String, default: '' },
+  // Error message if Cloudflare provisioning failed
+  cfErrorMessage: { type: String, default: '' },
 }, { _id: true, timestamps: true });
 
 const ecommercePaymentProviderSchema = new mongoose.Schema({

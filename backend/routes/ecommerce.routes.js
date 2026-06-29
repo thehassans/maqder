@@ -147,6 +147,7 @@ router.post('/domains', protect, async (req, res) => {
       status: 'pending',
       verificationToken,
       sslStatus: 'none',
+      // Only set as primary if there are no other domains; will be updated after CF provisioning
       isPrimary: tenant.ecommerce.domains.length === 0,
     });
     await tenant.save();
@@ -156,19 +157,33 @@ router.post('/domains', protect, async (req, res) => {
     if (isCloudflareConfigured()) {
       try {
         const cfResult = await provisionCloudflareDomain(hostname, verificationToken);
-        if (cfResult?.configured && cfResult?.success) {
-          const d = tenant.ecommerce.domains.id(tenant.ecommerce.domains[tenant.ecommerce.domains.length - 1]._id);
-          if (d) {
+        const d = tenant.ecommerce.domains.id(tenant.ecommerce.domains[tenant.ecommerce.domains.length - 1]._id);
+        if (d) {
+          if (cfResult?.configured && cfResult?.success) {
             d.cfHostnameId = cfResult.cfHostnameId || '';
             d.cfCnameTarget = cfResult.cnameTarget || '';
             d.cfTxtName = cfResult.txtName || '';
             d.cfTxtValue = cfResult.txtValue || '';
             d.sslStatus = cfResult.sslStatus || 'pending';
-            await tenant.save();
+            d.cfStatus = cfResult.cfStatus || 'pending';
+            d.cfErrorMessage = '';
+          } else if (cfResult?.configured) {
+            // CF is configured but provisioning failed — store error and mark domain as failed
+            d.cfErrorMessage = cfResult.errors?.[0] || 'Cloudflare provisioning failed';
+            d.status = 'failed';
+            d.isPrimary = false; // don't route traffic to a failed domain
           }
+          await tenant.save();
         }
-      } catch {
+      } catch (err) {
         // Cloudflare provisioning failed — user can still verify manually
+        const d = tenant.ecommerce.domains.id(tenant.ecommerce.domains[tenant.ecommerce.domains.length - 1]._id);
+        if (d) {
+          d.cfErrorMessage = err.message || 'Cloudflare provisioning failed';
+          d.status = 'failed';
+          d.isPrimary = false;
+          await tenant.save();
+        }
       }
     }
 
@@ -198,12 +213,14 @@ router.post('/domains/:id/verify', protect, async (req, res) => {
         const cfResult = await verifyDomainViaCloudflare(domain.hostname, domain.verificationToken, domain.cfHostnameId);
         if (cfResult.configured) {
           verified = cfResult.verified;
+          domain.cfStatus = cfResult.cfStatus || domain.cfStatus;
+          if (cfResult.cfHostnameId) domain.cfHostnameId = cfResult.cfHostnameId;
           if (verified) {
             const sslResult = await getSSLStatus(domain.hostname, domain.cfHostnameId);
             sslStatus = sslResult.status || 'pending';
           }
         }
-      } catch {
+      } catch (err) {
         // Fall through to DNS lookup
       }
     }
@@ -225,10 +242,57 @@ router.post('/domains/:id/verify', protect, async (req, res) => {
     if (verified) {
       domain.verifiedAt = new Date();
       domain.sslStatus = sslStatus !== 'none' ? sslStatus : 'pending';
+      domain.cfErrorMessage = '';
     }
     await tenant.save();
     clearTenantHostCache(domain.hostname);
     res.json({ verified, domain });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Retry Cloudflare for SaaS provisioning for a failed domain
+router.post('/domains/:id/retry-cloudflare', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    if (!isCloudflareConfigured()) return res.status(400).json({ error: 'Cloudflare not configured' });
+
+    const tenant = await Tenant.findById(tenantId);
+    if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+    const domain = tenant.ecommerce?.domains?.id(req.params.id);
+    if (!domain) return res.status(404).json({ error: 'Domain not found' });
+
+    // Clean up any existing CF custom hostname first
+    if (domain.cfHostnameId) {
+      try {
+        await removeCloudflareDomain(domain.hostname, domain.cfHostnameId);
+      } catch {
+        // ignore
+      }
+    }
+
+    // Re-provision
+    const cfResult = await provisionCloudflareDomain(domain.hostname, domain.verificationToken);
+    if (cfResult?.configured && cfResult?.success) {
+      domain.cfHostnameId = cfResult.cfHostnameId || '';
+      domain.cfCnameTarget = cfResult.cnameTarget || '';
+      domain.cfTxtName = cfResult.txtName || '';
+      domain.cfTxtValue = cfResult.txtValue || '';
+      domain.sslStatus = cfResult.sslStatus || 'pending';
+      domain.cfStatus = cfResult.cfStatus || 'pending';
+      domain.cfErrorMessage = '';
+      domain.status = 'pending';
+      await tenant.save();
+      clearTenantHostCache(domain.hostname);
+      return res.json({ success: true, domain, message: 'Cloudflare provisioning retried' });
+    }
+
+    domain.cfErrorMessage = cfResult.errors?.[0] || 'Cloudflare retry failed';
+    domain.status = 'failed';
+    await tenant.save();
+    res.status(400).json({ error: domain.cfErrorMessage, domain });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }

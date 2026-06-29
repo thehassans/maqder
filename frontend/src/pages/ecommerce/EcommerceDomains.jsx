@@ -12,6 +12,7 @@ export default function EcommerceDomains() {
   const [newDomain, setNewDomain] = useState('');
   const [adding, setAdding] = useState(false);
   const [verifyingId, setVerifyingId] = useState(null);
+  const [retryingId, setRetryingId] = useState(null);
   const [sslChecking, setSslChecking] = useState(false);
   const [cloudflareStatus, setCloudflareStatus] = useState(null);
 
@@ -87,6 +88,20 @@ export default function EcommerceDomains() {
     }
   };
 
+  const handleRetryCloudflare = async (id) => {
+    setRetryingId(id);
+    try {
+      const res = await api.post(`/ecommerce/domains/${id}/retry-cloudflare`);
+      toast.success(res.data?.message || 'Cloudflare provisioning retried');
+      fetchDomains();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Cloudflare retry failed');
+      fetchDomains();
+    } finally {
+      setRetryingId(null);
+    }
+  };
+
   const handleDelete = async (id) => {
     if (!confirm('Remove this domain?')) return;
     try {
@@ -109,6 +124,14 @@ export default function EcommerceDomains() {
     if (status === 'failed') return 'Failed';
     if (status === 'verifying') return 'Verifying';
     return 'Pending';
+  };
+
+  const cfStatusLabel = (cfStatus) => {
+    if (!cfStatus) return '';
+    if (cfStatus === 'active') return 'Cloudflare Active';
+    if (cfStatus === 'pending') return 'Cloudflare Pending';
+    if (cfStatus === 'pending_validation') return 'Cloudflare Validating';
+    return `Cloudflare: ${cfStatus}`;
   };
 
   if (loading) {
@@ -195,7 +218,12 @@ export default function EcommerceDomains() {
         <div className="mt-4 p-4 bg-amber-50 rounded-2xl text-sm text-amber-800 space-y-2">
           <p className="font-bold">How to connect your domain:</p>
           {cloudflareStatus ? (
-            <p className="flex items-center gap-1.5"><Cloud className="w-4 h-4 text-blue-500" /> Cloudflare will automatically create the DNS records and provision SSL — just click <strong>Add</strong> and we handle the rest.</p>
+            <>
+              <p className="flex items-center gap-1.5"><Cloud className="w-4 h-4 text-blue-500" /> Cloudflare for SaaS will create a custom hostname and provision SSL automatically.</p>
+              <p>1. Click <strong>Add</strong> to register the domain</p>
+              <p>2. Add the DNS records shown below into your DNS provider (the CNAME points to your fallback origin)</p>
+              <p>3. Click <strong>Verify</strong> — Cloudflare will confirm ownership and issue SSL</p>
+            </>
           ) : (
             <>
               <p>1. Add a <code className="bg-amber-100 px-1.5 py-0.5 rounded">CNAME</code> record in your DNS provider pointing <code className="bg-amber-100 px-1.5 py-0.5 rounded">store.example.com</code> → <code className="bg-amber-100 px-1.5 py-0.5 rounded">cname.{PLATFORM_BASE}</code></p>
@@ -221,12 +249,15 @@ export default function EcommerceDomains() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="font-bold text-sm text-gray-900 dark:text-white truncate">{domain.hostname}</p>
-                    {domain.isPrimary && (
+                    {domain.isPrimary && domain.status === 'verified' && (
                       <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[10px] font-bold">PRIMARY</span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <p className="text-xs text-gray-400">{statusLabel(domain.status)}</p>
+                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    <p className={`text-xs font-bold ${domain.status === 'verified' ? 'text-emerald-600' : domain.status === 'failed' ? 'text-rose-600' : 'text-amber-600'}`}>{statusLabel(domain.status)}</p>
+                    {domain.cfStatus && (
+                      <span className="text-xs text-blue-600 font-bold">{cfStatusLabel(domain.cfStatus)}</span>
+                    )}
                     {domain.sslStatus === 'active' && (
                       <span className="flex items-center gap-0.5 text-xs text-emerald-600 font-bold"><ShieldCheck className="w-3 h-3" /> SSL Active</span>
                     )}
@@ -234,6 +265,12 @@ export default function EcommerceDomains() {
                       <span className="flex items-center gap-0.5 text-xs text-amber-600 font-bold"><Clock className="w-3 h-3" /> SSL Pending</span>
                     )}
                   </div>
+                  {domain.cfErrorMessage && domain.status === 'failed' && (
+                    <div className="mt-1.5 p-2 bg-rose-50 rounded-lg text-xs text-rose-700 flex items-start gap-1.5">
+                      <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                      <span>{domain.cfErrorMessage}</span>
+                    </div>
+                  )}
                   {domain.status !== 'verified' && (
                     <div className="mt-1.5 space-y-1">
                       {domain.cfCnameTarget ? (
@@ -280,6 +317,17 @@ export default function EcommerceDomains() {
                     >
                       {verifyingId === domain._id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
                       Verify
+                    </button>
+                  )}
+                  {domain.status === 'failed' && cloudflareStatus && (
+                    <button
+                      onClick={() => handleRetryCloudflare(domain._id)}
+                      disabled={retryingId === domain._id}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-100 disabled:opacity-60 transition-colors"
+                      title="Retry Cloudflare provisioning"
+                    >
+                      {retryingId === domain._id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                      Retry CF
                     </button>
                   )}
                   {domain.status === 'verified' && (
