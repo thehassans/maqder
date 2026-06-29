@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Save, BookOpen, Upload, Loader2, Shirt, GraduationCap, Package } from 'lucide-react';
+import { ArrowLeft, Save, BookOpen, Upload, Loader2, Shirt, GraduationCap, Package, Search, Plus, X } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
@@ -65,9 +65,12 @@ export default function BookStoreAddProduct() {
     courseSchedule: '',
     courseCapacity: 0,
     courseLocation: '',
+    courseBooks: [],
   });
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
+  const [availableBooks, setAvailableBooks] = useState([]);
+  const [bookSearch, setBookSearch] = useState('');
 
   useEffect(() => {
     if (editId) {
@@ -77,6 +80,22 @@ export default function BookStoreAddProduct() {
       }).catch(() => toast.error('Failed to load product'));
     }
   }, [editId]);
+
+  useEffect(() => {
+    if (form.productType === 'course') {
+      api.get('/bookstore/books/list').then(res => setAvailableBooks(res.data || [])).catch(() => {});
+    }
+  }, [form.productType]);
+
+  const handleAddBook = (bookId) => {
+    if (!form.courseBooks?.includes(bookId)) {
+      setForm(prev => ({ ...prev, courseBooks: [...(prev.courseBooks || []), bookId] }));
+    }
+  };
+
+  const handleRemoveBook = (bookId) => {
+    setForm(prev => ({ ...prev, courseBooks: (prev.courseBooks || []).filter(id => id !== bookId) }));
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -389,6 +408,97 @@ export default function BookStoreAddProduct() {
             <div className="md:col-span-2">
               <label className="label">Description</label>
               <textarea name="description" value={form.description} onChange={handleChange} rows="2" className="input" />
+            </div>
+
+            {/* Course Books Selector */}
+            <div className="md:col-span-2">
+              <label className="label">Course Books (select books included in this course)</label>
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  value={bookSearch}
+                  onChange={(e) => setBookSearch(e.target.value)}
+                  placeholder="Search books to add..."
+                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:border-rose-200 outline-none"
+                />
+              </div>
+              {bookSearch && (
+                <div className="mt-2 max-h-40 overflow-y-auto bg-white border border-gray-100 rounded-xl shadow-sm">
+                  {availableBooks
+                    .filter(b =>
+                      b.name?.toLowerCase().includes(bookSearch.toLowerCase()) ||
+                      b.isbn?.includes(bookSearch) ||
+                      b.author?.toLowerCase().includes(bookSearch.toLowerCase())
+                    )
+                    .filter(b => !(form.courseBooks || []).includes(b._id))
+                    .slice(0, 8)
+                    .map(book => (
+                      <button
+                        key={book._id}
+                        type="button"
+                        onClick={() => { handleAddBook(book._id); setBookSearch(''); }}
+                        className="w-full flex items-center gap-3 p-2.5 hover:bg-gray-50 transition-colors text-left border-b border-gray-50 last:border-0"
+                      >
+                        {book.coverImage ? (
+                          <img src={book.coverImage} alt="" className="w-8 h-10 object-cover rounded" />
+                        ) : (
+                          <div className="w-8 h-10 bg-indigo-50 rounded flex items-center justify-center">
+                            <BookOpen className="w-4 h-4 text-indigo-300" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-gray-900 truncate">{book.name}</p>
+                          {book.author && <p className="text-xs text-gray-400 truncate">{book.author}</p>}
+                        </div>
+                        <Plus className="w-4 h-4 text-rose-500" />
+                      </button>
+                    ))}
+                  {availableBooks.filter(b =>
+                    b.name?.toLowerCase().includes(bookSearch.toLowerCase()) ||
+                    b.isbn?.includes(bookSearch) ||
+                    b.author?.toLowerCase().includes(bookSearch.toLowerCase())
+                  ).filter(b => !(form.courseBooks || []).includes(b._id)).length === 0 && (
+                    <p className="text-sm text-gray-400 p-3 text-center">No books found</p>
+                  )}
+                </div>
+              )}
+              {/* Selected books list */}
+              {(form.courseBooks || []).length > 0 && (
+                <div className="mt-3 space-y-2">
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Selected Books ({(form.courseBooks || []).length})</p>
+                  {(form.courseBooks || []).map(bookId => {
+                    const book = availableBooks.find(b => b._id === bookId);
+                    if (!book) return (
+                      <div key={bookId} className="flex items-center justify-between p-2.5 bg-rose-50 rounded-xl">
+                        <span className="text-sm text-gray-500">Loading...</span>
+                        <button type="button" onClick={() => handleRemoveBook(bookId)} className="text-red-500 hover:text-red-700">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    );
+                    return (
+                      <div key={bookId} className="flex items-center gap-3 p-2.5 bg-rose-50 rounded-xl">
+                        {book.coverImage ? (
+                          <img src={book.coverImage} alt="" className="w-8 h-10 object-cover rounded" />
+                        ) : (
+                          <div className="w-8 h-10 bg-white rounded flex items-center justify-center">
+                            <BookOpen className="w-4 h-4 text-rose-300" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-gray-900 truncate">{book.name}</p>
+                          {book.author && <p className="text-xs text-gray-400 truncate">{book.author}</p>}
+                        </div>
+                        <span className="text-sm font-bold text-rose-600">SAR {Number(book.retailPrice).toFixed(2)}</span>
+                        <button type="button" onClick={() => handleRemoveBook(bookId)} className="p-1 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-lg">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -137,6 +137,7 @@ export default function BookStorePOS() {
         author: product.author,
         seriesName: product.seriesName || '',
         seriesNumber: product.seriesNumber || null,
+        productType: product.productType || 'book',
         quantity: 1,
         unitPrice: price,
         taxRate: product.taxRate || 15,
@@ -156,6 +157,45 @@ export default function BookStorePOS() {
                 book: nextBook,
               });
             }
+          }
+        })
+        .catch(() => {});
+    }
+
+    if (product.productType === 'course' && product.courseBooks?.length > 0) {
+      api.get(`/bookstore/courses/${product._id}/books`)
+        .then(res => {
+          if (res.data?.books?.length > 0) {
+            setCartItems(prev => {
+              let updated = [...prev];
+              for (const book of res.data.books) {
+                const existing = updated.find(item => item.productId === book._id);
+                if (existing) {
+                  updated = updated.map(item =>
+                    item.productId === book._id
+                      ? { ...item, quantity: item.quantity + 1 }
+                      : item
+                  );
+                } else {
+                  const bookPrice = book.discountPrice > 0 ? book.discountPrice : book.retailPrice;
+                  updated = [...updated, {
+                    productId: book._id,
+                    productName: book.name,
+                    productNameAr: book.nameAr || book.name,
+                    primaryBarcode: book.primaryBarcode,
+                    isbn: book.isbn,
+                    author: book.author,
+                    productType: 'book',
+                    isCourseBook: true,
+                    quantity: 1,
+                    unitPrice: bookPrice,
+                    taxRate: book.taxRate || 15,
+                  }];
+                }
+              }
+              return updated;
+            });
+            toast.success(`Added ${res.data.books.length} course book${res.data.books.length > 1 ? 's' : ''} to cart`);
           }
         })
         .catch(() => {});
@@ -574,7 +614,19 @@ export default function BookStorePOS() {
               {cartItems.map((item, index) => (
                 <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl">
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm text-gray-900 truncate">{item.productName}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-sm text-gray-900 truncate">{item.productName}</p>
+                      {item.isCourseBook && (
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-50 text-rose-600 shrink-0">
+                          <GraduationCap className="w-2.5 h-2.5" /> Course Book
+                        </span>
+                      )}
+                      {item.productType === 'course' && (
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-50 text-rose-600 shrink-0">
+                          <GraduationCap className="w-2.5 h-2.5" /> Course
+                        </span>
+                      )}
+                    </div>
                     {item.author && <p className="text-xs text-gray-400 truncate">{item.author}</p>}
                     {item.seriesName && (
                       <p className="text-[10px] text-indigo-500 font-medium">{item.seriesName} #{item.seriesNumber || '?'}</p>

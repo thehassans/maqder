@@ -36,7 +36,7 @@ router.get('/products', protect, async (req, res) => {
     const tenantId = await getTargetTenantId(req.user);
     const filter = tenantId ? { tenantId, isActive: true } : {};
     const products = await BookStoreProduct.find(filter)
-      .select('name nameAr isbn primaryBarcode author publisher genre language retailPrice discountPrice taxRate unit stockQuantity category coverImage seriesName seriesNumber seriesTotal productType uniformSize uniformColor uniformGender uniformGradeLevel uniformSchoolName courseName courseLevel courseSubject courseDurationWeeks courseStartDate courseEndDate courseInstructor courseSchedule courseCapacity courseEnrolledCount courseLocation courseIsComplete')
+      .select('name nameAr isbn primaryBarcode author publisher genre language retailPrice discountPrice taxRate unit stockQuantity category coverImage seriesName seriesNumber seriesTotal productType uniformSize uniformColor uniformGender uniformGradeLevel uniformSchoolName courseName courseLevel courseSubject courseDurationWeeks courseStartDate courseEndDate courseInstructor courseSchedule courseCapacity courseEnrolledCount courseLocation courseIsComplete courseBooks')
       .lean();
     res.json({ success: true, products });
   } catch (error) {
@@ -677,9 +677,38 @@ router.get('/courses', protect, async (req, res) => {
     const tenantId = await getTargetTenantId(req.user);
     if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
     const courses = await BookStoreProduct.find({ tenantId, productType: 'course', isActive: true })
+      .populate('courseBooks', 'name nameAr isbn primaryBarcode author retailPrice discountPrice coverImage stockQuantity productType')
       .sort('-createdAt')
       .lean();
     res.json(courses);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/courses/:id/books', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    const course = await BookStoreProduct.findOne({ _id: req.params.id, tenantId, productType: 'course' })
+      .populate('courseBooks', 'name nameAr isbn primaryBarcode author retailPrice discountPrice coverImage stockQuantity productType taxRate')
+      .lean();
+    if (!course) return res.status(404).json({ error: 'Course not found' });
+    res.json({ success: true, books: course.courseBooks || [] });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/books/list', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    const books = await BookStoreProduct.find({ tenantId, productType: 'book', isActive: true })
+      .select('name nameAr isbn primaryBarcode author retailPrice discountPrice coverImage stockQuantity')
+      .sort('name')
+      .lean();
+    res.json(books);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

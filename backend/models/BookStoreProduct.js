@@ -60,6 +60,7 @@ const bookStoreProductSchema = new mongoose.Schema({
   courseEnrolledCount: { type: Number, default: 0 },
   courseLocation: { type: String },
   courseIsComplete: { type: Boolean, default: false },
+  courseBooks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'BookStoreProduct' }],
   isActive: { type: Boolean, default: true },
   coverImage: { type: String },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
