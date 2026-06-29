@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Printer, Box, Camera, Save, Receipt, Wifi, Volume2 } from 'lucide-react';
+import { Printer, Box, Camera, Save, Receipt, Wifi } from 'lucide-react';
 import { useTranslation } from '../../lib/translations';
 import { DEFAULT_THERMAL_SETTINGS, PRINTER_MODELS, applyPrinterModel } from '../../lib/thermalPrinter';
 import api from '../../lib/api';
@@ -82,28 +82,64 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
 
-      {/* Receipt Printer Section */}
+      {/* Printer Size & Connection */}
       <div className="card p-6">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <Printer className="w-5 h-5 text-indigo-500" />
           {language === 'ar' ? 'إعدادات الطابعة' : 'Printer Settings'}
         </h3>
 
-        {/* Printer Model Selection */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {/* Printer Type */}
+          <div>
+            <label className="label">{language === 'ar' ? 'نوع الطابعة' : 'Printer Type'}</label>
+            <select name="receiptPrinterType" value={hardware.receiptPrinterType} onChange={handleChange} className="select">
+              <option value="none">{language === 'ar' ? 'بدون (طباعة المتصفح)' : 'None (Browser Print)'}</option>
+              <option value="network">{language === 'ar' ? 'طابعة شبكة (ESC/POS)' : 'Network Printer (ESC/POS)'}</option>
+              <option value="usb">{language === 'ar' ? 'طابعة USB' : 'USB Printer'}</option>
+              <option value="bluetooth">{language === 'ar' ? 'طابعة بلوتوث' : 'Bluetooth Printer'}</option>
+            </select>
+          </div>
+
+          {/* Printer Model */}
+          <div>
+            <label className="label">{language === 'ar' ? 'موديل الطابعة' : 'Printer Model'}</label>
+            <select
+              value={thermal.printerModel || 'generic_80'}
+              onChange={(e) => handleModelChange(e.target.value)}
+              className="select"
+            >
+              {Object.entries(PRINTER_MODELS).map(([key, model]) => (
+                <option key={key} value={key}>
+                  {language === 'ar' ? model.labelAr : model.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Paper Width — the main "size of printer" control */}
         <div className="mb-6">
-          <label className="label">{language === 'ar' ? 'موديل الطابعة' : 'Printer Model'}</label>
-          <select
-            value={thermal.printerModel || 'generic_80'}
-            onChange={(e) => handleModelChange(e.target.value)}
-            className="select"
-          >
-            {Object.entries(PRINTER_MODELS).map(([key, model]) => (
-              <option key={key} value={key}>
-                {language === 'ar' ? model.labelAr : model.label}
-              </option>
-            ))}
-          </select>
-          <div className="mt-2 flex flex-wrap gap-2 text-xs">
+          <label className="label">{language === 'ar' ? 'حجم الورق / عرض الطابعة' : 'Paper Size / Printer Width'}</label>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <button
+              type="button"
+              onClick={() => setThermal(prev => ({ ...prev, paperWidth: 58, charsPerLine: 32 }))}
+              className={`py-3 rounded-xl font-bold text-sm border-2 transition-all ${thermal.paperWidth === 58 ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-gray-200 text-gray-500 hover:border-amber-300'}`}
+            >
+              58mm
+              <span className="block text-[10px] font-normal opacity-60">{language === 'ar' ? 'صغير' : 'Small'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setThermal(prev => ({ ...prev, paperWidth: 80, charsPerLine: 48 }))}
+              className={`py-3 rounded-xl font-bold text-sm border-2 transition-all ${thermal.paperWidth === 80 ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-gray-200 text-gray-500 hover:border-amber-300'}`}
+            >
+              80mm
+              <span className="block text-[10px] font-normal opacity-60">{language === 'ar' ? 'قياسي' : 'Standard'}</span>
+            </button>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs">
             <span className="px-2 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg font-semibold">
               {thermal.paperWidth}mm
             </span>
@@ -119,17 +155,8 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
           </div>
         </div>
 
+        {/* Connection Settings */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="label">{language === 'ar' ? 'نوع الطابعة' : 'Printer Type'}</label>
-            <select name="receiptPrinterType" value={hardware.receiptPrinterType} onChange={handleChange} className="select">
-              <option value="none">{language === 'ar' ? 'بدون (طباعة المتصفح)' : 'None (Browser Print)'}</option>
-              <option value="network">{language === 'ar' ? 'طابعة شبكة (ESC/POS)' : 'Network Printer (ESC/POS)'}</option>
-              <option value="usb">{language === 'ar' ? 'طابعة USB' : 'USB Printer'}</option>
-              <option value="bluetooth">{language === 'ar' ? 'طابعة بلوتوث' : 'Bluetooth Printer'}</option>
-            </select>
-          </div>
-
           {hardware.receiptPrinterType === 'network' && (
             <>
               <div>
@@ -174,41 +201,19 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
         </div>
       </div>
 
-      {/* Thermal Receipt Settings */}
+      {/* Receipt Layout */}
       <div className="card p-6">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
           <Receipt className="w-5 h-5 text-amber-500" />
-          {language === 'ar' ? 'إعدادات إيصال الطابعة الحرارية' : 'Thermal Receipt Settings'}
+          {language === 'ar' ? 'تنسيق الإيصال' : 'Receipt Layout'}
         </h3>
         <p className="text-sm text-gray-500 mb-4">
           {language === 'ar'
-            ? 'تحكم في حجم الورق والخط والمظهر لجميع الإيصالات الحرارية عبر النظام'
-            : 'Control paper size, font, and appearance for all thermal receipts across the system'}
+            ? 'تنسيق الخط والهوامش والمحتوى للإيصالات الحرارية'
+            : 'Font, margins, and content formatting for thermal receipts'}
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="label">{language === 'ar' ? 'عرض الورق' : 'Paper Width'}</label>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setThermal(prev => ({ ...prev, paperWidth: 58, charsPerLine: 32 }))}
-                className={`flex-1 py-3 rounded-xl font-bold text-sm border-2 transition-all ${thermal.paperWidth === 58 ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-gray-200 text-gray-500 hover:border-amber-300'}`}
-              >
-                58mm
-                <span className="block text-[10px] font-normal opacity-60">{language === 'ar' ? 'صغير' : 'Small'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setThermal(prev => ({ ...prev, paperWidth: 80, charsPerLine: 48 }))}
-                className={`flex-1 py-3 rounded-xl font-bold text-sm border-2 transition-all ${thermal.paperWidth === 80 ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-gray-200 text-gray-500 hover:border-amber-300'}`}
-              >
-                80mm
-                <span className="block text-[10px] font-normal opacity-60">{language === 'ar' ? 'قياسي' : 'Standard'}</span>
-              </button>
-            </div>
-          </div>
-
           <div>
             <label className="label">{language === 'ar' ? 'عدد الأعمدة' : 'Characters per Line'}</label>
             <input type="number" name="charsPerLine" min="24" max="64" value={thermal.charsPerLine} onChange={handleThermalChange} className="input" />
