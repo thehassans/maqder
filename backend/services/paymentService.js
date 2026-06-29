@@ -6,6 +6,7 @@
  *   - getPaymentStatus(paymentId)
  *   - refund(paymentId, amount)
  */
+import crypto from 'crypto';
 
 // --- Moyasar ---
 const moyasarAdapter = {
@@ -254,12 +255,36 @@ const stripeAdapter = {
   },
 
   verifyWebhook({ headers, rawBody, config }) {
-    // Stripe sends a stripe-signature header
+    // Stripe sends a stripe-signature header: t=timestamp,v1=signature
     const sig = headers['stripe-signature'];
     if (!sig || !config.webhookSecret) return false;
-    // In production, use stripe.webhooks.constructEvent
-    // For now, basic verification
-    return !!sig;
+
+    // Parse the signature header
+    const parts = sig.split(',');
+    const timestampPart = parts.find(p => p.startsWith('t='));
+    const signaturePart = parts.find(p => p.startsWith('v1='));
+    if (!timestampPart || !signaturePart) return false;
+
+    const timestamp = timestampPart.split('=')[1];
+    const signature = signaturePart.split('=')[1];
+
+    // Prevent replay attacks — reject if older than 5 minutes
+    const age = Math.floor(Date.now() / 1000) - parseInt(timestamp, 10);
+    if (age > 300) return false;
+
+    // Compute expected signature: HMAC-SHA256(timestamp + '.' + rawBody, webhookSecret)
+    const payload = `${timestamp}.${rawBody}`;
+    const expected = crypto.createHmac('sha256', config.webhookSecret).update(payload).digest('hex');
+
+    // Use timing-safe comparison
+    try {
+      const a = Buffer.from(signature, 'hex');
+      const b = Buffer.from(expected, 'hex');
+      if (a.length !== b.length) return false;
+      return crypto.timingSafeEqual(a, b);
+    } catch {
+      return false;
+    }
   },
 
   async getPaymentStatus(sessionId, config) {

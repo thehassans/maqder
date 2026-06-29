@@ -76,6 +76,7 @@ import ecommerceFulfillmentRoutes from './routes/ecommerceFulfillment.routes.js'
 import storefrontRoutes from './routes/storefront.routes.js';
 import ecommerceReviewRoutes from './routes/ecommerceReview.routes.js';
 import ecommerceCouponRoutes from './routes/ecommerceCoupon.routes.js';
+import abandonedCartRoutes from './routes/abandonedCart.routes.js';
 import restaurantReservationRoutes from './routes/restaurantReservation.routes.js';
 import saloonAppointmentRoutes from './routes/saloonAppointment.routes.js';
 import laundryDeliveryRoutes from './routes/laundryDelivery.routes.js';
@@ -122,6 +123,7 @@ import branchRoutes from './routes/branch.routes.js';
 
 import { checkIqamaExpiry } from './jobs/iqamaChecker.js';
 import { processScheduledReports } from './jobs/reportScheduleJob.js';
+import { processAbandonedCarts } from './routes/abandonedCart.routes.js';
 import { syncZatcaInvoices } from './jobs/zatcaSync.js';
 import { fetchImapEmails } from './jobs/imapFetcher.js';
 import { startBoutiqueReminderJobs } from './jobs/boutiqueReminderJob.js';
@@ -219,6 +221,11 @@ const startJobs = () => {
   cron.schedule('*/15 * * * *', async () => {
     logger.info('Running scheduled reports job...');
     await processScheduledReports();
+  });
+
+  cron.schedule('0 */2 * * *', async () => {
+    logger.info('Processing abandoned carts...');
+    await processAbandonedCarts();
   });
 
   cron.schedule('* * * * *', async () => {
@@ -495,6 +502,7 @@ app.use('/api/ecommerce/fulfillment', ensureDatabaseReady, ecommerceFulfillmentR
 app.use('/api/storefront', ensureDatabaseReady, storefrontRoutes);
 app.use('/api/ecommerce/reviews', ensureDatabaseReady, ecommerceReviewRoutes);
 app.use('/api/ecommerce/coupons', ensureDatabaseReady, ecommerceCouponRoutes);
+app.use('/api/ecommerce/abandoned-carts', ensureDatabaseReady, abandonedCartRoutes);
 app.use('/api/bakala/pnl', ensureDatabaseReady, dailyPnlRoutes);
 app.use('/api/restaurant/reservations', ensureDatabaseReady, restaurantReservationRoutes);
 app.use('/api/saloon/appointments', ensureDatabaseReady, saloonAppointmentRoutes);

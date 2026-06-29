@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Search, ShoppingCart, X, Menu, Instagram, Twitter, Facebook, Heart } from 'lucide-react';
 import storeApi from '../../lib/storeApi';
 import { useCart } from '../../store/storefrontCart';
+import { useI18n } from '../../store/storefrontI18n';
 
 // Inject pixel scripts into <head> based on store config
 function injectPixelScripts(pixels) {
@@ -70,6 +71,7 @@ export default function StorefrontLayout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { items, cartCount, cartTotal, isOpen, setIsOpen, removeItem } = useCart();
+  const { lang, toggleLang, t, isRTL } = useI18n();
 
   useEffect(() => {
     storeApi.get('/info').then(res => setStoreInfo(res.data)).catch(() => {});
@@ -140,8 +142,12 @@ export default function StorefrontLayout({ children }) {
           {/* Nav */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             {header.showCategories !== false && (
-              <Link to="/store/products" style={{ color: c('textMuted', '#6b7280'), textDecoration: 'none', fontSize: '14px' }} className="hidden md:inline">Products</Link>
+              <Link to="/store/products" style={{ color: c('textMuted', '#6b7280'), textDecoration: 'none', fontSize: '14px' }} className="hidden md:inline">{t('products')}</Link>
             )}
+            {/* Language toggle */}
+            <button onClick={toggleLang} style={{ background: 'none', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '8px', padding: '4px 10px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', color: c('text', '#111827') }}>
+              {lang === 'en' ? 'العربية' : 'EN'}
+            </button>
             {header.showCart !== false && (
               <>
                 <Link to="/store/wishlist" style={{ background: 'none', border: 'none', cursor: 'pointer', color: c('text', '#111827'), textDecoration: 'none' }}>
