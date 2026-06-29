@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Search, ShoppingCart, X, Menu, Instagram, Twitter, Facebook } from 'lucide-react';
+import { Search, ShoppingCart, X, Menu, Instagram, Twitter, Facebook, Heart } from 'lucide-react';
 import storeApi from '../../lib/storeApi';
 import { useCart } from '../../store/storefrontCart';
 
@@ -143,14 +143,19 @@ export default function StorefrontLayout({ children }) {
               <Link to="/store/products" style={{ color: c('textMuted', '#6b7280'), textDecoration: 'none', fontSize: '14px' }} className="hidden md:inline">Products</Link>
             )}
             {header.showCart !== false && (
-              <button onClick={() => setIsOpen(true)} style={{ position: 'relative', background: 'none', border: 'none', cursor: 'pointer', color: c('text', '#111827') }}>
-                <ShoppingCart size={22} />
-                {cartCount > 0 && (
-                  <span style={{ position: 'absolute', top: '-6px', right: '-6px', backgroundColor: c('primary', '#4f46e5'), color: '#fff', fontSize: '11px', fontWeight: 'bold', borderRadius: '999px', padding: '2px 6px', minWidth: '18px', textAlign: 'center' }}>
-                    {cartCount}
-                  </span>
-                )}
-              </button>
+              <>
+                <Link to="/store/wishlist" style={{ background: 'none', border: 'none', cursor: 'pointer', color: c('text', '#111827'), textDecoration: 'none' }}>
+                  <Heart size={22} />
+                </Link>
+                <button onClick={() => setIsOpen(true)} style={{ position: 'relative', background: 'none', border: 'none', cursor: 'pointer', color: c('text', '#111827') }}>
+                  <ShoppingCart size={22} />
+                  {cartCount > 0 && (
+                    <span style={{ position: 'absolute', top: '-6px', right: '-6px', backgroundColor: c('primary', '#4f46e5'), color: '#fff', fontSize: '11px', fontWeight: 'bold', borderRadius: '999px', padding: '2px 6px', minWidth: '18px', textAlign: 'center' }}>
+                      {cartCount}
+                    </span>
+                  )}
+                </button>
+              </>
             )}
             <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden" style={{ background: 'none', border: 'none', cursor: 'pointer', color: c('text', '#111827') }}>
               {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}

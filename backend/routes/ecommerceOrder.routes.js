@@ -3,6 +3,7 @@ import { protect } from '../middleware/auth.js';
 import Tenant from '../models/Tenant.js';
 import EcommerceOrder from '../models/EcommerceOrder.js';
 import EcommerceProduct from '../models/EcommerceProduct.js';
+import { sendOrderStatusEmail } from '../utils/tenantEmailService.js';
 
 const router = express.Router();
 
@@ -385,6 +386,13 @@ router.patch('/:id/status', protect, async (req, res) => {
     }
 
     await order.save();
+
+    // Send customer email notification
+    try {
+      const tenant = await Tenant.findById(tenantId);
+      if (tenant) sendOrderStatusEmail({ tenant, order, status, note }).catch(() => {});
+    } catch {}
+
     res.json(order);
   } catch (error) {
     res.status(400).json({ error: error.message });
