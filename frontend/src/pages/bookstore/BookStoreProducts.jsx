@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, BookOpen, Edit2, Trash2, Plus, PackageX, ArrowLeft, Shirt, GraduationCap, Package } from 'lucide-react';
+import { Search, BookOpen, Edit2, Trash2, Plus, PackageX, ArrowLeft, Shirt, GraduationCap, Package, Boxes, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
@@ -9,6 +9,7 @@ const TYPE_BADGES = {
   uniform: { label: 'Uniform', icon: Shirt, color: 'bg-emerald-50 text-emerald-600' },
   stationery: { label: 'Stationery', icon: Package, color: 'bg-amber-50 text-amber-600' },
   course: { label: 'Course', icon: GraduationCap, color: 'bg-rose-50 text-rose-600' },
+  bundle: { label: 'Bundle', icon: Boxes, color: 'bg-violet-50 text-violet-600' },
   other: { label: 'Other', icon: Package, color: 'bg-gray-50 text-gray-600' },
 };
 
@@ -82,7 +83,7 @@ export default function BookStoreProducts() {
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        {['all', 'book', 'uniform', 'stationery', 'course', 'other'].map(type => (
+        {['all', 'book', 'uniform', 'stationery', 'course', 'bundle', 'other'].map(type => (
           <button
             key={type}
             onClick={() => setTypeFilter(type)}
@@ -186,6 +187,11 @@ export default function BookStoreProducts() {
                   </td>
                   <td className="py-4 px-6">
                     <div className="flex items-center justify-center gap-2">
+                      {pt === 'course' && (
+                        <Link to={`/app/dashboard/bookstore/courses/${product._id}/enrollments`} className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Enrollments">
+                          <Users className="w-4 h-4" />
+                        </Link>
+                      )}
                       <Link to={`/app/dashboard/bookstore/add-product?id=${product._id}`} className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
                         <Edit2 className="w-4 h-4" />
                       </Link>

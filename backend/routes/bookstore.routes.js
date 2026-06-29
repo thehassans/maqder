@@ -3,6 +3,7 @@ import { protect } from '../middleware/auth.js';
 import BookStoreProduct from '../models/BookStoreProduct.js';
 import SchoolSupplyList from '../models/SchoolSupplyList.js';
 import BookRental from '../models/BookRental.js';
+import CourseEnrollment from '../models/CourseEnrollment.js';
 import Invoice from '../models/Invoice.js';
 import Tenant from '../models/Tenant.js';
 import PosSession from '../models/PosSession.js';
@@ -36,7 +37,7 @@ router.get('/products', protect, async (req, res) => {
     const tenantId = await getTargetTenantId(req.user);
     const filter = tenantId ? { tenantId, isActive: true } : {};
     const products = await BookStoreProduct.find(filter)
-      .select('name nameAr isbn primaryBarcode author publisher genre language retailPrice discountPrice taxRate unit stockQuantity category coverImage seriesName seriesNumber seriesTotal productType uniformSize uniformColor uniformGender uniformGradeLevel uniformSchoolName courseName courseLevel courseSubject courseDurationWeeks courseStartDate courseEndDate courseInstructor courseSchedule courseCapacity courseEnrolledCount courseLocation courseIsComplete courseBooks')
+      .select('name nameAr isbn primaryBarcode author publisher genre language retailPrice discountPrice taxRate unit stockQuantity category coverImage seriesName seriesNumber seriesTotal productType uniformSize uniformColor uniformGender uniformGradeLevel uniformSchoolName courseName courseLevel courseSubject courseDurationWeeks courseStartDate courseEndDate courseInstructor courseSchedule courseCapacity courseEnrolledCount courseLocation courseIsComplete courseBooks bundleItems bundleOriginalPrice bundleDiscountPercent')
       .lean();
     res.json({ success: true, products });
   } catch (error) {
@@ -976,6 +977,419 @@ router.get('/rentals/overdue', protect, async (req, res) => {
     }
 
     res.json(overdue);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- BUNDLES ---
+
+router.get('/bundles', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    const bundles = await BookStoreProduct.find({ tenantId, productType: 'bundle', isActive: true })
+      .populate('bundleItems.productId', 'name nameAr isbn primaryBarcode retailPrice coverImage stockQuantity productType')
+      .sort('-createdAt')
+      .lean();
+    res.json(bundles);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/bundles/:id/items', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    const bundle = await BookStoreProduct.findOne({ _id: req.params.id, tenantId, productType: 'bundle' })
+      .populate('bundleItems.productId', 'name nameAr isbn primaryBarcode retailPrice discountPrice coverImage stockQuantity productType taxRate')
+      .lean();
+    if (!bundle) return res.status(404).json({ error: 'Bundle not found' });
+    res.json({ success: true, items: bundle.bundleItems || [] });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- COURSE ENROLLMENTS ---
+
+router.get('/courses/:id/enrollments', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    const enrollments = await CourseEnrollment.find({ tenantId, courseId: req.params.id })
+      .sort('-enrollmentDate')
+      .lean();
+    res.json(enrollments);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/courses/:id/enroll', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    const course = await BookStoreProduct.findOne({ _id: req.params.id, tenantId, productType: 'course' });
+    if (!course) return res.status(404).json({ error: 'Course not found' });
+
+    const existingCount = await CourseEnrollment.countDocuments({ tenantId, courseId: course._id, status: { $in: ['enrolled', 'completed'] } });
+    if (course.courseCapacity > 0 && existingCount >= course.courseCapacity) {
+      return res.status(400).json({ error: 'Course is full' });
+    }
+
+    const { studentName, studentNameAr, studentPhone, studentEmail, studentGrade, parentName, parentPhone, paymentStatus, amountPaid, notes } = req.body;
+    if (!studentName) return res.status(400).json({ error: 'Student name is required' });
+
+    const enrollment = new CourseEnrollment({
+      tenantId,
+      courseId: course._id,
+      studentName,
+      studentNameAr,
+      studentPhone,
+      studentEmail,
+      studentGrade,
+      parentName,
+      parentPhone,
+      paymentStatus: paymentStatus || 'unpaid',
+      amountPaid: amountPaid || 0,
+      notes,
+      enrolledBy: req.user._id,
+    });
+    await enrollment.save();
+    course.courseEnrolledCount = existingCount + 1;
+    await course.save();
+    res.status(201).json(enrollment);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.put('/enrollments/:id', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    const enrollment = await CourseEnrollment.findOneAndUpdate(
+      { _id: req.params.id, tenantId },
+      req.body,
+      { new: true, runValidators: true }
+    );
+    if (!enrollment) return res.status(404).json({ error: 'Enrollment not found' });
+    res.json(enrollment);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+router.delete('/enrollments/:id', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    const enrollment = await CourseEnrollment.findOneAndDelete({ _id: req.params.id, tenantId });
+    if (!enrollment) return res.status(404).json({ error: 'Enrollment not found' });
+    const course = await BookStoreProduct.findById(enrollment.courseId);
+    if (course) {
+      const activeCount = await CourseEnrollment.countDocuments({ tenantId, courseId: course._id, status: { $in: ['enrolled', 'completed'] } });
+      course.courseEnrolledCount = activeCount;
+      await course.save();
+    }
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- REPORTS: PROFIT MARGINS ---
+
+router.get('/reports/profit-margins', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    const products = await BookStoreProduct.find({ tenantId, isActive: true })
+      .select('name productType costPrice retailPrice discountPrice category stockQuantity')
+      .lean();
+    const data = products.map(p => {
+      const sellPrice = (p.discountPrice > 0 ? p.discountPrice : p.retailPrice) || 0;
+      const cost = p.costPrice || 0;
+      const profit = sellPrice - cost;
+      const margin = sellPrice > 0 ? (profit / sellPrice) * 100 : 0;
+      return {
+        _id: p._id,
+        name: p.name,
+        productType: p.productType || 'book',
+        category: p.category || '—',
+        costPrice: cost,
+        retailPrice: p.retailPrice || 0,
+        discountPrice: p.discountPrice || 0,
+        sellPrice,
+        profit,
+        margin: Math.round(margin * 100) / 100,
+        stockQuantity: p.stockQuantity || 0,
+        stockValue: cost * (p.stockQuantity || 0),
+        potentialRevenue: sellPrice * (p.stockQuantity || 0),
+        potentialProfit: profit * (p.stockQuantity || 0),
+      };
+    });
+    data.sort((a, b) => b.margin - a.margin);
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- REPORTS: SLOW-MOVING INVENTORY ---
+
+router.get('/reports/slow-moving', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    const { days = 90 } = req.query;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - Number(days));
+
+    const products = await BookStoreProduct.find({ tenantId, isActive: true, stockQuantity: { $gt: 0 } })
+      .select('name productType category stockQuantity costPrice retailPrice discountPrice createdAt')
+      .lean();
+
+    const productIds = products.map(p => p._id);
+    const salesData = await Invoice.aggregate([
+      { $match: { tenantId: new mongoose.Types.ObjectId(tenantId), businessContext: 'bookstore', issueDate: { $gte: cutoff } } },
+      { $unwind: '$lineItems' },
+      { $match: { 'lineItems.productId': { $in: productIds.map(id => new mongoose.Types.ObjectId(id)) } } },
+      { $group: { _id: '$lineItems.productId', totalSold: { $sum: '$lineItems.quantity' }, lastSold: { $max: '$issueDate' } } },
+    ]);
+    const salesMap = {};
+    salesData.forEach(s => { salesMap[s._id.toString()] = s; });
+
+    const data = products.map(p => {
+      const sale = salesMap[p._id.toString()];
+      const sellPrice = (p.discountPrice > 0 ? p.discountPrice : p.retailPrice) || 0;
+      return {
+        _id: p._id,
+        name: p.name,
+        productType: p.productType || 'book',
+        category: p.category || '—',
+        stockQuantity: p.stockQuantity || 0,
+        stockValue: (p.costPrice || 0) * (p.stockQuantity || 0),
+        sellPrice,
+        unitsSold: sale?.totalSold || 0,
+        lastSoldDate: sale?.lastSold || null,
+        daysSinceLastSale: sale ? Math.ceil((new Date() - new Date(sale.lastSold)) / (1000 * 60 * 60 * 24)) : null,
+        isSlowMoving: !sale || sale.totalSold === 0,
+      };
+    });
+    data.sort((a, b) => (b.daysSinceLastSale || 99999) - (a.daysSinceLastSale || 99999));
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- REPORTS: SALES BY CATEGORY ---
+
+router.get('/reports/sales-by-category', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    const { startDate, endDate } = req.query;
+    const matchStage = {
+      tenantId: new mongoose.Types.ObjectId(tenantId),
+      businessContext: 'bookstore',
+    };
+    if (startDate || endDate) {
+      matchStage.issueDate = {};
+      if (startDate) matchStage.issueDate.$gte = new Date(startDate);
+      if (endDate) matchStage.issueDate.$lte = new Date(endDate);
+    }
+
+    const [byCategory, byProductType, byGrade] = await Promise.all([
+      Invoice.aggregate([
+        { $match: matchStage },
+        { $unwind: '$lineItems' },
+        { $lookup: { from: 'bookstoreproducts', localField: 'lineItems.productId', foreignField: '_id', as: 'product' } },
+        { $unwind: { path: '$product', preserveNullAndEmptyArrays: true } },
+        { $group: {
+          _id: { $ifNull: ['$product.category', 'Uncategorized'] },
+          totalSold: { $sum: '$lineItems.quantity' },
+          revenue: { $sum: { $ifNull: ['$lineItems.lineTotal', 0] } },
+          revenueWithTax: { $sum: { $ifNull: ['$lineItems.lineTotalWithTax', 0] } },
+          count: { $sum: 1 },
+        }},
+        { $sort: { revenue: -1 } },
+      ]),
+      Invoice.aggregate([
+        { $match: matchStage },
+        { $unwind: '$lineItems' },
+        { $lookup: { from: 'bookstoreproducts', localField: 'lineItems.productId', foreignField: '_id', as: 'product' } },
+        { $unwind: { path: '$product', preserveNullAndEmptyArrays: true } },
+        { $group: {
+          _id: { $ifNull: ['$product.productType', 'book'] },
+          totalSold: { $sum: '$lineItems.quantity' },
+          revenue: { $sum: { $ifNull: ['$lineItems.lineTotal', 0] } },
+          count: { $sum: 1 },
+        }},
+        { $sort: { revenue: -1 } },
+      ]),
+      Invoice.aggregate([
+        { $match: matchStage },
+        { $unwind: '$lineItems' },
+        { $lookup: { from: 'bookstoreproducts', localField: 'lineItems.productId', foreignField: '_id', as: 'product' } },
+        { $unwind: { path: '$product', preserveNullAndEmptyArrays: true } },
+        { $group: {
+          _id: { $ifNull: ['$product.courseLevel', { $ifNull: ['$product.uniformGradeLevel', 'Other'] }] },
+          totalSold: { $sum: '$lineItems.quantity' },
+          revenue: { $sum: { $ifNull: ['$lineItems.lineTotal', 0] } },
+          count: { $sum: 1 },
+        }},
+        { $sort: { revenue: -1 } },
+      ]),
+    ]);
+
+    res.json({ byCategory, byProductType, byGrade });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- REPORTS: SALES DASHBOARD ---
+
+router.get('/reports/dashboard', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    const { range = '30d' } = req.query;
+
+    const now = new Date();
+    let startDate;
+    switch (range) {
+      case '7d': startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); break;
+      case '30d': startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); break;
+      case '90d': startDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000); break;
+      case '1y': startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000); break;
+      default: startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    }
+
+    const matchStage = {
+      tenantId: new mongoose.Types.ObjectId(tenantId),
+      businessContext: 'bookstore',
+      issueDate: { $gte: startDate, $lte: now },
+    };
+
+    const [summary, dailySales, topProducts, paymentBreakdown] = await Promise.all([
+      Invoice.aggregate([
+        { $match: matchStage },
+        { $group: {
+          _id: null,
+          totalRevenue: { $sum: { $ifNull: ['$grandTotal', 0] } },
+          totalTax: { $sum: { $ifNull: ['$totalTax', 0] } },
+          totalSubtotal: { $sum: { $ifNull: ['$subtotal', 0] } },
+          totalDiscount: { $sum: { $ifNull: ['$totalDiscount', 0] } },
+          invoiceCount: { $sum: 1 },
+          avgInvoiceValue: { $avg: { $ifNull: ['$grandTotal', 0] } },
+        }},
+      ]),
+      Invoice.aggregate([
+        { $match: matchStage },
+        { $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$issueDate' } },
+          revenue: { $sum: { $ifNull: ['$grandTotal', 0] } },
+          invoiceCount: { $sum: 1 },
+        }},
+        { $sort: { _id: 1 } },
+      ]),
+      Invoice.aggregate([
+        { $match: matchStage },
+        { $unwind: '$lineItems' },
+        { $group: {
+          _id: '$lineItems.productName',
+          totalSold: { $sum: '$lineItems.quantity' },
+          revenue: { $sum: { $ifNull: ['$lineItems.lineTotal', 0] } },
+        }},
+        { $sort: { totalSold: -1 } },
+        { $limit: 10 },
+      ]),
+      Invoice.aggregate([
+        { $match: matchStage },
+        { $unwind: { path: '$payments', preserveNullAndEmptyArrays: true } },
+        { $group: {
+          _id: { $ifNull: ['$payments.method', 'unknown'] },
+          total: { $sum: { $ifNull: ['$payments.amount', 0] } },
+          count: { $sum: 1 },
+        }},
+        { $sort: { total: -1 } },
+      ]),
+    ]);
+
+    res.json({
+      summary: summary[0] || { totalRevenue: 0, totalTax: 0, totalSubtotal: 0, totalDiscount: 0, invoiceCount: 0, avgInvoiceValue: 0 },
+      dailySales,
+      topProducts,
+      paymentBreakdown,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- REPORTS: VAT / TAX ---
+
+router.get('/reports/vat', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+
+    const tenant = await Tenant.findById(tenantId).select('business.vatNumber business.legalNameEn business.legalNameAr');
+    const { startDate, endDate } = req.query;
+
+    const now = new Date();
+    const start = startDate ? new Date(startDate) : new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = endDate ? new Date(endDate) : now;
+
+    const matchStage = {
+      tenantId: new mongoose.Types.ObjectId(tenantId),
+      businessContext: 'bookstore',
+      issueDate: { $gte: start, $lte: end },
+    };
+
+    const [summary, byTaxRate, invoices] = await Promise.all([
+      Invoice.aggregate([
+        { $match: matchStage },
+        { $group: {
+          _id: null,
+          totalSubtotal: { $sum: { $ifNull: ['$subtotal', 0] } },
+          totalDiscount: { $sum: { $ifNull: ['$totalDiscount', 0] } },
+          totalTax: { $sum: { $ifNull: ['$totalTax', 0] } },
+          totalGrand: { $sum: { $ifNull: ['$grandTotal', 0] } },
+          invoiceCount: { $sum: 1 },
+          taxableAmount: { $sum: { $ifNull: ['$subtotal', 0] } },
+        }},
+      ]),
+      Invoice.aggregate([
+        { $match: matchStage },
+        { $unwind: '$lineItems' },
+        { $group: {
+          _id: { $ifNull: ['$lineItems.taxRate', 15] },
+          taxableAmount: { $sum: { $ifNull: ['$lineItems.lineTotal', 0] } },
+          taxAmount: { $sum: { $ifNull: ['$lineItems.taxAmount', 0] } },
+          lineCount: { $sum: 1 },
+        }},
+        { $sort: { _id: 1 } },
+      ]),
+      Invoice.find(matchStage)
+        .select('invoiceNumber issueDate subtotal totalDiscount totalTax grandTotal status')
+        .sort('issueDate')
+        .limit(500)
+        .lean(),
+    ]);
+
+    res.json({
+      tenant: { vatNumber: tenant?.business?.vatNumber || '', nameEn: tenant?.business?.legalNameEn || '', nameAr: tenant?.business?.legalNameAr || '' },
+      period: { startDate: start, endDate: end },
+      summary: summary[0] || { totalSubtotal: 0, totalDiscount: 0, totalTax: 0, totalGrand: 0, invoiceCount: 0, taxableAmount: 0 },
+      byTaxRate,
+      invoices,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

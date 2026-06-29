@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Save, BookOpen, Upload, Loader2, Shirt, GraduationCap, Package, Search, Plus, X } from 'lucide-react';
+import { ArrowLeft, Save, BookOpen, Upload, Loader2, Shirt, GraduationCap, Package, Search, Plus, X, Boxes } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
@@ -9,6 +9,7 @@ const PRODUCT_TYPES = [
   { value: 'uniform', label: 'Uniform', labelAr: 'زي مدرسي', icon: Shirt, color: 'emerald' },
   { value: 'stationery', label: 'Stationery', labelAr: 'قرطاسية', icon: Package, color: 'amber' },
   { value: 'course', label: 'Course', labelAr: 'دورة', icon: GraduationCap, color: 'rose' },
+  { value: 'bundle', label: 'Bundle', labelAr: 'حزمة', icon: Boxes, color: 'violet' },
   { value: 'other', label: 'Other', labelAr: 'أخرى', icon: Package, color: 'gray' },
 ];
 
@@ -66,6 +67,10 @@ export default function BookStoreAddProduct() {
     courseCapacity: 0,
     courseLocation: '',
     courseBooks: [],
+    // Bundle fields
+    bundleItems: [],
+    bundleOriginalPrice: 0,
+    bundleDiscountPercent: 0,
   });
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
@@ -91,7 +96,33 @@ export default function BookStoreAddProduct() {
           console.error('Failed to load books list:', err?.response?.data || err);
         });
     }
+    if (form.productType === 'bundle') {
+      api.get('/bookstore/products/all')
+        .then(res => {
+          setAvailableBooks((res.data || []).filter(p => p.productType !== 'bundle' && p.isActive !== false));
+        })
+        .catch((err) => {
+          console.error('Failed to load products for bundle:', err?.response?.data || err);
+        });
+    }
   }, [form.productType]);
+
+  const handleAddBundleItem = (productId) => {
+    if (!form.bundleItems?.some(bi => bi.productId === productId)) {
+      setForm(prev => ({ ...prev, bundleItems: [...(prev.bundleItems || []), { productId, quantity: 1 }] }));
+    }
+  };
+
+  const handleRemoveBundleItem = (productId) => {
+    setForm(prev => ({ ...prev, bundleItems: (prev.bundleItems || []).filter(bi => bi.productId !== productId) }));
+  };
+
+  const handleBundleItemQty = (productId, qty) => {
+    setForm(prev => ({
+      ...prev,
+      bundleItems: (prev.bundleItems || []).map(bi => bi.productId === productId ? { ...bi, quantity: Math.max(1, qty) } : bi),
+    }));
+  };
 
   const handleAddBook = (bookId) => {
     if (!form.courseBooks?.includes(bookId)) {
@@ -505,6 +536,145 @@ export default function BookStoreAddProduct() {
                   })}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+        )}
+
+        {/* Bundle Details */}
+        {form.productType === 'bundle' && (
+        <div className="bg-white dark:bg-dark-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-dark-700">
+          <div className="flex items-center gap-2 mb-5">
+            <Boxes className="w-5 h-5 text-violet-500" />
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Bundle Details</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <label className="label">Bundle Name (English) *</label>
+              <input name="name" value={form.name} onChange={handleChange} required className="input" placeholder="e.g. Grade 5 Full Set" />
+            </div>
+            <div>
+              <label className="label">Bundle Name (Arabic)</label>
+              <input name="nameAr" value={form.nameAr} onChange={handleChange} className="input" dir="rtl" />
+            </div>
+            <div>
+              <label className="label">Barcode / SKU</label>
+              <input name="primaryBarcode" value={form.primaryBarcode} onChange={handleChange} className="input" placeholder="Auto-generated if empty" />
+            </div>
+            <div>
+              <label className="label">Category</label>
+              <input name="category" value={form.category} onChange={handleChange} className="input" placeholder="e.g. Grade 5, Back to School" />
+            </div>
+          </div>
+
+          {/* Item selector */}
+          <div className="mb-4">
+            <label className="label">Bundle Items (select products to include)</label>
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                value={bookSearch}
+                onChange={(e) => setBookSearch(e.target.value)}
+                placeholder="Search products to add..."
+                className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:border-violet-200 outline-none"
+              />
+            </div>
+            {bookSearch && (
+              <div className="mt-2 max-h-40 overflow-y-auto bg-white border border-gray-100 rounded-xl shadow-sm">
+                {availableBooks
+                  .filter(b =>
+                    b.name?.toLowerCase().includes(bookSearch.toLowerCase()) ||
+                    b.isbn?.includes(bookSearch) ||
+                    b.primaryBarcode?.includes(bookSearch)
+                  )
+                  .filter(b => !(form.bundleItems || []).some(bi => bi.productId === b._id))
+                  .slice(0, 8)
+                  .map(prod => (
+                    <button
+                      key={prod._id}
+                      type="button"
+                      onClick={() => { handleAddBundleItem(prod._id); setBookSearch(''); }}
+                      className="w-full flex items-center gap-3 p-2.5 hover:bg-gray-50 transition-colors text-left border-b border-gray-50 last:border-0"
+                    >
+                      <div className="w-8 h-10 bg-violet-50 rounded flex items-center justify-center shrink-0">
+                        <Package className="w-4 h-4 text-violet-300" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-gray-900 truncate">{prod.name}</p>
+                        <p className="text-xs text-gray-400 truncate capitalize">{prod.productType || 'book'} · SAR {Number(prod.retailPrice).toFixed(2)}</p>
+                      </div>
+                      <Plus className="w-4 h-4 text-violet-500" />
+                    </button>
+                  ))}
+                {availableBooks.filter(b =>
+                  b.name?.toLowerCase().includes(bookSearch.toLowerCase()) ||
+                  b.isbn?.includes(bookSearch) ||
+                  b.primaryBarcode?.includes(bookSearch)
+                ).filter(b => !(form.bundleItems || []).some(bi => bi.productId === b._id)).length === 0 && (
+                  <p className="text-sm text-gray-400 p-3 text-center">No products found</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Selected items list */}
+          {(form.bundleItems || []).length > 0 && (
+            <div className="space-y-2 mb-6">
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Selected Items ({(form.bundleItems || []).length})</p>
+              {(form.bundleItems || []).map(bi => {
+                const prod = availableBooks.find(b => b._id === bi.productId);
+                if (!prod) return (
+                  <div key={bi.productId} className="flex items-center justify-between p-2.5 bg-violet-50 rounded-xl">
+                    <span className="text-sm text-gray-500">Loading...</span>
+                    <button type="button" onClick={() => handleRemoveBundleItem(bi.productId)} className="text-red-500"><X className="w-4 h-4" /></button>
+                  </div>
+                );
+                return (
+                  <div key={bi.productId} className="flex items-center gap-3 p-2.5 bg-violet-50 rounded-xl">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-gray-900 truncate">{prod.name}</p>
+                      <p className="text-xs text-gray-400 capitalize">{prod.productType || 'book'} · SAR {Number(prod.retailPrice).toFixed(2)}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button type="button" onClick={() => handleBundleItemQty(bi.productId, (bi.quantity || 1) - 1)} className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center">−</button>
+                      <span className="w-8 text-center text-sm font-bold">{bi.quantity || 1}</span>
+                      <button type="button" onClick={() => handleBundleItemQty(bi.productId, (bi.quantity || 1) + 1)} className="w-7 h-7 rounded-lg bg-white border border-gray-200 flex items-center justify-center">+</button>
+                    </div>
+                    <span className="text-sm font-bold text-violet-600 w-20 text-right">SAR {(Number(prod.retailPrice) * (bi.quantity || 1)).toFixed(2)}</span>
+                    <button type="button" onClick={() => handleRemoveBundleItem(bi.productId)} className="p-1 text-red-500 hover:text-red-700 hover:bg-red-100 rounded-lg">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Bundle pricing */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-100">
+            <div>
+              <label className="label">Original Total (auto-calculated)</label>
+              <input
+                type="number"
+                value={(() => {
+                  const total = (form.bundleItems || []).reduce((sum, bi) => {
+                    const prod = availableBooks.find(b => b._id === bi.productId);
+                    return sum + (Number(prod?.retailPrice || 0) * (bi.quantity || 1));
+                  }, 0);
+                  return total.toFixed(2);
+                })()}
+                readOnly
+                className="input bg-gray-50"
+              />
+            </div>
+            <div>
+              <label className="label">Discount %</label>
+              <input name="bundleDiscountPercent" type="number" min="0" max="100" step="0.01" value={form.bundleDiscountPercent} onChange={handleChange} className="input" placeholder="e.g. 10" />
+            </div>
+            <div>
+              <label className="label">Bundle Price (SAR) *</label>
+              <input name="retailPrice" type="number" min="0" step="0.01" value={form.retailPrice} onChange={handleChange} required className="input" placeholder="Price after discount" />
             </div>
           </div>
         </div>

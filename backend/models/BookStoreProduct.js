@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const bookStoreProductSchema = new mongoose.Schema({
   tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
-  productType: { type: String, enum: ['book', 'uniform', 'stationery', 'course', 'other'], default: 'book', index: true },
+  productType: { type: String, enum: ['book', 'uniform', 'stationery', 'course', 'bundle', 'other'], default: 'book', index: true },
   name: { type: String, required: true },
   nameAr: { type: String },
   isbn: { type: String, index: true },
@@ -61,6 +61,13 @@ const bookStoreProductSchema = new mongoose.Schema({
   courseLocation: { type: String },
   courseIsComplete: { type: Boolean, default: false },
   courseBooks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'BookStoreProduct' }],
+  // Bundle-specific fields
+  bundleItems: [{
+    productId: { type: mongoose.Schema.Types.ObjectId, ref: 'BookStoreProduct' },
+    quantity: { type: Number, default: 1 },
+  }],
+  bundleOriginalPrice: { type: Number, default: 0 },
+  bundleDiscountPercent: { type: Number, default: 0 },
   isActive: { type: Boolean, default: true },
   coverImage: { type: String },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

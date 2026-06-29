@@ -200,6 +200,46 @@ export default function BookStorePOS() {
         })
         .catch(() => {});
     }
+
+    if (product.productType === 'bundle' && product.bundleItems?.length > 0) {
+      api.get(`/bookstore/bundles/${product._id}/items`)
+        .then(res => {
+          if (res.data?.items?.length > 0) {
+            setCartItems(prev => {
+              let updated = [...prev];
+              for (const item of res.data.items) {
+                const prod = item.productId;
+                if (!prod) continue;
+                const qty = item.quantity || 1;
+                const existing = updated.find(ci => ci.productId === prod._id);
+                if (existing) {
+                  updated = updated.map(ci =>
+                    ci.productId === prod._id ? { ...ci, quantity: ci.quantity + qty } : ci
+                  );
+                } else {
+                  const itemPrice = prod.discountPrice > 0 ? prod.discountPrice : prod.retailPrice;
+                  updated = [...updated, {
+                    productId: prod._id,
+                    productName: prod.name,
+                    productNameAr: prod.nameAr || prod.name,
+                    primaryBarcode: prod.primaryBarcode,
+                    isbn: prod.isbn,
+                    author: prod.author,
+                    productType: prod.productType || 'book',
+                    isBundleItem: true,
+                    quantity: qty,
+                    unitPrice: itemPrice,
+                    taxRate: prod.taxRate || 15,
+                  }];
+                }
+              }
+              return updated;
+            });
+            toast.success(`Added ${res.data.items.length} bundle item${res.data.items.length > 1 ? 's' : ''} to cart`);
+          }
+        })
+        .catch(() => {});
+    }
   }, []);
 
   useEffect(() => {
@@ -579,7 +619,7 @@ export default function BookStorePOS() {
                     <div className="w-10 h-14 bg-indigo-50 rounded flex items-center justify-center">
                       {(() => {
                         const pt = product.productType || 'book';
-                        const Icon = pt === 'uniform' ? Shirt : pt === 'course' ? GraduationCap : pt === 'stationery' || pt === 'other' ? Package : BookOpen;
+                        const Icon = pt === 'uniform' ? Shirt : pt === 'course' ? GraduationCap : pt === 'bundle' ? Package : pt === 'stationery' || pt === 'other' ? Package : BookOpen;
                         return <Icon className="w-5 h-5 text-indigo-300" />;
                       })()}
                     </div>
@@ -593,7 +633,7 @@ export default function BookStorePOS() {
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-sm text-indigo-600">SAR {Number(product.discountPrice > 0 ? product.discountPrice : product.retailPrice).toFixed(2)}</p>
-                    <p className="text-[10px] text-gray-400">{product.productType === 'course' ? `${product.courseEnrolledCount || 0}/${product.courseCapacity || '∞'} enrolled` : `Stock: ${product.stockQuantity || 0}`}</p>
+                    <p className="text-[10px] text-gray-400">{product.productType === 'course' ? `${product.courseEnrolledCount || 0}/${product.courseCapacity || '∞'} enrolled` : product.productType === 'bundle' ? `${product.bundleItems?.length || 0} items` : `Stock: ${product.stockQuantity || 0}`}</p>
                   </div>
                 </button>
               ))}
@@ -624,6 +664,16 @@ export default function BookStorePOS() {
                       {item.productType === 'course' && (
                         <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-rose-50 text-rose-600 shrink-0">
                           <GraduationCap className="w-2.5 h-2.5" /> Course
+                        </span>
+                      )}
+                      {item.isBundleItem && (
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-violet-50 text-violet-600 shrink-0">
+                          <Package className="w-2.5 h-2.5" /> Bundle Item
+                        </span>
+                      )}
+                      {item.productType === 'bundle' && (
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-violet-50 text-violet-600 shrink-0">
+                          <Package className="w-2.5 h-2.5" /> Bundle
                         </span>
                       )}
                     </div>

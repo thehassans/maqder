@@ -148,6 +148,7 @@ export default function Sidebar() {
         { path: '/app/dashboard/bookstore/buyback', icon: Recycle, label: language === 'ar' ? 'الكتب المستعملة' : 'Buy-Back' },
         { path: '/app/dashboard/bookstore/rentals', icon: BookMarked, label: language === 'ar' ? 'الإعارة' : 'Rentals' },
         { path: '/app/dashboard/bookstore/bestsellers', icon: TrendingUp, label: language === 'ar' ? 'الأكثر مبيعاً' : 'Bestsellers' },
+        { path: '/app/dashboard/bookstore/reports', icon: BarChart3, label: language === 'ar' ? 'التقارير' : 'Reports' },
         { path: '/app/dashboard/bookstore/shift', icon: Wallet, label: language === 'ar' ? 'إدارة الوردية' : 'Shift Management' },
         { path: '/app/dashboard/khata', icon: Users, label: language === 'ar' ? 'العملاء (خاتا)' : 'Khata', perm: { module: 'finance', action: 'read' } },
         { path: '/app/dashboard/bookstore/dashboard', icon: ShieldCheck, label: language === 'ar' ? 'لوحة التحكم' : 'Administration' },
