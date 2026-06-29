@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Package, Save, Loader2, X, Trash2, ArrowLeft, Plus, AlertCircle, CheckCircle, Archive, Eye, Image as ImageIcon, Tag, Copy } from 'lucide-react';
+import { Package, Save, Loader2, X, Trash2, ArrowLeft, Plus, AlertCircle, CheckCircle, Archive, Eye, Image as ImageIcon, Tag, Copy, Sparkles } from 'lucide-react';
 import api from '../../lib/api';
 
 const emptyVariant = () => ({
@@ -21,6 +21,7 @@ export default function EcommerceProductDetail() {
   const [form, setForm] = useState(null);
   const [tagInput, setTagInput] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
     api.get(`/ecommerce/products/${id}`)
@@ -85,6 +86,27 @@ export default function EcommerceProductDetail() {
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to delete');
       setSaving(false);
+    }
+  };
+
+  const handleAiDescription = async () => {
+    setAiLoading(true);
+    setError('');
+    try {
+      const res = await api.post('/ai/generate-description', {
+        productName: form.title,
+        category: form.category || 'General',
+        features: form.shortDescription || form.tags?.join(', ') || '',
+      });
+      const data = res.data;
+      if (data.descriptionEn) update('description', data.descriptionEn);
+      if (data.descriptionAr) update('descriptionAr', data.descriptionAr);
+      setSuccess('AI description generated');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.error || 'AI generation failed');
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -214,7 +236,12 @@ export default function EcommerceProductDetail() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className={labelCls}>Description</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className={labelCls}>Description</label>
+                <button type="button" onClick={handleAiDescription} disabled={aiLoading} className="flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-700 disabled:opacity-50">
+                  {aiLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />} AI Generate
+                </button>
+              </div>
               <textarea className={inputCls} rows={4} value={form.description || ''} onChange={e => update('description', e.target.value)} />
             </div>
             <div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Store, Loader2, TrendingUp, TrendingDown, ShoppingBag, DollarSign, Package, ArrowUpRight, ArrowDownRight, CreditCard, Truck, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Store, Loader2, TrendingUp, TrendingDown, ShoppingBag, DollarSign, Package, ArrowUpRight, ArrowDownRight, CreditCard, Truck, Clock, CheckCircle, AlertTriangle, Download } from 'lucide-react';
 import api from '../../lib/api';
 
 const STATUS_COLORS = {
@@ -83,13 +83,45 @@ export default function EcommerceDashboard() {
             </p>
           </div>
         </div>
-        {/* Period selector */}
-        <div className="flex gap-1 bg-gray-100 dark:bg-dark-700 rounded-full p-1">
-          {[7, 30, 90].map(d => (
-            <button key={d} onClick={() => setDays(d)} className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${days === d ? 'bg-indigo-600 text-white' : 'text-gray-500'}`}>
-              {d}d
+        {/* Period selector + export */}
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1 bg-gray-100 dark:bg-dark-700 rounded-full p-1">
+            {[7, 30, 90].map(d => (
+              <button key={d} onClick={() => setDays(d)} className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${days === d ? 'bg-indigo-600 text-white' : 'text-gray-500'}`}>
+                {d}d
+              </button>
+            ))}
+          </div>
+          {a && (
+            <button onClick={() => {
+              const headers = ['Metric', 'Value'];
+              const rows = [
+                ['Period (days)', days],
+                ['Current Revenue', a.currentRevenue || 0],
+                ['Current Orders', a.currentOrders || 0],
+                ['Revenue Change (%)', a.revenueChange || 0],
+                ['Orders Change (%)', a.ordersChange || 0],
+                ['Avg Order Value', a.aov || 0],
+                ['Active Products', a.activeProducts || 0],
+                ['All-Time Revenue', a.totalRevenueAll || 0],
+                ['All-Time Orders', a.totalOrdersAll || 0],
+              ];
+              (a.topProducts || []).forEach((p, i) => rows.push([`Top Product ${i + 1}: ${p.title}`, `${p.qty} sold, ${p.revenue} revenue`]));
+              Object.entries(a.paymentBreakdown || {}).forEach(([m, d]) => rows.push([`Payment: ${m}`, `${d.count} orders, ${d.revenue} revenue`]));
+              Object.entries(a.statusCounts || {}).forEach(([s, c]) => rows.push([`Status: ${s}`, c]));
+              (a.categorySales || []).forEach((c, i) => rows.push([`Category: ${c.category || c._id}`, `${c.qty} sold, ${c.revenue} revenue, ${c.orders} orders`]));
+              const csv = [headers.join(','), ...rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(','))].join('\n');
+              const blob = new Blob([csv], { type: 'text/csv' });
+              const url = URL.createObjectURL(blob);
+              const el = document.createElement('a');
+              el.href = url;
+              el.download = `analytics-${days}d-${Date.now()}.csv`;
+              el.click();
+              URL.revokeObjectURL(url);
+            }} className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold border border-gray-200 dark:border-dark-600 text-gray-600 hover:bg-gray-50 dark:hover:bg-dark-700">
+              <Download className="w-3 h-3" /> Export
             </button>
-          ))}
+          )}
         </div>
       </div>
 
