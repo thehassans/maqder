@@ -32,6 +32,24 @@ export default function MiniCartPreview() {
 
         {/* Items */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
+          {/* Free shipping progress bar */}
+          {items.length > 0 && (() => {
+            const FREE_SHIP_THRESHOLD = 200;
+            const remaining = Math.max(0, FREE_SHIP_THRESHOLD - cartTotal);
+            const pct = Math.min(100, (cartTotal / FREE_SHIP_THRESHOLD) * 100);
+            return (
+              <div style={{ marginBottom: '16px', padding: '12px', background: '#f9fafb', borderRadius: '10px', border: '1px solid #f3f4f6' }}>
+                {remaining > 0 ? (
+                  <p style={{ fontSize: '12px', color: '#374151', margin: '0 0 8px' }}>Add <strong style={{ color: '#4f46e5' }}>{remaining} SAR</strong> more for free shipping!</p>
+                ) : (
+                  <p style={{ fontSize: '12px', color: '#059669', fontWeight: 'bold', margin: '0 0 8px' }}>✓ You qualify for free shipping!</p>
+                )}
+                <div style={{ height: '6px', background: '#e5e7eb', borderRadius: '999px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${pct}%`, background: remaining > 0 ? '#4f46e5' : '#059669', borderRadius: '999px', transition: 'width 0.3s' }} />
+                </div>
+              </div>
+            );
+          })()}
           {items.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 0', color: '#9ca3af' }}>
               <ShoppingCart size={40} style={{ margin: '0 auto 12px', opacity: 0.3 }} />

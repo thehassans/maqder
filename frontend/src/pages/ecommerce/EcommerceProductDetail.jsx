@@ -412,6 +412,23 @@ export default function EcommerceProductDetail() {
                 </table>
               </div>
               <button onClick={addVariant} className="flex items-center gap-2 text-sm font-bold text-indigo-600 hover:text-indigo-700"><Plus className="w-4 h-4" /> Add Variant</button>
+
+              {/* Bulk editor */}
+              <div className="border-t border-gray-100 dark:border-dark-700 pt-4 mt-2">
+                <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-3">Bulk Edit All Variants</h4>
+                <div className="flex flex-wrap items-end gap-3">
+                  <div>
+                    <label className="text-xs text-gray-400">Set Price for all</label>
+                    <input type="number" step="0.01" className={inputCls} placeholder="0.00" id="bulk-price-input" />
+                  </div>
+                  <button onClick={() => { const val = parseFloat(document.getElementById('bulk-price-input')?.value); if (!isNaN(val)) update('variants', form.variants.map(v => ({ ...v, price: val }))); }} className="px-3 py-2 rounded-lg bg-indigo-600 text-white font-bold text-xs">Apply Price</button>
+                  <div>
+                    <label className="text-xs text-gray-400">Set Stock for all</label>
+                    <input type="number" className={inputCls} placeholder="0" id="bulk-stock-input" />
+                  </div>
+                  <button onClick={() => { const val = parseInt(document.getElementById('bulk-stock-input')?.value); if (!isNaN(val)) update('variants', form.variants.map(v => ({ ...v, stockQuantity: val }))); }} className="px-3 py-2 rounded-lg bg-indigo-600 text-white font-bold text-xs">Apply Stock</button>
+                </div>
+              </div>
             </>
           )}
         </div>

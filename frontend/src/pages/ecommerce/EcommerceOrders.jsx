@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { ListOrdered, Search, Loader2, Eye, Package, DollarSign, TrendingUp, ShoppingBag, X, Download, CheckSquare } from 'lucide-react';
+import { ListOrdered, Search, Loader2, Eye, Package, DollarSign, TrendingUp, ShoppingBag, X, Download, CheckSquare, Printer } from 'lucide-react';
 import api from '../../lib/api';
 
 const STATUS_STYLES = {
@@ -251,6 +251,20 @@ export default function EcommerceOrders() {
               </select>
               <button onClick={handleBulkStatus} disabled={!bulkStatus || bulkLoading} className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-bold disabled:opacity-40 hover:bg-indigo-700">
                 {bulkLoading ? 'Updating...' : 'Apply'}
+              </button>
+              <button onClick={() => {
+                const ids = selected.size > 0 ? [...selected] : orders.map(o => o._id);
+                const win = window.open('', '_blank');
+                if (!win) { alert('Please allow popups to print invoices'); return; }
+                win.document.write('<html><head><title>Invoices</title><style>body{font-family:Arial,sans-serif;margin:0;padding:20px} .invoice{page-break-after:always;margin-bottom:40px;padding:20px;border:1px solid #e5e7eb;border-radius:8px} h1{font-size:20px} table{width:100%;border-collapse:collapse;margin:12px 0} th,td{padding:8px;text-align:left;border-bottom:1px solid #e5e7eb} .total{font-weight:bold;font-size:18px}</style></head><body>');
+                Promise.all(ids.map(id => api.get(`/ecommerce/orders/${id}`).then(res => {
+                  const o = res.data;
+                  win.document.write(`<div class="invoice"><h1>Invoice ${o.orderNumber}</h1><p>Customer: ${o.customer?.name || ''} | Date: ${new Date(o.createdAt).toLocaleDateString()}</p><table><thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead><tbody>`);
+                  (o.lineItems || []).forEach(i => win.document.write(`<tr><td>${i.title || i.productTitle || ''}</td><td>${i.quantity}</td><td>${i.price}</td><td>${i.lineTotal || (i.price * i.quantity)}</td></tr>`));
+                  win.document.write(`</tbody></table><p class="total">Total: ${o.grandTotal} ${o.currency || 'SAR'}</p><p>Payment: ${o.payment?.status || 'pending'} | Status: ${o.status}</p></div>`);
+                }))).then(() => { win.document.write('</body></html>'); win.document.close(); setTimeout(() => win.print(), 500); });
+              }} className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 dark:border-dark-600 text-sm font-bold text-gray-600 hover:bg-gray-50 dark:hover:bg-dark-700">
+                <Printer className="w-4 h-4" /> Print {selected.size > 0 ? `(${selected.size})` : 'All'}
               </button>
             </>
           )}
