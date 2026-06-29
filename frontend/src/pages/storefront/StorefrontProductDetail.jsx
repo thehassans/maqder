@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Loader2, ShoppingCart, Check, Minus, Plus, ChevronRight, Star, Heart, ZoomIn } from 'lucide-react';
+import { Loader2, ShoppingCart, Check, Minus, Plus, ChevronRight, Star, Heart, ZoomIn, Truck } from 'lucide-react';
 import storeApi from '../../lib/storeApi';
 import { useCart } from '../../store/storefrontCart';
 import { useWishlist } from '../../store/storefrontWishlist';
@@ -167,15 +167,57 @@ export default function StorefrontProductDetail() {
             <div style={{ marginBottom: '20px' }}>
               <p style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '8px' }}>Options:</p>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {product.variants.filter(v => v.isActive).map(v => (
-                  <button key={v._id} onClick={() => setSelectedVariant(v._id)} style={{
-                    padding: '8px 16px', borderRadius: '8px', border: selectedVariant === v._id ? '2px solid #4f46e5' : '1px solid #e5e7eb',
-                    background: selectedVariant === v._id ? '#eef2ff' : '#fff', cursor: 'pointer', fontSize: '14px',
-                  }}>
-                    {[v.option1Value, v.option2Value, v.option3Value].filter(Boolean).join(' / ')}
-                  </button>
-                ))}
+                {product.variants.filter(v => v.isActive).map(v => {
+                  const outOfStock = v.trackInventory && v.stockQuantity <= 0;
+                  return (
+                    <button key={v._id} onClick={() => setSelectedVariant(v._id)} disabled={outOfStock} style={{
+                      padding: '8px 16px', borderRadius: '8px', border: selectedVariant === v._id ? '2px solid #4f46e5' : '1px solid #e5e7eb',
+                      background: selectedVariant === v._id ? '#eef2ff' : '#fff', cursor: outOfStock ? 'not-allowed' : 'pointer', fontSize: '14px',
+                      opacity: outOfStock ? 0.4 : 1, textDecoration: outOfStock ? 'line-through' : 'none',
+                    }}>
+                      {[v.option1Value, v.option2Value, v.option3Value].filter(Boolean).join(' / ')}
+                      {v.price && v.price !== product.basePrice ? ` — ${v.price} ${currency}` : ''}
+                    </button>
+                  );
+                })}
               </div>
+              {(() => {
+                const sel = product.variants.find(v => v._id === selectedVariant);
+                if (sel?.trackInventory && sel.stockQuantity <= 5 && sel.stockQuantity > 0) {
+                  return <p style={{ fontSize: '13px', color: '#f59e0b', fontWeight: 'bold', marginTop: '8px' }}>Only {sel.stockQuantity} left in stock!</p>;
+                }
+                if (sel?.trackInventory && sel.stockQuantity <= 0) {
+                  return <p style={{ fontSize: '13px', color: '#dc2626', fontWeight: 'bold', marginTop: '8px' }}>Out of stock</p>;
+                }
+                return null;
+              })()}
+            </div>
+          )}
+
+          {/* Stock status for non-variant products */}
+          {!product.hasVariants && product.trackInventory && (
+            <div style={{ marginBottom: '16px' }}>
+              {product.stockQuantity <= 0 ? (
+                <p style={{ fontSize: '14px', color: '#dc2626', fontWeight: 'bold' }}>Out of stock</p>
+              ) : product.stockQuantity <= 5 ? (
+                <p style={{ fontSize: '14px', color: '#f59e0b', fontWeight: 'bold' }}>Only {product.stockQuantity} left in stock!</p>
+              ) : (
+                <p style={{ fontSize: '14px', color: '#059669', fontWeight: 'bold' }}>✓ In stock</p>
+              )}
+            </div>
+          )}
+
+          {/* Estimated delivery */}
+          {product.status !== 'out_of_stock' && (
+            <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Truck size={16} style={{ color: '#6b7280' }} />
+              <span>Estimated delivery: <strong style={{ color: '#111' }}>{(() => {
+                const d = new Date();
+                d.setDate(d.getDate() + 3);
+                const d2 = new Date();
+                d2.setDate(d2.getDate() + 7);
+                return `${d.toLocaleDateString('en', { day: 'numeric', month: 'short' })} — ${d2.toLocaleDateString('en', { day: 'numeric', month: 'short' })}`;
+              })()}</strong></span>
             </div>
           )}
 

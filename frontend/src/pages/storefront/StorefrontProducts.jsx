@@ -16,6 +16,9 @@ export default function StorefrontProducts() {
   const category = searchParams.get('category') || '';
   const sort = searchParams.get('sort') || 'newest';
   const page = parseInt(searchParams.get('page') || '1');
+  const minPrice = searchParams.get('minPrice') || '';
+  const maxPrice = searchParams.get('maxPrice') || '';
+  const inStock = searchParams.get('inStock') || '';
 
   useEffect(() => {
     storeApi.get('/info').then(res => setStoreInfo(res.data)).catch(() => {});
@@ -26,11 +29,14 @@ export default function StorefrontProducts() {
     const params = new URLSearchParams({ sort, page: String(page), limit: '24' });
     if (search) params.set('search', search);
     if (category) params.set('category', category);
+    if (minPrice) params.set('minPrice', minPrice);
+    if (maxPrice) params.set('maxPrice', maxPrice);
+    if (inStock) params.set('inStock', inStock);
     storeApi.get(`/products?${params}`)
       .then(res => setData(res.data))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [search, category, sort, page]);
+  }, [search, category, sort, page, minPrice, maxPrice, inStock]);
 
   const updateParam = (key, value) => {
     const next = new URLSearchParams(searchParams);
@@ -85,17 +91,37 @@ export default function StorefrontProducts() {
           </button>
         </div>
 
-        {/* Category filters */}
-        {showFilters && data.categories?.length > 0 && (
-          <div style={{ marginTop: '16px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            <button onClick={() => updateParam('category', '')} style={{
-              padding: '6px 14px', borderRadius: '999px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, background: !category ? c('primary', '#4f46e5') : '#fff', color: !category ? '#fff' : c('text', '#111'), cursor: 'pointer', fontSize: '13px',
-            }}>All</button>
-            {data.categories.map(cat => cat && (
-              <button key={cat} onClick={() => updateParam('category', cat)} style={{
-                padding: '6px 14px', borderRadius: '999px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, background: category === cat ? c('primary', '#4f46e5') : '#fff', color: category === cat ? '#fff' : c('text', '#111'), cursor: 'pointer', fontSize: '13px',
-              }}>{cat}</button>
-            ))}
+        {/* Category filters + Price range + Availability */}
+        {showFilters && (
+          <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* Categories */}
+            {data.categories?.length > 0 && (
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button onClick={() => updateParam('category', '')} style={{
+                  padding: '6px 14px', borderRadius: '999px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, background: !category ? c('primary', '#4f46e5') : '#fff', color: !category ? '#fff' : c('text', '#111'), cursor: 'pointer', fontSize: '13px',
+                }}>All</button>
+                {data.categories.map(cat => cat && (
+                  <button key={cat} onClick={() => updateParam('category', cat)} style={{
+                    padding: '6px 14px', borderRadius: '999px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, background: category === cat ? c('primary', '#4f46e5') : '#fff', color: category === cat ? '#fff' : c('text', '#111'), cursor: 'pointer', fontSize: '13px',
+                  }}>{cat}</button>
+                ))}
+              </div>
+            )}
+            {/* Price range */}
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '13px', fontWeight: 'bold', color: c('text', '#111') }}>Price:</span>
+              <input type="number" placeholder="Min" value={minPrice} onChange={e => updateParam('minPrice', e.target.value)} style={{ width: '80px', padding: '6px 10px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '8px', fontSize: '13px' }} />
+              <span style={{ color: c('textMuted', '#6b7280') }}>—</span>
+              <input type="number" placeholder="Max" value={maxPrice} onChange={e => updateParam('maxPrice', e.target.value)} style={{ width: '80px', padding: '6px 10px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '8px', fontSize: '13px' }} />
+              <span style={{ fontSize: '13px', color: c('textMuted', '#6b7280') }}>{currency}</span>
+            </div>
+            {/* Availability */}
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <span style={{ fontSize: '13px', fontWeight: 'bold', color: c('text', '#111') }}>Availability:</span>
+              <button onClick={() => updateParam('inStock', inStock === 'true' ? '' : 'true')} style={{
+                padding: '6px 14px', borderRadius: '999px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, background: inStock === 'true' ? c('primary', '#4f46e5') : '#fff', color: inStock === 'true' ? '#fff' : c('text', '#111'), cursor: 'pointer', fontSize: '13px',
+              }}>In Stock Only</button>
+            </div>
           </div>
         )}
       </div>

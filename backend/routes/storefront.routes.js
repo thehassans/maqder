@@ -37,11 +37,23 @@ router.get('/info', async (req, res) => {
 router.get('/products', async (req, res) => {
   try {
     const tenantId = req.storeTenant._id;
-    const { search, category, sort, page = 1, limit = 24 } = req.query;
+    const { search, category, sort, page = 1, limit = 24, minPrice, maxPrice, inStock } = req.query;
     const filter = { tenantId, status: 'active' };
 
     if (search) filter.$text = { $search: search };
     if (category) filter.category = category;
+    if (minPrice || maxPrice) {
+      filter.basePrice = {};
+      if (minPrice) filter.basePrice.$gte = Number(minPrice);
+      if (maxPrice) filter.basePrice.$lte = Number(maxPrice);
+    }
+    if (inStock === 'true') {
+      filter.$or = [
+        { trackInventory: false },
+        { trackInventory: true, stockQuantity: { $gt: 0 } },
+        { hasVariants: true, 'variants.stockQuantity': { $gt: 0 } },
+      ];
+    }
 
     const sortOptions = {
       newest: { createdAt: -1 },

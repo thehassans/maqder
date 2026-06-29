@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Package, Plus, Search, Loader2, Trash2, Eye, Archive, CheckCircle, AlertCircle, Tag } from 'lucide-react';
+import { Package, Plus, Search, Loader2, Trash2, Eye, Archive, CheckCircle, AlertCircle, Tag, Download, Upload } from 'lucide-react';
 import api from '../../lib/api';
 
 export default function EcommerceProducts() {
@@ -15,6 +15,8 @@ export default function EcommerceProducts() {
   const [total, setTotal] = useState(0);
   const [deleteId, setDeleteId] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const fileInputRef = React.useRef(null);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -107,6 +109,83 @@ export default function EcommerceProducts() {
     return product.stockQuantity || 0;
   };
 
+  const exportCsv = () => {
+    const headers = ['Title', 'Category', 'Base Price', 'Compare At Price', 'Status', 'Track Inventory', 'Stock Quantity', 'Low Stock Threshold', 'Has Variants', 'SKU', 'Short Description', 'Slug'];
+    const rows = products.map(p => [
+      `"${(p.title || '').replace(/"/g, '""')}"`,
+      `"${p.category || ''}"`,
+      p.basePrice || 0,
+      p.compareAtPrice || '',
+      p.status || 'draft',
+      p.trackInventory ? 'yes' : 'no',
+      p.stockQuantity || 0,
+      p.lowStockThreshold || 5,
+      p.hasVariants ? 'yes' : 'no',
+      `"${p.sku || ''}"`,
+      `"${(p.shortDescription || '').replace(/"/g, '""')}"`,
+      `"${p.seo?.slug || ''}"`,
+    ].join(','));
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `products-${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportLoading(true);
+    try {
+      const text = await file.text();
+      const lines = text.split('\n').filter(l => l.trim());
+      const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+      const created = [];
+      for (let i = 1; i < lines.length; i++) {
+        const values = [];
+        let current = '';
+        let inQuotes = false;
+        let col = '';
+        for (let j = 0; j < lines[i].length; j++) {
+          const ch = lines[i][j];
+          if (ch === '"' && lines[i][j+1] === '"') { col += '"'; j++; }
+          else if (ch === '"') { inQuotes = !inQuotes; }
+          else if (ch === ',' && !inQuotes) { values.push(col); col = ''; }
+          else { col += ch; }
+        }
+        values.push(col);
+        const row = {};
+        headers.forEach((h, idx) => { row[h] = values[idx] || ''; });
+        const payload = {
+          title: row.Title || row.title || '',
+          category: row.Category || row.category || '',
+          basePrice: Number(row['Base Price'] || row.basePrice || 0),
+          compareAtPrice: row['Compare At Price'] ? Number(row['Compare At Price']) : undefined,
+          status: row.Status || row.status || 'draft',
+          trackInventory: (row['Track Inventory'] || '').toLowerCase() === 'yes',
+          stockQuantity: Number(row['Stock Quantity'] || 0),
+          lowStockThreshold: Number(row['Low Stock Threshold'] || 5),
+          sku: row.SKU || row.sku || '',
+          shortDescription: row['Short Description'] || row.shortDescription || '',
+          seo: { slug: row.Slug || row.slug || '' },
+        };
+        if (!payload.title) continue;
+        const res = await api.post('/ecommerce/products', payload);
+        created.push(res.data);
+      }
+      alert(`Imported ${created.length} products successfully`);
+      fetchProducts();
+    } catch (err) {
+      alert(`Import failed: ${err.response?.data?.error || err.message}`);
+    } finally {
+      setImportLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-12">
       <div className="flex items-center justify-between">
@@ -119,13 +198,22 @@ export default function EcommerceProducts() {
             <p className="text-sm text-gray-400">{total} product{total !== 1 ? 's' : ''} total</p>
           </div>
         </div>
-        <Link
-          to="/app/dashboard/ecommerce/products/new"
-          className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-full font-bold shadow-lg shadow-indigo-600/10 hover:bg-indigo-700 transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          Add Product
-        </Link>
+        <div className="flex items-center gap-2">
+          <button onClick={exportCsv} className="flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-indigo-600 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors">
+            <Download className="w-4 h-4" /> Export
+          </button>
+          <button onClick={() => fileInputRef.current?.click()} disabled={importLoading} className="flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-indigo-600 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors disabled:opacity-40">
+            <Upload className="w-4 h-4" /> {importLoading ? 'Importing...' : 'Import'}
+          </button>
+          <input ref={fileInputRef} type="file" accept=".csv" onChange={handleImport} style={{ display: 'none' }} />
+          <Link
+            to="/app/dashboard/ecommerce/products/new"
+            className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-full font-bold shadow-lg shadow-indigo-600/10 hover:bg-indigo-700 transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            Add Product
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}

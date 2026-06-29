@@ -4,6 +4,8 @@ import { Search, ShoppingCart, X, Menu, Instagram, Twitter, Facebook, Heart } fr
 import storeApi from '../../lib/storeApi';
 import { useCart } from '../../store/storefrontCart';
 import { useI18n } from '../../store/storefrontI18n';
+import MiniCartPreview from './MiniCartPreview';
+import CookieConsent from './CookieConsent';
 
 // Inject pixel scripts into <head> based on store config
 function injectPixelScripts(pixels) {
@@ -261,6 +263,12 @@ export default function StorefrontLayout({ children }) {
           <p style={{ textAlign: 'center', marginTop: '24px', fontSize: '12px' }}>{footer.copyrightText}</p>
         )}
       </footer>
+
+      {/* Mini-cart drawer */}
+      <MiniCartPreview />
+
+      {/* Cookie consent banner */}
+      <CookieConsent />
     </div>
   );
 }
