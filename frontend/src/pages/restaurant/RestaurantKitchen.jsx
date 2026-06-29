@@ -7,6 +7,7 @@ import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import Money from '../../components/ui/Money'
+import { getThermalPrinterSettings, getPaperWidth } from '../../lib/thermalPrinter'
 
 function formatTime(value) {
   if (!value) return '-'
@@ -166,6 +167,8 @@ export default function RestaurantKitchen() {
     }[order?.orderType] || order?.orderType
 
     const logoSrc = tenant?.branding?.logoUrl || ''
+    const _thermal = getThermalPrinterSettings(tenant)
+    const _pw = getPaperWidth(_thermal)
     
     return `<!doctype html>
 <html>
@@ -174,10 +177,10 @@ export default function RestaurantKitchen() {
 <title>${title}</title>
 <style>
 @media print {
-  @page { margin: 0; size: 80mm auto; }
-  body { width: 80mm; margin: 0 auto; padding: 10px; }
+  @page { margin: 0; size: ${_pw} auto; }
+  body { width: ${_pw}; margin: 0 auto; padding: 10px; }
 }
-body{font-family:Arial, sans-serif; margin:0; padding:14px; max-width:80mm; margin: 0 auto;}
+body{font-family:Arial, sans-serif; margin:0; padding:14px; max-width:${_pw}; margin: 0 auto;}
 .header{text-align:center; margin-bottom:12px;}
 .logo{max-width:80px; max-height:80px; margin-bottom:8px; filter:grayscale(100%);}
 .order-block{border:2px solid #000; padding:8px; text-align:center; margin-bottom:12px; border-radius:4px;}
@@ -244,6 +247,8 @@ td{font-size:14px; padding:8px 0; font-weight:bold; border-bottom:1px dashed #dd
     const title = isAr ? 'إيصال' : 'Receipt'
 
     const logoSrc = tenant?.branding?.logoUrl || ''
+    const _thermal2 = getThermalPrinterSettings(tenant)
+    const _pw2 = getPaperWidth(_thermal2)
 
     return `<!doctype html>
 <html>
@@ -252,10 +257,10 @@ td{font-size:14px; padding:8px 0; font-weight:bold; border-bottom:1px dashed #dd
 <title>${title}</title>
 <style>
 @media print {
-  @page { margin: 0; size: 80mm auto; }
-  body { width: 80mm; margin: 0 auto; padding: 10px; }
+  @page { margin: 0; size: ${_pw2} auto; }
+  body { width: ${_pw2}; margin: 0 auto; padding: 10px; }
 }
-body{font-family:Arial, sans-serif; margin:0; padding:14px; max-width:80mm; margin: 0 auto;}
+body{font-family:Arial, sans-serif; margin:0; padding:14px; max-width:${_pw2}; margin: 0 auto;}
 .header{text-align:center; margin-bottom:12px;}
 .logo{max-width:80px; max-height:80px; margin-bottom:8px; filter:grayscale(100%);}
 .k{font-size:18px; font-weight:700;}

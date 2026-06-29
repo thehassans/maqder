@@ -131,6 +131,10 @@ router.put('/current', authorize('admin'), async (req, res) => {
           ...(currentSettings.hardwareSettings || {}),
           ...(settings.hardwareSettings || {}),
         },
+        thermalPrinter: {
+          ...(currentSettings.thermalPrinter || {}),
+          ...(settings.thermalPrinter || {}),
+        },
       };
     }
     

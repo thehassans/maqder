@@ -1,5 +1,6 @@
 import React, { forwardRef } from 'react';
 import { useSelector } from 'react-redux';
+import { getThermalPrinterSettings, getReceiptStyle, getPrintCss, getPageCss } from '../../lib/thermalPrinter';
 
 const OrderReceipt = forwardRef(({ order, invoice, isUpdated = false }, ref) => {
   const { tenant } = useSelector(state => state.auth);
@@ -7,6 +8,8 @@ const OrderReceipt = forwardRef(({ order, invoice, isUpdated = false }, ref) => 
   const isRtl = language === 'ar';
 
   if (!order) return null;
+
+  const thermalSettings = getThermalPrinterSettings(tenant);
 
   const businessName = tenant?.business?.legalNameEn || tenant?.name || 'Restaurant';
   const businessNameAr = tenant?.business?.legalNameAr || businessName;
@@ -35,31 +38,19 @@ const OrderReceipt = forwardRef(({ order, invoice, isUpdated = false }, ref) => 
   const totalTax = order.totalTax || 0;
   const grandTotal = order.grandTotal || 0;
 
+  const receiptStyle = getReceiptStyle(thermalSettings);
+  const printCss = getPrintCss('order-receipt', thermalSettings);
+  const pageCss = getPageCss(thermalSettings);
+
   return (
     <div
       ref={ref}
       className="order-receipt bg-white text-black font-mono"
-      style={{
-        width: '80mm',
-        padding: '4mm',
-        boxSizing: 'border-box',
-        fontSize: '10px',
-        lineHeight: 1.4,
-      }}
+      style={receiptStyle}
     >
       <style>{`
-        @media print {
-          .order-receipt {
-            width: 80mm !important;
-            padding: 4mm !important;
-            margin: 0 auto !important;
-            box-shadow: none !important;
-            border: none !important;
-          }
-          body * { visibility: hidden !important; }
-          .order-receipt, .order-receipt * { visibility: visible !important; }
-          .order-receipt { position: absolute; left: 0; top: 0; }
-        }
+        ${pageCss}
+        ${printCss}
       `}</style>
 
       {/* Header */}

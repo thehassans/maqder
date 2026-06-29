@@ -1,4 +1,5 @@
 import { forwardRef } from 'react';
+import { getThermalPrinterSettings, getReceiptStyle, getPrintCss, getPageCss } from '../../lib/thermalPrinter';
 
 /**
  * BoutiqueThermalReceipt
@@ -13,6 +14,8 @@ import { forwardRef } from 'react';
 
 const BoutiqueThermalReceipt = forwardRef(({ rental, tenant, invoice, qrDataUrl }, ref) => {
   if (!rental) return null;
+
+  const thermalSettings = getThermalPrinterSettings(tenant);
 
   const isSale = rental.transactionType === 'sale';
   const logoUrl = tenant?.settings?.invoiceBranding?.logo || tenant?.logo || '';
@@ -45,31 +48,19 @@ const BoutiqueThermalReceipt = forwardRef(({ rental, tenant, invoice, qrDataUrl 
   // Helper: detect if text is Arabic
   const hasArabic = (text) => /[\u0600-\u06FF]/.test(text || '');
 
+  const receiptStyle = getReceiptStyle(thermalSettings);
+  const printCss = getPrintCss('thermal-receipt', thermalSettings);
+  const pageCss = getPageCss(thermalSettings);
+
   return (
     <div
       ref={ref}
       className="thermal-receipt bg-white text-black font-mono"
-      style={{
-        width: '80mm',
-        padding: '4mm',
-        boxSizing: 'border-box',
-        fontSize: '10px',
-        lineHeight: 1.4,
-      }}
+      style={receiptStyle}
     >
       <style>{`
-        @media print {
-          .thermal-receipt {
-            width: 80mm !important;
-            padding: 4mm !important;
-            margin: 0 auto !important;
-            box-shadow: none !important;
-            border: none !important;
-          }
-          body * { visibility: hidden !important; }
-          .thermal-receipt, .thermal-receipt * { visibility: visible !important; }
-          .thermal-receipt { position: absolute; left: 0; top: 0; }
-        }
+        ${pageCss}
+        ${printCss}
       `}</style>
 
       {/* Logo */}

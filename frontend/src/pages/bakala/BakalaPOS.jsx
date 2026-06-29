@@ -10,6 +10,7 @@ import PosSessions from './PosSessions';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import { generateZatcaQrValue } from '../../lib/zatcaQr';
+import { getThermalPrinterSettings, getBodyWidthCss, getPageCss } from '../../lib/thermalPrinter';
 
 export default function BakalaPOS() {
   const navigate = useNavigate();
@@ -380,6 +381,10 @@ export default function BakalaPOS() {
       });
     } catch (_) {}
 
+    const _thermal = getThermalPrinterSettings(tenant);
+    const _bodyCss = getBodyWidthCss(_thermal);
+    const _pageCss = getPageCss(_thermal);
+
     const html = `
 <!DOCTYPE html>
 <html>
@@ -387,8 +392,8 @@ export default function BakalaPOS() {
 <meta charset="utf-8">
 <title>Receipt</title>
 <style>
-  @page { size: auto; margin: 0; }
-  body { margin: 0; padding: 8px; font-family: monospace; font-size: 11px; background: white; color: black; width: 80mm; }
+  ${_pageCss}
+  ${_bodyCss}
   .center { text-align: center; }
   .bold { font-weight: bold; }
   .divider { border-top: 1px dashed #999; margin: 6px 0; }

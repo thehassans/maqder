@@ -2,11 +2,13 @@ import React, { forwardRef } from 'react'
 import { useSelector } from 'react-redux'
 import { QRCodeSVG } from 'qrcode.react'
 import { generateZatcaQrValue } from '../../lib/zatcaQr'
+import { getThermalPrinterSettings, getReceiptStyle, getPrintCss, getPageCss } from '../../lib/thermalPrinter'
 
 const ThermalReceipt = forwardRef(({ order, type = 'laundry', isKitchen = false, isUpdated = false }, ref) => {
   const { tenant } = useSelector(state => state.auth)
   const { language } = useSelector(state => state.ui)
   const isRtl = language === 'ar'
+  const thermalSettings = getThermalPrinterSettings(tenant)
 
   if (!order) return null
 
@@ -87,15 +89,19 @@ const ThermalReceipt = forwardRef(({ order, type = 'laundry', isKitchen = false,
     }
   }
 
+  const receiptStyle = getReceiptStyle(thermalSettings)
+  const printCss = getPrintCss('print-section', thermalSettings)
+  const pageCss = getPageCss(thermalSettings)
+
   return (
     <div 
       ref={ref} 
-      className="print-section bg-white text-black p-5 mx-auto font-mono text-[11px] leading-tight select-none border border-gray-100"
-      style={{ width: '80mm', maxWidth: '100%', boxSizing: 'border-box' }}
+      className="print-section bg-white text-black mx-auto font-mono select-none border border-gray-100"
+      style={{ ...receiptStyle, maxWidth: '100%' }}
     >
       <style type="text/css" media="print">
         {`
-          @page { size: auto; margin: 0; }
+          ${pageCss}
           body { margin: 0; padding: 0; background: white; color: black; }
           body * { visibility: hidden; }
           .print-section, .print-section * { visibility: visible; }
@@ -103,10 +109,9 @@ const ThermalReceipt = forwardRef(({ order, type = 'laundry', isKitchen = false,
             position: absolute;
             left: 0;
             top: 0;
-            width: 80mm;
-            padding: 4mm;
             border: none !important;
           }
+          ${printCss}
           ::-webkit-scrollbar { display: none; }
         `}
       </style>
@@ -114,7 +119,7 @@ const ThermalReceipt = forwardRef(({ order, type = 'laundry', isKitchen = false,
       {/* Header Profile */}
       {!isKitchen ? (
         <div className="text-center mb-4 flex flex-col items-center">
-          {logoSrc && (
+          {thermalSettings.showLogo && logoSrc && (
             <img 
               src={logoSrc} 
               alt="Logo" 
@@ -308,7 +313,7 @@ const ThermalReceipt = forwardRef(({ order, type = 'laundry', isKitchen = false,
 
           {/* QR Codes Section */}
           <div className="my-5 flex flex-row items-center justify-center gap-4">
-            {zatcaQrPayload && (
+            {thermalSettings.showQrCode && zatcaQrPayload && (
               <div className="flex flex-col items-center justify-center text-center">
                 <div className="text-[7px] text-gray-500 mb-1 font-bold whitespace-nowrap">
                   ZATCA | هيئة الزكاة
@@ -344,11 +349,13 @@ const ThermalReceipt = forwardRef(({ order, type = 'laundry', isKitchen = false,
       )}
 
       {/* Footer message */}
-      <div className="text-center text-[9px] mt-4 pt-3 border-t border-dashed border-gray-400 text-gray-600 space-y-0.5">
-        <p className="font-extrabold text-gray-900 text-[10px]">{isRtl ? 'شكراً لزيارتكم!' : 'Thank you for your visit!'}</p>
-        <p>{isRtl ? 'يرجى الاحتفاظ بالإيصال.' : 'Please keep this receipt.'}</p>
-        <p className="text-[8px] text-gray-400 mt-2">Maqder POS powered by Advanced Solutions</p>
-      </div>
+      {thermalSettings.showFooter && (
+        <div className="text-center text-[9px] mt-4 pt-3 border-t border-dashed border-gray-400 text-gray-600 space-y-0.5">
+          <p className="font-extrabold text-gray-900 text-[10px]">{isRtl ? thermalSettings.footerTextAr : thermalSettings.footerTextEn}</p>
+          <p>{isRtl ? 'يرجى الاحتفاظ بالإيصال.' : 'Please keep this receipt.'}</p>
+          <p className="text-[8px] text-gray-400 mt-2">Maqder POS powered by Advanced Solutions</p>
+        </div>
+      )}
     </div>
   )
 })

@@ -1,5 +1,6 @@
 import React, { forwardRef } from 'react';
 import { useSelector } from 'react-redux';
+import { getThermalPrinterSettings, getReceiptStyle, getPrintCss, getPageCss } from '../../lib/thermalPrinter';
 
 const KitchenTicket = forwardRef(({ order, isUpdated = false }, ref) => {
   const { tenant } = useSelector(state => state.auth);
@@ -7,6 +8,8 @@ const KitchenTicket = forwardRef(({ order, isUpdated = false }, ref) => {
   const isRtl = language === 'ar';
 
   if (!order) return null;
+
+  const thermalSettings = getThermalPrinterSettings(tenant);
 
   const businessName = tenant?.business?.legalNameEn || tenant?.name || 'Restaurant';
   const dateStr = new Date(order.createdAt || Date.now()).toLocaleString(isRtl ? 'ar-SA' : 'en-GB');
@@ -22,31 +25,19 @@ const KitchenTicket = forwardRef(({ order, isUpdated = false }, ref) => {
 
   const items = order.lineItems || [];
 
+  const ticketStyle = { ...getReceiptStyle(thermalSettings), fontSize: '12px', lineHeight: 1.3 };
+  const printCss = getPrintCss('kitchen-ticket', thermalSettings);
+  const pageCss = getPageCss(thermalSettings);
+
   return (
     <div
       ref={ref}
       className="kitchen-ticket bg-white text-black font-mono"
-      style={{
-        width: '80mm',
-        padding: '4mm',
-        boxSizing: 'border-box',
-        fontSize: '12px',
-        lineHeight: 1.3,
-      }}
+      style={ticketStyle}
     >
       <style>{`
-        @media print {
-          .kitchen-ticket {
-            width: 80mm !important;
-            padding: 4mm !important;
-            margin: 0 auto !important;
-            box-shadow: none !important;
-            border: none !important;
-          }
-          body * { visibility: hidden !important; }
-          .kitchen-ticket, .kitchen-ticket * { visibility: visible !important; }
-          .kitchen-ticket { position: absolute; left: 0; top: 0; }
-        }
+        ${pageCss}
+        ${printCss}
       `}</style>
 
       {/* Header */}
