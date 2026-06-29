@@ -582,23 +582,23 @@ function App() {
         <Route path="bookstore/reports" element={<BusinessTypeRoute allowedTypes={['bookstore']}><BookStoreReports /></BusinessTypeRoute>} />
 
         {/* E-Commerce */}
-        <Route path="ecommerce" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceDashboard /></BusinessTypeRoute>} end />
-        <Route path="ecommerce/orders" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceOrders /></BusinessTypeRoute>} />
-        <Route path="ecommerce/orders/:id" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceOrderDetail /></BusinessTypeRoute>} />
-        <Route path="ecommerce/products" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceProducts /></BusinessTypeRoute>} />
-        <Route path="ecommerce/products/new" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceAddProduct /></BusinessTypeRoute>} />
-        <Route path="ecommerce/products/:id" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceProductDetail /></BusinessTypeRoute>} />
-        <Route path="ecommerce/theme" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceThemeEditor /></BusinessTypeRoute>} />
-        <Route path="ecommerce/domains" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceDomains /></BusinessTypeRoute>} />
-        <Route path="ecommerce/payments" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommercePayments /></BusinessTypeRoute>} />
-        <Route path="ecommerce/couriers" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceCouriers /></BusinessTypeRoute>} />
-        <Route path="ecommerce/pixels" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommercePixels /></BusinessTypeRoute>} />
-        <Route path="ecommerce/coupons" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceCoupons /></BusinessTypeRoute>} />
-        <Route path="ecommerce/reviews" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceReviews /></BusinessTypeRoute>} />
-        <Route path="ecommerce/newsletter" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceNewsletter /></BusinessTypeRoute>} />
-        <Route path="ecommerce/inventory" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceInventory /></BusinessTypeRoute>} />
-        <Route path="ecommerce/customers" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceCustomers /></BusinessTypeRoute>} />
-        <Route path="ecommerce/settings" element={<BusinessTypeRoute allowedTypes={['ecommerce']}><EcommerceStoreSettings /></BusinessTypeRoute>} />
+        <Route path="ecommerce" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceDashboard /></BusinessTypeRoute>} end />
+        <Route path="ecommerce/orders" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceOrders /></BusinessTypeRoute>} />
+        <Route path="ecommerce/orders/:id" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceOrderDetail /></BusinessTypeRoute>} />
+        <Route path="ecommerce/products" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceProducts /></BusinessTypeRoute>} />
+        <Route path="ecommerce/products/new" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceAddProduct /></BusinessTypeRoute>} />
+        <Route path="ecommerce/products/:id" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceProductDetail /></BusinessTypeRoute>} />
+        <Route path="ecommerce/theme" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceThemeEditor /></BusinessTypeRoute>} />
+        <Route path="ecommerce/domains" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceDomains /></BusinessTypeRoute>} />
+        <Route path="ecommerce/payments" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommercePayments /></BusinessTypeRoute>} />
+        <Route path="ecommerce/couriers" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceCouriers /></BusinessTypeRoute>} />
+        <Route path="ecommerce/pixels" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommercePixels /></BusinessTypeRoute>} />
+        <Route path="ecommerce/coupons" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceCoupons /></BusinessTypeRoute>} />
+        <Route path="ecommerce/reviews" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceReviews /></BusinessTypeRoute>} />
+        <Route path="ecommerce/newsletter" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceNewsletter /></BusinessTypeRoute>} />
+        <Route path="ecommerce/inventory" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceInventory /></BusinessTypeRoute>} />
+        <Route path="ecommerce/customers" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceCustomers /></BusinessTypeRoute>} />
+        <Route path="ecommerce/settings" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceStoreSettings /></BusinessTypeRoute>} />
 
         <Route path="restaurant/reservations" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantReservations /></BusinessTypeRoute>} />
         <Route path="saloon/appointments" element={<BusinessTypeRoute allowedTypes={['saloon']}><SaloonAppointments /></BusinessTypeRoute>} />

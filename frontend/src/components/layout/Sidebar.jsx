@@ -160,7 +160,7 @@ export default function Sidebar() {
     },
     {
       title: language === 'ar' ? 'المتجر الإلكتروني' : 'E-Commerce',
-      businessTypes: ['ecommerce'],
+      businessTypes: ['ecommerce', 'trading'],
       items: [
         { path: '/app/dashboard/ecommerce', icon: LayoutDashboard, label: language === 'ar' ? 'لوحة التحكم' : 'Insights', end: true },
         { path: '/app/dashboard/ecommerce/orders', icon: ListOrdered, label: language === 'ar' ? 'الطلبات' : 'Orders' },
