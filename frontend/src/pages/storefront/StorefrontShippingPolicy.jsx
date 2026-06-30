@@ -42,20 +42,20 @@ export default function StorefrontShippingPolicy() {
       <StorefrontSeo title="Shipping Policy" description="Our shipping and delivery policy" />
       <StorefrontBreadcrumbs items={[{ label: 'Home', path: '/store' }, { label: 'Shipping Policy' }]} />
 
-      <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px' }}>Shipping Policy</h1>
-      <p style={{ color: '#6b7280', fontSize: '15px', marginBottom: '32px' }}>Everything you need to know about our shipping and delivery.</p>
+      <h1 style={{ fontSize: '32px', fontWeight: 800, marginBottom: '10px', letterSpacing: '-0.5px' }}>Shipping Policy</h1>
+      <p style={{ color: '#6b7280', fontSize: '15px', marginBottom: '36px' }}>Everything you need to know about our shipping and delivery.</p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {sections.map((s, i) => {
           const Icon = s.icon;
           return (
-            <div key={i} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px' }}>
+            <div key={i} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '16px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 14px rgba(0,0,0,0.08)'; e.currentTarget.style.transform = 'translateY(-2px)'; }} onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; e.currentTarget.style.transform = 'translateY(0)'; }}>
               <div style={{ display: 'flex', gap: '14px' }}>
-                <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Icon size={20} style={{ color: '#4f46e5' }} />
+                <div style={{ width: '44px', height: '44px', borderRadius: '14px', background: 'linear-gradient(135deg, #4f46e520, #4f46e510)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Icon size={22} style={{ color: '#4f46e5' }} />
                 </div>
                 <div>
-                  <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '6px' }}>{s.title}</h3>
+                  <h3 style={{ fontSize: '17px', fontWeight: 700, marginBottom: '8px' }}>{s.title}</h3>
                   <p style={{ fontSize: '14px', color: '#4b5563', lineHeight: 1.7, margin: 0 }}>{s.content}</p>
                 </div>
               </div>
@@ -64,13 +64,13 @@ export default function StorefrontShippingPolicy() {
         })}
       </div>
 
-      <div style={{ marginTop: '32px', padding: '20px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px' }}>
+      <div style={{ marginTop: '32px', padding: '20px 24px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '16px' }}>
         <p style={{ fontSize: '13px', color: '#92400e', margin: 0 }}>
           <strong>Note:</strong> Delivery times may be affected during peak seasons, public holidays, or due to unforeseen circumstances. We will keep you informed of any significant delays.
         </p>
       </div>
 
-      <p style={{ marginTop: '24px', fontSize: '13px', color: '#9ca3af' }}>Last updated: {new Date().toLocaleDateString('en', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+      <p style={{ marginTop: '28px', fontSize: '13px', color: '#9ca3af' }}>Last updated: {new Date().toLocaleDateString('en', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
     </div>
   );
 }
