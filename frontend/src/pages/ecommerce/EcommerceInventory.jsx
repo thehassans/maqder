@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Package, Search, Loader2, Save, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import { Package, Search, Loader2, Save, AlertTriangle, CheckCircle, XCircle, Download, Layers } from 'lucide-react';
 import api from '../../lib/api';
 
 export default function EcommerceInventory() {
@@ -77,6 +77,42 @@ export default function EcommerceInventory() {
     }
   };
 
+  const handleSaveAll = async () => {
+    const entries = Object.entries(edits).filter(([, v]) => v !== undefined && v !== '');
+    if (entries.length === 0) return;
+    setSaving('bulk');
+    try {
+      await Promise.all(entries.map(([pid, val]) =>
+        api.patch(`/ecommerce/products/${pid}`, { stockQuantity: parseInt(val) })
+      ));
+      const updates = Object.fromEntries(entries);
+      setProducts(prev => prev.map(p => updates[p._id] !== undefined ? { ...p, stockQuantity: parseInt(updates[p._id]) } : p));
+      setEdits({});
+    } catch (err) {
+      alert(err.response?.data?.error || 'Bulk save failed');
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const exportCsv = () => {
+    const headers = ['Title', 'SKU', 'Current Stock', 'Low Stock Threshold', 'Tracked', 'Status'];
+    const rows = filtered.map(p => {
+      const stock = getStock(p);
+      const tracked = isTracked(p);
+      const status = !tracked ? 'Untracked' : isOutOfStock(p) ? 'Out of Stock' : isLowStock(p) ? 'Low Stock' : 'In Stock';
+      return [`"${(p.title || '').replace(/"/g, '""')}"`, p.sku || '', stock, getThreshold(p), tracked ? 'Yes' : 'No', status].join(',');
+    });
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `inventory-${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const summary = {
     total: products.length,
     tracked: products.filter(isTracked).length,
@@ -134,6 +170,15 @@ export default function EcommerceInventory() {
           <option value="low">Low Stock</option>
           <option value="out">Out of Stock</option>
         </select>
+        <button onClick={exportCsv} className="flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-indigo-600 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors">
+          <Download className="w-4 h-4" /> Export
+        </button>
+        {Object.keys(edits).length > 0 && (
+          <button onClick={handleSaveAll} disabled={saving === 'bulk'} className="flex items-center gap-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 rounded-xl transition-colors disabled:opacity-50">
+            {saving === 'bulk' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Layers className="w-4 h-4" />}
+            Save All ({Object.keys(edits).length})
+          </button>
+        )}
       </div>
 
       {/* Table */}
