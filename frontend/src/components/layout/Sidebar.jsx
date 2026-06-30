@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { motion, AnimatePresence } from 'framer-motion'
+import api from '../../lib/api'
 import {
   LayoutDashboard,
   FileText,
@@ -90,6 +91,8 @@ export default function Sidebar() {
   const { tenant, user } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
 
+  const [pendingQuestions, setPendingQuestions] = useState(0)
+
   const si = tenant?.settings?.saudiIntegrations || {};
   const isZatcaPhase1 = (tenant?.zatca?.phase || 1) === 1;
   const business = tenant?.business || {};
@@ -106,6 +109,16 @@ export default function Sidebar() {
   if (hasGosi) govChildren.push({ path: '/app/dashboard/tenant-settings/government-integrations/gosi', label: language === 'ar' ? 'بوابة التأمينات / مدد' : 'GOSI/Mudad Portal' });
 
   const businessTypes = getTenantBusinessTypes(tenant)
+
+  useEffect(() => {
+    if (businessTypes.includes('ecommerce') || businessTypes.includes('trading')) {
+      api.get('/ecommerce/products/questions/pending').then(res => setPendingQuestions(res.data?.questions?.length || 0)).catch(() => {})
+      const interval = setInterval(() => {
+        api.get('/ecommerce/products/questions/pending').then(res => setPendingQuestions(res.data?.questions?.length || 0)).catch(() => {})
+      }, 60000)
+      return () => clearInterval(interval)
+    }
+  }, [businessTypes])
 
   const hasAccess = (module, action) => {
     if (!user) return false
@@ -534,6 +547,9 @@ export default function Sidebar() {
                           className="flex-1 flex justify-between items-center"
                         >
                           <span>{item.label}</span>
+                          {item.path === '/app/dashboard/ecommerce/questions' && pendingQuestions > 0 && (
+                            <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-amber-500 text-white text-[10px] font-bold">{pendingQuestions}</span>
+                          )}
                         </motion.span>
                       )}
                     </NavLink>
