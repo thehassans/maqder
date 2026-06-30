@@ -174,6 +174,7 @@ import StorefrontWishlist from './pages/storefront/StorefrontWishlist'
 import StorefrontOrderTracking from './pages/storefront/StorefrontOrderTracking'
 import StorefrontReturnRequest from './pages/storefront/StorefrontReturnRequest'
 import StorefrontCompare from './pages/storefront/StorefrontCompare'
+import StorefrontAccount from './pages/storefront/StorefrontAccount'
 import StorefrontPrivacy from './pages/storefront/StorefrontPrivacy'
 import StorefrontTerms from './pages/storefront/StorefrontTerms'
 import StorefrontCategory from './pages/storefront/StorefrontCategory'
@@ -760,6 +761,7 @@ function App() {
       <Route path="/store/checkout" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontCheckout /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
       <Route path="/store/wishlist" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontWishlist /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
       <Route path="/store/compare" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontCompare /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store/account" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontAccount /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
       <Route path="/store/track-order" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontOrderTracking /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
       <Route path="/store/returns" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontReturnRequest /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
       <Route path="/store/privacy" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontPrivacy /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />

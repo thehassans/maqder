@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Loader2, ShoppingCart, Check, Minus, Plus, ChevronRight, Star, Heart, ZoomIn, Truck, Share2, MessageCircle, ShieldCheck, RotateCcw } from 'lucide-react';
+import { Loader2, ShoppingCart, Check, Minus, Plus, ChevronRight, Star, Heart, ZoomIn, Truck, Share2, MessageCircle, ShieldCheck, RotateCcw, GitCompare } from 'lucide-react';
 import storeApi from '../../lib/storeApi';
 import { useCart } from '../../store/storefrontCart';
 import { useWishlist } from '../../store/storefrontWishlist';
+import { useCompare } from '../../store/storefrontCompare';
 import { firePixelEvent } from '../../components/storefront/StorefrontLayout';
 import StorefrontSeo from '../../components/storefront/StorefrontSeo';
 import StorefrontBreadcrumbs from '../../components/storefront/StorefrontBreadcrumbs';
@@ -24,6 +25,7 @@ export default function StorefrontProductDetail() {
   const [reviewMessage, setReviewMessage] = useState('');
   const { addItem } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
+  const { toggleCompare, isInCompare } = useCompare();
   const { addProduct } = useRecentlyViewed();
   const [zoomed, setZoomed] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -286,6 +288,11 @@ export default function StorefrontProductDetail() {
               padding: '12px', background: isInWishlist(data.product._id) ? '#fee2e2' : '#fff', border: `1px solid ${isInWishlist(data.product._id) ? '#fca5a5' : '#e5e7eb'}`, borderRadius: '8px', cursor: 'pointer',
             }}>
               <Heart size={20} style={{ color: isInWishlist(data.product._id) ? '#dc2626' : '#9ca3af', fill: isInWishlist(data.product._id) ? '#dc2626' : 'none' }} />
+            </button>
+            <button onClick={() => toggleCompare(data.product._id)} title="Compare" style={{
+              padding: '12px', background: isInCompare(data.product._id) ? '#eef2ff' : '#fff', border: `1px solid ${isInCompare(data.product._id) ? '#4f46e5' : '#e5e7eb'}`, borderRadius: '8px', cursor: 'pointer',
+            }}>
+              <GitCompare size={20} style={{ color: isInCompare(data.product._id) ? '#4f46e5' : '#9ca3af' }} />
             </button>
           </div>
 
