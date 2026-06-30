@@ -161,32 +161,32 @@ export default function StorefrontCheckout() {
 
   if (items.length === 0) {
     return (
-      <div style={{ maxWidth: '500px', margin: '0 auto', padding: '60px 20px', textAlign: 'center' }}>
-        <ShoppingCart size={64} style={{ color: '#d1d5db', margin: '0 auto 16px' }} />
-        <h1 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '8px' }}>Your cart is empty</h1>
-        <Link to="/store/products" style={{ color: '#4f46e5', textDecoration: 'none', fontWeight: 'bold' }}>Browse products →</Link>
+      <div style={{ maxWidth: '500px', margin: '0 auto', padding: '80px 20px', textAlign: 'center' }}>
+        <ShoppingCart size={64} style={{ color: '#d1d5db', margin: '0 auto 20px' }} />
+        <h1 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '12px', letterSpacing: '-0.3px' }}>Your cart is empty</h1>
+        <Link to="/store/products" style={{ color: '#4f46e5', textDecoration: 'none', fontWeight: 700, fontSize: '15px' }}>Browse products →</Link>
       </div>
     );
   }
 
-  const inputStyle = { width: '100%', padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', outline: 'none' };
-  const labelStyle = { display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#374151', marginBottom: '4px' };
+  const inputStyle = { width: '100%', padding: '12px 16px', border: '1px solid #e5e7eb', borderRadius: '12px', fontSize: '14px', outline: 'none', transition: 'border-color 0.2s' };
+  const labelStyle = { display: 'block', fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '6px' };
 
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '24px 20px' }}>
       <StorefrontSeo title="Checkout" />
       <StorefrontBreadcrumbs items={[{ label: 'Checkout' }]} />
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold' }}>Checkout</h1>
-        <span style={{ fontSize: '13px', color: '#6b7280', background: '#f3f4f6', padding: '4px 12px', borderRadius: '999px', fontWeight: 'bold' }}>Guest Checkout — No account needed</span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px' }}>
+        <h1 style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-0.5px' }}>Checkout</h1>
+        <span style={{ fontSize: '13px', color: '#6b7280', background: '#f3f4f6', padding: '6px 14px', borderRadius: '999px', fontWeight: 700 }}>Guest Checkout — No account needed</span>
       </div>
 
-      {error && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '12px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', color: '#dc2626', fontSize: '14px' }}><AlertCircle size={16} /> {error}</div>}
+      {error && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '12px', padding: '14px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', color: '#dc2626', fontSize: '14px', fontWeight: 600 }}><AlertCircle size={16} /> {error}</div>}
 
-      <form id="checkout-form" onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '32px' }} className="store-checkout-grid">
+      <form id="checkout-form" onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '32px' }} className="store-checkout-grid">
         {/* Left: Customer info */}
         <div>
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px' }}>Shipping Details</h2>
+          <h2 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '20px', letterSpacing: '-0.3px' }}>Shipping Details</h2>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
             <div>
               <label style={labelStyle}>Full Name *</label>
@@ -231,41 +231,41 @@ export default function StorefrontCheckout() {
           </div>
 
           {/* Payment method */}
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px' }}>Payment Method</h2>
+          <h2 style={{ fontSize: '20px', fontWeight: 800, marginTop: '28px', marginBottom: '14px', letterSpacing: '-0.3px' }}>Payment Method</h2>
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', border: paymentMethod === 'cod' ? '2px solid #4f46e5' : '1px solid #e5e7eb', borderRadius: '8px', cursor: 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '14px 20px', border: paymentMethod === 'cod' ? '2px solid #4f46e5' : '1px solid #e5e7eb', borderRadius: '14px', cursor: 'pointer', transition: 'all 0.2s', background: paymentMethod === 'cod' ? '#eef2ff' : '#fff' }}>
               <input type="radio" checked={paymentMethod === 'cod'} onChange={() => { setPaymentMethod('cod'); firePixelEvent('AddPaymentInfo', { value: finalTotal, currency: 'SAR', payment_method: 'cod' }); }} />
-              <span style={{ fontWeight: 'bold', fontSize: '14px' }}>Cash on Delivery</span>
+              <span style={{ fontWeight: 700, fontSize: '14px' }}>Cash on Delivery</span>
             </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', border: paymentMethod === 'moyasar' ? '2px solid #4f46e5' : '1px solid #e5e7eb', borderRadius: '8px', cursor: 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '14px 20px', border: paymentMethod === 'moyasar' ? '2px solid #4f46e5' : '1px solid #e5e7eb', borderRadius: '14px', cursor: 'pointer', transition: 'all 0.2s', background: paymentMethod === 'moyasar' ? '#eef2ff' : '#fff' }}>
               <input type="radio" checked={paymentMethod === 'moyasar'} onChange={() => { setPaymentMethod('moyasar'); firePixelEvent('AddPaymentInfo', { value: finalTotal, currency: 'SAR', payment_method: 'moyasar' }); }} />
-              <span style={{ fontWeight: 'bold', fontSize: '14px' }}>Credit Card</span>
+              <span style={{ fontWeight: 700, fontSize: '14px' }}>Credit Card</span>
             </label>
           </div>
         </div>
 
         {/* Right: Order summary */}
         <div>
-          <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px', position: 'sticky', top: '20px' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '16px' }}>Order Summary</h2>
+          <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '20px', padding: '24px', position: 'sticky', top: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '20px', letterSpacing: '-0.3px' }}>Order Summary</h2>
             <div style={{ marginBottom: '16px' }}>
               {items.map(item => (
-                <div key={item.key} style={{ display: 'flex', gap: '10px', padding: '8px 0', borderBottom: '1px solid #e5e7eb' }}>
-                  {item.image && <img src={item.image} alt="" style={{ width: '48px', height: '48px', borderRadius: '6px', objectFit: 'cover' }} />}
+                <div key={item.key} style={{ display: 'flex', gap: '10px', padding: '10px 0', borderBottom: '1px solid #f3f4f6' }}>
+                  {item.image && <img src={item.image} alt="" style={{ width: '52px', height: '52px', borderRadius: '10px', objectFit: 'cover' }} />}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: '13px', fontWeight: 'bold', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</p>
+                    <p style={{ fontSize: '13px', fontWeight: 600, margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</p>
                     <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>Qty: {item.quantity} × {item.price} SAR</p>
                   </div>
                 </div>
               ))}
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '4px' }}>
-              <span>Subtotal</span><span style={{ fontWeight: 'bold' }}>{cartTotal} SAR</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '6px', fontWeight: 500 }}>
+              <span>Subtotal</span><span style={{ fontWeight: 700 }}>{cartTotal} SAR</span>
             </div>
             {/* Coupon input */}
-            <form onSubmit={handleApplyCoupon} style={{ display: 'flex', gap: '6px', margin: '8px 0' }}>
-              <input value={couponCode} onChange={e => setCouponCode(e.target.value)} placeholder="Coupon code" style={{ flex: 1, padding: '8px 10px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '13px' }} />
-              <button type="submit" disabled={couponLoading} style={{ padding: '8px 14px', background: '#6b7280', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}>{couponLoading ? '...' : 'Apply'}</button>
+            <form onSubmit={handleApplyCoupon} style={{ display: 'flex', gap: '6px', margin: '10px 0' }}>
+              <input value={couponCode} onChange={e => setCouponCode(e.target.value)} placeholder="Coupon code" style={{ flex: 1, padding: '10px 12px', border: '1px solid #e5e7eb', borderRadius: '10px', fontSize: '13px', outline: 'none' }} />
+              <button type="submit" disabled={couponLoading} style={{ padding: '10px 16px', background: '#6b7280', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = '0.9'} onMouseLeave={e => e.currentTarget.style.opacity = '1'}>{couponLoading ? '...' : 'Apply'}</button>
             </form>
             {couponError && <p style={{ fontSize: '12px', color: '#dc2626', margin: '0 0 8px' }}>{couponError}</p>}
             {appliedCoupon && <p style={{ fontSize: '12px', color: '#059669', margin: '0 0 8px', fontWeight: 'bold' }}>✓ {appliedCoupon.code} applied — {appliedCoupon.type === 'percentage' ? `${appliedCoupon.value}% off` : appliedCoupon.type === 'fixed' ? `${appliedCoupon.value} SAR off` : 'Free shipping'}</p>}
@@ -275,9 +275,9 @@ export default function StorefrontCheckout() {
               </div>
             )}
             {/* Gift card input */}
-            <form onSubmit={handleApplyGiftCard} style={{ display: 'flex', gap: '6px', margin: '8px 0' }}>
-              <input value={giftCardCode} onChange={e => setGiftCardCode(e.target.value)} placeholder="Gift card code" style={{ flex: 1, padding: '8px 10px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '13px' }} />
-              <button type="submit" disabled={giftCardLoading} style={{ padding: '8px 14px', background: '#6b7280', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}>{giftCardLoading ? '...' : 'Apply'}</button>
+            <form onSubmit={handleApplyGiftCard} style={{ display: 'flex', gap: '6px', margin: '10px 0' }}>
+              <input value={giftCardCode} onChange={e => setGiftCardCode(e.target.value)} placeholder="Gift card code" style={{ flex: 1, padding: '10px 12px', border: '1px solid #e5e7eb', borderRadius: '10px', fontSize: '13px', outline: 'none' }} />
+              <button type="submit" disabled={giftCardLoading} style={{ padding: '10px 16px', background: '#6b7280', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = '0.9'} onMouseLeave={e => e.currentTarget.style.opacity = '1'}>{giftCardLoading ? '...' : 'Apply'}</button>
             </form>
             {giftCardError && <p style={{ fontSize: '12px', color: '#dc2626', margin: '0 0 8px' }}>{giftCardError}</p>}
             {appliedGiftCard && <p style={{ fontSize: '12px', color: '#059669', margin: '0 0 8px', fontWeight: 'bold' }}>✓ Gift card applied — {giftCardAmount} SAR deducted</p>}
@@ -289,13 +289,14 @@ export default function StorefrontCheckout() {
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '4px', color: '#6b7280' }}>
               <span>Shipping</span><span>{freeShipping ? 'Free' : shippingEstimate ? `${shippingCost} SAR` : 'Calculated at checkout'}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '18px', fontWeight: 'bold', paddingTop: '12px', borderTop: '1px solid #e5e7eb', marginTop: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '20px', fontWeight: 800, paddingTop: '14px', borderTop: '1px solid #e5e7eb', marginTop: '10px' }}>
               <span>Total</span><span style={{ color: '#059669' }}>{finalTotal} SAR</span>
             </div>
             <button type="submit" disabled={loading} style={{
-              width: '100%', marginTop: '20px', padding: '14px', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '8px',
-              fontWeight: 'bold', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: loading ? 0.6 : 1,
-            }}>
+              width: '100%', marginTop: '24px', padding: '16px', background: 'linear-gradient(135deg, #4f46e5, #6366f1)', color: '#fff', border: 'none', borderRadius: '14px',
+              fontWeight: 700, fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: loading ? 0.6 : 1,
+              transition: 'all 0.2s', boxShadow: '0 4px 14px rgba(79,70,229,0.25)',
+            }} onMouseEnter={e => { if (!loading) e.currentTarget.style.transform = 'translateY(-2px)'; }} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
               {loading ? <Loader2 size={18} className="animate-spin" /> : 'Place Order'}
             </button>
           </div>
@@ -310,16 +311,16 @@ export default function StorefrontCheckout() {
       {/* Mobile sticky checkout bar */}
       <div className="store-mobile-sticky-bar" style={{
         display: 'none', position: 'fixed', bottom: '56px', left: 0, right: 0, zIndex: 90,
-        background: '#fff', borderTop: '1px solid #e5e7eb', padding: '10px 16px',
-        alignItems: 'center', gap: '12px', boxShadow: '0 -2px 12px rgba(0,0,0,0.06)',
+        background: '#fff', borderTop: '1px solid #e5e7eb', padding: '12px 16px',
+        alignItems: 'center', gap: '12px', boxShadow: '0 -2px 16px rgba(0,0,0,0.08)',
       }}>
         <div style={{ flex: 1 }}>
-          <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>Total</p>
-          <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#059669', margin: 0 }}>{finalTotal} SAR</p>
+          <p style={{ fontSize: '12px', color: '#6b7280', margin: 0, fontWeight: 500 }}>Total</p>
+          <p style={{ fontSize: '20px', fontWeight: 800, color: '#059669', margin: 0 }}>{finalTotal} SAR</p>
         </div>
         <button type="submit" form="checkout-form" disabled={loading} style={{
-          padding: '12px 24px', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '8px',
-          fontWeight: 'bold', fontSize: '15px', cursor: 'pointer', opacity: loading ? 0.6 : 1,
+          padding: '14px 28px', background: 'linear-gradient(135deg, #4f46e5, #6366f1)', color: '#fff', border: 'none', borderRadius: '14px',
+          fontWeight: 700, fontSize: '15px', cursor: 'pointer', opacity: loading ? 0.6 : 1, boxShadow: '0 4px 14px rgba(79,70,229,0.25)',
         }}>
           {loading ? '...' : 'Place Order'}
         </button>
