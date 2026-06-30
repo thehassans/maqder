@@ -76,6 +76,8 @@ export default function BookStoreAddProduct() {
   const fileInputRef = useRef(null);
   const [availableBooks, setAvailableBooks] = useState([]);
   const [bookSearch, setBookSearch] = useState('');
+  const courseAutoPrice = useRef(null);
+  const isFirstCourseCalc = useRef(true);
 
   useEffect(() => {
     if (editId) {
@@ -123,6 +125,30 @@ export default function BookStoreAddProduct() {
       bundleItems: (prev.bundleItems || []).map(bi => bi.productId === productId ? { ...bi, quantity: Math.max(1, qty) } : bi),
     }));
   };
+
+  useEffect(() => {
+    if (form.productType !== 'course' || !availableBooks.length) return;
+    const selectedBooks = (form.courseBooks || []).map(id => availableBooks.find(b => b._id === id)).filter(Boolean);
+    const costTotal = selectedBooks.reduce((sum, b) => sum + (Number(b.costPrice) || 0), 0);
+    const retailTotal = selectedBooks.reduce((sum, b) => sum + (Number(b.discountPrice > 0 ? b.discountPrice : b.retailPrice) || 0), 0);
+    const minStock = selectedBooks.length ? Math.min(...selectedBooks.map(b => Number(b.stockQuantity) || 0)) : '';
+
+    if (isFirstCourseCalc.current) {
+      courseAutoPrice.current = { costPrice: form.costPrice, retailPrice: form.retailPrice, stockQuantity: form.stockQuantity };
+      isFirstCourseCalc.current = false;
+      return;
+    }
+
+    const prev = courseAutoPrice.current;
+    setForm(prevForm => {
+      const updates = {};
+      if (prevForm.costPrice === '' || Number(prevForm.costPrice) === Number(prev?.costPrice ?? '')) updates.costPrice = costTotal;
+      if (prevForm.retailPrice === '' || Number(prevForm.retailPrice) === Number(prev?.retailPrice ?? '')) updates.retailPrice = retailTotal;
+      if (prevForm.stockQuantity === '' || Number(prevForm.stockQuantity) === Number(prev?.stockQuantity ?? '')) updates.stockQuantity = minStock;
+      return Object.keys(updates).length ? { ...prevForm, ...updates } : prevForm;
+    });
+    courseAutoPrice.current = { costPrice: costTotal, retailPrice: retailTotal, stockQuantity: minStock };
+  }, [form.courseBooks, form.productType, availableBooks]);
 
   const handleAddBook = (bookId) => {
     if (!form.courseBooks?.includes(bookId)) {
@@ -782,7 +808,12 @@ export default function BookStoreAddProduct() {
 
         {/* Pricing & Stock */}
         <div className="bg-white dark:bg-dark-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-dark-700">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-5">Pricing & Stock</h3>
+          <div className="flex items-center gap-2 mb-5">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Pricing & Stock</h3>
+            {form.productType === 'course' && (form.courseBooks || []).length > 0 && (
+              <span className="text-xs text-rose-500 bg-rose-50 px-2 py-1 rounded-full font-bold">Auto-calculated from books</span>
+            )}
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="label">Cost Price (SAR)</label>

@@ -840,9 +840,18 @@ export default function BookStorePOS() {
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-xs text-gray-900 truncate leading-tight">{product.name}</p>
                       <p className="text-[10px] text-gray-400 truncate">
-                        {pt === 'course' && product.courseLevel ? `${product.courseLevel} · ` : ''}
-                        {pt === 'uniform' && product.uniformSize ? `Size ${product.uniformSize} · ` : ''}
-                        {product.author || product.publisher || pt.charAt(0).toUpperCase() + pt.slice(1)}
+                        {pt === 'course' && product.courseBooks?.length > 0 ? (
+                          product.courseBooks
+                            .map(id => allProducts.find(p => p._id === id)?.name)
+                            .filter(Boolean)
+                            .join(' · ')
+                        ) : (
+                          <>
+                            {pt === 'course' && product.courseLevel ? `${product.courseLevel} · ` : ''}
+                            {pt === 'uniform' && product.uniformSize ? `Size ${product.uniformSize} · ` : ''}
+                            {product.author || product.publisher || pt.charAt(0).toUpperCase() + pt.slice(1)}
+                          </>
+                        )}
                       </p>
                     </div>
                     <div className="text-right shrink-0">
