@@ -97,23 +97,23 @@ export default function StorefrontProducts() {
       />
       <StorefrontBreadcrumbs items={[{ label: 'Products' }]} />
       {/* Header */}
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', margin: '0 0 16px', color: c('text', '#111') }}>
+      <div style={{ marginBottom: '28px' }}>
+        <h1 style={{ fontSize: '32px', fontWeight: 800, margin: '0 0 20px', color: c('text', '#111'), letterSpacing: '-0.5px' }}>
           {category || search ? (category || `Search: "${search}"`) : 'All Products'}
         </h1>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
           {/* Search */}
           <form onSubmit={e => { e.preventDefault(); updateParam('search', e.target.elements.q.value); }} style={{ flex: 1, minWidth: '200px', display: 'flex' }}>
             <input name="q" defaultValue={search} placeholder="Search products..." style={{
-              flex: 1, padding: '10px 14px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '8px 0 0 8px', fontSize: '14px', outline: 'none',
+              flex: 1, padding: '12px 16px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '12px 0 0 12px', fontSize: '14px', outline: 'none', transition: 'border-color 0.2s',
             }} />
-            <button type="submit" style={{ padding: '10px 16px', background: c('primary', '#4f46e5'), color: '#fff', border: 'none', borderRadius: '0 8px 8px 0', cursor: 'pointer' }}>
+            <button type="submit" style={{ padding: '12px 20px', background: c('primary', '#4f46e5'), color: '#fff', border: 'none', borderRadius: '0 12px 12px 0', cursor: 'pointer', transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = '0.9'} onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
               <Search size={16} />
             </button>
           </form>
           {/* Sort */}
           <select value={sort} onChange={e => updateParam('sort', e.target.value)} style={{
-            padding: '10px 14px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '8px', fontSize: '14px', background: '#fff',
+            padding: '12px 16px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '12px', fontSize: '14px', background: '#fff', cursor: 'pointer', outline: 'none',
           }}>
             <option value="newest">Newest</option>
             <option value="price-low">Price: Low to High</option>
@@ -122,7 +122,7 @@ export default function StorefrontProducts() {
           </select>
           {/* Filters toggle */}
           <button onClick={() => setShowFilters(!showFilters)} style={{
-            padding: '10px 14px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '8px', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px',
+            padding: '12px 16px', border: `1px solid ${showFilters ? c('primary', '#4f46e5') : c('borderColor', '#e5e7eb')}`, borderRadius: '12px', background: showFilters ? c('primary', '#4f46e5') : '#fff', color: showFilters ? '#fff' : c('text', '#111'), cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: 600, transition: 'all 0.2s',
           }}>
             <SlidersHorizontal size={16} /> Filters
           </button>
@@ -130,33 +130,34 @@ export default function StorefrontProducts() {
 
         {/* Category filters + Price range + Availability */}
         {showFilters && (
-          <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ marginTop: '16px', padding: '20px', background: '#fff', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
             {/* Categories */}
             {data.categories?.length > 0 && (
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: c('text', '#111'), marginRight: '4px' }}>Categories:</span>
                 <button onClick={() => updateParam('category', '')} style={{
-                  padding: '6px 14px', borderRadius: '999px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, background: !category ? c('primary', '#4f46e5') : '#fff', color: !category ? '#fff' : c('text', '#111'), cursor: 'pointer', fontSize: '13px',
+                  padding: '7px 16px', borderRadius: '999px', border: `1px solid ${!category ? c('primary', '#4f46e5') : c('borderColor', '#e5e7eb')}`, background: !category ? c('primary', '#4f46e5') : '#fff', color: !category ? '#fff' : c('text', '#111'), cursor: 'pointer', fontSize: '13px', fontWeight: 600, transition: 'all 0.2s',
                 }}>All</button>
                 {data.categories.map(cat => cat && (
                   <button key={cat} onClick={() => updateParam('category', cat)} style={{
-                    padding: '6px 14px', borderRadius: '999px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, background: category === cat ? c('primary', '#4f46e5') : '#fff', color: category === cat ? '#fff' : c('text', '#111'), cursor: 'pointer', fontSize: '13px',
+                    padding: '7px 16px', borderRadius: '999px', border: `1px solid ${category === cat ? c('primary', '#4f46e5') : c('borderColor', '#e5e7eb')}`, background: category === cat ? c('primary', '#4f46e5') : '#fff', color: category === cat ? '#fff' : c('text', '#111'), cursor: 'pointer', fontSize: '13px', fontWeight: 600, transition: 'all 0.2s',
                   }}>{cat}</button>
                 ))}
               </div>
             )}
             {/* Price range */}
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '13px', fontWeight: 'bold', color: c('text', '#111') }}>Price:</span>
-              <input type="number" placeholder="Min" value={minPrice} onChange={e => updateParam('minPrice', e.target.value)} style={{ width: '80px', padding: '6px 10px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '8px', fontSize: '13px' }} />
+              <span style={{ fontSize: '13px', fontWeight: 700, color: c('text', '#111') }}>Price:</span>
+              <input type="number" placeholder="Min" value={minPrice} onChange={e => updateParam('minPrice', e.target.value)} style={{ width: '90px', padding: '8px 12px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '10px', fontSize: '13px', outline: 'none' }} />
               <span style={{ color: c('textMuted', '#6b7280') }}>—</span>
-              <input type="number" placeholder="Max" value={maxPrice} onChange={e => updateParam('maxPrice', e.target.value)} style={{ width: '80px', padding: '6px 10px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '8px', fontSize: '13px' }} />
+              <input type="number" placeholder="Max" value={maxPrice} onChange={e => updateParam('maxPrice', e.target.value)} style={{ width: '90px', padding: '8px 12px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '10px', fontSize: '13px', outline: 'none' }} />
               <span style={{ fontSize: '13px', color: c('textMuted', '#6b7280') }}>{currency}</span>
             </div>
             {/* Availability */}
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <span style={{ fontSize: '13px', fontWeight: 'bold', color: c('text', '#111') }}>Availability:</span>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: c('text', '#111') }}>Availability:</span>
               <button onClick={() => updateParam('inStock', inStock === 'true' ? '' : 'true')} style={{
-                padding: '6px 14px', borderRadius: '999px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, background: inStock === 'true' ? c('primary', '#4f46e5') : '#fff', color: inStock === 'true' ? '#fff' : c('text', '#111'), cursor: 'pointer', fontSize: '13px',
+                padding: '7px 16px', borderRadius: '999px', border: `1px solid ${inStock === 'true' ? c('primary', '#4f46e5') : c('borderColor', '#e5e7eb')}`, background: inStock === 'true' ? c('primary', '#4f46e5') : '#fff', color: inStock === 'true' ? '#fff' : c('text', '#111'), cursor: 'pointer', fontSize: '13px', fontWeight: 600, transition: 'all 0.2s',
               }}>In Stock Only</button>
             </div>
           </div>
@@ -167,33 +168,36 @@ export default function StorefrontProducts() {
       {loading ? (
         <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin" /></div>
       ) : data.products.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px 0', color: c('textMuted', '#6b7280') }}>
-          <p style={{ fontSize: '18px', fontWeight: 'bold' }}>No products found</p>
-          <p style={{ fontSize: '14px', marginTop: '8px' }}>Try adjusting your search or filters</p>
+        <div style={{ textAlign: 'center', padding: '80px 0', color: c('textMuted', '#6b7280') }}>
+          <Search size={56} style={{ color: '#d1d5db', margin: '0 auto 16px' }} />
+          <p style={{ fontSize: '20px', fontWeight: 700, color: c('text', '#111') }}>No products found</p>
+          <p style={{ fontSize: '15px', marginTop: '8px' }}>Try adjusting your search or filters</p>
         </div>
       ) : (
         <>
-          <p style={{ fontSize: '14px', color: c('textMuted', '#6b7280'), marginBottom: '16px' }}>{data.total} products</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
+          <p style={{ fontSize: '14px', color: c('textMuted', '#6b7280'), marginBottom: '20px', fontWeight: 500 }}>{data.total} products</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '20px' }}>
             {allProducts.map(p => {
               const slug = p.seo?.slug || p._id;
               const images = p.images?.filter(img => img.url) || [];
               const hasMultiple = images.length > 1;
+              const hasSale = p.compareAtPrice && p.compareAtPrice > p.basePrice;
               return (
                 <div key={p._id} style={{
-                  background: c('surface', '#f9fafb'), border: `1px solid ${c('borderColor', '#e5e7eb')}`,
-                  borderRadius: '12px', overflow: 'hidden', position: 'relative',
-                }} className="product-card" onMouseEnter={e => e.currentTarget.querySelector('.card-thumbs')?.style.setProperty('opacity', '1')}
-                  onMouseLeave={e => { e.currentTarget.querySelector('.card-thumbs')?.style.setProperty('opacity', '0'); const img = e.currentTarget.querySelector('.card-main-img'); if (img && images[0]) img.src = images[0].url; }}>
+                  background: '#fff', border: `1px solid ${c('borderColor', '#e5e7eb')}`,
+                  borderRadius: '16px', overflow: 'hidden', position: 'relative',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                }} className="product-card" onMouseEnter={e => { e.currentTarget.querySelector('.card-thumbs')?.style.setProperty('opacity', '1'); e.currentTarget.style.transform = 'translateY(-6px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(0,0,0,0.1)'; e.currentTarget.style.borderColor = c('primary', '#4f46e5') + '40'; }}
+                  onMouseLeave={e => { e.currentTarget.querySelector('.card-thumbs')?.style.setProperty('opacity', '0'); const img = e.currentTarget.querySelector('.card-main-img'); if (img && images[0]) img.src = images[0].url; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; e.currentTarget.style.borderColor = c('borderColor', '#e5e7eb'); }}>
                   <Link to={`/store/products/${slug}`} style={{ textDecoration: 'none', display: 'block' }}>
                     <div style={{ aspectRatio: '1', background: c('borderColor', '#e5e7eb'), overflow: 'hidden', position: 'relative' }}>
-                      {p.compareAtPrice && p.compareAtPrice > p.basePrice && (
-                        <div style={{ position: 'absolute', top: '8px', left: '8px', background: c('salePriceColor', '#dc2626'), color: '#fff', fontSize: '11px', fontWeight: 'bold', padding: '3px 8px', borderRadius: '6px', zIndex: 3 }}>
+                      {hasSale && (
+                        <div style={{ position: 'absolute', top: '10px', left: '10px', background: c('salePriceColor', '#dc2626'), color: '#fff', fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '999px', zIndex: 3, boxShadow: '0 2px 8px rgba(220,38,38,0.3)' }}>
                           -{Math.round((1 - p.basePrice / p.compareAtPrice) * 100)}%
                         </div>
                       )}
                       {images[0]?.url ? (
-                        <img src={images[0].url} alt={p.title} className="card-main-img" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={images[0].url} alt={p.title} className="card-main-img" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} />
                       ) : (
                         <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: c('textMuted', '#6b7280'), fontSize: '12px' }}>No image</div>
                       )}
@@ -213,10 +217,10 @@ export default function StorefrontProducts() {
                         </div>
                       )}
                     </div>
-                    <div style={{ padding: '12px' }}>
-                      <p style={{ fontWeight: 'bold', fontSize: '14px', color: c('text', '#111'), margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</p>
+                    <div style={{ padding: '14px' }}>
+                      <p style={{ fontWeight: 600, fontSize: '14px', color: c('text', '#111'), margin: '0 0 6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</p>
                       {reviewStats[p._id]?.count > 0 && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
                           <div style={{ display: 'flex' }}>
                             {[1,2,3,4,5].map(n => (
                               <Star key={n} size={12} fill={n <= Math.round(reviewStats[p._id].avgRating) ? '#fbbf24' : 'none'} color={n <= Math.round(reviewStats[p._id].avgRating) ? '#fbbf24' : '#d1d5db'} />
@@ -225,25 +229,27 @@ export default function StorefrontProducts() {
                           <span style={{ fontSize: '11px', color: c('textMuted', '#6b7280') }}>({reviewStats[p._id].count})</span>
                         </div>
                       )}
-                      {p.compareAtPrice && p.compareAtPrice > p.basePrice && (
-                        <span style={{ fontSize: '12px', color: c('salePriceColor', '#dc2626'), textDecoration: 'line-through', marginRight: '6px' }}>{p.compareAtPrice} {currency}</span>
-                      )}
-                      <p style={{ fontSize: '16px', fontWeight: 'bold', color: c('priceColor', '#059669'), margin: 0 }}>{p.basePrice} {currency}</p>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                        {hasSale && (
+                          <span style={{ fontSize: '12px', color: c('salePriceColor', '#dc2626'), textDecoration: 'line-through' }}>{p.compareAtPrice} {currency}</span>
+                        )}
+                        <p style={{ fontSize: '17px', fontWeight: 800, color: c('priceColor', '#059669'), margin: 0 }}>{p.basePrice} {currency}</p>
+                      </div>
                     </div>
                   </Link>
                   {/* Quick view button */}
                   <button onClick={(e) => { e.preventDefault(); setQuickViewProduct(p); }} style={{
-                    position: 'absolute', top: '8px', right: '8px', width: '34px', height: '34px', borderRadius: '50%',
-                    background: 'rgba(255,255,255,0.9)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    opacity: 0, transition: 'opacity 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                  }} onMouseEnter={e => e.currentTarget.style.opacity = 1} onMouseLeave={e => e.currentTarget.style.opacity = 0} className="quick-view-btn">
-                    <Eye size={16} color="#4f46e5" />
+                    position: 'absolute', top: '10px', right: '10px', width: '36px', height: '36px', borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.95)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    opacity: 0, transition: 'all 0.25s', boxShadow: '0 2px 12px rgba(0,0,0,0.12)',
+                  }} onMouseEnter={e => { e.currentTarget.style.opacity = 1; e.currentTarget.style.transform = 'scale(1.1)'; }} onMouseLeave={e => { e.currentTarget.style.opacity = 0; e.currentTarget.style.transform = 'scale(1)'; }} className="quick-view-btn">
+                    <Eye size={16} color={c('primary', '#4f46e5')} />
                   </button>
                   {/* Compare button */}
                   <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleCompare(p._id); }} className="compare-btn"
-                    style={{ position: 'absolute', top: '8px', right: '48px', width: '34px', height: '34px', borderRadius: '50%', background: isInCompare(p._id) ? c('primary', '#4f46e5') : 'rgba(255,255,255,0.9)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', opacity: isInCompare(p._id) ? 1 : 0, transition: 'opacity 0.2s' }}
-                    onMouseEnter={e => e.currentTarget.style.opacity = 1} onMouseLeave={e => e.currentTarget.style.opacity = isInCompare(p._id) ? 1 : 0}>
-                    {isInCompare(p._id) ? <Check size={16} color="#fff" /> : <GitCompare size={16} color="#4f46e5" />}
+                    style={{ position: 'absolute', top: '10px', right: '54px', width: '36px', height: '36px', borderRadius: '50%', background: isInCompare(p._id) ? c('primary', '#4f46e5') : 'rgba(255,255,255,0.95)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.12)', opacity: isInCompare(p._id) ? 1 : 0, transition: 'all 0.25s' }}
+                    onMouseEnter={e => { e.currentTarget.style.opacity = 1; e.currentTarget.style.transform = 'scale(1.1)'; }} onMouseLeave={e => { e.currentTarget.style.opacity = isInCompare(p._id) ? 1 : 0; e.currentTarget.style.transform = 'scale(1)'; }}>
+                    {isInCompare(p._id) ? <Check size={16} color="#fff" /> : <GitCompare size={16} color={c('primary', '#4f46e5')} />}
                   </button>
                 </div>
               );
@@ -252,23 +258,23 @@ export default function StorefrontProducts() {
 
           {/* Load more + pagination */}
           {data.totalPages > 1 && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', marginTop: '40px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', marginTop: '48px' }}>
               {page < data.totalPages && (
                 <button onClick={loadMore} disabled={loadingMore} style={{
-                  padding: '12px 32px', border: `1px solid ${c('primary', '#4f46e5')}`, borderRadius: '999px',
+                  padding: '14px 36px', border: `2px solid ${c('primary', '#4f46e5')}`, borderRadius: '999px',
                   background: '#fff', color: c('primary', '#4f46e5'), cursor: loadingMore ? 'default' : 'pointer',
-                  fontWeight: 'bold', fontSize: '14px', opacity: loadingMore ? 0.6 : 1,
-                }}>
+                  fontWeight: 700, fontSize: '15px', opacity: loadingMore ? 0.6 : 1, transition: 'all 0.2s',
+                }} onMouseEnter={e => { if (!loadingMore) { e.currentTarget.style.background = c('primary', '#4f46e5'); e.currentTarget.style.color = '#fff'; } }} onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = c('primary', '#4f46e5'); }}>
                   {loadingMore ? 'Loading...' : 'Load More Products'}
                 </button>
               )}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <button onClick={() => updateParam('page', String(Math.max(1, page - 1)))} disabled={page <= 1} style={{
-                  padding: '8px 12px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '8px', background: '#fff', cursor: page <= 1 ? 'default' : 'pointer', opacity: page <= 1 ? 0.5 : 1,
+                  padding: '10px 14px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '10px', background: '#fff', cursor: page <= 1 ? 'default' : 'pointer', opacity: page <= 1 ? 0.5 : 1, transition: 'all 0.2s',
                 }}><ChevronLeft size={16} /></button>
-                <span style={{ fontSize: '14px', padding: '0 12px' }}>Page {page} of {data.totalPages}</span>
+                <span style={{ fontSize: '14px', padding: '0 12px', fontWeight: 600 }}>Page {page} of {data.totalPages}</span>
                 <button onClick={() => updateParam('page', String(Math.min(data.totalPages, page + 1)))} disabled={page >= data.totalPages} style={{
-                  padding: '8px 12px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '8px', background: '#fff', cursor: page >= data.totalPages ? 'default' : 'pointer', opacity: page >= data.totalPages ? 0.5 : 1,
+                  padding: '10px 14px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '10px', background: '#fff', cursor: page >= data.totalPages ? 'default' : 'pointer', opacity: page >= data.totalPages ? 0.5 : 1, transition: 'all 0.2s',
                 }}><ChevronRight size={16} /></button>
               </div>
             </div>
@@ -283,12 +289,12 @@ export default function StorefrontProducts() {
 
       {/* Floating compare bar */}
       {compareCount > 0 && (
-        <div style={{ position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 90, background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.12)', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: 90, background: '#fff', border: '1px solid #e5e7eb', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0,0,0,0.15)', padding: '12px 24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <GitCompare size={18} color={c('primary', '#4f46e5')} />
-            <span style={{ fontSize: '14px', fontWeight: 'bold' }}>{compareCount} product{compareCount !== 1 ? 's' : ''} to compare</span>
+            <span style={{ fontSize: '14px', fontWeight: 700 }}>{compareCount} product{compareCount !== 1 ? 's' : ''} to compare</span>
           </div>
-          <Link to="/store/compare" style={{ padding: '8px 20px', background: c('primary', '#4f46e5'), color: '#fff', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold', fontSize: '13px' }}>
+          <Link to="/store/compare" style={{ padding: '10px 24px', background: c('primary', '#4f46e5'), color: '#fff', borderRadius: '12px', textDecoration: 'none', fontWeight: 700, fontSize: '13px', transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = '0.9'} onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
             Compare Now
           </Link>
         </div>
