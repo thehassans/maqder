@@ -156,6 +156,7 @@ import EcommerceNewsletter from './pages/ecommerce/EcommerceNewsletter'
 import EcommerceWordPress from './pages/ecommerce/EcommerceWordPress'
 import EcommerceAbandonedCarts from './pages/ecommerce/EcommerceAbandonedCarts'
 import EcommerceReturns from './pages/ecommerce/EcommerceReturns'
+import EcommerceGiftCards from './pages/ecommerce/EcommerceGiftCards'
 import EcommerceInventory from './pages/ecommerce/EcommerceInventory'
 import EcommerceCustomers from './pages/ecommerce/EcommerceCustomers'
 import EcommerceCoupons from './pages/ecommerce/EcommerceCoupons'
@@ -606,6 +607,7 @@ function App() {
         <Route path="ecommerce/wordpress" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceWordPress /></BusinessTypeRoute>} />
         <Route path="ecommerce/abandoned-carts" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceAbandonedCarts /></BusinessTypeRoute>} />
         <Route path="ecommerce/returns" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceReturns /></BusinessTypeRoute>} />
+        <Route path="ecommerce/gift-cards" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceGiftCards /></BusinessTypeRoute>} />
         <Route path="ecommerce/inventory" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceInventory /></BusinessTypeRoute>} />
         <Route path="ecommerce/customers" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceCustomers /></BusinessTypeRoute>} />
         <Route path="ecommerce/settings" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceStoreSettings /></BusinessTypeRoute>} />

@@ -19,6 +19,10 @@ export default function StorefrontCheckout() {
   const [couponError, setCouponError] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
   const [shippingEstimate, setShippingEstimate] = useState(null);
+  const [giftCardCode, setGiftCardCode] = useState('');
+  const [appliedGiftCard, setAppliedGiftCard] = useState(null);
+  const [giftCardError, setGiftCardError] = useState('');
+  const [giftCardLoading, setGiftCardLoading] = useState(false);
   const [form, setForm] = useState({
     name: '', email: '', phone: '',
     addressLine1: '', addressLine2: '', city: '', region: '', postalCode: '', country: 'Saudi Arabia', notes: '',
@@ -69,10 +73,27 @@ export default function StorefrontCheckout() {
     }
   };
 
+  const handleApplyGiftCard = async (e) => {
+    e.preventDefault();
+    if (!giftCardCode.trim()) return;
+    setGiftCardLoading(true);
+    setGiftCardError('');
+    try {
+      const res = await storeApi.post('/gift-card/check', { code: giftCardCode });
+      setAppliedGiftCard(res.data);
+    } catch (err) {
+      setGiftCardError(err.response?.data?.error || 'Invalid gift card');
+      setAppliedGiftCard(null);
+    } finally {
+      setGiftCardLoading(false);
+    }
+  };
+
   const discountAmount = appliedCoupon?.discountAmount || 0;
   const freeShipping = appliedCoupon?.freeShipping || shippingEstimate?.freeShipping || false;
   const shippingCost = freeShipping ? 0 : (shippingEstimate?.shippingCost || 0);
-  const finalTotal = Math.max(0, cartTotal - discountAmount + shippingCost);
+  const giftCardAmount = appliedGiftCard ? Math.min(appliedGiftCard.balance, Math.max(0, cartTotal - discountAmount + shippingCost)) : 0;
+  const finalTotal = Math.max(0, cartTotal - discountAmount + shippingCost - giftCardAmount);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -87,7 +108,7 @@ export default function StorefrontCheckout() {
         variantId: i.variantId,
         quantity: i.quantity,
       }));
-      const res = await storeApi.post('/orders', { customer: form, items: orderItems, paymentMethod });
+      const res = await storeApi.post('/orders', { customer: form, items: orderItems, paymentMethod, giftCardCode: appliedGiftCard?.code });
       const { orderId, orderNumber } = res.data;
 
       // If online payment, initiate checkout
@@ -251,6 +272,18 @@ export default function StorefrontCheckout() {
             {discountAmount > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '4px', color: '#059669' }}>
                 <span>Discount</span><span style={{ fontWeight: 'bold' }}>-{discountAmount} SAR</span>
+              </div>
+            )}
+            {/* Gift card input */}
+            <form onSubmit={handleApplyGiftCard} style={{ display: 'flex', gap: '6px', margin: '8px 0' }}>
+              <input value={giftCardCode} onChange={e => setGiftCardCode(e.target.value)} placeholder="Gift card code" style={{ flex: 1, padding: '8px 10px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '13px' }} />
+              <button type="submit" disabled={giftCardLoading} style={{ padding: '8px 14px', background: '#6b7280', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}>{giftCardLoading ? '...' : 'Apply'}</button>
+            </form>
+            {giftCardError && <p style={{ fontSize: '12px', color: '#dc2626', margin: '0 0 8px' }}>{giftCardError}</p>}
+            {appliedGiftCard && <p style={{ fontSize: '12px', color: '#059669', margin: '0 0 8px', fontWeight: 'bold' }}>✓ Gift card applied — {giftCardAmount} SAR deducted</p>}
+            {giftCardAmount > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '4px', color: '#059669' }}>
+                <span>Gift Card</span><span style={{ fontWeight: 'bold' }}>-{giftCardAmount} SAR</span>
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '4px', color: '#6b7280' }}>

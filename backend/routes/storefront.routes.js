@@ -8,6 +8,7 @@ import { resolveTenantByHost } from '../middleware/resolveTenantByHost.js';
 import { createCheckoutSession } from '../services/paymentService.js';
 import { fireServerSideEvents, getPublicPixelConfig } from '../services/pixelService.js';
 import { sendOrderConfirmationEmail } from '../utils/tenantEmailService.js';
+import EcommerceGiftCard from '../models/EcommerceGiftCard.js';
 
 const router = express.Router();
 
@@ -198,7 +199,7 @@ router.post('/orders', async (req, res) => {
   try {
     const tenantId = req.storeTenant._id;
     const ecommerce = req.storeTenant.ecommerce || {};
-    const { customer, items, paymentMethod } = req.body;
+    const { customer, items, paymentMethod, giftCardCode } = req.body;
 
     if (!customer || !customer.name) return res.status(400).json({ error: 'Customer name is required' });
     if (!items || !items.length) return res.status(400).json({ error: 'Cart is empty' });
@@ -275,7 +276,20 @@ router.post('/orders', async (req, res) => {
     }
 
     const discount = 0;
-    const grandTotal = Math.round((subtotal + shippingCost + taxTotal - discount) * 100) / 100;
+    let giftCardAmount = 0;
+    let giftCardDoc = null;
+    if (giftCardCode) {
+      giftCardDoc = await EcommerceGiftCard.findOne({ code: giftCardCode.toUpperCase().trim(), tenantId });
+      if (!giftCardDoc) return res.status(400).json({ error: 'Invalid gift card code' });
+      if (giftCardDoc.status === 'disabled') return res.status(400).json({ error: 'Gift card has been disabled' });
+      if (giftCardDoc.expiresAt && new Date(giftCardDoc.expiresAt) < new Date()) return res.status(400).json({ error: 'Gift card has expired' });
+      if (giftCardDoc.balance <= 0) return res.status(400).json({ error: 'Gift card has no remaining balance' });
+    }
+    const preGiftTotal = Math.round((subtotal + shippingCost + taxTotal - discount) * 100) / 100;
+    if (giftCardDoc) {
+      giftCardAmount = Math.min(giftCardDoc.balance, preGiftTotal);
+    }
+    const grandTotal = Math.round((preGiftTotal - giftCardAmount) * 100) / 100;
 
     const order = new EcommerceOrder({
       tenantId,
@@ -303,6 +317,14 @@ router.post('/orders', async (req, res) => {
     });
 
     await order.save();
+
+    // Deduct gift card balance if used
+    if (giftCardDoc && giftCardAmount > 0) {
+      giftCardDoc.balance = Math.round((giftCardDoc.balance - giftCardAmount) * 100) / 100;
+      giftCardDoc.redeemedOrders.push({ orderId: order._id, amount: giftCardAmount });
+      if (giftCardDoc.balance <= 0) giftCardDoc.status = 'redeemed';
+      await giftCardDoc.save();
+    }
 
     // Fire server-side pixel events (CAPI)
     const pixelConfig = ecommerce.pixels || {};
@@ -589,6 +611,26 @@ router.post('/newsletter/unsubscribe', async (req, res) => {
     }
 
     res.json({ unsubscribed: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- GIFT CARD CHECK (public, for checkout) ---
+router.post('/gift-card/check', async (req, res) => {
+  try {
+    const tenantId = req.storeTenant._id;
+    const { code } = req.body;
+    if (!code) return res.status(400).json({ error: 'Gift card code is required' });
+
+    const card = await EcommerceGiftCard.findOne({ code: code.toUpperCase().trim(), tenantId });
+    if (!card) return res.status(404).json({ error: 'Invalid gift card code' });
+
+    if (card.status === 'disabled') return res.status(400).json({ error: 'This gift card has been disabled' });
+    if (card.status === 'redeemed') return res.status(400).json({ error: 'This gift card has been fully redeemed' });
+    if (card.expiresAt && new Date(card.expiresAt) < new Date()) return res.status(400).json({ error: 'This gift card has expired' });
+
+    res.json({ code: card.code, balance: card.balance, currency: card.currency, amount: card.amount });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

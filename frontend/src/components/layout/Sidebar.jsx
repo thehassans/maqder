@@ -76,6 +76,7 @@ import {
   Palette,
   Boxes,
   RotateCcw,
+  Gift,
   Globe2
 } from 'lucide-react'
 import { toggleSidebarCollapse, setMobileMenuOpen } from '../../store/slices/uiSlice'
@@ -180,6 +181,7 @@ export default function Sidebar() {
         { path: '/app/dashboard/ecommerce/newsletter', icon: Mail, label: language === 'ar' ? 'النشرة البريدية' : 'Newsletter' },
         { path: '/app/dashboard/ecommerce/abandoned-carts', icon: ShoppingCart, label: language === 'ar' ? 'سلات متروكة' : 'Abandoned Carts' },
         { path: '/app/dashboard/ecommerce/returns', icon: RotateCcw, label: language === 'ar' ? 'المرتجعات' : 'Returns & Refunds' },
+        { path: '/app/dashboard/ecommerce/gift-cards', icon: Gift, label: language === 'ar' ? 'بطاقات الهدايا' : 'Gift Cards' },
         { path: '/app/dashboard/ecommerce/wordpress', icon: Globe2, label: language === 'ar' ? 'ووردبريس' : 'WordPress' },
         { path: '/app/dashboard/ecommerce/settings', icon: Settings, label: language === 'ar' ? 'الإعدادات' : 'Store Settings' },
       ]
