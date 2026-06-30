@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Loader2, Eye } from 'lucide-react';
+import { ArrowRight, Loader2, Eye, Heart, ShoppingCart, Star, Check } from 'lucide-react';
 import storeApi from '../../lib/storeApi';
 import StorefrontSeo from '../../components/storefront/StorefrontSeo';
 import QuickViewModal from '../../components/storefront/QuickViewModal';
 import { useRecentlyViewed } from '../../store/recentlyViewed';
+import { useCart } from '../../store/storefrontCart';
+import { useWishlist } from '../../store/storefrontWishlist';
 
 export default function StorefrontHome() {
   const [storeInfo, setStoreInfo] = useState(null);
@@ -92,7 +94,7 @@ export default function StorefrontHome() {
               <h3 style={{ fontSize: '24px', fontWeight: 800, margin: 0, color: c('text', '#111'), letterSpacing: '-0.3px' }}>{s.title || 'Products'}</h3>
               <Link to="/store/products" style={{ color: c('primary', '#4f46e5'), textDecoration: 'none', fontSize: '14px', fontWeight: 700, transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = '0.7'} onMouseLeave={e => e.currentTarget.style.opacity = '1'}>View all →</Link>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
+            <div className="sf-grid">
               {products.slice(0, s.limit || 8).map(p => (
                 <ProductCard key={p._id} product={p} currency={currency} colors={colors} onQuickView={() => setQuickViewProduct(p)} />
               ))}
@@ -199,6 +201,18 @@ export default function StorefrontHome() {
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 20px' }}>
       <StorefrontSeo title={seoTitle} description={seoDesc} image={seoImage} url={window.location.href} siteName={storeName} />
+      <style>{`
+        .sf-grid { display: grid; gap: 16px; grid-template-columns: repeat(2, 1fr); }
+        @media (min-width: 640px) { .sf-grid { grid-template-columns: repeat(3, 1fr); gap: 20px; } }
+        @media (min-width: 1024px) { .sf-grid { grid-template-columns: repeat(4, 1fr); gap: 24px; } }
+        .sf-product-card:hover { transform: translateY(-8px); box-shadow: 0 18px 40px rgba(0,0,0,0.12); border-color: var(--sf-primary, #4f46e5) !important; }
+        .sf-product-card:hover .sf-card-img { transform: scale(1.08); }
+        .sf-card-actions { opacity: 0; transform: translateX(8px); transition: opacity 0.3s ease, transform 0.3s ease; pointer-events: none; }
+        .sf-product-card:hover .sf-card-actions { opacity: 1; transform: translateX(0); pointer-events: auto; }
+        .sf-card-cart { max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.35s ease, opacity 0.3s ease, padding 0.35s ease; padding-top: 0 !important; padding-bottom: 0 !important; }
+        .sf-product-card:hover .sf-card-cart { max-height: 80px; opacity: 1; padding-bottom: 16px !important; }
+        @media (hover: none) { .sf-card-actions { opacity: 1; transform: none; pointer-events: auto; } .sf-card-cart { max-height: 80px; opacity: 1; padding-bottom: 16px !important; } }
+      `}</style>
       {sections.length > 0 ? sections.map(renderSection) : (
         // Fallback if no theme configured
         <>
@@ -211,8 +225,9 @@ export default function StorefrontHome() {
             </div>
           </div>
           <div style={{ marginBottom: '40px' }}>
-            <h3 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '20px', letterSpacing: '-0.3px' }}>Featured Products</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
+            <h3 style={{ fontSize: '26px', fontWeight: 800, marginBottom: '6px', letterSpacing: '-0.4px' }}>Featured Products</h3>
+            <p style={{ color: c('textMuted', '#6b7280'), fontSize: '14px', margin: '0 0 24px' }}>Handpicked favourites just for you</p>
+            <div className="sf-grid">
               {products.map(p => <ProductCard key={p._id} product={p} currency={currency} colors={colors} onQuickView={() => setQuickViewProduct(p)} />)}
             </div>
           </div>
@@ -359,48 +374,95 @@ function ProductCard({ product, currency, colors, onQuickView }) {
   const c = (key, fallback) => colors[key] || fallback;
   const slug = product.seo?.slug || product._id;
   const hasSale = product.compareAtPrice && product.compareAtPrice > product.basePrice;
+  const { addItem } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
+  const wished = isInWishlist(product._id);
+  const [added, setAdded] = useState(false);
+  const outOfStock = product.inventory?.trackInventory && (product.inventory?.quantity ?? 0) <= 0;
+  const rating = product.rating?.average || product.reviewStats?.average || 0;
+  const reviewCount = product.rating?.count || product.reviewStats?.count || 0;
+  const primary = c('primary', '#4f46e5');
+
+  const handleAdd = (e) => {
+    e.preventDefault();
+    if (outOfStock) return;
+    addItem(product, 1);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
+  };
+
   return (
-    <div style={{
+    <div className="sf-product-card" style={{
       background: '#fff', border: `1px solid ${c('borderColor', '#e5e7eb')}`,
-      borderRadius: '16px', overflow: 'hidden', textDecoration: 'none', display: 'block',
-      position: 'relative', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-    }}
-      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-6px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(0,0,0,0.1)'; e.currentTarget.style.borderColor = c('primary', '#4f46e5') + '40'; }}
-      onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; e.currentTarget.style.borderColor = c('borderColor', '#e5e7eb'); }}
-    >
-      <Link to={`/store/products/${slug}`} style={{ textDecoration: 'none', display: 'block' }}>
-        <div style={{ aspectRatio: '1', background: c('borderColor', '#e5e7eb'), overflow: 'hidden', position: 'relative' }}>
+      borderRadius: '18px', overflow: 'hidden', textDecoration: 'none', display: 'flex', flexDirection: 'column',
+      position: 'relative', transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.04)', height: '100%',
+      ['--sf-primary']: primary,
+    }}>
+      <Link to={`/store/products/${slug}`} style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', flex: 1 }}>
+        <div className="sf-card-image" style={{ aspectRatio: '1', background: c('surface', '#f3f4f6'), overflow: 'hidden', position: 'relative' }}>
           {product.images?.[0]?.url ? (
-            <img src={product.images[0].url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} />
+            <img className="sf-card-img" src={product.images[0].url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s cubic-bezier(0.4,0,0.2,1)' }} />
           ) : (
-            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: c('textMuted', '#6b7280'), fontSize: '12px' }}>No image</div>
+            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: c('textMuted', '#9ca3af'), fontSize: '12px' }}>No image</div>
           )}
-          {hasSale && (
-            <div style={{ position: 'absolute', top: '10px', left: '10px', background: c('salePriceColor', '#dc2626'), color: '#fff', fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '999px', boxShadow: '0 2px 8px rgba(220,38,38,0.3)' }}>
-              -{Math.round((1 - product.basePrice / product.compareAtPrice) * 100)}%
+          {/* Badges */}
+          <div style={{ position: 'absolute', top: '12px', left: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {hasSale && (
+              <span style={{ background: c('salePriceColor', '#dc2626'), color: '#fff', fontSize: '11px', fontWeight: 800, padding: '4px 10px', borderRadius: '999px', boxShadow: '0 2px 8px rgba(220,38,38,0.35)' }}>
+                -{Math.round((1 - product.basePrice / product.compareAtPrice) * 100)}%
+              </span>
+            )}
+            {outOfStock && (
+              <span style={{ background: '#374151', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '4px 10px', borderRadius: '999px' }}>Sold Out</span>
+            )}
+          </div>
+        </div>
+        <div style={{ padding: '16px 16px 14px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+          <p style={{ fontWeight: 600, fontSize: '14.5px', color: c('text', '#111'), margin: '0 0 8px', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: '40px' }}>{product.title}</p>
+          {rating > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '3px', marginBottom: '8px' }}>
+              {[1, 2, 3, 4, 5].map(n => (
+                <Star key={n} size={13} style={{ color: n <= Math.round(rating) ? '#f59e0b' : '#e5e7eb', fill: n <= Math.round(rating) ? '#f59e0b' : '#e5e7eb' }} />
+              ))}
+              {reviewCount > 0 && <span style={{ fontSize: '11px', color: c('textMuted', '#9ca3af'), marginLeft: '3px' }}>({reviewCount})</span>}
             </div>
           )}
-        </div>
-        <div style={{ padding: '14px' }}>
-          <p style={{ fontWeight: 600, fontSize: '14px', color: c('text', '#111'), margin: '0 0 6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.title}</p>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: 'auto' }}>
+            <span style={{ fontSize: '18px', fontWeight: 800, color: c('priceColor', '#059669') }}>{product.basePrice} {currency}</span>
             {hasSale && (
-              <span style={{ fontSize: '12px', color: c('salePriceColor', '#dc2626'), textDecoration: 'line-through' }}>{product.compareAtPrice} {currency}</span>
+              <span style={{ fontSize: '13px', color: c('textMuted', '#9ca3af'), textDecoration: 'line-through' }}>{product.compareAtPrice} {currency}</span>
             )}
-            <p style={{ fontSize: '17px', fontWeight: 800, color: c('priceColor', '#059669'), margin: 0 }}>{product.basePrice} {currency}</p>
           </div>
         </div>
       </Link>
-      {onQuickView && (
-        <button onClick={(e) => { e.preventDefault(); onQuickView(); }} style={{
-          position: 'absolute', top: '10px', right: '10px', width: '36px', height: '36px', borderRadius: '50%',
-          background: 'rgba(255,255,255,0.95)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          opacity: 0, transition: 'opacity 0.25s', boxShadow: '0 2px 12px rgba(0,0,0,0.12)',
-        }} onMouseEnter={e => { e.currentTarget.style.opacity = 1; e.currentTarget.style.transform = 'scale(1.1)'; }} onMouseLeave={e => { e.currentTarget.style.opacity = 0; e.currentTarget.style.transform = 'scale(1)'; }}>
-          <Eye size={16} color={c('primary', '#4f46e5')} />
+
+      {/* Hover action buttons (top-right) */}
+      <div className="sf-card-actions" style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <button onClick={(e) => { e.preventDefault(); toggleWishlist(product); }} title="Add to wishlist" style={{
+          width: '38px', height: '38px', borderRadius: '50%', background: wished ? c('salePriceColor', '#dc2626') : 'rgba(255,255,255,0.96)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.12)', transition: 'transform 0.2s, background 0.2s',
+        }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.12)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+          <Heart size={16} style={{ color: wished ? '#fff' : '#374151', fill: wished ? '#fff' : 'none' }} />
         </button>
-      )}
+        {onQuickView && (
+          <button onClick={(e) => { e.preventDefault(); onQuickView(); }} title="Quick view" style={{
+            width: '38px', height: '38px', borderRadius: '50%', background: 'rgba(255,255,255,0.96)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.12)', transition: 'transform 0.2s',
+          }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.12)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+            <Eye size={16} color={primary} />
+          </button>
+        )}
+      </div>
+
+      {/* Slide-up Add to Cart */}
+      <div className="sf-card-cart" style={{ padding: '0 16px 16px' }}>
+        <button onClick={handleAdd} disabled={outOfStock} style={{
+          width: '100%', padding: '11px', borderRadius: '12px', border: 'none', cursor: outOfStock ? 'not-allowed' : 'pointer',
+          background: added ? '#059669' : primary, color: '#fff', fontWeight: 700, fontSize: '13.5px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', opacity: outOfStock ? 0.5 : 1, transition: 'background 0.2s',
+        }}>
+          {added ? <><Check size={16} /> Added</> : <><ShoppingCart size={16} /> {outOfStock ? 'Sold Out' : 'Add to Cart'}</>}
+        </button>
+      </div>
     </div>
   );
 }

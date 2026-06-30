@@ -165,9 +165,9 @@ export default function StorefrontProductDetail() {
         { label: product.title },
       ]} />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '48px' }} className="store-pd-grid">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '48px', alignItems: 'start' }} className="store-pd-grid">
         {/* Images */}
-        <div>
+        <div className="store-pd-gallery" style={{ position: 'sticky', top: '20px' }}>
           <div style={{ aspectRatio: '1', borderRadius: '20px', overflow: 'hidden', background: '#f3f4f6', marginBottom: '14px', position: 'relative', cursor: 'zoom-in', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
             onClick={() => setZoomed(true)}
           >
@@ -198,7 +198,7 @@ export default function StorefrontProductDetail() {
         {/* Info */}
         <div>
           {product.category && <p style={{ fontSize: '12px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px', fontWeight: 700 }}>{product.category}</p>}
-          <h1 style={{ fontSize: '30px', fontWeight: 800, margin: '0 0 16px', letterSpacing: '-0.5px', lineHeight: 1.2 }}>{product.title}</h1>
+          <h1 className="store-pd-title" style={{ fontSize: '30px', fontWeight: 800, margin: '0 0 16px', letterSpacing: '-0.5px', lineHeight: 1.2 }}>{product.title}</h1>
 
           {/* Share buttons */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
@@ -329,15 +329,15 @@ export default function StorefrontProductDetail() {
           </div>
 
           {/* Quantity + Add to cart */}
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden', flexShrink: 0 }}>
               <button onClick={() => setQuantity(Math.max(1, quantity - 1))} style={{ padding: '12px', background: 'none', border: 'none', cursor: 'pointer', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#f3f4f6'} onMouseLeave={e => e.currentTarget.style.background = 'none'}><Minus size={16} /></button>
               <span style={{ padding: '0 20px', fontWeight: 700, fontSize: '16px' }}>{quantity}</span>
               <button onClick={() => setQuantity(quantity + 1)} style={{ padding: '12px', background: 'none', border: 'none', cursor: 'pointer', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#f3f4f6'} onMouseLeave={e => e.currentTarget.style.background = 'none'}><Plus size={16} /></button>
             </div>
             <button onClick={handleAddToCart} style={{
-              flex: 1, padding: '14px 24px', background: added ? '#059669' : 'linear-gradient(135deg, #4f46e5, #6366f1)', color: '#fff', border: 'none', borderRadius: '14px',
-              fontWeight: 700, fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              flex: '1 1 160px', minWidth: 0, padding: '14px 24px', background: added ? '#059669' : 'linear-gradient(135deg, #4f46e5, #6366f1)', color: '#fff', border: 'none', borderRadius: '14px',
+              fontWeight: 700, fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', whiteSpace: 'nowrap',
               transition: 'all 0.2s', boxShadow: added ? '0 4px 14px rgba(5,150,105,0.25)' : '0 4px 14px rgba(79,70,229,0.25)',
             }} onMouseEnter={e => { if (!added) e.currentTarget.style.transform = 'translateY(-2px)'; }} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
               {added ? <><Check size={18} /> Added!</> : <><ShoppingCart size={18} /> Add to Cart</>}
@@ -404,7 +404,7 @@ export default function StorefrontProductDetail() {
       {related.length > 0 && (
         <div style={{ marginTop: '60px' }}>
           <h2 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '20px', letterSpacing: '-0.3px' }}>You may also like</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
+          <div className="store-related-grid">
             {related.map(p => {
               const slug = p.seo?.slug || p._id;
               return (
@@ -552,7 +552,16 @@ export default function StorefrontProductDetail() {
         </form>
       </div>
 
-      <style>{`@media(max-width:768px){.store-pd-grid{grid-template-columns:1fr!important}.store-reviews-grid{grid-template-columns:1fr!important}}`}</style>
+      <style>{`
+        .store-related-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:20px}
+        @media(max-width:768px){
+          .store-pd-grid{grid-template-columns:1fr!important;gap:24px!important}
+          .store-reviews-grid{grid-template-columns:1fr!important}
+          .store-pd-gallery{position:static!important}
+          .store-pd-title{font-size:24px!important}
+          .store-related-grid{grid-template-columns:repeat(2,1fr);gap:14px}
+        }
+      `}</style>
 
       {/* Image zoom modal */}
       {zoomed && product.images?.[selectedImage]?.url && (
@@ -584,22 +593,24 @@ export default function StorefrontProductDetail() {
 
       {/* Sticky add-to-cart bar (mobile only) */}
       <div className="md:hidden" style={{
-        position: 'fixed', bottom: '56px', left: 0, right: 0, zIndex: 90,
-        background: '#fff', borderTop: '1px solid #e5e7eb', padding: '8px 12px',
-        display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 -2px 12px rgba(0,0,0,0.06)',
+        position: 'fixed', bottom: '60px', left: 0, right: 0, zIndex: 90, maxWidth: '100%',
+        background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(12px)', borderTop: '1px solid #e5e7eb', padding: '10px 14px',
+        display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 -4px 20px rgba(0,0,0,0.08)',
       }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontSize: '12px', color: '#6b7280', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.title}</p>
-          <p style={{ fontSize: '16px', fontWeight: 'bold', color: '#059669', margin: 0 }}>{currentPrice} {currency}</p>
+          <p style={{ fontSize: '17px', fontWeight: 800, color: '#059669', margin: 0, letterSpacing: '-0.3px' }}>{currentPrice} {currency}</p>
         </div>
         <button onClick={handleAddToCart} disabled={isOutOfStock} style={{
-          padding: '10px 20px', background: added ? '#059669' : '#4f46e5', color: '#fff', border: 'none', borderRadius: '8px',
-          fontWeight: 'bold', fontSize: '14px', cursor: isOutOfStock ? 'not-allowed' : 'pointer', opacity: isOutOfStock ? 0.5 : 1,
-          display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0,
+          padding: '12px 22px', background: added ? '#059669' : 'linear-gradient(135deg, #4f46e5, #6366f1)', color: '#fff', border: 'none', borderRadius: '12px',
+          fontWeight: 700, fontSize: '14px', cursor: isOutOfStock ? 'not-allowed' : 'pointer', opacity: isOutOfStock ? 0.5 : 1,
+          display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, boxShadow: '0 4px 14px rgba(79,70,229,0.3)',
         }}>
-          {added ? <><Check size={16} /> Added</> : <><ShoppingCart size={16} /> Add</>}
+          {added ? <><Check size={16} /> Added</> : <><ShoppingCart size={16} /> {isOutOfStock ? 'Sold Out' : 'Add to Cart'}</>}
         </button>
       </div>
+      {/* Spacer so content is not hidden behind the sticky bar + bottom nav */}
+      <div className="md:hidden" style={{ height: '70px' }} />
     </div>
   );
 }

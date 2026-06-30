@@ -96,6 +96,11 @@ export default function StorefrontProducts() {
         siteName={storeInfo?.storeName || 'Store'}
       />
       <StorefrontBreadcrumbs items={[{ label: 'Products' }]} />
+      <style>{`
+        .sf-products-grid { display: grid; gap: 16px; grid-template-columns: repeat(2, 1fr); }
+        @media (min-width: 640px) { .sf-products-grid { grid-template-columns: repeat(3, 1fr); gap: 20px; } }
+        @media (min-width: 1024px) { .sf-products-grid { grid-template-columns: repeat(4, 1fr); gap: 24px; } }
+      `}</style>
       {/* Header */}
       <div style={{ marginBottom: '28px' }}>
         <h1 style={{ fontSize: '32px', fontWeight: 800, margin: '0 0 20px', color: c('text', '#111'), letterSpacing: '-0.5px' }}>
@@ -176,7 +181,7 @@ export default function StorefrontProducts() {
       ) : (
         <>
           <p style={{ fontSize: '14px', color: c('textMuted', '#6b7280'), marginBottom: '20px', fontWeight: 500 }}>{data.total} products</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '20px' }}>
+          <div className="sf-products-grid">
             {allProducts.map(p => {
               const slug = p.seo?.slug || p._id;
               const images = p.images?.filter(img => img.url) || [];
