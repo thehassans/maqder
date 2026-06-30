@@ -60,6 +60,10 @@ const sanitizeEcommerce = (ecom) => {
   if (clone.pixels?.tiktokCapi?.accessToken) clone.pixels.tiktokCapi.accessToken = mask(clone.pixels.tiktokCapi.accessToken);
   // Mask Cloudflare API token
   if (clone.cloudflare?.apiToken) clone.cloudflare.apiToken = mask(clone.cloudflare.apiToken);
+  // Mask WordPress credentials
+  if (clone.wordpress?.consumerKey) clone.wordpress.consumerKey = mask(clone.wordpress.consumerKey);
+  if (clone.wordpress?.consumerSecret) clone.wordpress.consumerSecret = mask(clone.wordpress.consumerSecret);
+  if (clone.wordpress?.appPassword) clone.wordpress.appPassword = mask(clone.wordpress.appPassword);
   return clone;
 };
 
