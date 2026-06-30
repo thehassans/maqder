@@ -33,6 +33,11 @@ const SECTION_TYPES = [
   { value: 'category-grid', label: 'Category Grid' },
   { value: 'newsletter', label: 'Newsletter Signup' },
   { value: 'custom-html', label: 'Custom HTML' },
+  { value: 'rich-text', label: 'Rich Text Block' },
+  { value: 'image-banner', label: 'Image Banner' },
+  { value: 'testimonial', label: 'Testimonials' },
+  { value: 'faq', label: 'FAQ Section' },
+  { value: 'spacer', label: 'Spacer / Divider' },
 ];
 
 export default function EcommerceThemeEditor() {
@@ -126,6 +131,39 @@ export default function EcommerceThemeEditor() {
               <button style="background:${c.buttonBg};color:${c.buttonText};border:none;padding:10px 20px;border-radius:8px;font-weight:bold">Subscribe</button>
             </div>
           </div>`;
+        case 'rich-text':
+          return `<div style="max-width:800px;margin:0 auto 24px;padding:16px">
+            <h3 style="color:${c.text};font-size:20px;margin:0 0 8px">${settings.title || ''}</h3>
+            <div style="color:${c.textMuted};font-size:14px;line-height:1.6">${settings.content || ''}</div>
+          </div>`;
+        case 'image-banner':
+          return `<div style="margin-bottom:24px;border-radius:12px;overflow:hidden">
+            <img src="${settings.imageUrl || ''}" alt="${settings.altText || ''}" style="width:100%;display:block;max-height:300px;object-fit:cover" />
+          </div>`;
+        case 'testimonial':
+          return `<div style="margin-bottom:24px">
+            <h3 style="color:${c.text};font-size:20px;margin:0 0 12px">${settings.title || 'Testimonials'}</h3>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px">
+              ${(settings.items || []).slice(0, 3).map((item, i) => `
+                <div style="background:${c.surface};border:1px solid ${c.borderColor};border-radius:8px;padding:16px">
+                  <p style="color:${c.text};font-size:14px;font-style:italic;margin:0 0 8px">"${item.text || 'Great service!'}"</p>
+                  <p style="color:${c.textMuted};font-size:13px;font-weight:bold;margin:0">${item.author || 'Customer'}</p>
+                </div>`).join('')}
+            </div>
+          </div>`;
+        case 'faq':
+          return `<div style="max-width:800px;margin:0 auto 24px;padding:16px">
+            <h3 style="color:${c.text};font-size:20px;margin:0 0 12px">${settings.title || 'FAQ'}</h3>
+            ${(settings.items || []).slice(0, 5).map((item, i) => `
+              <details style="border-bottom:1px solid ${c.borderColor};padding:8px 0">
+                <summary style="color:${c.text};font-size:14px;font-weight:bold;cursor:pointer">${item.question || 'Question?'}</summary>
+                <p style="color:${c.textMuted};font-size:13px;margin:8px 0">${item.answer || ''}</p>
+              </details>`).join('')}
+          </div>`;
+        case 'spacer':
+          return `<div style="height:${settings.height || 40}px"></div>`;
+        case 'custom-html':
+          return settings.html || '';
         default:
           return '';
       }
@@ -605,6 +643,62 @@ ${sectionHTML}
                           <input className={inputCls} value={sec.settings.title || ''} onChange={e => updateSection(idx, 'title', e.target.value)} placeholder="Title" />
                           <input className={inputCls} value={sec.settings.subtitle || ''} onChange={e => updateSection(idx, 'subtitle', e.target.value)} placeholder="Subtitle" />
                         </>
+                      )}
+                      {sec.type === 'rich-text' && (
+                        <>
+                          <input className={inputCls} value={sec.settings.title || ''} onChange={e => updateSection(idx, 'title', e.target.value)} placeholder="Block title" />
+                          <textarea className={`${inputCls}`} rows={4} value={sec.settings.content || ''} onChange={e => updateSection(idx, 'content', e.target.value)} placeholder="HTML or text content" />
+                        </>
+                      )}
+                      {sec.type === 'image-banner' && (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <input className={inputCls} value={sec.settings.imageUrl || ''} onChange={e => updateSection(idx, 'imageUrl', e.target.value)} placeholder="Image URL" />
+                            <button
+                              onClick={() => { setHeroUploadIdx(idx); setTimeout(() => heroInputRef.current?.click(), 0); }}
+                              disabled={applyingPreset}
+                              className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-bold transition-colors disabled:opacity-60"
+                            >
+                              {applyingPreset ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />}
+                              Upload
+                            </button>
+                          </div>
+                          <input className={inputCls} value={sec.settings.altText || ''} onChange={e => updateSection(idx, 'altText', e.target.value)} placeholder="Alt text" />
+                        </>
+                      )}
+                      {sec.type === 'testimonial' && (
+                        <>
+                          <input className={inputCls} value={sec.settings.title || ''} onChange={e => updateSection(idx, 'title', e.target.value)} placeholder="Section title" />
+                          {(sec.settings.items || []).map((item, i) => (
+                            <div key={i} className="flex items-center gap-2">
+                              <input className={inputCls} value={item.author || ''} onChange={e => { const next = [...(sec.settings.items || [])]; next[i] = { ...next[i], author: e.target.value }; updateSection(idx, 'items', next); }} placeholder="Author name" />
+                              <input className={inputCls} value={item.text || ''} onChange={e => { const next = [...(sec.settings.items || [])]; next[i] = { ...next[i], text: e.target.value }; updateSection(idx, 'items', next); }} placeholder="Testimonial text" />
+                              <button onClick={() => { const next = (sec.settings.items || []).filter((_, j) => j !== i); updateSection(idx, 'items', next); }} className="p-1 text-red-400 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5" /></button>
+                            </div>
+                          ))}
+                          <button onClick={() => updateSection(idx, 'items', [...(sec.settings.items || []), { author: '', text: '' }])} className="flex items-center gap-1 text-xs font-bold text-violet-600 hover:underline"><Plus className="w-3 h-3" /> Add testimonial</button>
+                        </>
+                      )}
+                      {sec.type === 'faq' && (
+                        <>
+                          <input className={inputCls} value={sec.settings.title || ''} onChange={e => updateSection(idx, 'title', e.target.value)} placeholder="Section title" />
+                          {(sec.settings.items || []).map((item, i) => (
+                            <div key={i} className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <input className={inputCls} value={item.question || ''} onChange={e => { const next = [...(sec.settings.items || [])]; next[i] = { ...next[i], question: e.target.value }; updateSection(idx, 'items', next); }} placeholder="Question" />
+                                <button onClick={() => { const next = (sec.settings.items || []).filter((_, j) => j !== i); updateSection(idx, 'items', next); }} className="p-1 text-red-400 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5" /></button>
+                              </div>
+                              <input className={inputCls} value={item.answer || ''} onChange={e => { const next = [...(sec.settings.items || [])]; next[i] = { ...next[i], answer: e.target.value }; updateSection(idx, 'items', next); }} placeholder="Answer" />
+                            </div>
+                          ))}
+                          <button onClick={() => updateSection(idx, 'items', [...(sec.settings.items || []), { question: '', answer: '' }])} className="flex items-center gap-1 text-xs font-bold text-violet-600 hover:underline"><Plus className="w-3 h-3" /> Add FAQ item</button>
+                        </>
+                      )}
+                      {sec.type === 'spacer' && (
+                        <input type="number" className={inputCls} value={sec.settings.height || 40} onChange={e => updateSection(idx, 'height', parseInt(e.target.value) || 40)} placeholder="Height in px" />
+                      )}
+                      {sec.type === 'custom-html' && (
+                        <textarea className={`${inputCls} font-mono`} rows={4} value={sec.settings.html || ''} onChange={e => updateSection(idx, 'html', e.target.value)} placeholder="Custom HTML code" />
                       )}
                     </div>
                   )}
