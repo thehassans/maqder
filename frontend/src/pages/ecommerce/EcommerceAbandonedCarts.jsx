@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingCart, Mail, CheckCircle, Clock, TrendingUp, Loader2 } from 'lucide-react';
+import { ShoppingCart, Mail, CheckCircle, Clock, TrendingUp, Loader2, Send, ChevronDown, ChevronUp } from 'lucide-react';
 import api from '../../lib/api';
 
 export default function EcommerceAbandonedCarts() {
@@ -10,6 +10,8 @@ export default function EcommerceAbandonedCarts() {
   const [totalPages, setTotalPages] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
   const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(null);
+  const [expanded, setExpanded] = useState(null);
 
   useEffect(() => {
     Promise.all([
@@ -22,6 +24,18 @@ export default function EcommerceAbandonedCarts() {
       setTotalPages(cartsRes.data.totalPages);
     }).catch(() => {}).finally(() => setLoading(false));
   }, [statusFilter, page]);
+
+  const handleSendRecovery = async (cartId) => {
+    setSending(cartId);
+    try {
+      await api.post(`/ecommerce/abandoned-carts/${cartId}/send-recovery`);
+      setCarts(prev => prev.map(c => c._id === cartId ? { ...c, recoveryEmailSent: true } : c));
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to send recovery email');
+    } finally {
+      setSending(null);
+    }
+  };
 
   if (loading) return <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin" /></div>;
 
@@ -94,21 +108,28 @@ export default function EcommerceAbandonedCarts() {
               <th className="text-center px-4 py-3 font-medium text-gray-600">Email Sent</th>
               <th className="text-center px-4 py-3 font-medium text-gray-600">Status</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Updated</th>
+              <th className="text-center px-4 py-3 font-medium text-gray-600">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {carts.length === 0 ? (
               <tr>
-                <td colSpan={6} className="text-center py-12 text-gray-400">
+                <td colSpan={7} className="text-center py-12 text-gray-400">
                   No abandoned carts found
                 </td>
               </tr>
             ) : carts.map(cart => (
-              <tr key={cart._id} className="hover:bg-gray-50">
-                <td className="px-4 py-3">
-                  <p className="font-medium text-gray-900">{cart.customerEmail || cart.customerPhone || 'Unknown'}</p>
-                  <p className="text-xs text-gray-400">{cart.customerPhone || ''}</p>
-                </td>
+              <React.Fragment key={cart._id}>
+                <tr className="hover:bg-gray-50 cursor-pointer" onClick={() => setExpanded(expanded === cart._id ? null : cart._id)}>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      {expanded === cart._id ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+                      <div>
+                        <p className="font-medium text-gray-900">{cart.customerEmail || cart.customerPhone || 'Unknown'}</p>
+                        <p className="text-xs text-gray-400">{cart.customerPhone || ''}</p>
+                      </div>
+                    </div>
+                  </td>
                 <td className="px-4 py-3">
                   <p className="text-gray-700">{cart.items.length} item(s)</p>
                   <p className="text-xs text-gray-400 truncate max-w-xs">
@@ -135,8 +156,43 @@ export default function EcommerceAbandonedCarts() {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-xs text-gray-500">{fmtDate(cart.updatedAt)}</td>
+                <td className="px-4 py-3 text-center">
+                  {cart.status === 'abandoned' && cart.customerEmail && !cart.recoveryEmailSent && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleSendRecovery(cart._id); }}
+                      disabled={sending === cart._id}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-violet-600 text-white text-xs font-bold hover:bg-violet-700 disabled:opacity-50"
+                    >
+                      {sending === cart._id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+                      Send
+                    </button>
+                  )}
+                  {cart.recoveryEmailSent && (
+                    <span className="text-xs text-blue-600 font-bold">Sent</span>
+                  )}
+                </td>
               </tr>
-            ))}
+              {expanded === cart._id && (
+                <tr className="bg-gray-50">
+                  <td colSpan={7} className="px-4 py-4">
+                    <div className="space-y-2">
+                      <p className="text-xs font-bold text-gray-500 uppercase mb-2">Cart Items</p>
+                      {cart.items.map((item, i) => (
+                        <div key={i} className="flex items-center justify-between text-sm">
+                          <span className="text-gray-700">{item.title} × {item.quantity}</span>
+                          <span className="text-gray-500 font-medium">{fmtPrice((item.price || 0) * (item.quantity || 1))}</span>
+                        </div>
+                      ))}
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                        <span className="font-bold text-gray-900">Cart Total</span>
+                        <span className="font-bold text-gray-900">{fmtPrice(cart.cartTotal)}</span>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </React.Fragment>
+          ))}
           </tbody>
         </table>
       </div>
