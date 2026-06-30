@@ -171,6 +171,7 @@ import { WishlistProvider } from './store/storefrontWishlist'
 import { StorefrontI18nProvider } from './store/storefrontI18n'
 import StorefrontWishlist from './pages/storefront/StorefrontWishlist'
 import StorefrontOrderTracking from './pages/storefront/StorefrontOrderTracking'
+import StorefrontReturnRequest from './pages/storefront/StorefrontReturnRequest'
 import StorefrontPrivacy from './pages/storefront/StorefrontPrivacy'
 import StorefrontTerms from './pages/storefront/StorefrontTerms'
 import StorefrontCategory from './pages/storefront/StorefrontCategory'
@@ -757,6 +758,7 @@ function App() {
       <Route path="/store/checkout" element={<StorefrontI18nProvider><WishlistProvider><CartProvider><StorefrontLayout><StorefrontCheckout /></StorefrontLayout></CartProvider></WishlistProvider></StorefrontI18nProvider>} />
       <Route path="/store/wishlist" element={<StorefrontI18nProvider><WishlistProvider><CartProvider><StorefrontLayout><StorefrontWishlist /></StorefrontLayout></CartProvider></WishlistProvider></StorefrontI18nProvider>} />
       <Route path="/store/track-order" element={<StorefrontI18nProvider><WishlistProvider><CartProvider><StorefrontLayout><StorefrontOrderTracking /></StorefrontLayout></CartProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store/returns" element={<StorefrontI18nProvider><WishlistProvider><CartProvider><StorefrontLayout><StorefrontReturnRequest /></StorefrontLayout></CartProvider></WishlistProvider></StorefrontI18nProvider>} />
       <Route path="/store/privacy" element={<StorefrontI18nProvider><WishlistProvider><CartProvider><StorefrontLayout><StorefrontPrivacy /></StorefrontLayout></CartProvider></WishlistProvider></StorefrontI18nProvider>} />
       <Route path="/store/terms" element={<StorefrontI18nProvider><WishlistProvider><CartProvider><StorefrontLayout><StorefrontTerms /></StorefrontLayout></CartProvider></WishlistProvider></StorefrontI18nProvider>} />
       <Route path="/checkout/success" element={<StorefrontI18nProvider><WishlistProvider><CartProvider><StorefrontLayout><StorefrontCheckoutSuccess /></StorefrontLayout></CartProvider></WishlistProvider></StorefrontI18nProvider>} />

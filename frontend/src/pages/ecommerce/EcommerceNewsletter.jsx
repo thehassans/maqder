@@ -1,11 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Mail, Loader2, Download, Trash2, Search } from 'lucide-react';
+import { Mail, Loader2, Download, Trash2, Search, Send, CheckCircle, AlertCircle, X } from 'lucide-react';
 import api from '../../lib/api';
 
 export default function EcommerceNewsletter() {
   const [subscribers, setSubscribers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [showCampaign, setShowCampaign] = useState(false);
+  const [campaign, setCampaign] = useState({ subject: '', body: '' });
+  const [sending, setSending] = useState(false);
+  const [campaignResult, setCampaignResult] = useState(null);
+  const [campaignError, setCampaignError] = useState('');
 
   const fetchSubscribers = useCallback(async () => {
     setLoading(true);
@@ -74,6 +79,11 @@ export default function EcommerceNewsletter() {
         <button onClick={exportCsv} className="flex items-center gap-2 text-sm font-bold text-gray-600 hover:text-indigo-600 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors">
           <Download className="w-4 h-4" /> Export CSV
         </button>
+        {activeCount > 0 && (
+          <button onClick={() => setShowCampaign(true)} className="flex items-center gap-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-4 py-2.5 rounded-xl transition-colors">
+            <Send className="w-4 h-4" /> Send Campaign
+          </button>
+        )}
       </div>
 
       {/* Table */}
@@ -112,6 +122,105 @@ export default function EcommerceNewsletter() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Campaign modal */}
+      {showCampaign && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowCampaign(false)}>
+          <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-dark-700">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+                  <Send className="w-5 h-5 text-indigo-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-white">Send Campaign</h2>
+                  <p className="text-sm text-gray-400">Email will be sent to {activeCount} active subscriber{activeCount !== 1 ? 's' : ''}</p>
+                </div>
+              </div>
+              <button onClick={() => setShowCampaign(false)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {campaignResult ? (
+                <div className="text-center py-8">
+                  {campaignResult.failed === 0 ? (
+                    <CheckCircle className="w-14 h-14 text-emerald-500 mx-auto mb-4" />
+                  ) : (
+                    <AlertCircle className="w-14 h-14 text-amber-500 mx-auto mb-4" />
+                  )}
+                  <h3 className="text-lg font-bold mb-2">Campaign Sent</h3>
+                  <p className="text-sm text-gray-500 mb-4">
+                    {campaignResult.sent} sent successfully · {campaignResult.failed} failed · {campaignResult.total} total
+                  </p>
+                  {campaignResult.errors?.length > 0 && (
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-left mb-4">
+                      <p className="text-xs font-bold text-red-700 dark:text-red-400 mb-1">Errors:</p>
+                      {campaignResult.errors.map((e, i) => (
+                        <p key={i} className="text-xs text-red-600 dark:text-red-500">{e.email}: {e.error}</p>
+                      ))}
+                    </div>
+                  )}
+                  <button onClick={() => { setShowCampaign(false); setCampaignResult(null); setCampaign({ subject: '', body: '' }); }} className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700">
+                    Done
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {campaignError && (
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3 flex items-center gap-2 text-sm text-red-700 dark:text-red-400">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />{campaignError}
+                    </div>
+                  )}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Subject *</label>
+                    <input
+                      type="text"
+                      value={campaign.subject}
+                      onChange={e => setCampaign({ ...campaign, subject: e.target.value })}
+                      placeholder="e.g. New arrivals — 20% off this week!"
+                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Message *</label>
+                    <textarea
+                      value={campaign.body}
+                      onChange={e => setCampaign({ ...campaign, body: e.target.value })}
+                      rows={8}
+                      placeholder="Write your campaign message here..."
+                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">Line breaks will be preserved in the email.</p>
+                  </div>
+                  <div className="flex gap-3 pt-2">
+                    <button onClick={() => setShowCampaign(false)} className="flex-1 py-2.5 rounded-xl border border-gray-200 dark:border-dark-600 font-bold text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-700">
+                      Cancel
+                    </button>
+                    <button
+                      onClick={async () => {
+                        if (!campaign.subject || !campaign.body) { setCampaignError('Subject and message are required'); return; }
+                        setSending(true); setCampaignError('');
+                        try {
+                          const res = await api.post('/ecommerce/newsletter/campaign', campaign);
+                          setCampaignResult(res.data);
+                        } catch (err) {
+                          setCampaignError(err.response?.data?.error || 'Failed to send campaign');
+                        } finally { setSending(false); }
+                      }}
+                      disabled={sending}
+                      className="flex-1 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-4 h-4" /> Send to {activeCount} subscriber{activeCount !== 1 ? 's' : ''}</>}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}

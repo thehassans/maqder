@@ -6,6 +6,7 @@ import EcommerceProduct from '../models/EcommerceProduct.js';
 import { clearTenantHostCache } from '../middleware/resolveTenantByHost.js';
 import { provisionCloudflareDomain, verifyDomainViaCloudflare, removeCloudflareDomain, getSSLStatus, isCloudflareConfigured, verifyCloudflareCredentials, listZones } from '../services/cloudflareService.js';
 import { testWordPressConnection, runWordPressSync } from '../services/wordpressService.js';
+import { sendTenantEmail, buildEmailShell } from '../utils/tenantEmailService.js';
 
 const router = express.Router();
 
@@ -675,6 +676,55 @@ router.post('/wordpress/sync', protect, async (req, res) => {
       }
     } catch {}
     res.status(400).json({ error: error.message });
+  }
+});
+
+// --- NEWSLETTER CAMPAIGN: Send email to subscribers ---
+router.post('/newsletter/campaign', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found' });
+    const { subject, body, recipients } = req.body;
+
+    if (!subject || !body) return res.status(400).json({ error: 'Subject and body are required' });
+
+    const tenant = await Tenant.findById(tenantId).lean();
+    const subscribers = (tenant.ecommerce?.newsletterSubscribers || []).filter(s => s.isActive);
+
+    const toSend = recipients && recipients.length > 0 ? recipients : subscribers.map(s => s.email);
+    if (toSend.length === 0) return res.status(400).json({ error: 'No active subscribers to send to' });
+
+    const storeName = tenant.ecommerce?.storeName || tenant.name || 'Store';
+    const html = buildEmailShell({
+      brandName: storeName,
+      title: subject,
+      htmlBody: body.replace(/\n/g, '<br>'),
+    });
+
+    let sent = 0;
+    let failed = 0;
+    const errors = [];
+
+    for (const email of toSend) {
+      try {
+        await sendTenantEmail({
+          tenant,
+          to: email,
+          subject: `[${storeName}] ${subject}`,
+          html,
+          text: body,
+          metadata: { type: 'newsletter_campaign' },
+        });
+        sent++;
+      } catch (err) {
+        failed++;
+        errors.push({ email, error: err.message });
+      }
+    }
+
+    res.json({ sent, failed, total: toSend.length, errors: errors.slice(0, 10) });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
