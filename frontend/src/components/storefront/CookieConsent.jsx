@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { X, Cookie } from 'lucide-react';
+import { useI18n } from '../../store/storefrontI18n';
 
 const STORAGE_KEY = 'maqder_cookie_consent';
 
 export default function CookieConsent() {
   const [visible, setVisible] = useState(false);
+  const { t } = useI18n();
 
   useEffect(() => {
     const consent = localStorage.getItem(STORAGE_KEY);
@@ -36,20 +38,19 @@ export default function CookieConsent() {
     }}>
       <Cookie size={24} style={{ color: '#fbbf24', flexShrink: 0 }} />
       <p style={{ flex: 1, fontSize: '14px', margin: 0, color: '#d1d5db', minWidth: '200px' }}>
-        We use cookies to improve your experience, analyze traffic, and serve relevant content.
-        By clicking "Accept", you agree to our use of cookies. See our{' '}
-        <Link to="/store/privacy" style={{ color: '#818cf8', textDecoration: 'underline' }}>Privacy Policy</Link>.
+        {t('cookieText')}{' '}
+        <Link to="/store/privacy" style={{ color: '#818cf8', textDecoration: 'underline' }}>{t('privacyPolicy')}</Link>.
       </p>
       <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
         <button onClick={handleDecline} style={{
           padding: '10px 20px', background: 'transparent', color: '#9ca3af', border: '1px solid #374151', borderRadius: '12px', cursor: 'pointer', fontSize: '14px', fontWeight: 700, transition: 'all 0.2s',
         }} onMouseEnter={e => { e.currentTarget.style.borderColor = '#4b5563'; e.currentTarget.style.color = '#d1d5db'; }} onMouseLeave={e => { e.currentTarget.style.borderColor = '#374151'; e.currentTarget.style.color = '#9ca3af'; }}>
-          Decline
+          {t('decline')}
         </button>
         <button onClick={handleAccept} style={{
           padding: '10px 24px', background: 'linear-gradient(135deg, #4f46e5, #6366f1)', color: '#fff', border: 'none', borderRadius: '12px', cursor: 'pointer', fontSize: '14px', fontWeight: 700, transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(79,70,229,0.3)',
         }} onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(79,70,229,0.4)'; }} onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(79,70,229,0.3)'; }}>
-          Accept
+          {t('accept')}
         </button>
         <button onClick={handleDecline} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', padding: '4px' }}>
           <X size={18} />

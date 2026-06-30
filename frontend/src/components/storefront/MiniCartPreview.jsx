@@ -3,10 +3,12 @@ import { Link } from 'react-router-dom';
 import { ShoppingCart, X, Plus, Minus, Trash2, Heart } from 'lucide-react';
 import { useCart } from '../../store/storefrontCart';
 import { useWishlist } from '../../store/storefrontWishlist';
+import { useI18n } from '../../store/storefrontI18n';
 
 export default function MiniCartPreview() {
   const { items, cartCount, cartTotal, isOpen, setIsOpen, removeItem, updateQuantity } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
+  const { t, isRTL } = useI18n();
 
   if (!isOpen) return null;
 
@@ -17,13 +19,13 @@ export default function MiniCartPreview() {
 
       {/* Drawer */}
       <div style={{
-        position: 'fixed', top: 0, right: 0, bottom: 0, width: '380px', maxWidth: '90vw', zIndex: 200,
-        background: '#fff', boxShadow: '-8px 0 32px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column',
+        position: 'fixed', top: 0, [isRTL ? 'left' : 'right']: 0, bottom: 0, width: '380px', maxWidth: '90vw', zIndex: 200,
+        background: '#fff', boxShadow: isRTL ? '8px 0 32px rgba(0,0,0,0.15)' : '-8px 0 32px rgba(0,0,0,0.15)', display: 'flex', flexDirection: 'column',
       }}>
         {/* Header */}
         <div style={{ padding: '18px 22px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px', letterSpacing: '-0.2px' }}>
-            <ShoppingCart size={20} /> Cart ({cartCount})
+            <ShoppingCart size={20} /> {t('cart')} ({cartCount})
           </h3>
           <button onClick={() => setIsOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
             <X size={20} />
@@ -40,9 +42,9 @@ export default function MiniCartPreview() {
             return (
               <div style={{ marginBottom: '16px', padding: '14px', background: '#f9fafb', borderRadius: '14px', border: '1px solid #f3f4f6' }}>
                 {remaining > 0 ? (
-                  <p style={{ fontSize: '12px', color: '#374151', margin: '0 0 8px' }}>Add <strong style={{ color: '#4f46e5' }}>{remaining} SAR</strong> more for free shipping!</p>
+                  <p style={{ fontSize: '12px', color: '#374151', margin: '0 0 8px' }}>{t('addMoreForFreeShipping')} <strong style={{ color: '#4f46e5' }}>{remaining} SAR</strong> {t('forFreeShipping')}</p>
                 ) : (
-                  <p style={{ fontSize: '12px', color: '#059669', fontWeight: 700, margin: '0 0 8px' }}>✓ You qualify for free shipping!</p>
+                  <p style={{ fontSize: '12px', color: '#059669', fontWeight: 700, margin: '0 0 8px' }}>{t('unlockedFreeShipping')}</p>
                 )}
                 <div style={{ height: '6px', background: '#e5e7eb', borderRadius: '999px', overflow: 'hidden' }}>
                   <div style={{ height: '100%', width: `${pct}%`, background: remaining > 0 ? 'linear-gradient(90deg, #4f46e5, #6366f1)' : '#059669', borderRadius: '999px', transition: 'width 0.3s' }} />
@@ -53,9 +55,9 @@ export default function MiniCartPreview() {
           {items.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '48px 0', color: '#9ca3af' }}>
               <ShoppingCart size={44} style={{ margin: '0 auto 14px', opacity: 0.3 }} />
-              <p style={{ fontWeight: 700, fontSize: '15px' }}>Your cart is empty</p>
+              <p style={{ fontWeight: 700, fontSize: '15px' }}>{t('cartIsEmpty')}</p>
               <Link to="/store/products" onClick={() => setIsOpen(false)} style={{ display: 'inline-block', marginTop: '14px', color: '#4f46e5', textDecoration: 'none', fontWeight: 700, fontSize: '14px' }}>
-                Browse products →
+                {t('browseProducts')} →
               </Link>
             </div>
           ) : (
@@ -85,7 +87,7 @@ export default function MiniCartPreview() {
                     <button onClick={() => removeItem(item.key)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', padding: '4px', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.15)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
                       <Trash2 size={16} />
                     </button>
-                    <button onClick={() => { toggleWishlist({ _id: item.productId, title: item.title, basePrice: item.price, images: item.image ? [{ url: item.image }] : [], seo: {} }); removeItem(item.key); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: isInWishlist(item.productId) ? '#ec4899' : '#9ca3af', padding: '4px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '2px', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.15)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} title="Save for later">
+                    <button onClick={() => { toggleWishlist({ _id: item.productId, title: item.title, basePrice: item.price, images: item.image ? [{ url: item.image }] : [], seo: {} }); removeItem(item.key); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: isInWishlist(item.productId) ? '#ec4899' : '#9ca3af', padding: '4px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '2px', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.15)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} title={t('saveForLater')}>
                       <Heart size={14} />
                     </button>
                   </div>
@@ -99,16 +101,16 @@ export default function MiniCartPreview() {
         {items.length > 0 && (
           <div style={{ padding: '18px 22px', borderTop: '1px solid #e5e7eb' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '14px' }}>
-              <span style={{ fontSize: '15px', fontWeight: 700 }}>Total</span>
+              <span style={{ fontSize: '15px', fontWeight: 700 }}>{t('total')}</span>
               <span style={{ fontSize: '20px', fontWeight: 800, color: '#059669' }}>{cartTotal} SAR</span>
             </div>
             <Link to="/store/checkout" onClick={() => setIsOpen(false)} style={{
               display: 'block', textAlign: 'center', padding: '16px', background: 'linear-gradient(135deg, #4f46e5, #6366f1)', color: '#fff', borderRadius: '14px', textDecoration: 'none', fontWeight: 700, fontSize: '16px', transition: 'all 0.2s', boxShadow: '0 4px 14px rgba(79,70,229,0.25)',
             }} onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(79,70,229,0.3)'; }} onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(79,70,229,0.25)'; }}>
-              Checkout
+              {t('checkout')}
             </Link>
             <button onClick={() => setIsOpen(false)} style={{ display: 'block', width: '100%', textAlign: 'center', padding: '10px', background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: '14px', marginTop: '8px' }}>
-              Continue shopping
+              {t('continueShopping')}
             </button>
           </div>
         )}

@@ -3,12 +3,14 @@ import { Link } from 'react-router-dom';
 import { X, ShoppingCart, Check, Minus, Plus, Eye } from 'lucide-react';
 import storeApi from '../../lib/storeApi';
 import { useCart } from '../../store/storefrontCart';
+import { useI18n } from '../../store/storefrontI18n';
 
 export default function QuickViewModal({ product, onClose, currency = 'SAR' }) {
   const [quantity, setQuantity] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [added, setAdded] = useState(false);
   const { addItem } = useCart();
+  const { t, isRTL } = useI18n();
 
   useEffect(() => {
     if (product?.variants?.length > 0) {
@@ -52,7 +54,7 @@ export default function QuickViewModal({ product, onClose, currency = 'SAR' }) {
       }}>
         {/* Close button */}
         <button onClick={onClose} style={{
-          position: 'absolute', top: '14px', right: '14px', zIndex: 1,
+          position: 'absolute', top: '14px', [isRTL ? 'left' : 'right']: '14px', zIndex: 1,
           width: '38px', height: '38px', borderRadius: '50%', background: 'rgba(255,255,255,0.95)',
           border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
           transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
@@ -66,7 +68,7 @@ export default function QuickViewModal({ product, onClose, currency = 'SAR' }) {
             {product.images?.[0]?.url ? (
               <img src={product.images[0].url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover', minHeight: '300px' }} />
             ) : (
-              <div style={{ minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: '14px' }}>No image</div>
+              <div style={{ minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: '14px' }}>{t('noImage')}</div>
             )}
           </div>
 
@@ -91,7 +93,7 @@ export default function QuickViewModal({ product, onClose, currency = 'SAR' }) {
             {/* Variants */}
             {product.hasVariants && product.variants?.length > 0 && (
               <div style={{ marginBottom: '18px' }}>
-                <p style={{ fontWeight: 700, fontSize: '13px', marginBottom: '8px' }}>Options:</p>
+                <p style={{ fontWeight: 700, fontSize: '13px', marginBottom: '8px' }}>{t('options')}</p>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   {product.variants.filter(v => v.isActive).map(v => {
                     const vOutOfStock = v.trackInventory && v.stockQuantity <= 0;
@@ -111,7 +113,7 @@ export default function QuickViewModal({ product, onClose, currency = 'SAR' }) {
             )}
 
             {/* Stock status */}
-            {outOfStock && <p style={{ fontSize: '13px', color: '#dc2626', fontWeight: 700, marginBottom: '14px' }}>Out of stock</p>}
+            {outOfStock && <p style={{ fontSize: '13px', color: '#dc2626', fontWeight: 700, marginBottom: '14px' }}>{t('outOfStock')}</p>}
 
             {/* Quantity + Add to cart */}
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '18px' }}>
@@ -126,7 +128,7 @@ export default function QuickViewModal({ product, onClose, currency = 'SAR' }) {
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all 0.2s',
                 boxShadow: added ? 'none' : '0 4px 14px rgba(79,70,229,0.25)',
               }} onMouseEnter={e => { if (!outOfStock && !added) e.currentTarget.style.transform = 'translateY(-2px)'; }} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
-                {added ? <><Check size={16} /> Added!</> : <><ShoppingCart size={16} /> Add to Cart</>}
+                {added ? <><Check size={16} /> {t('added')}</> : <><ShoppingCart size={16} /> {t('addToCart')}</>}
               </button>
             </div>
 
@@ -134,7 +136,7 @@ export default function QuickViewModal({ product, onClose, currency = 'SAR' }) {
             <Link to={`/store/products/${slug}`} onClick={onClose} style={{
               display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#4f46e5', textDecoration: 'none', fontWeight: 700, fontSize: '14px', transition: 'gap 0.2s',
             }} onMouseEnter={e => e.currentTarget.style.gap = '10px'} onMouseLeave={e => e.currentTarget.style.gap = '6px'}>
-              <Eye size={16} /> View full details
+              <Eye size={16} /> {t('viewFullDetails')}
             </Link>
           </div>
         </div>

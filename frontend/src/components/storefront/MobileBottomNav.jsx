@@ -3,11 +3,13 @@ import { Link, useLocation } from 'react-router-dom';
 import { Home, Search, ShoppingCart, Heart, User } from 'lucide-react';
 import { useCart } from '../../store/storefrontCart';
 import { useWishlist } from '../../store/storefrontWishlist';
+import { useI18n } from '../../store/storefrontI18n';
 
 export default function MobileBottomNav() {
   const location = useLocation();
   const { cartCount, setIsOpen } = useCart();
   const { count: wishlistCount } = useWishlist();
+  const { t } = useI18n();
 
   const isActive = (path) => {
     if (path === '/store') return location.pathname === '/store';
@@ -15,10 +17,10 @@ export default function MobileBottomNav() {
   };
 
   const items = [
-    { path: '/store', icon: Home, label: 'Home' },
-    { path: '/store/products', icon: Search, label: 'Shop' },
-    { action: () => setIsOpen(true), icon: ShoppingCart, label: 'Cart', badge: cartCount },
-    { path: '/store/wishlist', icon: Heart, label: 'Wishlist', badge: wishlistCount },
+    { path: '/store', icon: Home, label: t('home') },
+    { path: '/store/products', icon: Search, label: t('shop2') },
+    { action: () => setIsOpen(true), icon: ShoppingCart, label: t('cart'), badge: cartCount },
+    { path: '/store/wishlist', icon: Heart, label: t('wishlist'), badge: wishlistCount },
   ];
 
   return (

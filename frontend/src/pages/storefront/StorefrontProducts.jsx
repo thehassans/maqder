@@ -145,7 +145,7 @@ export default function StorefrontProducts() {
                 <span style={{ fontSize: '13px', fontWeight: 700, color: c('text', '#111'), marginInlineEnd: '4px' }}>{t('categories')}:</span>
                 <button onClick={() => updateParam('category', '')} style={{
                   padding: '7px 16px', borderRadius: '999px', border: `1px solid ${!category ? c('primary', '#4f46e5') : c('borderColor', '#e5e7eb')}`, background: !category ? c('primary', '#4f46e5') : '#fff', color: !category ? '#fff' : c('text', '#111'), cursor: 'pointer', fontSize: '13px', fontWeight: 600, transition: 'all 0.2s',
-                }}>All</button>
+                }}>{t('all')}</button>
                 {data.categories.map(cat => cat && (
                   <button key={cat} onClick={() => updateParam('category', cat)} style={{
                     padding: '7px 16px', borderRadius: '999px', border: `1px solid ${category === cat ? c('primary', '#4f46e5') : c('borderColor', '#e5e7eb')}`, background: category === cat ? c('primary', '#4f46e5') : '#fff', color: category === cat ? '#fff' : c('text', '#111'), cursor: 'pointer', fontSize: '13px', fontWeight: 600, transition: 'all 0.2s',
@@ -156,9 +156,9 @@ export default function StorefrontProducts() {
             {/* Price range */}
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
               <span style={{ fontSize: '13px', fontWeight: 700, color: c('text', '#111') }}>{t('priceRange')}</span>
-              <input type="number" placeholder="Min" value={minPrice} onChange={e => updateParam('minPrice', e.target.value)} style={{ width: '90px', padding: '8px 12px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '10px', fontSize: '13px', outline: 'none' }} />
+              <input type="number" placeholder={t('min')} value={minPrice} onChange={e => updateParam('minPrice', e.target.value)} style={{ width: '90px', padding: '8px 12px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '10px', fontSize: '13px', outline: 'none' }} />
               <span style={{ color: c('textMuted', '#6b7280') }}>—</span>
-              <input type="number" placeholder="Max" value={maxPrice} onChange={e => updateParam('maxPrice', e.target.value)} style={{ width: '90px', padding: '8px 12px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '10px', fontSize: '13px', outline: 'none' }} />
+              <input type="number" placeholder={t('max')} value={maxPrice} onChange={e => updateParam('maxPrice', e.target.value)} style={{ width: '90px', padding: '8px 12px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '10px', fontSize: '13px', outline: 'none' }} />
               <span style={{ fontSize: '13px', color: c('textMuted', '#6b7280') }}>{currency}</span>
             </div>
             {/* Availability */}

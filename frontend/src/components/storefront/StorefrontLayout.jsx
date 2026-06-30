@@ -298,7 +298,7 @@ export default function StorefrontLayout({ children }) {
                     onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
-                    See all results →
+                    {t('seeAllResults')} →
                   </Link>
                 </div>
               )}
@@ -333,7 +333,7 @@ export default function StorefrontLayout({ children }) {
                         onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                       >
-                        <LayoutGrid size={16} style={{ color: c('primary', '#4f46e5') }} /> All Products
+                        <LayoutGrid size={16} style={{ color: c('primary', '#4f46e5') }} /> {t('allProducts')}
                       </Link>
                       {categories.slice(0, 7).map(cat => (
                         <Link key={cat} to={`/store/products?category=${encodeURIComponent(cat)}`} onClick={() => setMegaMenuOpen(false)}
@@ -350,7 +350,7 @@ export default function StorefrontLayout({ children }) {
                       onMouseEnter={e => e.currentTarget.style.background = `${c('primary', '#4f46e5')}14`}
                       onMouseLeave={e => e.currentTarget.style.background = `${c('primary', '#4f46e5')}0d`}
                     >
-                      Browse all products →
+                      {t('browseAllProducts')} →
                     </Link>
                   </div>
                 )}
@@ -446,9 +446,9 @@ export default function StorefrontLayout({ children }) {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
                         <Truck size={16} style={{ color: c('primary', '#4f46e5') }} />
                         {remaining > 0 ? (
-                          <span style={{ fontSize: '12.5px', color: c('textMuted', '#6b7280'), fontWeight: 600 }}>Add <strong style={{ color: c('primary', '#4f46e5') }}>{remaining} {storeInfo?.currency || 'SAR'}</strong> for free shipping</span>
+                          <span style={{ fontSize: '12.5px', color: c('textMuted', '#6b7280'), fontWeight: 600 }}>{t('addMoreForFreeShipping')} <strong style={{ color: c('primary', '#4f46e5') }}>{remaining} {storeInfo?.currency || 'SAR'}</strong> {t('forFreeShipping')}</span>
                         ) : (
-                          <span style={{ fontSize: '12.5px', color: '#059669', fontWeight: 700 }}>✓ You've unlocked free shipping!</span>
+                          <span style={{ fontSize: '12.5px', color: '#059669', fontWeight: 700 }}>{t('unlockedFreeShipping')}</span>
                         )}
                       </div>
                       <div style={{ height: '6px', borderRadius: '999px', background: '#e5e7eb', overflow: 'hidden' }}>

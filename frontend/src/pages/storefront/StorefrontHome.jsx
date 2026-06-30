@@ -80,7 +80,7 @@ export default function StorefrontHome() {
             <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '200px', height: '200px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
             <div style={{ position: 'absolute', bottom: '-60px', left: '-30px', width: '160px', height: '160px', borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
             <div style={{ position: 'relative', zIndex: 1 }}>
-              <h2 style={{ color: '#fff', fontSize: '36px', margin: '0 0 12px', fontWeight: 800, letterSpacing: '-0.5px', textShadow: s.imageUrl ? '0 2px 12px rgba(0,0,0,0.3)' : 'none' }}>{s.title || 'Welcome to our store'}</h2>
+              <h2 style={{ color: '#fff', fontSize: '36px', margin: '0 0 12px', fontWeight: 800, letterSpacing: '-0.5px', textShadow: s.imageUrl ? '0 2px 12px rgba(0,0,0,0.3)' : 'none' }}>{s.title || t('welcomeStore')}</h2>
               <p style={{ color: '#fff', opacity: 0.95, margin: '0 0 28px', fontSize: '17px', textShadow: s.imageUrl ? '0 1px 8px rgba(0,0,0,0.3)' : 'none' }}>{s.subtitle || ''}</p>
               <Link to={s.buttonLink || '/store/products'} style={{
                 display: 'inline-flex', alignItems: 'center', gap: '8px',

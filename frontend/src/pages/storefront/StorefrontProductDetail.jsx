@@ -167,7 +167,7 @@ export default function StorefrontProductDetail() {
         siteName="Store"
       />
       <StorefrontBreadcrumbs items={[
-        { label: 'Products', href: '/store/products' },
+        { label: t('products'), href: '/store/products' },
         { label: product.title },
       ]} />
 
@@ -188,11 +188,11 @@ export default function StorefrontProductDetail() {
               <>
                 <img src={product.images[selectedImage].url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.2s ease', transform: hoverZoom.active ? `scale(2)` : 'scale(1)', transformOrigin: `${hoverZoom.x}% ${hoverZoom.y}%` }} />
                 <div style={{ position: 'absolute', bottom: '12px', right: '12px', background: 'rgba(0,0,0,0.5)', borderRadius: '10px', padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '4px', color: '#fff', fontSize: '12px', fontWeight: 600, backdropFilter: 'blur(8px)' }}>
-                  <ZoomIn size={14} /> Zoom
+                  <ZoomIn size={14} /> {t('zoom')}
                 </div>
               </>
             ) : (
-              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>No image</div>
+              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>{t('noImage')}</div>
             )}
           </div>
           {product.images?.length > 1 && (
@@ -215,7 +215,7 @@ export default function StorefrontProductDetail() {
 
           {/* Share buttons */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 'bold' }}>Share:</span>
+            <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 'bold' }}>{t('share')}</span>
             <a href={`https://wa.me/?text=${encodeURIComponent(product.title + ' - ' + currentPrice + ' ' + currency + ' ' + window.location.href)}`} target="_blank" rel="noopener" style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: '#25D366', color: '#fff', borderRadius: '8px', textDecoration: 'none', fontSize: '13px', fontWeight: 'bold' }}>
               <MessageCircle size={14} /> WhatsApp
             </a>
@@ -228,7 +228,7 @@ export default function StorefrontProductDetail() {
               X
             </a>
             <button onClick={() => { navigator.clipboard.writeText(window.location.href); setLinkCopied(true); setTimeout(() => setLinkCopied(false), 2000); }} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: '#f3f4f6', color: '#374151', border: '1px solid #e5e7eb', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
-              {linkCopied ? <><Check size={14} /> Copied!</> : <><Share2 size={14} /> Copy Link</>}
+              {linkCopied ? <><Check size={14} /> {t('copied')}</> : <><Share2 size={14} /> {t('copyLink')}</>}
             </button>
           </div>
 
@@ -238,7 +238,7 @@ export default function StorefrontProductDetail() {
             )}
             <span style={{ fontSize: '30px', fontWeight: 800, color: '#059669', letterSpacing: '-0.5px' }}>{currentPrice} {currency}</span>
             {product.compareAtPrice && product.compareAtPrice > currentPrice && (
-              <span style={{ background: '#fee2e2', color: '#dc2626', fontSize: '12px', fontWeight: 700, padding: '3px 10px', borderRadius: '999px' }}>Save {Math.round((1 - currentPrice / product.compareAtPrice) * 100)}%</span>
+              <span style={{ background: '#fee2e2', color: '#dc2626', fontSize: '12px', fontWeight: 700, padding: '3px 10px', borderRadius: '999px' }}>{t('save')} {Math.round((1 - currentPrice / product.compareAtPrice) * 100)}%</span>
             )}
           </div>
 
@@ -249,7 +249,7 @@ export default function StorefrontProductDetail() {
           {/* Variants */}
           {product.hasVariants && product.variants?.length > 0 && (
             <div style={{ marginBottom: '20px' }}>
-              <p style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '8px' }}>Options:</p>
+              <p style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '8px' }}>{t('options')}</p>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {product.variants.filter(v => v.isActive).map(v => {
                   const outOfStock = v.trackInventory && v.stockQuantity <= 0;
@@ -268,10 +268,10 @@ export default function StorefrontProductDetail() {
               {(() => {
                 const sel = product.variants.find(v => v._id === selectedVariant);
                 if (sel?.trackInventory && sel.stockQuantity <= 5 && sel.stockQuantity > 0) {
-                  return <p style={{ fontSize: '13px', color: '#f59e0b', fontWeight: 'bold', marginTop: '8px' }}>Only {sel.stockQuantity} left in stock!</p>;
+                  return <p style={{ fontSize: '13px', color: '#f59e0b', fontWeight: 'bold', marginTop: '8px' }}>{t('onlyLeftInStock')} {sel.stockQuantity} {t('leftInStock')}</p>;
                 }
                 if (sel?.trackInventory && sel.stockQuantity <= 0) {
-                  return <p style={{ fontSize: '13px', color: '#dc2626', fontWeight: 'bold', marginTop: '8px' }}>Out of stock</p>;
+                  return <p style={{ fontSize: '13px', color: '#dc2626', fontWeight: 'bold', marginTop: '8px' }}>{t('outOfStock')}</p>;
                 }
                 return null;
               })()}
@@ -282,11 +282,11 @@ export default function StorefrontProductDetail() {
           {!product.hasVariants && product.trackInventory && (
             <div style={{ marginBottom: '16px' }}>
               {product.stockQuantity <= 0 ? (
-                <p style={{ fontSize: '14px', color: '#dc2626', fontWeight: 'bold' }}>Out of stock</p>
+                <p style={{ fontSize: '14px', color: '#dc2626', fontWeight: 'bold' }}>{t('outOfStock')}</p>
               ) : product.stockQuantity <= 5 ? (
-                <p style={{ fontSize: '14px', color: '#f59e0b', fontWeight: 'bold' }}>Only {product.stockQuantity} left in stock!</p>
+                <p style={{ fontSize: '14px', color: '#f59e0b', fontWeight: 'bold' }}>{t('onlyLeftInStock')} {product.stockQuantity} {t('leftInStock')}</p>
               ) : (
-                <p style={{ fontSize: '14px', color: '#059669', fontWeight: 'bold' }}>✓ In stock</p>
+                <p style={{ fontSize: '14px', color: '#059669', fontWeight: 'bold' }}>{t('inStock')}</p>
               )}
             </div>
           )}
@@ -294,18 +294,18 @@ export default function StorefrontProductDetail() {
           {/* Bulk pricing tiers */}
           {product.priceTiers && product.priceTiers.length > 0 && (
             <div style={{ marginBottom: '16px', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '14px' }}>
-              <p style={{ fontSize: '13px', fontWeight: 'bold', margin: '0 0 10px', color: '#374151' }}>Bulk Discount Tiers:</p>
+              <p style={{ fontSize: '13px', fontWeight: 'bold', margin: '0 0 10px', color: '#374151' }}>{t('bulkDiscountTiers')}</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                 {product.priceTiers.sort((a, b) => a.minQty - b.minQty).map((tier, i) => (
                   <div key={i} style={{
                     padding: '6px 12px', borderRadius: '8px', background: '#fff', border: '1px solid #e5e7eb',
                     display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '80px',
                   }}>
-                    <span style={{ fontSize: '11px', color: '#6b7280' }}>{tier.minQty}+ qty</span>
+                    <span style={{ fontSize: '11px', color: '#6b7280' }}>{tier.minQty}+ {t('qty')}</span>
                     <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#059669' }}>{tier.price} {currency}</span>
                     {tier.price < currentPrice && (
                       <span style={{ fontSize: '10px', color: '#dc2626', fontWeight: 'bold' }}>
-                        Save {Math.round((1 - tier.price / currentPrice) * 100)}%
+                        {t('save')} {Math.round((1 - tier.price / currentPrice) * 100)}%
                       </span>
                     )}
                   </div>
@@ -354,12 +354,12 @@ export default function StorefrontProductDetail() {
               fontWeight: 700, fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', whiteSpace: 'nowrap',
               transition: 'all 0.2s', boxShadow: added ? '0 4px 14px rgba(5,150,105,0.25)' : '0 4px 14px rgba(79,70,229,0.25)',
             }} onMouseEnter={e => { if (!added) e.currentTarget.style.transform = 'translateY(-2px)'; }} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
-              {added ? <><Check size={18} /> Added!</> : <><ShoppingCart size={18} /> Add to Cart</>}
+              {added ? <><Check size={18} /> {t('added')}</> : <><ShoppingCart size={18} /> {t('addToCart')}</>}
             </button>
             <button onClick={() => {
               const wasInWishlist = isInWishlist(data.product._id);
               toggleWishlist(data.product);
-              toast(wasInWishlist ? 'Removed from wishlist' : 'Added to wishlist', 'wishlist');
+              toast(wasInWishlist ? t('removedFromWishlist') : t('addedToWishlist'), 'wishlist');
               if (!wasInWishlist) {
                 firePixelEvent('AddToWishlist', {
                   content_ids: [data.product._id],
@@ -374,7 +374,7 @@ export default function StorefrontProductDetail() {
             }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
               <Heart size={20} style={{ color: isInWishlist(data.product._id) ? '#dc2626' : '#9ca3af', fill: isInWishlist(data.product._id) ? '#dc2626' : 'none' }} />
             </button>
-            <button onClick={() => { toggleCompare(data.product._id); toast(isInCompare(data.product._id) ? 'Removed from compare' : 'Added to compare'); }} title="Compare" style={{
+            <button onClick={() => { toggleCompare(data.product._id); toast(isInCompare(data.product._id) ? t('removedFromCompare') : t('addedToCompare')); }} title={t('compare')} style={{
               padding: '12px', background: isInCompare(data.product._id) ? '#eef2ff' : '#fff', border: `1px solid ${isInCompare(data.product._id) ? '#4f46e5' : '#e5e7eb'}`, borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s',
             }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
               <GitCompare size={20} style={{ color: isInCompare(data.product._id) ? '#4f46e5' : '#9ca3af' }} />
@@ -387,19 +387,19 @@ export default function StorefrontProductDetail() {
               {notifyStatus === 'success' ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Check size={20} style={{ color: '#059669' }} />
-                  <p style={{ fontSize: '14px', fontWeight: 'bold', color: '#059669', margin: 0 }}>You're subscribed! We'll email you when this item is back in stock.</p>
+                  <p style={{ fontSize: '14px', fontWeight: 'bold', color: '#059669', margin: 0 }}>{t('notifySubscribed')}</p>
                 </div>
               ) : (
                 <>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
                     <BellRing size={18} style={{ color: '#f59e0b' }} />
-                    <p style={{ fontSize: '14px', fontWeight: 'bold', margin: 0 }}>Notify me when this item is back in stock</p>
+                    <p style={{ fontSize: '14px', fontWeight: 'bold', margin: 0 }}>{t('notifyBackInStock')}</p>
                   </div>
                   <form onSubmit={handleNotifyStock} style={{ display: 'flex', gap: '8px' }}>
                     <input type="email" required value={notifyEmail} onChange={e => setNotifyEmail(e.target.value)} placeholder="your@email.com" style={{ flex: 1, padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }} />
-                    <button type="submit" disabled={notifyStatus === 'loading'} style={{ padding: '10px 20px', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer' }}>{notifyStatus === 'loading' ? '...' : 'Notify Me'}</button>
+                    <button type="submit" disabled={notifyStatus === 'loading'} style={{ padding: '10px 20px', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer' }}>{notifyStatus === 'loading' ? '...' : t('notifyMe')}</button>
                   </form>
-                  {notifyStatus === 'error' && <p style={{ fontSize: '12px', color: '#dc2626', marginTop: '8px' }}>Failed to subscribe. Please try again.</p>}
+                  {notifyStatus === 'error' && <p style={{ fontSize: '12px', color: '#dc2626', marginTop: '8px' }}>{t('failedSubscribe')}</p>}
                 </>
               )}
             </div>
@@ -408,7 +408,7 @@ export default function StorefrontProductDetail() {
           {/* Description */}
           {product.description && (
             <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '24px' }}>
-              <h3 style={{ fontWeight: 700, fontSize: '16px', marginBottom: '12px' }}>Description</h3>
+              <h3 style={{ fontWeight: 700, fontSize: '16px', marginBottom: '12px' }}>{t('description')}</h3>
               <div style={{ fontSize: '14px', color: '#4b5563', lineHeight: 1.7 }} dangerouslySetInnerHTML={{ __html: product.description }} />
             </div>
           )}
@@ -418,7 +418,7 @@ export default function StorefrontProductDetail() {
       {/* Related products */}
       {related.length > 0 && (
         <div style={{ marginTop: '60px' }}>
-          <h2 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '20px', letterSpacing: '-0.3px' }}>You may also like</h2>
+          <h2 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '20px', letterSpacing: '-0.3px' }}>{t('youMayAlsoLike')}</h2>
           <div className="store-related-grid">
             {related.map(p => {
               const slug = p.seo?.slug || p._id;
@@ -443,7 +443,7 @@ export default function StorefrontProductDetail() {
 
       {/* Reviews section */}
       <div style={{ marginTop: '60px' }}>
-        <h2 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '20px', letterSpacing: '-0.3px' }}>Customer Reviews</h2>
+        <h2 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '20px', letterSpacing: '-0.3px' }}>{t('customerReviews')}</h2>
         {reviews.totalReviews > 0 && (
           <div style={{ display: 'flex', gap: '32px', marginBottom: '28px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
             <div style={{ textAlign: 'center', minWidth: '140px', padding: '20px', background: '#fff', border: '1px solid #e5e7eb', borderRadius: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
@@ -453,7 +453,7 @@ export default function StorefrontProductDetail() {
                   <Star key={n} size={16} className={n <= Math.round(reviews.avgRating) ? 'text-amber-400 fill-amber-400' : 'text-gray-200'} />
                 ))}
               </div>
-              <p style={{ color: '#6b7280', fontSize: '13px', margin: 0, fontWeight: 500 }}>{reviews.totalReviews} reviews</p>
+              <p style={{ color: '#6b7280', fontSize: '13px', margin: 0, fontWeight: 500 }}>{reviews.totalReviews} {t('reviews')}</p>
             </div>
             <div style={{ flex: 1, minWidth: '200px' }}>
               {[5, 4, 3, 2, 1].map(star => {
@@ -483,35 +483,35 @@ export default function StorefrontProductDetail() {
                     <Star key={n} size={12} className={n <= r.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-200'} />
                   ))}
                 </div>
-                {r.verifiedPurchase && <span style={{ fontSize: '11px', background: '#d1fae5', color: '#059669', padding: '2px 6px', borderRadius: '999px', fontWeight: 'bold' }}>Verified</span>}
+                {r.verifiedPurchase && <span style={{ fontSize: '11px', background: '#d1fae5', color: '#059669', padding: '2px 6px', borderRadius: '999px', fontWeight: 'bold' }}>{t('verified')}</span>}
               </div>
               {r.title && <p style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>{r.title}</p>}
               {r.body && <p style={{ fontSize: '13px', color: '#4b5563', marginBottom: '8px' }}>{r.body}</p>}
-              <p style={{ fontSize: '12px', color: '#9ca3af' }}>— {r.customerName} · {new Date(r.createdAt).toLocaleDateString()}</p>
+              <p style={{ fontSize: '12px', color: '#9ca3af' }}>— {r.customerName} · {new Date(r.createdAt).toLocaleDateString(isRTL ? 'ar' : 'en')}</p>
             </div>
           ))}
         </div>
 
         {/* Review form */}
         <form onSubmit={handleReviewSubmit} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px' }}>
-          <h3 style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '12px' }}>Write a Review</h3>
+          <h3 style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '12px' }}>{t('writeReview')}</h3>
           {reviewMessage && <p style={{ fontSize: '13px', color: reviewMessage.includes('Failed') || reviewMessage.includes('already') ? '#dc2626' : '#059669', marginBottom: '12px' }}>{reviewMessage}</p>}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-            <input placeholder="Your name *" required value={reviewForm.customerName} onChange={e => setReviewForm({ ...reviewForm, customerName: e.target.value })} style={{ padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }} />
-            <input placeholder="Email (optional)" type="email" value={reviewForm.customerEmail} onChange={e => setReviewForm({ ...reviewForm, customerEmail: e.target.value })} style={{ padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }} />
+            <input placeholder={t('yourName')} required value={reviewForm.customerName} onChange={e => setReviewForm({ ...reviewForm, customerName: e.target.value })} style={{ padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }} />
+            <input placeholder={t('emailOptional')} type="email" value={reviewForm.customerEmail} onChange={e => setReviewForm({ ...reviewForm, customerEmail: e.target.value })} style={{ padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }} />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-            <span style={{ fontSize: '14px', fontWeight: 'bold' }}>Rating:</span>
+            <span style={{ fontSize: '14px', fontWeight: 'bold' }}>{t('rating')}</span>
             {[1, 2, 3, 4, 5].map(n => (
               <button key={n} type="button" onClick={() => setReviewForm({ ...reviewForm, rating: n })}>
                 <Star size={20} className={n <= reviewForm.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-300'} />
               </button>
             ))}
           </div>
-          <input placeholder="Review title (optional)" value={reviewForm.title} onChange={e => setReviewForm({ ...reviewForm, title: e.target.value })} style={{ width: '100%', padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', marginBottom: '12px' }} />
-          <textarea placeholder="Your review (optional)" value={reviewForm.body} onChange={e => setReviewForm({ ...reviewForm, body: e.target.value })} style={{ width: '100%', padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', minHeight: '80px', marginBottom: '12px' }} />
+          <input placeholder={t('reviewTitle')} value={reviewForm.title} onChange={e => setReviewForm({ ...reviewForm, title: e.target.value })} style={{ width: '100%', padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', marginBottom: '12px' }} />
+          <textarea placeholder={t('yourReview')} value={reviewForm.body} onChange={e => setReviewForm({ ...reviewForm, body: e.target.value })} style={{ width: '100%', padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', minHeight: '80px', marginBottom: '12px' }} />
           <button type="submit" disabled={reviewSubmitting} style={{ padding: '10px 24px', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', opacity: reviewSubmitting ? 0.6 : 1 }}>
-            {reviewSubmitting ? 'Submitting...' : 'Submit Review'}
+            {reviewSubmitting ? t('submitting') : t('submitReview')}
           </button>
         </form>
       </div>
@@ -519,7 +519,7 @@ export default function StorefrontProductDetail() {
       {/* Q&A section */}
       <div style={{ marginTop: '60px' }}>
         <h2 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <HelpCircle size={22} style={{ color: '#4f46e5' }} /> Questions & Answers
+          <HelpCircle size={22} style={{ color: '#4f46e5' }} /> {t('questionsAnswers')}
         </h2>
 
         {/* Question list */}
@@ -533,14 +533,14 @@ export default function StorefrontProductDetail() {
                   </div>
                   <div style={{ flex: 1 }}>
                     <p style={{ fontWeight: 'bold', fontSize: '14px', margin: '0 0 4px' }}>{q.question}</p>
-                    <p style={{ fontSize: '12px', color: '#9ca3af', margin: '0 0 10px' }}>{q.askerName ? `${q.askerName} · ` : ''}{new Date(q.createdAt).toLocaleDateString('en', { day: 'numeric', month: 'short' })}</p>
+                    <p style={{ fontSize: '12px', color: '#9ca3af', margin: '0 0 10px' }}>{q.askerName ? `${q.askerName} · ` : ''}{new Date(q.createdAt).toLocaleDateString(isRTL ? 'ar' : 'en', { day: 'numeric', month: 'short' })}</p>
                     <div style={{ display: 'flex', gap: '10px' }}>
                       <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#d1fae5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                         <MessageCircle size={16} style={{ color: '#059669' }} />
                       </div>
                       <div>
                         <p style={{ fontSize: '14px', color: '#374151', margin: 0, lineHeight: 1.5 }}>{q.answer}</p>
-                        <p style={{ fontSize: '11px', color: '#9ca3af', margin: '4px 0 0' }}>Answered {new Date(q.answeredAt).toLocaleDateString('en', { day: 'numeric', month: 'short' })}</p>
+                        <p style={{ fontSize: '11px', color: '#9ca3af', margin: '4px 0 0' }}>{t('answered')} {new Date(q.answeredAt).toLocaleDateString(isRTL ? 'ar' : 'en', { day: 'numeric', month: 'short' })}</p>
                       </div>
                     </div>
                   </div>
@@ -549,20 +549,20 @@ export default function StorefrontProductDetail() {
             ))}
           </div>
         ) : (
-          <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '24px' }}>No questions yet. Be the first to ask!</p>
+          <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '24px' }}>{t('noQuestionsYet')}</p>
         )}
 
         {/* Question form */}
         <form onSubmit={handleQuestionSubmit} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px' }}>
-          <h3 style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '12px' }}>Ask a Question</h3>
+          <h3 style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '12px' }}>{t('askQuestion')}</h3>
           {questionMessage && <p style={{ fontSize: '13px', color: questionMessage.includes('Failed') ? '#dc2626' : '#059669', marginBottom: '12px' }}>{questionMessage}</p>}
-          <textarea required placeholder="Your question *" value={questionForm.question} onChange={e => setQuestionForm({ ...questionForm, question: e.target.value })} style={{ width: '100%', padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', minHeight: '60px', marginBottom: '12px', resize: 'vertical' }} />
+          <textarea required placeholder={t('yourQuestion')} value={questionForm.question} onChange={e => setQuestionForm({ ...questionForm, question: e.target.value })} style={{ width: '100%', padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', minHeight: '60px', marginBottom: '12px', resize: 'vertical' }} />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-            <input placeholder="Your name (optional)" value={questionForm.askerName} onChange={e => setQuestionForm({ ...questionForm, askerName: e.target.value })} style={{ padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }} />
-            <input type="email" placeholder="Email (optional)" value={questionForm.askerEmail} onChange={e => setQuestionForm({ ...questionForm, askerEmail: e.target.value })} style={{ padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }} />
+            <input placeholder={t('yourNameOptional')} value={questionForm.askerName} onChange={e => setQuestionForm({ ...questionForm, askerName: e.target.value })} style={{ padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }} />
+            <input type="email" placeholder={t('emailOptional')} value={questionForm.askerEmail} onChange={e => setQuestionForm({ ...questionForm, askerEmail: e.target.value })} style={{ padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }} />
           </div>
           <button type="submit" disabled={questionSubmitting} style={{ padding: '10px 24px', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', opacity: questionSubmitting ? 0.6 : 1 }}>
-            {questionSubmitting ? 'Submitting...' : 'Submit Question'}
+            {questionSubmitting ? t('submitting') : t('submitQuestion')}
           </button>
         </form>
       </div>
@@ -591,7 +591,7 @@ export default function StorefrontProductDetail() {
       {/* Recently viewed products */}
       {recentItems.filter(i => i.productId !== product._id && i.productId !== id).length > 0 && (
         <div style={{ marginTop: '60px' }}>
-          <h2 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '16px' }}>Recently Viewed</h2>
+          <h2 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '16px' }}>{t('recentlyViewed')}</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px' }}>
             {recentItems.filter(i => i.productId !== product._id && i.productId !== id).slice(0, 6).map(item => (
               <Link key={item.productId} to={`/store/products/${item.slug}`} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '10px', overflow: 'hidden', textDecoration: 'none' }}>
