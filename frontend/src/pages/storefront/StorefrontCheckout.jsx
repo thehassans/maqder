@@ -234,11 +234,11 @@ export default function StorefrontCheckout() {
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginTop: '24px', marginBottom: '12px' }}>Payment Method</h2>
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', border: paymentMethod === 'cod' ? '2px solid #4f46e5' : '1px solid #e5e7eb', borderRadius: '8px', cursor: 'pointer' }}>
-              <input type="radio" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} />
+              <input type="radio" checked={paymentMethod === 'cod'} onChange={() => { setPaymentMethod('cod'); firePixelEvent('AddPaymentInfo', { value: finalTotal, currency: 'SAR', payment_method: 'cod' }); }} />
               <span style={{ fontWeight: 'bold', fontSize: '14px' }}>Cash on Delivery</span>
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', border: paymentMethod === 'moyasar' ? '2px solid #4f46e5' : '1px solid #e5e7eb', borderRadius: '8px', cursor: 'pointer' }}>
-              <input type="radio" checked={paymentMethod === 'moyasar'} onChange={() => setPaymentMethod('moyasar')} />
+              <input type="radio" checked={paymentMethod === 'moyasar'} onChange={() => { setPaymentMethod('moyasar'); firePixelEvent('AddPaymentInfo', { value: finalTotal, currency: 'SAR', payment_method: 'moyasar' }); }} />
               <span style={{ fontWeight: 'bold', fontSize: '14px' }}>Credit Card</span>
             </label>
           </div>

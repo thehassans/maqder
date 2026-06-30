@@ -338,7 +338,19 @@ export default function StorefrontProductDetail() {
             }}>
               {added ? <><Check size={18} /> Added!</> : <><ShoppingCart size={18} /> Add to Cart</>}
             </button>
-            <button onClick={() => toggleWishlist(data.product)} style={{
+            <button onClick={() => {
+              const wasInWishlist = isInWishlist(data.product._id);
+              toggleWishlist(data.product);
+              if (!wasInWishlist) {
+                firePixelEvent('AddToWishlist', {
+                  content_ids: [data.product._id],
+                  content_name: data.product.title,
+                  content_type: 'product',
+                  value: data.product.basePrice,
+                  currency: data.product.currency || 'SAR',
+                });
+              }
+            }} style={{
               padding: '12px', background: isInWishlist(data.product._id) ? '#fee2e2' : '#fff', border: `1px solid ${isInWishlist(data.product._id) ? '#fca5a5' : '#e5e7eb'}`, borderRadius: '8px', cursor: 'pointer',
             }}>
               <Heart size={20} style={{ color: isInWishlist(data.product._id) ? '#dc2626' : '#9ca3af', fill: isInWishlist(data.product._id) ? '#dc2626' : 'none' }} />

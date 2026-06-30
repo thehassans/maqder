@@ -137,7 +137,18 @@ export default function EcommercePixels() {
         <Eye className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
         <div>
           <p className="text-sm font-bold text-blue-800">How pixels work</p>
-          <p className="text-xs text-blue-600 mt-1">Client-side pixels are automatically injected into your storefront <code className="bg-blue-100 px-1 rounded">&lt;head&gt;</code> and fire on PageView, ViewContent, AddToCart, InitiateCheckout, and Purchase events. CAPI integrations send the same events server-side for better attribution.</p>
+          <p className="text-xs text-blue-600 mt-1">Client-side pixels are automatically injected into your storefront <code className="bg-blue-100 px-1 rounded">&lt;head&gt;</code> and fire on these events with proper per-platform event name mapping:</p>
+          <div className="grid grid-cols-2 gap-1 mt-2 text-xs text-blue-700">
+            <span>• <strong>PageView</strong> — on every page load</span>
+            <span>• <strong>ViewContent</strong> — product detail view</span>
+            <span>• <strong>AddToCart</strong> — add item to cart</span>
+            <span>• <strong>AddToWishlist</strong> — add to wishlist</span>
+            <span>• <strong>Search</strong> — search query submitted</span>
+            <span>• <strong>InitiateCheckout</strong> — checkout page view</span>
+            <span>• <strong>AddPaymentInfo</strong> — payment method selected</span>
+            <span>• <strong>Purchase</strong> — order confirmed (with real value)</span>
+          </div>
+          <p className="text-xs text-blue-600 mt-2">Google Ads conversions fire automatically on Purchase with <code className="bg-blue-100 px-1 rounded">send_to</code> parameter. Purchase events are deduplicated per order ID. CAPI integrations send the same events server-side for better attribution.</p>
         </div>
       </div>
 
