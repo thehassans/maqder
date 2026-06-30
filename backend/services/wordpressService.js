@@ -148,6 +148,14 @@ export async function pullOrdersFromWooCommerce(tenant) {
       if (existing) continue;
 
       try {
+        const lineItems = (wcOrder.line_items || []).map(item => ({
+          productId: null,
+          productTitle: item.name,
+          sku: item.sku || '',
+          price: parseFloat(item.price || 0),
+          quantity: item.quantity,
+          lineTotal: parseFloat(item.total || 0),
+        }));
         const order = new EcommerceOrder({
           tenantId,
           orderNumber: `WC-${wcOrder.number || wcOrder.id}`,
@@ -156,32 +164,31 @@ export async function pullOrdersFromWooCommerce(tenant) {
             name: `${wcOrder.billing?.first_name || ''} ${wcOrder.billing?.last_name || ''}`.trim() || 'Guest',
             email: wcOrder.billing?.email || '',
             phone: wcOrder.billing?.phone || '',
-          },
-          items: (wcOrder.line_items || []).map(item => ({
-            productId: null,
-            title: item.name,
-            quantity: item.quantity,
-            price: parseFloat(item.price || 0),
-            total: parseFloat(item.total || 0),
-          })),
-          subtotal: parseFloat(wcOrder.total || 0),
-          total: parseFloat(wcOrder.total || 0),
-          currency: wcOrder.currency || 'SAR',
-          paymentStatus: wcOrder.payment_method ? (wcOrder.date_paid ? 'paid' : 'pending') : 'pending',
-          paymentMethod: wcOrder.payment_method_title || '',
-          shippingAddress: {
-            name: `${wcOrder.shipping?.first_name || ''} ${wcOrder.shipping?.last_name || ''}`.trim(),
-            address1: wcOrder.shipping?.address_1 || '',
+            addressLine1: wcOrder.shipping?.address_1 || '',
             city: wcOrder.shipping?.city || '',
-            state: wcOrder.shipping?.state || '',
-            postcode: wcOrder.shipping?.postcode || '',
-            country: wcOrder.shipping?.country || '',
+            region: wcOrder.shipping?.state || '',
+            postalCode: wcOrder.shipping?.postcode || '',
+            country: wcOrder.shipping?.country || 'Saudi Arabia',
           },
+          lineItems,
+          subtotal: parseFloat(wcOrder.total || 0),
+          grandTotal: parseFloat(wcOrder.total || 0),
+          currency: wcOrder.currency || 'SAR',
+          payment: {
+            method: 'manual',
+            status: wcOrder.date_paid ? 'paid' : 'pending',
+            provider: wcOrder.payment_method_title || '',
+          },
+          shipping: {
+            method: 'manual',
+          },
+          source: 'woocommerce',
           integration: {
             wordpressOrderId: wcOrder.id,
             source: 'woocommerce',
           },
         });
+        order.$__.skipHistory = true;
         await order.save();
         pulled++;
       } catch (err) {

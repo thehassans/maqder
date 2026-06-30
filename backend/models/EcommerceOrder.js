@@ -75,7 +75,7 @@ const ecommerceOrderSchema = new mongoose.Schema({
   // Shipping / Fulfillment
   shipping: { type: orderShippingSchema, default: () => ({}) },
   // Metadata
-  source: { type: String, enum: ['storefront', 'admin', 'api'], default: 'storefront' },
+  source: { type: String, enum: ['storefront', 'admin', 'api', 'woocommerce'], default: 'storefront' },
   customerIp: { type: String, default: '' },
   notes: { type: String, default: '' },
   tags: [{ type: String }],
@@ -86,6 +86,11 @@ const ecommerceOrderSchema = new mongoose.Schema({
     changedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     changedAt: { type: Date, default: Date.now },
   }],
+  // External integrations
+  integration: {
+    wordpressOrderId: { type: Number, default: null },
+    source: { type: String, default: '' },
+  },
   // Relations
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: true });

@@ -74,6 +74,11 @@ const ecommerceProductSchema = new mongoose.Schema({
   // Analytics
   viewsCount: { type: Number, default: 0 },
   salesCount: { type: Number, default: 0 },
+  // External integrations
+  integration: {
+    wordpressProductId: { type: Number, default: null },
+    source: { type: String, default: '' },
+  },
   // Relations
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
