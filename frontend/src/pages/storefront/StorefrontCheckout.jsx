@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Loader2, CheckCircle, AlertCircle, ShoppingCart, Download, Printer } from 'lucide-react';
 import storeApi from '../../lib/storeApi';
 import { useCart } from '../../store/storefrontCart';
+import { useI18n } from '../../store/storefrontI18n';
 import { firePixelEvent } from '../../components/storefront/StorefrontLayout';
 import StorefrontSeo from '../../components/storefront/StorefrontSeo';
 import StorefrontBreadcrumbs from '../../components/storefront/StorefrontBreadcrumbs';
@@ -10,6 +11,7 @@ import StorefrontBreadcrumbs from '../../components/storefront/StorefrontBreadcr
 export default function StorefrontCheckout() {
   const navigate = useNavigate();
   const { items, cartTotal, clearCart, cartId, setCartEmail, trackCart } = useCart();
+  const { t, isRTL } = useI18n();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(null);
@@ -57,8 +59,7 @@ export default function StorefrontCheckout() {
     }
   }, [cartTotal, items.length]);
 
-  const handleApplyCoupon = async (e) => {
-    e.preventDefault();
+  const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
     setCouponLoading(true);
     setCouponError('');
@@ -66,15 +67,14 @@ export default function StorefrontCheckout() {
       const res = await storeApi.post('/coupons/validate', { code: couponCode, subtotal: cartTotal });
       setAppliedCoupon(res.data);
     } catch (err) {
-      setCouponError(err.response?.data?.error || 'Invalid coupon');
+      setCouponError(err.response?.data?.error || t('invalidCoupon'));
       setAppliedCoupon(null);
     } finally {
       setCouponLoading(false);
     }
   };
 
-  const handleApplyGiftCard = async (e) => {
-    e.preventDefault();
+  const handleApplyGiftCard = async () => {
     if (!giftCardCode.trim()) return;
     setGiftCardLoading(true);
     setGiftCardError('');
@@ -82,7 +82,7 @@ export default function StorefrontCheckout() {
       const res = await storeApi.post('/gift-card/check', { code: giftCardCode });
       setAppliedGiftCard(res.data);
     } catch (err) {
-      setGiftCardError(err.response?.data?.error || 'Invalid gift card');
+      setGiftCardError(err.response?.data?.error || t('invalidGiftCard'));
       setAppliedGiftCard(null);
     } finally {
       setGiftCardLoading(false);
@@ -97,8 +97,8 @@ export default function StorefrontCheckout() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name || !form.phone) { setError('Name and phone are required'); return; }
-    if (items.length === 0) { setError('Cart is empty'); return; }
+    if (!form.name || !form.phone) { setError(t('namePhoneRequired')); return; }
+    if (items.length === 0) { setError(t('cartIsEmpty')); return; }
 
     setLoading(true);
     setError('');
@@ -136,24 +136,24 @@ export default function StorefrontCheckout() {
   if (success) {
     return (
       <div style={{ maxWidth: '600px', margin: '0 auto', padding: '60px 20px', textAlign: 'center' }}>
-        <StorefrontSeo title={`Order ${success.orderNumber} — Confirmed`} />
+        <StorefrontSeo title={`${t('orderNumber')} ${success.orderNumber} — ${t('orderConfirmed')}`} />
         <CheckCircle size={64} style={{ color: '#059669', margin: '0 auto 16px' }} />
-        <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px' }}>Order Placed Successfully!</h1>
-        <p style={{ color: '#6b7280', marginBottom: '8px' }}>Your order number is</p>
+        <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px' }}>{t('orderPlacedSuccess')}</h1>
+        <p style={{ color: '#6b7280', marginBottom: '8px' }}>{t('orderNumber')}</p>
         <p style={{ fontSize: '20px', fontWeight: 'bold', color: '#4f46e5', marginBottom: '24px' }}>{success.orderNumber}</p>
-        <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px', marginBottom: '24px', textAlign: 'left' }}>
-          <h3 style={{ fontSize: '15px', fontWeight: 'bold', marginBottom: '12px' }}>What happens next?</h3>
-          <ul style={{ fontSize: '14px', color: '#4b5563', lineHeight: 1.8, paddingLeft: '20px', margin: 0 }}>
-            <li>You'll receive a confirmation call/SMS shortly</li>
-            <li>Track your order anytime at our <Link to="/store/track-order" style={{ color: '#4f46e5', fontWeight: 'bold' }}>Order Tracking</Link> page</li>
-            <li>Use your order number <strong>{success.orderNumber}</strong> and phone number to check status</li>
+        <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px', marginBottom: '24px', textAlign: isRTL ? 'right' : 'left' }}>
+          <h3 style={{ fontSize: '15px', fontWeight: 'bold', marginBottom: '12px' }}>{t('whatHappensNext')}</h3>
+          <ul style={{ fontSize: '14px', color: '#4b5563', lineHeight: 1.8, paddingInlineStart: '20px', margin: 0 }}>
+            <li>{t('receiveConfirmation')}</li>
+            <li>{t('trackOrderPage')} <Link to="/store/track-order" style={{ color: '#4f46e5', fontWeight: 'bold' }}>{t('trackOrder')}</Link></li>
+            <li>{t('useOrderNumber')} <strong>{success.orderNumber}</strong></li>
           </ul>
         </div>
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
           <button onClick={() => window.print()} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '12px 20px', border: '1px solid #e5e7eb', borderRadius: '8px', background: '#fff', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', color: '#374151' }}>
-            <Printer size={16} /> Print Receipt
+            <Printer size={16} /> {t('printReceipt')}
           </button>
-          <Link to="/store" style={{ display: 'inline-block', padding: '12px 28px', background: '#4f46e5', color: '#fff', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold' }}>Continue Shopping</Link>
+          <Link to="/store" style={{ display: 'inline-block', padding: '12px 28px', background: '#4f46e5', color: '#fff', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold' }}>{t('continueShopping')}</Link>
         </div>
       </div>
     );
@@ -163,8 +163,8 @@ export default function StorefrontCheckout() {
     return (
       <div style={{ maxWidth: '500px', margin: '0 auto', padding: '80px 20px', textAlign: 'center' }}>
         <ShoppingCart size={64} style={{ color: '#d1d5db', margin: '0 auto 20px' }} />
-        <h1 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '12px', letterSpacing: '-0.3px' }}>Your cart is empty</h1>
-        <Link to="/store/products" style={{ color: '#4f46e5', textDecoration: 'none', fontWeight: 700, fontSize: '15px' }}>Browse products →</Link>
+        <h1 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '12px', letterSpacing: '-0.3px' }}>{t('yourCartIsEmpty')}</h1>
+        <Link to="/store/products" style={{ color: '#4f46e5', textDecoration: 'none', fontWeight: 700, fontSize: '15px' }}>{t('browseProducts')} →</Link>
       </div>
     );
   }
@@ -174,11 +174,11 @@ export default function StorefrontCheckout() {
 
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '24px 20px' }}>
-      <StorefrontSeo title="Checkout" />
-      <StorefrontBreadcrumbs items={[{ label: 'Checkout' }]} />
+      <StorefrontSeo title={t('checkout')} />
+      <StorefrontBreadcrumbs items={[{ label: t('checkout') }]} />
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px' }}>
-        <h1 style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-0.5px' }}>Checkout</h1>
-        <span style={{ fontSize: '13px', color: '#6b7280', background: '#f3f4f6', padding: '6px 14px', borderRadius: '999px', fontWeight: 700 }}>Guest Checkout — No account needed</span>
+        <h1 style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-0.5px' }}>{t('checkout')}</h1>
+        <span style={{ fontSize: '13px', color: '#6b7280', background: '#f3f4f6', padding: '6px 14px', borderRadius: '999px', fontWeight: 700 }}>{t('guestCheckout')}</span>
       </div>
 
       {error && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '12px', padding: '14px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', color: '#dc2626', fontSize: '14px', fontWeight: 600 }}><AlertCircle size={16} /> {error}</div>}
@@ -186,60 +186,60 @@ export default function StorefrontCheckout() {
       <form id="checkout-form" onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '32px' }} className="store-checkout-grid">
         {/* Left: Customer info */}
         <div>
-          <h2 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '20px', letterSpacing: '-0.3px' }}>Shipping Details</h2>
+          <h2 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '20px', letterSpacing: '-0.3px' }}>{t('shippingDetails')}</h2>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
             <div>
-              <label style={labelStyle}>Full Name *</label>
+              <label style={labelStyle}>{t('fullName')}</label>
               <input style={inputStyle} value={form.name} onChange={e => update('name', e.target.value)} required />
             </div>
             <div>
-              <label style={labelStyle}>Phone *</label>
+              <label style={labelStyle}>{t('phone')}</label>
               <input style={inputStyle} value={form.phone} onChange={e => update('phone', e.target.value)} required />
             </div>
           </div>
           <div style={{ marginBottom: '12px' }}>
-            <label style={labelStyle}>Email</label>
+            <label style={labelStyle}>{t('email')}</label>
             <input style={inputStyle} type="email" value={form.email} onChange={e => update('email', e.target.value)} />
           </div>
           <div style={{ marginBottom: '12px' }}>
-            <label style={labelStyle}>Address Line 1</label>
-            <input style={inputStyle} value={form.addressLine1} onChange={e => update('addressLine1', e.target.value)} placeholder="Street address" />
+            <label style={labelStyle}>{t('addressLine1')}</label>
+            <input style={inputStyle} value={form.addressLine1} onChange={e => update('addressLine1', e.target.value)} placeholder={t('streetAddress')} />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
             <div>
-              <label style={labelStyle}>City</label>
+              <label style={labelStyle}>{t('city')}</label>
               <input style={inputStyle} value={form.city} onChange={e => update('city', e.target.value)} />
             </div>
             <div>
-              <label style={labelStyle}>Region / Province</label>
+              <label style={labelStyle}>{t('region')}</label>
               <input style={inputStyle} value={form.region} onChange={e => update('region', e.target.value)} />
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
             <div>
-              <label style={labelStyle}>Postal Code</label>
+              <label style={labelStyle}>{t('postalCode')}</label>
               <input style={inputStyle} value={form.postalCode} onChange={e => update('postalCode', e.target.value)} />
             </div>
             <div>
-              <label style={labelStyle}>Country</label>
+              <label style={labelStyle}>{t('country')}</label>
               <input style={inputStyle} value={form.country} onChange={e => update('country', e.target.value)} />
             </div>
           </div>
           <div>
-            <label style={labelStyle}>Order Notes</label>
-            <textarea style={{ ...inputStyle, minHeight: '60px' }} value={form.notes} onChange={e => update('notes', e.target.value)} placeholder="Optional notes for the seller" />
+            <label style={labelStyle}>{t('orderNotes')}</label>
+            <textarea style={{ ...inputStyle, minHeight: '60px' }} value={form.notes} onChange={e => update('notes', e.target.value)} placeholder={t('optionalNotes')} />
           </div>
 
           {/* Payment method */}
-          <h2 style={{ fontSize: '20px', fontWeight: 800, marginTop: '28px', marginBottom: '14px', letterSpacing: '-0.3px' }}>Payment Method</h2>
+          <h2 style={{ fontSize: '20px', fontWeight: 800, marginTop: '28px', marginBottom: '14px', letterSpacing: '-0.3px' }}>{t('paymentMethod')}</h2>
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '14px 20px', border: paymentMethod === 'cod' ? '2px solid #4f46e5' : '1px solid #e5e7eb', borderRadius: '14px', cursor: 'pointer', transition: 'all 0.2s', background: paymentMethod === 'cod' ? '#eef2ff' : '#fff' }}>
               <input type="radio" checked={paymentMethod === 'cod'} onChange={() => { setPaymentMethod('cod'); firePixelEvent('AddPaymentInfo', { value: finalTotal, currency: 'SAR', payment_method: 'cod' }); }} />
-              <span style={{ fontWeight: 700, fontSize: '14px' }}>Cash on Delivery</span>
+              <span style={{ fontWeight: 700, fontSize: '14px' }}>{t('cashOnDelivery')}</span>
             </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '14px 20px', border: paymentMethod === 'moyasar' ? '2px solid #4f46e5' : '1px solid #e5e7eb', borderRadius: '14px', cursor: 'pointer', transition: 'all 0.2s', background: paymentMethod === 'moyasar' ? '#eef2ff' : '#fff' }}>
               <input type="radio" checked={paymentMethod === 'moyasar'} onChange={() => { setPaymentMethod('moyasar'); firePixelEvent('AddPaymentInfo', { value: finalTotal, currency: 'SAR', payment_method: 'moyasar' }); }} />
-              <span style={{ fontWeight: 700, fontSize: '14px' }}>Credit Card</span>
+              <span style={{ fontWeight: 700, fontSize: '14px' }}>{t('creditCard')}</span>
             </label>
           </div>
         </div>
@@ -247,57 +247,57 @@ export default function StorefrontCheckout() {
         {/* Right: Order summary */}
         <div>
           <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '20px', padding: '24px', position: 'sticky', top: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '20px', letterSpacing: '-0.3px' }}>Order Summary</h2>
+            <h2 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '20px', letterSpacing: '-0.3px' }}>{t('orderSummary')}</h2>
             <div style={{ marginBottom: '16px' }}>
               {items.map(item => (
                 <div key={item.key} style={{ display: 'flex', gap: '10px', padding: '10px 0', borderBottom: '1px solid #f3f4f6' }}>
                   {item.image && <img src={item.image} alt="" style={{ width: '52px', height: '52px', borderRadius: '10px', objectFit: 'cover' }} />}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: '13px', fontWeight: 600, margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</p>
-                    <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>Qty: {item.quantity} × {item.price} SAR</p>
+                    <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>{t('qtyLabel')}: {item.quantity} × {item.price} SAR</p>
                   </div>
                 </div>
               ))}
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '6px', fontWeight: 500 }}>
-              <span>Subtotal</span><span style={{ fontWeight: 700 }}>{cartTotal} SAR</span>
+              <span>{t('subtotal')}</span><span style={{ fontWeight: 700 }}>{cartTotal} SAR</span>
             </div>
             {/* Coupon input */}
-            <form onSubmit={handleApplyCoupon} style={{ display: 'flex', gap: '6px', margin: '10px 0' }}>
-              <input value={couponCode} onChange={e => setCouponCode(e.target.value)} placeholder="Coupon code" style={{ flex: 1, padding: '10px 12px', border: '1px solid #e5e7eb', borderRadius: '10px', fontSize: '13px', outline: 'none' }} />
-              <button type="submit" disabled={couponLoading} style={{ padding: '10px 16px', background: '#6b7280', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = '0.9'} onMouseLeave={e => e.currentTarget.style.opacity = '1'}>{couponLoading ? '...' : 'Apply'}</button>
-            </form>
+            <div style={{ display: 'flex', gap: '6px', margin: '10px 0' }}>
+              <input value={couponCode} onChange={e => setCouponCode(e.target.value)} placeholder={t('couponCode')} style={{ flex: 1, padding: '10px 12px', border: '1px solid #e5e7eb', borderRadius: '10px', fontSize: '13px', outline: 'none' }} />
+              <button type="button" onClick={handleApplyCoupon} disabled={couponLoading} style={{ padding: '10px 16px', background: '#6b7280', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = '0.9'} onMouseLeave={e => e.currentTarget.style.opacity = '1'}>{couponLoading ? '...' : t('apply')}</button>
+            </div>
             {couponError && <p style={{ fontSize: '12px', color: '#dc2626', margin: '0 0 8px' }}>{couponError}</p>}
             {appliedCoupon && <p style={{ fontSize: '12px', color: '#059669', margin: '0 0 8px', fontWeight: 'bold' }}>✓ {appliedCoupon.code} applied — {appliedCoupon.type === 'percentage' ? `${appliedCoupon.value}% off` : appliedCoupon.type === 'fixed' ? `${appliedCoupon.value} SAR off` : 'Free shipping'}</p>}
             {discountAmount > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '4px', color: '#059669' }}>
-                <span>Discount</span><span style={{ fontWeight: 'bold' }}>-{discountAmount} SAR</span>
+                <span>{t('discount')}</span><span style={{ fontWeight: 'bold' }}>-{discountAmount} SAR</span>
               </div>
             )}
             {/* Gift card input */}
-            <form onSubmit={handleApplyGiftCard} style={{ display: 'flex', gap: '6px', margin: '10px 0' }}>
-              <input value={giftCardCode} onChange={e => setGiftCardCode(e.target.value)} placeholder="Gift card code" style={{ flex: 1, padding: '10px 12px', border: '1px solid #e5e7eb', borderRadius: '10px', fontSize: '13px', outline: 'none' }} />
-              <button type="submit" disabled={giftCardLoading} style={{ padding: '10px 16px', background: '#6b7280', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = '0.9'} onMouseLeave={e => e.currentTarget.style.opacity = '1'}>{giftCardLoading ? '...' : 'Apply'}</button>
-            </form>
+            <div style={{ display: 'flex', gap: '6px', margin: '10px 0' }}>
+              <input value={giftCardCode} onChange={e => setGiftCardCode(e.target.value)} placeholder={t('giftCardCode')} style={{ flex: 1, padding: '10px 12px', border: '1px solid #e5e7eb', borderRadius: '10px', fontSize: '13px', outline: 'none' }} />
+              <button type="button" onClick={handleApplyGiftCard} disabled={giftCardLoading} style={{ padding: '10px 16px', background: '#6b7280', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = '0.9'} onMouseLeave={e => e.currentTarget.style.opacity = '1'}>{giftCardLoading ? '...' : t('apply')}</button>
+            </div>
             {giftCardError && <p style={{ fontSize: '12px', color: '#dc2626', margin: '0 0 8px' }}>{giftCardError}</p>}
-            {appliedGiftCard && <p style={{ fontSize: '12px', color: '#059669', margin: '0 0 8px', fontWeight: 'bold' }}>✓ Gift card applied — {giftCardAmount} SAR deducted</p>}
+            {appliedGiftCard && <p style={{ fontSize: '12px', color: '#059669', margin: '0 0 8px', fontWeight: 'bold' }}>✓ {t('giftCardApplied')} — {giftCardAmount} SAR {t('giftCardDeducted')}</p>}
             {giftCardAmount > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '4px', color: '#059669' }}>
-                <span>Gift Card</span><span style={{ fontWeight: 'bold' }}>-{giftCardAmount} SAR</span>
+                <span>{t('giftCard')}</span><span style={{ fontWeight: 'bold' }}>-{giftCardAmount} SAR</span>
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '4px', color: '#6b7280' }}>
-              <span>Shipping</span><span>{freeShipping ? 'Free' : shippingEstimate ? `${shippingCost} SAR` : 'Calculated at checkout'}</span>
+              <span>{t('shipping')}</span><span>{freeShipping ? t('free') : shippingEstimate ? `${shippingCost} SAR` : t('calculatedAtCheckout')}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '20px', fontWeight: 800, paddingTop: '14px', borderTop: '1px solid #e5e7eb', marginTop: '10px' }}>
-              <span>Total</span><span style={{ color: '#059669' }}>{finalTotal} SAR</span>
+              <span>{t('total')}</span><span style={{ color: '#059669' }}>{finalTotal} SAR</span>
             </div>
             <button type="submit" disabled={loading} style={{
               width: '100%', marginTop: '24px', padding: '16px', background: 'linear-gradient(135deg, #4f46e5, #6366f1)', color: '#fff', border: 'none', borderRadius: '14px',
               fontWeight: 700, fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: loading ? 0.6 : 1,
               transition: 'all 0.2s', boxShadow: '0 4px 14px rgba(79,70,229,0.25)',
             }} onMouseEnter={e => { if (!loading) e.currentTarget.style.transform = 'translateY(-2px)'; }} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
-              {loading ? <Loader2 size={18} className="animate-spin" /> : 'Place Order'}
+              {loading ? <Loader2 size={18} className="animate-spin" /> : t('placeOrder')}
             </button>
           </div>
         </div>
@@ -315,14 +315,14 @@ export default function StorefrontCheckout() {
         alignItems: 'center', gap: '12px', boxShadow: '0 -2px 16px rgba(0,0,0,0.08)',
       }}>
         <div style={{ flex: 1 }}>
-          <p style={{ fontSize: '12px', color: '#6b7280', margin: 0, fontWeight: 500 }}>Total</p>
+          <p style={{ fontSize: '12px', color: '#6b7280', margin: 0, fontWeight: 500 }}>{t('total')}</p>
           <p style={{ fontSize: '20px', fontWeight: 800, color: '#059669', margin: 0 }}>{finalTotal} SAR</p>
         </div>
         <button type="submit" form="checkout-form" disabled={loading} style={{
           padding: '14px 28px', background: 'linear-gradient(135deg, #4f46e5, #6366f1)', color: '#fff', border: 'none', borderRadius: '14px',
           fontWeight: 700, fontSize: '15px', cursor: 'pointer', opacity: loading ? 0.6 : 1, boxShadow: '0 4px 14px rgba(79,70,229,0.25)',
         }}>
-          {loading ? '...' : 'Place Order'}
+          {loading ? '...' : t('placeOrder')}
         </button>
       </div>
     </div>
