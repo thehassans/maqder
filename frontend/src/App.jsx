@@ -168,10 +168,12 @@ import StorefrontCheckoutCancel from './pages/storefront/StorefrontCheckoutCance
 import StorefrontLayout from './components/storefront/StorefrontLayout'
 import { CartProvider } from './store/storefrontCart'
 import { WishlistProvider } from './store/storefrontWishlist'
+import { CompareProvider } from './store/storefrontCompare'
 import { StorefrontI18nProvider } from './store/storefrontI18n'
 import StorefrontWishlist from './pages/storefront/StorefrontWishlist'
 import StorefrontOrderTracking from './pages/storefront/StorefrontOrderTracking'
 import StorefrontReturnRequest from './pages/storefront/StorefrontReturnRequest'
+import StorefrontCompare from './pages/storefront/StorefrontCompare'
 import StorefrontPrivacy from './pages/storefront/StorefrontPrivacy'
 import StorefrontTerms from './pages/storefront/StorefrontTerms'
 import StorefrontCategory from './pages/storefront/StorefrontCategory'
@@ -751,18 +753,19 @@ function App() {
       </Route>
 
       {/* ───── Public Storefront ───── */}
-      <Route path="/store" element={<StorefrontI18nProvider><WishlistProvider><CartProvider><StorefrontLayout><StorefrontHome /></StorefrontLayout></CartProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/products" element={<StorefrontI18nProvider><WishlistProvider><CartProvider><StorefrontLayout><StorefrontProducts /></StorefrontLayout></CartProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/category/:slug" element={<StorefrontI18nProvider><WishlistProvider><CartProvider><StorefrontLayout><StorefrontCategory /></StorefrontLayout></CartProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/products/:id" element={<StorefrontI18nProvider><WishlistProvider><CartProvider><StorefrontLayout><StorefrontProductDetail /></StorefrontLayout></CartProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/checkout" element={<StorefrontI18nProvider><WishlistProvider><CartProvider><StorefrontLayout><StorefrontCheckout /></StorefrontLayout></CartProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/wishlist" element={<StorefrontI18nProvider><WishlistProvider><CartProvider><StorefrontLayout><StorefrontWishlist /></StorefrontLayout></CartProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/track-order" element={<StorefrontI18nProvider><WishlistProvider><CartProvider><StorefrontLayout><StorefrontOrderTracking /></StorefrontLayout></CartProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/returns" element={<StorefrontI18nProvider><WishlistProvider><CartProvider><StorefrontLayout><StorefrontReturnRequest /></StorefrontLayout></CartProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/privacy" element={<StorefrontI18nProvider><WishlistProvider><CartProvider><StorefrontLayout><StorefrontPrivacy /></StorefrontLayout></CartProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/terms" element={<StorefrontI18nProvider><WishlistProvider><CartProvider><StorefrontLayout><StorefrontTerms /></StorefrontLayout></CartProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/checkout/success" element={<StorefrontI18nProvider><WishlistProvider><CartProvider><StorefrontLayout><StorefrontCheckoutSuccess /></StorefrontLayout></CartProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/checkout/cancel" element={<StorefrontI18nProvider><WishlistProvider><CartProvider><StorefrontLayout><StorefrontCheckoutCancel /></StorefrontLayout></CartProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontHome /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store/products" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontProducts /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store/category/:slug" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontCategory /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store/products/:id" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontProductDetail /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store/checkout" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontCheckout /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store/wishlist" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontWishlist /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store/compare" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontCompare /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store/track-order" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontOrderTracking /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store/returns" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontReturnRequest /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store/privacy" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontPrivacy /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store/terms" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontTerms /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/checkout/success" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontCheckoutSuccess /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/checkout/cancel" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontCheckoutCancel /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
 
       {/* Catch all */}
       <Route path="*" element={<Navigate to="/" replace />} />

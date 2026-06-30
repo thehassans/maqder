@@ -7,6 +7,7 @@ import EcommerceReview from '../models/EcommerceReview.js';
 import { resolveTenantByHost } from '../middleware/resolveTenantByHost.js';
 import { createCheckoutSession } from '../services/paymentService.js';
 import { fireServerSideEvents, getPublicPixelConfig } from '../services/pixelService.js';
+import { sendOrderConfirmationEmail } from '../utils/tenantEmailService.js';
 
 const router = express.Router();
 
@@ -310,6 +311,14 @@ router.post('/orders', async (req, res) => {
       customData: { value: order.grandTotal, currency: order.currency, content_ids: processedItems.map(i => i.productId.toString()), content_type: 'product', num_items: processedItems.length },
       userData: { email: order.customer.email, phone: order.customer.phone },
     }, pixelConfig).catch(() => {});
+
+    // Send order confirmation email to customer
+    if (order.customer?.email) {
+      try {
+        const tenant = await Tenant.findById(tenantId).lean();
+        if (tenant) sendOrderConfirmationEmail({ tenant, order }).catch(() => {});
+      } catch {}
+    }
 
     res.status(201).json({ order, orderId: order._id, orderNumber: order.orderNumber });
   } catch (error) {

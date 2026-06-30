@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Search, Loader2, ChevronLeft, ChevronRight, SlidersHorizontal, Eye, Star } from 'lucide-react';
+import { Search, Loader2, ChevronLeft, ChevronRight, SlidersHorizontal, Eye, Star, GitCompare, Check } from 'lucide-react';
 import storeApi from '../../lib/storeApi';
+import { useCompare } from '../../store/storefrontCompare';
 import StorefrontSeo from '../../components/storefront/StorefrontSeo';
 import StorefrontBreadcrumbs from '../../components/storefront/StorefrontBreadcrumbs';
 import QuickViewModal from '../../components/storefront/QuickViewModal';
@@ -16,6 +17,7 @@ export default function StorefrontProducts() {
   const [allProducts, setAllProducts] = useState([]);
   const [loadingMore, setLoadingMore] = useState(false);
   const [reviewStats, setReviewStats] = useState({});
+  const { toggleCompare, isInCompare, count: compareCount } = useCompare();
 
   const search = searchParams.get('search') || '';
   const category = searchParams.get('category') || '';
@@ -237,6 +239,12 @@ export default function StorefrontProducts() {
                   }} onMouseEnter={e => e.currentTarget.style.opacity = 1} onMouseLeave={e => e.currentTarget.style.opacity = 0} className="quick-view-btn">
                     <Eye size={16} color="#4f46e5" />
                   </button>
+                  {/* Compare button */}
+                  <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleCompare(p._id); }} className="compare-btn"
+                    style={{ position: 'absolute', top: '8px', right: '48px', width: '34px', height: '34px', borderRadius: '50%', background: isInCompare(p._id) ? c('primary', '#4f46e5') : 'rgba(255,255,255,0.9)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', opacity: isInCompare(p._id) ? 1 : 0, transition: 'opacity 0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.opacity = 1} onMouseLeave={e => e.currentTarget.style.opacity = isInCompare(p._id) ? 1 : 0}>
+                    {isInCompare(p._id) ? <Check size={16} color="#fff" /> : <GitCompare size={16} color="#4f46e5" />}
+                  </button>
                 </div>
               );
             })}
@@ -271,6 +279,19 @@ export default function StorefrontProducts() {
       {/* Quick view modal */}
       {quickViewProduct && (
         <QuickViewModal product={quickViewProduct} onClose={() => setQuickViewProduct(null)} currency={currency} />
+      )}
+
+      {/* Floating compare bar */}
+      {compareCount > 0 && (
+        <div style={{ position: 'fixed', bottom: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 90, background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.12)', padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <GitCompare size={18} color={c('primary', '#4f46e5')} />
+            <span style={{ fontSize: '14px', fontWeight: 'bold' }}>{compareCount} product{compareCount !== 1 ? 's' : ''} to compare</span>
+          </div>
+          <Link to="/store/compare" style={{ padding: '8px 20px', background: c('primary', '#4f46e5'), color: '#fff', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold', fontSize: '13px' }}>
+            Compare Now
+          </Link>
+        </div>
       )}
     </div>
   );
