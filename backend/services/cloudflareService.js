@@ -196,6 +196,22 @@ export async function verifyCloudflareCredentials(config = {}) {
   return { valid: true, result: res.result };
 }
 
+/**
+ * List all zones accessible by the given API token.
+ * Used to auto-detect the zone ID when a tenant connects their Cloudflare account.
+ */
+export async function listZones(config = {}) {
+  const { apiToken } = resolveConfig(config);
+  if (!apiToken) return { success: false, zones: [], error: 'No API token' };
+
+  const res = await cfRequest('/zones?per_page=50', 'GET', null, config);
+  if (!res.success) {
+    return { success: false, zones: [], error: formatCfErrors(res.errors) || 'Failed to list zones' };
+  }
+  const zones = (res.result || []).map(z => ({ id: z.id, name: z.name, status: z.status }));
+  return { success: true, zones };
+}
+
 export async function getSSLStatus(hostname, cfHostnameId, config = {}) {
   if (!isCloudflareConfigured(config)) return { configured: false, status: 'none' };
 

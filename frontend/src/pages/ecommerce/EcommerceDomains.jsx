@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Globe, Plus, Trash2, Loader2, CheckCircle2, XCircle, Clock, RefreshCw, Cloud, ShieldCheck, AlertCircle, ExternalLink, X, KeyRound } from 'lucide-react';
+import { Globe, Plus, Trash2, Loader2, CheckCircle2, XCircle, Clock, RefreshCw, Cloud, ShieldCheck, AlertCircle, ExternalLink, X, KeyRound, Unlink } from 'lucide-react';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 
@@ -17,8 +17,9 @@ export default function EcommerceDomains() {
   const [cloudflareStatus, setCloudflareStatus] = useState(null);
   const [tenantCloudflareConnected, setTenantCloudflareConnected] = useState(false);
   const [showCfModal, setShowCfModal] = useState(false);
-  const [cfForm, setCfForm] = useState({ apiToken: '', zoneId: '', fallbackOrigin: '' });
+  const [cfToken, setCfToken] = useState('');
   const [connectingCf, setConnectingCf] = useState(false);
+  const [zoneSelection, setZoneSelection] = useState(null);
 
   useEffect(() => { fetchDomains(); }, []);
 
@@ -93,14 +94,19 @@ export default function EcommerceDomains() {
     }
   };
 
-  const handleConnectCloudflare = async () => {
+  const handleConnectCloudflare = async (selectedZoneId) => {
     setConnectingCf(true);
     try {
-      const res = await api.put('/ecommerce/domains/cloudflare', cfForm);
+      const res = await api.put('/ecommerce/domains/cloudflare', { apiToken: cfToken, zoneId: selectedZoneId || undefined });
+      if (res.data?.needsZoneSelection) {
+        setZoneSelection(res.data.zones);
+        return;
+      }
       toast.success('Cloudflare account connected');
       setTenantCloudflareConnected(true);
       setShowCfModal(false);
-      setCfForm({ apiToken: '', zoneId: '', fallbackOrigin: '' });
+      setCfToken('');
+      setZoneSelection(null);
       fetchDomains();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Failed to connect Cloudflare');
@@ -108,6 +114,20 @@ export default function EcommerceDomains() {
       setConnectingCf(false);
     }
   };
+
+  const handleDisconnectCloudflare = async () => {
+    if (!confirm('Disconnect your Cloudflare account? Custom domains will need manual DNS configuration.')) return;
+    try {
+      await api.delete('/ecommerce/domains/cloudflare');
+      toast.success('Cloudflare account disconnected');
+      setTenantCloudflareConnected(false);
+      fetchDomains();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to disconnect');
+    }
+  };
+
+  const CF_TOKEN_PERMISSIONS_URL = 'https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22zone%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22ssl_certs%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22dns_records%22%2C%22type%22%3A%22edit%22%7D%5D';
 
   const handleRetryCloudflare = async (id) => {
     setRetryingId(id);
@@ -199,12 +219,21 @@ export default function EcommerceDomains() {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          <button
-            onClick={() => setShowCfModal(true)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-colors ${tenantCloudflareConnected ? 'bg-blue-50 text-blue-700 hover:bg-blue-100' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
-          >
-            <KeyRound className="w-3.5 h-3.5" /> {tenantCloudflareConnected ? 'Manage Cloudflare' : 'Connect Cloudflare'}
-          </button>
+          {tenantCloudflareConnected ? (
+            <button
+              onClick={handleDisconnectCloudflare}
+              className="flex items-center gap-1.5 px-3 py-2 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-100 transition-colors"
+            >
+              <Unlink className="w-3.5 h-3.5" /> Disconnect
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowCfModal(true)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors"
+            >
+              <KeyRound className="w-3.5 h-3.5" /> Connect Cloudflare
+            </button>
+          )}
           {cloudflareStatus && (
             <div className="px-2.5 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold flex items-center gap-1">
               <CheckCircle2 className="w-3 h-3" /> {tenantCloudflareConnected ? 'Tenant' : 'Auto'}
@@ -395,67 +424,73 @@ export default function EcommerceDomains() {
               <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <Cloud className="w-5 h-5 text-blue-500" /> Connect Cloudflare
               </h3>
-              <button onClick={() => setShowCfModal(false)} className="p-1 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors">
+              <button onClick={() => { setShowCfModal(false); setZoneSelection(null); setCfToken(''); }} className="p-1 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors">
                 <X className="w-5 h-5 text-gray-400" />
               </button>
             </div>
-            <p className="text-sm text-gray-500">
-              Connect your Cloudflare account to automatically provision DNS and SSL for your custom domain. Your token is only used to manage custom hostnames in your zone.
-            </p>
-            <a
-              href="https://dash.cloudflare.com/profile/api-tokens"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm text-blue-600 font-bold hover:underline"
-            >
-              <ExternalLink className="w-4 h-4" /> Get Cloudflare API Token
-            </a>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 mb-1">Cloudflare API Token</label>
-                <input
-                  type="password"
-                  value={cfForm.apiToken}
-                  onChange={e => setCfForm(prev => ({ ...prev, apiToken: e.target.value }))}
-                  placeholder="cfut_..."
-                  className="w-full input text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 mb-1">Zone ID</label>
-                <input
-                  value={cfForm.zoneId}
-                  onChange={e => setCfForm(prev => ({ ...prev, zoneId: e.target.value }))}
-                  placeholder="3b2ee2..."
-                  className="w-full input text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-500 mb-1">Fallback Origin (optional)</label>
-                <input
-                  value={cfForm.fallbackOrigin}
-                  onChange={e => setCfForm(prev => ({ ...prev, fallbackOrigin: e.target.value }))}
-                  placeholder="origin.maqder.com"
-                  className="w-full input text-sm"
-                />
-              </div>
-            </div>
-            <div className="flex items-center gap-3 pt-2">
-              <button
-                onClick={() => setShowCfModal(false)}
-                className="flex-1 px-4 py-2 rounded-lg text-sm font-bold text-gray-600 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConnectCloudflare}
-                disabled={connectingCf || !cfForm.apiToken || !cfForm.zoneId}
-                className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 disabled:opacity-60 transition-colors"
-              >
-                {connectingCf ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
-                Connect
-              </button>
-            </div>
+
+            {!zoneSelection ? (
+              <>
+                <p className="text-sm text-gray-500">
+                  You'll be redirected to Cloudflare to create an API token with the required permissions. After creating the token, copy and paste it below.
+                </p>
+                <a
+                  href={CF_TOKEN_PERMISSIONS_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-colors"
+                >
+                  <ExternalLink className="w-4 h-4" /> Open Cloudflare to Create Token
+                </a>
+                <div className="pt-2 border-t border-gray-100 dark:border-dark-700 space-y-3">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 mb-1">Paste your API Token</label>
+                    <input
+                      type="password"
+                      value={cfToken}
+                      onChange={e => setCfToken(e.target.value)}
+                      placeholder="Paste Cloudflare API token here..."
+                      className="w-full input text-sm"
+                      onKeyDown={e => e.key === 'Enter' && cfToken && handleConnectCloudflare()}
+                    />
+                  </div>
+                  <button
+                    onClick={() => handleConnectCloudflare()}
+                    disabled={connectingCf || !cfToken}
+                    className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 disabled:opacity-60 transition-colors"
+                  >
+                    {connectingCf ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
+                    Connect
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-gray-500">Multiple zones found. Select which zone to use for your store domains:</p>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {zoneSelection.map(zone => (
+                    <button
+                      key={zone.id}
+                      onClick={() => handleConnectCloudflare(zone.id)}
+                      disabled={connectingCf}
+                      className="w-full flex items-center justify-between px-4 py-3 border border-gray-200 dark:border-dark-600 rounded-xl hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-dark-700 transition-colors text-left"
+                    >
+                      <div>
+                        <p className="font-bold text-sm text-gray-900 dark:text-white">{zone.name}</p>
+                        <p className="text-xs text-gray-400">{zone.id}</p>
+                      </div>
+                      <Cloud className="w-4 h-4 text-gray-300" />
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setZoneSelection(null)}
+                  className="w-full px-4 py-2 text-sm font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors"
+                >
+                  Back
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

@@ -4,7 +4,7 @@ import { protect } from '../middleware/auth.js';
 import Tenant from '../models/Tenant.js';
 import EcommerceProduct from '../models/EcommerceProduct.js';
 import { clearTenantHostCache } from '../middleware/resolveTenantByHost.js';
-import { provisionCloudflareDomain, verifyDomainViaCloudflare, removeCloudflareDomain, getSSLStatus, isCloudflareConfigured, verifyCloudflareCredentials } from '../services/cloudflareService.js';
+import { provisionCloudflareDomain, verifyDomainViaCloudflare, removeCloudflareDomain, getSSLStatus, isCloudflareConfigured, verifyCloudflareCredentials, listZones } from '../services/cloudflareService.js';
 
 const router = express.Router();
 
@@ -346,31 +346,63 @@ router.delete('/domains/:id', protect, async (req, res) => {
   }
 });
 
-// Save tenant-level Cloudflare credentials for Connect with Cloudflare
+// Connect tenant Cloudflare account — accepts just an API token, auto-detects zone
 router.put('/domains/cloudflare', protect, async (req, res) => {
   try {
     const tenantId = await getTargetTenantId(req.user);
     if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
 
     const { apiToken, zoneId, fallbackOrigin } = req.body || {};
-    if (!apiToken || !zoneId) return res.status(400).json({ error: 'API token and zone ID are required' });
+    if (!apiToken) return res.status(400).json({ error: 'Cloudflare API token is required' });
 
-    // Verify token works before saving
-    const verify = await verifyCloudflareCredentials({ apiToken, zoneId, fallbackOrigin });
-    if (!verify.valid) return res.status(400).json({ error: verify.error || 'Invalid Cloudflare credentials' });
+    // Verify token works
+    const verify = await verifyCloudflareCredentials({ apiToken, zoneId: zoneId || 'placeholder' });
+    if (!verify.valid) return res.status(400).json({ error: verify.error || 'Invalid Cloudflare token' });
+
+    // List zones accessible by this token
+    const zonesRes = await listZones({ apiToken });
+    if (!zonesRes.success || zonesRes.zones.length === 0) {
+      return res.status(400).json({ error: 'No zones found for this token. Ensure the token has Zone:Read permission.' });
+    }
+
+    // If multiple zones and no zoneId specified, return the list for the user to pick
+    let resolvedZoneId = zoneId;
+    if (!resolvedZoneId) {
+      if (zonesRes.zones.length === 1) {
+        resolvedZoneId = zonesRes.zones[0].id;
+      } else {
+        return res.json({ success: false, needsZoneSelection: true, zones: zonesRes.zones });
+      }
+    }
 
     const tenant = await Tenant.findById(tenantId);
     if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
     tenant.ecommerce = tenant.ecommerce || {};
     tenant.ecommerce.cloudflare = {
       apiToken,
-      zoneId,
+      zoneId: resolvedZoneId,
       fallbackOrigin: fallbackOrigin || process.env.CLOUDFLARE_FALLBACK_ORIGIN || 'origin.maqder.com',
       connectedAt: new Date(),
     };
     await tenant.save();
 
     res.json({ success: true, cloudflare: sanitizeEcommerce(tenant.ecommerce).cloudflare });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Disconnect tenant Cloudflare account
+router.delete('/domains/cloudflare', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    const tenant = await Tenant.findById(tenantId);
+    if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+    tenant.ecommerce = tenant.ecommerce || {};
+    tenant.ecommerce.cloudflare = { apiToken: '', zoneId: '', fallbackOrigin: '', connectedAt: null };
+    await tenant.save();
+    res.json({ success: true });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
