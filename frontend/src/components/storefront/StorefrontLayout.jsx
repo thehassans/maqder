@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Search, ShoppingCart, X, Menu, Instagram, Twitter, Facebook, Heart, Mail, Phone, MapPin, Send, ShieldCheck, Truck, CreditCard, RotateCcw } from 'lucide-react';
+import { Search, ShoppingCart, X, Menu, Instagram, Twitter, Facebook, Heart, Mail, Phone, MapPin, Send, ShieldCheck, Truck, CreditCard, RotateCcw, ChevronDown, LayoutGrid, Tag } from 'lucide-react';
 import storeApi from '../../lib/storeApi';
 import { useCart } from '../../store/storefrontCart';
 import { useI18n } from '../../store/storefrontI18n';
@@ -139,6 +139,9 @@ export default function StorefrontLayout({ children }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [newsletterDone, setNewsletterDone] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [megaMenuOpen, setMegaMenuOpen] = useState(false);
+  const megaMenuRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { items, cartCount, cartTotal, isOpen, setIsOpen, removeItem } = useCart();
@@ -146,6 +149,10 @@ export default function StorefrontLayout({ children }) {
 
   useEffect(() => {
     storeApi.get('/info').then(res => setStoreInfo(res.data)).catch(() => {});
+    storeApi.get('/products?limit=100').then(res => {
+      const cats = [...new Set(res.data.products.map(p => p.category).filter(Boolean))];
+      setCategories(cats);
+    }).catch(() => {});
   }, []);
 
   // Inject pixel scripts when store info loads
@@ -199,6 +206,7 @@ export default function StorefrontLayout({ children }) {
   useEffect(() => {
     const handler = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target)) setShowSuggestions(false);
+      if (megaMenuRef.current && !megaMenuRef.current.contains(e.target)) setMegaMenuOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -300,10 +308,53 @@ export default function StorefrontLayout({ children }) {
           {/* Nav */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             {header.showCategories !== false && (
-              <Link to="/store/products" style={{ color: c('textMuted', '#6b7280'), textDecoration: 'none', fontSize: '14px', fontWeight: 600, transition: 'color 0.2s' }} className="hidden md:inline"
-                onMouseEnter={e => e.currentTarget.style.color = c('primary', '#4f46e5')}
-                onMouseLeave={e => e.currentTarget.style.color = c('textMuted', '#6b7280')}
-              >{t('products')}</Link>
+              <div ref={megaMenuRef} className="hidden md:block" style={{ position: 'relative' }}>
+                <button
+                  onClick={() => setMegaMenuOpen(!megaMenuOpen)}
+                  onMouseEnter={() => setMegaMenuOpen(true)}
+                  style={{ color: megaMenuOpen ? c('primary', '#4f46e5') : c('textMuted', '#6b7280'), textDecoration: 'none', fontSize: '14px', fontWeight: 600, transition: 'color 0.2s', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                >
+                  {t('products')}
+                  <ChevronDown size={14} style={{ transition: 'transform 0.2s', transform: megaMenuOpen ? 'rotate(180deg)' : 'none' }} />
+                </button>
+                {megaMenuOpen && (
+                  <div
+                    onMouseLeave={() => setMegaMenuOpen(false)}
+                    style={{
+                      position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', marginTop: '10px',
+                      background: '#fff', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '16px',
+                      boxShadow: '0 20px 50px rgba(0,0,0,0.12)', zIndex: 200, padding: '20px', minWidth: '320px',
+                      animation: 'sf-toast-in 0.2s ease',
+                    }}
+                  >
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                      <Link to="/store/products" onClick={() => setMegaMenuOpen(false)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', borderRadius: '10px', textDecoration: 'none', color: c('text', '#111'), fontSize: '14px', fontWeight: 600, transition: 'background 0.15s' }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <LayoutGrid size={16} style={{ color: c('primary', '#4f46e5') }} /> All Products
+                      </Link>
+                      {categories.slice(0, 7).map(cat => (
+                        <Link key={cat} to={`/store/products?category=${encodeURIComponent(cat)}`} onClick={() => setMegaMenuOpen(false)}
+                          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', borderRadius: '10px', textDecoration: 'none', color: c('text', '#111'), fontSize: '14px', fontWeight: 600, transition: 'background 0.15s' }}
+                          onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
+                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        >
+                          <Tag size={16} style={{ color: c('primary', '#4f46e5') }} /> {cat}
+                        </Link>
+                      ))}
+                    </div>
+                    <Link to="/store/products" onClick={() => setMegaMenuOpen(false)}
+                      style={{ display: 'block', marginTop: '12px', padding: '10px', textAlign: 'center', borderRadius: '10px', background: `${c('primary', '#4f46e5')}0d`, color: c('primary', '#4f46e5'), textDecoration: 'none', fontSize: '13px', fontWeight: 700, transition: 'background 0.15s' }}
+                      onMouseEnter={e => e.currentTarget.style.background = `${c('primary', '#4f46e5')}14`}
+                      onMouseLeave={e => e.currentTarget.style.background = `${c('primary', '#4f46e5')}0d`}
+                    >
+                      Browse all products →
+                    </Link>
+                  </div>
+                )}
+              </div>
             )}
             {/* Language toggle */}
             <button onClick={toggleLang} style={{ background: 'none', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '10px', padding: '6px 12px', cursor: 'pointer', fontSize: '13px', fontWeight: 700, color: c('text', '#111827'), transition: 'all 0.2s' }}

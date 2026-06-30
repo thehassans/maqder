@@ -264,6 +264,21 @@ export default function StorefrontHome() {
         </div>
       )}
 
+      {/* You may also like */}
+      {products.length > 4 && (
+        <div style={{ marginBottom: '40px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+            <h3 style={{ fontSize: '24px', fontWeight: 800, margin: 0, letterSpacing: '-0.3px' }}>You May Also Like</h3>
+            <div style={{ flex: 1, height: '1px', background: `linear-gradient(90deg, ${c('borderColor', '#e5e7eb')}, transparent)` }} />
+          </div>
+          <div className="sf-grid">
+            {products.slice(-4).reverse().map(p => (
+              <ProductCard key={p._id + '-rec'} product={p} currency={currency} colors={colors} onQuickView={() => setQuickViewProduct(p)} />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Quick view modal */}
       {quickViewProduct && (
         <QuickViewModal product={quickViewProduct} onClose={() => setQuickViewProduct(null)} currency={currency} />
@@ -392,6 +407,10 @@ function ProductCard({ product, currency, colors, onQuickView }) {
   const reviewCount = product.rating?.count || product.reviewStats?.count || 0;
   const primary = c('primary', '#4f46e5');
   const secondImg = product.images?.[1]?.url;
+  const isNew = (() => {
+    const created = new Date(product.createdAt || product.created || Date.now());
+    return (Date.now() - created.getTime()) < 14 * 86400000;
+  })();
 
   const handleAdd = (e) => {
     e.preventDefault();
@@ -432,6 +451,9 @@ function ProductCard({ product, currency, colors, onQuickView }) {
           )}
           {/* Badges */}
           <div style={{ position: 'absolute', top: '12px', left: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {isNew && !outOfStock && (
+              <span style={{ background: c('primary', '#4f46e5'), color: '#fff', fontSize: '10px', fontWeight: 800, padding: '4px 10px', borderRadius: '999px', boxShadow: '0 2px 8px rgba(79,70,229,0.3)' }}>NEW</span>
+            )}
             {hasSale && (
               <span style={{ background: c('salePriceColor', '#dc2626'), color: '#fff', fontSize: '11px', fontWeight: 800, padding: '4px 10px', borderRadius: '999px', boxShadow: '0 2px 8px rgba(220,38,38,0.35)' }}>
                 -{Math.round((1 - product.basePrice / product.compareAtPrice) * 100)}%

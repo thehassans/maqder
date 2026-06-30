@@ -29,6 +29,7 @@ export default function StorefrontProductDetail() {
   const { toggleCompare, isInCompare } = useCompare();
   const { addProduct, items: recentItems } = useRecentlyViewed();
   const { toast } = useToast();
+  const [hoverZoom, setHoverZoom] = useState({ active: false, x: 50, y: 50 });
   const [zoomed, setZoomed] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [notifyEmail, setNotifyEmail] = useState('');
@@ -173,10 +174,17 @@ export default function StorefrontProductDetail() {
         <div className="store-pd-gallery" style={{ position: 'sticky', top: '20px' }}>
           <div style={{ aspectRatio: '1', borderRadius: '20px', overflow: 'hidden', background: '#f3f4f6', marginBottom: '14px', position: 'relative', cursor: 'zoom-in', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
             onClick={() => setZoomed(true)}
+            onMouseMove={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const x = ((e.clientX - rect.left) / rect.width) * 100;
+              const y = ((e.clientY - rect.top) / rect.height) * 100;
+              setHoverZoom({ active: true, x, y });
+            }}
+            onMouseLeave={() => setHoverZoom({ active: false, x: 50, y: 50 })}
           >
             {product.images?.[selectedImage]?.url ? (
               <>
-                <img src={product.images[selectedImage].url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} />
+                <img src={product.images[selectedImage].url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.2s ease', transform: hoverZoom.active ? `scale(2)` : 'scale(1)', transformOrigin: `${hoverZoom.x}% ${hoverZoom.y}%` }} />
                 <div style={{ position: 'absolute', bottom: '12px', right: '12px', background: 'rgba(0,0,0,0.5)', borderRadius: '10px', padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '4px', color: '#fff', fontSize: '12px', fontWeight: 600, backdropFilter: 'blur(8px)' }}>
                   <ZoomIn size={14} /> Zoom
                 </div>
