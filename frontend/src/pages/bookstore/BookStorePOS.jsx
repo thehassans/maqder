@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import { ShoppingCart, CreditCard, Wallet, Search, Plus, Minus, Trash2, LogOut, ArrowLeft, BookOpen, CheckCircle2, X, Shirt, GraduationCap, Package } from 'lucide-react';
+import { ShoppingCart, CreditCard, Wallet, Search, Plus, Minus, Trash2, LogOut, ArrowLeft, BookOpen, CheckCircle2, X, Shirt, GraduationCap, Package, Users, RefreshCw } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -103,6 +103,11 @@ export default function BookStorePOS() {
   const [showRecallModal, setShowRecallModal] = useState(false);
   const [seriesSuggestion, setSeriesSuggestion] = useState(null);
   const [quickFilter, setQuickFilter] = useState('all');
+  // Khata
+  const [showKhataModal, setShowKhataModal] = useState(false);
+  const [khataAccounts, setKhataAccounts] = useState([]);
+  const [loadingKhata, setLoadingKhata] = useState(false);
+  const [khataSearch, setKhataSearch] = useState('');
   const barcodeInputRef = useRef(null);
 
   const totals = useMemo(() => {
@@ -158,45 +163,6 @@ export default function BookStorePOS() {
                 book: nextBook,
               });
             }
-          }
-        })
-        .catch(() => {});
-    }
-
-    if (product.productType === 'course' && product.courseBooks?.length > 0) {
-      api.get(`/bookstore/courses/${product._id}/books`)
-        .then(res => {
-          if (res.data?.books?.length > 0) {
-            setCartItems(prev => {
-              let updated = [...prev];
-              for (const book of res.data.books) {
-                const existing = updated.find(item => item.productId === book._id);
-                if (existing) {
-                  updated = updated.map(item =>
-                    item.productId === book._id
-                      ? { ...item, quantity: item.quantity + 1 }
-                      : item
-                  );
-                } else {
-                  const bookPrice = book.discountPrice > 0 ? book.discountPrice : book.retailPrice;
-                  updated = [...updated, {
-                    productId: book._id,
-                    productName: book.name,
-                    productNameAr: book.nameAr || book.name,
-                    primaryBarcode: book.primaryBarcode,
-                    isbn: book.isbn,
-                    author: book.author,
-                    productType: 'book',
-                    isCourseBook: true,
-                    quantity: 1,
-                    unitPrice: bookPrice,
-                    taxRate: book.taxRate || 15,
-                  }];
-                }
-              }
-              return updated;
-            });
-            toast.success(`Added ${res.data.books.length} course book${res.data.books.length > 1 ? 's' : ''} to cart`);
           }
         })
         .catch(() => {});
@@ -353,8 +319,22 @@ export default function BookStorePOS() {
     }
   };
 
-  const handleCheckout = async (paymentMethod, payments = null) => {
+  const handleCheckout = async (paymentMethod, payments = null, khataAccountId = null) => {
     if (cartItems.length === 0) return;
+
+    if (paymentMethod === 'khata' && khataAccountId) {
+      try {
+        await api.post(`/khata/${khataAccountId}/transactions`, {
+          type: 'credit',
+          amount: totals.grandTotal,
+          notes: 'Bookstore POS Checkout'
+        });
+        toast.success('Recorded in Khata');
+      } catch (error) {
+        toast.error('Failed to record Khata transaction');
+        return;
+      }
+    }
 
     const invoice = {
       offlineId: uuidv4(),
@@ -376,6 +356,7 @@ export default function BookStorePOS() {
       grandTotal: totals.grandTotal,
       paymentMethod,
       payments,
+      khataAccountId,
       issueDate: new Date().toISOString(),
     };
 
@@ -405,7 +386,7 @@ export default function BookStorePOS() {
     const addressText = addressParts.join(', ');
     const dateStr = new Date().toLocaleString('en-US');
     const items = order.lineItems || [];
-    const pmLabel = paymentMethod === 'cash' ? 'Cash | نقدي' : paymentMethod === 'card' ? 'Card | بطاقة' : paymentMethod === 'split' ? 'Split | مقسم' : String(paymentMethod);
+    const pmLabel = paymentMethod === 'cash' ? 'Cash | نقدي' : paymentMethod === 'card' ? 'Card | بطاقة' : paymentMethod === 'split' ? 'Split | مقسم' : paymentMethod === 'khata' ? 'Khata | خطة' : String(paymentMethod);
 
     let zatcaQrPayload = '';
     try {
@@ -500,6 +481,7 @@ export default function BookStorePOS() {
         case 'F1': e.preventDefault(); handleCheckout('cash'); break;
         case 'F2': e.preventDefault(); handleCheckout('card'); break;
         case 'F3': e.preventDefault(); setShowSplitModal(true); break;
+        case 'F4': e.preventDefault(); handleOpenKhata(); break;
         case 'Escape': e.preventDefault(); clearCart(); break;
         default: break;
       }
@@ -536,6 +518,30 @@ export default function BookStorePOS() {
     setSplitCash('');
     setSplitCard('');
   };
+
+  const handleOpenKhata = async () => {
+    if (cartItems.length === 0) return;
+    setShowKhataModal(true);
+    setLoadingKhata(true);
+    try {
+      const res = await api.get('/khata');
+      setKhataAccounts(res.data || []);
+    } catch (err) {
+      toast.error('Failed to fetch Khata accounts');
+    } finally {
+      setLoadingKhata(false);
+    }
+  };
+
+  const filteredKhataAccounts = useMemo(() => {
+    if (!khataSearch) return khataAccounts;
+    const lower = khataSearch.toLowerCase();
+    return khataAccounts.filter(a =>
+      a.customerId?.name?.toLowerCase().includes(lower) ||
+      a.customerId?.phone?.includes(lower) ||
+      a.customerId?.mobile?.includes(lower)
+    );
+  }, [khataSearch, khataAccounts]);
 
   return (
     <div className="flex h-[calc(100vh-4rem)] bg-[#F8F9FA] text-gray-900 overflow-hidden font-sans">
@@ -747,7 +753,7 @@ export default function BookStorePOS() {
             <span className="text-lg font-bold text-gray-900">Total</span>
             <span className="text-2xl font-black tracking-tighter text-indigo-600">SAR {totals.grandTotal.toFixed(2)}</span>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-4 gap-3">
             <button
               onClick={() => handleCheckout('cash')}
               disabled={cartItems.length === 0}
@@ -771,6 +777,14 @@ export default function BookStorePOS() {
             >
               <CreditCard className="w-5 h-5" />
               <span className="text-xs">Split (F3)</span>
+            </button>
+            <button
+              onClick={handleOpenKhata}
+              disabled={cartItems.length === 0}
+              className="py-4 bg-amber-500 text-white rounded-2xl font-bold hover:bg-amber-600 disabled:opacity-40 transition-all flex flex-col items-center gap-1"
+            >
+              <Users className="w-5 h-5" />
+              <span className="text-xs">Khata (F4)</span>
             </button>
           </div>
         </div>
@@ -951,6 +965,63 @@ export default function BookStorePOS() {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Khata Checkout Modal */}
+      {showKhataModal && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <Users className="w-5 h-5 text-amber-500" />
+                Select Khata Customer
+              </h2>
+              <button onClick={() => setShowKhataModal(false)} className="p-2 text-gray-400 hover:text-gray-900 rounded-xl hover:bg-gray-100">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="mb-4">
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name or phone..."
+                  value={khataSearch}
+                  onChange={(e) => setKhataSearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:border-amber-200 outline-none"
+                  autoFocus
+                />
+              </div>
+            </div>
+            <div className="max-h-80 overflow-y-auto space-y-2">
+              {loadingKhata ? (
+                <div className="flex justify-center py-10"><RefreshCw className="w-6 h-6 animate-spin text-amber-500" /></div>
+              ) : filteredKhataAccounts.length === 0 ? (
+                <p className="text-center text-gray-400 py-8">No customers found</p>
+              ) : (
+                filteredKhataAccounts.map((acc) => (
+                  <button
+                    key={acc._id}
+                    onClick={() => {
+                      handleCheckout('khata', null, acc._id);
+                      setShowKhataModal(false);
+                    }}
+                    className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-2xl hover:bg-amber-50 transition-colors text-left"
+                  >
+                    <div>
+                      <p className="font-bold text-sm text-gray-900">{acc.customerId?.name}</p>
+                      <p className="text-xs text-gray-400">{acc.customerId?.phone || acc.customerId?.mobile || 'No phone'}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] uppercase font-bold text-gray-400">Balance</p>
+                      <p className="font-bold text-amber-600">SAR {Number(acc.balance || 0).toFixed(2)}</p>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
           </div>
         </div>
       )}

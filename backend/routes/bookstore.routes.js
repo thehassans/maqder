@@ -215,7 +215,7 @@ router.post('/sync', protect, async (req, res) => {
       try {
         const cleanedInvoice = {
           ...offlineInvoice,
-          paymentMethod: offlineInvoice.paymentMethod === 'split' ? 'split' : (['mada', 'apple_pay'].includes(offlineInvoice.paymentMethod) ? 'card' : (offlineInvoice.paymentMethod || 'cash')),
+          paymentMethod: offlineInvoice.paymentMethod === 'split' ? 'split' : (['mada', 'apple_pay'].includes(offlineInvoice.paymentMethod) ? 'card' : (offlineInvoice.paymentMethod === 'khata' ? 'khata' : (offlineInvoice.paymentMethod || 'cash'))),
           payments: offlineInvoice.payments || [],
           lineItems: offlineInvoice.lineItems?.map(line => {
             const l = { ...line };
