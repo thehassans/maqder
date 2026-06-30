@@ -283,7 +283,7 @@ export default function StorefrontProductDetail() {
                     display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '80px',
                   }}>
                     <span style={{ fontSize: '11px', color: '#999' }}>{tier.minQty}+ {t('qty')}</span>
-                    <span style={{ fontSize: '16px', fontWeight: 700, color: '#059669', display: 'flex', alignItems: 'center', gap: '2px' }}>{tier.price} <SaudiRiyalSymbol size={11} color="#059669" /></span>
+                    <span style={{ fontSize: '16px', fontWeight: 700, color: '#111', display: 'flex', alignItems: 'center', gap: '2px' }}>{tier.price} <SaudiRiyalSymbol size={11} color="#111" /></span>
                     {tier.price < currentPrice && (
                       <span style={{ fontSize: '10px', color: '#dc2626', fontWeight: 700 }}>
                         {t('save')} {Math.round((1 - tier.price / currentPrice) * 100)}%
@@ -430,7 +430,7 @@ export default function StorefrontProductDetail() {
                   </div>
                   <div style={{ padding: '14px' }}>
                     <p style={{ fontWeight: 600, fontSize: '14px', margin: '0 0 6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#111' }}>{p.title}</p>
-                    <p style={{ fontSize: '17px', fontWeight: 800, color: '#059669', margin: 0, display: 'flex', alignItems: 'center', gap: '3px' }}>{p.basePrice} <SaudiRiyalSymbol size={13} color="#059669" /></p>
+                    <p style={{ fontSize: '17px', fontWeight: 800, color: '#111', margin: 0, display: 'flex', alignItems: 'center', gap: '3px' }}>{p.basePrice} <SaudiRiyalSymbol size={13} color="#111" /></p>
                   </div>
                 </Link>
               );
@@ -545,7 +545,7 @@ export default function StorefrontProductDetail() {
                 {item.image && <img src={item.image} alt={item.title} style={{ width: '100%', aspectRatio: '1', objectFit: 'cover' }} />}
                 <div style={{ padding: '8px 10px' }}>
                   <p style={{ fontSize: '12px', fontWeight: 'bold', color: '#111', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</p>
-                  <p style={{ fontSize: '14px', fontWeight: 'bold', color: '#059669', margin: 0, display: 'flex', alignItems: 'center', gap: '3px' }}>{item.price} <SaudiRiyalSymbol size={11} color="#059669" /></p>
+                  <p style={{ fontSize: '14px', fontWeight: 'bold', color: '#111', margin: 0, display: 'flex', alignItems: 'center', gap: '3px' }}>{item.price} <SaudiRiyalSymbol size={11} color="#111" /></p>
                 </div>
               </Link>
             ))}
