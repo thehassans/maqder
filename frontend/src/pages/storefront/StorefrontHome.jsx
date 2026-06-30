@@ -372,12 +372,12 @@ export default function StorefrontHome() {
         </div>
       )}
 
-      {/* You may also like */}
+      {/* You may also like — ultra premium */}
       {products.length > 4 && (
-        <div style={{ marginBottom: '40px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-            <h3 style={{ fontSize: '24px', fontWeight: 800, margin: 0, letterSpacing: '-0.3px' }}>{t('youMayAlsoLike')}</h3>
-            <div style={{ flex: 1, height: '1px', background: `linear-gradient(90deg, ${c('borderColor', '#e5e7eb')}, transparent)` }} />
+        <div style={{ marginBottom: '48px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
+            <h3 style={{ fontSize: '26px', fontWeight: 900, margin: 0, letterSpacing: '-0.5px', color: c('text', '#111') }}>{t('youMayAlsoLike')}</h3>
+            <div style={{ flex: 1, height: '1px', background: `linear-gradient(90deg, ${c('borderColor', '#e5e7eb')} 0%, transparent 100%)` }} />
           </div>
           <div className="sf-grid">
             {products.slice(-4).reverse().map(p => (
@@ -584,8 +584,8 @@ function ProductCard({ product, currency, colors, onQuickView }) {
             </div>
           )}
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginTop: 'auto' }}>
-            <span style={{ fontSize: '18px', fontWeight: 800, color: c('priceColor', '#059669'), display: 'flex', alignItems: 'center', gap: '3px' }}>
-              {product.basePrice} <SaudiRiyalSymbol size={14} color={c('priceColor', '#059669')} />
+            <span style={{ fontSize: '18px', fontWeight: 800, color: c('text', '#111'), display: 'flex', alignItems: 'center', gap: '3px' }}>
+              {product.basePrice} <SaudiRiyalSymbol size={14} color={c('text', '#111')} />
             </span>
             {hasSale && (
               <span style={{ fontSize: '13px', color: c('textMuted', '#9ca3af'), textDecoration: 'line-through', display: 'flex', alignItems: 'center', gap: '2px' }}>
