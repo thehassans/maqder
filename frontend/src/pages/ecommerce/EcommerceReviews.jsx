@@ -54,8 +54,9 @@ export default function EcommerceReviews() {
       {/* Filter tabs */}
       <div className="flex gap-2">
         {['', 'pending', 'approved', 'rejected'].map(s => (
-          <button key={s} onClick={() => { setFilter(s); setPage(1); }} className={`px-4 py-2 rounded-full text-sm font-bold ${filter === s ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-500'}`}>
-            {s || 'All'} {s === 'pending' && data.total > 0 && filter === 'pending' ? `(${data.total})` : ''}
+          <button key={s} onClick={() => { setFilter(s); setPage(1); }} className={`px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 ${filter === s ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-500'}`}>
+            {s ? s.charAt(0).toUpperCase() + s.slice(1) : 'All'}
+            {s === 'pending' && data.total > 0 && <span className={`inline-flex items-center justify-center min-w-[18px] h-4 px-1 rounded-full text-[10px] ${filter === 'pending' ? 'bg-white/20' : 'bg-amber-100 text-amber-700'}`}>{data.total}</span>}
           </button>
         ))}
       </div>

@@ -92,6 +92,7 @@ export default function Sidebar() {
   const { t } = useTranslation(language)
 
   const [pendingQuestions, setPendingQuestions] = useState(0)
+  const [pendingReviews, setPendingReviews] = useState(0)
 
   const si = tenant?.settings?.saudiIntegrations || {};
   const isZatcaPhase1 = (tenant?.zatca?.phase || 1) === 1;
@@ -113,8 +114,10 @@ export default function Sidebar() {
   useEffect(() => {
     if (businessTypes.includes('ecommerce') || businessTypes.includes('trading')) {
       api.get('/ecommerce/products/questions/pending').then(res => setPendingQuestions(res.data?.questions?.length || 0)).catch(() => {})
+      api.get('/ecommerce/reviews?status=pending&limit=1').then(res => setPendingReviews(res.data?.total || 0)).catch(() => {})
       const interval = setInterval(() => {
         api.get('/ecommerce/products/questions/pending').then(res => setPendingQuestions(res.data?.questions?.length || 0)).catch(() => {})
+        api.get('/ecommerce/reviews?status=pending&limit=1').then(res => setPendingReviews(res.data?.total || 0)).catch(() => {})
       }, 60000)
       return () => clearInterval(interval)
     }
@@ -549,6 +552,9 @@ export default function Sidebar() {
                           <span>{item.label}</span>
                           {item.path === '/app/dashboard/ecommerce/questions' && pendingQuestions > 0 && (
                             <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-amber-500 text-white text-[10px] font-bold">{pendingQuestions}</span>
+                          )}
+                          {item.path === '/app/dashboard/ecommerce/reviews' && pendingReviews > 0 && (
+                            <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-amber-500 text-white text-[10px] font-bold">{pendingReviews}</span>
                           )}
                         </motion.span>
                       )}
