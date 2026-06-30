@@ -1,8 +1,13 @@
 import express from 'express';
+import path from 'path';
+import fs from 'fs';
+import multer from 'multer';
+import sharp from 'sharp';
 import { protect } from '../middleware/auth.js';
 import Tenant from '../models/Tenant.js';
 
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
 const getTargetTenantId = async (user) => {
   if (user.tenantId) return user.tenantId;
@@ -174,6 +179,150 @@ router.post('/reset', protect, async (req, res) => {
 // Get defaults (for reference)
 router.get('/defaults', protect, async (req, res) => {
   res.json(DEFAULT_THEME);
+});
+
+// Preset themes (Shopify-like) that users can apply with one click
+const PRESET_THEMES = [
+  {
+    id: 'modern',
+    name: 'Modern',
+    nameAr: 'عصري',
+    description: 'Clean indigo theme with a modern storefront.',
+    preview: { primary: '#4f46e5', background: '#ffffff' },
+    theme: DEFAULT_THEME,
+  },
+  {
+    id: 'classic',
+    name: 'Classic',
+    nameAr: 'كلاسيكي',
+    description: 'Elegant serif theme with warm tones.',
+    preview: { primary: '#8b5cf6', background: '#fafaf9' },
+    theme: {
+      ...DEFAULT_THEME,
+      layout: 'classic',
+      colors: {
+        ...DEFAULT_THEME.colors,
+        primary: '#8b5cf6',
+        secondary: '#a78bfa',
+        accent: '#f59e0b',
+        background: '#fafaf9',
+        surface: '#f5f5f4',
+        text: '#1c1917',
+        textMuted: '#78716c',
+        headerBg: '#fafaf9',
+        footerBg: '#1c1917',
+        buttonBg: '#8b5cf6',
+      },
+      typography: { ...DEFAULT_THEME.typography, headingFont: 'Georgia', bodyFont: 'Inter' },
+    },
+  },
+  {
+    id: 'minimal',
+    name: 'Minimal',
+    nameAr: 'بسيط',
+    description: 'Minimalist black and white theme.',
+    preview: { primary: '#111827', background: '#ffffff' },
+    theme: {
+      ...DEFAULT_THEME,
+      layout: 'minimal',
+      colors: {
+        ...DEFAULT_THEME.colors,
+        primary: '#111827',
+        secondary: '#374151',
+        accent: '#06b6d4',
+        background: '#ffffff',
+        surface: '#f9fafb',
+        text: '#111827',
+        textMuted: '#6b7280',
+        headerBg: '#ffffff',
+        footerBg: '#111827',
+        buttonBg: '#111827',
+        borderColor: '#e5e7eb',
+      },
+      typography: { ...DEFAULT_THEME.typography, headingFont: 'Inter', bodyFont: 'Inter', headingWeight: 'font-semibold' },
+    },
+  },
+  {
+    id: 'bold',
+    name: 'Bold',
+    nameAr: 'جريء',
+    description: 'High contrast theme with bold colors for fashion and lifestyle brands.',
+    preview: { primary: '#dc2626', background: '#0f172a' },
+    theme: {
+      ...DEFAULT_THEME,
+      layout: 'modern',
+      colors: {
+        ...DEFAULT_THEME.colors,
+        primary: '#dc2626',
+        secondary: '#7f1d1d',
+        accent: '#fbbf24',
+        background: '#0f172a',
+        surface: '#1e293b',
+        text: '#f8fafc',
+        textMuted: '#94a3b8',
+        headerBg: '#0f172a',
+        footerBg: '#020617',
+        buttonBg: '#dc2626',
+        buttonText: '#ffffff',
+        priceColor: '#22c55e',
+        salePriceColor: '#f87171',
+        borderColor: '#334155',
+      },
+      typography: { ...DEFAULT_THEME.typography, headingFont: 'Poppins', bodyFont: 'Inter', headingWeight: 'font-extrabold' },
+    },
+  },
+];
+
+router.get('/presets', protect, async (req, res) => {
+  res.json(PRESET_THEMES.map(p => ({ id: p.id, name: p.name, nameAr: p.nameAr, description: p.description, preview: p.preview })));
+});
+
+// Apply a preset theme as the new draft
+router.post('/presets/:id', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    const preset = PRESET_THEMES.find(p => p.id === req.params.id);
+    if (!preset) return res.status(404).json({ error: 'Preset not found' });
+
+    const tenant = await Tenant.findById(tenantId);
+    if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+    tenant.ecommerce = tenant.ecommerce || {};
+    tenant.ecommerce.theme = tenant.ecommerce.theme || {};
+    tenant.ecommerce.theme.draft = preset.theme;
+    tenant.ecommerce.theme.draftUpdatedAt = new Date();
+    await tenant.save();
+    res.json({ draft: mergeDefaults(tenant.ecommerce.theme.draft), draftUpdatedAt: tenant.ecommerce.theme.draftUpdatedAt });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Upload theme image (logo, hero background, etc.)
+router.post('/upload', protect, upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
+
+    const tenantIdStr = req.user.tenantId.toString();
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'ecommerce', tenantIdStr);
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    const filename = `theme-${Date.now()}-${Math.round(Math.random() * 1E9)}.webp`;
+    const filepath = path.join(uploadsDir, filename);
+
+    await sharp(req.file.buffer)
+      .resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: 85 })
+      .toFile(filepath);
+
+    const imageUrl = `/uploads/ecommerce/${tenantIdStr}/${filename}`;
+    res.json({ imageUrl });
+  } catch (error) {
+    console.error('Ecommerce theme upload error:', error);
+    res.status(500).json({ error: 'Failed to process image' });
+  }
 });
 
 // Helper: deep merge user config over defaults

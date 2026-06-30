@@ -199,14 +199,12 @@ export default function EcommerceDomains() {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
-          {!cloudflareStatus && !tenantCloudflareConnected && (
-            <button
-              onClick={() => setShowCfModal(true)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors"
-            >
-              <KeyRound className="w-3.5 h-3.5" /> Connect Cloudflare
-            </button>
-          )}
+          <button
+            onClick={() => setShowCfModal(true)}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-colors ${tenantCloudflareConnected ? 'bg-blue-50 text-blue-700 hover:bg-blue-100' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+          >
+            <KeyRound className="w-3.5 h-3.5" /> {tenantCloudflareConnected ? 'Manage Cloudflare' : 'Connect Cloudflare'}
+          </button>
           {cloudflareStatus && (
             <div className="px-2.5 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold flex items-center gap-1">
               <CheckCircle2 className="w-3 h-3" /> {tenantCloudflareConnected ? 'Tenant' : 'Auto'}

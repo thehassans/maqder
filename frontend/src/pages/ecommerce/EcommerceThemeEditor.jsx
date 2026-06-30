@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Palette, Save, Loader2, Upload, RotateCcw, AlertCircle, CheckCircle, Eye, Layout, Type, ShoppingCart, Home, Monitor, Smartphone, GripVertical, Trash2, Plus } from 'lucide-react';
+import { Palette, Save, Loader2, Upload, RotateCcw, AlertCircle, CheckCircle, Eye, Layout, Type, ShoppingCart, Home, Monitor, Smartphone, GripVertical, Trash2, Plus, ImageIcon, Sparkles } from 'lucide-react';
 import api from '../../lib/api';
 
 const COLOR_FIELDS = [
@@ -47,15 +47,25 @@ export default function EcommerceThemeEditor() {
   const [hasUnpublished, setHasUnpublished] = useState(false);
   const [publishedAt, setPublishedAt] = useState(null);
   const [draftUpdatedAt, setDraftUpdatedAt] = useState(null);
+  const [presets, setPresets] = useState([]);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [applyingPreset, setApplyingPreset] = useState(null);
+  const [heroUploadIdx, setHeroUploadIdx] = useState(null);
   const previewRef = useRef(null);
+  const logoInputRef = useRef(null);
+  const heroInputRef = useRef(null);
 
   const fetchTheme = useCallback(async () => {
     try {
-      const res = await api.get('/ecommerce/theme');
-      setTheme(res.data.draft);
-      setHasUnpublished(res.data.hasUnpublishedChanges);
-      setPublishedAt(res.data.publishedAt);
-      setDraftUpdatedAt(res.data.draftUpdatedAt);
+      const [themeRes, presetsRes] = await Promise.all([
+        api.get('/ecommerce/theme'),
+        api.get('/ecommerce/theme/presets'),
+      ]);
+      setTheme(themeRes.data.draft);
+      setHasUnpublished(themeRes.data.hasUnpublishedChanges);
+      setPublishedAt(themeRes.data.publishedAt);
+      setDraftUpdatedAt(themeRes.data.draftUpdatedAt);
+      setPresets(presetsRes.data || []);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to load theme');
     } finally {
@@ -291,6 +301,51 @@ ${sectionHTML}
     }
   };
 
+  const handleUploadImage = async (e, target) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const targetSetter = target === 'hero' ? setApplyingPreset : setUploadingLogo;
+    targetSetter(true);
+    try {
+      const fd = new FormData();
+      fd.append('image', file);
+      const res = await api.post('/ecommerce/theme/upload', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 120000,
+      });
+      const imageUrl = res.data?.imageUrl;
+      if (target === 'hero' && heroUploadIdx !== null) {
+        updateSection(heroUploadIdx, 'imageUrl', imageUrl);
+      } else {
+        updateHeader('logoImageUrl', imageUrl);
+      }
+      return imageUrl;
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to upload image');
+      return null;
+    } finally {
+      targetSetter(false);
+      if (target === 'logo' && logoInputRef.current) logoInputRef.current.value = '';
+      if (target === 'hero' && heroInputRef.current) heroInputRef.current.value = '';
+    }
+  };
+
+  const handleApplyPreset = async (id) => {
+    setApplyingPreset(id);
+    try {
+      const res = await api.post(`/ecommerce/theme/presets/${id}`);
+      setTheme(res.data.draft);
+      setDraftUpdatedAt(res.data.draftUpdatedAt);
+      setHasUnpublished(true);
+      setSuccess('Preset applied — save draft to keep it');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to apply preset');
+    } finally {
+      setApplyingPreset(null);
+    }
+  };
+
   const handleReset = async () => {
     if (!confirm('Reset draft to default theme? This will discard all your changes.')) return;
     setSaving(true);
@@ -357,6 +412,7 @@ ${sectionHTML}
         <div className="space-y-4">
           {/* Tabs */}
           <div className="flex gap-2 flex-wrap">
+            <button onClick={() => setActiveTab('presets')} className={tabCls('presets')}><Sparkles className="w-4 h-4" /> Presets</button>
             <button onClick={() => setActiveTab('colors')} className={tabCls('colors')}><Palette className="w-4 h-4" /> Colors</button>
             <button onClick={() => setActiveTab('typography')} className={tabCls('typography')}><Type className="w-4 h-4" /> Typography</button>
             <button onClick={() => setActiveTab('header')} className={tabCls('header')}><Layout className="w-4 h-4" /> Header</button>
@@ -365,6 +421,39 @@ ${sectionHTML}
             <button onClick={() => setActiveTab('product')} className={tabCls('product')}><Eye className="w-4 h-4" /> Product</button>
             <button onClick={() => setActiveTab('cart')} className={tabCls('cart')}><ShoppingCart className="w-4 h-4" /> Cart</button>
           </div>
+
+          {/* Hidden file inputs for image uploads */}
+          <input ref={heroInputRef} type="file" accept="image/*" onChange={e => handleUploadImage(e, 'hero')} className="hidden" />
+
+          {/* Presets */}
+          {activeTab === 'presets' && (
+            <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-5 space-y-4">
+              <p className="text-sm text-gray-500">Choose a preset theme to apply instantly. You can customize it afterward.</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {presets.map(preset => (
+                  <div key={preset.id} className="border border-gray-200 dark:border-dark-600 rounded-xl p-4 space-y-3 hover:border-violet-300 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg border border-gray-200 overflow-hidden flex-shrink-0" style={{ background: preset.preview?.background || '#fff' }}>
+                        <div className="w-full h-2" style={{ background: preset.preview?.primary || '#4f46e5' }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-sm text-gray-900 dark:text-white truncate">{preset.name}</p>
+                        <p className="text-xs text-gray-400 truncate">{preset.description}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleApplyPreset(preset.id)}
+                      disabled={applyingPreset === preset.id}
+                      className="w-full flex items-center justify-center gap-1.5 px-3 py-2 bg-violet-50 text-violet-600 rounded-lg text-xs font-bold hover:bg-violet-100 disabled:opacity-60 transition-colors"
+                    >
+                      {applyingPreset === preset.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                      Apply Preset
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Colors */}
           {activeTab === 'colors' && (
@@ -422,8 +511,22 @@ ${sectionHTML}
                   <input className={inputCls} value={theme.header?.logoText || ''} onChange={e => updateHeader('logoText', e.target.value)} placeholder="Store name" />
                 </div>
                 <div>
-                  <label className={labelCls}>Logo Image URL</label>
-                  <input className={inputCls} value={theme.header?.logoImageUrl || ''} onChange={e => updateHeader('logoImageUrl', e.target.value)} placeholder="https://..." />
+                  <label className={labelCls}>Logo Image</label>
+                  <div className="flex items-center gap-2">
+                    <input className={inputCls} value={theme.header?.logoImageUrl || ''} onChange={e => updateHeader('logoImageUrl', e.target.value)} placeholder="https://..." />
+                    <input ref={logoInputRef} type="file" accept="image/*" onChange={e => handleUploadImage(e, 'logo')} className="hidden" />
+                    <button
+                      onClick={() => logoInputRef.current?.click()}
+                      disabled={uploadingLogo}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-bold transition-colors disabled:opacity-60"
+                    >
+                      {uploadingLogo ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />}
+                      Upload
+                    </button>
+                  </div>
+                  {theme.header?.logoImageUrl && (
+                    <img src={theme.header.logoImageUrl} alt="Logo preview" className="mt-2 h-10 w-auto object-contain rounded-lg border border-gray-200" />
+                  )}
                 </div>
               </div>
               <div className="space-y-2">
@@ -471,7 +574,17 @@ ${sectionHTML}
                         <>
                           <input className={inputCls} value={sec.settings.title || ''} onChange={e => updateSection(idx, 'title', e.target.value)} placeholder="Hero title" />
                           <input className={inputCls} value={sec.settings.subtitle || ''} onChange={e => updateSection(idx, 'subtitle', e.target.value)} placeholder="Subtitle" />
-                          <input className={inputCls} value={sec.settings.imageUrl || ''} onChange={e => updateSection(idx, 'imageUrl', e.target.value)} placeholder="Background image URL" />
+                          <div className="flex items-center gap-2">
+                            <input className={inputCls} value={sec.settings.imageUrl || ''} onChange={e => updateSection(idx, 'imageUrl', e.target.value)} placeholder="Background image URL" />
+                            <button
+                              onClick={() => { setHeroUploadIdx(idx); setTimeout(() => heroInputRef.current?.click(), 0); }}
+                              disabled={applyingPreset}
+                              className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-bold transition-colors disabled:opacity-60"
+                            >
+                              {applyingPreset ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />}
+                              Upload
+                            </button>
+                          </div>
                           <input className={inputCls} value={sec.settings.buttonText || ''} onChange={e => updateSection(idx, 'buttonText', e.target.value)} placeholder="Button text" />
                         </>
                       )}
