@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { User, Phone, Loader2, Package, RotateCcw, ChevronRight, CheckCircle, XCircle, Clock, Truck, ShoppingBag, Search } from 'lucide-react';
+import { User, Phone, Loader2, Package, RotateCcw, ChevronRight, CheckCircle, XCircle, Clock, Truck, ShoppingBag, Search, Download } from 'lucide-react';
 import storeApi from '../../lib/storeApi';
 import { useCart } from '../../store/storefrontCart';
 import StorefrontSeo from '../../components/storefront/StorefrontSeo';
@@ -25,6 +25,36 @@ export default function StorefrontAccount() {
   const [returns, setReturns] = useState([]);
   const [expandedOrder, setExpandedOrder] = useState(null);
   const { addItem } = useCart();
+
+  const handleDownloadReceipt = (order) => {
+    const win = window.open('', '_blank');
+    if (!win) return;
+    const itemsHtml = (order.items || []).map(i => `<tr><td style="padding:6px 8px;border-bottom:1px solid #eee">${i.title}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:center">${i.quantity}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right">${(i.price * i.quantity).toFixed(2)} ${order.currency}</td></tr>`).join('');
+    win.document.write(`
+      <html><head><title>Receipt ${order.orderNumber}</title>
+      <style>body{font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#111}
+      h1{font-size:20px}h2{font-size:14px;color:#666}
+      table{width:100%;border-collapse:collapse;margin:16px 0;font-size:13px}
+      th{background:#f5f5f5;padding:8px;text-align:left;font-size:12px}
+      .total{font-size:16px;font-weight:bold;margin-top:12px;text-align:right}
+      .info{background:#f9fafb;border-radius:8px;padding:12px;margin:12px 0;font-size:13px}
+      @media print{body{padding:0}}</style></head><body>
+      <h1>Order Receipt</h1>
+      <h2>Order #${order.orderNumber}</h2>
+      <p style="color:#666;font-size:13px">${new Date(order.createdAt).toLocaleDateString('en',{day:'numeric',month:'long',year:'numeric'})}</p>
+      <div class="info">
+        <strong>Customer:</strong> ${order.customer?.name || ''}<br>
+        ${order.customer?.phone ? '<strong>Phone:</strong> ' + order.customer.phone + '<br>' : ''}
+        ${order.customer?.email ? '<strong>Email:</strong> ' + order.customer.email : ''}
+      </div>
+      <table><thead><tr><th>Item</th><th style="text-align:center">Qty</th><th style="text-align:right">Total</th></tr></thead><tbody>${itemsHtml}</tbody></table>
+      <div class="total">Total: ${order.total} ${order.currency}</div>
+      <div class="info"><strong>Payment:</strong> ${order.paymentMethod || 'COD'} — ${order.paymentStatus || 'Pending'}<br><strong>Shipping:</strong> ${order.shippingStatus || 'Unfulfilled'}${order.trackingNumber ? ' — Tracking: ' + order.trackingNumber : ''}</div>
+      <p style="text-align:center;color:#999;font-size:12px;margin-top:24px">Thank you for your order!</p>
+      <script>window.onload=()=>window.print()</script>
+      </body></html>`);
+    win.document.close();
+  };
 
   const handleLookup = async (e) => {
     e.preventDefault();
@@ -201,6 +231,11 @@ export default function StorefrontAccount() {
                               <ShoppingBag size={14} /> Reorder
                             </button>
                           )}
+                          <button onClick={() => handleDownloadReceipt(order)} style={{
+                            padding: '8px 16px', background: '#fff', color: '#374151', border: '1px solid #e5e7eb', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
+                          }}>
+                            <Download size={14} /> Receipt
+                          </button>
                         </div>
                       </div>
                     )}

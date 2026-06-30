@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Package, Truck, CheckCircle, Clock, XCircle, Loader2, ListOrdered, ChevronRight } from 'lucide-react';
+import { Search, Package, Truck, CheckCircle, Clock, XCircle, Loader2, ListOrdered, ChevronRight, Download } from 'lucide-react';
 import storeApi from '../../lib/storeApi';
 import StorefrontSeo from '../../components/storefront/StorefrontSeo';
 import StorefrontBreadcrumbs from '../../components/storefront/StorefrontBreadcrumbs';
@@ -178,6 +178,19 @@ export default function StorefrontOrderTracking() {
               <p style={{ fontSize: '14px', fontWeight: 'bold', margin: 0 }}>{order.paymentStatus}</p>
               <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 0' }}>{order.paymentMethod}</p>
             </div>
+          </div>
+
+          {/* Download receipt */}
+          <div style={{ marginBottom: '20px' }}>
+            <button onClick={() => {
+              const win = window.open('', '_blank');
+              if (!win) return;
+              const itemsHtml = (order.items || []).map(i => `<tr><td style="padding:6px 8px;border-bottom:1px solid #eee">${i.title}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:center">${i.quantity}</td><td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right">${(i.price * i.quantity).toFixed(2)} ${order.currency}</td></tr>`).join('');
+              win.document.write(`<html><head><title>Receipt ${order.orderNumber}</title><style>body{font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#111}h1{font-size:20px}h2{font-size:14px;color:#666}table{width:100%;border-collapse:collapse;margin:16px 0;font-size:13px}th{background:#f5f5f5;padding:8px;text-align:left;font-size:12px}.total{font-size:16px;font-weight:bold;margin-top:12px;text-align:right}.info{background:#f9fafb;border-radius:8px;padding:12px;margin:12px 0;font-size:13px}@media print{body{padding:0}}</style></head><body><h1>Order Receipt</h1><h2>Order #${order.orderNumber}</h2><p style="color:#666;font-size:13px">${new Date(order.createdAt).toLocaleDateString('en',{day:'numeric',month:'long',year:'numeric'})}</p><div class="info"><strong>Customer:</strong> ${order.customer?.name || ''}<br>${order.customer?.phone ? '<strong>Phone:</strong> ' + order.customer.phone + '<br>' : ''}${order.customer?.email ? '<strong>Email:</strong> ' + order.customer.email : ''}</div><table><thead><tr><th>Item</th><th style="text-align:center">Qty</th><th style="text-align:right">Total</th></tr></thead><tbody>${itemsHtml}</tbody></table><div class="total">Total: ${order.total} ${order.currency}</div><div class="info"><strong>Payment:</strong> ${order.paymentMethod || 'COD'} \u2014 ${order.paymentStatus || 'Pending'}<br><strong>Shipping:</strong> ${order.shippingStatus || 'Unfulfilled'}${order.trackingNumber ? ' \u2014 Tracking: ' + order.trackingNumber : ''}</div><p style="text-align:center;color:#999;font-size:12px;margin-top:24px">Thank you for your order!</p><script>window.onload=()=>window.print()</script></body></html>`);
+              win.document.close();
+            }} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 20px', background: '#fff', color: '#374151', border: '1px solid #e5e7eb', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer' }}>
+              <Download size={16} /> Download Receipt
+            </button>
           </div>
 
           {/* Status timeline */}
