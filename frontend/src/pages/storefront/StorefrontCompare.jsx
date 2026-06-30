@@ -52,16 +52,18 @@ export default function StorefrontCompare() {
       <StorefrontSeo title="Compare Products" />
       <StorefrontBreadcrumbs items={[{ label: 'Home', path: '/store' }, { label: 'Compare' }]} />
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <GitCompare size={32} style={{ color: c('primary', '#4f46e5') }} />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '28px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: `linear-gradient(135deg, ${c('primary', '#4f46e5')}20, ${c('primary', '#4f46e5')}10)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <GitCompare size={26} style={{ color: c('primary', '#4f46e5') }} />
+          </div>
           <div>
-            <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0 }}>Compare Products</h1>
-            <p style={{ fontSize: '14px', color: '#6b7280', margin: '4px 0 0' }}>{count} of 4 products selected</p>
+            <h1 style={{ fontSize: '28px', fontWeight: 800, margin: 0, letterSpacing: '-0.3px' }}>Compare Products</h1>
+            <p style={{ fontSize: '14px', color: '#6b7280', margin: '4px 0 0', fontWeight: 500 }}>{count} of 4 products selected</p>
           </div>
         </div>
         {count > 0 && (
-          <button onClick={clearCompare} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', border: '1px solid #e5e7eb', borderRadius: '8px', background: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', color: '#dc2626' }}>
+          <button onClick={clearCompare} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', border: '1px solid #fecaca', borderRadius: '12px', background: '#fff', cursor: 'pointer', fontSize: '13px', fontWeight: 700, color: '#dc2626', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; }} onMouseLeave={e => { e.currentTarget.style.background = '#fff'; }}>
             <Trash2 size={14} /> Clear All
           </button>
         )}
@@ -73,43 +75,44 @@ export default function StorefrontCompare() {
         </div>
       ) : products.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '80px 20px' }}>
-          <GitCompare size={64} style={{ color: '#d1d5db', margin: '0 auto 16px' }} />
-          <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }}>No products to compare</h2>
-          <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '24px' }}>
+          <GitCompare size={64} style={{ color: '#d1d5db', margin: '0 auto 20px' }} />
+          <h2 style={{ fontSize: '22px', fontWeight: 800, marginBottom: '12px', letterSpacing: '-0.3px' }}>No products to compare</h2>
+          <p style={{ color: '#6b7280', fontSize: '15px', marginBottom: '28px' }}>
             Add products to compare by clicking the compare icon on product cards
           </p>
-          <Link to="/store/products" style={{ display: 'inline-block', padding: '12px 28px', background: c('primary', '#4f46e5'), color: '#fff', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold' }}>
+          <Link to="/store/products" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '14px 32px', background: `linear-gradient(135deg, ${c('primary', '#4f46e5')}, #6366f1)`, color: '#fff', borderRadius: '999px', textDecoration: 'none', fontWeight: 700, fontSize: '15px', boxShadow: '0 4px 14px rgba(79,70,229,0.25)', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(79,70,229,0.3)'; }} onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(79,70,229,0.25)'; }}>
             Browse Products
           </Link>
         </div>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
+        <div style={{ overflowX: 'auto', borderRadius: '16px', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px', background: '#fff' }}>
             <thead>
               <tr>
-                <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', color: '#9ca3af', textTransform: 'uppercase', fontWeight: 'bold', borderBottom: '2px solid #e5e7eb', width: '140px' }}></th>
+                <th style={{ padding: '16px', textAlign: 'left', fontSize: '12px', color: '#9ca3af', textTransform: 'uppercase', fontWeight: 700, borderBottom: '2px solid #e5e7eb', width: '140px' }}></th>
                 {products.map(p => {
                   const slug = p.seo?.slug || p._id;
                   return (
-                    <th key={p._id} style={{ padding: '12px 16px', textAlign: 'center', borderBottom: '2px solid #e5e7eb', minWidth: '180px' }}>
+                    <th key={p._id} style={{ padding: '16px', textAlign: 'center', borderBottom: '2px solid #e5e7eb', minWidth: '180px' }}>
                       <div style={{ position: 'relative' }}>
-                        <button onClick={() => removeFromCompare(p._id)} style={{ position: 'absolute', top: '-4px', right: '-4px', width: '24px', height: '24px', borderRadius: '50%', background: '#fee2e2', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <button onClick={() => removeFromCompare(p._id)} style={{ position: 'absolute', top: '-4px', right: '-4px', width: '26px', height: '26px', borderRadius: '50%', background: '#fee2e2', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
                           <X size={14} color="#dc2626" />
                         </button>
                         <Link to={`/store/products/${slug}`} style={{ textDecoration: 'none' }}>
-                          <div style={{ width: '100%', aspectRatio: '1', borderRadius: '8px', overflow: 'hidden', background: '#f3f4f6', marginBottom: '8px' }}>
+                          <div style={{ width: '100%', aspectRatio: '1', borderRadius: '12px', overflow: 'hidden', background: '#f3f4f6', marginBottom: '10px' }}>
                             {p.images?.[0]?.url ? (
-                              <img src={p.images[0].url} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              <img src={p.images[0].url} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} />
                             ) : (
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#9ca3af', fontSize: '12px' }}>No image</div>
                             )}
                           </div>
-                          <p style={{ fontSize: '13px', fontWeight: 'bold', color: c('text', '#111'), margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</p>
+                          <p style={{ fontSize: '13px', fontWeight: 600, color: c('text', '#111'), margin: '0 0 6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</p>
                         </Link>
-                        <p style={{ fontSize: '16px', fontWeight: 'bold', color: c('priceColor', '#059669'), margin: '0 0 8px' }}>{p.basePrice} {currency}</p>
+                        <p style={{ fontSize: '17px', fontWeight: 800, color: c('priceColor', '#059669'), margin: '0 0 10px' }}>{p.basePrice} {currency}</p>
                         <button
                           onClick={() => addItem({ productId: p._id, title: p.title, price: p.basePrice, image: p.images?.[0]?.url, quantity: 1 })}
-                          style={{ width: '100%', padding: '8px', background: c('primary', '#4f46e5'), color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+                          style={{ width: '100%', padding: '10px', background: `linear-gradient(135deg, ${c('primary', '#4f46e5')}, #6366f1)`, color: '#fff', border: 'none', borderRadius: '10px', fontWeight: 700, fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(79,70,229,0.2)' }}
+                          onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
                         >
                           <ShoppingCart size={14} /> Add to Cart
                         </button>
@@ -121,10 +124,10 @@ export default function StorefrontCompare() {
             </thead>
             <tbody>
               {specs.map((spec, i) => (
-                <tr key={spec.key} style={{ background: i % 2 === 0 ? '#f9fafb' : '#fff' }}>
-                  <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 'bold', color: '#6b7280', borderBottom: '1px solid #f3f4f6' }}>{spec.label}</td>
+                <tr key={spec.key} style={{ background: i % 2 === 0 ? '#fafafa' : '#fff' }}>
+                  <td style={{ padding: '14px 16px', fontSize: '13px', fontWeight: 700, color: '#6b7280', borderBottom: '1px solid #f3f4f6' }}>{spec.label}</td>
                   {products.map(p => (
-                    <td key={p._id} style={{ padding: '12px 16px', fontSize: '13px', color: '#374151', textAlign: 'center', borderBottom: '1px solid #f3f4f6' }}>
+                    <td key={p._id} style={{ padding: '14px 16px', fontSize: '13px', color: '#374151', textAlign: 'center', borderBottom: '1px solid #f3f4f6' }}>
                       {spec.render(p)}
                     </td>
                   ))}
