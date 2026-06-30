@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Search, ShoppingCart, X, Menu, Instagram, Twitter, Facebook, Heart } from 'lucide-react';
+import { Search, ShoppingCart, X, Menu, Instagram, Twitter, Facebook, Heart, Mail, Phone, MapPin, Send, ShieldCheck, Truck, CreditCard, RotateCcw } from 'lucide-react';
 import storeApi from '../../lib/storeApi';
 import { useCart } from '../../store/storefrontCart';
 import { useI18n } from '../../store/storefrontI18n';
@@ -137,6 +137,7 @@ export default function StorefrontLayout({ children }) {
   const [storeInfo, setStoreInfo] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [newsletterDone, setNewsletterDone] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { items, cartCount, cartTotal, isOpen, setIsOpen, removeItem } = useCart();
@@ -393,57 +394,137 @@ export default function StorefrontLayout({ children }) {
         </div>
       )}
 
-      {/* Footer */}
-      <footer style={{ backgroundColor: c('footerBg', '#111827'), color: c('footerText', '#9ca3af'), padding: '48px 20px 32px', marginTop: '80px' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '32px' }}>
-          {footer.showAbout !== false && (
-            <div style={{ maxWidth: '280px' }}>
-              <h4 style={{ color: '#fff', margin: '0 0 12px', fontSize: '16px', fontWeight: 700 }}>{storeInfo?.storeName || 'Store'}</h4>
-              <p style={{ fontSize: '13px', lineHeight: 1.6, margin: '0 0 16px' }}>{footer.aboutText || 'Your one-stop shop for quality products.'}</p>
-              {footer.showSocialLinks && footer.socialLinks && (
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  {footer.socialLinks.instagram && <a href={footer.socialLinks.instagram} target="_blank" rel="noopener" style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: c('footerText', '#9ca3af'), textDecoration: 'none', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; e.currentTarget.style.transform = 'translateY(-2px)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'translateY(0)'; }}><Instagram size={16} /></a>}
-                  {footer.socialLinks.twitter && <a href={footer.socialLinks.twitter} target="_blank" rel="noopener" style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: c('footerText', '#9ca3af'), textDecoration: 'none', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; e.currentTarget.style.transform = 'translateY(-2px)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'translateY(0)'; }}><Twitter size={16} /></a>}
-                  {footer.socialLinks.facebook && <a href={footer.socialLinks.facebook} target="_blank" rel="noopener" style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: c('footerText', '#9ca3af'), textDecoration: 'none', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; e.currentTarget.style.transform = 'translateY(-2px)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'translateY(0)'; }}><Facebook size={16} /></a>}
-                </div>
-              )}
+      {/* Trust badges bar */}
+      <div style={{ borderTop: `1px solid ${c('borderColor', '#e5e7eb')}`, background: c('background', '#ffffff'), marginTop: '80px' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '28px 20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
+          {[
+            { icon: Truck, title: 'Free Shipping', sub: 'On orders over 200 SAR' },
+            { icon: ShieldCheck, title: 'Secure Payment', sub: '100% protected checkout' },
+            { icon: RotateCcw, title: 'Easy Returns', sub: '7-day return policy' },
+            { icon: Phone, title: 'Dedicated Support', sub: 'We\'re here to help' },
+          ].map((b, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ width: '46px', height: '46px', borderRadius: '14px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: `${c('primary', '#4f46e5')}14`, color: c('primary', '#4f46e5') }}>
+                <b.icon size={22} />
+              </div>
+              <div>
+                <p style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: c('text', '#111827') }}>{b.title}</p>
+                <p style={{ margin: 0, fontSize: '12px', color: c('textMuted', '#6b7280') }}>{b.sub}</p>
+              </div>
             </div>
-          )}
+          ))}
+        </div>
+      </div>
+
+      {/* Footer */}
+      <footer style={{ background: 'linear-gradient(180deg, #1a1f2e 0%, #0d1117 100%)', color: 'rgba(255,255,255,0.62)', position: 'relative' }}>
+        {/* Accent top border */}
+        <div style={{ height: '3px', background: `linear-gradient(90deg, ${c('primary', '#4f46e5')}, ${c('accent', '#7c3aed')}, ${c('primary', '#4f46e5')})` }} />
+
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '56px 20px 40px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '48px' }}>
+          {/* Brand + newsletter */}
+          <div style={{ maxWidth: '320px' }}>
+            <h4 style={{ color: '#fff', margin: '0 0 14px', fontSize: '22px', fontWeight: 800, letterSpacing: '-0.5px' }}>{storeInfo?.storeName || header.logoText || 'Store'}</h4>
+            <p style={{ fontSize: '13px', lineHeight: 1.7, margin: '0 0 20px' }}>{footer.aboutText || 'Your one-stop destination for premium quality products, delivered fast across the Kingdom.'}</p>
+
+            {/* Newsletter */}
+            <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', fontWeight: 700, margin: '0 0 10px' }}>Subscribe for exclusive offers</p>
+            <form onSubmit={e => { e.preventDefault(); const email = e.target.email.value; if (email) { storeApi.post('/newsletter/subscribe', { email }).catch(() => {}); e.target.reset(); setNewsletterDone(true); setTimeout(() => setNewsletterDone(false), 3000); } }} style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+              <input name="email" type="email" required placeholder="Your email" style={{ flex: 1, minWidth: 0, padding: '11px 14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', color: '#fff', fontSize: '13px', outline: 'none', transition: 'border-color 0.2s' }} onFocus={e => e.currentTarget.style.borderColor = c('primary', '#4f46e5')} onBlur={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'} />
+              <button type="submit" style={{ flexShrink: 0, width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px', border: 'none', cursor: 'pointer', color: '#fff', background: `linear-gradient(135deg, ${c('primary', '#4f46e5')}, ${c('accent', '#6366f1')})`, transition: 'transform 0.2s, box-shadow 0.2s', boxShadow: '0 4px 14px rgba(79,70,229,0.3)' }} onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; }} onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }} title="Subscribe">
+                <Send size={18} />
+              </button>
+            </form>
+            {newsletterDone && <p style={{ fontSize: '12px', color: '#34d399', margin: '-12px 0 16px', fontWeight: 600 }}>✓ Thanks for subscribing!</p>}
+
+            {/* Social */}
+            {footer.showSocialLinks !== false && (
+              <div style={{ display: 'flex', gap: '10px' }}>
+                {[
+                  { url: footer.socialLinks?.instagram, Icon: Instagram },
+                  { url: footer.socialLinks?.twitter, Icon: Twitter },
+                  { url: footer.socialLinks?.facebook, Icon: Facebook },
+                ].filter(s => s.url).map((s, i) => (
+                  <a key={i} href={s.url} target="_blank" rel="noopener" style={{ width: '38px', height: '38px', borderRadius: '11px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.7)', textDecoration: 'none', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.background = c('primary', '#4f46e5'); e.currentTarget.style.color = '#fff'; e.currentTarget.style.transform = 'translateY(-3px)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; e.currentTarget.style.transform = 'translateY(0)'; }}><s.Icon size={17} /></a>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Shop links */}
           <div>
-            <h4 style={{ color: '#fff', margin: '0 0 12px', fontSize: '14px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Quick Links</h4>
+            <h4 style={{ color: '#fff', margin: '0 0 16px', fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Shop</h4>
             {[
               { to: '/store', label: 'Home' },
-              { to: '/store/about', label: 'About Us' },
-              { to: '/store/account', label: 'My Account' },
               { to: '/store/products', label: 'All Products' },
               { to: '/store/wishlist', label: 'Wishlist' },
-              { to: '/store/compare', label: 'Compare Products' },
-              { to: '/store/track-order', label: 'Track Order' },
-              { to: '/store/returns', label: 'Returns & Refunds' },
-              { to: '/store/contact', label: 'Contact Us' },
-              { to: '/store/faq', label: 'FAQ' },
-              { to: '/store/shipping-policy', label: 'Shipping Policy' },
-              { to: '/store/privacy', label: 'Privacy Policy' },
-              { to: '/store/terms', label: 'Terms & Conditions' },
+              { to: '/store/compare', label: 'Compare' },
+              { to: '/store/account', label: 'My Account' },
             ].map(link => (
-              <Link key={link.to} to={link.to} style={{ display: 'block', color: c('footerText', '#9ca3af'), textDecoration: 'none', fontSize: '13px', marginBottom: '6px', transition: 'color 0.2s, padding-left 0.2s' }}
-                onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.paddingLeft = '4px'; }}
-                onMouseLeave={e => { e.currentTarget.style.color = c('footerText', '#9ca3af'); e.currentTarget.style.paddingLeft = '0'; }}
+              <Link key={link.to} to={link.to} style={{ display: 'block', color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontSize: '13.5px', marginBottom: '10px', transition: 'color 0.2s, padding-left 0.2s', width: 'fit-content' }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.paddingLeft = '5px'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; e.currentTarget.style.paddingLeft = '0'; }}
               >{link.label}</Link>
             ))}
           </div>
-          {footer.showContact !== false && (
-            <div>
-              <h4 style={{ color: '#fff', margin: '0 0 12px', fontSize: '14px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Contact</h4>
-              <p style={{ fontSize: '13px', lineHeight: 1.6, margin: 0 }}>Email: info@store.com</p>
-            </div>
-          )}
-        </div>
-        {footer.copyrightText && (
-          <div style={{ maxWidth: '1200px', margin: '32px auto 0', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-            <p style={{ textAlign: 'center', fontSize: '12px', margin: 0 }}>{footer.copyrightText}</p>
+
+          {/* Help links */}
+          <div>
+            <h4 style={{ color: '#fff', margin: '0 0 16px', fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Help</h4>
+            {[
+              { to: '/store/track-order', label: 'Track Order' },
+              { to: '/store/returns', label: 'Returns & Refunds' },
+              { to: '/store/shipping-policy', label: 'Shipping Policy' },
+              { to: '/store/faq', label: 'FAQ' },
+              { to: '/store/contact', label: 'Contact Us' },
+            ].map(link => (
+              <Link key={link.to} to={link.to} style={{ display: 'block', color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontSize: '13.5px', marginBottom: '10px', transition: 'color 0.2s, padding-left 0.2s', width: 'fit-content' }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.paddingLeft = '5px'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; e.currentTarget.style.paddingLeft = '0'; }}
+              >{link.label}</Link>
+            ))}
           </div>
-        )}
+
+          {/* Contact */}
+          <div>
+            <h4 style={{ color: '#fff', margin: '0 0 16px', fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>Get in Touch</h4>
+            {footer.contactEmail && (
+              <a href={`mailto:${footer.contactEmail}`} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontSize: '13.5px', marginBottom: '12px', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#fff'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.6)'}>
+                <Mail size={16} style={{ marginTop: '2px', flexShrink: 0, color: c('primary', '#818cf8') }} /> {footer.contactEmail}
+              </a>
+            )}
+            {footer.contactPhone && (
+              <a href={`tel:${footer.contactPhone}`} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontSize: '13.5px', marginBottom: '12px', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#fff'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.6)'}>
+                <Phone size={16} style={{ marginTop: '2px', flexShrink: 0, color: c('primary', '#818cf8') }} /> {footer.contactPhone}
+              </a>
+            )}
+            {footer.contactAddress && (
+              <p style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13.5px', margin: '0 0 12px', lineHeight: 1.6 }}>
+                <MapPin size={16} style={{ marginTop: '2px', flexShrink: 0, color: c('primary', '#818cf8') }} /> {footer.contactAddress}
+              </p>
+            )}
+            {!footer.contactEmail && !footer.contactPhone && !footer.contactAddress && (
+              <Link to="/store/contact" style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontSize: '13.5px', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#fff'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.6)'}>
+                <Mail size={16} style={{ flexShrink: 0, color: c('primary', '#818cf8') }} /> Contact our support team
+              </Link>
+            )}
+          </div>
+        </div>
+
+        {/* Bottom bar */}
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+            <p style={{ fontSize: '12.5px', margin: 0, color: 'rgba(255,255,255,0.5)' }}>
+              {footer.copyrightText || `© ${new Date().getFullYear()} ${storeInfo?.storeName || header.logoText || 'Store'}. All rights reserved.`}
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', marginRight: '4px' }}>We accept</span>
+              {['VISA', 'MC', 'MADA', 'AMEX'].map(p => (
+                <span key={p} style={{ display: 'inline-flex', alignItems: 'center', height: '26px', padding: '0 9px', borderRadius: '6px', background: 'rgba(255,255,255,0.92)', color: '#1a1f2e', fontSize: '10px', fontWeight: 800, letterSpacing: '0.3px' }}>{p}</span>
+              ))}
+            </div>
+          </div>
+        </div>
       </footer>
 
       {/* Mini-cart drawer */}

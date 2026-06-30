@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Globe, Plus, Trash2, Loader2, CheckCircle2, XCircle, Clock, RefreshCw, Cloud, ShieldCheck, AlertCircle, ExternalLink, X, KeyRound, Unlink } from 'lucide-react';
+import { Globe, Plus, Trash2, Loader2, CheckCircle2, XCircle, Clock, RefreshCw, Cloud, ShieldCheck, AlertCircle, ExternalLink, X, KeyRound, Unlink, Copy, Check } from 'lucide-react';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 
@@ -20,8 +20,42 @@ export default function EcommerceDomains() {
   const [cfToken, setCfToken] = useState('');
   const [connectingCf, setConnectingCf] = useState(false);
   const [zoneSelection, setZoneSelection] = useState(null);
+  const [copiedKey, setCopiedKey] = useState('');
+  const [autoChecking, setAutoChecking] = useState(false);
 
   useEffect(() => { fetchDomains(); }, []);
+
+  // Auto-verify polling: while there are pending domains, silently re-check every 20s
+  useEffect(() => {
+    const hasPending = domains.some(d => d.status === 'pending' || d.status === 'verifying');
+    if (!hasPending) { setAutoChecking(false); return; }
+    setAutoChecking(true);
+    const interval = setInterval(() => { silentVerifyPending(); }, 20000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [domains]);
+
+  const silentVerifyPending = async () => {
+    const pending = domains.filter(d => d.status === 'pending' || d.status === 'verifying');
+    let anyVerified = false;
+    for (const d of pending) {
+      try {
+        const res = await api.post(`/ecommerce/domains/${d._id}/verify`);
+        if (res.data?.verified) anyVerified = true;
+      } catch { /* keep polling silently */ }
+    }
+    if (anyVerified) {
+      toast.success('Domain verified automatically! SSL is being provisioned.');
+    }
+    fetchDomains();
+  };
+
+  const copyToClipboard = (text, key) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedKey(key);
+      setTimeout(() => setCopiedKey(''), 2000);
+    }).catch(() => toast.error('Failed to copy'));
+  };
 
   const fetchDomains = async () => {
     try {
@@ -244,15 +278,32 @@ export default function EcommerceDomains() {
 
       {/* Platform subdomain card */}
       <div className="bg-gradient-to-br from-indigo-50 to-violet-50 rounded-3xl p-6 border border-indigo-100">
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="min-w-0">
             <p className="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-1">Platform Subdomain (Free)</p>
-            <p className="text-xl font-black text-gray-900">
+            <p className="text-xl font-black text-gray-900 break-all">
               {slug || 'your-store'}.{PLATFORM_BASE}
             </p>
+            <p className="text-xs text-indigo-500 mt-1">Ready to use instantly — no setup required.</p>
           </div>
-          <div className="px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold flex items-center gap-1">
-            <CheckCircle2 className="w-3.5 h-3.5" /> Active
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={() => copyToClipboard(`${slug || 'your-store'}.${PLATFORM_BASE}`, 'subdomain')}
+              className="flex items-center gap-1.5 px-3 py-2 bg-white/70 text-indigo-700 rounded-xl text-xs font-bold hover:bg-white transition-colors"
+            >
+              {copiedKey === 'subdomain' ? <><Check className="w-3.5 h-3.5 text-emerald-500" /> Copied</> : <><Copy className="w-3.5 h-3.5" /> Copy</>}
+            </button>
+            <a
+              href={`https://${slug || 'your-store'}.${PLATFORM_BASE}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition-colors"
+            >
+              <ExternalLink className="w-3.5 h-3.5" /> Visit
+            </a>
+            <div className="px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5" /> Active
+            </div>
           </div>
         </div>
       </div>
@@ -334,31 +385,29 @@ export default function EcommerceDomains() {
                     </div>
                   )}
                   {domain.status !== 'verified' && (
-                    <div className="mt-1.5 space-y-1">
+                    <div className="mt-3 rounded-xl border border-gray-100 dark:border-dark-700 bg-gray-50/60 dark:bg-dark-900/40 p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">Add these DNS records</p>
+                        {autoChecking && (
+                          <span className="flex items-center gap-1 text-[11px] font-bold text-indigo-500">
+                            <Loader2 className="w-3 h-3 animate-spin" /> Auto-checking…
+                          </span>
+                        )}
+                      </div>
                       {domain.cfCnameTarget ? (
                         <>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-bold text-gray-500">CNAME:</span>
-                            <code className="text-[10px] bg-gray-100 dark:bg-dark-700 px-2 py-1 rounded text-gray-600 dark:text-gray-400 break-all">
-                              {domain.hostname} → {domain.cfCnameTarget}
-                            </code>
-                          </div>
+                          <DnsRecordRow type="CNAME" name={domain.hostname} value={domain.cfCnameTarget} copyKey={`${domain._id}-cname`} copiedKey={copiedKey} onCopy={copyToClipboard} />
                           {domain.cfTxtName && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-bold text-gray-500">TXT:</span>
-                              <code className="text-[10px] bg-gray-100 dark:bg-dark-700 px-2 py-1 rounded text-gray-600 dark:text-gray-400 break-all">
-                                {domain.cfTxtName} = {domain.cfTxtValue}
-                              </code>
-                            </div>
+                            <DnsRecordRow type="TXT" name={domain.cfTxtName} value={domain.cfTxtValue} copyKey={`${domain._id}-txt`} copiedKey={copiedKey} onCopy={copyToClipboard} />
                           )}
                         </>
                       ) : domain.verificationToken ? (
-                        <div className="flex items-center gap-2">
-                          <code className="text-[10px] bg-gray-100 dark:bg-dark-700 px-2 py-1 rounded text-gray-600 dark:text-gray-400 break-all">
-                            TXT _maqder-verify.{domain.hostname} = {domain.verificationToken}
-                          </code>
-                        </div>
+                        <>
+                          <DnsRecordRow type="CNAME" name={domain.hostname} value={`cname.${PLATFORM_BASE}`} copyKey={`${domain._id}-cname`} copiedKey={copiedKey} onCopy={copyToClipboard} />
+                          <DnsRecordRow type="TXT" name={`_maqder-verify.${domain.hostname}`} value={domain.verificationToken} copyKey={`${domain._id}-txt`} copiedKey={copiedKey} onCopy={copyToClipboard} />
+                        </>
                       ) : null}
+                      <p className="text-[11px] text-gray-400 pt-1">DNS changes can take a few minutes to propagate. We'll verify automatically, or click <strong>Verify</strong> to check now.</p>
                     </div>
                   )}
                 </div>
@@ -494,6 +543,25 @@ export default function EcommerceDomains() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function DnsRecordRow({ type, name, value, copyKey, copiedKey, onCopy }) {
+  return (
+    <div className="flex items-center gap-2 bg-white dark:bg-dark-800 rounded-lg border border-gray-100 dark:border-dark-700 px-2.5 py-1.5">
+      <span className="text-[10px] font-black text-indigo-500 w-12 flex-shrink-0">{type}</span>
+      <div className="flex-1 min-w-0 overflow-hidden">
+        <code className="text-[11px] text-gray-700 dark:text-gray-300 break-all">{name}</code>
+        <code className="block text-[11px] text-gray-500 dark:text-gray-400 break-all">{value}</code>
+      </div>
+      <button
+        onClick={() => onCopy(value, copyKey)}
+        className="flex-shrink-0 flex items-center gap-1 px-2 py-1.5 rounded-md text-[11px] font-bold text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-dark-700 transition-colors"
+        title="Copy value"
+      >
+        {copiedKey === copyKey ? <><Check className="w-3.5 h-3.5 text-emerald-500" /> Copied</> : <><Copy className="w-3.5 h-3.5" /> Copy</>}
+      </button>
     </div>
   );
 }

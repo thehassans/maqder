@@ -592,9 +592,9 @@ export default function StorefrontProductDetail() {
           <p style={{ fontSize: '12px', color: '#6b7280', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.title}</p>
           <p style={{ fontSize: '16px', fontWeight: 'bold', color: '#059669', margin: 0 }}>{currentPrice} {currency}</p>
         </div>
-        <button onClick={handleAddToCart} disabled={outOfStock} style={{
+        <button onClick={handleAddToCart} disabled={isOutOfStock} style={{
           padding: '10px 20px', background: added ? '#059669' : '#4f46e5', color: '#fff', border: 'none', borderRadius: '8px',
-          fontWeight: 'bold', fontSize: '14px', cursor: outOfStock ? 'not-allowed' : 'pointer', opacity: outOfStock ? 0.5 : 1,
+          fontWeight: 'bold', fontSize: '14px', cursor: isOutOfStock ? 'not-allowed' : 'pointer', opacity: isOutOfStock ? 0.5 : 1,
           display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0,
         }}>
           {added ? <><Check size={16} /> Added</> : <><ShoppingCart size={16} /> Add</>}
