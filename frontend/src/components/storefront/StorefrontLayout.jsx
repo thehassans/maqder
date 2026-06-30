@@ -144,7 +144,7 @@ export default function StorefrontLayout({ children }) {
   const megaMenuRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
-  const { items, cartCount, cartTotal, isOpen, setIsOpen, removeItem } = useCart();
+  const { cartCount, isOpen, setIsOpen } = useCart();
   const { lang, toggleLang, t, isRTL } = useI18n();
 
   useEffect(() => {
@@ -403,72 +403,6 @@ export default function StorefrontLayout({ children }) {
 
       {/* Main content */}
       <main>{children}</main>
-
-      {/* Cart drawer */}
-      {isOpen && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 200 }} onClick={() => setIsOpen(false)}>
-          <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)', transition: 'opacity 0.3s' }} />
-          <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', [isRTL ? 'left' : 'right']: 0, top: 0, bottom: 0, width: '100%', maxWidth: '420px', backgroundColor: c('background', '#fff'), boxShadow: isRTL ? '8px 0 32px rgba(0,0,0,0.12)' : '-8px 0 32px rgba(0,0,0,0.12)', display: 'flex', flexDirection: 'column', animation: 'slideIn 0.3s ease' }}>
-            <div style={{ padding: '20px 24px', borderBottom: `1px solid ${c('borderColor', '#e5e7eb')}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ fontWeight: 800, fontSize: '20px', margin: 0, letterSpacing: '-0.3px' }}>{t('cart')} ({cartCount})</h3>
-              <button onClick={() => setIsOpen(false)} style={{ background: 'rgba(0,0,0,0.05)', border: 'none', cursor: 'pointer', borderRadius: '10px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.1)'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'}><X size={20} /></button>
-            </div>
-            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px' }}>
-              {items.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                  <ShoppingCart size={48} style={{ color: '#d1d5db', margin: '0 auto 16px' }} />
-                  <p style={{ color: c('textMuted', '#6b7280'), fontSize: '15px', fontWeight: 600 }}>{t('yourCartIsEmpty')}</p>
-                  <Link to="/store/products" onClick={() => setIsOpen(false)} style={{ display: 'inline-block', marginTop: '16px', padding: '10px 24px', background: c('primary', '#4f46e5'), color: '#fff', borderRadius: '10px', textDecoration: 'none', fontWeight: 600, fontSize: '14px' }}>{t('browseProducts')}</Link>
-                </div>
-              ) : (
-                items.map(item => (
-                  <div key={item.key} style={{ display: 'flex', gap: '14px', padding: '14px 0', borderBottom: `1px solid ${c('borderColor', '#e5e7eb')}` }}>
-                    {item.image && <img src={item.image} alt={item.title} style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '12px' }} />}
-                    <div style={{ flex: 1 }}>
-                      <p style={{ fontWeight: 600, fontSize: '14px', margin: '0 0 4px' }}>{item.title}</p>
-                      {item.variantLabel && <p style={{ fontSize: '12px', color: c('textMuted', '#6b7280'), margin: '0 0 4px' }}>{item.variantLabel}</p>}
-                      <p style={{ fontSize: '14px', color: c('priceColor', '#059669'), fontWeight: 700, margin: 0 }}>{item.price} {storeInfo?.currency || 'SAR'} × {item.quantity}</p>
-                    </div>
-                    <button onClick={() => removeItem(item.key)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', padding: '4px', transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = '0.7'} onMouseLeave={e => e.currentTarget.style.opacity = '1'}><X size={16} /></button>
-                  </div>
-                ))
-              )}
-            </div>
-            {items.length > 0 && (
-              <div style={{ padding: '20px 24px', borderTop: `1px solid ${c('borderColor', '#e5e7eb')}` }}>
-                {/* Free shipping progress */}
-                {(() => {
-                  const threshold = 200;
-                  const remaining = Math.max(0, threshold - cartTotal);
-                  const pct = Math.min(100, (cartTotal / threshold) * 100);
-                  return (
-                    <div style={{ marginBottom: '16px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                        <Truck size={16} style={{ color: c('primary', '#4f46e5') }} />
-                        {remaining > 0 ? (
-                          <span style={{ fontSize: '12.5px', color: c('textMuted', '#6b7280'), fontWeight: 600 }}>{t('addMoreForFreeShipping')} <strong style={{ color: c('primary', '#4f46e5') }}>{remaining} {storeInfo?.currency || 'SAR'}</strong> {t('forFreeShipping')}</span>
-                        ) : (
-                          <span style={{ fontSize: '12.5px', color: '#059669', fontWeight: 700 }}>{t('unlockedFreeShipping')}</span>
-                        )}
-                      </div>
-                      <div style={{ height: '6px', borderRadius: '999px', background: '#e5e7eb', overflow: 'hidden' }}>
-                        <div style={{ height: '100%', borderRadius: '999px', width: `${pct}%`, background: `linear-gradient(90deg, ${c('primary', '#4f46e5')}, ${c('accent', '#6366f1')})`, transition: 'width 0.4s ease' }} />
-                      </div>
-                    </div>
-                  );
-                })()}
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-                  <span style={{ fontWeight: 700, fontSize: '16px' }}>{t('total')}</span>
-                  <span style={{ fontWeight: 800, fontSize: '18px', color: c('primary', '#4f46e5') }}>{cartTotal} {storeInfo?.currency || 'SAR'}</span>
-                </div>
-                <Link to="/store/checkout" onClick={() => setIsOpen(false)} style={{ display: 'block', textAlign: 'center', padding: '14px', backgroundColor: c('buttonBg', '#4f46e5'), color: c('buttonText', '#fff'), borderRadius: '12px', textDecoration: 'none', fontWeight: 700, fontSize: '15px', transition: 'opacity 0.2s', boxShadow: '0 4px 14px rgba(79,70,229,0.2)' }} onMouseEnter={e => e.currentTarget.style.opacity = '0.9'} onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-                  {t('checkout')} →
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Trust badges bar */}
       <div style={{ borderTop: `1px solid ${c('borderColor', '#e5e7eb')}`, background: c('background', '#ffffff'), marginTop: '80px' }}>
