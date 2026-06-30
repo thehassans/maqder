@@ -32,10 +32,10 @@ export default function StorefrontAbout() {
 
       {/* Hero */}
       <div style={{ textAlign: 'center', marginBottom: '48px' }}>
-        <div style={{ width: '72px', height: '72px', borderRadius: '18px', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+        <div style={{ width: '72px', height: '72px', borderRadius: '22px', background: 'linear-gradient(135deg, #4f46e520, #4f46e510)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
           <Store size={36} style={{ color: '#4f46e5' }} />
         </div>
-        <h1 style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '12px' }}>About {storeName}</h1>
+        <h1 style={{ fontSize: '36px', fontWeight: 800, marginBottom: '14px', letterSpacing: '-0.5px' }}>About {storeName}</h1>
         {storeDesc ? (
           <p style={{ fontSize: '16px', color: '#6b7280', maxWidth: '600px', margin: '0 auto', lineHeight: 1.7 }}>{storeDesc}</p>
         ) : (
@@ -46,11 +46,11 @@ export default function StorefrontAbout() {
       </div>
 
       {/* Story */}
-      <div style={{ background: '#f9fafb', borderRadius: '16px', padding: '32px', marginBottom: '40px', border: '1px solid #e5e7eb' }}>
-        <h2 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Sparkles size={22} style={{ color: '#4f46e5' }} /> Our Story
+      <div style={{ background: '#fff', borderRadius: '20px', padding: '36px', marginBottom: '40px', border: '1px solid #e5e7eb', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+        <h2 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '10px', letterSpacing: '-0.3px' }}>
+          <Sparkles size={24} style={{ color: '#4f46e5' }} /> Our Story
         </h2>
-        <p style={{ fontSize: '15px', color: '#4b5563', lineHeight: 1.8, marginBottom: '12px' }}>
+        <p style={{ fontSize: '15px', color: '#4b5563', lineHeight: 1.8, marginBottom: '14px' }}>
           {storeName} was founded with a simple goal: to provide high-quality products with exceptional service to customers across Saudi Arabia. What started as a small operation has grown into a trusted online destination for thousands of shoppers.
         </p>
         <p style={{ fontSize: '15px', color: '#4b5563', lineHeight: 1.8 }}>
@@ -59,16 +59,16 @@ export default function StorefrontAbout() {
       </div>
 
       {/* Values */}
-      <h2 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '20px', textAlign: 'center' }}>Our Values</h2>
+      <h2 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '24px', textAlign: 'center', letterSpacing: '-0.3px' }}>Our Values</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px', marginBottom: '40px' }}>
         {values.map((v, i) => {
           const Icon = v.icon;
           return (
-            <div key={i} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '14px', padding: '24px', textAlign: 'center' }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                <Icon size={24} style={{ color: '#4f46e5' }} />
+            <div key={i} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '18px', padding: '28px', textAlign: 'center', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }} onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-6px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(0,0,0,0.1)'; }} onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; }}>
+              <div style={{ width: '52px', height: '52px', borderRadius: '16px', background: 'linear-gradient(135deg, #4f46e520, #4f46e510)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px' }}>
+                <Icon size={26} style={{ color: '#4f46e5' }} />
               </div>
-              <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '8px' }}>{v.title}</h3>
+              <h3 style={{ fontSize: '17px', fontWeight: 700, marginBottom: '10px' }}>{v.title}</h3>
               <p style={{ fontSize: '13px', color: '#6b7280', lineHeight: 1.6 }}>{v.desc}</p>
             </div>
           );
@@ -84,9 +84,9 @@ export default function StorefrontAbout() {
         ].map((s, i) => {
           const Icon = s.icon;
           return (
-            <div key={i} style={{ textAlign: 'center', padding: '24px', background: '#4f46e5', borderRadius: '14px', color: '#fff' }}>
-              <Icon size={28} style={{ margin: '0 auto 8px' }} />
-              <p style={{ fontSize: '24px', fontWeight: 'bold', margin: '0 0 4px' }}>{s.value}</p>
+            <div key={i} style={{ textAlign: 'center', padding: '28px', background: 'linear-gradient(135deg, #4f46e5, #6366f1)', borderRadius: '18px', color: '#fff', boxShadow: '0 4px 14px rgba(79,70,229,0.2)' }}>
+              <Icon size={30} style={{ margin: '0 auto 10px' }} />
+              <p style={{ fontSize: '26px', fontWeight: 800, margin: '0 0 4px' }}>{s.value}</p>
               <p style={{ fontSize: '13px', opacity: 0.9, margin: 0 }}>{s.label}</p>
             </div>
           );
@@ -94,12 +94,12 @@ export default function StorefrontAbout() {
       </div>
 
       {/* CTA */}
-      <div style={{ textAlign: 'center', background: '#f9fafb', borderRadius: '16px', padding: '32px', border: '1px solid #e5e7eb' }}>
-        <h3 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }}>Ready to explore?</h3>
-        <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '20px' }}>Browse our collection and find something you'll love.</p>
+      <div style={{ textAlign: 'center', background: '#fff', borderRadius: '20px', padding: '36px', border: '1px solid #e5e7eb', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+        <h3 style={{ fontSize: '22px', fontWeight: 800, marginBottom: '10px', letterSpacing: '-0.3px' }}>Ready to explore?</h3>
+        <p style={{ color: '#6b7280', fontSize: '15px', marginBottom: '24px' }}>Browse our collection and find something you'll love.</p>
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Link to="/store/products" style={{ display: 'inline-block', padding: '12px 28px', background: '#4f46e5', color: '#fff', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold', fontSize: '14px' }}>Shop Now</Link>
-          <Link to="/store/contact" style={{ display: 'inline-block', padding: '12px 28px', background: '#fff', color: '#374151', border: '1px solid #e5e7eb', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold', fontSize: '14px' }}>Contact Us</Link>
+          <Link to="/store/products" style={{ display: 'inline-flex', alignItems: 'center', padding: '14px 32px', background: 'linear-gradient(135deg, #4f46e5, #6366f1)', color: '#fff', borderRadius: '999px', textDecoration: 'none', fontWeight: 700, fontSize: '15px', boxShadow: '0 4px 14px rgba(79,70,229,0.25)', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(79,70,229,0.3)'; }} onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(79,70,229,0.25)'; }}>Shop Now</Link>
+          <Link to="/store/contact" style={{ display: 'inline-flex', alignItems: 'center', padding: '14px 32px', background: '#fff', color: '#374151', border: '1px solid #e5e7eb', borderRadius: '999px', textDecoration: 'none', fontWeight: 700, fontSize: '15px', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.background = '#f9fafb'; }} onMouseLeave={e => { e.currentTarget.style.background = '#fff'; }}>Contact Us</Link>
         </div>
       </div>
     </div>

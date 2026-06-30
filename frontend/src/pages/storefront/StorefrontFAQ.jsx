@@ -59,25 +59,25 @@ export default function StorefrontFAQ() {
       <StorefrontBreadcrumbs items={[{ label: 'Home', path: '/store' }, { label: 'FAQ' }]} />
 
       <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-        <div style={{ width: '64px', height: '64px', borderRadius: '16px', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+        <div style={{ width: '64px', height: '64px', borderRadius: '20px', background: 'linear-gradient(135deg, #4f46e520, #4f46e510)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
           <HelpCircle size={32} style={{ color: '#4f46e5' }} />
         </div>
-        <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px' }}>Frequently Asked Questions</h1>
+        <h1 style={{ fontSize: '30px', fontWeight: 800, marginBottom: '8px', letterSpacing: '-0.5px' }}>Frequently Asked Questions</h1>
         <p style={{ color: '#6b7280', fontSize: '15px' }}>Find answers to common questions about orders, shipping, returns, and more.</p>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '40px' }}>
         {faqs.map((faq, i) => (
-          <div key={i} style={{ background: '#fff', border: `1px solid ${openIndex === i ? '#4f46e5' : '#e5e7eb'}`, borderRadius: '12px', overflow: 'hidden', transition: 'border-color 0.2s' }}>
+          <div key={i} style={{ background: '#fff', border: `1px solid ${openIndex === i ? '#4f46e5' : '#e5e7eb'}`, borderRadius: '16px', overflow: 'hidden', transition: 'all 0.2s', boxShadow: openIndex === i ? '0 4px 14px rgba(79,70,229,0.1)' : '0 1px 3px rgba(0,0,0,0.04)' }}>
             <button
               onClick={() => setOpenIndex(openIndex === i ? null : i)}
-              style={{ width: '100%', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+              style={{ width: '100%', padding: '18px 22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}
             >
-              <span style={{ fontWeight: 'bold', fontSize: '15px', color: '#111', flex: 1 }}>{faq.question}</span>
+              <span style={{ fontWeight: 700, fontSize: '15px', color: '#111', flex: 1 }}>{faq.question}</span>
               <ChevronDown size={20} style={{ color: '#6b7280', transition: 'transform 0.2s', transform: openIndex === i ? 'rotate(180deg)' : 'none', flexShrink: 0 }} />
             </button>
             {openIndex === i && (
-              <div style={{ padding: '0 20px 16px', fontSize: '14px', color: '#4b5563', lineHeight: 1.6 }}>
+              <div style={{ padding: '0 22px 18px', fontSize: '14px', color: '#4b5563', lineHeight: 1.7 }}>
                 {faq.answer}
               </div>
             )}
@@ -85,10 +85,10 @@ export default function StorefrontFAQ() {
         ))}
       </div>
 
-      <div style={{ background: '#f9fafb', borderRadius: '12px', padding: '24px', textAlign: 'center', border: '1px solid #e5e7eb' }}>
-        <h3 style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '8px' }}>Still have questions?</h3>
-        <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '16px' }}>Our support team is here to help.</p>
-        <Link to="/store/contact" style={{ display: 'inline-block', padding: '10px 24px', background: '#4f46e5', color: '#fff', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold', fontSize: '14px' }}>
+      <div style={{ background: '#fff', borderRadius: '20px', padding: '32px', textAlign: 'center', border: '1px solid #e5e7eb', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+        <h3 style={{ fontWeight: 800, fontSize: '18px', marginBottom: '8px', letterSpacing: '-0.3px' }}>Still have questions?</h3>
+        <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '20px' }}>Our support team is here to help.</p>
+        <Link to="/store/contact" style={{ display: 'inline-flex', alignItems: 'center', padding: '12px 28px', background: 'linear-gradient(135deg, #4f46e5, #6366f1)', color: '#fff', borderRadius: '999px', textDecoration: 'none', fontWeight: 700, fontSize: '14px', boxShadow: '0 4px 14px rgba(79,70,229,0.25)', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(79,70,229,0.3)'; }} onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(79,70,229,0.25)'; }}>
           Contact Us
         </Link>
       </div>
