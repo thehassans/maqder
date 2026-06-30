@@ -61,28 +61,38 @@ export default function StorefrontHome() {
       case 'hero':
         return (
           <div key={section.id} style={{
-            background: s.imageUrl ? `url(${s.imageUrl}) center/cover` : c('primary', '#4f46e5'),
-            padding: '60px 20px', textAlign: 'center', borderRadius: '12px', marginBottom: '32px',
+            background: s.imageUrl ? `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url(${s.imageUrl}) center/cover` : `linear-gradient(135deg, ${c('primary', '#4f46e5')}, ${c('accent', '#7c3aed')})`,
+            padding: '80px 24px', textAlign: 'center', borderRadius: '24px', marginBottom: '40px',
+            position: 'relative', overflow: 'hidden',
+            boxShadow: s.imageUrl ? '0 20px 60px -15px rgba(0,0,0,0.3)' : '0 20px 60px -15px rgba(79,70,229,0.3)',
           }}>
-            <h2 style={{ color: '#fff', fontSize: '32px', margin: '0 0 8px', fontWeight: 'bold' }}>{s.title || 'Welcome to our store'}</h2>
-            <p style={{ color: '#fff', opacity: 0.9, margin: '0 0 20px', fontSize: '16px' }}>{s.subtitle || ''}</p>
-            <Link to={s.buttonLink || '/store/products'} style={{
-              display: 'inline-flex', alignItems: 'center', gap: '8px',
-              background: c('buttonBg', '#4f46e5'), color: c('buttonText', '#fff'),
-              padding: '12px 28px', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold',
-            }}>
-              {s.buttonText || 'Shop Now'} <ArrowRight size={16} />
-            </Link>
+            <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '200px', height: '200px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
+            <div style={{ position: 'absolute', bottom: '-60px', left: '-30px', width: '160px', height: '160px', borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <h2 style={{ color: '#fff', fontSize: '36px', margin: '0 0 12px', fontWeight: 800, letterSpacing: '-0.5px', textShadow: s.imageUrl ? '0 2px 12px rgba(0,0,0,0.3)' : 'none' }}>{s.title || 'Welcome to our store'}</h2>
+              <p style={{ color: '#fff', opacity: 0.95, margin: '0 0 28px', fontSize: '17px', textShadow: s.imageUrl ? '0 1px 8px rgba(0,0,0,0.3)' : 'none' }}>{s.subtitle || ''}</p>
+              <Link to={s.buttonLink || '/store/products'} style={{
+                display: 'inline-flex', alignItems: 'center', gap: '8px',
+                background: '#fff', color: c('primary', '#4f46e5'),
+                padding: '14px 32px', borderRadius: '999px', textDecoration: 'none', fontWeight: 700, fontSize: '16px',
+                transition: 'all 0.2s', boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+              }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(0,0,0,0.2)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.15)'; }}
+              >
+                {s.buttonText || 'Shop Now'} <ArrowRight size={18} />
+              </Link>
+            </div>
           </div>
         );
       case 'product-carousel':
         return (
           <div key={section.id} style={{ marginBottom: '40px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '22px', fontWeight: 'bold', margin: 0, color: c('text', '#111') }}>{s.title || 'Products'}</h3>
-              <Link to="/store/products" style={{ color: c('primary', '#4f46e5'), textDecoration: 'none', fontSize: '14px', fontWeight: 'bold' }}>View all →</Link>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ fontSize: '24px', fontWeight: 800, margin: 0, color: c('text', '#111'), letterSpacing: '-0.3px' }}>{s.title || 'Products'}</h3>
+              <Link to="/store/products" style={{ color: c('primary', '#4f46e5'), textDecoration: 'none', fontSize: '14px', fontWeight: 700, transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = '0.7'} onMouseLeave={e => e.currentTarget.style.opacity = '1'}>View all →</Link>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
               {products.slice(0, s.limit || 8).map(p => (
                 <ProductCard key={p._id} product={p} currency={currency} colors={colors} onQuickView={() => setQuickViewProduct(p)} />
               ))}
@@ -94,14 +104,18 @@ export default function StorefrontHome() {
       case 'category-grid':
         return (
           <div key={section.id} style={{ marginBottom: '40px' }}>
-            <h3 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '16px', color: c('text', '#111') }}>{s.title || 'Categories'}</h3>
+            <h3 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '20px', color: c('text', '#111'), letterSpacing: '-0.3px' }}>{s.title || 'Categories'}</h3>
             <div style={{ display: 'grid', gridTemplateColumns: `repeat(${s.columns || 4}, 1fr)`, gap: '16px' }}>
               {(categories.length > 0 ? categories.slice(0, s.columns || 4) : ['Category 1', 'Category 2', 'Category 3', 'Category 4']).map((cat, i) => (
                 <Link key={i} to={`/store/products?category=${encodeURIComponent(cat)}`} style={{
-                  background: c('surface', '#f9fafb'), border: `1px solid ${c('borderColor', '#e5e7eb')}`,
-                  borderRadius: '12px', padding: '24px', textAlign: 'center', textDecoration: 'none',
-                }}>
-                  <p style={{ fontWeight: 'bold', color: c('text', '#111'), margin: 0 }}>{cat}</p>
+                  background: `linear-gradient(135deg, ${c('surface', '#f9fafb')}, #fff)`, border: `1px solid ${c('borderColor', '#e5e7eb')}`,
+                  borderRadius: '16px', padding: '32px 24px', textAlign: 'center', textDecoration: 'none',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 28px rgba(0,0,0,0.08)'; e.currentTarget.style.borderColor = c('primary', '#4f46e5') + '40'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; e.currentTarget.style.borderColor = c('borderColor', '#e5e7eb'); }}
+                >
+                  <p style={{ fontWeight: 700, color: c('text', '#111'), margin: 0, fontSize: '15px' }}>{cat}</p>
                 </Link>
               ))}
             </div>
@@ -110,17 +124,21 @@ export default function StorefrontHome() {
       case 'newsletter':
         return (
           <form key={section.id} onSubmit={handleNewsletterSubmit} style={{
-            background: c('primary', '#4f46e5'), padding: '40px 20px', textAlign: 'center',
-            borderRadius: '12px', marginBottom: '32px',
+            background: `linear-gradient(135deg, ${c('primary', '#4f46e5')}, ${c('accent', '#7c3aed')})`, padding: '48px 24px', textAlign: 'center',
+            borderRadius: '24px', marginBottom: '40px', position: 'relative', overflow: 'hidden',
+            boxShadow: '0 20px 60px -15px rgba(79,70,229,0.3)',
           }}>
-            <h3 style={{ color: '#fff', fontSize: '22px', margin: '0 0 8px' }}>{s.title || 'Subscribe'}</h3>
-            <p style={{ color: '#fff', opacity: 0.9, margin: '0 0 16px' }}>{s.subtitle || 'Get updates on new products'}</p>
-            <div style={{ display: 'flex', gap: '8px', maxWidth: '400px', margin: '0 auto' }}>
-              <input placeholder="Email address" value={newsletterEmail} onChange={e => setNewsletterEmail(e.target.value)} type="email" required style={{ flex: 1, padding: '10px 14px', border: 'none', borderRadius: '8px', fontSize: '14px' }} />
-              <button type="submit" disabled={newsletterStatus === 'loading'} style={{ background: c('buttonBg', '#4f46e5'), color: c('buttonText', '#fff'), border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>{newsletterStatus === 'loading' ? '...' : 'Subscribe'}</button>
+            <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '180px', height: '180px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <h3 style={{ color: '#fff', fontSize: '26px', margin: '0 0 8px', fontWeight: 800 }}>{s.title || 'Subscribe'}</h3>
+              <p style={{ color: '#fff', opacity: 0.9, margin: '0 0 24px', fontSize: '15px' }}>{s.subtitle || 'Get updates on new products'}</p>
+              <div style={{ display: 'flex', gap: '8px', maxWidth: '420px', margin: '0 auto' }}>
+                <input placeholder="Email address" value={newsletterEmail} onChange={e => setNewsletterEmail(e.target.value)} type="email" required style={{ flex: 1, padding: '14px 18px', border: 'none', borderRadius: '12px', fontSize: '15px', outline: 'none' }} />
+                <button type="submit" disabled={newsletterStatus === 'loading'} style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', padding: '14px 24px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', fontSize: '15px', backdropFilter: 'blur(10px)', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}>{newsletterStatus === 'loading' ? '...' : 'Subscribe'}</button>
+              </div>
+              {newsletterStatus === 'success' && <p style={{ color: '#fff', marginTop: '12px', fontSize: '14px', fontWeight: 600 }}>✓ Subscribed! Thank you.</p>}
+              {newsletterStatus === 'error' && <p style={{ color: '#fecaca', marginTop: '12px', fontSize: '14px' }}>Failed to subscribe. Please try again.</p>}
             </div>
-            {newsletterStatus === 'success' && <p style={{ color: '#fff', marginTop: '8px', fontSize: '14px' }}>✓ Subscribed! Thank you.</p>}
-            {newsletterStatus === 'error' && <p style={{ color: '#fecaca', marginTop: '8px', fontSize: '14px' }}>Failed to subscribe. Please try again.</p>}
           </form>
         );
       case 'rich-text':
@@ -139,12 +157,19 @@ export default function StorefrontHome() {
       case 'testimonial':
         return (
           <div key={section.id} style={{ marginBottom: '40px' }}>
-            <h3 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '16px', color: c('text', '#111') }}>{s.title || 'Testimonials'}</h3>
+            <h3 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '20px', color: c('text', '#111'), letterSpacing: '-0.3px' }}>{s.title || 'Testimonials'}</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
               {(s.items || []).map((item, i) => (
-                <div key={i} style={{ background: c('surface', '#f9fafb'), border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '12px', padding: '20px' }}>
-                  <p style={{ color: c('text', '#111'), fontSize: '15px', fontStyle: 'italic', margin: '0 0 12px' }}>"{item.text || ''}"</p>
-                  <p style={{ color: c('textMuted', '#6b7280'), fontSize: '14px', fontWeight: 'bold', margin: 0 }}>— {item.author || 'Customer'}</p>
+                <div key={i} style={{ background: '#fff', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '16px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', transition: 'all 0.3s' }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 28px rgba(0,0,0,0.08)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; }}
+                >
+                  <div style={{ fontSize: '28px', color: c('primary', '#4f46e5'), lineHeight: 1, marginBottom: '8px' }}>“</div>
+                  <p style={{ color: c('text', '#111'), fontSize: '15px', fontStyle: 'italic', margin: '0 0 16px', lineHeight: 1.6 }}>{item.text || ''}</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: `linear-gradient(135deg, ${c('primary', '#4f46e5')}, ${c('accent', '#7c3aed')})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '14px' }}>{(item.author || 'C')[0]}</div>
+                    <p style={{ color: c('textMuted', '#6b7280'), fontSize: '14px', fontWeight: 600, margin: 0 }}>— {item.author || 'Customer'}</p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -177,12 +202,16 @@ export default function StorefrontHome() {
       {sections.length > 0 ? sections.map(renderSection) : (
         // Fallback if no theme configured
         <>
-          <div style={{ background: c('primary', '#4f46e5'), padding: '60px 20px', textAlign: 'center', borderRadius: '12px', marginBottom: '32px' }}>
-            <h2 style={{ color: '#fff', fontSize: '32px', margin: '0 0 8px' }}>{storeInfo?.storeName || 'Welcome'}</h2>
-            <Link to="/store/products" style={{ display: 'inline-block', background: '#fff', color: c('primary', '#4f46e5'), padding: '12px 28px', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold' }}>Shop Now</Link>
+          <div style={{ background: `linear-gradient(135deg, ${c('primary', '#4f46e5')}, ${c('accent', '#7c3aed')})`, padding: '80px 24px', textAlign: 'center', borderRadius: '24px', marginBottom: '40px', position: 'relative', overflow: 'hidden', boxShadow: '0 20px 60px -15px rgba(79,70,229,0.3)' }}>
+            <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '200px', height: '200px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <h2 style={{ color: '#fff', fontSize: '36px', margin: '0 0 12px', fontWeight: 800, letterSpacing: '-0.5px' }}>{storeInfo?.storeName || 'Welcome'}</h2>
+              <p style={{ color: '#fff', opacity: 0.9, margin: '0 0 28px', fontSize: '17px' }}>Discover amazing products at great prices</p>
+              <Link to="/store/products" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#fff', color: c('primary', '#4f46e5'), padding: '14px 32px', borderRadius: '999px', textDecoration: 'none', fontWeight: 700, fontSize: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(0,0,0,0.2)'; }} onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.15)'; }}>Shop Now <ArrowRight size={18} /></Link>
+            </div>
           </div>
           <div style={{ marginBottom: '40px' }}>
-            <h3 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '16px' }}>Featured Products</h3>
+            <h3 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '20px', letterSpacing: '-0.3px' }}>Featured Products</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
               {products.map(p => <ProductCard key={p._id} product={p} currency={currency} colors={colors} onQuickView={() => setQuickViewProduct(p)} />)}
             </div>
@@ -193,16 +222,19 @@ export default function StorefrontHome() {
       {/* Recently viewed products */}
       {recentItems.length > 0 && (
         <div style={{ marginBottom: '40px' }}>
-          <h3 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '16px' }}>Recently Viewed</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px' }}>
+          <h3 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '20px', letterSpacing: '-0.3px' }}>Recently Viewed</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '16px' }}>
             {recentItems.slice(0, 6).map(item => (
-              <Link key={item.productId} to={`/store/products/${item.slug}`} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '10px', overflow: 'hidden', textDecoration: 'none' }}>
+              <Link key={item.productId} to={`/store/products/${item.slug}`} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '14px', overflow: 'hidden', textDecoration: 'none', transition: 'all 0.3s', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 12px 28px rgba(0,0,0,0.08)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; }}
+              >
                 <div style={{ aspectRatio: '1', background: '#e5e7eb', overflow: 'hidden' }}>
-                  {item.image ? <img src={item.image} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
+                  {item.image ? <img src={item.image} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} /> : null}
                 </div>
-                <div style={{ padding: '8px' }}>
-                  <p style={{ fontSize: '12px', fontWeight: 'bold', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#111' }}>{item.title}</p>
-                  <p style={{ fontSize: '13px', fontWeight: 'bold', color: '#059669', margin: 0 }}>{item.price} {currency}</p>
+                <div style={{ padding: '10px' }}>
+                  <p style={{ fontSize: '12px', fontWeight: 600, margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#111' }}>{item.title}</p>
+                  <p style={{ fontSize: '14px', fontWeight: 800, color: '#059669', margin: 0 }}>{item.price} {currency}</p>
                 </div>
               </Link>
             ))}
@@ -326,34 +358,46 @@ function FlashSaleSection({ settings, products, currency, colors, onQuickView })
 function ProductCard({ product, currency, colors, onQuickView }) {
   const c = (key, fallback) => colors[key] || fallback;
   const slug = product.seo?.slug || product._id;
+  const hasSale = product.compareAtPrice && product.compareAtPrice > product.basePrice;
   return (
     <div style={{
-      background: c('surface', '#f9fafb'), border: `1px solid ${c('borderColor', '#e5e7eb')}`,
-      borderRadius: '12px', overflow: 'hidden', textDecoration: 'none', display: 'block',
-      position: 'relative',
-    }}>
+      background: '#fff', border: `1px solid ${c('borderColor', '#e5e7eb')}`,
+      borderRadius: '16px', overflow: 'hidden', textDecoration: 'none', display: 'block',
+      position: 'relative', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+    }}
+      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-6px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(0,0,0,0.1)'; e.currentTarget.style.borderColor = c('primary', '#4f46e5') + '40'; }}
+      onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; e.currentTarget.style.borderColor = c('borderColor', '#e5e7eb'); }}
+    >
       <Link to={`/store/products/${slug}`} style={{ textDecoration: 'none', display: 'block' }}>
-        <div style={{ aspectRatio: '1', background: c('borderColor', '#e5e7eb'), overflow: 'hidden' }}>
+        <div style={{ aspectRatio: '1', background: c('borderColor', '#e5e7eb'), overflow: 'hidden', position: 'relative' }}>
           {product.images?.[0]?.url ? (
-            <img src={product.images[0].url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <img src={product.images[0].url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} />
           ) : (
             <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: c('textMuted', '#6b7280'), fontSize: '12px' }}>No image</div>
           )}
-        </div>
-        <div style={{ padding: '12px' }}>
-          <p style={{ fontWeight: 'bold', fontSize: '14px', color: c('text', '#111'), margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.title}</p>
-          {product.compareAtPrice && product.compareAtPrice > product.basePrice && (
-            <span style={{ fontSize: '12px', color: c('salePriceColor', '#dc2626'), textDecoration: 'line-through', marginRight: '6px' }}>{product.compareAtPrice} {currency}</span>
+          {hasSale && (
+            <div style={{ position: 'absolute', top: '10px', left: '10px', background: c('salePriceColor', '#dc2626'), color: '#fff', fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '999px', boxShadow: '0 2px 8px rgba(220,38,38,0.3)' }}>
+              -{Math.round((1 - product.basePrice / product.compareAtPrice) * 100)}%
+            </div>
           )}
-          <p style={{ fontSize: '16px', fontWeight: 'bold', color: c('priceColor', '#059669'), margin: 0 }}>{product.basePrice} {currency}</p>
+        </div>
+        <div style={{ padding: '14px' }}>
+          <p style={{ fontWeight: 600, fontSize: '14px', color: c('text', '#111'), margin: '0 0 6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.title}</p>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+            {hasSale && (
+              <span style={{ fontSize: '12px', color: c('salePriceColor', '#dc2626'), textDecoration: 'line-through' }}>{product.compareAtPrice} {currency}</span>
+            )}
+            <p style={{ fontSize: '17px', fontWeight: 800, color: c('priceColor', '#059669'), margin: 0 }}>{product.basePrice} {currency}</p>
+          </div>
         </div>
       </Link>
       {onQuickView && (
         <button onClick={(e) => { e.preventDefault(); onQuickView(); }} style={{
-          position: 'absolute', top: '8px', right: '8px', width: '34px', height: '34px', borderRadius: '50%',
-          background: 'rgba(255,255,255,0.9)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          opacity: 0, transition: 'opacity 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-        }} onMouseEnter={e => e.currentTarget.style.opacity = 1} onMouseLeave={e => e.currentTarget.style.opacity = 0}>
+          position: 'absolute', top: '10px', right: '10px', width: '36px', height: '36px', borderRadius: '50%',
+          background: 'rgba(255,255,255,0.95)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          opacity: 0, transition: 'opacity 0.25s', boxShadow: '0 2px 12px rgba(0,0,0,0.12)',
+        }} onMouseEnter={e => { e.currentTarget.style.opacity = 1; e.currentTarget.style.transform = 'scale(1.1)'; }} onMouseLeave={e => { e.currentTarget.style.opacity = 0; e.currentTarget.style.transform = 'scale(1)'; }}>
           <Eye size={16} color={c('primary', '#4f46e5')} />
         </button>
       )}
