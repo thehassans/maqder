@@ -299,6 +299,7 @@ export default function StorefrontLayout({ children }) {
           <div>
             <h4 style={{ color: '#fff', margin: '0 0 8px', fontSize: '14px' }}>Quick Links</h4>
             <Link to="/store" style={{ display: 'block', color: c('footerText', '#9ca3af'), textDecoration: 'none', fontSize: '13px', marginBottom: '4px' }}>Home</Link>
+            <Link to="/store/about" style={{ display: 'block', color: c('footerText', '#9ca3af'), textDecoration: 'none', fontSize: '13px', marginBottom: '4px' }}>About Us</Link>
             <Link to="/store/account" style={{ display: 'block', color: c('footerText', '#9ca3af'), textDecoration: 'none', fontSize: '13px', marginBottom: '4px' }}>My Account</Link>
             <Link to="/store/products" style={{ display: 'block', color: c('footerText', '#9ca3af'), textDecoration: 'none', fontSize: '13px', marginBottom: '4px' }}>All Products</Link>
             <Link to="/store/wishlist" style={{ display: 'block', color: c('footerText', '#9ca3af'), textDecoration: 'none', fontSize: '13px', marginBottom: '4px' }}>Wishlist</Link>
@@ -307,6 +308,7 @@ export default function StorefrontLayout({ children }) {
             <Link to="/store/returns" style={{ display: 'block', color: c('footerText', '#9ca3af'), textDecoration: 'none', fontSize: '13px', marginBottom: '4px' }}>Returns & Refunds</Link>
             <Link to="/store/contact" style={{ display: 'block', color: c('footerText', '#9ca3af'), textDecoration: 'none', fontSize: '13px', marginBottom: '4px' }}>Contact Us</Link>
             <Link to="/store/faq" style={{ display: 'block', color: c('footerText', '#9ca3af'), textDecoration: 'none', fontSize: '13px', marginBottom: '4px' }}>FAQ</Link>
+            <Link to="/store/shipping-policy" style={{ display: 'block', color: c('footerText', '#9ca3af'), textDecoration: 'none', fontSize: '13px', marginBottom: '4px' }}>Shipping Policy</Link>
             <Link to="/store/privacy" style={{ display: 'block', color: c('footerText', '#9ca3af'), textDecoration: 'none', fontSize: '13px', marginBottom: '4px' }}>Privacy Policy</Link>
             <Link to="/store/terms" style={{ display: 'block', color: c('footerText', '#9ca3af'), textDecoration: 'none', fontSize: '13px', marginBottom: '4px' }}>Terms &amp; Conditions</Link>
           </div>
