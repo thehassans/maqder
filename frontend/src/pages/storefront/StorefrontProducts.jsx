@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Search, Loader2, ChevronLeft, ChevronRight, SlidersHorizontal, Eye, Star, GitCompare, Check } from 'lucide-react';
 import storeApi from '../../lib/storeApi';
 import { useCompare } from '../../store/storefrontCompare';
+import { useI18n } from '../../store/storefrontI18n';
 import StorefrontSeo from '../../components/storefront/StorefrontSeo';
 import StorefrontBreadcrumbs from '../../components/storefront/StorefrontBreadcrumbs';
 import QuickViewModal from '../../components/storefront/QuickViewModal';
@@ -19,6 +20,7 @@ export default function StorefrontProducts() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [reviewStats, setReviewStats] = useState({});
   const { toggleCompare, isInCompare, count: compareCount } = useCompare();
+  const { t, isRTL } = useI18n();
 
   const search = searchParams.get('search') || '';
   const category = searchParams.get('category') || '';
@@ -96,7 +98,7 @@ export default function StorefrontProducts() {
         url={window.location.href}
         siteName={storeInfo?.storeName || 'Store'}
       />
-      <StorefrontBreadcrumbs items={[{ label: 'Products' }]} />
+      <StorefrontBreadcrumbs items={[{ label: t('products') }]} />
       <style>{`
         .sf-products-grid { display: grid; gap: 16px; grid-template-columns: repeat(2, 1fr); }
         @media (min-width: 640px) { .sf-products-grid { grid-template-columns: repeat(3, 1fr); gap: 20px; } }
@@ -105,15 +107,15 @@ export default function StorefrontProducts() {
       {/* Header */}
       <div style={{ marginBottom: '28px' }}>
         <h1 style={{ fontSize: '32px', fontWeight: 800, margin: '0 0 20px', color: c('text', '#111'), letterSpacing: '-0.5px' }}>
-          {category || search ? (category || `Search: "${search}"`) : 'All Products'}
+          {category || search ? (category || `"${search}"`) : t('allProducts')}
         </h1>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
           {/* Search */}
           <form onSubmit={e => { e.preventDefault(); updateParam('search', e.target.elements.q.value); }} style={{ flex: 1, minWidth: '200px', display: 'flex' }}>
-            <input name="q" defaultValue={search} placeholder="Search products..." style={{
-              flex: 1, padding: '12px 16px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '12px 0 0 12px', fontSize: '14px', outline: 'none', transition: 'border-color 0.2s',
+            <input name="q" defaultValue={search} placeholder={t('search')} style={{
+              flex: 1, padding: '12px 16px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: isRTL ? '0 12px 12px 0' : '12px 0 0 12px', fontSize: '14px', outline: 'none', transition: 'border-color 0.2s',
             }} />
-            <button type="submit" style={{ padding: '12px 20px', background: c('primary', '#4f46e5'), color: '#fff', border: 'none', borderRadius: '0 12px 12px 0', cursor: 'pointer', transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = '0.9'} onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+            <button type="submit" style={{ padding: '12px 20px', background: c('primary', '#4f46e5'), color: '#fff', border: 'none', borderRadius: isRTL ? '12px 0 0 12px' : '0 12px 12px 0', cursor: 'pointer', transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = '0.9'} onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
               <Search size={16} />
             </button>
           </form>
@@ -121,16 +123,16 @@ export default function StorefrontProducts() {
           <select value={sort} onChange={e => updateParam('sort', e.target.value)} style={{
             padding: '12px 16px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '12px', fontSize: '14px', background: '#fff', cursor: 'pointer', outline: 'none',
           }}>
-            <option value="newest">Newest</option>
-            <option value="price-low">Price: Low to High</option>
-            <option value="price-high">Price: High to Low</option>
-            <option value="popular">Most Popular</option>
+            <option value="newest">{t('newest')}</option>
+            <option value="price-low">{t('priceLow')}</option>
+            <option value="price-high">{t('priceHigh')}</option>
+            <option value="popular">{t('mostPopular')}</option>
           </select>
           {/* Filters toggle */}
           <button onClick={() => setShowFilters(!showFilters)} style={{
             padding: '12px 16px', border: `1px solid ${showFilters ? c('primary', '#4f46e5') : c('borderColor', '#e5e7eb')}`, borderRadius: '12px', background: showFilters ? c('primary', '#4f46e5') : '#fff', color: showFilters ? '#fff' : c('text', '#111'), cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', fontWeight: 600, transition: 'all 0.2s',
           }}>
-            <SlidersHorizontal size={16} /> Filters
+            <SlidersHorizontal size={16} /> {t('filters')}
           </button>
         </div>
 
@@ -140,7 +142,7 @@ export default function StorefrontProducts() {
             {/* Categories */}
             {data.categories?.length > 0 && (
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                <span style={{ fontSize: '13px', fontWeight: 700, color: c('text', '#111'), marginRight: '4px' }}>Categories:</span>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: c('text', '#111'), marginInlineEnd: '4px' }}>{t('categories')}:</span>
                 <button onClick={() => updateParam('category', '')} style={{
                   padding: '7px 16px', borderRadius: '999px', border: `1px solid ${!category ? c('primary', '#4f46e5') : c('borderColor', '#e5e7eb')}`, background: !category ? c('primary', '#4f46e5') : '#fff', color: !category ? '#fff' : c('text', '#111'), cursor: 'pointer', fontSize: '13px', fontWeight: 600, transition: 'all 0.2s',
                 }}>All</button>
@@ -153,7 +155,7 @@ export default function StorefrontProducts() {
             )}
             {/* Price range */}
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '13px', fontWeight: 700, color: c('text', '#111') }}>Price:</span>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: c('text', '#111') }}>{t('priceRange')}</span>
               <input type="number" placeholder="Min" value={minPrice} onChange={e => updateParam('minPrice', e.target.value)} style={{ width: '90px', padding: '8px 12px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '10px', fontSize: '13px', outline: 'none' }} />
               <span style={{ color: c('textMuted', '#6b7280') }}>—</span>
               <input type="number" placeholder="Max" value={maxPrice} onChange={e => updateParam('maxPrice', e.target.value)} style={{ width: '90px', padding: '8px 12px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '10px', fontSize: '13px', outline: 'none' }} />
@@ -161,10 +163,10 @@ export default function StorefrontProducts() {
             </div>
             {/* Availability */}
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <span style={{ fontSize: '13px', fontWeight: 700, color: c('text', '#111') }}>Availability:</span>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: c('text', '#111') }}>{t('availability')}</span>
               <button onClick={() => updateParam('inStock', inStock === 'true' ? '' : 'true')} style={{
                 padding: '7px 16px', borderRadius: '999px', border: `1px solid ${inStock === 'true' ? c('primary', '#4f46e5') : c('borderColor', '#e5e7eb')}`, background: inStock === 'true' ? c('primary', '#4f46e5') : '#fff', color: inStock === 'true' ? '#fff' : c('text', '#111'), cursor: 'pointer', fontSize: '13px', fontWeight: 600, transition: 'all 0.2s',
-              }}>In Stock Only</button>
+              }}>{t('inStockOnly')}</button>
             </div>
           </div>
         )}
@@ -176,12 +178,12 @@ export default function StorefrontProducts() {
       ) : data.products.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '80px 0', color: c('textMuted', '#6b7280') }}>
           <Search size={56} style={{ color: '#d1d5db', margin: '0 auto 16px' }} />
-          <p style={{ fontSize: '20px', fontWeight: 700, color: c('text', '#111') }}>No products found</p>
-          <p style={{ fontSize: '15px', marginTop: '8px' }}>Try adjusting your search or filters</p>
+          <p style={{ fontSize: '20px', fontWeight: 700, color: c('text', '#111') }}>{t('noProducts')}</p>
+          <p style={{ fontSize: '15px', marginTop: '8px' }}>{t('tryAdjusting')}</p>
         </div>
       ) : (
         <>
-          <p style={{ fontSize: '14px', color: c('textMuted', '#6b7280'), marginBottom: '20px', fontWeight: 500 }}>{data.total} products</p>
+          <p style={{ fontSize: '14px', color: c('textMuted', '#6b7280'), marginBottom: '20px', fontWeight: 500 }}>{data.total} {t('productsCount')}</p>
           <div className="sf-products-grid">
             {allProducts.map(p => {
               const slug = p.seo?.slug || p._id;
@@ -205,7 +207,7 @@ export default function StorefrontProducts() {
                       {images[0]?.url ? (
                         <img src={images[0].url} alt={p.title} className="card-main-img" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} />
                       ) : (
-                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: c('textMuted', '#6b7280'), fontSize: '12px' }}>No image</div>
+                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: c('textMuted', '#6b7280'), fontSize: '12px' }}>{t('noImage')}</div>
                       )}
                       {hasMultiple && (
                         <div className="card-thumbs" style={{
@@ -271,14 +273,14 @@ export default function StorefrontProducts() {
                   background: '#fff', color: c('primary', '#4f46e5'), cursor: loadingMore ? 'default' : 'pointer',
                   fontWeight: 700, fontSize: '15px', opacity: loadingMore ? 0.6 : 1, transition: 'all 0.2s',
                 }} onMouseEnter={e => { if (!loadingMore) { e.currentTarget.style.background = c('primary', '#4f46e5'); e.currentTarget.style.color = '#fff'; } }} onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = c('primary', '#4f46e5'); }}>
-                  {loadingMore ? 'Loading...' : 'Load More Products'}
+                  {loadingMore ? '...' : t('viewAll')}
                 </button>
               )}
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <button onClick={() => updateParam('page', String(Math.max(1, page - 1)))} disabled={page <= 1} style={{
                   padding: '10px 14px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '10px', background: '#fff', cursor: page <= 1 ? 'default' : 'pointer', opacity: page <= 1 ? 0.5 : 1, transition: 'all 0.2s',
                 }}><ChevronLeft size={16} /></button>
-                <span style={{ fontSize: '14px', padding: '0 12px', fontWeight: 600 }}>Page {page} of {data.totalPages}</span>
+                <span style={{ fontSize: '14px', padding: '0 12px', fontWeight: 600 }}>{t('page')} {page} {t('of')} {data.totalPages}</span>
                 <button onClick={() => updateParam('page', String(Math.min(data.totalPages, page + 1)))} disabled={page >= data.totalPages} style={{
                   padding: '10px 14px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '10px', background: '#fff', cursor: page >= data.totalPages ? 'default' : 'pointer', opacity: page >= data.totalPages ? 0.5 : 1, transition: 'all 0.2s',
                 }}><ChevronRight size={16} /></button>
@@ -298,10 +300,10 @@ export default function StorefrontProducts() {
         <div style={{ position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)', zIndex: 90, background: '#fff', border: '1px solid #e5e7eb', borderRadius: '16px', boxShadow: '0 8px 32px rgba(0,0,0,0.15)', padding: '12px 24px', display: 'flex', alignItems: 'center', gap: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <GitCompare size={18} color={c('primary', '#4f46e5')} />
-            <span style={{ fontSize: '14px', fontWeight: 700 }}>{compareCount} product{compareCount !== 1 ? 's' : ''} to compare</span>
+            <span style={{ fontSize: '14px', fontWeight: 700 }}>{compareCount} {t('productsCount')} {t('compare')}</span>
           </div>
           <Link to="/store/compare" style={{ padding: '10px 24px', background: c('primary', '#4f46e5'), color: '#fff', borderRadius: '12px', textDecoration: 'none', fontWeight: 700, fontSize: '13px', transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = '0.9'} onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-            Compare Now
+            {t('compare')}
           </Link>
         </div>
       )}

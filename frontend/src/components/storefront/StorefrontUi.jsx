@@ -111,7 +111,7 @@ export function ScrollToTop() {
   return null;
 }
 
-// ─── Global styles (shimmer + toast animation) ──────────────
+// ─── Global styles (shimmer + toast animation + RTL) ───────
 export function StorefrontGlobalStyles() {
   return (
     <style>{`
@@ -119,6 +119,16 @@ export function StorefrontGlobalStyles() {
       @keyframes sf-toast-in { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
       @keyframes sf-bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.3); } }
       .sf-cart-bounce { animation: sf-bounce 0.4s ease; }
+      /* RTL: flip directional arrows */
+      [dir="rtl"] .sf-rtl-flip { transform: scaleX(-1); }
+      /* RTL: ensure text inputs align right */
+      [dir="rtl"] input, [dir="rtl"] textarea, [dir="rtl"] select { text-align: right; }
+      [dir="ltr"] input, [dir="ltr"] textarea, [dir="ltr"] select { text-align: left; }
+      /* RTL: flip chevron arrows in pagination */
+      [dir="rtl"] .sf-rtl-chevron { transform: scaleX(-1); }
+      /* Load Arabic fonts when RTL */
+      [dir="rtl"] { font-family: 'Tajawal', 'Cairo', 'Noto Sans Arabic', sans-serif; }
+      [dir="rtl"] body { font-family: 'Tajawal', 'Cairo', 'Noto Sans Arabic', sans-serif; }
     `}</style>
   );
 }

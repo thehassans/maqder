@@ -5,6 +5,7 @@ import storeApi from '../../lib/storeApi';
 import { useCart } from '../../store/storefrontCart';
 import { useWishlist } from '../../store/storefrontWishlist';
 import { useCompare } from '../../store/storefrontCompare';
+import { useI18n } from '../../store/storefrontI18n';
 import { firePixelEvent } from '../../components/storefront/StorefrontLayout';
 import StorefrontSeo from '../../components/storefront/StorefrontSeo';
 import StorefrontBreadcrumbs from '../../components/storefront/StorefrontBreadcrumbs';
@@ -29,6 +30,7 @@ export default function StorefrontProductDetail() {
   const { toggleCompare, isInCompare } = useCompare();
   const { addProduct, items: recentItems } = useRecentlyViewed();
   const { toast } = useToast();
+  const { t, isRTL } = useI18n();
   const [hoverZoom, setHoverZoom] = useState({ active: false, x: 50, y: 50 });
   const [zoomed, setZoomed] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -316,12 +318,13 @@ export default function StorefrontProductDetail() {
           {product.status !== 'out_of_stock' && (
             <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Truck size={16} style={{ color: '#6b7280' }} />
-              <span>Estimated delivery: <strong style={{ color: '#111' }}>{(() => {
+              <span>{t('estimatedDelivery')}: <strong style={{ color: '#111' }}>{(() => {
                 const d = new Date();
                 d.setDate(d.getDate() + 3);
                 const d2 = new Date();
                 d2.setDate(d2.getDate() + 7);
-                return `${d.toLocaleDateString('en', { day: 'numeric', month: 'short' })} — ${d2.toLocaleDateString('en', { day: 'numeric', month: 'short' })}`;
+                const locale = isRTL ? 'ar' : 'en';
+                return `${d.toLocaleDateString(locale, { day: 'numeric', month: 'short' })} — ${d2.toLocaleDateString(locale, { day: 'numeric', month: 'short' })}`;
               })()}</strong></span>
             </div>
           )}
@@ -329,13 +332,13 @@ export default function StorefrontProductDetail() {
           {/* Trust badges */}
           <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '20px', padding: '16px', background: 'linear-gradient(135deg, #f9fafb, #f3f4f6)', borderRadius: '14px', border: '1px solid #f3f4f6' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#374151', fontWeight: 600 }}>
-              <Truck size={16} style={{ color: '#4f46e5' }} /> Free shipping over 200 SAR
+              <Truck size={16} style={{ color: '#4f46e5' }} /> {t('freeShippingSub')}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#374151', fontWeight: 600 }}>
-              <ShieldCheck size={16} style={{ color: '#059669' }} /> Secure payment
+              <ShieldCheck size={16} style={{ color: '#059669' }} /> {t('securePayment')}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#374151', fontWeight: 600 }}>
-              <RotateCcw size={16} style={{ color: '#f59e0b' }} /> 7-day returns
+              <RotateCcw size={16} style={{ color: '#f59e0b' }} /> {t('easyReturnsSub')}
             </div>
           </div>
 
@@ -618,7 +621,7 @@ export default function StorefrontProductDetail() {
           fontWeight: 700, fontSize: '14px', cursor: isOutOfStock ? 'not-allowed' : 'pointer', opacity: isOutOfStock ? 0.5 : 1,
           display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, boxShadow: '0 4px 14px rgba(79,70,229,0.3)',
         }}>
-          {added ? <><Check size={16} /> Added</> : <><ShoppingCart size={16} /> {isOutOfStock ? 'Sold Out' : 'Add to Cart'}</>}
+          {added ? <><Check size={16} /> {t('added')}</> : <><ShoppingCart size={16} /> {isOutOfStock ? t('soldOut') : t('addToCart')}</>}
         </button>
       </div>
       {/* Spacer so content is not hidden behind the sticky bar + bottom nav */}

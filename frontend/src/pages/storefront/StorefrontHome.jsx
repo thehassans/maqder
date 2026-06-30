@@ -7,6 +7,7 @@ import QuickViewModal from '../../components/storefront/QuickViewModal';
 import { useRecentlyViewed } from '../../store/recentlyViewed';
 import { useCart } from '../../store/storefrontCart';
 import { useWishlist } from '../../store/storefrontWishlist';
+import { useI18n } from '../../store/storefrontI18n';
 import { useToast, Skeleton, SkeletonGrid } from '../../components/storefront/StorefrontUi';
 
 export default function StorefrontHome() {
@@ -18,6 +19,7 @@ export default function StorefrontHome() {
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterStatus, setNewsletterStatus] = useState('');
   const { items: recentItems } = useRecentlyViewed();
+  const { t, isRTL } = useI18n();
 
   useEffect(() => {
     Promise.all([
@@ -89,7 +91,7 @@ export default function StorefrontHome() {
                 onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(0,0,0,0.2)'; }}
                 onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.15)'; }}
               >
-                {s.buttonText || 'Shop Now'} <ArrowRight size={18} />
+                {s.buttonText || t('shopNow')} <ArrowRight size={18} style={{ transform: isRTL ? 'scaleX(-1)' : 'none' }} />
               </Link>
             </div>
           </div>
@@ -99,7 +101,7 @@ export default function StorefrontHome() {
           <div key={section.id} style={{ marginBottom: '40px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h3 style={{ fontSize: '24px', fontWeight: 800, margin: 0, color: c('text', '#111'), letterSpacing: '-0.3px' }}>{s.title || 'Products'}</h3>
-              <Link to="/store/products" style={{ color: c('primary', '#4f46e5'), textDecoration: 'none', fontSize: '14px', fontWeight: 700, transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = '0.7'} onMouseLeave={e => e.currentTarget.style.opacity = '1'}>View all →</Link>
+              <Link to="/store/products" style={{ color: c('primary', '#4f46e5'), textDecoration: 'none', fontSize: '14px', fontWeight: 700, transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = '0.7'} onMouseLeave={e => e.currentTarget.style.opacity = '1'}>{t('viewAll')} →</Link>
             </div>
             <div className="sf-grid">
               {products.slice(0, s.limit || 8).map(p => (
@@ -113,7 +115,7 @@ export default function StorefrontHome() {
       case 'category-grid':
         return (
           <div key={section.id} style={{ marginBottom: '40px' }}>
-            <h3 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '20px', color: c('text', '#111'), letterSpacing: '-0.3px' }}>{s.title || 'Categories'}</h3>
+            <h3 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '20px', color: c('text', '#111'), letterSpacing: '-0.3px' }}>{s.title || t('categories')}</h3>
             <div style={{ display: 'grid', gridTemplateColumns: `repeat(${s.columns || 4}, 1fr)`, gap: '16px' }}>
               {(categories.length > 0 ? categories.slice(0, s.columns || 4) : ['Category 1', 'Category 2', 'Category 3', 'Category 4']).map((cat, i) => (
                 <Link key={i} to={`/store/products?category=${encodeURIComponent(cat)}`} style={{
@@ -139,13 +141,13 @@ export default function StorefrontHome() {
           }}>
             <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '180px', height: '180px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
             <div style={{ position: 'relative', zIndex: 1 }}>
-              <h3 style={{ color: '#fff', fontSize: '26px', margin: '0 0 8px', fontWeight: 800 }}>{s.title || 'Subscribe'}</h3>
-              <p style={{ color: '#fff', opacity: 0.9, margin: '0 0 24px', fontSize: '15px' }}>{s.subtitle || 'Get updates on new products'}</p>
+              <h3 style={{ color: '#fff', fontSize: '26px', margin: '0 0 8px', fontWeight: 800 }}>{s.title || t('subscribe')}</h3>
+              <p style={{ color: '#fff', opacity: 0.9, margin: '0 0 24px', fontSize: '15px' }}>{s.subtitle || t('emailPlaceholder')}</p>
               <div style={{ display: 'flex', gap: '8px', maxWidth: '420px', margin: '0 auto' }}>
-                <input placeholder="Email address" value={newsletterEmail} onChange={e => setNewsletterEmail(e.target.value)} type="email" required style={{ flex: 1, padding: '14px 18px', border: 'none', borderRadius: '12px', fontSize: '15px', outline: 'none' }} />
-                <button type="submit" disabled={newsletterStatus === 'loading'} style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', padding: '14px 24px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', fontSize: '15px', backdropFilter: 'blur(10px)', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}>{newsletterStatus === 'loading' ? '...' : 'Subscribe'}</button>
+                <input placeholder={t('emailPlaceholder')} value={newsletterEmail} onChange={e => setNewsletterEmail(e.target.value)} type="email" required style={{ flex: 1, padding: '14px 18px', border: 'none', borderRadius: '12px', fontSize: '15px', outline: 'none' }} />
+                <button type="submit" disabled={newsletterStatus === 'loading'} style={{ background: 'rgba(255,255,255,0.2)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', padding: '14px 24px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', fontSize: '15px', backdropFilter: 'blur(10px)', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'} onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}>{newsletterStatus === 'loading' ? '...' : t('subscribe')}</button>
               </div>
-              {newsletterStatus === 'success' && <p style={{ color: '#fff', marginTop: '12px', fontSize: '14px', fontWeight: 600 }}>✓ Subscribed! Thank you.</p>}
+              {newsletterStatus === 'success' && <p style={{ color: '#fff', marginTop: '12px', fontSize: '14px', fontWeight: 600 }}>✓ {t('thanksSubscribing')}</p>}
               {newsletterStatus === 'error' && <p style={{ color: '#fecaca', marginTop: '12px', fontSize: '14px' }}>Failed to subscribe. Please try again.</p>}
             </div>
           </form>
@@ -228,12 +230,12 @@ export default function StorefrontHome() {
             <div style={{ position: 'relative', zIndex: 1 }}>
               <h2 style={{ color: '#fff', fontSize: '36px', margin: '0 0 12px', fontWeight: 800, letterSpacing: '-0.5px' }}>{storeInfo?.storeName || 'Welcome'}</h2>
               <p style={{ color: '#fff', opacity: 0.9, margin: '0 0 28px', fontSize: '17px' }}>Discover amazing products at great prices</p>
-              <Link to="/store/products" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#fff', color: c('primary', '#4f46e5'), padding: '14px 32px', borderRadius: '999px', textDecoration: 'none', fontWeight: 700, fontSize: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(0,0,0,0.2)'; }} onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.15)'; }}>Shop Now <ArrowRight size={18} /></Link>
+              <Link to="/store/products" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#fff', color: c('primary', '#4f46e5'), padding: '14px 32px', borderRadius: '999px', textDecoration: 'none', fontWeight: 700, fontSize: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(0,0,0,0.2)'; }} onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.15)'; }}>{t('shopNow')} <ArrowRight size={18} style={{ transform: isRTL ? 'scaleX(-1)' : 'none' }} /></Link>
             </div>
           </div>
           <div style={{ marginBottom: '40px' }}>
-            <h3 style={{ fontSize: '26px', fontWeight: 800, marginBottom: '6px', letterSpacing: '-0.4px' }}>Featured Products</h3>
-            <p style={{ color: c('textMuted', '#6b7280'), fontSize: '14px', margin: '0 0 24px' }}>Handpicked favourites just for you</p>
+            <h3 style={{ fontSize: '26px', fontWeight: 800, marginBottom: '6px', letterSpacing: '-0.4px' }}>{t('featuredProducts')}</h3>
+            <p style={{ color: c('textMuted', '#6b7280'), fontSize: '14px', margin: '0 0 24px' }}>{t('subscribeForOffers')}</p>
             <div className="sf-grid">
               {products.map(p => <ProductCard key={p._id} product={p} currency={currency} colors={colors} onQuickView={() => setQuickViewProduct(p)} />)}
             </div>
@@ -244,7 +246,7 @@ export default function StorefrontHome() {
       {/* Recently viewed products */}
       {recentItems.length > 0 && (
         <div style={{ marginBottom: '40px' }}>
-          <h3 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '20px', letterSpacing: '-0.3px' }}>Recently Viewed</h3>
+          <h3 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '20px', letterSpacing: '-0.3px' }}>{t('recentlyViewed')}</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '16px' }}>
             {recentItems.slice(0, 6).map(item => (
               <Link key={item.productId} to={`/store/products/${item.slug}`} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '14px', overflow: 'hidden', textDecoration: 'none', transition: 'all 0.3s', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
@@ -268,7 +270,7 @@ export default function StorefrontHome() {
       {products.length > 4 && (
         <div style={{ marginBottom: '40px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-            <h3 style={{ fontSize: '24px', fontWeight: 800, margin: 0, letterSpacing: '-0.3px' }}>You May Also Like</h3>
+            <h3 style={{ fontSize: '24px', fontWeight: 800, margin: 0, letterSpacing: '-0.3px' }}>{t('youMayAlsoLike')}</h3>
             <div style={{ flex: 1, height: '1px', background: `linear-gradient(90deg, ${c('borderColor', '#e5e7eb')}, transparent)` }} />
           </div>
           <div className="sf-grid">
@@ -399,6 +401,7 @@ function ProductCard({ product, currency, colors, onQuickView }) {
   const { addItem } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { toast } = useToast();
+  const { t } = useI18n();
   const wished = isInWishlist(product._id);
   const [added, setAdded] = useState(false);
   const [hoverImg, setHoverImg] = useState(false);
@@ -417,14 +420,14 @@ function ProductCard({ product, currency, colors, onQuickView }) {
     if (outOfStock) return;
     addItem(product, 1);
     setAdded(true);
-    toast('Added to cart');
+    toast(t('addedToCart'));
     setTimeout(() => setAdded(false), 1500);
   };
 
   const handleWishlist = (e) => {
     e.preventDefault();
     toggleWishlist(product);
-    toast(wished ? 'Removed from wishlist' : 'Added to wishlist', 'wishlist');
+    toast(wished ? t('removedFromWishlist') : t('addedToWishlist'), 'wishlist');
   };
 
   return (
@@ -460,7 +463,7 @@ function ProductCard({ product, currency, colors, onQuickView }) {
               </span>
             )}
             {outOfStock && (
-              <span style={{ background: '#374151', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '4px 10px', borderRadius: '999px' }}>Sold Out</span>
+              <span style={{ background: '#374151', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '4px 10px', borderRadius: '999px' }}>{t('soldOut')}</span>
             )}
           </div>
         </div>
@@ -506,7 +509,7 @@ function ProductCard({ product, currency, colors, onQuickView }) {
           background: added ? '#059669' : primary, color: '#fff', fontWeight: 700, fontSize: '13.5px',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', opacity: outOfStock ? 0.5 : 1, transition: 'background 0.2s',
         }}>
-          {added ? <><Check size={16} /> Added</> : <><ShoppingCart size={16} /> {outOfStock ? 'Sold Out' : 'Add to Cart'}</>}
+          {added ? <><Check size={16} /> {t('added')}</> : <><ShoppingCart size={16} /> {outOfStock ? t('soldOut') : t('addToCart')}</>}
         </button>
       </div>
     </div>
