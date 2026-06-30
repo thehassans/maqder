@@ -1,12 +1,25 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, Search, Loader2, Download, ChevronRight } from 'lucide-react';
+import { Users, Search, Loader2, Download, ChevronRight, X, Package, TrendingUp, UserCheck, DollarSign } from 'lucide-react';
 import api from '../../lib/api';
+
+const STATUS_STYLES = {
+  pending: 'bg-amber-50 text-amber-700',
+  confirmed: 'bg-blue-50 text-blue-700',
+  processing: 'bg-indigo-50 text-indigo-700',
+  shipped: 'bg-violet-50 text-violet-700',
+  delivered: 'bg-emerald-50 text-emerald-700',
+  completed: 'bg-emerald-100 text-emerald-800',
+  cancelled: 'bg-red-50 text-red-600',
+  returned: 'bg-orange-50 text-orange-700',
+};
 
 export default function EcommerceCustomers() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+
+  const [selected, setSelected] = useState(null);
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -54,6 +67,22 @@ export default function EcommerceCustomers() {
     c.email.toLowerCase().includes(search.toLowerCase())
   );
 
+  const stats = React.useMemo(() => {
+    const total = customers.reduce((s, c) => s + c.totalSpent, 0);
+    const totalOrders = customers.reduce((s, c) => s + c.orderCount, 0);
+    const now = Date.now();
+    const newThisMonth = customers.filter(c => new Date(c.lastOrder).getTime() > now - 30 * 24 * 60 * 60 * 1000).length;
+    return { totalRevenue: total, totalOrders, avgOrderValue: totalOrders > 0 ? (total / totalOrders).toFixed(0) : 0, newThisMonth };
+  }, [customers]);
+
+  const selectedOrders = React.useMemo(() => {
+    if (!selected) return [];
+    return orders.filter(o => {
+      const key = o.customer?.phone || o.customer?.email || o.customer?.name || 'unknown';
+      return key === selected.key;
+    }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }, [selected, orders]);
+
   const exportCsv = () => {
     const headers = ['Name', 'Email', 'Phone', 'City', 'Orders', 'Total Spent', 'Last Order'];
     const rows = filtered.map(c => [
@@ -86,6 +115,26 @@ export default function EcommerceCustomers() {
         <div>
           <h1 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white">Customers</h1>
           <p className="text-sm text-gray-400">{customers.length} customers from {orders.length} orders</p>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 p-4">
+          <div className="flex items-center gap-2 mb-1"><Users className="w-4 h-4 text-indigo-500" /><span className="text-xs text-gray-400 font-bold uppercase">Customers</span></div>
+          <p className="text-2xl font-black text-gray-900 dark:text-white">{customers.length}</p>
+        </div>
+        <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 p-4">
+          <div className="flex items-center gap-2 mb-1"><DollarSign className="w-4 h-4 text-emerald-500" /><span className="text-xs text-gray-400 font-bold uppercase">Revenue</span></div>
+          <p className="text-2xl font-black text-gray-900 dark:text-white">{stats.totalRevenue.toFixed(0)} <span className="text-sm">SAR</span></p>
+        </div>
+        <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 p-4">
+          <div className="flex items-center gap-2 mb-1"><TrendingUp className="w-4 h-4 text-violet-500" /><span className="text-xs text-gray-400 font-bold uppercase">Avg Order</span></div>
+          <p className="text-2xl font-black text-gray-900 dark:text-white">{stats.avgOrderValue} <span className="text-sm">SAR</span></p>
+        </div>
+        <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 p-4">
+          <div className="flex items-center gap-2 mb-1"><UserCheck className="w-4 h-4 text-amber-500" /><span className="text-xs text-gray-400 font-bold uppercase">New (30d)</span></div>
+          <p className="text-2xl font-black text-gray-900 dark:text-white">{stats.newThisMonth}</p>
         </div>
       </div>
 
@@ -130,8 +179,10 @@ export default function EcommerceCustomers() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((c, i) => (
-                  <tr key={i} className="border-b border-gray-50 dark:border-dark-700/50 hover:bg-gray-50 dark:hover:bg-dark-700/30 transition-colors">
+                {filtered.map((c, i) => {
+                  const key = c.phone || c.email || c.name || 'unknown';
+                  return (
+                  <tr key={i} onClick={() => setSelected({ ...c, key })} className="border-b border-gray-50 dark:border-dark-700/50 hover:bg-gray-50 dark:hover:bg-dark-700/30 transition-colors cursor-pointer">
                     <td className="px-4 py-3 font-bold text-gray-900 dark:text-white">{c.name}</td>
                     <td className="px-4 py-3">
                       {c.phone && <p className="text-gray-600 dark:text-gray-300">{c.phone}</p>}
@@ -141,12 +192,58 @@ export default function EcommerceCustomers() {
                     <td className="px-4 py-3">
                       <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-indigo-50 text-indigo-600 text-xs font-bold">{c.orderCount}</span>
                     </td>
-                    <td className="px-4 py-3 font-bold text-emerald-600">{c.totalSpent} SAR</td>
+                    <td className="px-4 py-3 font-bold text-emerald-600">{c.totalSpent.toFixed(0)} SAR</td>
                     <td className="px-4 py-3 text-gray-500">{fmtDate(c.lastOrder)}</td>
+                    <td className="px-4 py-3"><ChevronRight className="w-4 h-4 text-gray-300" /></td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Customer detail drawer */}
+      {selected && (
+        <div className="fixed inset-0 z-50 flex justify-end" onClick={() => setSelected(null)}>
+          <div className="absolute inset-0 bg-black/30" />
+          <div className="relative w-full max-w-md bg-white dark:bg-dark-800 shadow-2xl overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white dark:bg-dark-800 border-b border-gray-100 dark:border-dark-700 px-6 py-4 flex items-center justify-between">
+              <div>
+                <h3 className="font-black text-lg text-gray-900 dark:text-white">{selected.name}</h3>
+                <p className="text-sm text-gray-400">{selected.phone || selected.email || 'No contact'}</p>
+              </div>
+              <button onClick={() => setSelected(null)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-700"><X className="w-5 h-5 text-gray-400" /></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-indigo-50 rounded-xl p-3 text-center"><p className="text-xs text-gray-400 font-bold uppercase">Orders</p><p className="text-xl font-black text-indigo-600">{selected.orderCount}</p></div>
+                <div className="bg-emerald-50 rounded-xl p-3 text-center"><p className="text-xs text-gray-400 font-bold uppercase">Spent</p><p className="text-xl font-black text-emerald-600">{selected.totalSpent.toFixed(0)}</p></div>
+                <div className="bg-violet-50 rounded-xl p-3 text-center"><p className="text-xs text-gray-400 font-bold uppercase">Avg</p><p className="text-xl font-black text-violet-600">{(selected.totalSpent / selected.orderCount).toFixed(0)}</p></div>
+              </div>
+              {selected.city && <p className="text-sm text-gray-500">City: {selected.city}</p>}
+              <div>
+                <h4 className="text-xs font-bold uppercase text-gray-400 mb-3">Order History</h4>
+                <div className="space-y-2">
+                  {selectedOrders.map(o => (
+                    <Link key={o._id} to={`/app/dashboard/ecommerce/orders/${o._id}`} className="block bg-gray-50 dark:bg-dark-700/50 rounded-xl p-3 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Package className="w-4 h-4 text-gray-400" />
+                          <span className="font-bold text-sm text-gray-900 dark:text-white">{o.orderNumber}</span>
+                        </div>
+                        <span className="font-bold text-sm text-emerald-600">{o.grandTotal?.toFixed(0) || 0} SAR</span>
+                      </div>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-xs text-gray-400">{new Date(o.createdAt).toLocaleDateString('en', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${STATUS_STYLES[o.status] || 'bg-gray-50 text-gray-600'}`}>{o.status}</span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
