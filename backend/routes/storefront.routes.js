@@ -355,6 +355,7 @@ router.post('/track-order', async (req, res) => {
 
     // Return sanitized order info (no sensitive data)
     res.json({
+      _id: order._id,
       orderNumber: order.orderNumber,
       status: order.status,
       createdAt: order.createdAt,
@@ -405,6 +406,93 @@ router.post('/track-orders', async (req, res) => {
         trackingNumber: o.shipping?.trackingNumber || '',
         paymentStatus: o.payment?.status || 'pending',
       })),
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- RETURN REQUEST (public, customer submits return) ---
+router.post('/returns/request', async (req, res) => {
+  try {
+    const tenantId = req.storeTenant._id;
+    const { orderId, orderNumber, phone, email, items, reason, reasonDetails, images } = req.body;
+
+    if (!orderId || !items || items.length === 0) {
+      return res.status(400).json({ error: 'Order ID and items are required' });
+    }
+
+    const order = await EcommerceOrder.findOne({ tenantId, _id: orderId });
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    // Verify phone or email matches
+    const phoneMatch = phone && order.customer.phone && order.customer.phone.replace(/\s/g, '') === phone.replace(/\s/g, '');
+    const emailMatch = email && order.customer.email && order.customer.email.toLowerCase() === email.toLowerCase().trim();
+    if (!phoneMatch && !emailMatch) {
+      return res.status(403).json({ error: 'Phone or email does not match this order' });
+    }
+
+    if (!['delivered', 'completed'].includes(order.status)) {
+      return res.status(400).json({ error: 'Returns can only be requested for delivered orders' });
+    }
+
+    // Check for existing pending return
+    const EcommerceReturn = (await import('../models/EcommerceReturn.js')).default;
+    const existing = await EcommerceReturn.findOne({
+      tenantId, orderId, status: { $in: ['requested', 'approved', 'received'] },
+    });
+    if (existing) {
+      return res.status(400).json({ error: 'A return request is already in progress for this order' });
+    }
+
+    const refundAmount = items.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+
+    const ret = await EcommerceReturn.create({
+      tenantId,
+      orderId,
+      orderNumber: order.orderNumber,
+      customerName: order.customer?.name || '',
+      customerEmail: order.customer?.email || '',
+      customerPhone: order.customer?.phone || '',
+      items,
+      reason: reason || 'other',
+      reasonDetails: reasonDetails || '',
+      refundAmount,
+      images: images || [],
+    });
+
+    res.json({ success: true, returnNumber: ret.returnNumber });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- RETURN STATUS CHECK (public) ---
+router.post('/returns/status', async (req, res) => {
+  try {
+    const tenantId = req.storeTenant._id;
+    const { orderId, phone, email } = req.body;
+
+    const EcommerceReturn = (await import('../models/EcommerceReturn.js')).default;
+    const ret = await EcommerceReturn.findOne({ tenantId, orderId }).sort({ createdAt: -1 }).lean();
+    if (!ret) return res.json({ return: null });
+
+    // Verify phone or email
+    const phoneMatch = phone && ret.customerPhone && ret.customerPhone.replace(/\s/g, '') === phone.replace(/\s/g, '');
+    const emailMatch = email && ret.customerEmail && ret.customerEmail.toLowerCase() === email.toLowerCase().trim();
+    if (!phoneMatch && !emailMatch) {
+      return res.status(403).json({ error: 'Phone or email does not match' });
+    }
+
+    res.json({
+      return: {
+        returnNumber: ret.returnNumber,
+        status: ret.status,
+        reason: ret.reason,
+        refundAmount: ret.refundAmount,
+        createdAt: ret.createdAt,
+        items: ret.items,
+      },
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
