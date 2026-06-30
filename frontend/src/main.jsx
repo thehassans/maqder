@@ -47,7 +47,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <ErrorBoundary fallbackMessage="Something went wrong while loading the app. Please reload the page.">
             <App />
           </ErrorBoundary>
