@@ -99,6 +99,49 @@ export default function StorefrontHome() {
             </div>
           </div>
         );
+      case 'rich-text':
+        return (
+          <div key={section.id} style={{ maxWidth: '800px', margin: '0 auto 32px', padding: '16px' }}>
+            {s.title && <h3 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '12px', color: c('text', '#111') }}>{s.title}</h3>}
+            <div style={{ color: c('textMuted', '#6b7280'), fontSize: '15px', lineHeight: 1.7 }} dangerouslySetInnerHTML={{ __html: s.content || '' }} />
+          </div>
+        );
+      case 'image-banner':
+        return (
+          <div key={section.id} style={{ marginBottom: '32px', borderRadius: '12px', overflow: 'hidden' }}>
+            {s.imageUrl && <img src={s.imageUrl} alt={s.altText || ''} style={{ width: '100%', display: 'block', maxHeight: '400px', objectFit: 'cover' }} />}
+          </div>
+        );
+      case 'testimonial':
+        return (
+          <div key={section.id} style={{ marginBottom: '40px' }}>
+            <h3 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '16px', color: c('text', '#111') }}>{s.title || 'Testimonials'}</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+              {(s.items || []).map((item, i) => (
+                <div key={i} style={{ background: c('surface', '#f9fafb'), border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '12px', padding: '20px' }}>
+                  <p style={{ color: c('text', '#111'), fontSize: '15px', fontStyle: 'italic', margin: '0 0 12px' }}>"{item.text || ''}"</p>
+                  <p style={{ color: c('textMuted', '#6b7280'), fontSize: '14px', fontWeight: 'bold', margin: 0 }}>— {item.author || 'Customer'}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      case 'faq':
+        return (
+          <div key={section.id} style={{ maxWidth: '800px', margin: '0 auto 32px', padding: '16px' }}>
+            <h3 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '16px', color: c('text', '#111') }}>{s.title || 'FAQ'}</h3>
+            {(s.items || []).map((item, i) => (
+              <details key={i} style={{ borderBottom: `1px solid ${c('borderColor', '#e5e7eb')}`, padding: '12px 0' }}>
+                <summary style={{ fontSize: '15px', fontWeight: 'bold', cursor: 'pointer', color: c('text', '#111') }}>{item.question || ''}</summary>
+                <p style={{ color: c('textMuted', '#6b7280'), fontSize: '14px', margin: '8px 0 0', lineHeight: 1.6 }}>{item.answer || ''}</p>
+              </details>
+            ))}
+          </div>
+        );
+      case 'spacer':
+        return <div key={section.id} style={{ height: `${s.height || 40}px` }} />;
+      case 'custom-html':
+        return <div key={section.id} style={{ marginBottom: '32px' }} dangerouslySetInnerHTML={{ __html: s.html || '' }} />;
       default:
         return null;
     }
