@@ -129,6 +129,8 @@ export function StorefrontGlobalStyles() {
       /* Load Arabic fonts when RTL */
       [dir="rtl"] { font-family: 'Tajawal', 'Cairo', 'Noto Sans Arabic', sans-serif; }
       [dir="rtl"] body { font-family: 'Tajawal', 'Cairo', 'Noto Sans Arabic', sans-serif; }
+      @media (max-width: 768px) { .sf-footer-grid { grid-template-columns: 1fr 1fr !important; gap: 32px !important; } }
+      @media (max-width: 480px) { .sf-footer-grid { grid-template-columns: 1fr !important; gap: 24px !important; } }
     `}</style>
   );
 }

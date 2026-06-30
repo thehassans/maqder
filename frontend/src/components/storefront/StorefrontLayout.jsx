@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Search, ShoppingCart, X, Menu, Instagram, Twitter, Facebook, Heart, Mail, Phone, MapPin, Send, ShieldCheck, Truck, CreditCard, RotateCcw, ChevronDown, LayoutGrid, Tag } from 'lucide-react';
+import SaudiRiyalSymbol from './SaudiRiyalSymbol';
 import storeApi from '../../lib/storeApi';
 import { useCart } from '../../store/storefrontCart';
 import { useI18n } from '../../store/storefrontI18n';
@@ -224,7 +225,7 @@ export default function StorefrontLayout({ children }) {
         </div>
       )}
 
-      {/* Header */}
+      {/* Header — ultra premium minimalistic */}
       <header style={{
         backgroundColor: c('headerBg', '#ffffff'),
         borderBottom: `1px solid ${c('borderColor', '#e5e7eb')}`,
@@ -232,20 +233,31 @@ export default function StorefrontLayout({ children }) {
         backdropFilter: 'blur(12px)',
         background: header.sticky ? `${c('headerBg', '#ffffff')}f2` : c('headerBg', '#ffffff'),
         transition: 'box-shadow 0.3s ease, background 0.3s ease',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
       }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
-          {/* Logo */}
-          <Link to="/store" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', transition: 'opacity 0.2s' }}
-            onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+          {/* Logo — Maqder */}
+          <Link to="/store" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', transition: 'opacity 0.2s' }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '0.7'}
             onMouseLeave={e => e.currentTarget.style.opacity = '1'}
           >
             {header.logoImageUrl ? (
-              <img src={header.logoImageUrl} alt="logo" style={{ height: '36px' }} />
+              <img src={header.logoImageUrl} alt="logo" style={{ height: '34px' }} />
             ) : (
-              <span style={{ fontWeight: 800, fontSize: '22px', color: c('text', '#111827'), letterSpacing: '-0.5px' }}>
-                {header.logoText || storeInfo?.storeName || 'Store'}
-              </span>
+              <>
+                <div style={{
+                  width: '36px', height: '36px', borderRadius: '10px',
+                  background: `linear-gradient(135deg, ${c('primary', '#059669')}, ${c('primary', '#059669')}dd)`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 7h18M3 12h18M3 17h12" />
+                  </svg>
+                </div>
+                <span style={{ fontWeight: 800, fontSize: '20px', color: c('text', '#111827'), letterSpacing: '-0.5px' }}>
+                  {header.logoText || storeInfo?.storeName || 'Maqder'}
+                </span>
+              </>
             )}
           </Link>
 
@@ -259,9 +271,9 @@ export default function StorefrontLayout({ children }) {
                   value={searchQuery}
                   onChange={e => { setSearchQuery(e.target.value); setShowSuggestions(true); }}
                   onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                  style={{ flex: 1, padding: '10px 14px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: isRTL ? '0 10px 10px 0' : '10px 0 0 10px', fontSize: '14px', outline: 'none', transition: 'border-color 0.2s' }}
+                  style={{ flex: 1, padding: '10px 16px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: isRTL ? '0 10px 10px 0' : '10px 0 0 10px', fontSize: '14px', outline: 'none', transition: 'border-color 0.2s', background: c('surface', '#f9fafb') }}
                 />
-                <button type="submit" style={{ padding: '10px 18px', backgroundColor: c('primary', '#4f46e5'), color: '#fff', border: 'none', borderRadius: isRTL ? '10px 0 0 10px' : '0 10px 10px 0', cursor: 'pointer', transition: 'opacity 0.2s' }}
+                <button type="submit" style={{ padding: '10px 18px', backgroundColor: c('primary', '#059669'), color: '#fff', border: 'none', borderRadius: isRTL ? '10px 0 0 10px' : '0 10px 10px 0', cursor: 'pointer', transition: 'opacity 0.2s' }}
                   onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
                   onMouseLeave={e => e.currentTarget.style.opacity = '1'}
                 >
@@ -288,7 +300,7 @@ export default function StorefrontLayout({ children }) {
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{ fontSize: '13px', fontWeight: 600, margin: 0, color: c('text', '#111'), overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</p>
-                          <p style={{ fontSize: '12px', color: c('priceColor', '#059669'), fontWeight: 700, margin: 0 }}>{p.basePrice} {storeInfo?.currency || 'SAR'}</p>
+                          <p style={{ fontSize: '12px', color: c('priceColor', '#059669'), fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '2px' }}>{p.basePrice} <SaudiRiyalSymbol size={10} color={c('priceColor', '#059669')} /></p>
                         </div>
                       </Link>
                     );
@@ -377,7 +389,7 @@ export default function StorefrontLayout({ children }) {
                 >
                   <ShoppingCart size={22} />
                   {cartCount > 0 && (
-                    <span key={cartCount} className="sf-cart-bounce" style={{ position: 'absolute', top: '-6px', right: '-6px', backgroundColor: c('primary', '#4f46e5'), color: '#fff', fontSize: '11px', fontWeight: 'bold', borderRadius: '999px', padding: '2px 6px', minWidth: '18px', textAlign: 'center', boxShadow: '0 2px 8px rgba(79,70,229,0.3)' }}>
+                    <span key={cartCount} className="sf-cart-bounce" style={{ position: 'absolute', top: '-6px', right: '-6px', backgroundColor: c('primary', '#059669'), color: '#fff', fontSize: '11px', fontWeight: 'bold', borderRadius: '999px', padding: '2px 6px', minWidth: '18px', textAlign: 'center', boxShadow: '0 2px 8px rgba(5,150,105,0.3)' }}>
                       {cartCount}
                     </span>
                   )}
@@ -404,133 +416,127 @@ export default function StorefrontLayout({ children }) {
       {/* Main content */}
       <main>{children}</main>
 
-      {/* Trust badges bar */}
-      <div style={{ borderTop: `1px solid ${c('borderColor', '#e5e7eb')}`, background: c('background', '#ffffff'), marginTop: '80px' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '28px 20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
+      {/* Trust badges bar — minimal */}
+      <div style={{ borderTop: `1px solid ${c('borderColor', '#e5e7eb')}`, background: c('background', '#ffffff'), marginTop: '60px' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 20px', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '32px' }}>
           {[
             { icon: Truck, title: t('freeShipping'), sub: t('freeShippingSub') },
             { icon: ShieldCheck, title: t('securePayment'), sub: t('securePaymentSub') },
             { icon: RotateCcw, title: t('easyReturns'), sub: t('easyReturnsSub') },
             { icon: Phone, title: t('dedicatedSupport'), sub: t('dedicatedSupportSub') },
           ].map((b, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <div style={{ width: '46px', height: '46px', borderRadius: '14px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: `${c('primary', '#4f46e5')}14`, color: c('primary', '#4f46e5') }}>
-                <b.icon size={22} />
-              </div>
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <b.icon size={18} style={{ color: c('primary', '#059669'), flexShrink: 0 }} />
               <div>
-                <p style={{ margin: 0, fontSize: '14px', fontWeight: 700, color: c('text', '#111827') }}>{b.title}</p>
-                <p style={{ margin: 0, fontSize: '12px', color: c('textMuted', '#6b7280') }}>{b.sub}</p>
+                <p style={{ margin: 0, fontSize: '13px', fontWeight: 700, color: c('text', '#111827') }}>{b.title}</p>
+                <p style={{ margin: 0, fontSize: '11px', color: c('textMuted', '#9ca3af') }}>{b.sub}</p>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Footer */}
-      <footer style={{ background: 'linear-gradient(180deg, #1a1f2e 0%, #0d1117 100%)', color: 'rgba(255,255,255,0.62)', position: 'relative' }}>
-        {/* Accent top border */}
-        <div style={{ height: '3px', background: `linear-gradient(90deg, ${c('primary', '#4f46e5')}, ${c('accent', '#7c3aed')}, ${c('primary', '#4f46e5')})` }} />
-
-        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '56px 20px 40px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '48px' }}>
-          {/* Brand + newsletter */}
-          <div style={{ maxWidth: '320px' }}>
-            <h4 style={{ color: '#fff', margin: '0 0 14px', fontSize: '22px', fontWeight: 800, letterSpacing: '-0.5px' }}>{storeInfo?.storeName || header.logoText || 'Store'}</h4>
-            <p style={{ fontSize: '13px', lineHeight: 1.7, margin: '0 0 20px' }}>{footer.aboutText || 'Your one-stop destination for premium quality products, delivered fast across the Kingdom.'}</p>
-
-            {/* Newsletter */}
-            <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px', fontWeight: 700, margin: '0 0 10px' }}>{t('subscribeForOffers')}</p>
-            <form onSubmit={e => { e.preventDefault(); const email = e.target.email.value; if (email) { storeApi.post('/newsletter/subscribe', { email }).catch(() => {}); e.target.reset(); setNewsletterDone(true); setTimeout(() => setNewsletterDone(false), 3000); } }} style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-              <input name="email" type="email" required placeholder={t('yourEmail')} style={{ flex: 1, minWidth: 0, padding: '11px 14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', color: '#fff', fontSize: '13px', outline: 'none', transition: 'border-color 0.2s' }} onFocus={e => e.currentTarget.style.borderColor = c('primary', '#4f46e5')} onBlur={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)'} />
-              <button type="submit" style={{ flexShrink: 0, width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '12px', border: 'none', cursor: 'pointer', color: '#fff', background: `linear-gradient(135deg, ${c('primary', '#4f46e5')}, ${c('accent', '#6366f1')})`, transition: 'transform 0.2s, box-shadow 0.2s', boxShadow: '0 4px 14px rgba(79,70,229,0.3)' }} onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; }} onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }} title={t('subscribe')}>
-                <Send size={18} style={{ transform: isRTL ? 'scaleX(-1)' : 'none' }} />
-              </button>
-            </form>
-            {newsletterDone && <p style={{ fontSize: '12px', color: '#34d399', margin: '-12px 0 16px', fontWeight: 600 }}>{t('thanksSubscribing')}</p>}
-
-            {/* Social */}
-            {footer.showSocialLinks !== false && (
-              <div style={{ display: 'flex', gap: '10px' }}>
-                {[
-                  { url: footer.socialLinks?.instagram, Icon: Instagram },
-                  { url: footer.socialLinks?.twitter, Icon: Twitter },
-                  { url: footer.socialLinks?.facebook, Icon: Facebook },
-                ].filter(s => s.url).map((s, i) => (
-                  <a key={i} href={s.url} target="_blank" rel="noopener" style={{ width: '38px', height: '38px', borderRadius: '11px', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.7)', textDecoration: 'none', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.background = c('primary', '#4f46e5'); e.currentTarget.style.color = '#fff'; e.currentTarget.style.transform = 'translateY(-3px)'; }} onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; e.currentTarget.style.color = 'rgba(255,255,255,0.7)'; e.currentTarget.style.transform = 'translateY(0)'; }}><s.Icon size={17} /></a>
-                ))}
+      {/* Footer — ultra premium minimalistic */}
+      <footer style={{ background: '#fff', borderTop: `1px solid ${c('borderColor', '#e5e7eb')}`, marginTop: '80px' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '64px 20px 40px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '48px' }} className="sf-footer-grid">
+            {/* Brand */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+                {header.logoImageUrl ? (
+                  <img src={header.logoImageUrl} alt="logo" style={{ height: '32px' }} />
+                ) : (
+                  <span style={{ fontWeight: 800, fontSize: '20px', color: c('text', '#111'), letterSpacing: '-0.5px' }}>
+                    {header.logoText || storeInfo?.storeName || 'Store'}
+                  </span>
+                )}
               </div>
-            )}
-          </div>
-
-          {/* Shop links */}
-          <div>
-            <h4 style={{ color: '#fff', margin: '0 0 16px', fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>{t('shop')}</h4>
-            {[
-              { to: '/store', label: t('home') },
-              { to: '/store/products', label: t('allProducts') },
-              { to: '/store/wishlist', label: t('wishlist') },
-              { to: '/store/compare', label: t('compare') },
-              { to: '/store/account', label: t('myAccount') },
-            ].map(link => (
-              <Link key={link.to} to={link.to} style={{ display: 'block', color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontSize: '13.5px', marginBottom: '10px', transition: 'color 0.2s, padding-inline 0.2s', width: 'fit-content' }}
-                onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.paddingInlineStart = '5px'; }}
-                onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; e.currentTarget.style.paddingInlineStart = '0'; }}
-              >{link.label}</Link>
-            ))}
-          </div>
-
-          {/* Help links */}
-          <div>
-            <h4 style={{ color: '#fff', margin: '0 0 16px', fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>{t('help')}</h4>
-            {[
-              { to: '/store/track-order', label: t('trackOrder') },
-              { to: '/store/returns', label: t('returnsRefunds') },
-              { to: '/store/shipping-policy', label: t('shippingPolicy') },
-              { to: '/store/faq', label: t('faq') },
-              { to: '/store/contact', label: t('contactUs') },
-            ].map(link => (
-              <Link key={link.to} to={link.to} style={{ display: 'block', color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontSize: '13.5px', marginBottom: '10px', transition: 'color 0.2s, padding-inline 0.2s', width: 'fit-content' }}
-                onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.paddingInlineStart = '5px'; }}
-                onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; e.currentTarget.style.paddingInlineStart = '0'; }}
-              >{link.label}</Link>
-            ))}
-          </div>
-
-          {/* Contact */}
-          <div>
-            <h4 style={{ color: '#fff', margin: '0 0 16px', fontSize: '13px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>{t('getInTouch')}</h4>
-            {footer.contactEmail && (
-              <a href={`mailto:${footer.contactEmail}`} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontSize: '13.5px', marginBottom: '12px', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#fff'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.6)'}>
-                <Mail size={16} style={{ marginTop: '2px', flexShrink: 0, color: c('primary', '#818cf8') }} /> {footer.contactEmail}
-              </a>
-            )}
-            {footer.contactPhone && (
-              <a href={`tel:${footer.contactPhone}`} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontSize: '13.5px', marginBottom: '12px', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#fff'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.6)'}>
-                <Phone size={16} style={{ marginTop: '2px', flexShrink: 0, color: c('primary', '#818cf8') }} /> {footer.contactPhone}
-              </a>
-            )}
-            {footer.contactAddress && (
-              <p style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13.5px', margin: '0 0 12px', lineHeight: 1.6 }}>
-                <MapPin size={16} style={{ marginTop: '2px', flexShrink: 0, color: c('primary', '#818cf8') }} /> {footer.contactAddress}
+              <p style={{ fontSize: '13px', lineHeight: 1.8, color: c('textMuted', '#6b7280'), margin: '0 0 24px', maxWidth: '280px' }}>
+                {footer.aboutText || 'Premium products, delivered with excellence across the Kingdom.'}
               </p>
-            )}
-            {!footer.contactEmail && !footer.contactPhone && !footer.contactAddress && (
-              <Link to="/store/contact" style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontSize: '13.5px', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = '#fff'} onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.6)'}>
-                <Mail size={16} style={{ flexShrink: 0, color: c('primary', '#818cf8') }} /> {t('contactSupport')}
-              </Link>
-            )}
+              {/* Social — minimal */}
+              {footer.showSocialLinks !== false && (
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {[
+                    { url: footer.socialLinks?.instagram, Icon: Instagram },
+                    { url: footer.socialLinks?.twitter, Icon: Twitter },
+                    { url: footer.socialLinks?.facebook, Icon: Facebook },
+                  ].filter(s => s.url).map((s, i) => (
+                    <a key={i} href={s.url} target="_blank" rel="noopener" style={{ width: '36px', height: '36px', borderRadius: '50%', border: `1px solid ${c('borderColor', '#e5e7eb')}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: c('textMuted', '#6b7280'), textDecoration: 'none', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.borderColor = c('text', '#111'); e.currentTarget.style.color = c('text', '#111'); }} onMouseLeave={e => { e.currentTarget.style.borderColor = c('borderColor', '#e5e7eb'); e.currentTarget.style.color = c('textMuted', '#6b7280'); }}>
+                      <s.Icon size={15} />
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Shop */}
+            <div>
+              <h4 style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: c('text', '#111'), margin: '0 0 16px' }}>{t('shop')}</h4>
+              {[
+                { to: '/store', label: t('home') },
+                { to: '/store/products', label: t('allProducts') },
+                { to: '/store/wishlist', label: t('wishlist') },
+                { to: '/store/compare', label: t('compare') },
+              ].map(link => (
+                <Link key={link.to} to={link.to} style={{ display: 'block', color: c('textMuted', '#6b7280'), textDecoration: 'none', fontSize: '13px', marginBottom: '8px', transition: 'color 0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.color = c('text', '#111')}
+                  onMouseLeave={e => e.currentTarget.style.color = c('textMuted', '#6b7280')}
+                >{link.label}</Link>
+              ))}
+            </div>
+
+            {/* Help */}
+            <div>
+              <h4 style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: c('text', '#111'), margin: '0 0 16px' }}>{t('help')}</h4>
+              {[
+                { to: '/store/track-order', label: t('trackOrder') },
+                { to: '/store/returns', label: t('returnsRefunds') },
+                { to: '/store/shipping-policy', label: t('shippingPolicy') },
+                { to: '/store/faq', label: t('faq') },
+                { to: '/store/contact', label: t('contactUs') },
+              ].map(link => (
+                <Link key={link.to} to={link.to} style={{ display: 'block', color: c('textMuted', '#6b7280'), textDecoration: 'none', fontSize: '13px', marginBottom: '8px', transition: 'color 0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.color = c('text', '#111')}
+                  onMouseLeave={e => e.currentTarget.style.color = c('textMuted', '#6b7280')}
+                >{link.label}</Link>
+              ))}
+            </div>
+
+            {/* Contact + Newsletter */}
+            <div>
+              <h4 style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: c('text', '#111'), margin: '0 0 16px' }}>{t('getInTouch')}</h4>
+              {footer.contactEmail && (
+                <a href={`mailto:${footer.contactEmail}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', color: c('textMuted', '#6b7280'), textDecoration: 'none', fontSize: '13px', marginBottom: '8px', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = c('text', '#111')} onMouseLeave={e => e.currentTarget.style.color = c('textMuted', '#6b7280')}>
+                  <Mail size={14} style={{ flexShrink: 0 }} /> {footer.contactEmail}
+                </a>
+              )}
+              {footer.contactPhone && (
+                <a href={`tel:${footer.contactPhone}`} style={{ display: 'flex', alignItems: 'center', gap: '8px', color: c('textMuted', '#6b7280'), textDecoration: 'none', fontSize: '13px', marginBottom: '8px', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = c('text', '#111')} onMouseLeave={e => e.currentTarget.style.color = c('textMuted', '#6b7280')}>
+                  <Phone size={14} style={{ flexShrink: 0 }} /> {footer.contactPhone}
+                </a>
+              )}
+              {/* Newsletter — minimal */}
+              <form onSubmit={e => { e.preventDefault(); const email = e.target.email.value; if (email) { storeApi.post('/newsletter/subscribe', { email }).catch(() => {}); e.target.reset(); setNewsletterDone(true); setTimeout(() => setNewsletterDone(false), 3000); } }} style={{ display: 'flex', gap: '0', marginTop: '16px', borderBottom: `1px solid ${c('borderColor', '#e5e7eb')}` }}>
+                <input name="email" type="email" required placeholder={t('yourEmail')} style={{ flex: 1, minWidth: 0, padding: '10px 0', border: 'none', background: 'none', color: c('text', '#111'), fontSize: '13px', outline: 'none' }} />
+                <button type="submit" style={{ flexShrink: 0, padding: '10px 0 10px 12px', background: 'none', border: 'none', cursor: 'pointer', color: c('text', '#111'), transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = '0.6'} onMouseLeave={e => e.currentTarget.style.opacity = '1'} title={t('subscribe')}>
+                  <Send size={16} style={{ transform: isRTL ? 'scaleX(-1)' : 'none' }} />
+                </button>
+              </form>
+              {newsletterDone && <p style={{ fontSize: '12px', color: '#059669', margin: '8px 0 0', fontWeight: 600 }}>✓ {t('thanksSubscribing')}</p>}
+            </div>
           </div>
         </div>
 
-        {/* Bottom bar */}
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-          <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
-            <p style={{ fontSize: '12.5px', margin: 0, color: 'rgba(255,255,255,0.5)' }}>
+        {/* Bottom bar — minimal */}
+        <div style={{ borderTop: `1px solid ${c('borderColor', '#e5e7eb')}` }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+            <p style={{ fontSize: '12px', margin: 0, color: c('textMuted', '#9ca3af') }}>
               {footer.copyrightText || `© ${new Date().getFullYear()} ${storeInfo?.storeName || header.logoText || 'Store'}. All rights reserved.`}
             </p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', marginInlineEnd: '4px' }}>{t('weAccept')}</span>
-              {['VISA', 'MC', 'MADA', 'AMEX'].map(p => (
-                <span key={p} style={{ display: 'inline-flex', alignItems: 'center', height: '26px', padding: '0 9px', borderRadius: '6px', background: 'rgba(255,255,255,0.92)', color: '#1a1f2e', fontSize: '10px', fontWeight: 800, letterSpacing: '0.3px' }}>{p}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {['VISA', 'MC', 'MADA'].map(p => (
+                <span key={p} style={{ display: 'inline-flex', alignItems: 'center', height: '22px', padding: '0 7px', borderRadius: '4px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, color: c('textMuted', '#6b7280'), fontSize: '9px', fontWeight: 700, letterSpacing: '0.3px' }}>{p}</span>
               ))}
             </div>
           </div>

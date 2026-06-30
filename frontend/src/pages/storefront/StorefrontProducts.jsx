@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Search, Loader2, ChevronLeft, ChevronRight, SlidersHorizontal, Eye, Star, GitCompare, Check } from 'lucide-react';
+import SaudiRiyalSymbol from '../../components/storefront/SaudiRiyalSymbol';
 import storeApi from '../../lib/storeApi';
 import { useCompare } from '../../store/storefrontCompare';
 import { useI18n } from '../../store/storefrontI18n';
@@ -159,7 +160,7 @@ export default function StorefrontProducts() {
               <input type="number" placeholder={t('min')} value={minPrice} onChange={e => updateParam('minPrice', e.target.value)} style={{ width: '90px', padding: '8px 12px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '10px', fontSize: '13px', outline: 'none' }} />
               <span style={{ color: c('textMuted', '#6b7280') }}>—</span>
               <input type="number" placeholder={t('max')} value={maxPrice} onChange={e => updateParam('maxPrice', e.target.value)} style={{ width: '90px', padding: '8px 12px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '10px', fontSize: '13px', outline: 'none' }} />
-              <span style={{ fontSize: '13px', color: c('textMuted', '#6b7280') }}>{currency}</span>
+              <span style={{ fontSize: '13px', color: c('textMuted', '#6b7280'), display: 'inline-flex', alignItems: 'center', gap: '2px' }}><SaudiRiyalSymbol size={10} color={c('textMuted', '#6b7280')} /></span>
             </div>
             {/* Availability */}
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -239,9 +240,9 @@ export default function StorefrontProducts() {
                       )}
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
                         {hasSale && (
-                          <span style={{ fontSize: '12px', color: c('salePriceColor', '#dc2626'), textDecoration: 'line-through' }}>{p.compareAtPrice} {currency}</span>
+                          <span style={{ fontSize: '12px', color: c('salePriceColor', '#dc2626'), textDecoration: 'line-through', display: 'flex', alignItems: 'center', gap: '2px' }}>{p.compareAtPrice} <SaudiRiyalSymbol size={10} color={c('salePriceColor', '#dc2626')} /></span>
                         )}
-                        <p style={{ fontSize: '17px', fontWeight: 800, color: c('priceColor', '#059669'), margin: 0 }}>{p.basePrice} {currency}</p>
+                        <p style={{ fontSize: '17px', fontWeight: 800, color: c('priceColor', '#059669'), margin: 0, display: 'flex', alignItems: 'center', gap: '3px' }}>{p.basePrice} <SaudiRiyalSymbol size={13} color={c('priceColor', '#059669')} /></p>
                       </div>
                     </div>
                   </Link>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { GitCompare, X, Loader2, ShoppingCart, Check, Trash2 } from 'lucide-react';
+import SaudiRiyalSymbol from '../../components/storefront/SaudiRiyalSymbol';
 import storeApi from '../../lib/storeApi';
 import { useCart } from '../../store/storefrontCart';
 import { useCompare } from '../../store/storefrontCompare';
@@ -35,8 +36,8 @@ export default function StorefrontCompare() {
   const c = (key, fallback) => colors[key] || fallback;
 
   const specs = products.length > 0 ? [
-    { label: 'Price', key: 'price', render: (p) => `${p.basePrice} ${currency}` },
-    { label: 'Compare At', key: 'compareAt', render: (p) => p.compareAtPrice ? `${p.compareAtPrice} ${currency}` : '—' },
+    { label: 'Price', key: 'price', render: (p) => <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>{p.basePrice} <SaudiRiyalSymbol size={12} color={c('priceColor', '#059669')} /></span> },
+    { label: 'Compare At', key: 'compareAt', render: (p) => p.compareAtPrice ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>{p.compareAtPrice} <SaudiRiyalSymbol size={12} color={c('salePriceColor', '#dc2626')} /></span> : '—' },
     { label: 'Category', key: 'category', render: (p) => p.category || '—' },
     { label: 'Brand', key: 'brand', render: (p) => p.brand || '—' },
     { label: 'SKU', key: 'sku', render: (p) => p.sku || '—' },
@@ -108,7 +109,7 @@ export default function StorefrontCompare() {
                           </div>
                           <p style={{ fontSize: '13px', fontWeight: 600, color: c('text', '#111'), margin: '0 0 6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</p>
                         </Link>
-                        <p style={{ fontSize: '17px', fontWeight: 800, color: c('priceColor', '#059669'), margin: '0 0 10px' }}>{p.basePrice} {currency}</p>
+                        <p style={{ fontSize: '17px', fontWeight: 800, color: c('priceColor', '#059669'), margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: '3px' }}>{p.basePrice} <SaudiRiyalSymbol size={13} color={c('priceColor', '#059669')} /></p>
                         <button
                           onClick={() => addItem({ productId: p._id, title: p.title, price: p.basePrice, image: p.images?.[0]?.url, quantity: 1 })}
                           style={{ width: '100%', padding: '10px', background: `linear-gradient(135deg, ${c('primary', '#4f46e5')}, #6366f1)`, color: '#fff', border: 'none', borderRadius: '10px', fontWeight: 700, fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(79,70,229,0.2)' }}

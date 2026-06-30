@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { CheckCircle, Loader2, Package, Truck, RotateCcw, User, Printer, ChevronRight, Sparkles } from 'lucide-react';
+import SaudiRiyalSymbol from '../../components/storefront/SaudiRiyalSymbol';
 import { firePixelEvent } from '../../components/storefront/StorefrontLayout';
 import storeApi from '../../lib/storeApi';
 import StorefrontSeo from '../../components/storefront/StorefrontSeo';
@@ -81,7 +82,7 @@ export default function StorefrontCheckoutSuccess() {
           )}
           {orderTotal > 0 && (
             <p style={{ fontSize: '15px', opacity: 0.85, margin: '16px 0 0' }}>
-              Total: <strong>{orderTotal} SAR</strong> · {orderItems.length} item{orderItems.length !== 1 ? 's' : ''}
+              Total: <strong style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>{orderTotal} <SaudiRiyalSymbol size={12} color="#fff" /></strong> · {orderItems.length} item{orderItems.length !== 1 ? 's' : ''}
             </p>
           )}
         </div>
@@ -102,7 +103,7 @@ export default function StorefrontCheckoutSuccess() {
                   <p style={{ fontSize: '14px', fontWeight: 600, color: '#111', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</p>
                   <p style={{ fontSize: '12px', color: '#9ca3af', margin: '2px 0 0' }}>Qty: {item.quantity}</p>
                 </div>
-                <span style={{ fontSize: '14px', fontWeight: 700, color: '#059669' }}>{(item.price * item.quantity).toFixed(0)} SAR</span>
+                <span style={{ fontSize: '14px', fontWeight: 700, color: '#059669', display: 'flex', alignItems: 'center', gap: '2px' }}>{(item.price * item.quantity).toFixed(0)} <SaudiRiyalSymbol size={11} color="#059669" /></span>
               </div>
             ))}
             {orderItems.length > 4 && (

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Loader2, ShoppingCart, Check, Minus, Plus, ChevronRight, Star, Heart, ZoomIn, Truck, Share2, MessageCircle, ShieldCheck, RotateCcw, GitCompare, BellRing, HelpCircle } from 'lucide-react';
+import { Loader2, ShoppingCart, Check, Minus, Plus, ChevronRight, Star, Heart, ZoomIn, Truck, Share2, MessageCircle, ShieldCheck, RotateCcw, GitCompare, BellRing } from 'lucide-react';
+import SaudiRiyalSymbol from '../../components/storefront/SaudiRiyalSymbol';
 import storeApi from '../../lib/storeApi';
 import { useCart } from '../../store/storefrontCart';
 import { useWishlist } from '../../store/storefrontWishlist';
@@ -36,10 +37,6 @@ export default function StorefrontProductDetail() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [notifyEmail, setNotifyEmail] = useState('');
   const [notifyStatus, setNotifyStatus] = useState('');
-  const [questions, setQuestions] = useState([]);
-  const [questionForm, setQuestionForm] = useState({ question: '', askerName: '', askerEmail: '' });
-  const [questionSubmitting, setQuestionSubmitting] = useState(false);
-  const [questionMessage, setQuestionMessage] = useState('');
 
   const handleNotifyStock = async (e) => {
     e.preventDefault();
@@ -93,25 +90,8 @@ export default function StorefrontProductDetail() {
   useEffect(() => {
     if (id) {
       storeApi.get(`/reviews/product/${id}`).then(res => setReviews(res.data)).catch(() => {});
-      storeApi.get(`/products/${id}/questions`).then(res => setQuestions(res.data.questions || [])).catch(() => {});
     }
   }, [id]);
-
-  const handleQuestionSubmit = async (e) => {
-    e.preventDefault();
-    if (!questionForm.question.trim()) return;
-    setQuestionSubmitting(true);
-    setQuestionMessage('');
-    try {
-      await storeApi.post(`/products/${id}/questions`, questionForm);
-      setQuestionMessage('Question submitted! We\'ll answer it soon.');
-      setQuestionForm({ question: '', askerName: '', askerEmail: '' });
-    } catch (err) {
-      setQuestionMessage(err.response?.data?.error || 'Failed to submit question');
-    } finally {
-      setQuestionSubmitting(false);
-    }
-  };
 
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
@@ -171,10 +151,10 @@ export default function StorefrontProductDetail() {
         { label: product.title },
       ]} />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '48px', alignItems: 'start' }} className="store-pd-grid">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '56px', alignItems: 'start', marginTop: '24px' }} className="store-pd-grid">
         {/* Images */}
         <div className="store-pd-gallery" style={{ position: 'sticky', top: '20px' }}>
-          <div style={{ aspectRatio: '1', borderRadius: '20px', overflow: 'hidden', background: '#f3f4f6', marginBottom: '14px', position: 'relative', cursor: 'zoom-in', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
+          <div style={{ aspectRatio: '1', borderRadius: '24px', overflow: 'hidden', background: '#f8f8f8', marginBottom: '16px', position: 'relative', cursor: 'zoom-in', boxShadow: '0 2px 20px rgba(0,0,0,0.04)', border: '1px solid #f0f0f0' }}
             onClick={() => setZoomed(true)}
             onMouseMove={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
@@ -187,20 +167,20 @@ export default function StorefrontProductDetail() {
             {product.images?.[selectedImage]?.url ? (
               <>
                 <img src={product.images[selectedImage].url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.2s ease', transform: hoverZoom.active ? `scale(2)` : 'scale(1)', transformOrigin: `${hoverZoom.x}% ${hoverZoom.y}%` }} />
-                <div style={{ position: 'absolute', bottom: '12px', right: '12px', background: 'rgba(0,0,0,0.5)', borderRadius: '10px', padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '4px', color: '#fff', fontSize: '12px', fontWeight: 600, backdropFilter: 'blur(8px)' }}>
+                <div style={{ position: 'absolute', bottom: '14px', right: '14px', background: 'rgba(255,255,255,0.85)', borderRadius: '12px', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: '5px', color: '#111', fontSize: '12px', fontWeight: 600, backdropFilter: 'blur(12px)', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
                   <ZoomIn size={14} /> {t('zoom')}
                 </div>
               </>
             ) : (
-              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>{t('noImage')}</div>
+              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ccc' }}>{t('noImage')}</div>
             )}
           </div>
           {product.images?.length > 1 && (
             <div style={{ display: 'flex', gap: '10px', overflowX: 'auto' }}>
               {product.images.map((img, idx) => (
                 <button key={idx} onClick={() => setSelectedImage(idx)} style={{
-                  width: '68px', height: '68px', borderRadius: '12px', overflow: 'hidden', border: selectedImage === idx ? '2px solid #4f46e5' : '1px solid #e5e7eb', cursor: 'pointer', flexShrink: 0, transition: 'all 0.2s',
-                }} onMouseEnter={e => { if (selectedImage !== idx) e.currentTarget.style.borderColor = '#c7d2fe'; }} onMouseLeave={e => { if (selectedImage !== idx) e.currentTarget.style.borderColor = '#e5e7eb'; }}>
+                  width: '72px', height: '72px', borderRadius: '14px', overflow: 'hidden', border: selectedImage === idx ? '2px solid #111' : '1px solid #eee', cursor: 'pointer', flexShrink: 0, transition: 'all 0.25s', opacity: selectedImage === idx ? 1 : 0.6,
+                }} onMouseEnter={e => { if (selectedImage !== idx) { e.currentTarget.style.borderColor = '#ddd'; e.currentTarget.style.opacity = '0.85'; } }} onMouseLeave={e => { if (selectedImage !== idx) { e.currentTarget.style.borderColor = '#eee'; e.currentTarget.style.opacity = '0.6'; } }}>
                   <img src={img.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </button>
               ))}
@@ -209,58 +189,59 @@ export default function StorefrontProductDetail() {
         </div>
 
         {/* Info */}
-        <div>
-          {product.category && <p style={{ fontSize: '12px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px', fontWeight: 700 }}>{product.category}</p>}
-          <h1 className="store-pd-title" style={{ fontSize: '30px', fontWeight: 800, margin: '0 0 16px', letterSpacing: '-0.5px', lineHeight: 1.2 }}>{product.title}</h1>
+        <div style={{ padding: '8px 0' }}>
+          {product.category && <p style={{ fontSize: '11px', color: '#999', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '12px', fontWeight: 700 }}>{product.category}</p>}
+          <h1 className="store-pd-title" style={{ fontSize: '34px', fontWeight: 800, margin: '0 0 20px', letterSpacing: '-0.8px', lineHeight: 1.15, color: '#111' }}>{product.title}</h1>
 
-          {/* Share buttons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: 'bold' }}>{t('share')}</span>
-            <a href={`https://wa.me/?text=${encodeURIComponent(product.title + ' - ' + currentPrice + ' ' + currency + ' ' + window.location.href)}`} target="_blank" rel="noopener" style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: '#25D366', color: '#fff', borderRadius: '8px', textDecoration: 'none', fontSize: '13px', fontWeight: 'bold' }}>
-              <MessageCircle size={14} /> WhatsApp
-            </a>
-            <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`} target="_blank" rel="noopener" style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: '#1877F2', color: '#fff', borderRadius: '8px', textDecoration: 'none', fontSize: '13px', fontWeight: 'bold' }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-              Facebook
-            </a>
-            <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(product.title + ' - ' + currentPrice + ' ' + currency)}&url=${encodeURIComponent(window.location.href)}`} target="_blank" rel="noopener" style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: '#000', color: '#fff', borderRadius: '8px', textDecoration: 'none', fontSize: '13px', fontWeight: 'bold' }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-              X
-            </a>
-            <button onClick={() => { navigator.clipboard.writeText(window.location.href); setLinkCopied(true); setTimeout(() => setLinkCopied(false), 2000); }} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', background: '#f3f4f6', color: '#374151', border: '1px solid #e5e7eb', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' }}>
-              {linkCopied ? <><Check size={14} /> {t('copied')}</> : <><Share2 size={14} /> {t('copyLink')}</>}
-            </button>
-          </div>
+          {/* Rating row */}
+          {reviews.avgRating > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
+              <div style={{ display: 'flex', gap: '2px' }}>
+                {[1, 2, 3, 4, 5].map(n => (
+                  <Star key={n} size={16} style={{ color: n <= Math.round(reviews.avgRating) ? '#f59e0b' : '#e5e7eb', fill: n <= Math.round(reviews.avgRating) ? '#f59e0b' : '#e5e7eb' }} />
+                ))}
+              </div>
+              <span style={{ fontSize: '13px', color: '#999', fontWeight: 500 }}>{reviews.avgRating.toFixed(1)} · {reviews.totalReviews} {t('reviews')}</span>
+            </div>
+          )}
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+          {/* Price */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
             {product.compareAtPrice && product.compareAtPrice > currentPrice && (
-              <span style={{ fontSize: '18px', color: '#dc2626', textDecoration: 'line-through', fontWeight: 600 }}>{product.compareAtPrice} {currency}</span>
+              <span style={{ fontSize: '18px', color: '#bbb', textDecoration: 'line-through', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '3px' }}>
+                {product.compareAtPrice} <SaudiRiyalSymbol size={14} color="#bbb" />
+              </span>
             )}
-            <span style={{ fontSize: '30px', fontWeight: 800, color: '#059669', letterSpacing: '-0.5px' }}>{currentPrice} {currency}</span>
+            <span style={{ fontSize: '36px', fontWeight: 800, color: '#111', letterSpacing: '-1px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+              {currentPrice} <SaudiRiyalSymbol size={24} color="#111" />
+            </span>
             {product.compareAtPrice && product.compareAtPrice > currentPrice && (
-              <span style={{ background: '#fee2e2', color: '#dc2626', fontSize: '12px', fontWeight: 700, padding: '3px 10px', borderRadius: '999px' }}>{t('save')} {Math.round((1 - currentPrice / product.compareAtPrice) * 100)}%</span>
+              <span style={{ background: '#111', color: '#fff', fontSize: '11px', fontWeight: 700, padding: '4px 12px', borderRadius: '999px', letterSpacing: '0.03em' }}>{t('save')} {Math.round((1 - currentPrice / product.compareAtPrice) * 100)}%</span>
             )}
           </div>
 
+          {/* Short description */}
           {product.shortDescription && (
-            <p style={{ fontSize: '15px', color: '#4b5563', lineHeight: 1.6, marginBottom: '20px' }}>{product.shortDescription}</p>
+            <p style={{ fontSize: '15px', color: '#666', lineHeight: 1.7, marginBottom: '28px', maxWidth: '440px' }}>{product.shortDescription}</p>
           )}
 
           {/* Variants */}
           {product.hasVariants && product.variants?.length > 0 && (
-            <div style={{ marginBottom: '20px' }}>
-              <p style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '8px' }}>{t('options')}</p>
+            <div style={{ marginBottom: '24px' }}>
+              <p style={{ fontWeight: 700, fontSize: '13px', marginBottom: '10px', color: '#111', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('options')}</p>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {product.variants.filter(v => v.isActive).map(v => {
                   const outOfStock = v.trackInventory && v.stockQuantity <= 0;
                   return (
                     <button key={v._id} onClick={() => setSelectedVariant(v._id)} disabled={outOfStock} style={{
-                      padding: '8px 16px', borderRadius: '8px', border: selectedVariant === v._id ? '2px solid #4f46e5' : '1px solid #e5e7eb',
-                      background: selectedVariant === v._id ? '#eef2ff' : '#fff', cursor: outOfStock ? 'not-allowed' : 'pointer', fontSize: '14px',
-                      opacity: outOfStock ? 0.4 : 1, textDecoration: outOfStock ? 'line-through' : 'none',
+                      padding: '10px 18px', borderRadius: '12px', border: selectedVariant === v._id ? '2px solid #111' : '1px solid #e5e7eb',
+                      background: selectedVariant === v._id ? '#111' : '#fff', color: selectedVariant === v._id ? '#fff' : '#111',
+                      cursor: outOfStock ? 'not-allowed' : 'pointer', fontSize: '14px', fontWeight: 600,
+                      opacity: outOfStock ? 0.35 : 1, textDecoration: outOfStock ? 'line-through' : 'none',
+                      transition: 'all 0.2s',
                     }}>
                       {[v.option1Value, v.option2Value, v.option3Value].filter(Boolean).join(' / ')}
-                      {v.price && v.price !== product.basePrice ? ` — ${v.price} ${currency}` : ''}
+                      {v.price && v.price !== product.basePrice ? ` · ${v.price}` : ''}
                     </button>
                   );
                 })}
@@ -268,10 +249,10 @@ export default function StorefrontProductDetail() {
               {(() => {
                 const sel = product.variants.find(v => v._id === selectedVariant);
                 if (sel?.trackInventory && sel.stockQuantity <= 5 && sel.stockQuantity > 0) {
-                  return <p style={{ fontSize: '13px', color: '#f59e0b', fontWeight: 'bold', marginTop: '8px' }}>{t('onlyLeftInStock')} {sel.stockQuantity} {t('leftInStock')}</p>;
+                  return <p style={{ fontSize: '13px', color: '#f59e0b', fontWeight: 600, marginTop: '10px' }}>{t('onlyLeftInStock')} {sel.stockQuantity} {t('leftInStock')}</p>;
                 }
                 if (sel?.trackInventory && sel.stockQuantity <= 0) {
-                  return <p style={{ fontSize: '13px', color: '#dc2626', fontWeight: 'bold', marginTop: '8px' }}>{t('outOfStock')}</p>;
+                  return <p style={{ fontSize: '13px', color: '#dc2626', fontWeight: 600, marginTop: '10px' }}>{t('outOfStock')}</p>;
                 }
                 return null;
               })()}
@@ -280,31 +261,31 @@ export default function StorefrontProductDetail() {
 
           {/* Stock status for non-variant products */}
           {!product.hasVariants && product.trackInventory && (
-            <div style={{ marginBottom: '16px' }}>
+            <div style={{ marginBottom: '20px' }}>
               {product.stockQuantity <= 0 ? (
-                <p style={{ fontSize: '14px', color: '#dc2626', fontWeight: 'bold' }}>{t('outOfStock')}</p>
+                <p style={{ fontSize: '14px', color: '#dc2626', fontWeight: 600 }}>{t('outOfStock')}</p>
               ) : product.stockQuantity <= 5 ? (
-                <p style={{ fontSize: '14px', color: '#f59e0b', fontWeight: 'bold' }}>{t('onlyLeftInStock')} {product.stockQuantity} {t('leftInStock')}</p>
+                <p style={{ fontSize: '14px', color: '#f59e0b', fontWeight: 600 }}>{t('onlyLeftInStock')} {product.stockQuantity} {t('leftInStock')}</p>
               ) : (
-                <p style={{ fontSize: '14px', color: '#059669', fontWeight: 'bold' }}>{t('inStock')}</p>
+                <p style={{ fontSize: '14px', color: '#059669', fontWeight: 600 }}>{t('inStock')}</p>
               )}
             </div>
           )}
 
           {/* Bulk pricing tiers */}
           {product.priceTiers && product.priceTiers.length > 0 && (
-            <div style={{ marginBottom: '16px', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '10px', padding: '14px' }}>
-              <p style={{ fontSize: '13px', fontWeight: 'bold', margin: '0 0 10px', color: '#374151' }}>{t('bulkDiscountTiers')}</p>
+            <div style={{ marginBottom: '20px', background: '#f9f9f9', border: '1px solid #f0f0f0', borderRadius: '16px', padding: '16px' }}>
+              <p style={{ fontSize: '12px', fontWeight: 700, margin: '0 0 12px', color: '#111', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('bulkDiscountTiers')}</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                 {product.priceTiers.sort((a, b) => a.minQty - b.minQty).map((tier, i) => (
                   <div key={i} style={{
-                    padding: '6px 12px', borderRadius: '8px', background: '#fff', border: '1px solid #e5e7eb',
+                    padding: '8px 14px', borderRadius: '12px', background: '#fff', border: '1px solid #eee',
                     display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '80px',
                   }}>
-                    <span style={{ fontSize: '11px', color: '#6b7280' }}>{tier.minQty}+ {t('qty')}</span>
-                    <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#059669' }}>{tier.price} {currency}</span>
+                    <span style={{ fontSize: '11px', color: '#999' }}>{tier.minQty}+ {t('qty')}</span>
+                    <span style={{ fontSize: '16px', fontWeight: 700, color: '#059669', display: 'flex', alignItems: 'center', gap: '2px' }}>{tier.price} <SaudiRiyalSymbol size={11} color="#059669" /></span>
                     {tier.price < currentPrice && (
-                      <span style={{ fontSize: '10px', color: '#dc2626', fontWeight: 'bold' }}>
+                      <span style={{ fontSize: '10px', color: '#dc2626', fontWeight: 700 }}>
                         {t('save')} {Math.round((1 - tier.price / currentPrice) * 100)}%
                       </span>
                     )}
@@ -316,8 +297,8 @@ export default function StorefrontProductDetail() {
 
           {/* Estimated delivery */}
           {product.status !== 'out_of_stock' && (
-            <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Truck size={16} style={{ color: '#6b7280' }} />
+            <div style={{ fontSize: '13px', color: '#999', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Truck size={16} style={{ color: '#999' }} />
               <span>{t('estimatedDelivery')}: <strong style={{ color: '#111' }}>{(() => {
                 const d = new Date();
                 d.setDate(d.getDate() + 3);
@@ -329,30 +310,30 @@ export default function StorefrontProductDetail() {
             </div>
           )}
 
-          {/* Trust badges */}
-          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '20px', padding: '16px', background: 'linear-gradient(135deg, #f9fafb, #f3f4f6)', borderRadius: '14px', border: '1px solid #f3f4f6' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#374151', fontWeight: 600 }}>
-              <Truck size={16} style={{ color: '#4f46e5' }} /> {t('freeShippingSub')}
+          {/* Trust badges - minimal */}
+          <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', marginBottom: '28px', padding: '14px 0', borderTop: '1px solid #f0f0f0', borderBottom: '1px solid #f0f0f0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#666', fontWeight: 500 }}>
+              <Truck size={15} style={{ color: '#999' }} /> {t('freeShippingSub')}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#374151', fontWeight: 600 }}>
-              <ShieldCheck size={16} style={{ color: '#059669' }} /> {t('securePayment')}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#666', fontWeight: 500 }}>
+              <ShieldCheck size={15} style={{ color: '#999' }} /> {t('securePayment')}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#374151', fontWeight: 600 }}>
-              <RotateCcw size={16} style={{ color: '#f59e0b' }} /> {t('easyReturnsSub')}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#666', fontWeight: 500 }}>
+              <RotateCcw size={15} style={{ color: '#999' }} /> {t('easyReturnsSub')}
             </div>
           </div>
 
           {/* Quantity + Add to cart */}
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden', flexShrink: 0 }}>
-              <button onClick={() => setQuantity(Math.max(1, quantity - 1))} style={{ padding: '12px', background: 'none', border: 'none', cursor: 'pointer', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#f3f4f6'} onMouseLeave={e => e.currentTarget.style.background = 'none'}><Minus size={16} /></button>
-              <span style={{ padding: '0 20px', fontWeight: 700, fontSize: '16px' }}>{quantity}</span>
-              <button onClick={() => setQuantity(quantity + 1)} style={{ padding: '12px', background: 'none', border: 'none', cursor: 'pointer', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#f3f4f6'} onMouseLeave={e => e.currentTarget.style.background = 'none'}><Plus size={16} /></button>
+            <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e5e7eb', borderRadius: '14px', overflow: 'hidden', flexShrink: 0 }}>
+              <button onClick={() => setQuantity(Math.max(1, quantity - 1))} style={{ padding: '14px', background: 'none', border: 'none', cursor: 'pointer', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#f5f5f5'} onMouseLeave={e => e.currentTarget.style.background = 'none'}><Minus size={16} /></button>
+              <span style={{ padding: '0 24px', fontWeight: 700, fontSize: '16px' }}>{quantity}</span>
+              <button onClick={() => setQuantity(quantity + 1)} style={{ padding: '14px', background: 'none', border: 'none', cursor: 'pointer', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#f5f5f5'} onMouseLeave={e => e.currentTarget.style.background = 'none'}><Plus size={16} /></button>
             </div>
             <button onClick={handleAddToCart} style={{
-              flex: '1 1 160px', minWidth: 0, padding: '14px 24px', background: added ? '#059669' : 'linear-gradient(135deg, #4f46e5, #6366f1)', color: '#fff', border: 'none', borderRadius: '14px',
+              flex: '1 1 180px', minWidth: 0, padding: '16px 28px', background: added ? '#059669' : '#111', color: '#fff', border: 'none', borderRadius: '14px',
               fontWeight: 700, fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', whiteSpace: 'nowrap',
-              transition: 'all 0.2s', boxShadow: added ? '0 4px 14px rgba(5,150,105,0.25)' : '0 4px 14px rgba(79,70,229,0.25)',
+              transition: 'all 0.25s', boxShadow: added ? '0 4px 14px rgba(5,150,105,0.2)' : '0 4px 14px rgba(0,0,0,0.12)',
             }} onMouseEnter={e => { if (!added) e.currentTarget.style.transform = 'translateY(-2px)'; }} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
               {added ? <><Check size={18} /> {t('added')}</> : <><ShoppingCart size={18} /> {t('addToCart')}</>}
             </button>
@@ -370,34 +351,51 @@ export default function StorefrontProductDetail() {
                 });
               }
             }} style={{
-              padding: '12px', background: isInWishlist(data.product._id) ? '#fee2e2' : '#fff', border: `1px solid ${isInWishlist(data.product._id) ? '#fca5a5' : '#e5e7eb'}`, borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s',
+              padding: '14px', background: isInWishlist(data.product._id) ? '#fee2e2' : '#fff', border: `1px solid ${isInWishlist(data.product._id) ? '#fca5a5' : '#e5e7eb'}`, borderRadius: '14px', cursor: 'pointer', transition: 'all 0.2s',
             }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
-              <Heart size={20} style={{ color: isInWishlist(data.product._id) ? '#dc2626' : '#9ca3af', fill: isInWishlist(data.product._id) ? '#dc2626' : 'none' }} />
+              <Heart size={20} style={{ color: isInWishlist(data.product._id) ? '#dc2626' : '#999', fill: isInWishlist(data.product._id) ? '#dc2626' : 'none' }} />
             </button>
             <button onClick={() => { toggleCompare(data.product._id); toast(isInCompare(data.product._id) ? t('removedFromCompare') : t('addedToCompare')); }} title={t('compare')} style={{
-              padding: '12px', background: isInCompare(data.product._id) ? '#eef2ff' : '#fff', border: `1px solid ${isInCompare(data.product._id) ? '#4f46e5' : '#e5e7eb'}`, borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s',
+              padding: '14px', background: isInCompare(data.product._id) ? '#f5f5f5' : '#fff', border: `1px solid ${isInCompare(data.product._id) ? '#111' : '#e5e7eb'}`, borderRadius: '14px', cursor: 'pointer', transition: 'all 0.2s',
             }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
-              <GitCompare size={20} style={{ color: isInCompare(data.product._id) ? '#4f46e5' : '#9ca3af' }} />
+              <GitCompare size={20} style={{ color: isInCompare(data.product._id) ? '#111' : '#999' }} />
+            </button>
+          </div>
+
+          {/* Share buttons - ultra minimalistic */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '24px' }}>
+            <span style={{ fontSize: '11px', color: '#999', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', marginRight: '4px' }}>{t('share')}</span>
+            <a href={`https://wa.me/?text=${encodeURIComponent(product.title + ' ' + window.location.href)}`} target="_blank" rel="noopener" style={{ width: '32px', height: '32px', borderRadius: '50%', border: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666', textDecoration: 'none', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.borderColor = '#111'; e.currentTarget.style.color = '#111'; }} onMouseLeave={e => { e.currentTarget.style.borderColor = '#eee'; e.currentTarget.style.color = '#666'; }}>
+              <MessageCircle size={14} />
+            </a>
+            <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`} target="_blank" rel="noopener" style={{ width: '32px', height: '32px', borderRadius: '50%', border: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666', textDecoration: 'none', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.borderColor = '#111'; e.currentTarget.style.color = '#111'; }} onMouseLeave={e => { e.currentTarget.style.borderColor = '#eee'; e.currentTarget.style.color = '#666'; }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            </a>
+            <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(product.title)}&url=${encodeURIComponent(window.location.href)}`} target="_blank" rel="noopener" style={{ width: '32px', height: '32px', borderRadius: '50%', border: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666', textDecoration: 'none', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.borderColor = '#111'; e.currentTarget.style.color = '#111'; }} onMouseLeave={e => { e.currentTarget.style.borderColor = '#eee'; e.currentTarget.style.color = '#666'; }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            </a>
+            <button onClick={() => { navigator.clipboard.writeText(window.location.href); setLinkCopied(true); setTimeout(() => setLinkCopied(false), 2000); }} style={{ width: '32px', height: '32px', borderRadius: '50%', border: `1px solid ${linkCopied ? '#059669' : '#eee'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: linkCopied ? '#059669' : '#666', background: 'none', cursor: 'pointer', transition: 'all 0.2s' }} onMouseEnter={e => { if (!linkCopied) { e.currentTarget.style.borderColor = '#111'; e.currentTarget.style.color = '#111'; } }} onMouseLeave={e => { if (!linkCopied) { e.currentTarget.style.borderColor = '#eee'; e.currentTarget.style.color = '#666'; } }}>
+              {linkCopied ? <Check size={14} /> : <Share2 size={14} />}
             </button>
           </div>
 
           {/* Back-in-stock notification */}
           {isOutOfStock && (
-            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '10px', padding: '16px', marginBottom: '24px' }}>
+            <div style={{ background: '#fafafa', border: '1px solid #f0f0f0', borderRadius: '16px', padding: '20px', marginBottom: '28px' }}>
               {notifyStatus === 'success' ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Check size={20} style={{ color: '#059669' }} />
-                  <p style={{ fontSize: '14px', fontWeight: 'bold', color: '#059669', margin: 0 }}>{t('notifySubscribed')}</p>
+                  <p style={{ fontSize: '14px', fontWeight: 600, color: '#059669', margin: 0 }}>{t('notifySubscribed')}</p>
                 </div>
               ) : (
                 <>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
                     <BellRing size={18} style={{ color: '#f59e0b' }} />
-                    <p style={{ fontSize: '14px', fontWeight: 'bold', margin: 0 }}>{t('notifyBackInStock')}</p>
+                    <p style={{ fontSize: '14px', fontWeight: 600, margin: 0, color: '#111' }}>{t('notifyBackInStock')}</p>
                   </div>
                   <form onSubmit={handleNotifyStock} style={{ display: 'flex', gap: '8px' }}>
-                    <input type="email" required value={notifyEmail} onChange={e => setNotifyEmail(e.target.value)} placeholder="your@email.com" style={{ flex: 1, padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }} />
-                    <button type="submit" disabled={notifyStatus === 'loading'} style={{ padding: '10px 20px', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer' }}>{notifyStatus === 'loading' ? '...' : t('notifyMe')}</button>
+                    <input type="email" required value={notifyEmail} onChange={e => setNotifyEmail(e.target.value)} placeholder="your@email.com" style={{ flex: 1, padding: '12px 16px', border: '1px solid #e5e7eb', borderRadius: '12px', fontSize: '14px', outline: 'none' }} />
+                    <button type="submit" disabled={notifyStatus === 'loading'} style={{ padding: '12px 24px', background: '#111', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 700, fontSize: '14px', cursor: 'pointer' }}>{notifyStatus === 'loading' ? '...' : t('notifyMe')}</button>
                   </form>
                   {notifyStatus === 'error' && <p style={{ fontSize: '12px', color: '#dc2626', marginTop: '8px' }}>{t('failedSubscribe')}</p>}
                 </>
@@ -407,9 +405,9 @@ export default function StorefrontProductDetail() {
 
           {/* Description */}
           {product.description && (
-            <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '24px' }}>
-              <h3 style={{ fontWeight: 700, fontSize: '16px', marginBottom: '12px' }}>{t('description')}</h3>
-              <div style={{ fontSize: '14px', color: '#4b5563', lineHeight: 1.7 }} dangerouslySetInnerHTML={{ __html: product.description }} />
+            <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: '28px' }}>
+              <h3 style={{ fontWeight: 700, fontSize: '14px', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#111' }}>{t('description')}</h3>
+              <div style={{ fontSize: '15px', color: '#555', lineHeight: 1.8 }} dangerouslySetInnerHTML={{ __html: product.description }} />
             </div>
           )}
         </div>
@@ -432,7 +430,7 @@ export default function StorefrontProductDetail() {
                   </div>
                   <div style={{ padding: '14px' }}>
                     <p style={{ fontWeight: 600, fontSize: '14px', margin: '0 0 6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#111' }}>{p.title}</p>
-                    <p style={{ fontSize: '17px', fontWeight: 800, color: '#059669', margin: 0 }}>{p.basePrice} {currency}</p>
+                    <p style={{ fontSize: '17px', fontWeight: 800, color: '#059669', margin: 0, display: 'flex', alignItems: 'center', gap: '3px' }}>{p.basePrice} <SaudiRiyalSymbol size={13} color="#059669" /></p>
                   </div>
                 </Link>
               );
@@ -516,57 +514,6 @@ export default function StorefrontProductDetail() {
         </form>
       </div>
 
-      {/* Q&A section */}
-      <div style={{ marginTop: '60px' }}>
-        <h2 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <HelpCircle size={22} style={{ color: '#4f46e5' }} /> {t('questionsAnswers')}
-        </h2>
-
-        {/* Question list */}
-        {questions.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
-            {questions.map(q => (
-              <div key={q._id} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px' }}>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <HelpCircle size={16} style={{ color: '#4f46e5' }} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <p style={{ fontWeight: 'bold', fontSize: '14px', margin: '0 0 4px' }}>{q.question}</p>
-                    <p style={{ fontSize: '12px', color: '#9ca3af', margin: '0 0 10px' }}>{q.askerName ? `${q.askerName} · ` : ''}{new Date(q.createdAt).toLocaleDateString(isRTL ? 'ar' : 'en', { day: 'numeric', month: 'short' })}</p>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#d1fae5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <MessageCircle size={16} style={{ color: '#059669' }} />
-                      </div>
-                      <div>
-                        <p style={{ fontSize: '14px', color: '#374151', margin: 0, lineHeight: 1.5 }}>{q.answer}</p>
-                        <p style={{ fontSize: '11px', color: '#9ca3af', margin: '4px 0 0' }}>{t('answered')} {new Date(q.answeredAt).toLocaleDateString(isRTL ? 'ar' : 'en', { day: 'numeric', month: 'short' })}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '24px' }}>{t('noQuestionsYet')}</p>
-        )}
-
-        {/* Question form */}
-        <form onSubmit={handleQuestionSubmit} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px' }}>
-          <h3 style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '12px' }}>{t('askQuestion')}</h3>
-          {questionMessage && <p style={{ fontSize: '13px', color: questionMessage.includes('Failed') ? '#dc2626' : '#059669', marginBottom: '12px' }}>{questionMessage}</p>}
-          <textarea required placeholder={t('yourQuestion')} value={questionForm.question} onChange={e => setQuestionForm({ ...questionForm, question: e.target.value })} style={{ width: '100%', padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', minHeight: '60px', marginBottom: '12px', resize: 'vertical' }} />
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-            <input placeholder={t('yourNameOptional')} value={questionForm.askerName} onChange={e => setQuestionForm({ ...questionForm, askerName: e.target.value })} style={{ padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }} />
-            <input type="email" placeholder={t('emailOptional')} value={questionForm.askerEmail} onChange={e => setQuestionForm({ ...questionForm, askerEmail: e.target.value })} style={{ padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }} />
-          </div>
-          <button type="submit" disabled={questionSubmitting} style={{ padding: '10px 24px', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', opacity: questionSubmitting ? 0.6 : 1 }}>
-            {questionSubmitting ? t('submitting') : t('submitQuestion')}
-          </button>
-        </form>
-      </div>
-
       <style>{`
         .store-related-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:20px}
         @media(max-width:768px){
@@ -598,7 +545,7 @@ export default function StorefrontProductDetail() {
                 {item.image && <img src={item.image} alt={item.title} style={{ width: '100%', aspectRatio: '1', objectFit: 'cover' }} />}
                 <div style={{ padding: '8px 10px' }}>
                   <p style={{ fontSize: '12px', fontWeight: 'bold', color: '#111', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</p>
-                  <p style={{ fontSize: '14px', fontWeight: 'bold', color: '#059669', margin: 0 }}>{item.price} SAR</p>
+                  <p style={{ fontSize: '14px', fontWeight: 'bold', color: '#059669', margin: 0, display: 'flex', alignItems: 'center', gap: '3px' }}>{item.price} <SaudiRiyalSymbol size={11} color="#059669" /></p>
                 </div>
               </Link>
             ))}
@@ -606,26 +553,6 @@ export default function StorefrontProductDetail() {
         </div>
       )}
 
-      {/* Sticky add-to-cart bar (mobile only) */}
-      <div className="md:hidden" style={{
-        position: 'fixed', bottom: '60px', left: 0, right: 0, zIndex: 90, maxWidth: '100%',
-        background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(12px)', borderTop: '1px solid #e5e7eb', padding: '10px 14px',
-        display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 -4px 20px rgba(0,0,0,0.08)',
-      }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontSize: '12px', color: '#6b7280', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.title}</p>
-          <p style={{ fontSize: '17px', fontWeight: 800, color: '#059669', margin: 0, letterSpacing: '-0.3px' }}>{currentPrice} {currency}</p>
-        </div>
-        <button onClick={handleAddToCart} disabled={isOutOfStock} style={{
-          padding: '12px 22px', background: added ? '#059669' : 'linear-gradient(135deg, #4f46e5, #6366f1)', color: '#fff', border: 'none', borderRadius: '12px',
-          fontWeight: 700, fontSize: '14px', cursor: isOutOfStock ? 'not-allowed' : 'pointer', opacity: isOutOfStock ? 0.5 : 1,
-          display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0, boxShadow: '0 4px 14px rgba(79,70,229,0.3)',
-        }}>
-          {added ? <><Check size={16} /> {t('added')}</> : <><ShoppingCart size={16} /> {isOutOfStock ? t('soldOut') : t('addToCart')}</>}
-        </button>
-      </div>
-      {/* Spacer so content is not hidden behind the sticky bar + bottom nav */}
-      <div className="md:hidden" style={{ height: '70px' }} />
     </div>
   );
 }

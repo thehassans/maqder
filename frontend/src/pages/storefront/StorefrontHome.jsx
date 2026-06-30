@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Loader2, Eye, Heart, ShoppingCart, Star, Check } from 'lucide-react';
+import { ArrowRight, Loader2, Eye, Heart, ShoppingCart, Star, Check, Sparkles, TrendingUp } from 'lucide-react';
+import SaudiRiyalSymbol from '../../components/storefront/SaudiRiyalSymbol';
 import storeApi from '../../lib/storeApi';
 import StorefrontSeo from '../../components/storefront/StorefrontSeo';
 import QuickViewModal from '../../components/storefront/QuickViewModal';
@@ -72,24 +73,23 @@ export default function StorefrontHome() {
       case 'hero':
         return (
           <div key={section.id} style={{
-            background: s.imageUrl ? `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url(${s.imageUrl}) center/cover` : `linear-gradient(135deg, ${c('primary', '#4f46e5')}, ${c('accent', '#7c3aed')})`,
-            padding: '80px 24px', textAlign: 'center', borderRadius: '24px', marginBottom: '40px',
+            background: s.imageUrl ? `linear-gradient(rgba(0,0,0,0.25), rgba(0,0,0,0.25)), url(${s.imageUrl}) center/cover` : `linear-gradient(135deg, ${c('surface', '#f9fafb')} 0%, #fff 100%)`,
+            padding: '64px 40px', borderRadius: '20px', marginBottom: '40px',
             position: 'relative', overflow: 'hidden',
-            boxShadow: s.imageUrl ? '0 20px 60px -15px rgba(0,0,0,0.3)' : '0 20px 60px -15px rgba(79,70,229,0.3)',
+            border: s.imageUrl ? 'none' : `1px solid ${c('borderColor', '#e5e7eb')}`,
+            minHeight: '320px', display: 'flex', alignItems: 'center',
           }}>
-            <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '200px', height: '200px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
-            <div style={{ position: 'absolute', bottom: '-60px', left: '-30px', width: '160px', height: '160px', borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
-            <div style={{ position: 'relative', zIndex: 1 }}>
-              <h2 style={{ color: '#fff', fontSize: '36px', margin: '0 0 12px', fontWeight: 800, letterSpacing: '-0.5px', textShadow: s.imageUrl ? '0 2px 12px rgba(0,0,0,0.3)' : 'none' }}>{s.title || t('welcomeStore')}</h2>
-              <p style={{ color: '#fff', opacity: 0.95, margin: '0 0 28px', fontSize: '17px', textShadow: s.imageUrl ? '0 1px 8px rgba(0,0,0,0.3)' : 'none' }}>{s.subtitle || ''}</p>
+            <div style={{ position: 'relative', zIndex: 1, maxWidth: '500px' }}>
+              <h2 style={{ color: s.imageUrl ? '#fff' : c('text', '#111'), fontSize: '38px', margin: '0 0 12px', fontWeight: 900, letterSpacing: '-1px', lineHeight: 1.1, textShadow: s.imageUrl ? '0 2px 12px rgba(0,0,0,0.3)' : 'none' }}>{s.title || t('welcomeStore')}</h2>
+              <p style={{ color: s.imageUrl ? '#fff' : c('textMuted', '#6b7280'), opacity: s.imageUrl ? 0.95 : 1, margin: '0 0 28px', fontSize: '16px', lineHeight: 1.6, textShadow: s.imageUrl ? '0 1px 8px rgba(0,0,0,0.3)' : 'none' }}>{s.subtitle || ''}</p>
               <Link to={s.buttonLink || '/store/products'} style={{
                 display: 'inline-flex', alignItems: 'center', gap: '8px',
-                background: '#fff', color: c('primary', '#4f46e5'),
-                padding: '14px 32px', borderRadius: '999px', textDecoration: 'none', fontWeight: 700, fontSize: '16px',
-                transition: 'all 0.2s', boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                background: s.imageUrl ? '#fff' : c('primary', '#059669'), color: s.imageUrl ? c('primary', '#059669') : '#fff',
+                padding: '14px 28px', borderRadius: '12px', textDecoration: 'none', fontWeight: 700, fontSize: '15px',
+                transition: 'all 0.25s', boxShadow: s.imageUrl ? '0 4px 20px rgba(0,0,0,0.15)' : '0 4px 14px rgba(5,150,105,0.2)',
               }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(0,0,0,0.2)'; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.15)'; }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
               >
                 {s.buttonText || t('shopNow')} <ArrowRight size={18} style={{ transform: isRTL ? 'scaleX(-1)' : 'none' }} />
               </Link>
@@ -221,21 +221,127 @@ export default function StorefrontHome() {
         .sf-card-cart { max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.35s ease, opacity 0.3s ease, padding 0.35s ease; padding-top: 0 !important; padding-bottom: 0 !important; }
         .sf-product-card:hover .sf-card-cart { max-height: 80px; opacity: 1; padding-bottom: 16px !important; }
         @media (hover: none) { .sf-card-actions { opacity: 1; transform: none; pointer-events: auto; } .sf-card-cart { max-height: 80px; opacity: 1; padding-bottom: 16px !important; } }
+        @media (max-width: 768px) { .sf-hero-grid { flex-direction: column !important; padding: 32px 20px !important; gap: 24px !important; } .sf-hero-products { display: none !important; } }
       `}</style>
       {sections.length > 0 ? sections.map(renderSection) : (
         // Fallback if no theme configured
         <>
-          <div style={{ background: `linear-gradient(135deg, ${c('primary', '#4f46e5')}, ${c('accent', '#7c3aed')})`, padding: '80px 24px', textAlign: 'center', borderRadius: '24px', marginBottom: '40px', position: 'relative', overflow: 'hidden', boxShadow: '0 20px 60px -15px rgba(79,70,229,0.3)' }}>
-            <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '200px', height: '200px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
-            <div style={{ position: 'relative', zIndex: 1 }}>
-              <h2 style={{ color: '#fff', fontSize: '36px', margin: '0 0 12px', fontWeight: 800, letterSpacing: '-0.5px' }}>{storeInfo?.storeName || 'Welcome'}</h2>
-              <p style={{ color: '#fff', opacity: 0.9, margin: '0 0 28px', fontSize: '17px' }}>Discover amazing products at great prices</p>
-              <Link to="/store/products" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: '#fff', color: c('primary', '#4f46e5'), padding: '14px 32px', borderRadius: '999px', textDecoration: 'none', fontWeight: 700, fontSize: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 28px rgba(0,0,0,0.2)'; }} onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.15)'; }}>{t('shopNow')} <ArrowRight size={18} style={{ transform: isRTL ? 'scaleX(-1)' : 'none' }} /></Link>
+          {/* Hero — ultra premium minimalistic */}
+          <div style={{
+            position: 'relative', marginBottom: '48px', borderRadius: '20px', overflow: 'hidden',
+            background: `linear-gradient(135deg, ${c('surface', '#f9fafb')} 0%, #fff 100%)`,
+            minHeight: '380px', display: 'flex', alignItems: 'center',
+            border: `1px solid ${c('borderColor', '#e5e7eb')}`,
+          }}>
+            <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: '48px', padding: '48px 40px', width: '100%' }} className="sf-hero-grid">
+              {/* Left: Logo + text */}
+              <div style={{ flex: '1 1 320px' }}>
+                {/* Maqder logo */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
+                  <div style={{
+                    width: '44px', height: '44px', borderRadius: '12px',
+                    background: `linear-gradient(135deg, ${c('primary', '#059669')}, ${c('primary', '#059669')}dd)`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 7h18M3 12h18M3 17h12" />
+                    </svg>
+                  </div>
+                  <span style={{ fontSize: '22px', fontWeight: 800, color: c('text', '#111'), letterSpacing: '-0.5px' }}>
+                    {storeInfo?.storeName || 'Maqder'}
+                  </span>
+                </div>
+
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: `${c('primary', '#059669')}0d`, color: c('primary', '#059669'), padding: '6px 14px', borderRadius: '999px', marginBottom: '20px' }}>
+                  <Sparkles size={13} />
+                  <span style={{ fontSize: '12px', fontWeight: 600 }}>{t('newArrivals')}</span>
+                </div>
+
+                <h1 style={{ fontSize: '40px', margin: '0 0 12px', fontWeight: 900, letterSpacing: '-1.2px', lineHeight: 1.1, color: c('text', '#111') }}>
+                  {t('welcomeStore')}
+                </h1>
+                <p style={{ color: c('textMuted', '#6b7280'), margin: '0 0 32px', fontSize: '16px', lineHeight: 1.6, maxWidth: '360px' }}>
+                  {t('subscribeForOffers')}
+                </p>
+
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  <Link to="/store/products" style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '8px',
+                    background: c('primary', '#059669'), color: '#fff',
+                    padding: '14px 28px', borderRadius: '12px', textDecoration: 'none', fontWeight: 700, fontSize: '15px',
+                    transition: 'all 0.25s', boxShadow: '0 4px 14px rgba(5,150,105,0.2)',
+                  }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(5,150,105,0.3)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(5,150,105,0.2)'; }}
+                  >
+                    {t('shopNow')} <ArrowRight size={18} style={{ transform: isRTL ? 'scaleX(-1)' : 'none' }} />
+                  </Link>
+                  <Link to="/store/products?sort=popular" style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '8px',
+                    background: 'transparent', color: c('text', '#111'), border: `1px solid ${c('borderColor', '#e5e7eb')}`,
+                    padding: '14px 28px', borderRadius: '12px', textDecoration: 'none', fontWeight: 700, fontSize: '15px',
+                    transition: 'all 0.25s',
+                  }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = c('text', '#111'); }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = c('borderColor', '#e5e7eb'); }}
+                  >
+                    <TrendingUp size={18} /> {t('bestSellers')}
+                  </Link>
+                </div>
+              </div>
+
+              {/* Right: Product showcase — minimal */}
+              {products.length > 0 && (
+                <div style={{ flex: '0 0 auto', display: 'flex', gap: '12px', alignItems: 'center' }} className="sf-hero-products">
+                  {products.slice(0, 3).map((p, i) => {
+                    const slug = p.seo?.slug || p._id;
+                    return (
+                      <Link key={p._id} to={`/store/products/${slug}`} style={{
+                        textDecoration: 'none', display: 'block', position: 'relative',
+                        transform: i === 1 ? 'translateY(-12px)' : 'translateY(0)',
+                        transition: 'transform 0.3s ease',
+                      }}
+                        onMouseEnter={e => e.currentTarget.style.transform = i === 1 ? 'translateY(-18px)' : 'translateY(-6px)'}
+                        onMouseLeave={e => e.currentTarget.style.transform = i === 1 ? 'translateY(-12px)' : 'translateY(0)'}
+                      >
+                        <div style={{
+                          width: '130px', height: '170px', borderRadius: '16px', overflow: 'hidden',
+                          background: c('surface', '#f9fafb'), border: `1px solid ${c('borderColor', '#e5e7eb')}`,
+                          boxShadow: '0 8px 24px rgba(0,0,0,0.06)', position: 'relative',
+                        }}>
+                          {p.images?.[0]?.url ? (
+                            <img src={p.images[0].url} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <span style={{ fontSize: '11px', color: c('textMuted', '#9ca3af') }}>No image</span>
+                            </div>
+                          )}
+                          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '10px', background: 'linear-gradient(transparent, rgba(255,255,255,0.95))' }}>
+                            <p style={{ color: c('text', '#111'), fontSize: '11px', fontWeight: 700, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</p>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '3px', marginTop: '2px' }}>
+                              <span style={{ color: c('primary', '#059669'), fontSize: '13px', fontWeight: 800 }}>{p.basePrice}</span>
+                              <SaudiRiyalSymbol size={10} color={c('primary', '#059669')} />
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
+
+          {/* Featured Products */}
           <div style={{ marginBottom: '40px' }}>
-            <h3 style={{ fontSize: '26px', fontWeight: 800, marginBottom: '6px', letterSpacing: '-0.4px' }}>{t('featuredProducts')}</h3>
-            <p style={{ color: c('textMuted', '#6b7280'), fontSize: '14px', margin: '0 0 24px' }}>{t('subscribeForOffers')}</p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+              <div>
+                <h3 style={{ fontSize: '28px', fontWeight: 900, marginBottom: '4px', letterSpacing: '-0.5px', margin: 0 }}>{t('featuredProducts')}</h3>
+                <p style={{ color: c('textMuted', '#6b7280'), fontSize: '14px', margin: 0 }}>{t('subscribeForOffers')}</p>
+              </div>
+              <Link to="/store/products" style={{ color: c('primary', '#4f46e5'), textDecoration: 'none', fontSize: '14px', fontWeight: 700 }}>{t('viewAll')} →</Link>
+            </div>
             <div className="sf-grid">
               {products.map(p => <ProductCard key={p._id} product={p} currency={currency} colors={colors} onQuickView={() => setQuickViewProduct(p)} />)}
             </div>
@@ -258,7 +364,7 @@ export default function StorefrontHome() {
                 </div>
                 <div style={{ padding: '10px' }}>
                   <p style={{ fontSize: '12px', fontWeight: 600, margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#111' }}>{item.title}</p>
-                  <p style={{ fontSize: '14px', fontWeight: 800, color: '#059669', margin: 0 }}>{item.price} {currency}</p>
+                  <p style={{ fontSize: '14px', fontWeight: 800, color: '#059669', margin: 0, display: 'flex', alignItems: 'center', gap: '3px' }}>{item.price} <SaudiRiyalSymbol size={12} color="#059669" /></p>
                 </div>
               </Link>
             ))}
@@ -373,8 +479,8 @@ function FlashSaleSection({ settings, products, currency, colors, onQuickView })
                 </div>
                 <div style={{ padding: '10px' }}>
                   <p style={{ fontWeight: 'bold', fontSize: '13px', color: '#111', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</p>
-                  <span style={{ fontSize: '12px', color: '#9ca3af', textDecoration: 'line-through' }}>{p.basePrice} {currency}</span>
-                  <p style={{ fontSize: '16px', fontWeight: 'bold', color: c('salePriceColor', '#dc2626'), margin: 0 }}>{salePrice} {currency}</p>
+                  <span style={{ fontSize: '12px', color: '#9ca3af', textDecoration: 'line-through', display: 'flex', alignItems: 'center', gap: '2px' }}>{p.basePrice} <SaudiRiyalSymbol size={10} color="#9ca3af" /></span>
+                  <p style={{ fontSize: '16px', fontWeight: 'bold', color: c('salePriceColor', '#dc2626'), margin: 0, display: 'flex', alignItems: 'center', gap: '3px' }}>{salePrice} <SaudiRiyalSymbol size={12} color={c('salePriceColor', '#dc2626')} /></p>
                 </div>
               </Link>
               {onQuickView && (
@@ -477,10 +583,14 @@ function ProductCard({ product, currency, colors, onQuickView }) {
               {reviewCount > 0 && <span style={{ fontSize: '11px', color: c('textMuted', '#9ca3af'), marginLeft: '3px' }}>({reviewCount})</span>}
             </div>
           )}
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: 'auto' }}>
-            <span style={{ fontSize: '18px', fontWeight: 800, color: c('priceColor', '#059669') }}>{product.basePrice} {currency}</span>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginTop: 'auto' }}>
+            <span style={{ fontSize: '18px', fontWeight: 800, color: c('priceColor', '#059669'), display: 'flex', alignItems: 'center', gap: '3px' }}>
+              {product.basePrice} <SaudiRiyalSymbol size={14} color={c('priceColor', '#059669')} />
+            </span>
             {hasSale && (
-              <span style={{ fontSize: '13px', color: c('textMuted', '#9ca3af'), textDecoration: 'line-through' }}>{product.compareAtPrice} {currency}</span>
+              <span style={{ fontSize: '13px', color: c('textMuted', '#9ca3af'), textDecoration: 'line-through', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                {product.compareAtPrice} <SaudiRiyalSymbol size={11} color={c('textMuted', '#9ca3af')} />
+              </span>
             )}
           </div>
         </div>

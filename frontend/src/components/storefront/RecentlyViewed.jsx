@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Clock } from 'lucide-react';
+import SaudiRiyalSymbol from './SaudiRiyalSymbol';
 import storeApi from '../../lib/storeApi';
 
 const STORAGE_KEY = 'maqder_recently_viewed';
@@ -57,7 +58,7 @@ export default function RecentlyViewed() {
               </div>
               <div style={{ padding: '10px' }}>
                 <p style={{ fontSize: '13px', fontWeight: 700, color: '#111', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</p>
-                <p style={{ fontSize: '15px', fontWeight: 800, color: '#059669', margin: 0 }}>{item.price} SAR</p>
+                <p style={{ fontSize: '15px', fontWeight: 800, color: '#059669', margin: 0, display: 'flex', alignItems: 'center', gap: '3px' }}>{item.price} <SaudiRiyalSymbol size={12} color="#059669" /></p>
               </div>
             </div>
           </Link>

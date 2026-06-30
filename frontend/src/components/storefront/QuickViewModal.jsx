@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { X, ShoppingCart, Check, Minus, Plus, Eye } from 'lucide-react';
+import SaudiRiyalSymbol from './SaudiRiyalSymbol';
 import storeApi from '../../lib/storeApi';
 import { useCart } from '../../store/storefrontCart';
 import { useI18n } from '../../store/storefrontI18n';
@@ -79,9 +80,9 @@ export default function QuickViewModal({ product, onClose, currency = 'SAR' }) {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
               {product.compareAtPrice && product.compareAtPrice > currentPrice && (
-                <span style={{ fontSize: '15px', color: '#dc2626', textDecoration: 'line-through' }}>{product.compareAtPrice} {currency}</span>
+                <span style={{ fontSize: '15px', color: '#dc2626', textDecoration: 'line-through', display: 'flex', alignItems: 'center', gap: '2px' }}>{product.compareAtPrice} <SaudiRiyalSymbol size={12} color="#dc2626" /></span>
               )}
-              <span style={{ fontSize: '24px', fontWeight: 800, color: '#059669' }}>{currentPrice} {currency}</span>
+              <span style={{ fontSize: '24px', fontWeight: 800, color: '#059669', display: 'flex', alignItems: 'center', gap: '3px' }}>{currentPrice} <SaudiRiyalSymbol size={18} color="#059669" /></span>
             </div>
 
             {product.shortDescription && (

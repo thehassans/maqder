@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, Trash2, ShoppingCart, Share2, Check } from 'lucide-react';
+import SaudiRiyalSymbol from '../../components/storefront/SaudiRiyalSymbol';
 import { useWishlist } from '../../store/storefrontWishlist';
 import { useCart } from '../../store/storefrontCart';
 import StorefrontSeo from '../../components/storefront/StorefrontSeo';
@@ -59,7 +60,7 @@ export default function StorefrontWishlist() {
               <Link to={`/store/products/${item.slug}`} style={{ textDecoration: 'none' }}>
                 <p style={{ fontWeight: 600, fontSize: '14px', color: '#111', margin: '0 0 6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</p>
               </Link>
-              <p style={{ fontSize: '17px', fontWeight: 800, color: '#059669', margin: '0 0 12px' }}>{item.price} SAR</p>
+              <p style={{ fontSize: '17px', fontWeight: 800, color: '#059669', margin: '0 0 12px', display: 'flex', alignItems: 'center', gap: '3px' }}>{item.price} <SaudiRiyalSymbol size={13} color="#059669" /></p>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={() => { addItem({ _id: item.productId, title: item.title, basePrice: item.price, images: item.image ? [{ url: item.image }] : [] }, 1); }} style={{
                   flex: 1, padding: '10px', background: 'linear-gradient(135deg, #4f46e5, #6366f1)', color: '#fff', border: 'none', borderRadius: '10px', fontWeight: 700, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(79,70,229,0.2)',

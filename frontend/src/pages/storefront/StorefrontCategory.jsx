@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Star, Eye } from 'lucide-react';
+import SaudiRiyalSymbol from '../../components/storefront/SaudiRiyalSymbol';
 import storeApi from '../../lib/storeApi';
 import StorefrontSeo from '../../components/storefront/StorefrontSeo';
 import StorefrontBreadcrumbs from '../../components/storefront/StorefrontBreadcrumbs';
@@ -117,9 +118,9 @@ export default function StorefrontCategory() {
                     </div>
                   )}
                   {p.compareAtPrice && p.compareAtPrice > p.basePrice && (
-                    <span style={{ fontSize: '12px', color: c('salePriceColor', '#dc2626'), textDecoration: 'line-through', marginRight: '6px' }}>{p.compareAtPrice} {currency}</span>
+                    <span style={{ fontSize: '12px', color: c('salePriceColor', '#dc2626'), textDecoration: 'line-through', marginRight: '6px', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>{p.compareAtPrice} <SaudiRiyalSymbol size={10} color={c('salePriceColor', '#dc2626')} /></span>
                   )}
-                  <p style={{ fontSize: '17px', fontWeight: 800, color: c('priceColor', '#059669'), margin: 0 }}>{p.basePrice} {currency}</p>
+                  <p style={{ fontSize: '17px', fontWeight: 800, color: c('priceColor', '#059669'), margin: 0, display: 'flex', alignItems: 'center', gap: '3px' }}>{p.basePrice} <SaudiRiyalSymbol size={13} color={c('priceColor', '#059669')} /></p>
                 </div>
               </Link>
               <button onClick={(e) => { e.preventDefault(); setQuickViewProduct(p); }} style={{

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Loader2, CheckCircle, AlertCircle, ShoppingCart, Download, Printer } from 'lucide-react';
+import SaudiRiyalSymbol from '../../components/storefront/SaudiRiyalSymbol';
 import storeApi from '../../lib/storeApi';
 import { useCart } from '../../store/storefrontCart';
 import { useI18n } from '../../store/storefrontI18n';
@@ -254,13 +255,13 @@ export default function StorefrontCheckout() {
                   {item.image && <img src={item.image} alt="" style={{ width: '52px', height: '52px', borderRadius: '10px', objectFit: 'cover' }} />}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: '13px', fontWeight: 600, margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</p>
-                    <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>{t('qtyLabel')}: {item.quantity} × {item.price} SAR</p>
+                    <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>{t('qtyLabel')}: {item.quantity} × {item.price} <SaudiRiyalSymbol size={9} color="#6b7280" /></p>
                   </div>
                 </div>
               ))}
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '6px', fontWeight: 500 }}>
-              <span>{t('subtotal')}</span><span style={{ fontWeight: 700 }}>{cartTotal} SAR</span>
+              <span>{t('subtotal')}</span><span style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '2px' }}>{cartTotal} <SaudiRiyalSymbol size={11} color="#111" /></span>
             </div>
             {/* Coupon input */}
             <div style={{ display: 'flex', gap: '6px', margin: '10px 0' }}>
@@ -271,7 +272,7 @@ export default function StorefrontCheckout() {
             {appliedCoupon && <p style={{ fontSize: '12px', color: '#059669', margin: '0 0 8px', fontWeight: 'bold' }}>✓ {appliedCoupon.code} applied — {appliedCoupon.type === 'percentage' ? `${appliedCoupon.value}% off` : appliedCoupon.type === 'fixed' ? `${appliedCoupon.value} SAR off` : 'Free shipping'}</p>}
             {discountAmount > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '4px', color: '#059669' }}>
-                <span>{t('discount')}</span><span style={{ fontWeight: 'bold' }}>-{discountAmount} SAR</span>
+                <span>{t('discount')}</span><span style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '2px' }}>-{discountAmount} <SaudiRiyalSymbol size={10} color="#059669" /></span>
               </div>
             )}
             {/* Gift card input */}
@@ -280,17 +281,17 @@ export default function StorefrontCheckout() {
               <button type="button" onClick={handleApplyGiftCard} disabled={giftCardLoading} style={{ padding: '10px 16px', background: '#6b7280', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = '0.9'} onMouseLeave={e => e.currentTarget.style.opacity = '1'}>{giftCardLoading ? '...' : t('apply')}</button>
             </div>
             {giftCardError && <p style={{ fontSize: '12px', color: '#dc2626', margin: '0 0 8px' }}>{giftCardError}</p>}
-            {appliedGiftCard && <p style={{ fontSize: '12px', color: '#059669', margin: '0 0 8px', fontWeight: 'bold' }}>✓ {t('giftCardApplied')} — {giftCardAmount} SAR {t('giftCardDeducted')}</p>}
+            {appliedGiftCard && <p style={{ fontSize: '12px', color: '#059669', margin: '0 0 8px', fontWeight: 'bold' }}>✓ {t('giftCardApplied')} — {giftCardAmount} <SaudiRiyalSymbol size={9} color="#059669" /> {t('giftCardDeducted')}</p>}
             {giftCardAmount > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '4px', color: '#059669' }}>
-                <span>{t('giftCard')}</span><span style={{ fontWeight: 'bold' }}>-{giftCardAmount} SAR</span>
+                <span>{t('giftCard')}</span><span style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '2px' }}>-{giftCardAmount} <SaudiRiyalSymbol size={10} color="#059669" /></span>
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '4px', color: '#6b7280' }}>
-              <span>{t('shipping')}</span><span>{freeShipping ? t('free') : shippingEstimate ? `${shippingCost} SAR` : t('calculatedAtCheckout')}</span>
+              <span>{t('shipping')}</span><span>{freeShipping ? t('free') : shippingEstimate ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>{shippingCost} <SaudiRiyalSymbol size={10} color="#6b7280" /></span> : t('calculatedAtCheckout')}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '20px', fontWeight: 800, paddingTop: '14px', borderTop: '1px solid #e5e7eb', marginTop: '10px' }}>
-              <span>{t('total')}</span><span style={{ color: '#059669' }}>{finalTotal} SAR</span>
+              <span>{t('total')}</span><span style={{ color: '#059669', display: 'flex', alignItems: 'center', gap: '3px' }}>{finalTotal} <SaudiRiyalSymbol size={15} color="#059669" /></span>
             </div>
             <button type="submit" disabled={loading} style={{
               width: '100%', marginTop: '24px', padding: '16px', background: 'linear-gradient(135deg, #4f46e5, #6366f1)', color: '#fff', border: 'none', borderRadius: '14px',
@@ -316,7 +317,7 @@ export default function StorefrontCheckout() {
       }}>
         <div style={{ flex: 1 }}>
           <p style={{ fontSize: '12px', color: '#6b7280', margin: 0, fontWeight: 500 }}>{t('total')}</p>
-          <p style={{ fontSize: '20px', fontWeight: 800, color: '#059669', margin: 0 }}>{finalTotal} SAR</p>
+          <p style={{ fontSize: '20px', fontWeight: 800, color: '#059669', margin: 0, display: 'flex', alignItems: 'center', gap: '3px' }}>{finalTotal} <SaudiRiyalSymbol size={15} color="#059669" /></p>
         </div>
         <button type="submit" form="checkout-form" disabled={loading} style={{
           padding: '14px 28px', background: 'linear-gradient(135deg, #4f46e5, #6366f1)', color: '#fff', border: 'none', borderRadius: '14px',

@@ -21,6 +21,17 @@ const demoProducts = [
     basePrice: 89,
     compareAtPrice: 129,
     stockQuantity: 50,
+    hasVariants: true,
+    option1Name: 'Size',
+    option2Name: 'Color',
+    variants: [
+      { option1Value: 'S', option2Value: 'White', price: 89, stockQuantity: 15, trackInventory: true, isActive: true, sku: 'TSH-S-WHT' },
+      { option1Value: 'M', option2Value: 'White', price: 89, stockQuantity: 12, trackInventory: true, isActive: true, sku: 'TSH-M-WHT' },
+      { option1Value: 'L', option2Value: 'White', price: 95, stockQuantity: 10, trackInventory: true, isActive: true, sku: 'TSH-L-WHT' },
+      { option1Value: 'S', option2Value: 'Black', price: 89, stockQuantity: 8, trackInventory: true, isActive: true, sku: 'TSH-S-BLK' },
+      { option1Value: 'M', option2Value: 'Black', price: 89, stockQuantity: 5, trackInventory: true, isActive: true, sku: 'TSH-M-BLK' },
+      { option1Value: 'L', option2Value: 'Black', price: 95, stockQuantity: 0, trackInventory: true, isActive: true, sku: 'TSH-L-BLK' },
+    ],
     images: [{ url: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600', altText: 'Premium Cotton T-Shirt' }],
     tags: ['clothing', 'cotton', 'casual'],
   },
@@ -34,6 +45,13 @@ const demoProducts = [
     basePrice: 349,
     compareAtPrice: 499,
     stockQuantity: 30,
+    hasVariants: true,
+    option1Name: 'Color',
+    variants: [
+      { option1Value: 'Matte Black', price: 349, stockQuantity: 15, trackInventory: true, isActive: true, sku: 'HDP-BLK' },
+      { option1Value: 'Silver', price: 349, stockQuantity: 10, trackInventory: true, isActive: true, sku: 'HDP-SLV' },
+      { option1Value: 'Rose Gold', price: 379, stockQuantity: 5, trackInventory: true, isActive: true, sku: 'HDP-RGD' },
+    ],
     images: [{ url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600', altText: 'Wireless Headphones' }],
     tags: ['electronics', 'audio', 'wireless'],
   },
@@ -47,6 +65,15 @@ const demoProducts = [
     basePrice: 599,
     compareAtPrice: 799,
     stockQuantity: 25,
+    hasVariants: true,
+    option1Name: 'Band',
+    option2Name: 'Case Size',
+    variants: [
+      { option1Value: 'Sport Band', option2Value: '41mm', price: 599, stockQuantity: 10, trackInventory: true, isActive: true, sku: 'SW-S41' },
+      { option1Value: 'Sport Band', option2Value: '45mm', price: 649, stockQuantity: 8, trackInventory: true, isActive: true, sku: 'SW-S45' },
+      { option1Value: 'Leather Band', option2Value: '41mm', price: 699, stockQuantity: 4, trackInventory: true, isActive: true, sku: 'SW-L41' },
+      { option1Value: 'Leather Band', option2Value: '45mm', price: 749, stockQuantity: 3, trackInventory: true, isActive: true, sku: 'SW-L45' },
+    ],
     images: [{ url: 'https://images.unsplash.com/photo-1546868871-7041f2a55e0f?w=600', altText: 'Smart Watch' }],
     tags: ['electronics', 'wearable', 'fitness'],
   },
@@ -207,8 +234,8 @@ async function seedDemoStore() {
         },
         ecommerce: {
           storeStatus: 'live',
-          storeName: 'Demo Store',
-          storeNameAr: 'متجر تجريبي',
+          storeName: 'Maqder',
+          storeNameAr: 'مقدر',
           subdomain: DEMO_TENANT_SLUG,
           currency: 'SAR',
           defaultTaxRate: 15,
@@ -230,14 +257,15 @@ async function seedDemoStore() {
           theme: {
             published: {
               header: {
-                logoText: 'Demo Store',
+                logoText: 'Maqder',
                 showSearch: true,
                 showCategories: true,
+                sticky: true,
               },
               colors: {
-                primary: '#4f46e5',
-                secondary: '#6366f1',
-                accent: '#7c3aed',
+                primary: '#059669',
+                secondary: '#10b981',
+                accent: '#34d399',
                 text: '#111827',
                 textMuted: '#6b7280',
                 borderColor: '#e5e7eb',
@@ -246,7 +274,7 @@ async function seedDemoStore() {
               },
               hero: {
                 enabled: true,
-                title: 'Welcome to Demo Store',
+                title: 'Welcome to Maqder',
                 subtitle: 'Discover premium products at unbeatable prices',
                 buttonText: 'Shop Now',
                 buttonLink: '/store/products',
@@ -256,12 +284,13 @@ async function seedDemoStore() {
                 showAbout: true,
                 showContact: true,
                 showSocial: true,
+                aboutText: 'Premium products, delivered with excellence across the Kingdom.',
               },
             },
           },
           seo: {
-            metaTitle: 'Demo Store — Premium Products',
-            metaDescription: 'Shop premium products at Demo Store. Fast delivery across Saudi Arabia.',
+            metaTitle: 'Maqder — Premium Products',
+            metaDescription: 'Shop premium products at Maqder. Fast delivery across Saudi Arabia.',
           },
         },
         settings: {
@@ -279,18 +308,18 @@ async function seedDemoStore() {
         tenant.ecommerce.domains = tenant.ecommerce.domains || [];
         tenant.ecommerce.domains.push({ hostname: 'localhost', type: 'custom', status: 'verified' });
         tenant.ecommerce.storeStatus = 'live';
-        tenant.ecommerce.storeName = tenant.ecommerce.storeName || 'Demo Store';
+        tenant.ecommerce.storeName = tenant.ecommerce.storeName || 'Maqder';
         tenant.ecommerce.subdomain = tenant.ecommerce.subdomain || DEMO_TENANT_SLUG;
         tenant.ecommerce.currency = tenant.ecommerce.currency || 'SAR';
         tenant.ecommerce.payments = tenant.ecommerce.payments || { defaultProvider: 'cod', codEnabled: true };
         tenant.ecommerce.couriers = tenant.ecommerce.couriers || { flatRate: { enabled: true, price: 25 } };
         tenant.ecommerce.theme = tenant.ecommerce.theme || { published: {
-          header: { logoText: 'Demo Store', showSearch: true, showCategories: true },
-          colors: { primary: '#4f46e5', secondary: '#6366f1', accent: '#7c3aed', text: '#111827', textMuted: '#6b7280', borderColor: '#e5e7eb', priceColor: '#059669', salePriceColor: '#dc2626' },
-          hero: { enabled: true, title: 'Welcome to Demo Store', subtitle: 'Discover premium products at unbeatable prices', buttonText: 'Shop Now', buttonLink: '/store/products' },
-          footer: { showAbout: true, showContact: true, showSocial: true },
+          header: { logoText: 'Maqder', showSearch: true, showCategories: true, sticky: true },
+          colors: { primary: '#059669', secondary: '#10b981', accent: '#34d399', text: '#111827', textMuted: '#6b7280', borderColor: '#e5e7eb', priceColor: '#059669', salePriceColor: '#dc2626' },
+          hero: { enabled: true, title: 'Welcome to Maqder', subtitle: 'Discover premium products at unbeatable prices', buttonText: 'Shop Now', buttonLink: '/store/products' },
+          footer: { showAbout: true, showContact: true, showSocial: true, aboutText: 'Premium products, delivered with excellence across the Kingdom.' },
         }};
-        tenant.ecommerce.seo = tenant.ecommerce.seo || { metaTitle: 'Demo Store — Premium Products', metaDescription: 'Shop premium products at Demo Store.' };
+        tenant.ecommerce.seo = tenant.ecommerce.seo || { metaTitle: 'Maqder — Premium Products', metaDescription: 'Shop premium products at Maqder.' };
         tenant.isActive = true;
         if (!tenant.businessTypes?.includes('ecommerce')) {
           tenant.businessTypes = [...(tenant.businessTypes || []), 'ecommerce'];
@@ -323,6 +352,11 @@ async function seedDemoStore() {
           currency: 'SAR',
           stockQuantity: p.stockQuantity,
           trackInventory: true,
+          hasVariants: p.hasVariants || false,
+          option1Name: p.option1Name || '',
+          option2Name: p.option2Name || '',
+          option3Name: p.option3Name || '',
+          variants: p.variants || [],
           images: p.images,
           tags: p.tags,
           requiresShipping: true,
