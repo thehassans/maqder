@@ -305,6 +305,7 @@ export default function StorefrontLayout({ children }) {
             <Link to="/store/compare" style={{ display: 'block', color: c('footerText', '#9ca3af'), textDecoration: 'none', fontSize: '13px', marginBottom: '4px' }}>Compare Products</Link>
             <Link to="/store/track-order" style={{ display: 'block', color: c('footerText', '#9ca3af'), textDecoration: 'none', fontSize: '13px', marginBottom: '4px' }}>Track Order</Link>
             <Link to="/store/returns" style={{ display: 'block', color: c('footerText', '#9ca3af'), textDecoration: 'none', fontSize: '13px', marginBottom: '4px' }}>Returns & Refunds</Link>
+            <Link to="/store/contact" style={{ display: 'block', color: c('footerText', '#9ca3af'), textDecoration: 'none', fontSize: '13px', marginBottom: '4px' }}>Contact Us</Link>
             <Link to="/store/privacy" style={{ display: 'block', color: c('footerText', '#9ca3af'), textDecoration: 'none', fontSize: '13px', marginBottom: '4px' }}>Privacy Policy</Link>
             <Link to="/store/terms" style={{ display: 'block', color: c('footerText', '#9ca3af'), textDecoration: 'none', fontSize: '13px', marginBottom: '4px' }}>Terms &amp; Conditions</Link>
           </div>

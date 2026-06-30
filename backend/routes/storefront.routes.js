@@ -616,6 +616,44 @@ router.post('/newsletter/unsubscribe', async (req, res) => {
   }
 });
 
+// --- CONTACT FORM (public) ---
+router.post('/contact', async (req, res) => {
+  try {
+    const tenantId = req.storeTenant._id;
+    const { name, email, phone, subject, message } = req.body;
+    if (!name || !email || !message) return res.status(400).json({ error: 'Name, email, and message are required' });
+
+    const tenant = await Tenant.findById(tenantId).lean();
+    const storeName = tenant?.name || 'Store';
+    const notifyEmail = tenant?.ecommerce?.contactEmail || tenant?.email || '';
+
+    if (notifyEmail) {
+      const { sendTenantEmail } = await import('../utils/tenantEmailService.js');
+      sendTenantEmail({
+        tenant,
+        to: notifyEmail,
+        replyTo: email,
+        subject: `[Contact Form] ${subject || 'New inquiry from ' + name}`,
+        html: `
+          <h2>New Contact Form Submission</h2>
+          <p><strong>From:</strong> ${name}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          ${phone ? `<p><strong>Phone:</strong> ${phone}</p>` : ''}
+          ${subject ? `<p><strong>Subject:</strong> ${subject}</p>` : ''}
+          <hr>
+          <p><strong>Message:</strong></p>
+          <p style="white-space: pre-wrap;">${message}</p>
+        `,
+        text: `New contact form submission from ${name} (${email}${phone ? ', ' + phone : ''})\n\nSubject: ${subject || 'N/A'}\n\nMessage: ${message}`,
+      }).catch(() => {});
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // --- GIFT CARD CHECK (public, for checkout) ---
 router.post('/gift-card/check', async (req, res) => {
   try {

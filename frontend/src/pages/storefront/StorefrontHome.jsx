@@ -9,8 +9,11 @@ import { useRecentlyViewed } from '../../store/recentlyViewed';
 export default function StorefrontHome() {
   const [storeInfo, setStoreInfo] = useState(null);
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [quickViewProduct, setQuickViewProduct] = useState(null);
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterStatus, setNewsletterStatus] = useState('');
   const { items: recentItems } = useRecentlyViewed();
 
   useEffect(() => {
@@ -20,6 +23,8 @@ export default function StorefrontHome() {
     ]).then(([infoRes, prodRes]) => {
       setStoreInfo(infoRes.data);
       setProducts(prodRes.data.products);
+      const cats = [...new Set(prodRes.data.products.map(p => p.category).filter(Boolean))];
+      setCategories(cats);
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
@@ -35,6 +40,19 @@ export default function StorefrontHome() {
   const c = (key, fallback) => colors[key] || fallback;
   const sections = theme.homepage?.sections || [];
   const currency = storeInfo?.currency || 'SAR';
+
+  const handleNewsletterSubmit = async (e) => {
+    e.preventDefault();
+    if (!newsletterEmail.trim()) return;
+    setNewsletterStatus('loading');
+    try {
+      await storeApi.post('/newsletter/subscribe', { email: newsletterEmail });
+      setNewsletterStatus('success');
+      setNewsletterEmail('');
+    } catch {
+      setNewsletterStatus('error');
+    }
+  };
 
   const renderSection = (section) => {
     if (!section.enabled) return null;
@@ -78,8 +96,8 @@ export default function StorefrontHome() {
           <div key={section.id} style={{ marginBottom: '40px' }}>
             <h3 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '16px', color: c('text', '#111') }}>{s.title || 'Categories'}</h3>
             <div style={{ display: 'grid', gridTemplateColumns: `repeat(${s.columns || 4}, 1fr)`, gap: '16px' }}>
-              {['Category 1', 'Category 2', 'Category 3', 'Category 4'].map((cat, i) => (
-                <Link key={i} to="/store/products" style={{
+              {(categories.length > 0 ? categories.slice(0, s.columns || 4) : ['Category 1', 'Category 2', 'Category 3', 'Category 4']).map((cat, i) => (
+                <Link key={i} to={`/store/products?category=${encodeURIComponent(cat)}`} style={{
                   background: c('surface', '#f9fafb'), border: `1px solid ${c('borderColor', '#e5e7eb')}`,
                   borderRadius: '12px', padding: '24px', textAlign: 'center', textDecoration: 'none',
                 }}>
@@ -91,17 +109,19 @@ export default function StorefrontHome() {
         );
       case 'newsletter':
         return (
-          <div key={section.id} style={{
+          <form key={section.id} onSubmit={handleNewsletterSubmit} style={{
             background: c('primary', '#4f46e5'), padding: '40px 20px', textAlign: 'center',
             borderRadius: '12px', marginBottom: '32px',
           }}>
             <h3 style={{ color: '#fff', fontSize: '22px', margin: '0 0 8px' }}>{s.title || 'Subscribe'}</h3>
             <p style={{ color: '#fff', opacity: 0.9, margin: '0 0 16px' }}>{s.subtitle || 'Get updates on new products'}</p>
             <div style={{ display: 'flex', gap: '8px', maxWidth: '400px', margin: '0 auto' }}>
-              <input placeholder="Email address" style={{ flex: 1, padding: '10px 14px', border: 'none', borderRadius: '8px', fontSize: '14px' }} />
-              <button style={{ background: c('buttonBg', '#4f46e5'), color: c('buttonText', '#fff'), border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Subscribe</button>
+              <input placeholder="Email address" value={newsletterEmail} onChange={e => setNewsletterEmail(e.target.value)} type="email" required style={{ flex: 1, padding: '10px 14px', border: 'none', borderRadius: '8px', fontSize: '14px' }} />
+              <button type="submit" disabled={newsletterStatus === 'loading'} style={{ background: c('buttonBg', '#4f46e5'), color: c('buttonText', '#fff'), border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>{newsletterStatus === 'loading' ? '...' : 'Subscribe'}</button>
             </div>
-          </div>
+            {newsletterStatus === 'success' && <p style={{ color: '#fff', marginTop: '8px', fontSize: '14px' }}>✓ Subscribed! Thank you.</p>}
+            {newsletterStatus === 'error' && <p style={{ color: '#fecaca', marginTop: '8px', fontSize: '14px' }}>Failed to subscribe. Please try again.</p>}
+          </form>
         );
       case 'rich-text':
         return (
