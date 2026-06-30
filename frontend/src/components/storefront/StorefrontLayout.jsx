@@ -9,6 +9,7 @@ import CookieConsent from './CookieConsent';
 import MobileBottomNav from './MobileBottomNav';
 import BackToTop from './BackToTop';
 import AbandonedCartReminder from './AbandonedCartReminder';
+import NewsletterPopup from './NewsletterPopup';
 
 // Inject pixel scripts into <head> based on store config
 function injectPixelScripts(pixels) {
@@ -348,6 +349,9 @@ export default function StorefrontLayout({ children }) {
 
       {/* Abandoned cart reminder */}
       <AbandonedCartReminder />
+
+      {/* Newsletter exit-intent popup */}
+      <NewsletterPopup />
 
       {/* Bottom padding for mobile nav */}
       <div className="md:hidden" style={{ height: '60px' }} />

@@ -413,14 +413,31 @@ export default function StorefrontProductDetail() {
       <div style={{ marginTop: '60px' }}>
         <h2 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '16px' }}>Customer Reviews</h2>
         {reviews.totalReviews > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-            <div style={{ display: 'flex' }}>
-              {[1, 2, 3, 4, 5].map(n => (
-                <Star key={n} size={20} className={n <= Math.round(reviews.avgRating) ? 'text-amber-400 fill-amber-400' : 'text-gray-200'} />
-              ))}
+          <div style={{ display: 'flex', gap: '32px', marginBottom: '24px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+            <div style={{ textAlign: 'center', minWidth: '120px' }}>
+              <p style={{ fontSize: '40px', fontWeight: 'bold', margin: '0 0 4px' }}>{reviews.avgRating.toFixed(1)}</p>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '4px' }}>
+                {[1, 2, 3, 4, 5].map(n => (
+                  <Star key={n} size={16} className={n <= Math.round(reviews.avgRating) ? 'text-amber-400 fill-amber-400' : 'text-gray-200'} />
+                ))}
+              </div>
+              <p style={{ color: '#6b7280', fontSize: '13px', margin: 0 }}>{reviews.totalReviews} reviews</p>
             </div>
-            <span style={{ fontWeight: 'bold', fontSize: '16px' }}>{reviews.avgRating.toFixed(1)}</span>
-            <span style={{ color: '#6b7280', fontSize: '14px' }}>({reviews.totalReviews} reviews)</span>
+            <div style={{ flex: 1, minWidth: '200px' }}>
+              {[5, 4, 3, 2, 1].map(star => {
+                const count = reviews.reviews.filter(r => r.rating === star).length;
+                const pct = reviews.totalReviews > 0 ? (count / reviews.totalReviews) * 100 : 0;
+                return (
+                  <div key={star} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '12px', color: '#6b7280', minWidth: '24px' }}>{star}★</span>
+                    <div style={{ flex: 1, height: '8px', background: '#e5e7eb', borderRadius: '999px', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${pct}%`, background: '#f59e0b', borderRadius: '999px', transition: 'width 0.3s' }} />
+                    </div>
+                    <span style={{ fontSize: '12px', color: '#9ca3af', minWidth: '24px', textAlign: 'right' }}>{count}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
