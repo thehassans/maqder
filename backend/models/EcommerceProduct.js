@@ -89,6 +89,17 @@ const ecommerceProductSchema = new mongoose.Schema({
     notified: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now },
   }],
+  // Product Q&A
+  questions: [{
+    question: { type: String, required: true },
+    askerName: { type: String, default: '' },
+    askerEmail: { type: String, default: '' },
+    answer: { type: String, default: '' },
+    answeredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    answeredAt: { type: Date, default: null },
+    isPublic: { type: Boolean, default: true },
+    createdAt: { type: Date, default: Date.now },
+  }],
 }, { timestamps: true });
 
 // Auto-generate SEO slug from title if not provided

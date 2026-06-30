@@ -616,6 +616,43 @@ router.post('/newsletter/unsubscribe', async (req, res) => {
   }
 });
 
+// --- PRODUCT Q&A (public) ---
+router.get('/products/:id/questions', async (req, res) => {
+  try {
+    const tenantId = req.storeTenant._id;
+    const product = await EcommerceProduct.findOne({ _id: req.params.id, tenantId, status: 'active' })
+      .select('questions');
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+    const publicQs = product.questions.filter(q => q.isPublic && q.answer).map(q => ({
+      _id: q._id, question: q.question, askerName: q.askerName, answer: q.answer, createdAt: q.createdAt, answeredAt: q.answeredAt,
+    }));
+    res.json({ questions: publicQs });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/products/:id/questions', async (req, res) => {
+  try {
+    const tenantId = req.storeTenant._id;
+    const { question, askerName, askerEmail } = req.body;
+    if (!question || !question.trim()) return res.status(400).json({ error: 'Question is required' });
+
+    const product = await EcommerceProduct.findOne({ _id: req.params.id, tenantId, status: 'active' });
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+
+    product.questions.push({
+      question: question.trim(),
+      askerName: askerName || '',
+      askerEmail: askerEmail || '',
+    });
+    await product.save();
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // --- BACK IN STOCK NOTIFICATION (public) ---
 router.post('/products/:id/notify-stock', async (req, res) => {
   try {

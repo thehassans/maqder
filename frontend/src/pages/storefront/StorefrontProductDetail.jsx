@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Loader2, ShoppingCart, Check, Minus, Plus, ChevronRight, Star, Heart, ZoomIn, Truck, Share2, MessageCircle, ShieldCheck, RotateCcw, GitCompare, BellRing } from 'lucide-react';
+import { Loader2, ShoppingCart, Check, Minus, Plus, ChevronRight, Star, Heart, ZoomIn, Truck, Share2, MessageCircle, ShieldCheck, RotateCcw, GitCompare, BellRing, HelpCircle } from 'lucide-react';
 import storeApi from '../../lib/storeApi';
 import { useCart } from '../../store/storefrontCart';
 import { useWishlist } from '../../store/storefrontWishlist';
@@ -31,6 +31,10 @@ export default function StorefrontProductDetail() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [notifyEmail, setNotifyEmail] = useState('');
   const [notifyStatus, setNotifyStatus] = useState('');
+  const [questions, setQuestions] = useState([]);
+  const [questionForm, setQuestionForm] = useState({ question: '', askerName: '', askerEmail: '' });
+  const [questionSubmitting, setQuestionSubmitting] = useState(false);
+  const [questionMessage, setQuestionMessage] = useState('');
 
   const handleNotifyStock = async (e) => {
     e.preventDefault();
@@ -84,8 +88,25 @@ export default function StorefrontProductDetail() {
   useEffect(() => {
     if (id) {
       storeApi.get(`/reviews/product/${id}`).then(res => setReviews(res.data)).catch(() => {});
+      storeApi.get(`/products/${id}/questions`).then(res => setQuestions(res.data.questions || [])).catch(() => {});
     }
   }, [id]);
+
+  const handleQuestionSubmit = async (e) => {
+    e.preventDefault();
+    if (!questionForm.question.trim()) return;
+    setQuestionSubmitting(true);
+    setQuestionMessage('');
+    try {
+      await storeApi.post(`/products/${id}/questions`, questionForm);
+      setQuestionMessage('Question submitted! We\'ll answer it soon.');
+      setQuestionForm({ question: '', askerName: '', askerEmail: '' });
+    } catch (err) {
+      setQuestionMessage(err.response?.data?.error || 'Failed to submit question');
+    } finally {
+      setQuestionSubmitting(false);
+    }
+  };
 
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
@@ -434,6 +455,57 @@ export default function StorefrontProductDetail() {
           <textarea placeholder="Your review (optional)" value={reviewForm.body} onChange={e => setReviewForm({ ...reviewForm, body: e.target.value })} style={{ width: '100%', padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', minHeight: '80px', marginBottom: '12px' }} />
           <button type="submit" disabled={reviewSubmitting} style={{ padding: '10px 24px', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', opacity: reviewSubmitting ? 0.6 : 1 }}>
             {reviewSubmitting ? 'Submitting...' : 'Submit Review'}
+          </button>
+        </form>
+      </div>
+
+      {/* Q&A section */}
+      <div style={{ marginTop: '60px' }}>
+        <h2 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <HelpCircle size={22} style={{ color: '#4f46e5' }} /> Questions & Answers
+        </h2>
+
+        {/* Question list */}
+        {questions.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+            {questions.map(q => (
+              <div key={q._id} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px' }}>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <HelpCircle size={16} style={{ color: '#4f46e5' }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontWeight: 'bold', fontSize: '14px', margin: '0 0 4px' }}>{q.question}</p>
+                    <p style={{ fontSize: '12px', color: '#9ca3af', margin: '0 0 10px' }}>{q.askerName ? `${q.askerName} · ` : ''}{new Date(q.createdAt).toLocaleDateString('en', { day: 'numeric', month: 'short' })}</p>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#d1fae5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <MessageCircle size={16} style={{ color: '#059669' }} />
+                      </div>
+                      <div>
+                        <p style={{ fontSize: '14px', color: '#374151', margin: 0, lineHeight: 1.5 }}>{q.answer}</p>
+                        <p style={{ fontSize: '11px', color: '#9ca3af', margin: '4px 0 0' }}>Answered {new Date(q.answeredAt).toLocaleDateString('en', { day: 'numeric', month: 'short' })}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '24px' }}>No questions yet. Be the first to ask!</p>
+        )}
+
+        {/* Question form */}
+        <form onSubmit={handleQuestionSubmit} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px' }}>
+          <h3 style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '12px' }}>Ask a Question</h3>
+          {questionMessage && <p style={{ fontSize: '13px', color: questionMessage.includes('Failed') ? '#dc2626' : '#059669', marginBottom: '12px' }}>{questionMessage}</p>}
+          <textarea required placeholder="Your question *" value={questionForm.question} onChange={e => setQuestionForm({ ...questionForm, question: e.target.value })} style={{ width: '100%', padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', minHeight: '60px', marginBottom: '12px', resize: 'vertical' }} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+            <input placeholder="Your name (optional)" value={questionForm.askerName} onChange={e => setQuestionForm({ ...questionForm, askerName: e.target.value })} style={{ padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }} />
+            <input type="email" placeholder="Email (optional)" value={questionForm.askerEmail} onChange={e => setQuestionForm({ ...questionForm, askerEmail: e.target.value })} style={{ padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }} />
+          </div>
+          <button type="submit" disabled={questionSubmitting} style={{ padding: '10px 24px', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', opacity: questionSubmitting ? 0.6 : 1 }}>
+            {questionSubmitting ? 'Submitting...' : 'Submit Question'}
           </button>
         </form>
       </div>

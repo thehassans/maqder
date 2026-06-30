@@ -202,4 +202,66 @@ router.get('/meta/categories', protect, async (req, res) => {
   }
 });
 
+// --- LIST UNANSWERED QUESTIONS (admin) ---
+router.get('/questions/pending', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    const products = await EcommerceProduct.find({ tenantId, 'questions.answer': '' })
+      .select('title questions')
+      .lean();
+    const pending = [];
+    products.forEach(p => {
+      p.questions.forEach(q => {
+        if (!q.answer) pending.push({ productId: p._id, productTitle: p.title, ...q });
+      });
+    });
+    res.json({ questions: pending });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- ANSWER QUESTION (admin) ---
+router.put('/:productId/questions/:questionId/answer', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    const { answer } = req.body;
+    if (!answer || !answer.trim()) return res.status(400).json({ error: 'Answer is required' });
+
+    const product = await EcommerceProduct.findOne({ _id: req.params.productId, tenantId });
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+
+    const q = product.questions.id(req.params.questionId);
+    if (!q) return res.status(404).json({ error: 'Question not found' });
+
+    q.answer = answer.trim();
+    q.answeredBy = req.user._id;
+    q.answeredAt = new Date();
+    q.isPublic = true;
+    await product.save();
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- DELETE QUESTION (admin) ---
+router.delete('/:productId/questions/:questionId', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+
+    const product = await EcommerceProduct.findOne({ _id: req.params.productId, tenantId });
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+
+    product.questions.id(req.params.questionId)?.deleteOne();
+    await product.save();
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;
