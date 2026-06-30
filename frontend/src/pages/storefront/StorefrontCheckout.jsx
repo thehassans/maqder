@@ -9,7 +9,7 @@ import StorefrontBreadcrumbs from '../../components/storefront/StorefrontBreadcr
 
 export default function StorefrontCheckout() {
   const navigate = useNavigate();
-  const { items, cartTotal, clearCart } = useCart();
+  const { items, cartTotal, clearCart, cartId, setCartEmail, trackCart } = useCart();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(null);
@@ -23,7 +23,13 @@ export default function StorefrontCheckout() {
     addressLine1: '', addressLine2: '', city: '', region: '', postalCode: '', country: 'Saudi Arabia', notes: '',
   });
 
-  const update = (key, value) => setForm(prev => ({ ...prev, [key]: value }));
+  const update = (key, value) => {
+    setForm(prev => ({ ...prev, [key]: value }));
+    if (key === 'email' && value) {
+      setCartEmail(value);
+      trackCart(value);
+    }
+  };
 
   // Fire InitiateCheckout pixel event
   useEffect(() => {
@@ -82,6 +88,10 @@ export default function StorefrontCheckout() {
         }
       }
 
+      // Mark abandoned cart as recovered
+      if (cartId) {
+        try { await storeApi.post(`/abandoned-carts/recover/${cartId}`, { orderId }); } catch {}
+      }
       clearCart();
       setSuccess({ orderNumber, orderId });
     } catch (err) {

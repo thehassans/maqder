@@ -30,6 +30,7 @@ const LAYOUT_OPTIONS = [
 const SECTION_TYPES = [
   { value: 'hero', label: 'Hero Banner' },
   { value: 'product-carousel', label: 'Product Carousel' },
+  { value: 'flash-sale', label: 'Flash Sale / Countdown' },
   { value: 'category-grid', label: 'Category Grid' },
   { value: 'newsletter', label: 'Newsletter Signup' },
   { value: 'custom-html', label: 'Custom HTML' },
@@ -112,6 +113,29 @@ export default function EcommerceThemeEditor() {
                   <div style="padding:8px">
                     <p style="color:${c.text};font-size:13px;margin:0 0 4px">Sample Product ${i + 1}</p>
                     <p style="color:${c.priceColor};font-size:14px;font-weight:bold;margin:0">99 SAR</p>
+                  </div>
+                </div>`).join('')}
+            </div>
+          </div>`;
+        case 'flash-sale':
+          return `<div style="margin-bottom:24px;background:linear-gradient(135deg,${c.primary || '#4f46e5'},${c.accent || '#7c3aed'});border-radius:12px;padding:24px;text-align:center">
+            <h3 style="color:#fff;font-size:22px;margin:0 0 4px">${settings.title || 'Flash Sale'}</h3>
+            <p style="color:#fff;opacity:0.9;margin:0 0 12px">${settings.subtitle || 'Limited time offer!'}</p>
+            <div style="display:flex;gap:8px;justify-content:center;margin-bottom:16px">
+              ${['00','12','45','30'].map((val,i) => `
+                <div style="background:rgba(255,255,255,0.2);border-radius:8px;padding:8px 12px;min-width:48px">
+                  <p style="color:#fff;font-size:20px;font-weight:bold;margin:0">${val}</p>
+                  <p style="color:#fff;opacity:0.7;font-size:10px;margin:0">${['Days','Hrs','Min','Sec'][i]}</p>
+                </div>`).join('')}
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px">
+              ${Array.from({ length: 4 }).map((_, i) => `
+                <div style="background:#fff;border-radius:8px;overflow:hidden">
+                  <div style="height:100px;background:#f3f4f6;display:flex;align-items:center;justify-content:center"><span style="color:#9ca3af;font-size:11px">Product ${i + 1}</span></div>
+                  <div style="padding:8px">
+                    <p style="font-size:12px;margin:0 0 2px">Sale Product ${i + 1}</p>
+                    <span style="font-size:11px;color:#dc2626;text-decoration:line-through">199 SAR</span>
+                    <p style="color:#059669;font-size:14px;font-weight:bold;margin:0">99 SAR</p>
                   </div>
                 </div>`).join('')}
             </div>
@@ -713,6 +737,16 @@ ${sectionHTML}
                         <>
                           <input className={inputCls} value={sec.settings.title || ''} onChange={e => updateSection(idx, 'title', e.target.value)} placeholder="Title" />
                           <input className={inputCls} value={sec.settings.subtitle || ''} onChange={e => updateSection(idx, 'subtitle', e.target.value)} placeholder="Subtitle" />
+                        </>
+                      )}
+                      {sec.type === 'flash-sale' && (
+                        <>
+                          <input className={inputCls} value={sec.settings.title || ''} onChange={e => updateSection(idx, 'title', e.target.value)} placeholder="Sale title (e.g. Flash Sale)" />
+                          <input className={inputCls} value={sec.settings.subtitle || ''} onChange={e => updateSection(idx, 'subtitle', e.target.value)} placeholder="Subtitle (e.g. Limited time offer!)" />
+                          <input type="datetime-local" className={inputCls} value={sec.settings.endDate ? sec.settings.endDate.slice(0, 16) : ''} onChange={e => updateSection(idx, 'endDate', e.target.value ? new Date(e.target.value).toISOString() : '')} />
+                          <input type="number" className={inputCls} value={sec.settings.discountPercent || 20} onChange={e => updateSection(idx, 'discountPercent', parseInt(e.target.value) || 0)} placeholder="Discount %" />
+                          <input type="number" className={inputCls} value={sec.settings.limit || 4} onChange={e => updateSection(idx, 'limit', parseInt(e.target.value) || 4)} placeholder="Number of products" />
+                          <input className={inputCls} value={sec.settings.categoryFilter || ''} onChange={e => updateSection(idx, 'categoryFilter', e.target.value)} placeholder="Category filter (optional)" />
                         </>
                       )}
                       {sec.type === 'rich-text' && (

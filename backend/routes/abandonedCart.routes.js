@@ -1,5 +1,7 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import { resolveTenantByHost } from '../middleware/resolveTenantByHost.js';
+import { protect } from '../middleware/auth.js';
 import AbandonedCart from '../models/AbandonedCart.js';
 import EcommerceOrder from '../models/EcommerceOrder.js';
 import Tenant from '../models/Tenant.js';
@@ -66,12 +68,12 @@ router.post('/recover/:cartId', resolveTenantByHost, async (req, res) => {
 });
 
 // Admin: list abandoned carts
-router.get('/', async (req, res) => {
+router.get('/', protect, async (req, res) => {
   try {
-    // This would need protect middleware in production
-    // For now, just return a simple list
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found' });
     const { status, page = 1, limit = 20 } = req.query;
-    const filter = {};
+    const filter = { tenantId };
     if (status) filter.status = status;
 
     const skip = (Number(page) - 1) * Number(limit);
@@ -81,6 +83,36 @@ router.get('/', async (req, res) => {
     ]);
 
     res.json({ carts, total, page: Number(page), totalPages: Math.ceil(total / Number(limit)) });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Admin: abandoned cart stats
+router.get('/stats', protect, async (req, res) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found' });
+    const [abandoned, recovered, emailed] = await Promise.all([
+      AbandonedCart.countDocuments({ tenantId, status: 'abandoned' }),
+      AbandonedCart.countDocuments({ tenantId, status: 'recovered' }),
+      AbandonedCart.countDocuments({ tenantId, recoveryEmailSent: true }),
+    ]);
+    const lostRevenueResult = await AbandonedCart.aggregate([
+      { $match: { tenantId: new mongoose.Types.ObjectId(tenantId), status: 'abandoned' } },
+      { $group: { _id: null, total: { $sum: '$cartTotal' } } },
+    ]);
+    const recoveredRevenueResult = await AbandonedCart.aggregate([
+      { $match: { tenantId: new mongoose.Types.ObjectId(tenantId), status: 'recovered' } },
+      { $group: { _id: null, total: { $sum: '$cartTotal' } } },
+    ]);
+    res.json({
+      abandoned,
+      recovered,
+      emailed,
+      lostRevenue: lostRevenueResult[0]?.total || 0,
+      recoveredRevenue: recoveredRevenueResult[0]?.total || 0,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

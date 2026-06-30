@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowRight, Loader2, Eye } from 'lucide-react';
 import storeApi from '../../lib/storeApi';
 import StorefrontSeo from '../../components/storefront/StorefrontSeo';
+import QuickViewModal from '../../components/storefront/QuickViewModal';
 import { useRecentlyViewed } from '../../store/recentlyViewed';
 
 export default function StorefrontHome() {
   const [storeInfo, setStoreInfo] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [quickViewProduct, setQuickViewProduct] = useState(null);
   const { items: recentItems } = useRecentlyViewed();
 
   useEffect(() => {
@@ -64,11 +66,13 @@ export default function StorefrontHome() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
               {products.slice(0, s.limit || 8).map(p => (
-                <ProductCard key={p._id} product={p} currency={currency} colors={colors} />
+                <ProductCard key={p._id} product={p} currency={currency} colors={colors} onQuickView={() => setQuickViewProduct(p)} />
               ))}
             </div>
           </div>
         );
+      case 'flash-sale':
+        return <FlashSaleSection key={section.id} settings={s} products={products} currency={currency} colors={colors} onQuickView={setQuickViewProduct} />;
       case 'category-grid':
         return (
           <div key={section.id} style={{ marginBottom: '40px' }}>
@@ -160,7 +164,7 @@ export default function StorefrontHome() {
           <div style={{ marginBottom: '40px' }}>
             <h3 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '16px' }}>Featured Products</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
-              {products.map(p => <ProductCard key={p._id} product={p} currency={currency} colors={colors} />)}
+              {products.map(p => <ProductCard key={p._id} product={p} currency={currency} colors={colors} onQuickView={() => setQuickViewProduct(p)} />)}
             </div>
           </div>
         </>
@@ -185,33 +189,154 @@ export default function StorefrontHome() {
           </div>
         </div>
       )}
+
+      {/* Quick view modal */}
+      {quickViewProduct && (
+        <QuickViewModal product={quickViewProduct} onClose={() => setQuickViewProduct(null)} currency={currency} />
+      )}
     </div>
   );
 }
 
-function ProductCard({ product, currency, colors }) {
+function FlashSaleSection({ settings, products, currency, colors, onQuickView }) {
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+  const c = (key, fallback) => colors[key] || fallback;
+
+  useEffect(() => {
+    if (!settings.endDate) return;
+    const update = () => {
+      const diff = new Date(settings.endDate).getTime() - Date.now();
+      if (diff <= 0) {
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+        return;
+      }
+      setTimeLeft({
+        days: Math.floor(diff / 86400000),
+        hours: Math.floor((diff % 86400000) / 3600000),
+        minutes: Math.floor((diff % 3600000) / 60000),
+        seconds: Math.floor((diff % 60000) / 1000),
+      });
+    };
+    update();
+    const timer = setInterval(update, 1000);
+    return () => clearInterval(timer);
+  }, [settings.endDate]);
+
+  const isExpired = !settings.endDate || new Date(settings.endDate).getTime() <= Date.now();
+  if (isExpired) return null;
+
+  const discountPercent = settings.discountPercent || 20;
+  const limit = settings.limit || 4;
+  let saleProducts = products;
+  if (settings.categoryFilter) {
+    saleProducts = saleProducts.filter(p => p.category === settings.categoryFilter);
+  }
+  saleProducts = saleProducts.slice(0, limit);
+
+  const pad = (n) => String(n).padStart(2, '0');
+  const timeBoxes = [
+    { label: 'Days', value: timeLeft.days },
+    { label: 'Hrs', value: timeLeft.hours },
+    { label: 'Min', value: timeLeft.minutes },
+    { label: 'Sec', value: timeLeft.seconds },
+  ];
+
+  return (
+    <div key={settings.id} style={{
+      marginBottom: '40px',
+      background: `linear-gradient(135deg, ${c('primary', '#4f46e5')}, ${c('accent', '#7c3aed')})`,
+      borderRadius: '16px', padding: '28px 20px',
+    }}>
+      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+        <h3 style={{ color: '#fff', fontSize: '24px', fontWeight: 'bold', margin: '0 0 4px' }}>{settings.title || 'Flash Sale'}</h3>
+        <p style={{ color: '#fff', opacity: 0.9, margin: '0 0 16px', fontSize: '15px' }}>{settings.subtitle || 'Limited time offer!'}</p>
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+          {timeBoxes.map((tb, i) => (
+            <div key={i} style={{
+              background: 'rgba(255,255,255,0.2)', borderRadius: '10px', padding: '8px 14px', minWidth: '56px',
+            }}>
+              <p style={{ color: '#fff', fontSize: '22px', fontWeight: 'bold', margin: 0 }}>{pad(tb.value)}</p>
+              <p style={{ color: '#fff', opacity: 0.7, fontSize: '10px', margin: 0 }}>{tb.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px' }}>
+        {saleProducts.map(p => {
+          const slug = p.seo?.slug || p._id;
+          const salePrice = Math.round(p.basePrice * (1 - discountPercent / 100) * 100) / 100;
+          return (
+            <div key={p._id} style={{
+              background: '#fff', borderRadius: '10px', overflow: 'hidden', position: 'relative',
+            }}>
+              <Link to={`/store/products/${slug}`} style={{ textDecoration: 'none', display: 'block' }}>
+                <div style={{ aspectRatio: '1', background: '#f3f4f6', overflow: 'hidden' }}>
+                  {p.images?.[0]?.url ? (
+                    <img src={p.images[0].url} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: '11px' }}>No image</div>
+                  )}
+                </div>
+                <div style={{ position: 'absolute', top: '6px', left: '6px', background: c('salePriceColor', '#dc2626'), color: '#fff', fontSize: '11px', fontWeight: 'bold', padding: '3px 8px', borderRadius: '6px' }}>
+                  -{discountPercent}%
+                </div>
+                <div style={{ padding: '10px' }}>
+                  <p style={{ fontWeight: 'bold', fontSize: '13px', color: '#111', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</p>
+                  <span style={{ fontSize: '12px', color: '#9ca3af', textDecoration: 'line-through' }}>{p.basePrice} {currency}</span>
+                  <p style={{ fontSize: '16px', fontWeight: 'bold', color: c('salePriceColor', '#dc2626'), margin: 0 }}>{salePrice} {currency}</p>
+                </div>
+              </Link>
+              {onQuickView && (
+                <button onClick={(e) => { e.preventDefault(); onQuickView(p); }} style={{
+                  position: 'absolute', top: '6px', right: '6px', width: '30px', height: '30px', borderRadius: '50%',
+                  background: 'rgba(255,255,255,0.9)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  opacity: 0, transition: 'opacity 0.2s',
+                }} onMouseEnter={e => e.currentTarget.style.opacity = 1} onMouseLeave={e => e.currentTarget.style.opacity = 0}>
+                  <Eye size={14} color={c('primary', '#4f46e5')} />
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ProductCard({ product, currency, colors, onQuickView }) {
   const c = (key, fallback) => colors[key] || fallback;
   const slug = product.seo?.slug || product._id;
   return (
-    <Link to={`/store/products/${slug}`} style={{
+    <div style={{
       background: c('surface', '#f9fafb'), border: `1px solid ${c('borderColor', '#e5e7eb')}`,
       borderRadius: '12px', overflow: 'hidden', textDecoration: 'none', display: 'block',
-      transition: 'transform 0.15s', ':hover': { transform: 'translateY(-2px)' },
+      position: 'relative',
     }}>
-      <div style={{ aspectRatio: '1', background: c('borderColor', '#e5e7eb'), overflow: 'hidden' }}>
-        {product.images?.[0]?.url ? (
-          <img src={product.images[0].url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        ) : (
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: c('textMuted', '#6b7280'), fontSize: '12px' }}>No image</div>
-        )}
-      </div>
-      <div style={{ padding: '12px' }}>
-        <p style={{ fontWeight: 'bold', fontSize: '14px', color: c('text', '#111'), margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.title}</p>
-        {product.compareAtPrice && product.compareAtPrice > product.basePrice && (
-          <span style={{ fontSize: '12px', color: c('salePriceColor', '#dc2626'), textDecoration: 'line-through', marginRight: '6px' }}>{product.compareAtPrice} {currency}</span>
-        )}
-        <p style={{ fontSize: '16px', fontWeight: 'bold', color: c('priceColor', '#059669'), margin: 0 }}>{product.basePrice} {currency}</p>
-      </div>
-    </Link>
+      <Link to={`/store/products/${slug}`} style={{ textDecoration: 'none', display: 'block' }}>
+        <div style={{ aspectRatio: '1', background: c('borderColor', '#e5e7eb'), overflow: 'hidden' }}>
+          {product.images?.[0]?.url ? (
+            <img src={product.images[0].url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: c('textMuted', '#6b7280'), fontSize: '12px' }}>No image</div>
+          )}
+        </div>
+        <div style={{ padding: '12px' }}>
+          <p style={{ fontWeight: 'bold', fontSize: '14px', color: c('text', '#111'), margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.title}</p>
+          {product.compareAtPrice && product.compareAtPrice > product.basePrice && (
+            <span style={{ fontSize: '12px', color: c('salePriceColor', '#dc2626'), textDecoration: 'line-through', marginRight: '6px' }}>{product.compareAtPrice} {currency}</span>
+          )}
+          <p style={{ fontSize: '16px', fontWeight: 'bold', color: c('priceColor', '#059669'), margin: 0 }}>{product.basePrice} {currency}</p>
+        </div>
+      </Link>
+      {onQuickView && (
+        <button onClick={(e) => { e.preventDefault(); onQuickView(); }} style={{
+          position: 'absolute', top: '8px', right: '8px', width: '34px', height: '34px', borderRadius: '50%',
+          background: 'rgba(255,255,255,0.9)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          opacity: 0, transition: 'opacity 0.2s', boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        }} onMouseEnter={e => e.currentTarget.style.opacity = 1} onMouseLeave={e => e.currentTarget.style.opacity = 0}>
+          <Eye size={16} color={c('primary', '#4f46e5')} />
+        </button>
+      )}
+    </div>
   );
 }
