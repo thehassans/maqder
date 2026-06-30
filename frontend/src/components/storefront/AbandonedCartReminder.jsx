@@ -39,20 +39,20 @@ export default function AbandonedCartReminder() {
   return (
     <div style={{
       position: 'fixed', bottom: '76px', left: '50%', transform: 'translateX(-50%)', zIndex: 140,
-      background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '12px 16px',
-      boxShadow: '0 8px 24px rgba(0,0,0,0.12)', display: 'flex', alignItems: 'center', gap: '12px',
+      background: '#fff', border: '1px solid #e5e7eb', borderRadius: '16px', padding: '14px 18px',
+      boxShadow: '0 12px 32px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', gap: '14px',
       maxWidth: '90vw', width: '400px',
     }} className="md:bottom-6">
-      <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#4f46e515', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        <ShoppingCart size={20} color="#4f46e5" />
+      <div style={{ width: '44px', height: '44px', borderRadius: '14px', background: 'linear-gradient(135deg, #4f46e515, #4f46e508)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <ShoppingCart size={22} color="#4f46e5" />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontWeight: 'bold', fontSize: '14px', margin: '0 0 2px' }}>You have {cartCount} item{cartCount !== 1 ? 's' : ''} in your cart</p>
+        <p style={{ fontWeight: 700, fontSize: '14px', margin: '0 0 2px' }}>You have {cartCount} item{cartCount !== 1 ? 's' : ''} in your cart</p>
         <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>Don't forget to complete your order!</p>
       </div>
       <Link to="/store/checkout" onClick={handleDismiss} style={{
-        padding: '8px 16px', background: '#4f46e5', color: '#fff', borderRadius: '8px', textDecoration: 'none', fontWeight: 'bold', fontSize: '13px', flexShrink: 0,
-      }}>
+        padding: '10px 20px', background: 'linear-gradient(135deg, #4f46e5, #6366f1)', color: '#fff', borderRadius: '12px', textDecoration: 'none', fontWeight: 700, fontSize: '13px', flexShrink: 0, transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(79,70,229,0.2)',
+      }} onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(79,70,229,0.3)'; }} onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(79,70,229,0.2)'; }}>
         Checkout
       </Link>
       <button onClick={handleDismiss} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', flexShrink: 0 }}>

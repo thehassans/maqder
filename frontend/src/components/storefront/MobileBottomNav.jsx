@@ -24,9 +24,10 @@ export default function MobileBottomNav() {
   return (
     <nav style={{
       position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
-      background: '#fff', borderTop: '1px solid #e5e7eb',
+      background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+      borderTop: '1px solid rgba(229,231,235,0.8)',
       display: 'flex', justifyContent: 'space-around', alignItems: 'center',
-      padding: '6px 0', paddingBottom: 'calc(6px + env(safe-area-inset-bottom))',
+      padding: '8px 0', paddingBottom: 'calc(8px + env(safe-area-inset-bottom))',
     }} className="md:hidden">
       {items.map((item, i) => {
         const active = item.path ? isActive(item.path) : false;
@@ -38,11 +39,12 @@ export default function MobileBottomNav() {
               {item.badge > 0 && (
                 <span style={{
                   position: 'absolute', top: '-6px', right: '-8px', background: '#dc2626', color: '#fff',
-                  fontSize: '10px', fontWeight: 'bold', borderRadius: '999px', padding: '1px 5px', minWidth: '16px', textAlign: 'center',
+                  fontSize: '10px', fontWeight: 700, borderRadius: '999px', padding: '2px 6px', minWidth: '18px', textAlign: 'center',
+                  boxShadow: '0 2px 6px rgba(220,38,38,0.3)',
                 }}>{item.badge}</span>
               )}
             </div>
-            <span style={{ fontSize: '10px', fontWeight: 'bold', color: active ? '#4f46e5' : '#6b7280', marginTop: '2px' }}>{item.label}</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, color: active ? '#4f46e5' : '#6b7280', marginTop: '3px' }}>{item.label}</span>
           </>
         );
         if (item.action) {

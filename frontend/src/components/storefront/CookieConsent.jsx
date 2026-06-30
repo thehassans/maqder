@@ -30,8 +30,8 @@ export default function CookieConsent() {
   return (
     <div style={{
       position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 250,
-      background: '#111827', color: '#fff', padding: '16px 20px',
-      boxShadow: '0 -4px 24px rgba(0,0,0,0.15)',
+      background: 'rgba(17,24,39,0.95)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', color: '#fff', padding: '18px 24px',
+      boxShadow: '0 -8px 32px rgba(0,0,0,0.2)',
       display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap',
     }}>
       <Cookie size={24} style={{ color: '#fbbf24', flexShrink: 0 }} />
@@ -42,13 +42,13 @@ export default function CookieConsent() {
       </p>
       <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
         <button onClick={handleDecline} style={{
-          padding: '8px 16px', background: 'transparent', color: '#9ca3af', border: '1px solid #374151', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
-        }}>
+          padding: '10px 20px', background: 'transparent', color: '#9ca3af', border: '1px solid #374151', borderRadius: '12px', cursor: 'pointer', fontSize: '14px', fontWeight: 700, transition: 'all 0.2s',
+        }} onMouseEnter={e => { e.currentTarget.style.borderColor = '#4b5563'; e.currentTarget.style.color = '#d1d5db'; }} onMouseLeave={e => { e.currentTarget.style.borderColor = '#374151'; e.currentTarget.style.color = '#9ca3af'; }}>
           Decline
         </button>
         <button onClick={handleAccept} style={{
-          padding: '8px 20px', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
-        }}>
+          padding: '10px 24px', background: 'linear-gradient(135deg, #4f46e5, #6366f1)', color: '#fff', border: 'none', borderRadius: '12px', cursor: 'pointer', fontSize: '14px', fontWeight: 700, transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(79,70,229,0.3)',
+        }} onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(79,70,229,0.4)'; }} onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(79,70,229,0.3)'; }}>
           Accept
         </button>
         <button onClick={handleDecline} style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', padding: '4px' }}>
