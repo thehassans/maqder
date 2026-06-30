@@ -616,6 +616,27 @@ router.post('/newsletter/unsubscribe', async (req, res) => {
   }
 });
 
+// --- BACK IN STOCK NOTIFICATION (public) ---
+router.post('/products/:id/notify-stock', async (req, res) => {
+  try {
+    const tenantId = req.storeTenant._id;
+    const { email, variantId } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email is required' });
+
+    const product = await EcommerceProduct.findOne({ _id: req.params.id, tenantId, status: 'active' });
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+
+    const existing = product.stockNotifications.find(n => n.email === email && String(n.variantId || '') === String(variantId || ''));
+    if (existing) return res.json({ success: true, message: 'Already signed up' });
+
+    product.stockNotifications.push({ email, variantId: variantId || null });
+    await product.save();
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // --- CONTACT FORM (public) ---
 router.post('/contact', async (req, res) => {
   try {

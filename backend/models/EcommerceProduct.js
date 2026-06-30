@@ -82,6 +82,13 @@ const ecommerceProductSchema = new mongoose.Schema({
   // Relations
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  // Back-in-stock notifications
+  stockNotifications: [{
+    email: { type: String, required: true },
+    variantId: { type: mongoose.Schema.Types.ObjectId, default: null },
+    notified: { type: Boolean, default: false },
+    createdAt: { type: Date, default: Date.now },
+  }],
 }, { timestamps: true });
 
 // Auto-generate SEO slug from title if not provided

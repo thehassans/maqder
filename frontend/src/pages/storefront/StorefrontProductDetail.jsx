@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Loader2, ShoppingCart, Check, Minus, Plus, ChevronRight, Star, Heart, ZoomIn, Truck, Share2, MessageCircle, ShieldCheck, RotateCcw, GitCompare } from 'lucide-react';
+import { Loader2, ShoppingCart, Check, Minus, Plus, ChevronRight, Star, Heart, ZoomIn, Truck, Share2, MessageCircle, ShieldCheck, RotateCcw, GitCompare, BellRing } from 'lucide-react';
 import storeApi from '../../lib/storeApi';
 import { useCart } from '../../store/storefrontCart';
 import { useWishlist } from '../../store/storefrontWishlist';
@@ -29,6 +29,31 @@ export default function StorefrontProductDetail() {
   const { addProduct } = useRecentlyViewed();
   const [zoomed, setZoomed] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [notifyEmail, setNotifyEmail] = useState('');
+  const [notifyStatus, setNotifyStatus] = useState('');
+
+  const handleNotifyStock = async (e) => {
+    e.preventDefault();
+    if (!notifyEmail.trim()) return;
+    setNotifyStatus('loading');
+    try {
+      await storeApi.post(`/products/${data.product._id}/notify-stock`, { email: notifyEmail, variantId: selectedVariant });
+      setNotifyStatus('success');
+      setNotifyEmail('');
+    } catch {
+      setNotifyStatus('error');
+    }
+  };
+
+  const isOutOfStock = (() => {
+    if (!data?.product) return false;
+    const p = data.product;
+    if (p.hasVariants && selectedVariant) {
+      const v = p.variants.find(v => v._id === selectedVariant);
+      return v?.trackInventory && v.stockQuantity <= 0;
+    }
+    return !p.hasVariants && p.trackInventory && p.stockQuantity <= 0;
+  })();
 
   useEffect(() => {
     setLoading(true);
@@ -295,6 +320,30 @@ export default function StorefrontProductDetail() {
               <GitCompare size={20} style={{ color: isInCompare(data.product._id) ? '#4f46e5' : '#9ca3af' }} />
             </button>
           </div>
+
+          {/* Back-in-stock notification */}
+          {isOutOfStock && (
+            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '10px', padding: '16px', marginBottom: '24px' }}>
+              {notifyStatus === 'success' ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Check size={20} style={{ color: '#059669' }} />
+                  <p style={{ fontSize: '14px', fontWeight: 'bold', color: '#059669', margin: 0 }}>You're subscribed! We'll email you when this item is back in stock.</p>
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                    <BellRing size={18} style={{ color: '#f59e0b' }} />
+                    <p style={{ fontSize: '14px', fontWeight: 'bold', margin: 0 }}>Notify me when this item is back in stock</p>
+                  </div>
+                  <form onSubmit={handleNotifyStock} style={{ display: 'flex', gap: '8px' }}>
+                    <input type="email" required value={notifyEmail} onChange={e => setNotifyEmail(e.target.value)} placeholder="your@email.com" style={{ flex: 1, padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }} />
+                    <button type="submit" disabled={notifyStatus === 'loading'} style={{ padding: '10px 20px', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer' }}>{notifyStatus === 'loading' ? '...' : 'Notify Me'}</button>
+                  </form>
+                  {notifyStatus === 'error' && <p style={{ fontSize: '12px', color: '#dc2626', marginTop: '8px' }}>Failed to subscribe. Please try again.</p>}
+                </>
+              )}
+            </div>
+          )}
 
           {/* Description */}
           {product.description && (
