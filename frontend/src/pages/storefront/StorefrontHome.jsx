@@ -7,6 +7,7 @@ import QuickViewModal from '../../components/storefront/QuickViewModal';
 import { useRecentlyViewed } from '../../store/recentlyViewed';
 import { useCart } from '../../store/storefrontCart';
 import { useWishlist } from '../../store/storefrontWishlist';
+import { useToast, Skeleton, SkeletonGrid } from '../../components/storefront/StorefrontUi';
 
 export default function StorefrontHome() {
   const [storeInfo, setStoreInfo] = useState(null);
@@ -30,7 +31,13 @@ export default function StorefrontHome() {
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="flex justify-center py-40"><Loader2 className="w-8 h-8 animate-spin" /></div>;
+  if (loading) return (
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 20px' }}>
+      <Skeleton w="60%" h="36px" r="8px" mb="12px" />
+      <Skeleton w="40%" h="18px" r="8px" mb="40px" />
+      <SkeletonGrid count={8} />
+    </div>
+  );
 
   const storeName = storeInfo?.storeName || 'Store';
   const seoTitle = storeInfo?.seo?.metaTitle || `${storeName} — Online Store`;
@@ -376,19 +383,29 @@ function ProductCard({ product, currency, colors, onQuickView }) {
   const hasSale = product.compareAtPrice && product.compareAtPrice > product.basePrice;
   const { addItem } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
+  const { toast } = useToast();
   const wished = isInWishlist(product._id);
   const [added, setAdded] = useState(false);
+  const [hoverImg, setHoverImg] = useState(false);
   const outOfStock = product.inventory?.trackInventory && (product.inventory?.quantity ?? 0) <= 0;
   const rating = product.rating?.average || product.reviewStats?.average || 0;
   const reviewCount = product.rating?.count || product.reviewStats?.count || 0;
   const primary = c('primary', '#4f46e5');
+  const secondImg = product.images?.[1]?.url;
 
   const handleAdd = (e) => {
     e.preventDefault();
     if (outOfStock) return;
     addItem(product, 1);
     setAdded(true);
+    toast('Added to cart');
     setTimeout(() => setAdded(false), 1500);
+  };
+
+  const handleWishlist = (e) => {
+    e.preventDefault();
+    toggleWishlist(product);
+    toast(wished ? 'Removed from wishlist' : 'Added to wishlist', 'wishlist');
   };
 
   return (
@@ -400,9 +417,16 @@ function ProductCard({ product, currency, colors, onQuickView }) {
       ['--sf-primary']: primary,
     }}>
       <Link to={`/store/products/${slug}`} style={{ textDecoration: 'none', display: 'flex', flexDirection: 'column', flex: 1 }}>
-        <div className="sf-card-image" style={{ aspectRatio: '1', background: c('surface', '#f3f4f6'), overflow: 'hidden', position: 'relative' }}>
+        <div className="sf-card-image" style={{ aspectRatio: '1', background: c('surface', '#f3f4f6'), overflow: 'hidden', position: 'relative' }}
+          onMouseEnter={() => setHoverImg(true)} onMouseLeave={() => setHoverImg(false)}
+        >
           {product.images?.[0]?.url ? (
-            <img className="sf-card-img" src={product.images[0].url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s cubic-bezier(0.4,0,0.2,1)' }} />
+            <>
+              <img className="sf-card-img" src={product.images[0].url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'opacity 0.4s ease, transform 0.5s cubic-bezier(0.4,0,0.2,1)', opacity: hoverImg && secondImg ? 0 : 1 }} />
+              {secondImg && (
+                <img className="sf-card-img2" src={secondImg} alt={product.title} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: hoverImg ? 1 : 0, transition: 'opacity 0.4s ease, transform 0.5s cubic-bezier(0.4,0,0.2,1)', transform: hoverImg ? 'scale(1.08)' : 'scale(1)' }} />
+              )}
+            </>
           ) : (
             <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: c('textMuted', '#9ca3af'), fontSize: '12px' }}>No image</div>
           )}
@@ -439,7 +463,7 @@ function ProductCard({ product, currency, colors, onQuickView }) {
 
       {/* Hover action buttons (top-right) */}
       <div className="sf-card-actions" style={{ position: 'absolute', top: '12px', right: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <button onClick={(e) => { e.preventDefault(); toggleWishlist(product); }} title="Add to wishlist" style={{
+        <button onClick={handleWishlist} title="Add to wishlist" style={{
           width: '38px', height: '38px', borderRadius: '50%', background: wished ? c('salePriceColor', '#dc2626') : 'rgba(255,255,255,0.96)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.12)', transition: 'transform 0.2s, background 0.2s',
         }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.12)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
           <Heart size={16} style={{ color: wished ? '#fff' : '#374151', fill: wished ? '#fff' : 'none' }} />

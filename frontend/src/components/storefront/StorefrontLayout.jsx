@@ -10,6 +10,7 @@ import MobileBottomNav from './MobileBottomNav';
 import BackToTop from './BackToTop';
 import AbandonedCartReminder from './AbandonedCartReminder';
 import NewsletterPopup from './NewsletterPopup';
+import { ToastProvider, ScrollToTop, StorefrontGlobalStyles } from './StorefrontUi';
 
 // Inject pixel scripts into <head> based on store config
 function injectPixelScripts(pixels) {
@@ -204,7 +205,10 @@ export default function StorefrontLayout({ children }) {
   }, []);
 
   return (
+    <ToastProvider>
     <div style={{ backgroundColor: c('background', '#ffffff'), color: c('text', '#111827'), minHeight: '100vh', fontFamily: theme.typography?.bodyFont || 'Inter, sans-serif', overflowX: 'clip' }}>
+      <StorefrontGlobalStyles />
+      <ScrollToTop />
       {/* Announcement bar */}
       {header.announcementBar?.enabled && (
         <div style={{ backgroundColor: header.announcementBar.bgColor || c('primary', '#4f46e5'), color: header.announcementBar.textColor || '#fff', padding: '8px', textAlign: 'center', fontSize: '13px' }}>
@@ -322,7 +326,7 @@ export default function StorefrontLayout({ children }) {
                 >
                   <ShoppingCart size={22} />
                   {cartCount > 0 && (
-                    <span style={{ position: 'absolute', top: '-6px', right: '-6px', backgroundColor: c('primary', '#4f46e5'), color: '#fff', fontSize: '11px', fontWeight: 'bold', borderRadius: '999px', padding: '2px 6px', minWidth: '18px', textAlign: 'center', boxShadow: '0 2px 8px rgba(79,70,229,0.3)' }}>
+                    <span key={cartCount} className="sf-cart-bounce" style={{ position: 'absolute', top: '-6px', right: '-6px', backgroundColor: c('primary', '#4f46e5'), color: '#fff', fontSize: '11px', fontWeight: 'bold', borderRadius: '999px', padding: '2px 6px', minWidth: '18px', textAlign: 'center', boxShadow: '0 2px 8px rgba(79,70,229,0.3)' }}>
                       {cartCount}
                     </span>
                   )}
@@ -381,6 +385,27 @@ export default function StorefrontLayout({ children }) {
             </div>
             {items.length > 0 && (
               <div style={{ padding: '20px 24px', borderTop: `1px solid ${c('borderColor', '#e5e7eb')}` }}>
+                {/* Free shipping progress */}
+                {(() => {
+                  const threshold = 200;
+                  const remaining = Math.max(0, threshold - cartTotal);
+                  const pct = Math.min(100, (cartTotal / threshold) * 100);
+                  return (
+                    <div style={{ marginBottom: '16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                        <Truck size={16} style={{ color: c('primary', '#4f46e5') }} />
+                        {remaining > 0 ? (
+                          <span style={{ fontSize: '12.5px', color: c('textMuted', '#6b7280'), fontWeight: 600 }}>Add <strong style={{ color: c('primary', '#4f46e5') }}>{remaining} {storeInfo?.currency || 'SAR'}</strong> for free shipping</span>
+                        ) : (
+                          <span style={{ fontSize: '12.5px', color: '#059669', fontWeight: 700 }}>✓ You've unlocked free shipping!</span>
+                        )}
+                      </div>
+                      <div style={{ height: '6px', borderRadius: '999px', background: '#e5e7eb', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', borderRadius: '999px', width: `${pct}%`, background: `linear-gradient(90deg, ${c('primary', '#4f46e5')}, ${c('accent', '#6366f1')})`, transition: 'width 0.4s ease' }} />
+                      </div>
+                    </div>
+                  );
+                })()}
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
                   <span style={{ fontWeight: 700, fontSize: '16px' }}>Total</span>
                   <span style={{ fontWeight: 800, fontSize: '18px', color: c('primary', '#4f46e5') }}>{cartTotal} {storeInfo?.currency || 'SAR'}</span>
@@ -548,5 +573,6 @@ export default function StorefrontLayout({ children }) {
       {/* Bottom padding for mobile nav */}
       <div className="md:hidden" style={{ height: '60px' }} />
     </div>
+    </ToastProvider>
   );
 }

@@ -6,6 +6,7 @@ import { useCompare } from '../../store/storefrontCompare';
 import StorefrontSeo from '../../components/storefront/StorefrontSeo';
 import StorefrontBreadcrumbs from '../../components/storefront/StorefrontBreadcrumbs';
 import QuickViewModal from '../../components/storefront/QuickViewModal';
+import { SkeletonGrid } from '../../components/storefront/StorefrontUi';
 
 export default function StorefrontProducts() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -171,7 +172,7 @@ export default function StorefrontProducts() {
 
       {/* Products grid */}
       {loading ? (
-        <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin" /></div>
+        <SkeletonGrid count={8} />
       ) : data.products.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '80px 0', color: c('textMuted', '#6b7280') }}>
           <Search size={56} style={{ color: '#d1d5db', margin: '0 auto 16px' }} />

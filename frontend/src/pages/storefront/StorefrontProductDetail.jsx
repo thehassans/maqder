@@ -9,6 +9,7 @@ import { firePixelEvent } from '../../components/storefront/StorefrontLayout';
 import StorefrontSeo from '../../components/storefront/StorefrontSeo';
 import StorefrontBreadcrumbs from '../../components/storefront/StorefrontBreadcrumbs';
 import { useRecentlyViewed } from '../../store/recentlyViewed';
+import { ProductDetailSkeleton, useToast } from '../../components/storefront/StorefrontUi';
 
 export default function StorefrontProductDetail() {
   const { id } = useParams();
@@ -27,6 +28,7 @@ export default function StorefrontProductDetail() {
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { toggleCompare, isInCompare } = useCompare();
   const { addProduct, items: recentItems } = useRecentlyViewed();
+  const { toast } = useToast();
   const [zoomed, setZoomed] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [notifyEmail, setNotifyEmail] = useState('');
@@ -136,10 +138,11 @@ export default function StorefrontProductDetail() {
       currency: 'SAR',
     });
     setAdded(true);
+    toast('Added to cart');
     setTimeout(() => setAdded(false), 2000);
   };
 
-  if (loading) return <div className="flex justify-center py-40"><Loader2 className="w-8 h-8 animate-spin" /></div>;
+  if (loading) return <ProductDetailSkeleton />;
   if (error) return <div style={{ textAlign: 'center', padding: '60px', color: '#6b7280' }}><p>{error}</p><Link to="/store/products" style={{ color: '#4f46e5' }}>Back to products</Link></div>;
   if (!data?.product) return null;
 
@@ -345,6 +348,7 @@ export default function StorefrontProductDetail() {
             <button onClick={() => {
               const wasInWishlist = isInWishlist(data.product._id);
               toggleWishlist(data.product);
+              toast(wasInWishlist ? 'Removed from wishlist' : 'Added to wishlist', 'wishlist');
               if (!wasInWishlist) {
                 firePixelEvent('AddToWishlist', {
                   content_ids: [data.product._id],
@@ -359,7 +363,7 @@ export default function StorefrontProductDetail() {
             }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
               <Heart size={20} style={{ color: isInWishlist(data.product._id) ? '#dc2626' : '#9ca3af', fill: isInWishlist(data.product._id) ? '#dc2626' : 'none' }} />
             </button>
-            <button onClick={() => toggleCompare(data.product._id)} title="Compare" style={{
+            <button onClick={() => { toggleCompare(data.product._id); toast(isInCompare(data.product._id) ? 'Removed from compare' : 'Added to compare'); }} title="Compare" style={{
               padding: '12px', background: isInCompare(data.product._id) ? '#eef2ff' : '#fff', border: `1px solid ${isInCompare(data.product._id) ? '#4f46e5' : '#e5e7eb'}`, borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s',
             }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
               <GitCompare size={20} style={{ color: isInCompare(data.product._id) ? '#4f46e5' : '#9ca3af' }} />

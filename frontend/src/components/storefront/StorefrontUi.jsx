@@ -1,0 +1,124 @@
+import React, { useState, useEffect, useCallback, useRef, createContext, useContext } from 'react';
+import { Check, Heart, ShoppingCart, X, AlertCircle } from 'lucide-react';
+
+// ─── Skeleton ───────────────────────────────────────────────
+export function Skeleton({ w = '100%', h = '20px', r = '8px', mb = '0' }) {
+  return (
+    <div style={{
+      width: w, height: h, borderRadius: r, marginBottom: mb,
+      background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)',
+      backgroundSize: '200% 100%', animation: 'sf-shimmer 1.5s infinite',
+    }} />
+  );
+}
+
+export function ProductCardSkeleton() {
+  return (
+    <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '18px', overflow: 'hidden' }}>
+      <Skeleton w="100%" h="0" r="0" />
+      <div style={{ aspectRatio: '1' }}>
+        <Skeleton w="100%" h="100%" r="0" />
+      </div>
+      <div style={{ padding: '16px' }}>
+        <Skeleton w="80%" h="14px" mb="10px" />
+        <Skeleton w="50%" h="16px" mb="8px" />
+        <Skeleton w="40%" h="18px" />
+      </div>
+    </div>
+  );
+}
+
+export function SkeletonGrid({ count = 8 }) {
+  return (
+    <div className="sf-grid">
+      {Array.from({ length: count }).map((_, i) => <ProductCardSkeleton key={i} />)}
+    </div>
+  );
+}
+
+export function ProductDetailSkeleton() {
+  return (
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 20px' }}>
+      <Skeleton w="120px" h="14px" mb="20px" />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '48px' }} className="store-pd-grid">
+        <div>
+          <Skeleton w="100%" h="400px" r="20px" mb="14px" />
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <Skeleton w="68px" h="68px" r="12px" />
+            <Skeleton w="68px" h="68px" r="12px" />
+            <Skeleton w="68px" h="68px" r="12px" />
+          </div>
+        </div>
+        <div>
+          <Skeleton w="60px" h="12px" mb="12px" />
+          <Skeleton w="80%" h="30px" mb="20px" />
+          <Skeleton w="120px" h="28px" mb="24px" />
+          <Skeleton w="100%" h="60px" mb="20px" />
+          <Skeleton w="100%" h="48px" mb="16px" />
+          <Skeleton w="100%" h="48px" mb="16px" />
+          <Skeleton w="100%" h="120px" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Toast System ───────────────────────────────────────────
+const ToastContext = createContext(null);
+
+export function useToast() {
+  const ctx = useContext(ToastContext);
+  if (!ctx) return { toast: () => {} };
+  return ctx;
+}
+
+export function ToastProvider({ children }) {
+  const [toasts, setToasts] = useState([]);
+  const idRef = useRef(0);
+
+  const toast = useCallback((message, type = 'success') => {
+    const id = ++idRef.current;
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 2800);
+  }, []);
+
+  return (
+    <ToastContext.Provider value={{ toast }}>
+      {children}
+      <div style={{ position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center', pointerEvents: 'none' }}>
+        {toasts.map(t => (
+          <div key={t.id} style={{
+            display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 20px', borderRadius: '12px',
+            background: t.type === 'error' ? '#dc2626' : t.type === 'wishlist' ? '#ec4899' : '#059669',
+            color: '#fff', fontSize: '14px', fontWeight: 600, boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+            animation: 'sf-toast-in 0.3s ease', whiteSpace: 'nowrap',
+          }}>
+            {t.type === 'error' ? <AlertCircle size={18} /> : t.type === 'wishlist' ? <Heart size={18} fill="#fff" /> : <Check size={18} />}
+            {t.message}
+          </div>
+        ))}
+      </div>
+    </ToastContext.Provider>
+  );
+}
+
+// ─── ScrollToTop on Route Change ────────────────────────────
+export function ScrollToTop() {
+  const loc = window.location.pathname;
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [loc]);
+  return null;
+}
+
+// ─── Global styles (shimmer + toast animation) ──────────────
+export function StorefrontGlobalStyles() {
+  return (
+    <style>{`
+      @keyframes sf-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+      @keyframes sf-toast-in { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+      @keyframes sf-bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.3); } }
+      .sf-cart-bounce { animation: sf-bounce 0.4s ease; }
+    `}</style>
+  );
+}
