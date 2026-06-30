@@ -38,11 +38,11 @@ export default function BookStoreAddProduct() {
     subCategory: '',
     description: '',
     unit: 'PCS',
-    stockQuantity: 0,
+    stockQuantity: '',
     minimumStockAlertLevel: 5,
-    costPrice: 0,
-    retailPrice: 0,
-    discountPrice: 0,
+    costPrice: '',
+    retailPrice: '',
+    discountPrice: '',
     taxRate: 15,
     isStationery: false,
     coverImage: '',
@@ -64,13 +64,13 @@ export default function BookStoreAddProduct() {
     courseEndDate: '',
     courseInstructor: '',
     courseSchedule: '',
-    courseCapacity: 0,
+    courseCapacity: '',
     courseLocation: '',
     courseBooks: [],
     // Bundle fields
     bundleItems: [],
-    bundleOriginalPrice: 0,
-    bundleDiscountPercent: 0,
+    bundleOriginalPrice: '',
+    bundleDiscountPercent: '',
   });
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
@@ -134,9 +134,12 @@ export default function BookStoreAddProduct() {
     setForm(prev => ({ ...prev, courseBooks: (prev.courseBooks || []).filter(id => id !== bookId) }));
   };
 
+  const normalizeNumeric = (value) => value === '' ? '' : Number(value);
+  const isNumericField = (name) => ['stockQuantity', 'minimumStockAlertLevel', 'costPrice', 'retailPrice', 'discountPrice', 'taxRate', 'publicationYear', 'seriesNumber', 'seriesTotal', 'courseDurationWeeks', 'courseCapacity', 'bundleOriginalPrice', 'bundleDiscountPercent'].includes(name);
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+    setForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : isNumericField(name) ? normalizeNumeric(value) : value }));
   };
 
   const handleTypeChange = (type) => {
@@ -162,14 +165,51 @@ export default function BookStoreAddProduct() {
     }
   };
 
+  const prepareFormPayload = (rawForm) => {
+    const numericFields = ['stockQuantity', 'minimumStockAlertLevel', 'costPrice', 'retailPrice', 'discountPrice', 'taxRate', 'publicationYear', 'seriesNumber', 'seriesTotal', 'courseDurationWeeks', 'courseCapacity', 'bundleOriginalPrice', 'bundleDiscountPercent'];
+    const payload = { ...rawForm };
+    numericFields.forEach(field => {
+      if (payload[field] === '' || payload[field] == null) {
+        payload[field] = 0;
+      } else {
+        payload[field] = Number(payload[field]);
+      }
+    });
+    return payload;
+  };
+
+  const handleAutoFillCourseBooks = () => {
+    const searchTerms = [form.courseName, form.courseLevel, form.courseSubject].filter(Boolean).join(' ').toLowerCase();
+    if (!searchTerms.trim()) return;
+    const gradeMatch = searchTerms.match(/\b(grade\s*\d+|\d+th|\d+st|\d+nd|\d+rd|g\d+|\d+)\b/);
+    const subjectMatch = form.courseSubject?.toLowerCase().trim();
+    const matches = availableBooks.filter(book => {
+      if ((form.courseBooks || []).includes(book._id)) return false;
+      const bookText = `${book.name || ''} ${book.category || ''} ${book.genre || ''} ${book.subject || ''}`.toLowerCase();
+      if (subjectMatch && bookText.includes(subjectMatch)) return true;
+      if (gradeMatch) {
+        const gradePatterns = [gradeMatch[0], gradeMatch[0].replace(/\s/g, '')];
+        return gradePatterns.some(p => bookText.includes(p));
+      }
+      return false;
+    });
+    if (matches.length === 0) {
+      toast('No matching books found for this course');
+      return;
+    }
+    setForm(prev => ({ ...prev, courseBooks: [...(prev.courseBooks || []), ...matches.map(b => b._id)] }));
+    toast.success(`Added ${matches.length} book${matches.length > 1 ? 's' : ''} to course`);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const payload = prepareFormPayload(form);
     try {
       if (isEdit) {
-        await api.put(`/bookstore/products/${editId}`, form);
+        await api.put(`/bookstore/products/${editId}`, payload);
         toast.success('Product updated');
       } else {
-        await api.post('/bookstore/products', form);
+        await api.post('/bookstore/products', payload);
         toast.success('Product added');
       }
       navigate('/app/dashboard/bookstore/products');
@@ -445,6 +485,20 @@ export default function BookStoreAddProduct() {
             <div className="md:col-span-2">
               <label className="label">Description</label>
               <textarea name="description" value={form.description} onChange={handleChange} rows="2" className="input" />
+            </div>
+
+            {/* Auto-fill course books */}
+            <div className="md:col-span-2">
+              <button
+                type="button"
+                onClick={handleAutoFillCourseBooks}
+                disabled={!form.courseLevel && !form.courseSubject && !form.courseName}
+                className="flex items-center gap-2 px-4 py-2.5 bg-rose-50 text-rose-600 rounded-xl font-bold text-sm hover:bg-rose-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Boxes className="w-4 h-4" />
+                Auto-fill course books
+              </button>
+              <p className="text-xs text-gray-400 mt-1.5">Matches books by course level and subject</p>
             </div>
 
             {/* Course Books Selector */}

@@ -92,6 +92,17 @@
   * {
     @apply border-gray-200;
   }
+
+  /* Hide number input stepper arrows across browsers */
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type=number] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
   
   .dark body {
     @apply bg-dark-900 text-gray-100;
