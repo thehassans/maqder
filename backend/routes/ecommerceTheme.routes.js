@@ -341,4 +341,62 @@ function mergeDefaults(userConfig) {
   };
 }
 
+// Export theme config as a downloadable JSON file
+router.get('/export', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    const tenant = await Tenant.findById(tenantId);
+    if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+    const draft = tenant.ecommerce?.theme?.draft || DEFAULT_THEME;
+    const published = tenant.ecommerce?.theme?.published || null;
+    const exportData = {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      storeName: tenant.ecommerce?.storeName || tenant.name,
+      draft: mergeDefaults(draft),
+      published: published ? mergeDefaults(published) : null,
+    };
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', `attachment; filename="maqder-theme-${Date.now()}.json"`);
+    res.json(exportData);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Import theme config from uploaded JSON file
+router.post('/import', protect, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+
+    let parsed;
+    try {
+      parsed = JSON.parse(req.file.buffer.toString('utf8'));
+    } catch {
+      return res.status(400).json({ error: 'Invalid JSON file' });
+    }
+
+    if (!parsed.draft && !parsed.published && !parsed.colors) {
+      return res.status(400).json({ error: 'Invalid theme file — no theme data found' });
+    }
+
+    const themeData = parsed.draft || parsed;
+
+    const tenant = await Tenant.findById(tenantId);
+    if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+    tenant.ecommerce = tenant.ecommerce || {};
+    tenant.ecommerce.theme = tenant.ecommerce.theme || {};
+    tenant.ecommerce.theme.draft = mergeDefaults(themeData);
+    tenant.ecommerce.theme.draftUpdatedAt = new Date();
+    await tenant.save();
+
+    res.json({ draft: mergeDefaults(tenant.ecommerce.theme.draft), draftUpdatedAt: tenant.ecommerce.theme.draftUpdatedAt });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 export default router;

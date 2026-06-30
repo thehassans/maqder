@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Palette, Save, Loader2, Upload, RotateCcw, AlertCircle, CheckCircle, Eye, Layout, Type, ShoppingCart, Home, Monitor, Smartphone, GripVertical, Trash2, Plus, ImageIcon, Sparkles } from 'lucide-react';
+import { Palette, Save, Loader2, Upload, RotateCcw, AlertCircle, CheckCircle, Eye, Layout, Type, ShoppingCart, Home, Monitor, Smartphone, GripVertical, Trash2, Plus, ImageIcon, Sparkles, Download, FileUp } from 'lucide-react';
 import api from '../../lib/api';
 
 const COLOR_FIELDS = [
@@ -56,6 +56,10 @@ export default function EcommerceThemeEditor() {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [applyingPreset, setApplyingPreset] = useState(null);
   const [heroUploadIdx, setHeroUploadIdx] = useState(null);
+  const [importingTheme, setImportingTheme] = useState(false);
+  const [draggedIdx, setDraggedIdx] = useState(null);
+  const [dragOverIdx, setDragOverIdx] = useState(null);
+  const importInputRef = useRef(null);
   const previewRef = useRef(null);
   const logoInputRef = useRef(null);
   const heroInputRef = useRef(null);
@@ -384,6 +388,58 @@ ${sectionHTML}
     }
   };
 
+  const handleExportTheme = async () => {
+    try {
+      const res = await api.get('/ecommerce/theme/export', { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `maqder-theme-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setError('Failed to export theme');
+    }
+  };
+
+  const handleDragStart = (idx) => setDraggedIdx(idx);
+  const handleDragOver = (e, idx) => { e.preventDefault(); setDragOverIdx(idx); };
+  const handleDrop = (e, idx) => {
+    e.preventDefault();
+    if (draggedIdx === null || draggedIdx === idx) { setDraggedIdx(null); setDragOverIdx(null); return; }
+    const sections = [...(theme.homepage?.sections || [])];
+    const [moved] = sections.splice(draggedIdx, 1);
+    sections.splice(idx, 0, moved);
+    update('homepage.sections', sections);
+    setDraggedIdx(null);
+    setDragOverIdx(null);
+  };
+
+  const handleImportTheme = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportingTheme(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await api.post('/ecommerce/theme/import', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setTheme(res.data.draft);
+      setDraftUpdatedAt(res.data.draftUpdatedAt);
+      setHasUnpublished(true);
+      setSuccess('Theme imported — save draft to keep it');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to import theme');
+    } finally {
+      setImportingTheme(false);
+      if (importInputRef.current) importInputRef.current.value = '';
+    }
+  };
+
   const handleReset = async () => {
     if (!confirm('Reset draft to default theme? This will discard all your changes.')) return;
     setSaving(true);
@@ -432,6 +488,13 @@ ${sectionHTML}
         <div className="flex items-center gap-2">
           <button onClick={handleReset} disabled={saving} className="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 dark:border-dark-600 font-bold text-sm hover:bg-gray-50 dark:hover:bg-dark-700">
             <RotateCcw className="w-4 h-4" /> Reset
+          </button>
+          <button onClick={handleExportTheme} className="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 dark:border-dark-600 font-bold text-sm hover:bg-gray-50 dark:hover:bg-dark-700">
+            <Download className="w-4 h-4" /> Export
+          </button>
+          <input ref={importInputRef} type="file" accept=".json" onChange={handleImportTheme} className="hidden" />
+          <button onClick={() => importInputRef.current?.click()} disabled={importingTheme} className="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 dark:border-dark-600 font-bold text-sm hover:bg-gray-50 dark:hover:bg-dark-700 disabled:opacity-50">
+            {importingTheme ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileUp className="w-4 h-4" />} Import
           </button>
           <button onClick={handleSaveDraft} disabled={saving} className="flex items-center gap-2 px-4 py-2 rounded-full border border-violet-200 text-violet-600 font-bold text-sm hover:bg-violet-50 disabled:opacity-50">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Save Draft
@@ -593,9 +656,17 @@ ${sectionHTML}
             <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-5 space-y-3">
               <p className="text-sm text-gray-400 mb-2">Drag sections to reorder. Toggle to show/hide on storefront.</p>
               {theme.homepage?.sections?.map((sec, idx) => (
-                <div key={sec.id || idx} className="border border-gray-200 dark:border-dark-600 rounded-xl p-3 space-y-2">
+                <div
+                  key={sec.id || idx}
+                  draggable
+                  onDragStart={() => handleDragStart(idx)}
+                  onDragOver={(e) => handleDragOver(e, idx)}
+                  onDrop={(e) => handleDrop(e, idx)}
+                  onDragEnd={() => { setDraggedIdx(null); setDragOverIdx(null); }}
+                  className={`border rounded-xl p-3 space-y-2 transition-all ${dragOverIdx === idx && draggedIdx !== idx ? 'border-violet-400 bg-violet-50' : 'border-gray-200 dark:border-dark-600'} ${draggedIdx === idx ? 'opacity-50' : ''}`}
+                >
                   <div className="flex items-center gap-2">
-                    <GripVertical className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                    <GripVertical className="w-4 h-4 text-gray-300 flex-shrink-0 cursor-grab active:cursor-grabbing" />
                     <select className={`${inputCls} flex-1`} value={sec.type} onChange={e => updateSection(idx, 'type', e.target.value)}>
                       {SECTION_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                     </select>

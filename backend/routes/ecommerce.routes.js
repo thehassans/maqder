@@ -5,6 +5,7 @@ import Tenant from '../models/Tenant.js';
 import EcommerceProduct from '../models/EcommerceProduct.js';
 import { clearTenantHostCache } from '../middleware/resolveTenantByHost.js';
 import { provisionCloudflareDomain, verifyDomainViaCloudflare, removeCloudflareDomain, getSSLStatus, isCloudflareConfigured, verifyCloudflareCredentials, listZones } from '../services/cloudflareService.js';
+import { testWordPressConnection, runWordPressSync } from '../services/wordpressService.js';
 
 const router = express.Router();
 
@@ -565,6 +566,110 @@ router.put('/pixels', protect, async (req, res) => {
     if (pixels.tiktokCapi?.accessToken) pixels.tiktokCapi.accessToken = mask(pixels.tiktokCapi.accessToken);
     res.json(pixels);
   } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// ── WordPress / WooCommerce Integration ──
+
+// Get WordPress settings
+router.get('/wordpress', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    const tenant = await Tenant.findById(tenantId);
+    if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+    const wp = tenant.ecommerce?.wordpress || {};
+    res.json({
+      enabled: wp.enabled || false,
+      siteUrl: wp.siteUrl || '',
+      syncDirection: wp.syncDirection || 'push',
+      lastSyncAt: wp.lastSyncAt || null,
+      lastSyncStatus: wp.lastSyncStatus || '',
+      lastSyncError: wp.lastSyncError || '',
+      autoSync: wp.autoSync || false,
+      hasCredentials: !!(wp.consumerKey || wp.appPassword),
+    });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Save WordPress settings and credentials
+router.put('/wordpress', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    const tenant = await Tenant.findById(tenantId);
+    if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+    tenant.ecommerce = tenant.ecommerce || {};
+    const existing = tenant.ecommerce.wordpress || {};
+    const body = req.body || {};
+
+    tenant.ecommerce.wordpress = {
+      enabled: body.enabled ?? existing.enabled ?? false,
+      siteUrl: (body.siteUrl ?? existing.siteUrl) || '',
+      consumerKey: (body.consumerKey ?? existing.consumerKey) || '',
+      consumerSecret: (body.consumerSecret ?? existing.consumerSecret) || '',
+      username: (body.username ?? existing.username) || '',
+      appPassword: (body.appPassword ?? existing.appPassword) || '',
+      syncDirection: body.syncDirection || existing.syncDirection || 'push',
+      autoSync: body.autoSync ?? existing.autoSync ?? false,
+      lastSyncAt: existing.lastSyncAt || null,
+      lastSyncStatus: existing.lastSyncStatus || '',
+      lastSyncError: existing.lastSyncError || '',
+    };
+    await tenant.save();
+    res.json({ success: true });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Test WordPress connection
+router.post('/wordpress/test', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    const tenant = await Tenant.findById(tenantId);
+    if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+    const result = await testWordPressConnection(tenant);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Run WordPress sync
+router.post('/wordpress/sync', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    const tenant = await Tenant.findById(tenantId);
+    if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+
+    const result = await runWordPressSync(tenant);
+
+    // Update sync status
+    const hasErrors = (result.results?.push?.errors?.length > 0) || (result.results?.pull?.errors?.length > 0);
+    tenant.ecommerce.wordpress.lastSyncAt = new Date();
+    tenant.ecommerce.wordpress.lastSyncStatus = hasErrors ? 'partial' : 'success';
+    tenant.ecommerce.wordpress.lastSyncError = hasErrors ? 'Some items had errors' : '';
+    await tenant.save();
+
+    res.json(result);
+  } catch (error) {
+    // Mark sync as failed
+    try {
+      const tenantId = await getTargetTenantId(req.user);
+      const tenant = await Tenant.findById(tenantId);
+      if (tenant) {
+        tenant.ecommerce.wordpress.lastSyncAt = new Date();
+        tenant.ecommerce.wordpress.lastSyncStatus = 'failed';
+        tenant.ecommerce.wordpress.lastSyncError = error.message;
+        await tenant.save();
+      }
+    } catch {}
     res.status(400).json({ error: error.message });
   }
 });

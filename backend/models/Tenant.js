@@ -251,6 +251,20 @@ const ecommerceSchema = new mongoose.Schema({
     fallbackOrigin: { type: String, default: '' },
     connectedAt: { type: Date },
   },
+  // WordPress / WooCommerce integration
+  wordpress: {
+    enabled: { type: Boolean, default: false },
+    siteUrl: { type: String, default: '' },
+    consumerKey: { type: String, default: '' },
+    consumerSecret: { type: String, default: '' },
+    username: { type: String, default: '' },
+    appPassword: { type: String, default: '' },
+    syncDirection: { type: String, enum: ['push', 'pull', 'two-way'], default: 'push' },
+    lastSyncAt: { type: Date },
+    lastSyncStatus: { type: String, default: '' },
+    lastSyncError: { type: String, default: '' },
+    autoSync: { type: Boolean, default: false },
+  },
   // Newsletter subscribers
   newsletterSubscribers: [{
     email: { type: String, required: true },

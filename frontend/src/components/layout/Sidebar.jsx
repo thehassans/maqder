@@ -74,7 +74,8 @@ import {
   BookMarked,
   Store,
   Palette,
-  Boxes
+  Boxes,
+  Globe2
 } from 'lucide-react'
 import { toggleSidebarCollapse, setMobileMenuOpen } from '../../store/slices/uiSlice'
 import { useTranslation } from '../../lib/translations'
@@ -176,6 +177,7 @@ export default function Sidebar() {
         { path: '/app/dashboard/ecommerce/coupons', icon: Tag, label: language === 'ar' ? 'كوبونات الخصم' : 'Coupons' },
         { path: '/app/dashboard/ecommerce/reviews', icon: MessageSquare, label: language === 'ar' ? 'التقييمات' : 'Reviews' },
         { path: '/app/dashboard/ecommerce/newsletter', icon: Mail, label: language === 'ar' ? 'النشرة البريدية' : 'Newsletter' },
+        { path: '/app/dashboard/ecommerce/wordpress', icon: Globe2, label: language === 'ar' ? 'ووردبريس' : 'WordPress' },
         { path: '/app/dashboard/ecommerce/settings', icon: Settings, label: language === 'ar' ? 'الإعدادات' : 'Store Settings' },
       ]
     },
