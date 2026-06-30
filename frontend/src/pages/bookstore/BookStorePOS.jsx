@@ -102,6 +102,7 @@ export default function BookStorePOS() {
   const [heldBills, setHeldBills] = useState([]);
   const [showRecallModal, setShowRecallModal] = useState(false);
   const [seriesSuggestion, setSeriesSuggestion] = useState(null);
+  const [quickFilter, setQuickFilter] = useState('all');
   const barcodeInputRef = useRef(null);
 
   const totals = useMemo(() => {
@@ -777,11 +778,39 @@ export default function BookStorePOS() {
 
       {/* RIGHT PANEL: Product grid (40%) */}
       <div className="w-[40%] flex flex-col bg-[#F8F9FA] overflow-hidden">
-        <div className="px-6 py-5 border-b border-gray-100 bg-white">
-          <h2 className="font-bold text-gray-900">Quick Browse</h2>
-          <p className="text-xs text-gray-400 mt-0.5">Tap a book to add to cart</p>
+        <div className="px-4 py-3 border-b border-gray-100 bg-white flex items-center justify-between">
+          <div>
+            <h2 className="font-bold text-gray-900 text-sm">Quick Browse</h2>
+            <p className="text-[10px] text-gray-400">Tap to add</p>
+          </div>
+          <span className="text-[10px] text-gray-400">{allProducts.length} items</span>
         </div>
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="px-4 py-2 border-b border-gray-100 bg-white">
+          <div className="flex gap-1.5 overflow-x-auto scrollbar-thin pb-1">
+            {[
+              { key: 'all', label: 'All' },
+              { key: 'book', label: 'Books' },
+              { key: 'course', label: 'Courses' },
+              { key: 'uniform', label: 'Uniforms' },
+              { key: 'stationery', label: 'Stationery' },
+              { key: 'bundle', label: 'Bundles' },
+              { key: 'other', label: 'Other' },
+            ].map(f => (
+              <button
+                key={f.key}
+                onClick={() => setQuickFilter(f.key)}
+                className={`px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap transition-colors ${
+                  quickFilter === f.key
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex-1 overflow-y-auto p-3">
           {allProducts.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-300">
               <BookOpen className="w-12 h-12 mb-3 opacity-30" />
@@ -789,28 +818,40 @@ export default function BookStorePOS() {
               <p className="text-xs">Add products from the Products page</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3">
-              {allProducts.slice(0, 60).map(product => (
-                <button
-                  key={product._id}
-                  onClick={() => addItem(product)}
-                  className="bg-white rounded-2xl p-3 border border-gray-100 hover:border-indigo-200 hover:shadow-md transition-all text-left group"
-                >
-                  <div className="aspect-[3/4] mb-2 rounded-lg overflow-hidden bg-indigo-50 flex items-center justify-center">
-                    {product.coverImage ? (
-                      <img src={product.coverImage} alt="" className="w-full h-full object-cover" />
-                    ) : (
-                      <BookOpen className="w-8 h-8 text-indigo-300" />
-                    )}
-                  </div>
-                  <p className="font-bold text-xs text-gray-900 line-clamp-2 leading-tight">{product.name}</p>
-                  {product.author && <p className="text-[10px] text-gray-400 mt-0.5 truncate">{product.author}</p>}
-                  <div className="flex items-center justify-between mt-1.5">
-                    <span className="font-bold text-sm text-indigo-600">SAR {Number(product.discountPrice > 0 ? product.discountPrice : product.retailPrice).toFixed(2)}</span>
-                    <span className="text-[10px] text-gray-300">{product.stockQuantity || 0}</span>
-                  </div>
-                </button>
-              ))}
+            <div className="space-y-1.5">
+              {(quickFilter === 'all' ? allProducts : allProducts.filter(p => p.productType === quickFilter)).slice(0, 80).map(product => {
+                const pt = product.productType || 'book';
+                const TypeIcon = pt === 'uniform' ? Shirt : pt === 'course' ? GraduationCap : pt === 'bundle' ? Package : pt === 'stationery' || pt === 'other' ? Package : BookOpen;
+                const typeColor = pt === 'uniform' ? 'text-emerald-500 bg-emerald-50' : pt === 'course' ? 'text-rose-500 bg-rose-50' : pt === 'bundle' ? 'text-violet-500 bg-violet-50' : pt === 'stationery' ? 'text-amber-500 bg-amber-50' : 'text-indigo-500 bg-indigo-50';
+                const price = Number(product.discountPrice > 0 ? product.discountPrice : product.retailPrice).toFixed(2);
+                return (
+                  <button
+                    key={product._id}
+                    onClick={() => addItem(product)}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 bg-white rounded-xl border border-gray-100 hover:border-indigo-200 hover:shadow-sm transition-all text-left"
+                  >
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${typeColor}`}>
+                      {product.coverImage ? (
+                        <img src={product.coverImage} alt="" className="w-full h-full object-cover rounded-lg" />
+                      ) : (
+                        <TypeIcon className="w-4 h-4" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-xs text-gray-900 truncate leading-tight">{product.name}</p>
+                      <p className="text-[10px] text-gray-400 truncate">
+                        {pt === 'course' && product.courseLevel ? `${product.courseLevel} · ` : ''}
+                        {pt === 'uniform' && product.uniformSize ? `Size ${product.uniformSize} · ` : ''}
+                        {product.author || product.publisher || pt.charAt(0).toUpperCase() + pt.slice(1)}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="font-bold text-xs text-indigo-600">SAR {price}</p>
+                      <p className="text-[9px] text-gray-300">{pt === 'course' ? 'course' : pt === 'bundle' ? 'bundle' : `Stock: ${product.stockQuantity || 0}`}</p>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
