@@ -165,16 +165,16 @@ export default function StorefrontProductDetail() {
         { label: product.title },
       ]} />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px' }} className="store-pd-grid">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '48px' }} className="store-pd-grid">
         {/* Images */}
         <div>
-          <div style={{ aspectRatio: '1', borderRadius: '12px', overflow: 'hidden', background: '#f3f4f6', marginBottom: '12px', position: 'relative', cursor: 'zoom-in' }}
+          <div style={{ aspectRatio: '1', borderRadius: '20px', overflow: 'hidden', background: '#f3f4f6', marginBottom: '14px', position: 'relative', cursor: 'zoom-in', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}
             onClick={() => setZoomed(true)}
           >
             {product.images?.[selectedImage]?.url ? (
               <>
-                <img src={product.images[selectedImage].url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <div style={{ position: 'absolute', bottom: '12px', right: '12px', background: 'rgba(0,0,0,0.5)', borderRadius: '8px', padding: '6px 8px', display: 'flex', alignItems: 'center', gap: '4px', color: '#fff', fontSize: '12px' }}>
+                <img src={product.images[selectedImage].url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} />
+                <div style={{ position: 'absolute', bottom: '12px', right: '12px', background: 'rgba(0,0,0,0.5)', borderRadius: '10px', padding: '6px 10px', display: 'flex', alignItems: 'center', gap: '4px', color: '#fff', fontSize: '12px', fontWeight: 600, backdropFilter: 'blur(8px)' }}>
                   <ZoomIn size={14} /> Zoom
                 </div>
               </>
@@ -183,11 +183,11 @@ export default function StorefrontProductDetail() {
             )}
           </div>
           {product.images?.length > 1 && (
-            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto' }}>
+            <div style={{ display: 'flex', gap: '10px', overflowX: 'auto' }}>
               {product.images.map((img, idx) => (
                 <button key={idx} onClick={() => setSelectedImage(idx)} style={{
-                  width: '64px', height: '64px', borderRadius: '8px', overflow: 'hidden', border: selectedImage === idx ? '2px solid #4f46e5' : '1px solid #e5e7eb', cursor: 'pointer', flexShrink: 0,
-                }}>
+                  width: '68px', height: '68px', borderRadius: '12px', overflow: 'hidden', border: selectedImage === idx ? '2px solid #4f46e5' : '1px solid #e5e7eb', cursor: 'pointer', flexShrink: 0, transition: 'all 0.2s',
+                }} onMouseEnter={e => { if (selectedImage !== idx) e.currentTarget.style.borderColor = '#c7d2fe'; }} onMouseLeave={e => { if (selectedImage !== idx) e.currentTarget.style.borderColor = '#e5e7eb'; }}>
                   <img src={img.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </button>
               ))}
@@ -197,8 +197,8 @@ export default function StorefrontProductDetail() {
 
         {/* Info */}
         <div>
-          {product.category && <p style={{ fontSize: '13px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>{product.category}</p>}
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', margin: '0 0 12px' }}>{product.title}</h1>
+          {product.category && <p style={{ fontSize: '12px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px', fontWeight: 700 }}>{product.category}</p>}
+          <h1 style={{ fontSize: '30px', fontWeight: 800, margin: '0 0 16px', letterSpacing: '-0.5px', lineHeight: 1.2 }}>{product.title}</h1>
 
           {/* Share buttons */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
@@ -221,9 +221,12 @@ export default function StorefrontProductDetail() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
             {product.compareAtPrice && product.compareAtPrice > currentPrice && (
-              <span style={{ fontSize: '16px', color: '#dc2626', textDecoration: 'line-through' }}>{product.compareAtPrice} {currency}</span>
+              <span style={{ fontSize: '18px', color: '#dc2626', textDecoration: 'line-through', fontWeight: 600 }}>{product.compareAtPrice} {currency}</span>
             )}
-            <span style={{ fontSize: '28px', fontWeight: 'bold', color: '#059669' }}>{currentPrice} {currency}</span>
+            <span style={{ fontSize: '30px', fontWeight: 800, color: '#059669', letterSpacing: '-0.5px' }}>{currentPrice} {currency}</span>
+            {product.compareAtPrice && product.compareAtPrice > currentPrice && (
+              <span style={{ background: '#fee2e2', color: '#dc2626', fontSize: '12px', fontWeight: 700, padding: '3px 10px', borderRadius: '999px' }}>Save {Math.round((1 - currentPrice / product.compareAtPrice) * 100)}%</span>
+            )}
           </div>
 
           {product.shortDescription && (
@@ -313,29 +316,30 @@ export default function StorefrontProductDetail() {
           )}
 
           {/* Trust badges */}
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '16px', padding: '12px', background: '#f9fafb', borderRadius: '10px', border: '1px solid #f3f4f6' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#374151' }}>
+          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '20px', padding: '16px', background: 'linear-gradient(135deg, #f9fafb, #f3f4f6)', borderRadius: '14px', border: '1px solid #f3f4f6' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#374151', fontWeight: 600 }}>
               <Truck size={16} style={{ color: '#4f46e5' }} /> Free shipping over 200 SAR
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#374151' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#374151', fontWeight: 600 }}>
               <ShieldCheck size={16} style={{ color: '#059669' }} /> Secure payment
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#374151' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#374151', fontWeight: 600 }}>
               <RotateCcw size={16} style={{ color: '#f59e0b' }} /> 7-day returns
             </div>
           </div>
 
           {/* Quantity + Add to cart */}
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e5e7eb', borderRadius: '8px' }}>
-              <button onClick={() => setQuantity(Math.max(1, quantity - 1))} style={{ padding: '10px', background: 'none', border: 'none', cursor: 'pointer' }}><Minus size={16} /></button>
-              <span style={{ padding: '0 16px', fontWeight: 'bold' }}>{quantity}</span>
-              <button onClick={() => setQuantity(quantity + 1)} style={{ padding: '10px', background: 'none', border: 'none', cursor: 'pointer' }}><Plus size={16} /></button>
+            <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden' }}>
+              <button onClick={() => setQuantity(Math.max(1, quantity - 1))} style={{ padding: '12px', background: 'none', border: 'none', cursor: 'pointer', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#f3f4f6'} onMouseLeave={e => e.currentTarget.style.background = 'none'}><Minus size={16} /></button>
+              <span style={{ padding: '0 20px', fontWeight: 700, fontSize: '16px' }}>{quantity}</span>
+              <button onClick={() => setQuantity(quantity + 1)} style={{ padding: '12px', background: 'none', border: 'none', cursor: 'pointer', transition: 'background 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = '#f3f4f6'} onMouseLeave={e => e.currentTarget.style.background = 'none'}><Plus size={16} /></button>
             </div>
             <button onClick={handleAddToCart} style={{
-              flex: 1, padding: '12px 24px', background: added ? '#059669' : '#4f46e5', color: '#fff', border: 'none', borderRadius: '8px',
-              fontWeight: 'bold', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-            }}>
+              flex: 1, padding: '14px 24px', background: added ? '#059669' : 'linear-gradient(135deg, #4f46e5, #6366f1)', color: '#fff', border: 'none', borderRadius: '14px',
+              fontWeight: 700, fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+              transition: 'all 0.2s', boxShadow: added ? '0 4px 14px rgba(5,150,105,0.25)' : '0 4px 14px rgba(79,70,229,0.25)',
+            }} onMouseEnter={e => { if (!added) e.currentTarget.style.transform = 'translateY(-2px)'; }} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
               {added ? <><Check size={18} /> Added!</> : <><ShoppingCart size={18} /> Add to Cart</>}
             </button>
             <button onClick={() => {
@@ -351,13 +355,13 @@ export default function StorefrontProductDetail() {
                 });
               }
             }} style={{
-              padding: '12px', background: isInWishlist(data.product._id) ? '#fee2e2' : '#fff', border: `1px solid ${isInWishlist(data.product._id) ? '#fca5a5' : '#e5e7eb'}`, borderRadius: '8px', cursor: 'pointer',
-            }}>
+              padding: '12px', background: isInWishlist(data.product._id) ? '#fee2e2' : '#fff', border: `1px solid ${isInWishlist(data.product._id) ? '#fca5a5' : '#e5e7eb'}`, borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s',
+            }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
               <Heart size={20} style={{ color: isInWishlist(data.product._id) ? '#dc2626' : '#9ca3af', fill: isInWishlist(data.product._id) ? '#dc2626' : 'none' }} />
             </button>
             <button onClick={() => toggleCompare(data.product._id)} title="Compare" style={{
-              padding: '12px', background: isInCompare(data.product._id) ? '#eef2ff' : '#fff', border: `1px solid ${isInCompare(data.product._id) ? '#4f46e5' : '#e5e7eb'}`, borderRadius: '8px', cursor: 'pointer',
-            }}>
+              padding: '12px', background: isInCompare(data.product._id) ? '#eef2ff' : '#fff', border: `1px solid ${isInCompare(data.product._id) ? '#4f46e5' : '#e5e7eb'}`, borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s',
+            }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
               <GitCompare size={20} style={{ color: isInCompare(data.product._id) ? '#4f46e5' : '#9ca3af' }} />
             </button>
           </div>
@@ -388,9 +392,9 @@ export default function StorefrontProductDetail() {
 
           {/* Description */}
           {product.description && (
-            <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '20px' }}>
-              <h3 style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '8px' }}>Description</h3>
-              <div style={{ fontSize: '14px', color: '#4b5563', lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: product.description }} />
+            <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '24px' }}>
+              <h3 style={{ fontWeight: 700, fontSize: '16px', marginBottom: '12px' }}>Description</h3>
+              <div style={{ fontSize: '14px', color: '#4b5563', lineHeight: 1.7 }} dangerouslySetInnerHTML={{ __html: product.description }} />
             </div>
           )}
         </div>
@@ -399,20 +403,21 @@ export default function StorefrontProductDetail() {
       {/* Related products */}
       {related.length > 0 && (
         <div style={{ marginTop: '60px' }}>
-          <h2 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '16px' }}>You may also like</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '16px' }}>
+          <h2 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '20px', letterSpacing: '-0.3px' }}>You may also like</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
             {related.map(p => {
               const slug = p.seo?.slug || p._id;
               return (
                 <Link key={p._id} to={`/store/products/${slug}`} style={{
-                  background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden', textDecoration: 'none',
-                }}>
+                  background: '#fff', border: '1px solid #e5e7eb', borderRadius: '16px', overflow: 'hidden', textDecoration: 'none',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                }} onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-6px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(0,0,0,0.1)'; }} onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; }}>
                   <div style={{ aspectRatio: '1', background: '#e5e7eb', overflow: 'hidden' }}>
-                    {p.images?.[0]?.url ? <img src={p.images[0].url} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
+                    {p.images?.[0]?.url ? <img src={p.images[0].url} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} /> : null}
                   </div>
-                  <div style={{ padding: '12px' }}>
-                    <p style={{ fontWeight: 'bold', fontSize: '14px', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</p>
-                    <p style={{ fontSize: '16px', fontWeight: 'bold', color: '#059669', margin: 0 }}>{p.basePrice} {currency}</p>
+                  <div style={{ padding: '14px' }}>
+                    <p style={{ fontWeight: 600, fontSize: '14px', margin: '0 0 6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#111' }}>{p.title}</p>
+                    <p style={{ fontSize: '17px', fontWeight: 800, color: '#059669', margin: 0 }}>{p.basePrice} {currency}</p>
                   </div>
                 </Link>
               );
@@ -423,17 +428,17 @@ export default function StorefrontProductDetail() {
 
       {/* Reviews section */}
       <div style={{ marginTop: '60px' }}>
-        <h2 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '16px' }}>Customer Reviews</h2>
+        <h2 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '20px', letterSpacing: '-0.3px' }}>Customer Reviews</h2>
         {reviews.totalReviews > 0 && (
-          <div style={{ display: 'flex', gap: '32px', marginBottom: '24px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-            <div style={{ textAlign: 'center', minWidth: '120px' }}>
-              <p style={{ fontSize: '40px', fontWeight: 'bold', margin: '0 0 4px' }}>{reviews.avgRating.toFixed(1)}</p>
+          <div style={{ display: 'flex', gap: '32px', marginBottom: '28px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+            <div style={{ textAlign: 'center', minWidth: '140px', padding: '20px', background: '#fff', border: '1px solid #e5e7eb', borderRadius: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+              <p style={{ fontSize: '44px', fontWeight: 800, margin: '0 0 4px', letterSpacing: '-1px' }}>{reviews.avgRating.toFixed(1)}</p>
               <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '4px' }}>
                 {[1, 2, 3, 4, 5].map(n => (
                   <Star key={n} size={16} className={n <= Math.round(reviews.avgRating) ? 'text-amber-400 fill-amber-400' : 'text-gray-200'} />
                 ))}
               </div>
-              <p style={{ color: '#6b7280', fontSize: '13px', margin: 0 }}>{reviews.totalReviews} reviews</p>
+              <p style={{ color: '#6b7280', fontSize: '13px', margin: 0, fontWeight: 500 }}>{reviews.totalReviews} reviews</p>
             </div>
             <div style={{ flex: 1, minWidth: '200px' }}>
               {[5, 4, 3, 2, 1].map(star => {
