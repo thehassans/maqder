@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Store, Loader2, TrendingUp, TrendingDown, ShoppingBag, DollarSign, Package, ArrowUpRight, ArrowDownRight, CreditCard, Truck, Clock, CheckCircle, AlertTriangle, Download, Users, ExternalLink, Eye, X } from 'lucide-react';
+import { Store, Loader2, TrendingUp, TrendingDown, ShoppingBag, DollarSign, Package, ArrowUpRight, ArrowDownRight, CreditCard, Truck, Clock, CheckCircle, AlertTriangle, Download, Users, ExternalLink, Eye, X, HelpCircle, MessageSquare } from 'lucide-react';
 import api from '../../lib/api';
 
 const STATUS_COLORS = {
@@ -19,6 +19,8 @@ export default function EcommerceDashboard() {
   const [settings, setSettings] = useState(null);
   const [analytics, setAnalytics] = useState(null);
   const [lowStockProducts, setLowStockProducts] = useState([]);
+  const [pendingReviews, setPendingReviews] = useState(0);
+  const [pendingQuestions, setPendingQuestions] = useState(0);
   const [days, setDays] = useState(30);
   const [showPreview, setShowPreview] = useState(false);
 
@@ -45,6 +47,8 @@ export default function EcommerceDashboard() {
       const lowStock = products.filter(p => p.trackInventory && p.stockQuantity <= (p.lowStockThreshold || 5));
       setLowStockProducts(lowStock);
     }).catch(() => {});
+    api.get('/ecommerce/reviews?status=pending&limit=1').then(res => setPendingReviews(res.data?.total || 0)).catch(() => {});
+    api.get('/ecommerce/products/questions/pending').then(res => setPendingQuestions(res.data?.questions?.length || 0)).catch(() => {});
   }, []);
 
   if (loading) {
@@ -162,6 +166,50 @@ export default function EcommerceDashboard() {
           <div className="flex-1">
             <p className="text-sm font-bold text-amber-800">Your store is not live yet</p>
             <p className="text-xs text-amber-600">Add products, customize your theme, and publish your store to start selling.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Needs Attention widget */}
+      {(pendingReviews > 0 || pendingQuestions > 0) && (
+        <div className="bg-white dark:bg-dark-800 rounded-2xl border border-gray-100 dark:border-dark-700 p-5">
+          <h3 className="text-sm font-black text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-500" /> Needs Attention
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {pendingReviews > 0 && (
+              <Link to="/app/dashboard/ecommerce/reviews" className="flex items-center gap-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors">
+                <div className="w-9 h-9 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center flex-shrink-0">
+                  <MessageSquare className="w-4 h-4 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-lg font-black text-amber-700 dark:text-amber-400">{pendingReviews}</p>
+                  <p className="text-xs text-amber-600 dark:text-amber-500">Pending Reviews</p>
+                </div>
+              </Link>
+            )}
+            {pendingQuestions > 0 && (
+              <Link to="/app/dashboard/ecommerce/questions" className="flex items-center gap-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors">
+                <div className="w-9 h-9 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center flex-shrink-0">
+                  <HelpCircle className="w-4 h-4 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-lg font-black text-amber-700 dark:text-amber-400">{pendingQuestions}</p>
+                  <p className="text-xs text-amber-600 dark:text-amber-500">Unanswered Questions</p>
+                </div>
+              </Link>
+            )}
+            {lowStockProducts.length > 0 && (
+              <Link to="/app/dashboard/ecommerce/inventory" className="flex items-center gap-3 bg-red-50 dark:bg-red-900/20 rounded-xl p-3 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors">
+                <div className="w-9 h-9 rounded-lg bg-red-100 dark:bg-red-900/40 flex items-center justify-center flex-shrink-0">
+                  <Package className="w-4 h-4 text-red-600" />
+                </div>
+                <div>
+                  <p className="text-lg font-black text-red-700 dark:text-red-400">{lowStockProducts.length}</p>
+                  <p className="text-xs text-red-600 dark:text-red-500">Low Stock Items</p>
+                </div>
+              </Link>
+            )}
           </div>
         </div>
       )}
