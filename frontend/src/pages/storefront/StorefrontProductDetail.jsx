@@ -26,7 +26,7 @@ export default function StorefrontProductDetail() {
   const { addItem } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { toggleCompare, isInCompare } = useCompare();
-  const { addProduct } = useRecentlyViewed();
+  const { addProduct, items: recentItems } = useRecentlyViewed();
   const [zoomed, setZoomed] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [notifyEmail, setNotifyEmail] = useState('');
@@ -527,6 +527,24 @@ export default function StorefrontProductDetail() {
         }}>
           <img src={product.images[selectedImage].url} alt={product.title} style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', borderRadius: '8px' }} />
           <button onClick={() => setZoomed(false)} style={{ position: 'absolute', top: '20px', right: '20px', background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%', width: '40px', height: '40px', cursor: 'pointer', color: '#fff', fontSize: '20px' }}>×</button>
+        </div>
+      )}
+
+      {/* Recently viewed products */}
+      {recentItems.filter(i => i.productId !== product._id && i.productId !== id).length > 0 && (
+        <div style={{ marginTop: '60px' }}>
+          <h2 style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '16px' }}>Recently Viewed</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px' }}>
+            {recentItems.filter(i => i.productId !== product._id && i.productId !== id).slice(0, 6).map(item => (
+              <Link key={item.productId} to={`/store/products/${item.slug}`} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '10px', overflow: 'hidden', textDecoration: 'none' }}>
+                {item.image && <img src={item.image} alt={item.title} style={{ width: '100%', aspectRatio: '1', objectFit: 'cover' }} />}
+                <div style={{ padding: '8px 10px' }}>
+                  <p style={{ fontSize: '12px', fontWeight: 'bold', color: '#111', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</p>
+                  <p style={{ fontSize: '14px', fontWeight: 'bold', color: '#059669', margin: 0 }}>{item.price} SAR</p>
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
       )}
 
