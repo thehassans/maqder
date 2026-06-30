@@ -18,6 +18,7 @@ export default function StorefrontCheckout() {
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponError, setCouponError] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
+  const [shippingEstimate, setShippingEstimate] = useState(null);
   const [form, setForm] = useState({
     name: '', email: '', phone: '',
     addressLine1: '', addressLine2: '', city: '', region: '', postalCode: '', country: 'Saudi Arabia', notes: '',
@@ -43,6 +44,15 @@ export default function StorefrontCheckout() {
     }
   }, []); // fire once on mount
 
+  // Fetch shipping estimate
+  useEffect(() => {
+    if (items.length > 0) {
+      storeApi.post('/shipping/estimate', { subtotal: cartTotal })
+        .then(res => setShippingEstimate(res.data))
+        .catch(() => setShippingEstimate(null));
+    }
+  }, [cartTotal, items.length]);
+
   const handleApplyCoupon = async (e) => {
     e.preventDefault();
     if (!couponCode.trim()) return;
@@ -60,8 +70,9 @@ export default function StorefrontCheckout() {
   };
 
   const discountAmount = appliedCoupon?.discountAmount || 0;
-  const freeShipping = appliedCoupon?.freeShipping || false;
-  const finalTotal = Math.max(0, cartTotal - discountAmount);
+  const freeShipping = appliedCoupon?.freeShipping || shippingEstimate?.freeShipping || false;
+  const shippingCost = freeShipping ? 0 : (shippingEstimate?.shippingCost || 0);
+  const finalTotal = Math.max(0, cartTotal - discountAmount + shippingCost);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -243,7 +254,7 @@ export default function StorefrontCheckout() {
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '4px', color: '#6b7280' }}>
-              <span>Shipping</span><span>{freeShipping ? 'Free' : 'Calculated at checkout'}</span>
+              <span>Shipping</span><span>{freeShipping ? 'Free' : shippingEstimate ? `${shippingCost} SAR` : 'Calculated at checkout'}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '18px', fontWeight: 'bold', paddingTop: '12px', borderTop: '1px solid #e5e7eb', marginTop: '8px' }}>
               <span>Total</span><span style={{ color: '#059669' }}>{finalTotal} SAR</span>

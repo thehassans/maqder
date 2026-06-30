@@ -168,6 +168,30 @@ router.get('/products/:id', async (req, res) => {
   }
 });
 
+// --- SHIPPING ESTIMATE (public, for checkout preview) ---
+router.post('/shipping/estimate', async (req, res) => {
+  try {
+    const ecommerce = req.storeTenant.ecommerce || {};
+    const { subtotal } = req.body;
+    const flatRate = ecommerce.couriers?.flatRate || {};
+    let shippingCost = 0;
+    let freeShipping = false;
+    if (flatRate.enabled) {
+      const threshold = flatRate.freeShippingThreshold || 0;
+      const cartSubtotal = Number(subtotal) || 0;
+      if (threshold > 0 && cartSubtotal >= threshold) {
+        shippingCost = 0;
+        freeShipping = true;
+      } else {
+        shippingCost = flatRate.price || 0;
+      }
+    }
+    res.json({ shippingCost, freeShipping, flatRateEnabled: !!flatRate.enabled });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // --- CREATE ORDER (public checkout) ---
 router.post('/orders', async (req, res) => {
   try {
