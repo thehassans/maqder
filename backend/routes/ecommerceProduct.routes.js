@@ -144,12 +144,86 @@ router.put('/:id', protect, async (req, res) => {
       if (body[key] !== undefined) update[key] = body[key];
     }
 
+    // Fetch current product to detect stock changes
+    const oldProduct = await EcommerceProduct.findOne({ _id: req.params.id, tenantId }).lean();
+
     const product = await EcommerceProduct.findOneAndUpdate(
       { _id: req.params.id, tenantId },
       { $set: update },
       { new: true, runValidators: true }
     );
     if (!product) return res.status(404).json({ error: 'Product not found' });
+
+    // Back-in-stock notification logic
+    if (oldProduct && update.stockQuantity !== undefined) {
+      const wasOOS = oldProduct.trackInventory && oldProduct.stockQuantity <= 0;
+      const nowInStock = product.trackInventory && product.stockQuantity > 0;
+      if (wasOOS && nowInStock && oldProduct.stockNotifications?.length > 0) {
+        const unnotified = oldProduct.stockNotifications.filter(n => !n.notified);
+        if (unnotified.length > 0) {
+          try {
+            const tenant = await Tenant.findById(tenantId).lean();
+            const { sendTenantEmail } = await import('../utils/tenantEmailService.js');
+            const storeName = tenant?.ecommerce?.storeName || tenant?.name || 'Store';
+            const productUrl = `${tenant?.ecommerce?.domain || ''}/store/products/${product.seo?.slug || product._id}`;
+            for (const notif of unnotified) {
+              sendTenantEmail({
+                tenant,
+                to: notif.email,
+                subject: `Back in Stock — ${product.title}`,
+                html: `
+                  <h2>Good news! ${product.title} is back in stock!</h2>
+                  <p>The item you were interested in is now available again at ${storeName}.</p>
+                  <p><a href="${productUrl}" style="display:inline-block;padding:12px 28px;background:#4f46e5;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;margin-top:12px;">Shop Now</a></p>
+                `,
+                text: `${product.title} is back in stock at ${storeName}. Visit ${productUrl} to shop now.`,
+              }).catch(() => {});
+            }
+            // Mark all as notified
+            await EcommerceProduct.updateOne(
+              { _id: product._id },
+              { $set: { 'stockNotifications.$[].notified': true } }
+            );
+          } catch {}
+        }
+      }
+
+      // Also check variant stock changes
+      if (oldProduct.hasVariants && update.variants) {
+        const oldVariants = new Map(oldProduct.variants.map(v => [String(v._id), v]));
+        for (const newVariant of update.variants) {
+          const oldVariant = oldVariants.get(String(newVariant._id));
+          if (oldVariant && oldVariant.trackInventory && oldVariant.stockQuantity <= 0
+              && newVariant.trackInventory && newVariant.stockQuantity > 0
+              && oldProduct.stockNotifications?.length > 0) {
+            const unnotified = oldProduct.stockNotifications.filter(n => !n.notified && String(n.variantId) === String(newVariant._id));
+            if (unnotified.length > 0) {
+              try {
+                const tenant = await Tenant.findById(tenantId).lean();
+                const { sendTenantEmail } = await import('../utils/tenantEmailService.js');
+                const storeName = tenant?.ecommerce?.storeName || tenant?.name || 'Store';
+                const productUrl = `${tenant?.ecommerce?.domain || ''}/store/products/${product.seo?.slug || product._id}`;
+                for (const notif of unnotified) {
+                  sendTenantEmail({
+                    tenant,
+                    to: notif.email,
+                    subject: `Back in Stock — ${product.title}`,
+                    html: `<h2>Good news! ${product.title} is back in stock!</h2><p>The item you were interested in is now available again at ${storeName}.</p><p><a href="${productUrl}" style="display:inline-block;padding:12px 28px;background:#4f46e5;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;">Shop Now</a></p>`,
+                    text: `${product.title} is back in stock at ${storeName}. Visit ${productUrl} to shop now.`,
+                  }).catch(() => {});
+                }
+              } catch {}
+            }
+          }
+        }
+        // Mark variant-specific notifications as notified
+        await EcommerceProduct.updateOne(
+          { _id: product._id },
+          { $set: { 'stockNotifications.$[].notified': true } }
+        );
+      }
+    }
+
     res.json(product);
   } catch (error) {
     res.status(400).json({ error: error.message });

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Package, Save, Loader2, X, Trash2, ArrowLeft, Plus, AlertCircle, CheckCircle, Archive, Eye, Image as ImageIcon, Tag, Copy, Sparkles } from 'lucide-react';
+import { Package, Save, Loader2, X, Trash2, ArrowLeft, Plus, AlertCircle, CheckCircle, Archive, Eye, Image as ImageIcon, Tag, Copy, Sparkles, BellRing } from 'lucide-react';
 import api from '../../lib/api';
 
 const emptyVariant = () => ({
@@ -361,6 +361,12 @@ export default function EcommerceProductDetail() {
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.trackInventory ?? true} onChange={e => update('trackInventory', e.target.checked)} className="w-4 h-4 rounded" /> Track inventory</label>
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.continueSellingWhenOOS || false} onChange={e => update('continueSellingWhenOOS', e.target.checked)} className="w-4 h-4 rounded" /> Continue selling when out of stock</label>
               </div>
+              {form.stockNotifications?.length > 0 && (
+                <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm">
+                  <BellRing className="w-4 h-4 text-amber-600" />
+                  <span className="text-amber-700 font-bold">{form.stockNotifications.filter(n => !n.notified).length} customer(s) waiting for back-in-stock notification</span>
+                </div>
+              )}
             </>
           )}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-4 border-t border-gray-100 dark:border-dark-700">
