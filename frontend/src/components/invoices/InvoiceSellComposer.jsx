@@ -12,6 +12,7 @@ import Money from '../ui/Money'
 import { getPrimaryBusinessType, getTenantBusinessTypes } from '../../lib/businessTypes'
 import { calculateInvoiceSummary, toNumber } from '../../lib/invoiceDocument'
 import { getInvoiceTemplateId } from '../../lib/invoiceBranding'
+import { useLiveTranslation, LineItemTranslator } from '../../lib/liveTranslation'
 import InvoiceLivePreview from './InvoiceLivePreview'
 import InvoiceTemplateSelector from './InvoiceTemplateSelector'
 import TravelInvoiceFields from './TravelInvoiceFields'
@@ -134,6 +135,19 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
   const isManpowerContext = businessContext === 'manpower'
   const [sourceId, setSourceId] = useState('')
   const skipBusinessContextResetRef = useRef(false)
+
+  useLiveTranslation({
+    control, watch, setValue,
+    sourceField: 'buyer.name',
+    targetField: 'buyer.nameAr',
+    sourceLang: 'en', targetLang: 'ar',
+  })
+  useLiveTranslation({
+    control, watch, setValue,
+    sourceField: 'buyer.nameAr',
+    targetField: 'buyer.name',
+    sourceLang: 'ar', targetLang: 'en',
+  })
 
   useEffect(() => {
     if (isEdit && initialInvoice?._id) return
@@ -777,6 +791,7 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
             <div className="space-y-4">
               {fields.map((field, index) => (
                 <motion.div key={field.id} initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl bg-gray-50 p-4 dark:bg-dark-700">
+                  <LineItemTranslator index={index} control={control} watch={watch} setValue={setValue} />
                   <input type="hidden" {...register(`lineItems.${index}.productNameAr`)} />
                   <input type="hidden" {...register(`lineItems.${index}.unitCode`)} />
                   <input type="hidden" {...register(`lineItems.${index}.taxRate`, { valueAsNumber: true })} />

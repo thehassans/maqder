@@ -10,6 +10,7 @@ import { useTranslation } from '../../lib/translations'
 import { getPrimaryBusinessType, getTenantBusinessTypes } from '../../lib/businessTypes'
 import { calculateInvoiceSummary, toNumber } from '../../lib/invoiceDocument'
 import { getInvoiceTemplateId } from '../../lib/invoiceBranding'
+import { useLiveTranslation, LineItemTranslator } from '../../lib/liveTranslation'
 
 const emptyLine = {
   productId: '',
@@ -100,6 +101,31 @@ export default function QuotationComposer({ quotationId = '', initialQuotation =
   const selectedTemplateId = Number(getInvoiceTemplateId(tenant, businessContext))
   const isTradingContext = businessContext === 'trading'
   const [customerLookupId, setCustomerLookupId] = useState('')
+
+  useLiveTranslation({
+    control, watch, setValue,
+    sourceField: 'buyer.name',
+    targetField: 'buyer.nameAr',
+    sourceLang: 'en', targetLang: 'ar',
+  })
+  useLiveTranslation({
+    control, watch, setValue,
+    sourceField: 'buyer.nameAr',
+    targetField: 'buyer.name',
+    sourceLang: 'ar', targetLang: 'en',
+  })
+  useLiveTranslation({
+    control, watch, setValue,
+    sourceField: 'subject',
+    targetField: 'subjectAr',
+    sourceLang: 'en', targetLang: 'ar',
+  })
+  useLiveTranslation({
+    control, watch, setValue,
+    sourceField: 'subjectAr',
+    targetField: 'subject',
+    sourceLang: 'ar', targetLang: 'en',
+  })
 
   useEffect(() => {
     if (!isEdit || !initialQuotation?._id) return
@@ -390,6 +416,7 @@ export default function QuotationComposer({ quotationId = '', initialQuotation =
                 const summaryLine = totals.lines[index] || { lineTotalWithTax: 0 }
                 return (
                   <div key={field.id} className="rounded-2xl border border-gray-200 dark:border-dark-600 p-4 space-y-4">
+                    <LineItemTranslator index={index} control={control} watch={watch} setValue={setValue} />
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
                       {isTradingContext ? (
                         <div className="md:col-span-4">

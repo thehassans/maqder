@@ -1,25 +1,24 @@
 import { useState, useCallback } from 'react';
+import api from '../lib/api';
 
 /**
- * A hook to automatically translate text between English and Arabic using MyMemory Free API.
- * In a production environment, this should be replaced with Google Translate API or AWS Translate.
+ * A hook to automatically translate text between English and Arabic.
+ * Uses the backend /api/ai/translate endpoint (Gemini/Grok/Groq/OpenAI fallbacks).
  */
 export function useAutoTranslate() {
   const [isTranslating, setIsTranslating] = useState(false);
 
   const translate = useCallback(async (text, fromLang, toLang) => {
     if (!text || !text.trim()) return '';
-    
+
     setIsTranslating(true);
     try {
-      // MyMemory translation API (free tier limits apply)
-      const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${fromLang}|${toLang}`);
-      const data = await res.json();
-      
-      if (data?.responseData?.translatedText) {
-        return data.responseData.translatedText;
-      }
-      return '';
+      const { data } = await api.post('/ai/translate', {
+        text: text.trim(),
+        sourceLang: fromLang,
+        targetLang: toLang,
+      });
+      return String(data?.translatedText || '').trim();
     } catch (error) {
       console.error('Translation failed:', error);
       return '';

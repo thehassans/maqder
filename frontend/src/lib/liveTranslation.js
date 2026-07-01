@@ -106,3 +106,31 @@ export const useLiveTranslation = ({
 }
 
 export default useLiveTranslation
+
+export function LineItemTranslator({ index, control, watch, setValue, enabled = true }) {
+  useLiveTranslation({
+    control, watch, setValue,
+    sourceField: `lineItems.${index}.productName`,
+    targetField: `lineItems.${index}.productNameAr`,
+    sourceLang: 'en', targetLang: 'ar', enabled,
+  })
+  useLiveTranslation({
+    control, watch, setValue,
+    sourceField: `lineItems.${index}.productNameAr`,
+    targetField: `lineItems.${index}.productName`,
+    sourceLang: 'ar', targetLang: 'en', enabled,
+  })
+  useLiveTranslation({
+    control, watch, setValue,
+    sourceField: `lineItems.${index}.description`,
+    targetField: `lineItems.${index}.descriptionAr`,
+    sourceLang: 'en', targetLang: 'ar', enabled,
+  })
+  useLiveTranslation({
+    control, watch, setValue,
+    sourceField: `lineItems.${index}.descriptionAr`,
+    targetField: `lineItems.${index}.description`,
+    sourceLang: 'ar', targetLang: 'en', enabled,
+  })
+  return null
+}
