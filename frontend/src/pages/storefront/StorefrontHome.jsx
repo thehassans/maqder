@@ -430,11 +430,7 @@ function HeroCarousel({ settings, c, t, isRTL }) {
     if (!isDragging) return;
     setIsDragging(false);
     if (Math.abs(dragDelta.current) > 50) {
-      if (isRTL) {
-        dragDelta.current > 0 ? prev() : next();
-      } else {
-        dragDelta.current > 0 ? prev() : next();
-      }
+      dragDelta.current > 0 ? prev() : next();
     }
     dragDelta.current = 0;
     resumeAuto();

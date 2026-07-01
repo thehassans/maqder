@@ -97,12 +97,16 @@ export default function EcommerceThemeEditor() {
     const sectionHTML = sections.filter(s => s.enabled).map(s => {
       const settings = s.settings || {};
       switch (s.type) {
-        case 'hero':
-          return `<div style="background:${settings.imageUrl ? `url(${settings.imageUrl}) center/cover` : c.primary};padding:60px 20px;text-align:center;border-radius:12px;margin-bottom:20px">
-            <h2 style="color:#fff;font-size:28px;margin:0 0 8px">${settings.title || 'Welcome to our store'}</h2>
-            <p style="color:#fff;opacity:0.9;margin:0 0 16px">${settings.subtitle || ''}</p>
-            <button style="background:${c.buttonBg};color:${c.buttonText};border:none;padding:10px 24px;border-radius:8px;font-weight:bold;cursor:pointer">${settings.buttonText || 'Shop Now'}</button>
+        case 'hero': {
+          const slides = settings.slides || [{ imageUrl: settings.imageUrl, title: settings.title, subtitle: settings.subtitle, buttonText: settings.buttonText, buttonLink: settings.buttonLink }];
+          const slide = slides[0] || {};
+          return `<div style="background:${slide.imageUrl ? `linear-gradient(rgba(0,0,0,0.25),rgba(0,0,0,0.25)),url(${slide.imageUrl}) center/cover` : c.primary};padding:60px 20px;text-align:center;border-radius:12px;margin-bottom:20px">
+            <h2 style="color:#fff;font-size:28px;margin:0 0 8px">${slide.title || 'Welcome to our store'}</h2>
+            <p style="color:#fff;opacity:0.9;margin:0 0 16px">${slide.subtitle || ''}</p>
+            ${slide.buttonText ? `<button style="background:${c.buttonBg};color:${c.buttonText};border:none;padding:10px 24px;border-radius:8px;font-weight:bold;cursor:pointer">${slide.buttonText}</button>` : ''}
+            ${slides.length > 1 ? `<p style="color:#fff;opacity:0.6;font-size:11px;margin-top:12px">${slides.length} slides · ${settings.autoPlay !== false ? 'Auto-play' : 'Manual'}</p>` : ''}
           </div>`;
+        }
         case 'product-carousel':
           return `<div style="margin-bottom:24px">
             <h3 style="color:${c.text};font-size:20px;margin:0 0 12px">${settings.title || 'Products'}</h3>
@@ -164,10 +168,12 @@ export default function EcommerceThemeEditor() {
             <h3 style="color:${c.text};font-size:20px;margin:0 0 8px">${settings.title || ''}</h3>
             <div style="color:${c.textMuted};font-size:14px;line-height:1.6">${settings.content || ''}</div>
           </div>`;
-        case 'image-banner':
-          return `<div style="margin-bottom:24px;border-radius:12px;overflow:hidden">
-            <img src="${settings.imageUrl || ''}" alt="${settings.altText || ''}" style="width:100%;display:block;max-height:300px;object-fit:cover" />
-          </div>`;
+        case 'image-banner': {
+          const banners = settings.banners || [{ imageUrl: settings.imageUrl, linkUrl: settings.linkUrl, altText: settings.altText }];
+          return banners.map(b => `<div style="margin-bottom:12px;border-radius:12px;overflow:hidden">
+            <img src="${b.imageUrl || ''}" alt="${b.altText || ''}" style="width:100%;display:block;max-height:300px;object-fit:cover" />
+          </div>`).join('');
+        }
         case 'testimonial':
           return `<div style="margin-bottom:24px">
             <h3 style="color:${c.text};font-size:20px;margin:0 0 12px">${settings.title || 'Testimonials'}</h3>
