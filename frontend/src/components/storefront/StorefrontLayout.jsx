@@ -550,7 +550,7 @@ export default function StorefrontLayout({ children }) {
       <CookieConsent />
 
       {/* Mobile bottom navigation */}
-      <MobileBottomNav theme={theme} colors={colors} />
+      {theme?.mobileNav?.enabled !== false && <MobileBottomNav theme={theme} colors={colors} />}
 
       {/* Back to top button */}
       <BackToTop />
@@ -562,7 +562,7 @@ export default function StorefrontLayout({ children }) {
       <NewsletterPopup />
 
       {/* Bottom padding for mobile nav */}
-      <div className="md:hidden" style={{ height: '60px' }} />
+      {theme?.mobileNav?.enabled !== false && <div className="md:hidden" style={{ height: '60px' }} />}
     </div>
     </ToastProvider>
   );
