@@ -345,12 +345,12 @@ const measureWrappedLinesHeight = (doc, lines, width, englishFont, arabicFont, f
   return totalHeight;
 };
 
-const drawWrappedLines = (doc, lines, x, y, width, { englishFont, arabicFont, fontSize = 10.5, lineHeight = fontSize + 4, align = 'left' } = {}) => {
+const drawWrappedLines = (doc, lines, x, y, width, { englishFont, arabicFont, fontSize = 10.5, lineHeight = fontSize + 4, align = 'left', fontStyle = 'normal' } = {}) => {
   let cursorY = y;
 
   lines.forEach((line) => {
     const fontFamily = hasArabicText(line) ? arabicFont : englishFont;
-    setDocFont(doc, fontFamily, 'normal', fontSize);
+    setDocFont(doc, fontFamily, fontStyle, fontSize);
     const parts = splitLineForWidth(doc, line, width);
 
     parts.forEach((part) => {
@@ -597,7 +597,11 @@ export const buildInvoicePdfBuffer = async ({ invoice, tenant, customerName, lan
 
   lineItems.forEach((line, index) => {
     const nameText = mergeUniqueLines(normalizeText(line?.productName), normalizeText(line?.productNameAr)).join('\n') || `Item ${index + 1}`;
-    const descText = mergeUniqueLines(normalizeText(line?.description), normalizeText(line?.descriptionAr)).join('\n');
+    const descRaw = mergeUniqueLines(normalizeText(line?.description), normalizeText(line?.descriptionAr)).join('\n');
+    const descText = descRaw
+      .replace(/\b(exclusions?|excl)\b/gi, '\n$1')
+      .replace(/\n{2,}/g, '\n')
+      .trim();
     const rowValues = isTravelPdf
       ? [
           String(index + 1),
@@ -656,6 +660,7 @@ export const buildInvoicePdfBuffer = async ({ invoice, tenant, customerName, lan
         fontSize: 8,
         lineHeight: 10,
         align: 'left',
+        fontStyle: 'bold',
       });
     }
     doc.line(tableX + tableWidth, rowY, tableX + tableWidth, rowY + rowHeight);

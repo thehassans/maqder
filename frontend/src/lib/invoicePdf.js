@@ -1349,7 +1349,11 @@ const generateInvoicePdf = async ({ invoice, language = 'en', tenant, sourceElem
     },
     didParseCell: (data) => {
       if (data.column.index === 1 && data.section === 'body' && rowDescriptions[data.row.index]) {
-        const descLines = doc.splitTextToSize(shape(rowDescriptions[data.row.index]), descW - 8)
+        const rawDesc = rowDescriptions[data.row.index]
+          .replace(/\b(exclusions?|excl)\b/gi, '\n$1')
+          .replace(/\n{2,}/g, '\n')
+          .trim()
+        const descLines = doc.splitTextToSize(shape(rawDesc), descW - 8)
         const nameLines = doc.splitTextToSize(String(data.cell.text[0] || ''), descW - 8)
         const neededHeight = nameLines.length * (nameFontSize * 1.15) + descLines.length * (descFontSize * 1.15) + 12
         if (neededHeight > (data.cell.styles.minCellHeight || 0)) {
@@ -1368,10 +1372,15 @@ const generateInvoicePdf = async ({ invoice, language = 'en', tenant, sourceElem
         let descY = y + padding + nameLines.length * (nameFontSize * 1.15) + 3
 
         doc.setFontSize(descFontSize)
-        doc.setFont(bodyFontName, 'normal')
-        doc.setTextColor(100, 116, 139)
+        doc.setFont(bodyFontName, 'bold')
+        doc.setTextColor(71, 85, 105)
 
-        const descLines = doc.splitTextToSize(shape(rowDescriptions[data.row.index]), maxWidth)
+        const rawDesc = rowDescriptions[data.row.index]
+        const descWithExclusions = rawDesc
+          .replace(/\b(exclusions?|excl)\b/gi, '\n$1')
+          .replace(/\n{2,}/g, '\n')
+          .trim()
+        const descLines = doc.splitTextToSize(shape(descWithExclusions), maxWidth)
         doc.text(descLines, textX, descY, { align: isRtl ? 'right' : 'left', maxWidth })
 
         doc.setFontSize(nameFontSize)

@@ -95,12 +95,12 @@ export default function QuotationDocumentPreview({ quotation, tenant, language =
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_268px] lg:items-start">
 
           {/* Left: Logo + company */}
-          <div className="flex items-start gap-4">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white p-2.5 shadow-sm">
+          <div className="flex items-center gap-5">
+            <div className="flex h-32 w-32 shrink-0 items-center justify-center overflow-hidden rounded-[1.25rem] border border-slate-200 bg-white p-3 shadow-sm">
               {logoSrc ? (
                 <img src={logoSrc} alt="" className="h-full w-full object-contain" />
               ) : (
-                <span className="text-sm font-bold tracking-[0.25em] text-slate-500">{companyName.slice(0, 2)}</span>
+                <span className="text-2xl font-bold tracking-[0.25em] text-slate-500">{companyName.slice(0, 2)}</span>
               )}
             </div>
             <div className="min-w-0 flex-1 pt-1">
@@ -203,7 +203,7 @@ export default function QuotationDocumentPreview({ quotation, tenant, language =
                   <span className="text-slate-400 text-[11px] w-8 shrink-0">
                     {language === 'ar' ? 'بريد' : 'Email'}
                   </span>
-                  <span className="font-medium text-slate-800 truncate">{tenant.business.contactEmail}</span>
+                  <span className="font-medium text-slate-800 break-all">{tenant.business.contactEmail}</span>
                 </div>
               )}
             </div>
@@ -282,15 +282,19 @@ export default function QuotationDocumentPreview({ quotation, tenant, language =
                 const itemName = language === 'ar'
                   ? pickLocalizedText(line?.productNameAr, line?.productName)
                   : pickLocalizedText(line?.productName, line?.productNameAr)
-                const description = language === 'ar'
+                const rawDescription = language === 'ar'
                   ? pickLocalizedText(line?.descriptionAr, line?.description)
                   : pickLocalizedText(line?.description, line?.descriptionAr)
+                const description = (rawDescription || '')
+                  .replace(/\b(exclusions?|excl)\b/gi, '\n$1')
+                  .replace(/\n{2,}/g, '\n')
+                  .trim()
                 const isEven = index % 2 === 1
                 return (
                   <tr key={`${line?._id || index}`} className={isEven ? 'bg-slate-50/50' : 'bg-white'}>
                     <td className="px-4 py-3.5 text-slate-400 text-xs">{index + 1}</td>
                     <td className="px-4 py-3.5 font-semibold text-slate-900">{itemName}</td>
-                    <td className="px-4 py-3.5 text-slate-500">{description}</td>
+                    <td className="px-4 py-3.5 font-semibold text-slate-700 whitespace-pre-line">{description}</td>
                     <td className="px-4 py-3.5 text-end text-slate-700">{Number(line?.quantity || 0)}</td>
                     <td className="px-4 py-3.5 text-end text-slate-700">{formatCurrency(line?.unitPrice || 0, { language, currency })}</td>
                     <td className="px-4 py-3.5 text-end font-bold text-slate-900">{formatCurrency(line?.lineTotalWithTax || line?.lineTotal || 0, { language, currency })}</td>
