@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Globe, Plus, Trash2, Loader2, CheckCircle2, XCircle, Clock, RefreshCw, Cloud, ShieldCheck, AlertCircle, ExternalLink, X, KeyRound, Unlink, Copy, Check } from 'lucide-react';
+import { Globe, Plus, Trash2, Loader2, CheckCircle2, XCircle, Clock, RefreshCw, Cloud, ShieldCheck, AlertCircle, ExternalLink, X, Unlink, Copy, Check } from 'lucide-react';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 
@@ -16,10 +16,10 @@ export default function EcommerceDomains() {
   const [sslChecking, setSslChecking] = useState(false);
   const [cloudflareStatus, setCloudflareStatus] = useState(null);
   const [tenantCloudflareConnected, setTenantCloudflareConnected] = useState(false);
+  const [tenantCloudflareOAuth, setTenantCloudflareOAuth] = useState(false);
+  const [cloudflareOAuthConfigured, setCloudflareOAuthConfigured] = useState(false);
   const [showCfModal, setShowCfModal] = useState(false);
-  const [cfToken, setCfToken] = useState('');
   const [connectingCf, setConnectingCf] = useState(false);
-  const [zoneSelection, setZoneSelection] = useState(null);
   const [copiedKey, setCopiedKey] = useState('');
   const [autoChecking, setAutoChecking] = useState(false);
 
@@ -66,6 +66,8 @@ export default function EcommerceDomains() {
       // Check Cloudflare config status from the domains response
       setCloudflareStatus(d.headers?.['x-cloudflare-configured'] || null);
       setTenantCloudflareConnected(d.headers?.['x-tenant-cloudflare-connected'] === 'true');
+      setTenantCloudflareOAuth(d.headers?.['x-tenant-cloudflare-oauth'] === 'true');
+      setCloudflareOAuthConfigured(d.headers?.['x-cloudflare-oauth-configured'] === 'true');
     } catch {
       toast.error('Failed to load domains');
     } finally {
@@ -128,23 +130,40 @@ export default function EcommerceDomains() {
     }
   };
 
-  const handleConnectCloudflare = async (selectedZoneId) => {
+  const handleConnectCloudflare = async () => {
     setConnectingCf(true);
     try {
-      const res = await api.put('/ecommerce/domains/cloudflare', { apiToken: cfToken, zoneId: selectedZoneId || undefined });
-      if (res.data?.needsZoneSelection) {
-        setZoneSelection(res.data.zones);
+      const res = await api.get('/ecommerce/domains/cloudflare/oauth-url');
+      const url = res.data?.url;
+      if (!url) throw new Error('No OAuth URL returned');
+
+      const width = 520;
+      const height = 680;
+      const left = window.screenX + (window.innerWidth - width) / 2;
+      const top = window.screenY + (window.innerHeight - height) / 2;
+      const popup = window.open(
+        url,
+        'cloudflareOAuth',
+        `width=${width},height=${height},top=${top},left=${left},toolbar=no,menubar=no,location=no,status=no`
+      );
+      if (!popup) {
+        toast.error('Popup blocked — please allow popups for this site');
         return;
       }
-      toast.success('Cloudflare account connected');
-      setTenantCloudflareConnected(true);
-      setShowCfModal(false);
-      setCfToken('');
-      setZoneSelection(null);
-      fetchDomains();
+
+      // Listen for the popup to report success
+      const onMessage = (event) => {
+        if (event.data?.type === 'cloudflare-oauth-success') {
+          window.removeEventListener('message', onMessage);
+          setShowCfModal(false);
+          setConnectingCf(false);
+          fetchDomains();
+          toast.success('Cloudflare connected — DNS will be added automatically');
+        }
+      };
+      window.addEventListener('message', onMessage);
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to connect Cloudflare');
-    } finally {
+      toast.error(err.response?.data?.error || err.message || 'Failed to start Cloudflare OAuth');
       setConnectingCf(false);
     }
   };
@@ -160,8 +179,6 @@ export default function EcommerceDomains() {
       toast.error(err.response?.data?.error || 'Failed to disconnect');
     }
   };
-
-  const CF_TOKEN_PERMISSIONS_URL = 'https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22zone%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22ssl_certs%22%2C%22type%22%3A%22edit%22%7D%2C%7B%22key%22%3A%22dns_records%22%2C%22type%22%3A%22edit%22%7D%5D';
 
   const handleRetryCloudflare = async (id) => {
     setRetryingId(id);
@@ -241,15 +258,23 @@ export default function EcommerceDomains() {
         <div className="flex-1">
           <p className="text-sm font-bold text-gray-900 dark:text-white">
             {cloudflareStatus
-              ? (tenantCloudflareConnected ? 'Cloudflare Connected (Tenant Account)' : 'Cloudflare DNS Auto-Provisioning Active')
+              ? (tenantCloudflareOAuth
+                ? 'Cloudflare Connected (Auto-DNS)'
+                : tenantCloudflareConnected
+                  ? 'Cloudflare Connected (Tenant Account)'
+                  : 'Cloudflare DNS Auto-Provisioning Active')
               : 'Cloudflare Not Configured'}
           </p>
           <p className="text-xs text-gray-400">
             {cloudflareStatus
-              ? (tenantCloudflareConnected
-                ? 'Your Cloudflare account is connected. DNS records and SSL are provisioned through your own zone.'
-                : 'DNS records and SSL certificates are automatically provisioned when you add a domain.')
-              : 'Connect your Cloudflare account or ask your admin to set CLOUDFLARE_API_TOKEN and CLOUDFLARE_ZONE_ID on the server.'}
+              ? (tenantCloudflareOAuth
+                ? 'Your Cloudflare account is connected. CNAME records and SSL are created automatically when you add a domain.'
+                : tenantCloudflareConnected
+                  ? 'Your Cloudflare account is connected. DNS records and SSL are provisioned through your own zone.'
+                  : 'DNS records and SSL certificates are automatically provisioned when you add a domain.')
+              : cloudflareOAuthConfigured
+                ? 'Connect your Cloudflare account to enable automatic DNS and SSL.'
+                : 'Connect your Cloudflare account or ask your admin to set CLOUDFLARE_OAUTH_CLIENT_ID and CLOUDFLARE_OAUTH_CLIENT_SECRET on the server.'}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -265,12 +290,12 @@ export default function EcommerceDomains() {
               onClick={() => setShowCfModal(true)}
               className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors"
             >
-              <KeyRound className="w-3.5 h-3.5" /> Connect Cloudflare
+              <Cloud className="w-3.5 h-3.5" /> Connect Cloudflare
             </button>
           )}
           {cloudflareStatus && (
             <div className="px-2.5 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3" /> {tenantCloudflareConnected ? 'Tenant' : 'Auto'}
+              <CheckCircle2 className="w-3 h-3" /> {tenantCloudflareOAuth ? 'Auto-DNS' : tenantCloudflareConnected ? 'Tenant' : 'Auto'}
             </div>
           )}
         </div>
@@ -330,7 +355,14 @@ export default function EcommerceDomains() {
         </div>
         <div className="mt-4 p-4 bg-amber-50 rounded-2xl text-sm text-amber-800 space-y-2">
           <p className="font-bold">How to connect your domain:</p>
-          {cloudflareStatus ? (
+          {tenantCloudflareOAuth ? (
+            <>
+              <p className="flex items-center gap-1.5"><Cloud className="w-4 h-4 text-blue-500" /> Your Cloudflare account is connected. DNS and SSL are created automatically.</p>
+              <p>1. Click <strong>Add</strong> to register the domain</p>
+              <p>2. We create a CNAME record and enable Cloudflare proxy in your zone automatically</p>
+              <p>3. SSL is active immediately — no manual DNS steps needed</p>
+            </>
+          ) : cloudflareStatus ? (
             <>
               <p className="flex items-center gap-1.5"><Cloud className="w-4 h-4 text-blue-500" /> Cloudflare for SaaS will create a custom hostname and provision SSL automatically.</p>
               <p>1. Click <strong>Add</strong> to register the domain</p>
@@ -473,73 +505,27 @@ export default function EcommerceDomains() {
               <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <Cloud className="w-5 h-5 text-blue-500" /> Connect Cloudflare
               </h3>
-              <button onClick={() => { setShowCfModal(false); setZoneSelection(null); setCfToken(''); }} className="p-1 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors">
+              <button onClick={() => { setShowCfModal(false); }} className="p-1 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors">
                 <X className="w-5 h-5 text-gray-400" />
               </button>
             </div>
 
-            {!zoneSelection ? (
-              <>
-                <p className="text-sm text-gray-500">
-                  You'll be redirected to Cloudflare to create an API token with the required permissions. After creating the token, copy and paste it below.
-                </p>
-                <a
-                  href={CF_TOKEN_PERMISSIONS_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full px-4 py-3 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-colors"
-                >
-                  <ExternalLink className="w-4 h-4" /> Open Cloudflare to Create Token
-                </a>
-                <div className="pt-2 border-t border-gray-100 dark:border-dark-700 space-y-3">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 mb-1">Paste your API Token</label>
-                    <input
-                      type="password"
-                      value={cfToken}
-                      onChange={e => setCfToken(e.target.value)}
-                      placeholder="Paste Cloudflare API token here..."
-                      className="w-full input text-sm"
-                      onKeyDown={e => e.key === 'Enter' && cfToken && handleConnectCloudflare()}
-                    />
-                  </div>
-                  <button
-                    onClick={() => handleConnectCloudflare()}
-                    disabled={connectingCf || !cfToken}
-                    className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 disabled:opacity-60 transition-colors"
-                  >
-                    {connectingCf ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
-                    Connect
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <p className="text-sm text-gray-500">Multiple zones found. Select which zone to use for your store domains:</p>
-                <div className="space-y-2 max-h-60 overflow-y-auto">
-                  {zoneSelection.map(zone => (
-                    <button
-                      key={zone.id}
-                      onClick={() => handleConnectCloudflare(zone.id)}
-                      disabled={connectingCf}
-                      className="w-full flex items-center justify-between px-4 py-3 border border-gray-200 dark:border-dark-600 rounded-xl hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-dark-700 transition-colors text-left"
-                    >
-                      <div>
-                        <p className="font-bold text-sm text-gray-900 dark:text-white">{zone.name}</p>
-                        <p className="text-xs text-gray-400">{zone.id}</p>
-                      </div>
-                      <Cloud className="w-4 h-4 text-gray-300" />
-                    </button>
-                  ))}
-                </div>
-                <button
-                  onClick={() => setZoneSelection(null)}
-                  className="w-full px-4 py-2 text-sm font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg transition-colors"
-                >
-                  Back
-                </button>
-              </>
-            )}
+            <div className="space-y-4">
+              <p className="text-sm text-gray-500">
+                Log in with your Cloudflare account to enable automatic DNS and SSL. We will create CNAME records in your Cloudflare zone when you add a domain.
+              </p>
+              <button
+                onClick={handleConnectCloudflare}
+                disabled={connectingCf}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 disabled:opacity-60 transition-colors"
+              >
+                {connectingCf ? <Loader2 className="w-4 h-4 animate-spin" /> : <Cloud className="w-4 h-4" />}
+                Login with Cloudflare
+              </button>
+              <p className="text-xs text-gray-400 text-center">
+                A popup window will open for you to authorize Maqder.
+              </p>
+            </div>
           </div>
         </div>
       )}

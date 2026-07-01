@@ -20,6 +20,8 @@ const CF_API = 'https://api.cloudflare.com/client/v4';
 const getGlobalToken = () => process.env.CLOUDFLARE_API_TOKEN || '';
 const getGlobalZoneId = () => process.env.CLOUDFLARE_ZONE_ID || '';
 const getGlobalFallbackOrigin = () => process.env.CLOUDFLARE_FALLBACK_ORIGIN || 'origin.maqder.com';
+const getOAuthClientId = () => process.env.CLOUDFLARE_OAUTH_CLIENT_ID || '';
+const getOAuthClientSecret = () => process.env.CLOUDFLARE_OAUTH_CLIENT_SECRET || '';
 
 function resolveConfig(config = {}) {
   return {
@@ -27,6 +29,62 @@ function resolveConfig(config = {}) {
     zoneId: config.zoneId || getGlobalZoneId(),
     fallbackOrigin: config.fallbackOrigin || getGlobalFallbackOrigin(),
   };
+}
+
+export function isCloudflareOAuthConfigured() {
+  return Boolean(getOAuthClientId() && getOAuthClientSecret());
+}
+
+export function getCloudflareOAuthRedirectUrl() {
+  return process.env.CLOUDFLARE_OAUTH_REDIRECT_URL || `${process.env.FRONTEND_URL || 'https://maqder.com'}/api/ecommerce/domains/cloudflare/oauth-callback`;
+}
+
+export function buildCloudflareAuthUrl(state) {
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: getOAuthClientId(),
+    redirect_uri: getCloudflareOAuthRedirectUrl(),
+    scope: 'account:read zone:read dns_records:edit ssl_certs:edit',
+    state,
+  });
+  return `https://dash.cloudflare.com/oauth2/auth?${params.toString()}`;
+}
+
+export async function exchangeCloudflareCodeForToken(code) {
+  const res = await fetch('https://api.cloudflare.com/oauth2/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'authorization_code',
+      code,
+      client_id: getOAuthClientId(),
+      client_secret: getOAuthClientSecret(),
+      redirect_uri: getCloudflareOAuthRedirectUrl(),
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.access_token) {
+    return { success: false, error: data.error_description || data.error || 'Token exchange failed' };
+  }
+  return { success: true, accessToken: data.access_token, refreshToken: data.refresh_token, expiresIn: data.expires_in, tokenType: data.token_type };
+}
+
+export async function refreshCloudflareToken(refreshToken) {
+  const res = await fetch('https://api.cloudflare.com/oauth2/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+      client_id: getOAuthClientId(),
+      client_secret: getOAuthClientSecret(),
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.access_token) {
+    return { success: false, error: data.error_description || data.error || 'Refresh failed' };
+  }
+  return { success: true, accessToken: data.access_token, refreshToken: data.refresh_token, expiresIn: data.expires_in };
 }
 
 export const isCloudflareConfigured = (config = {}) => {
@@ -210,6 +268,78 @@ export async function listZones(config = {}) {
   }
   const zones = (res.result || []).map(z => ({ id: z.id, name: z.name, status: z.status }));
   return { success: true, zones };
+}
+
+/**
+ * Make a request using an OAuth access token (tenant account).
+ * The access_token is used as a Bearer token instead of an API token.
+ */
+async function cfOAuthRequest(path, accessToken, method = 'GET', body = null) {
+  if (!accessToken) return { success: false, errors: [{ message: 'No Cloudflare OAuth token' }] };
+  const headers = {
+    'Authorization': `Bearer ${accessToken}`,
+    'Content-Type': 'application/json',
+  };
+  try {
+    const res = await fetch(`${CF_API}${path}`, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    return { success: false, errors: [{ message: err.message }] };
+  }
+}
+
+/**
+ * Find the Cloudflare zone ID for a given domain name using an OAuth token.
+ */
+export async function findZoneByHostname(accessToken, hostname) {
+  const root = hostname.replace(/^[^.]+\./, '');
+  const res = await cfOAuthRequest(`/zones?name=${encodeURIComponent(root)}`, accessToken);
+  if (!res.success || res.result?.length === 0) return { success: false, error: 'No matching Cloudflare zone found' };
+  return { success: true, zoneId: res.result[0].id, zoneName: res.result[0].name };
+}
+
+/**
+ * List all zones accessible via OAuth token.
+ */
+export async function listZonesOAuth(accessToken) {
+  const res = await cfOAuthRequest('/zones?per_page=50', accessToken);
+  if (!res.success) return { success: false, zones: [], error: formatCfErrors(res.errors) };
+  return { success: true, zones: (res.result || []).map(z => ({ id: z.id, name: z.name, status: z.status })) };
+}
+
+/**
+ * Create a CNAME (and optionally TXT) record in the tenant's Cloudflare zone.
+ * Proxied=true means Cloudflare handles SSL and DDoS automatically.
+ */
+export async function createCloudflareDnsRecord(accessToken, hostname, target, proxied = true) {
+  const zone = await findZoneByHostname(accessToken, hostname);
+  if (!zone.success) return zone;
+
+  const create = await cfOAuthRequest(`/zones/${zone.zoneId}/dns_records`, accessToken, 'POST', {
+    type: 'CNAME',
+    name: hostname,
+    content: target,
+    proxied,
+    ttl: 1, // Auto TTL
+    comment: 'Auto-provisioned by Maqder',
+  });
+
+  if (!create.success) return { success: false, error: formatCfErrors(create.errors) };
+  return { success: true, zoneId: zone.zoneId, recordId: create.result.id, name: create.result.name, content: create.result.content };
+}
+
+/**
+ * Delete a DNS record from the tenant's Cloudflare zone.
+ */
+export async function deleteCloudflareDnsRecord(accessToken, zoneId, recordId) {
+  const res = await cfOAuthRequest(`/zones/${zoneId}/dns_records/${recordId}`, accessToken, 'DELETE');
+  if (!res.success) return { success: false, error: formatCfErrors(res.errors) };
+  return { success: true };
 }
 
 export async function getSSLStatus(hostname, cfHostnameId, config = {}) {
