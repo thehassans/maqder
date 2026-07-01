@@ -196,6 +196,7 @@ export default function Sidebar() {
         { path: '/app/dashboard/ecommerce/couriers', icon: Truck, label: language === 'ar' ? 'شركات الشحن' : 'Couriers' },
         { path: '/app/dashboard/ecommerce/pixels', icon: BarChart3, label: language === 'ar' ? 'بيكسلات التتبع' : 'Tracking Pixels' },
         { path: '/app/dashboard/ecommerce/coupons', icon: Tag, label: language === 'ar' ? 'كوبونات الخصم' : 'Coupons' },
+        { path: '/app/dashboard/ecommerce/bundles', icon: Package, label: language === 'ar' ? 'حزم المنتجات' : 'Bundles' },
         { path: '/app/dashboard/ecommerce/reviews', icon: MessageSquare, label: language === 'ar' ? 'التقييمات' : 'Reviews' },
         { path: '/app/dashboard/ecommerce/newsletter', icon: Mail, label: language === 'ar' ? 'النشرة البريدية' : 'Newsletter' },
         { path: '/app/dashboard/ecommerce/abandoned-carts', icon: ShoppingCart, label: language === 'ar' ? 'سلات متروكة' : 'Abandoned Carts' },

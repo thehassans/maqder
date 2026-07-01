@@ -76,6 +76,7 @@ import ecommerceFulfillmentRoutes from './routes/ecommerceFulfillment.routes.js'
 import storefrontRoutes from './routes/storefront.routes.js';
 import ecommerceReviewRoutes from './routes/ecommerceReview.routes.js';
 import ecommerceCouponRoutes from './routes/ecommerceCoupon.routes.js';
+import ecommerceBundleRoutes from './routes/ecommerceBundle.routes.js';
 import abandonedCartRoutes from './routes/abandonedCart.routes.js';
 import ecommerceReturnRoutes from './routes/ecommerceReturn.routes.js';
 import ecommerceGiftCardRoutes from './routes/ecommerceGiftCard.routes.js';
@@ -505,6 +506,7 @@ app.use('/api/ecommerce/fulfillment', ensureDatabaseReady, ecommerceFulfillmentR
 app.use('/api/storefront', ensureDatabaseReady, storefrontRoutes);
 app.use('/api/ecommerce/reviews', ensureDatabaseReady, ecommerceReviewRoutes);
 app.use('/api/ecommerce/coupons', ensureDatabaseReady, ecommerceCouponRoutes);
+app.use('/api/ecommerce/bundles', ensureDatabaseReady, ecommerceBundleRoutes);
 app.use('/api/ecommerce/abandoned-carts', ensureDatabaseReady, abandonedCartRoutes);
 app.use('/api/ecommerce/returns', ensureDatabaseReady, ecommerceReturnRoutes);
 app.use('/api/ecommerce/gift-cards', ensureDatabaseReady, ecommerceGiftCardRoutes);

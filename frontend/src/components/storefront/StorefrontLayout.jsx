@@ -10,6 +10,7 @@ import WishlistDrawer from './WishlistDrawer';
 import CookieConsent from './CookieConsent';
 import MobileBottomNav from './MobileBottomNav';
 import BackToTop from './BackToTop';
+import SalesNotificationPopup from './SalesNotificationPopup';
 import AbandonedCartReminder from './AbandonedCartReminder';
 import NewsletterPopup from './NewsletterPopup';
 import { ToastProvider, ScrollToTop, StorefrontGlobalStyles } from './StorefrontUi';
@@ -586,6 +587,9 @@ export default function StorefrontLayout({ children }) {
 
       {/* Newsletter exit-intent popup */}
       <NewsletterPopup />
+
+      {/* Live sales notification popup */}
+      <SalesNotificationPopup />
 
       {/* Bottom padding for mobile nav */}
       {theme?.mobileNav?.enabled !== false && <div className="md:hidden" style={{ height: ['spotlight', 'pill'].includes(theme?.mobileNav?.style) ? '80px' : '60px' }} />}

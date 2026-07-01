@@ -4,6 +4,7 @@ import Tenant from '../models/Tenant.js';
 import EcommerceProduct from '../models/EcommerceProduct.js';
 import EcommerceOrder from '../models/EcommerceOrder.js';
 import EcommerceReview from '../models/EcommerceReview.js';
+import EcommerceBundle from '../models/EcommerceBundle.js';
 import { resolveTenantByHost } from '../middleware/resolveTenantByHost.js';
 import { createCheckoutSession } from '../services/paymentService.js';
 import { fireServerSideEvents, getPublicPixelConfig } from '../services/pixelService.js';
@@ -41,11 +42,12 @@ router.get('/info', async (req, res) => {
 router.get('/products', async (req, res) => {
   try {
     const tenantId = req.storeTenant._id;
-    const { search, category, sort, page = 1, limit = 24, minPrice, maxPrice, inStock } = req.query;
+    const { search, category, sort, page = 1, limit = 24, minPrice, maxPrice, inStock, brand, minRating } = req.query;
     const filter = { tenantId, status: 'active' };
 
     if (search) filter.$text = { $search: search };
     if (category) filter.category = category;
+    if (brand) filter.brand = brand;
     if (minPrice || maxPrice) {
       filter.basePrice = {};
       if (minPrice) filter.basePrice.$gte = Number(minPrice);
@@ -59,18 +61,34 @@ router.get('/products', async (req, res) => {
       ];
     }
 
+    // Rating filter requires aggregation — fetch product IDs with sufficient rating
+    let ratingProductIds = null;
+    if (minRating && Number(minRating) > 0) {
+      const ratingStats = await EcommerceReview.aggregate([
+        { $match: { tenantId, status: 'approved' } },
+        { $group: { _id: '$productId', avgRating: { $avg: '$rating' }, count: { $sum: 1 } } },
+        { $match: { avgRating: { $gte: Number(minRating) } } },
+      ]);
+      ratingProductIds = ratingStats.map(s => s._id);
+      if (ratingProductIds.length === 0) {
+        return res.json({ products: [], total: 0, page: Number(page), totalPages: 0, categories: [], brands: [] });
+      }
+      filter._id = { $in: ratingProductIds };
+    }
+
     const sortOptions = {
       newest: { createdAt: -1 },
       'price-low': { basePrice: 1 },
       'price-high': { basePrice: -1 },
       popular: { salesCount: -1 },
+      'top-rated': { rating: -1 },
     };
     const sortBy = sortOptions[sort] || sortOptions.newest;
 
     const skip = (Number(page) - 1) * Number(limit);
     const [products, total] = await Promise.all([
       EcommerceProduct.find(filter)
-        .select('title titleAr basePrice compareAtPrice images category hasVariants variants.sku variants.price variants.stockQuantity seo.slug')
+        .select('title titleAr basePrice compareAtPrice images category brand hasVariants variants.sku variants.price variants.stockQuantity seo.slug salesCount rating')
         .sort(sortBy)
         .skip(skip)
         .limit(Number(limit))
@@ -78,10 +96,13 @@ router.get('/products', async (req, res) => {
       EcommerceProduct.countDocuments(filter),
     ]);
 
-    // Get distinct categories for filter
-    const categories = await EcommerceProduct.distinct('category', { tenantId, status: 'active' });
+    // Get distinct categories and brands for filters
+    const [categories, brands] = await Promise.all([
+      EcommerceProduct.distinct('category', { tenantId, status: 'active' }),
+      EcommerceProduct.distinct('brand', { tenantId, status: 'active', brand: { $exists: true, $ne: '' } }),
+    ]);
 
-    res.json({ products, total, page: Number(page), totalPages: Math.ceil(total / Number(limit)), categories });
+    res.json({ products, total, page: Number(page), totalPages: Math.ceil(total / Number(limit)), categories, brands: brands.filter(Boolean) });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -101,6 +122,115 @@ router.get('/review-stats', async (req, res) => {
     const result = {};
     stats.forEach(s => { result[s._id] = { avgRating: Math.round(s.avgRating * 10) / 10, count: s.count }; });
     res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- ACTIVE BUNDLES (public) ---
+router.get('/bundles', async (req, res) => {
+  try {
+    const tenantId = req.storeTenant._id;
+    const now = new Date();
+    const bundles = await EcommerceBundle.find({
+      tenantId, isActive: true,
+      $or: [{ startsAt: null }, { startsAt: { $lte: now } }],
+      $or: [{ endsAt: null }, { endsAt: { $gte: now } }],
+    }).lean();
+
+    const productIds = [...new Set(bundles.flatMap(b => b.items.map(i => i.productId)))];
+    const products = await EcommerceProduct.find({ _id: { $in: productIds } })
+      .select('title basePrice images seo.slug').lean();
+    const productMap = {};
+    products.forEach(p => { productMap[p._id] = p; });
+
+    const enriched = bundles.map(b => ({
+      ...b,
+      items: b.items.map(item => ({ ...item, product: productMap[item.productId] || null })),
+    }));
+    res.json({ bundles: enriched });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- FREQUENTLY BOUGHT TOGETHER (public) ---
+router.get('/frequently-bought/:productId', async (req, res) => {
+  try {
+    const tenantId = req.storeTenant._id;
+    const productId = new mongoose.Types.ObjectId(req.params.productId);
+
+    const orders = await EcommerceOrder.find({
+      tenantId, 'lineItems.productId': productId,
+    }).select('lineItems.productId').limit(200).lean();
+
+    const coOccurrence = {};
+    orders.forEach(order => {
+      order.lineItems.forEach(item => {
+        const id = item.productId?.toString();
+        if (id && id !== req.params.productId) {
+          coOccurrence[id] = (coOccurrence[id] || 0) + 1;
+        }
+      });
+    });
+
+    const sortedIds = Object.entries(coOccurrence)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map(([id]) => id);
+
+    if (sortedIds.length === 0) {
+      const currentProduct = await EcommerceProduct.findById(productId).select('category').lean();
+      if (currentProduct) {
+        const related = await EcommerceProduct.find({
+          tenantId, status: 'active', category: currentProduct.category, _id: { $ne: productId },
+        }).select('title basePrice images seo.slug').limit(4).lean();
+        return res.json({ products: related, source: 'category' });
+      }
+      return res.json({ products: [], source: 'none' });
+    }
+
+    const products = await EcommerceProduct.find({
+      _id: { $in: sortedIds.map(id => new mongoose.Types.ObjectId(id)) }, status: 'active',
+    }).select('title basePrice images seo.slug').lean();
+
+    const productMap = {};
+    products.forEach(p => { productMap[p._id.toString()] = p; });
+    const sorted = sortedIds.map(id => productMap[id]).filter(Boolean);
+
+    res.json({ products: sorted, source: 'orders' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- RECENT SALES (for social proof popups) ---
+router.get('/recent-sales', async (req, res) => {
+  try {
+    const tenantId = req.storeTenant._id;
+    const recentOrders = await EcommerceOrder.find({
+      tenantId,
+      status: { $nin: ['cancelled', 'refunded'] },
+      createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+    })
+      .select('orderNumber customer.city customer.name lineItems.createdAt')
+      .sort({ createdAt: -1 })
+      .limit(20)
+      .lean();
+
+    const sales = recentOrders.flatMap(order =>
+      (order.lineItems || []).slice(0, 1).map(item => ({
+        orderNumber: order.orderNumber,
+        customerName: order.customer?.name || 'Someone',
+        city: order.customer?.city || '',
+        productId: item.productId,
+        productTitle: item.title,
+        productImage: item.image || '',
+        timeAgo: Math.round((Date.now() - new Date(order.createdAt).getTime()) / 60000),
+      }))
+    );
+
+    res.json({ sales: sales.slice(0, 10) });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

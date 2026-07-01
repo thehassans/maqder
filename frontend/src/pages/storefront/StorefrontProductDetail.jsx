@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Loader2, ShoppingCart, Check, Minus, Plus, ChevronRight, Star, Heart, ZoomIn, Truck, Share2, MessageCircle, ShieldCheck, RotateCcw, GitCompare, BellRing, ThumbsUp, ImagePlus, X } from 'lucide-react';
+import { Loader2, ShoppingCart, Check, Minus, Plus, ChevronRight, Star, Heart, ZoomIn, Truck, Share2, MessageCircle, ShieldCheck, RotateCcw, GitCompare, BellRing, ThumbsUp, ImagePlus, X, Package, Eye } from 'lucide-react';
 import SaudiRiyalSymbol from '../../components/storefront/SaudiRiyalSymbol';
 import storeApi from '../../lib/storeApi';
 import { useCart } from '../../store/storefrontCart';
@@ -40,6 +40,9 @@ export default function StorefrontProductDetail() {
   const [linkCopied, setLinkCopied] = useState(false);
   const [notifyEmail, setNotifyEmail] = useState('');
   const [notifyStatus, setNotifyStatus] = useState('');
+  const [fbtProducts, setFbtProducts] = useState([]);
+  const [fbtSelected, setFbtSelected] = useState(new Set());
+  const [fbtLoading, setFbtLoading] = useState(false);
 
   // Color utility from theme
   const c = (key, fallback) => data?.colors?.[key] || fallback;
@@ -98,6 +101,19 @@ export default function StorefrontProductDetail() {
       storeApi.get(`/reviews/product/${id}`).then(res => setReviews(res.data)).catch(() => {});
     }
   }, [id]);
+
+  // Fetch frequently bought together
+  useEffect(() => {
+    if (!data?.product?._id) return;
+    setFbtLoading(true);
+    storeApi.get(`/frequently-bought/${data.product._id}`)
+      .then(res => {
+        setFbtProducts(res.data.products || []);
+        setFbtSelected(new Set((res.data.products || []).map(p => p._id)));
+      })
+      .catch(() => {})
+      .finally(() => setFbtLoading(false));
+  }, [data?.product?._id]);
 
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
@@ -315,6 +331,22 @@ export default function StorefrontProductDetail() {
             </div>
           )}
 
+          {/* Social proof badges */}
+          {(product.viewsCount > 10 || product.salesCount > 5) && (
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
+              {product.viewsCount > 10 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: '#f3f4f6', borderRadius: '999px', fontSize: '12px', fontWeight: 600, color: '#6b7280' }}>
+                  <Eye size={14} /> {product.viewsCount} views
+                </div>
+              )}
+              {product.salesCount > 5 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: '#ecfdf5', borderRadius: '999px', fontSize: '12px', fontWeight: 600, color: '#059669' }}>
+                  <ShoppingCart size={14} /> {product.salesCount} sold
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Bulk pricing tiers */}
           {product.priceTiers && product.priceTiers.length > 0 && (
             <div style={{ marginBottom: '20px', background: '#f9f9f9', border: '1px solid #f0f0f0', borderRadius: '16px', padding: '16px' }}>
@@ -455,6 +487,71 @@ export default function StorefrontProductDetail() {
           )}
         </div>
       </div>
+
+      {/* Frequently Bought Together */}
+      {fbtProducts.length > 0 && (
+        <div style={{ marginTop: '60px' }}>
+          <h2 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '20px', letterSpacing: '-0.3px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Package size={22} /> Frequently Bought Together
+          </h2>
+          <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '16px', padding: '24px' }}>
+            <div style={{ display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '8px' }}>
+              {/* Current product */}
+              <FBTItem
+                product={data.product}
+                checked={true}
+                alwaysChecked={true}
+                onToggle={() => {}}
+              />
+              {fbtProducts.map(p => (
+                <FBTItem
+                  key={p._id}
+                  product={p}
+                  checked={fbtSelected.has(p._id)}
+                  onToggle={() => {
+                    setFbtSelected(prev => {
+                      const next = new Set(prev);
+                      if (next.has(p._id)) next.delete(p._id);
+                      else next.add(p._id);
+                      return next;
+                    });
+                  }}
+                />
+              ))}
+            </div>
+            {/* Total + add all */}
+            <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #f3f4f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <span style={{ fontSize: '14px', color: '#6b7280' }}>Total for {1 + fbtSelected.size} item{1 + fbtSelected.size !== 1 ? 's' : ''}: </span>
+                <span style={{ fontSize: '22px', fontWeight: 800, color: '#111', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                  {(() => {
+                    const total = data.product.basePrice + fbtProducts.filter(p => fbtSelected.has(p._id)).reduce((sum, p) => sum + p.basePrice, 0);
+                    return Math.round(total * 100) / 100;
+                  })()}
+                  <SaudiRiyalSymbol size={16} color="#111" />
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  addItem(data.product, 1, selectedVariant);
+                  fbtProducts.filter(p => fbtSelected.has(p._id)).forEach(p => addItem(p, 1));
+                  toast(t('addedToCart'), 'success');
+                }}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '8px',
+                  background: c('primary', '#4f46e5'), color: '#fff', border: 'none',
+                  padding: '14px 28px', borderRadius: '12px', fontSize: '15px', fontWeight: 700,
+                  cursor: 'pointer', transition: 'all 0.2s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 20px rgba(79,70,229,0.25)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+              >
+                <ShoppingCart size={18} /> Add All to Cart
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Related products */}
       {related.length > 0 && (
@@ -637,6 +734,48 @@ export default function StorefrontProductDetail() {
         </div>
       )}
 
+    </div>
+  );
+}
+
+// Frequently Bought Together item card
+function FBTItem({ product, checked, alwaysChecked, onToggle }) {
+  const slug = product.seo?.slug || product._id;
+  return (
+    <div style={{ minWidth: '160px', flexShrink: 0, textAlign: 'center' }}>
+      <div style={{ position: 'relative', marginBottom: '8px' }}>
+        <Link to={`/store/products/${slug}`}>
+          <div style={{ width: '120px', height: '120px', borderRadius: '12px', overflow: 'hidden', margin: '0 auto', border: '1px solid #e5e7eb', opacity: checked ? 1 : 0.5, transition: 'opacity 0.2s' }}>
+            {product.images?.[0]?.url ? (
+              <img src={product.images[0].url} alt={product.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f3f4f6' }}>
+                <Package size={24} color="#9ca3af" />
+              </div>
+            )}
+          </div>
+        </Link>
+        {!alwaysChecked && (
+          <button
+            onClick={onToggle}
+            style={{
+              position: 'absolute', top: '-4px', left: '50%', transform: 'translateX(-50%)',
+              width: '24px', height: '24px', borderRadius: '50%', border: '2px solid #fff',
+              background: checked ? '#4f46e5' : '#fff', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.15)', zIndex: 1,
+            }}
+          >
+            {checked && <Check size={14} color="#fff" />}
+          </button>
+        )}
+      </div>
+      <Link to={`/store/products/${slug}`} style={{ textDecoration: 'none' }}>
+        <p style={{ fontSize: '12px', fontWeight: 600, color: '#111', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }}>{product.title}</p>
+      </Link>
+      <p style={{ fontSize: '14px', fontWeight: 800, color: '#111', margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}>
+        {product.basePrice} <SaudiRiyalSymbol size={11} color="#111" />
+      </p>
     </div>
   );
 }

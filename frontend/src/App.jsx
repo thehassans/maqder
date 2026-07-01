@@ -162,6 +162,7 @@ import EcommerceInventory from './pages/ecommerce/EcommerceInventory'
 import EcommerceCustomers from './pages/ecommerce/EcommerceCustomers'
 import EcommerceSalesReport from './pages/ecommerce/EcommerceSalesReport'
 import EcommerceCoupons from './pages/ecommerce/EcommerceCoupons'
+import EcommerceBundles from './pages/ecommerce/EcommerceBundles'
 import StorefrontHome from './pages/storefront/StorefrontHome'
 import StorefrontProducts from './pages/storefront/StorefrontProducts'
 import StorefrontProductDetail from './pages/storefront/StorefrontProductDetail'
@@ -608,6 +609,7 @@ function App() {
         <Route path="ecommerce/couriers" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceCouriers /></BusinessTypeRoute>} />
         <Route path="ecommerce/pixels" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommercePixels /></BusinessTypeRoute>} />
         <Route path="ecommerce/coupons" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceCoupons /></BusinessTypeRoute>} />
+        <Route path="ecommerce/bundles" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceBundles /></BusinessTypeRoute>} />
         <Route path="ecommerce/reviews" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceReviews /></BusinessTypeRoute>} />
         <Route path="ecommerce/newsletter" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceNewsletter /></BusinessTypeRoute>} />
         <Route path="ecommerce/wordpress" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceWordPress /></BusinessTypeRoute>} />

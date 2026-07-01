@@ -35,6 +35,8 @@ export default function StorefrontProducts() {
   const minPrice = searchParams.get('minPrice') || '';
   const maxPrice = searchParams.get('maxPrice') || '';
   const inStock = searchParams.get('inStock') || '';
+  const brand = searchParams.get('brand') || '';
+  const minRating = searchParams.get('minRating') || '';
 
   useEffect(() => {
     storeApi.get('/info').then(res => setStoreInfo(res.data)).catch(() => {});
@@ -48,11 +50,13 @@ export default function StorefrontProducts() {
     if (minPrice) params.set('minPrice', minPrice);
     if (maxPrice) params.set('maxPrice', maxPrice);
     if (inStock) params.set('inStock', inStock);
+    if (brand) params.set('brand', brand);
+    if (minRating) params.set('minRating', minRating);
     storeApi.get(`/products?${params}`)
       .then(res => { setData(res.data); setAllProducts(res.data.products); fetchReviewStats(res.data.products); })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [search, category, sort, page, minPrice, maxPrice, inStock]);
+  }, [search, category, sort, page, minPrice, maxPrice, inStock, brand, minRating]);
 
   const fetchReviewStats = async (products) => {
     if (!products?.length) return;
@@ -80,6 +84,8 @@ export default function StorefrontProducts() {
       if (minPrice) params.set('minPrice', minPrice);
       if (maxPrice) params.set('maxPrice', maxPrice);
       if (inStock) params.set('inStock', inStock);
+      if (brand) params.set('brand', brand);
+      if (minRating) params.set('minRating', minRating);
       const res = await storeApi.get(`/products?${params}`);
       setAllProducts(prev => [...prev, ...(res.data.products || [])]);
       setData(prev => ({ ...prev, products: [...allProducts, ...(res.data.products || [])], total: res.data.total, totalPages: res.data.totalPages }));
@@ -126,6 +132,7 @@ export default function StorefrontProducts() {
             <option value="price-low">{t('priceLow')}</option>
             <option value="price-high">{t('priceHigh')}</option>
             <option value="popular">{t('mostPopular')}</option>
+            <option value="top-rated">Top Rated</option>
           </select>
           {/* Filters toggle */}
           <button onClick={() => setShowFilters(!showFilters)} style={{
@@ -166,6 +173,29 @@ export default function StorefrontProducts() {
               <button onClick={() => updateParam('inStock', inStock === 'true' ? '' : 'true')} style={{
                 padding: '7px 16px', borderRadius: '999px', border: `1px solid ${inStock === 'true' ? c('primary', '#4f46e5') : c('borderColor', '#e5e7eb')}`, background: inStock === 'true' ? c('primary', '#4f46e5') : '#fff', color: inStock === 'true' ? '#fff' : c('text', '#111'), cursor: 'pointer', fontSize: '13px', fontWeight: 600, transition: 'all 0.2s',
               }}>{t('inStockOnly')}</button>
+            </div>
+            {/* Brand filter */}
+            {data.brands?.length > 0 && (
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: c('text', '#111'), marginInlineEnd: '4px' }}>Brand:</span>
+                <button onClick={() => updateParam('brand', '')} style={{
+                  padding: '7px 16px', borderRadius: '999px', border: `1px solid ${!brand ? c('primary', '#4f46e5') : c('borderColor', '#e5e7eb')}`, background: !brand ? c('primary', '#4f46e5') : '#fff', color: !brand ? '#fff' : c('text', '#111'), cursor: 'pointer', fontSize: '13px', fontWeight: 600, transition: 'all 0.2s',
+                }}>All</button>
+                {data.brands.map(b => b && (
+                  <button key={b} onClick={() => updateParam('brand', b)} style={{
+                    padding: '7px 16px', borderRadius: '999px', border: `1px solid ${brand === b ? c('primary', '#4f46e5') : c('borderColor', '#e5e7eb')}`, background: brand === b ? c('primary', '#4f46e5') : '#fff', color: brand === b ? '#fff' : c('text', '#111'), cursor: 'pointer', fontSize: '13px', fontWeight: 600, transition: 'all 0.2s',
+                  }}>{b}</button>
+                ))}
+              </div>
+            )}
+            {/* Rating filter */}
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: c('text', '#111') }}>Rating:</span>
+              {[0, 3, 4, 4.5].map(r => (
+                <button key={r} onClick={() => updateParam('minRating', r ? String(r) : '')} style={{
+                  padding: '7px 16px', borderRadius: '999px', border: `1px solid ${minRating === String(r) ? c('primary', '#4f46e5') : c('borderColor', '#e5e7eb')}`, background: minRating === String(r) ? c('primary', '#4f46e5') : '#fff', color: minRating === String(r) ? '#fff' : c('text', '#111'), cursor: 'pointer', fontSize: '13px', fontWeight: 600, transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '4px',
+                }}>{r === 0 ? 'All' : <>{r}+ <Star size={12} fill={minRating === String(r) ? '#fff' : '#fbbf24'} color={minRating === String(r) ? '#fff' : '#fbbf24'} /></>}</button>
+              ))}
             </div>
           </div>
         )}
