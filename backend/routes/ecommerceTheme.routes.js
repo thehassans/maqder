@@ -52,6 +52,7 @@ const DEFAULT_THEME = {
     showLogo: true,
     logoText: '',
     logoImageUrl: '',
+    logoSize: 34,
     showSearch: true,
     showCart: true,
     showCategories: true,
@@ -63,6 +64,10 @@ const DEFAULT_THEME = {
       textColor: '#ffffff',
     },
     sticky: true,
+  },
+  headerNav: {
+    enabled: true,
+    style: 'default', // default, centered, minimal, split
   },
   footer: {
     showAbout: true,
@@ -448,6 +453,7 @@ function mergeDefaults(userConfig) {
     colors: { ...DEFAULT_THEME.colors, ...(userConfig.colors || {}) },
     typography: { ...DEFAULT_THEME.typography, ...(userConfig.typography || {}) },
     header: { ...DEFAULT_THEME.header, ...(userConfig.header || {}), announcementBar: { ...DEFAULT_THEME.header.announcementBar, ...((userConfig.header || {}).announcementBar || {}) } },
+    headerNav: { ...DEFAULT_THEME.headerNav, ...(userConfig.headerNav || {}) },
     footer: { ...DEFAULT_THEME.footer, ...(userConfig.footer || {}), socialLinks: { ...DEFAULT_THEME.footer.socialLinks, ...((userConfig.footer || {}).socialLinks || {}) } },
     homepage: { ...DEFAULT_THEME.homepage, ...(userConfig.homepage || {}), sections: userConfig.homepage?.sections || DEFAULT_THEME.homepage.sections },
     productPage: { ...DEFAULT_THEME.productPage, ...(userConfig.productPage || {}) },

@@ -86,11 +86,12 @@ export default function EcommerceThemeEditor() {
   useEffect(() => { fetchTheme(); }, [fetchTheme]);
 
   // Generate preview HTML from theme config
-  const generatePreviewHTML = (config) => {
+  const generatePreviewHTML = (config, device = 'desktop') => {
     if (!config) return '<html><body>Loading...</body></html>';
     const c = config.colors || {};
     const t = config.typography || {};
     const h = config.header || {};
+    const hn = config.headerNav || {};
     const f = config.footer || {};
     const sections = config.homepage?.sections || [];
 
@@ -211,17 +212,22 @@ export default function EcommerceThemeEditor() {
     const mobileNavEnabled = config.mobileNav?.enabled !== false;
     const navStyle = config.mobileNav?.style || 'default';
     const accent = c.primary || '#4f46e5';
-    const navIcons = ['🏠', '🔍', '🛒', '❤️'];
     const navLabels = ['Home', 'Shop', 'Cart', 'Wishlist'];
+    const navSvgs = [
+      '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
+      '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+      '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>',
+      '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
+    ];
     let mobileNavHTML = '';
     if (mobileNavEnabled) {
       if (navStyle === 'default') {
         mobileNavHTML = `<div style="position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,0.95);backdrop-filter:blur(12px);border-top:1px solid ${c.borderColor || '#e5e7eb'};display:flex;justify-content:space-around;padding:8px 0">
-          ${navIcons.map((ic, i) => `<div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:20px">${ic}</span><span style="font-size:10px;font-weight:700;color:${i===0?accent:'#6b7280'}">${navLabels[i]}</span></div>`).join('')}
+          ${navSvgs.map((ic, i) => `<div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:20px">${ic}</span><span style="font-size:10px;font-weight:700;color:${i===0?accent:'#6b7280'}">${navLabels[i]}</span></div>`).join('')}
         </div>`;
       } else if (navStyle === 'modern') {
         mobileNavHTML = `<div style="position:fixed;bottom:0;left:0;right:0;background:${c.surface || '#fff'};border-top:1px solid ${c.borderColor || '#e5e7eb'};display:flex;justify-content:space-around;padding:6px 0">
-          ${navIcons.map((ic, i) => `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 14px">
+          ${navSvgs.map((ic, i) => `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 14px">
             <span style="font-size:20px;${i===0?`animation:iconBounce 0.5s ease`:''}">${ic}</span>
             <strong style="font-size:10px;color:${i===0?accent:'#9ca3af'}">${navLabels[i]}</strong>
             ${i===0?`<div style="height:2px;width:30px;background:${accent};border-radius:999px;margin-top:3px"></div>`:'<div style="height:2px;width:0;margin-top:3px"></div>'}
@@ -230,14 +236,14 @@ export default function EcommerceThemeEditor() {
         </div>`;
       } else if (navStyle === 'spotlight') {
         mobileNavHTML = `<div style="position:fixed;bottom:12px;left:50%;transform:translateX(-50%);display:flex;align-items:center;background:rgba(17,17,17,0.92);border-radius:16px;padding:8px 6px;box-shadow:0 8px 32px rgba(0,0,0,0.18)">
-          ${navIcons.map((ic, i) => { const dist=Math.abs(0-i); const op=i===0?1:Math.max(0,1-dist*0.6); return `<div style="position:relative;display:flex;align-items:center;justify-content:center;width:48px;height:48px;margin:0 4px">
+          ${navSvgs.map((ic, i) => { const dist=Math.abs(0-i); const op=i===0?1:Math.max(0,1-dist*0.6); return `<div style="position:relative;display:flex;align-items:center;justify-content:center;width:48px;height:48px;margin:0 4px">
             <div style="position:absolute;width:48px;height:64px;background:radial-gradient(ellipse at center,${accent}55 0%,transparent 70%);border-radius:50%;filter:blur(8px);opacity:${op}"></div>
             <span style="font-size:20px;position:relative">${ic}</span>
           </div>`; }).join('')}
         </div>`;
       } else if (navStyle === 'pill') {
         mobileNavHTML = `<div style="position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:2px;background:${c.surface || '#fff'};border-radius:999px;padding:6px;box-shadow:0 4px 24px rgba(0,0,0,0.1)">
-          ${navIcons.map((ic, i) => `<div style="display:flex;align-items:center;gap:6px;padding:${i===0?'8px 16px':'8px'};border-radius:999px;background:${i===0?accent:'transparent'}">
+          ${navSvgs.map((ic, i) => `<div style="display:flex;align-items:center;gap:6px;padding:${i===0?'8px 16px':'8px'};border-radius:999px;background:${i===0?accent:'transparent'}">
             <span style="font-size:18px">${ic}</span>
             ${i===0?`<span style="font-size:12px;font-weight:700;color:#fff">${navLabels[i]}</span>`:''}
           </div>`).join('')}
@@ -255,25 +261,42 @@ export default function EcommerceThemeEditor() {
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:${t.bodyFont || 'Inter'},sans-serif;background:${c.background};color:${c.text};${t.lineHeight ? `line-height:1.6` : ''}}
   .header{background:${c.headerBg};border-bottom:1px solid ${c.borderColor};padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:${h.sticky ? 'sticky' : 'static'};top:0;z-index:10}
-  .logo{font-weight:bold;font-size:20px;color:${c.text}}
+  .logo{font-weight:bold;font-size:20px;color:${c.text};display:flex;align-items:center;gap:8px}
   .nav{display:flex;gap:16px}
   .nav a{color:${c.textMuted};text-decoration:none;font-size:14px}
+  .header-centered{text-align:center}
+  .header-centered .logo{justify-content:center;margin-bottom:8px}
+  .header-centered .nav{justify-content:center}
+  .header-split{display:grid;grid-template-columns:1fr 2fr 1fr;align-items:center;gap:16px}
+  .header-split .nav{justify-content:flex-end}
+  .header-minimal .nav{display:none}
+  .hamburger{font-size:24px;cursor:pointer;color:${c.text}}
   .container{max-width:960px;margin:0 auto;padding:20px}
   .footer{background:${c.footerBg};color:${c.footerText};padding:24px 20px;margin-top:40px}
   .footer-grid{max-width:960px;margin:0 auto;display:flex;justify-content:space-between;flex-wrap:wrap;gap:20px}
   .footer h4{color:#fff;margin:0 0 8px;font-size:14px}
   .footer a{color:${c.footerText};text-decoration:none;font-size:13px;display:block;margin-bottom:4px}
+  ${device === 'mobile' ? `
+  .container{max-width:100%;padding:16px}
+  .header{padding:10px 16px}
+  .header-split{grid-template-columns:1fr auto;gap:8px}
+  .header-split .nav{display:none}
+  .nav{gap:10px}
+  .nav a{font-size:12px}
+  .footer-grid{flex-direction:column;gap:12px}
+  ` : ''}
   ${config.customCss || ''}
 </style>
 </head>
 <body>
 ${announcement}
-<div class="header">
-  <div class="logo">${h.logoImageUrl ? `<img src="${h.logoImageUrl}" alt="logo" style="height:32px">` : (h.logoText || 'Store Name')}</div>
+<div class="header header-${hn.style || 'default'}">
+  <div class="logo">${h.logoImageUrl ? `<img src="${h.logoImageUrl}" alt="logo" style="height:${h.logoSize || 34}px">` : (h.logoText || 'Store Name')}</div>
+  ${(hn.style === 'split' && h.showSearch) ? '<div style="flex:1;max-width:300px"><input style="width:100%;padding:8px 12px;border:1px solid ' + (c.borderColor || '#e5e7eb') + ';border-radius:8px;font-size:13px;background:' + (c.surface || '#f9fafb') + '" placeholder="Search products..."></div>' : ''}
   <div class="nav">
     ${h.showCategories ? '<a href="#">Categories</a>' : ''}
     <a href="#">Products</a>
-    ${h.showSearch ? '<a href="#">Search</a>' : ''}
+    ${h.showSearch && hn.style !== 'split' ? '<a href="#">Search</a>' : ''}
     ${h.showCart ? '<a href="#">Cart (0)</a>' : ''}
   </div>
 </div>
@@ -308,11 +331,11 @@ ${mobileNavHTML}
       const doc = previewRef.current.contentDocument;
       if (doc) {
         doc.open();
-        doc.write(generatePreviewHTML(theme));
+        doc.write(generatePreviewHTML(theme, previewDevice));
         doc.close();
       }
     }
-  }, [theme]);
+  }, [theme, previewDevice]);
 
   const update = (path, value) => {
     setTheme(prev => {
@@ -585,6 +608,7 @@ ${mobileNavHTML}
             <button onClick={() => setActiveTab('colors')} className={tabCls('colors')}><Palette className="w-4 h-4" /> Colors</button>
             <button onClick={() => setActiveTab('typography')} className={tabCls('typography')}><Type className="w-4 h-4" /> Typography</button>
             <button onClick={() => setActiveTab('header')} className={tabCls('header')}><Layout className="w-4 h-4" /> Header</button>
+            <button onClick={() => setActiveTab('headernav')} className={tabCls('headernav')}><Layout className="w-4 h-4" /> Header Nav</button>
             <button onClick={() => setActiveTab('sections')} className={tabCls('sections')}><Home className="w-4 h-4" /> Sections</button>
             <button onClick={() => setActiveTab('footer')} className={tabCls('footer')}><Layout className="w-4 h-4" /> Footer</button>
             <button onClick={() => setActiveTab('product')} className={tabCls('product')}><Eye className="w-4 h-4" /> Product</button>
@@ -696,8 +720,25 @@ ${mobileNavHTML}
                     </button>
                   </div>
                   {theme.header?.logoImageUrl && (
-                    <img src={theme.header.logoImageUrl} alt="Logo preview" className="mt-2 h-10 w-auto object-contain rounded-lg border border-gray-200" />
+                    <img src={theme.header.logoImageUrl} alt="Logo preview" className="mt-2 w-auto object-contain rounded-lg border border-gray-200" style={{ height: `${theme.header?.logoSize || 34}px` }} />
                   )}
+                </div>
+              </div>
+              {/* Logo size slider */}
+              <div>
+                <label className={labelCls}>Logo Size: {theme.header?.logoSize || 34}px</label>
+                <input
+                  type="range"
+                  min="20"
+                  max="80"
+                  value={theme.header?.logoSize || 34}
+                  onChange={e => updateHeader('logoSize', parseInt(e.target.value))}
+                  className="w-full h-2 rounded-full appearance-none cursor-pointer bg-gray-200 dark:bg-dark-600"
+                  style={{ accentColor: '#7c3aed' }}
+                />
+                <div className="flex justify-between text-[10px] text-gray-300 mt-1">
+                  <span>20px</span>
+                  <span>80px</span>
                 </div>
               </div>
               <div className="space-y-2">
@@ -717,6 +758,40 @@ ${mobileNavHTML}
                     <input type="color" value={theme.header.announcementBar.textColor || '#ffffff'} onChange={e => update('header.announcementBar.textColor', e.target.value)} className="w-full h-10 rounded-lg border border-gray-200 cursor-pointer" />
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Header Nav */}
+          {activeTab === 'headernav' && (
+            <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-5 space-y-4">
+              <div>
+                <label className={labelCls}>Header Navigation Style</label>
+                <p className="text-xs text-gray-400 mb-3">Choose a header layout style for your storefront. This controls how the logo, navigation links, and search are arranged.</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { value: 'default', label: 'Default', desc: 'Logo left, nav links right' },
+                    { value: 'centered', label: 'Centered', desc: 'Logo centered, nav below' },
+                    { value: 'minimal', label: 'Minimal', desc: 'Logo left, hamburger menu' },
+                    { value: 'split', label: 'Split', desc: 'Logo left, search center, cart right' },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => update('headerNav.style', opt.value)}
+                      className={`text-left p-4 rounded-xl border-2 transition-all ${
+                        (theme.headerNav?.style || 'default') === opt.value
+                          ? 'border-violet-500 bg-violet-50'
+                          : 'border-gray-200 dark:border-dark-600 hover:border-gray-300'
+                      }`}
+                    >
+                      <p className="font-bold text-sm text-gray-900 dark:text-white">{opt.label}</p>
+                      <p className="text-xs text-gray-400 mt-1">{opt.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="pt-3 border-t border-gray-100 dark:border-dark-700">
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.headerNav?.enabled ?? true} onChange={e => update('headerNav.enabled', e.target.checked)} className="w-4 h-4 rounded" /> Show header navigation</label>
               </div>
             </div>
           )}
@@ -1071,18 +1146,31 @@ ${mobileNavHTML}
         <div className="space-y-3 sticky top-4 self-start">
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2"><Eye className="w-4 h-4 text-gray-400" /> Live Preview</h3>
-            <div className="flex gap-1">
-              <button onClick={() => setPreviewDevice('desktop')} className={`p-2 rounded-lg ${previewDevice === 'desktop' ? 'bg-violet-600 text-white' : 'text-gray-400 hover:bg-gray-100'}`}><Monitor className="w-4 h-4" /></button>
-              <button onClick={() => setPreviewDevice('mobile')} className={`p-2 rounded-lg ${previewDevice === 'mobile' ? 'bg-violet-600 text-white' : 'text-gray-400 hover:bg-gray-100'}`}><Smartphone className="w-4 h-4" /></button>
+            <div className="flex gap-1 bg-gray-100 dark:bg-dark-700 rounded-lg p-1">
+              <button onClick={() => setPreviewDevice('desktop')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${previewDevice === 'desktop' ? 'bg-white dark:bg-dark-800 text-gray-900 dark:text-white shadow-sm' : 'text-gray-400'}`}><Monitor className="w-3.5 h-3.5" /> Desktop</button>
+              <button onClick={() => setPreviewDevice('mobile')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${previewDevice === 'mobile' ? 'bg-white dark:bg-dark-800 text-gray-900 dark:text-white shadow-sm' : 'text-gray-400'}`}><Smartphone className="w-3.5 h-3.5" /> Mobile</button>
             </div>
           </div>
-          <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 overflow-hidden">
-            <iframe
-              ref={previewRef}
-              title="Theme Preview"
-              className="w-full border-0 transition-all"
-              style={{ height: '600px', maxWidth: previewDevice === 'mobile' ? '375px' : '100%', margin: previewDevice === 'mobile' ? '0 auto' : '0' }}
-            />
+          <div className={`bg-gray-100 dark:bg-dark-900 rounded-2xl border border-gray-100 dark:border-dark-700 overflow-hidden flex items-center justify-center ${previewDevice === 'mobile' ? 'py-8' : ''}`}>
+            {previewDevice === 'mobile' ? (
+              <div className="relative" style={{ width: '375px', height: '667px' }}>
+                <div className="absolute inset-0 bg-black rounded-[2.5rem] shadow-xl p-2">
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-b-2xl z-10" />
+                  <iframe
+                    ref={previewRef}
+                    title="Theme Preview"
+                    className="w-full h-full rounded-[2rem] border-0 bg-white"
+                  />
+                </div>
+              </div>
+            ) : (
+              <iframe
+                ref={previewRef}
+                title="Theme Preview"
+                className="w-full border-0"
+                style={{ height: '600px' }}
+              />
+            )}
           </div>
         </div>
       </div>

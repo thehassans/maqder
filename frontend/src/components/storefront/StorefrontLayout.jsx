@@ -256,7 +256,7 @@ export default function StorefrontLayout({ children }) {
             onMouseLeave={e => e.currentTarget.style.opacity = '1'}
           >
             {header.logoImageUrl ? (
-              <img src={header.logoImageUrl} alt="logo" style={{ height: '34px' }} />
+              <img src={header.logoImageUrl} alt="logo" style={{ height: `${header.logoSize || 34}px` }} />
             ) : (
               <>
                 <div style={{
