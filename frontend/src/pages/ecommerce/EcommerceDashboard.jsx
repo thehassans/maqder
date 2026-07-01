@@ -21,6 +21,7 @@ export default function EcommerceDashboard() {
   const [lowStockProducts, setLowStockProducts] = useState([]);
   const [pendingReviews, setPendingReviews] = useState(0);
   const [pendingQuestions, setPendingQuestions] = useState(0);
+  const [abandonedStats, setAbandonedStats] = useState(null);
   const [days, setDays] = useState(30);
   const [showPreview, setShowPreview] = useState(false);
 
@@ -49,6 +50,7 @@ export default function EcommerceDashboard() {
     }).catch(() => {});
     api.get('/ecommerce/reviews?status=pending&limit=1').then(res => setPendingReviews(res.data?.total || 0)).catch(() => {});
     api.get('/ecommerce/products/questions/pending').then(res => setPendingQuestions(res.data?.questions?.length || 0)).catch(() => {});
+    api.get('/ecommerce/abandoned-carts/stats').then(res => setAbandonedStats(res.data)).catch(() => {});
   }, []);
 
   if (loading) {
@@ -231,6 +233,39 @@ export default function EcommerceDashboard() {
               <span className="inline-flex items-center px-3 py-1.5 text-xs text-red-500">+{lowStockProducts.length - 8} more</span>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Abandoned cart stats */}
+      {abandonedStats && (abandonedStats.abandoned > 0 || abandonedStats.recovered > 0) && (
+        <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-5">
+          <h3 className="font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <ShoppingBag className="w-4 h-4 text-amber-500" /> Abandoned Cart Recovery
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-3">
+              <p className="text-2xl font-black text-amber-700 dark:text-amber-400">{abandonedStats.abandoned}</p>
+              <p className="text-xs text-amber-600 dark:text-amber-500 font-bold">Abandoned</p>
+            </div>
+            <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-3">
+              <p className="text-2xl font-black text-emerald-700 dark:text-emerald-400">{abandonedStats.recovered}</p>
+              <p className="text-xs text-emerald-600 dark:text-emerald-500 font-bold">Recovered</p>
+            </div>
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3">
+              <p className="text-2xl font-black text-blue-700 dark:text-blue-400">{abandonedStats.emailed}</p>
+              <p className="text-xs text-blue-600 dark:text-blue-500 font-bold">Emails Sent</p>
+            </div>
+            <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-3">
+              <p className="text-2xl font-black text-red-700 dark:text-red-400">{fmtCurrency(abandonedStats.lostRevenue)}</p>
+              <p className="text-xs text-red-600 dark:text-red-500 font-bold">Lost Revenue</p>
+            </div>
+          </div>
+          {abandonedStats.recoveredRevenue > 0 && (
+            <div className="mt-3 flex items-center gap-2 text-sm">
+              <CheckCircle className="w-4 h-4 text-emerald-500" />
+              <span className="text-gray-600 dark:text-gray-400 font-bold">{fmtCurrency(abandonedStats.recoveredRevenue)} recovered through email campaigns</span>
+            </div>
+          )}
         </div>
       )}
 

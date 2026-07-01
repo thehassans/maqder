@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Search, ShoppingCart, X, Menu, Instagram, Twitter, Facebook, Heart, Mail, Phone, MapPin, Send, ShieldCheck, Truck, CreditCard, RotateCcw, ChevronDown, LayoutGrid, Tag } from 'lucide-react';
+import { Search, ShoppingCart, X, Menu, Instagram, Twitter, Facebook, Heart, Mail, Phone, MapPin, Send, ShieldCheck, Truck, CreditCard, RotateCcw, ChevronDown, LayoutGrid, Tag, Moon, Sun } from 'lucide-react';
 import SaudiRiyalSymbol from './SaudiRiyalSymbol';
 import storeApi from '../../lib/storeApi';
 import { useCart } from '../../store/storefrontCart';
@@ -144,6 +144,9 @@ export default function StorefrontLayout({ children }) {
   const [categories, setCategories] = useState([]);
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
   const [wishlistOpen, setWishlistOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    try { return localStorage.getItem('maqder_dark_mode') === 'true'; } catch { return false; }
+  });
   const megaMenuRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -174,10 +177,19 @@ export default function StorefrontLayout({ children }) {
   }, [location.pathname, storeInfo]);
 
   const theme = storeInfo?.theme || {};
-  const colors = theme.colors || {};
+  const lightColors = theme.colors || {};
+  const darkColors = theme.darkMode?.colors || {};
+  const darkModeEnabled = theme.darkMode?.enabled === true;
+  const colors = (darkModeEnabled && isDarkMode) ? { ...lightColors, ...darkColors } : lightColors;
   const header = theme.header || {};
   const footer = theme.footer || {};
   const c = (key, fallback) => colors[key] || fallback;
+
+  const toggleDarkMode = () => {
+    const next = !isDarkMode;
+    setIsDarkMode(next);
+    try { localStorage.setItem('maqder_dark_mode', String(next)); } catch {}
+  };
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -377,6 +389,15 @@ export default function StorefrontLayout({ children }) {
             >
               {lang === 'en' ? 'العربية' : 'EN'}
             </button>
+            {/* Dark mode toggle */}
+            {darkModeEnabled && (
+              <button onClick={toggleDarkMode} style={{ background: 'none', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '10px', padding: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: c('text', '#111827'), transition: 'all 0.2s' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = c('primary', '#4f46e5'); e.currentTarget.style.color = c('primary', '#4f46e5'); }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = c('borderColor', '#e5e7eb'); e.currentTarget.style.color = c('text', '#111827'); }}
+              >
+                {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
+              </button>
+            )}
             {header.showCart !== false && (
               <>
                 <button onClick={() => setWishlistOpen(true)} style={{ position: 'relative', background: 'none', border: 'none', cursor: 'pointer', color: c('text', '#111827'), transition: 'transform 0.2s' }}

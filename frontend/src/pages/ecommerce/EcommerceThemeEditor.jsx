@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Palette, Save, Loader2, Upload, RotateCcw, AlertCircle, CheckCircle, Eye, Layout, Type, ShoppingCart, Home, Monitor, Smartphone, GripVertical, Trash2, Plus, ImageIcon, Sparkles, Download, FileUp, Smartphone as PhoneIcon } from 'lucide-react';
+import { Palette, Save, Loader2, Upload, RotateCcw, AlertCircle, CheckCircle, Eye, Layout, Type, ShoppingCart, Home, Monitor, Smartphone, GripVertical, Trash2, Plus, ImageIcon, Sparkles, Download, FileUp, Smartphone as PhoneIcon, Moon } from 'lucide-react';
 import api from '../../lib/api';
 
 const COLOR_FIELDS = [
@@ -584,6 +584,7 @@ ${mobileNavHTML}
             <button onClick={() => setActiveTab('product')} className={tabCls('product')}><Eye className="w-4 h-4" /> Product</button>
             <button onClick={() => setActiveTab('cart')} className={tabCls('cart')}><ShoppingCart className="w-4 h-4" /> Cart</button>
             <button onClick={() => setActiveTab('mobilenav')} className={tabCls('mobilenav')}><Smartphone className="w-4 h-4" /> Mobile Nav</button>
+            <button onClick={() => setActiveTab('darkmode')} className={tabCls('darkmode')}><Moon className="w-4 h-4" /> Dark Mode</button>
           </div>
 
           {/* Hidden file inputs for image uploads */}
@@ -937,6 +938,45 @@ ${mobileNavHTML}
               <div className="pt-3 border-t border-gray-100 dark:border-dark-700">
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.mobileNav?.enabled ?? true} onChange={e => update('mobileNav.enabled', e.target.checked)} className="w-4 h-4 rounded" /> Show bottom navigation on mobile</label>
               </div>
+            </div>
+          )}
+
+          {/* Dark Mode */}
+          {activeTab === 'darkmode' && (
+            <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-5 space-y-4">
+              <div className="pt-3 border-b border-gray-100 dark:border-dark-700 pb-4">
+                <label className="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white">
+                  <input type="checkbox" checked={theme.darkMode?.enabled ?? false} onChange={e => update('darkMode.enabled', e.target.checked)} className="w-4 h-4 rounded" />
+                  Enable Dark Mode for Storefront
+                </label>
+                <p className="text-xs text-gray-400 mt-2 ml-6">When enabled, customers can toggle between light and dark themes on the storefront.</p>
+              </div>
+              {(theme.darkMode?.enabled) && (
+                <div className="space-y-4">
+                  <p className="text-sm font-bold text-gray-700 dark:text-gray-300">Dark Mode Colors</p>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {COLOR_FIELDS.map(f => (
+                      <div key={f.key}>
+                        <label className={labelCls}>{f.label}</label>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="color"
+                            value={theme.darkMode?.colors?.[f.key] || '#000000'}
+                            onChange={e => update(`darkMode.colors.${f.key}`, e.target.value)}
+                            className="w-10 h-10 rounded-lg border border-gray-200 dark:border-dark-600 cursor-pointer"
+                          />
+                          <input
+                            type="text"
+                            value={theme.darkMode?.colors?.[f.key] || ''}
+                            onChange={e => update(`darkMode.colors.${f.key}`, e.target.value)}
+                            className={`${inputCls} font-mono text-xs`}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
