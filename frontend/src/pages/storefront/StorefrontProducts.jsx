@@ -204,7 +204,7 @@ export default function StorefrontProducts() {
                         </div>
                       )}
                       {images[0]?.url ? (
-                        <img src={images[0].url} alt={p.title} className="card-main-img" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} />
+                        <img src={images[0].url} alt={p.title} loading="lazy" className="card-main-img" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} />
                       ) : (
                         <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: c('textMuted', '#6b7280'), fontSize: '12px' }}>{t('noImage')}</div>
                       )}

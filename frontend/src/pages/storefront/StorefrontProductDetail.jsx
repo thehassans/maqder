@@ -469,7 +469,7 @@ export default function StorefrontProductDetail() {
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                 }} onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-6px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(0,0,0,0.1)'; }} onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; }}>
                   <div style={{ aspectRatio: '1', background: '#e5e7eb', overflow: 'hidden' }}>
-                    {p.images?.[0]?.url ? <img src={p.images[0].url} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} /> : null}
+                    {p.images?.[0]?.url ? <img src={p.images[0].url} alt={p.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} /> : null}
                   </div>
                   <div style={{ padding: '14px' }}>
                     <p style={{ fontWeight: 600, fontSize: '14px', margin: '0 0 6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#111' }}>{p.title}</p>
@@ -626,7 +626,7 @@ export default function StorefrontProductDetail() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px' }}>
             {recentItems.filter(i => i.productId !== product._id && i.productId !== id).slice(0, 6).map(item => (
               <Link key={item.productId} to={`/store/products/${item.slug}`} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '10px', overflow: 'hidden', textDecoration: 'none' }}>
-                {item.image && <img src={item.image} alt={item.title} style={{ width: '100%', aspectRatio: '1', objectFit: 'cover' }} />}
+                {item.image && <img src={item.image} alt={item.title} loading="lazy" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover' }} />}
                 <div style={{ padding: '8px 10px' }}>
                   <p style={{ fontSize: '12px', fontWeight: 'bold', color: '#111', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</p>
                   <p style={{ fontSize: '14px', fontWeight: 'bold', color: '#111', margin: 0, display: 'flex', alignItems: 'center', gap: '3px' }}>{item.price} <SaudiRiyalSymbol size={11} color="#111" /></p>

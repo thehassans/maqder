@@ -1,9 +1,14 @@
 import express from 'express';
+import path from 'path';
+import fs from 'fs';
+import multer from 'multer';
+import sharp from 'sharp';
 import { protect } from '../middleware/auth.js';
 import Tenant from '../models/Tenant.js';
 import EcommerceProduct from '../models/EcommerceProduct.js';
 
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 const getTargetTenantId = async (user) => {
   if (user.tenantId) return user.tenantId;
@@ -335,6 +340,31 @@ router.delete('/:productId/questions/:questionId', protect, async (req, res) => 
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// --- UPLOAD PRODUCT IMAGE (WebP conversion) ---
+router.post('/upload-image', protect, upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+    const tenantIdStr = tenantId.toString();
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'ecommerce', tenantIdStr, 'products');
+    if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
+    const filename = `product-${Date.now()}-${Math.round(Math.random() * 1E9)}.webp`;
+    const filepath = path.join(uploadsDir, filename);
+
+    await sharp(req.file.buffer)
+      .resize({ width: 1200, height: 1200, fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: 85 })
+      .toFile(filepath);
+
+    const imageUrl = `/uploads/ecommerce/${tenantIdStr}/products/${filename}`;
+    res.json({ imageUrl });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to process image' });
   }
 });
 

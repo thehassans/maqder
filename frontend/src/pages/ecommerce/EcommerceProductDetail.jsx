@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Package, Save, Loader2, X, Trash2, ArrowLeft, Plus, AlertCircle, CheckCircle, Archive, Eye, Image as ImageIcon, Tag, Copy, Sparkles, BellRing } from 'lucide-react';
+import { Package, Save, Loader2, X, Trash2, ArrowLeft, Plus, AlertCircle, CheckCircle, Archive, Eye, Image as ImageIcon, Tag, Copy, Sparkles, BellRing, Upload } from 'lucide-react';
 import api from '../../lib/api';
 
 const emptyVariant = () => ({
@@ -22,6 +22,8 @@ export default function EcommerceProductDetail() {
   const [tagInput, setTagInput] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
+  const imageInputRef = useRef(null);
 
   useEffect(() => {
     api.get(`/ecommerce/products/${id}`)
@@ -47,6 +49,27 @@ export default function EcommerceProductDetail() {
     setImageUrl('');
   };
   const removeImage = (idx) => update('images', form.images.filter((_, i) => i !== idx).map((img, i) => ({ ...img, position: i })));
+
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    setImageUploading(true);
+    try {
+      const uploaded = await Promise.all(files.map(async (file) => {
+        const fd = new FormData();
+        fd.append('image', file);
+        const res = await api.post('/ecommerce/products/upload-image', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+        return res.data.imageUrl;
+      }));
+      const newImages = uploaded.map((url, i) => ({ url, altText: '', position: (form.images?.length || 0) + i }));
+      update('images', [...(form.images || []), ...newImages]);
+    } catch (err) {
+      setError('Failed to upload image');
+    } finally {
+      setImageUploading(false);
+      if (imageInputRef.current) imageInputRef.current.value = '';
+    }
+  };
 
   const addVariant = () => update('variants', [...(form.variants || []), emptyVariant()]);
   const removeVariant = (idx) => update('variants', form.variants.filter((_, i) => i !== idx));
@@ -443,8 +466,30 @@ export default function EcommerceProductDetail() {
       {/* Images */}
       {activeTab === 'images' && form && (
         <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-6 space-y-4">
+          {/* Upload zone */}
+          <div
+            onClick={() => imageInputRef.current?.click()}
+            onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = '#6366f1'; e.currentTarget.style.background = '#eef2ff'; }}
+            onDragLeave={e => { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.background = '#f9fafb'; }}
+            onDrop={e => { e.preventDefault(); e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.background = '#f9fafb'; const files = Array.from(e.dataTransfer.files); if (files.length > 0) { const dt = new DataTransfer(); files.forEach(f => dt.items.add(f)); imageInputRef.current.files = dt.files; handleImageUpload({ target: { files } }); } }}
+            className="border-2 border-dashed border-gray-300 dark:border-dark-600 rounded-xl p-8 text-center cursor-pointer hover:border-indigo-400 transition-colors"
+            style={{ background: 'var(--tw-colors-gray-50, #f9fafb)' }}
+          >
+            <input ref={imageInputRef} type="file" accept="image/*" multiple onChange={handleImageUpload} style={{ display: 'none' }} />
+            {imageUploading ? (
+              <div className="flex flex-col items-center gap-2"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /><p className="text-sm text-gray-500">Converting to WebP...</p></div>
+            ) : (
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center"><Upload className="w-6 h-6 text-indigo-600" /></div>
+                <p className="text-sm font-bold text-gray-700 dark:text-gray-300">Click to upload or drag & drop</p>
+                <p className="text-xs text-gray-400">Images auto-converted to WebP (max 10MB each)</p>
+              </div>
+            )}
+          </div>
+
+          {/* Manual URL input */}
           <div className="flex gap-2">
-            <input className={inputCls} value={imageUrl} onChange={e => setImageUrl(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addImage(); } }} placeholder="Paste image URL" />
+            <input className={inputCls} value={imageUrl} onChange={e => setImageUrl(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addImage(); } }} placeholder="Or paste image URL manually" />
             <button onClick={addImage} className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-sm">Add</button>
           </div>
           {form.images?.length > 0 ? (

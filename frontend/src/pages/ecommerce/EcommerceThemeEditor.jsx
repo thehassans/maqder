@@ -745,20 +745,59 @@ ${mobileNavHTML}
                     <div className="pl-6 grid grid-cols-2 gap-2">
                       {sec.type === 'hero' && (
                         <>
-                          <input className={inputCls} value={sec.settings.title || ''} onChange={e => updateSection(idx, 'title', e.target.value)} placeholder="Hero title" />
-                          <input className={inputCls} value={sec.settings.subtitle || ''} onChange={e => updateSection(idx, 'subtitle', e.target.value)} placeholder="Subtitle" />
-                          <div className="flex items-center gap-2">
-                            <input className={inputCls} value={sec.settings.imageUrl || ''} onChange={e => updateSection(idx, 'imageUrl', e.target.value)} placeholder="Background image URL" />
-                            <button
-                              onClick={() => { setHeroUploadIdx(idx); setTimeout(() => heroInputRef.current?.click(), 0); }}
-                              disabled={applyingPreset}
-                              className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-bold transition-colors disabled:opacity-60"
-                            >
-                              {applyingPreset ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />}
-                              Upload
-                            </button>
+                          <div className="col-span-2 flex items-center gap-2">
+                            <label className="text-xs font-bold text-gray-500">Mode:</label>
+                            <select className={inputCls} style={{ width: 'auto' }} value={sec.settings.slides ? 'multi' : 'single'} onChange={e => { if (e.target.value === 'multi') { updateSection(idx, 'slides', sec.settings.slides || [{ imageUrl: sec.settings.imageUrl || '', title: sec.settings.title || '', subtitle: sec.settings.subtitle || '', buttonText: sec.settings.buttonText || '', buttonLink: sec.settings.buttonLink || '/store/products', textPosition: 'left' }]); updateSection(idx, 'autoPlay', true); updateSection(idx, 'interval', 5000); } else { const s0 = (sec.settings.slides || [])[0] || {}; updateSection(idx, 'imageUrl', s0.imageUrl || ''); updateSection(idx, 'title', s0.title || ''); updateSection(idx, 'subtitle', s0.subtitle || ''); updateSection(idx, 'buttonText', s0.buttonText || ''); updateSection(idx, 'buttonLink', s0.buttonLink || ''); } }}>
+                              <option value="single">Single (Steady)</option>
+                              <option value="multi">Multi-slide Carousel</option>
+                            </select>
+                            {sec.settings.slides && (
+                              <>
+                                <label className="flex items-center gap-1 text-xs font-bold text-gray-500"><input type="checkbox" checked={sec.settings.autoPlay !== false} onChange={e => updateSection(idx, 'autoPlay', e.target.checked)} /> Auto-play</label>
+                                <input type="number" className={inputCls} style={{ width: '80px' }} value={sec.settings.interval || 5000} onChange={e => updateSection(idx, 'interval', parseInt(e.target.value) || 5000)} placeholder="ms" />
+                                <span className="text-xs text-gray-400">ms interval</span>
+                              </>
+                            )}
                           </div>
-                          <input className={inputCls} value={sec.settings.buttonText || ''} onChange={e => updateSection(idx, 'buttonText', e.target.value)} placeholder="Button text" />
+                          {sec.settings.slides ? (
+                            <div className="col-span-2 space-y-2">
+                              {(sec.settings.slides || []).map((slide, si) => (
+                                <div key={si} className="border border-gray-200 dark:border-dark-600 rounded-lg p-2 space-y-2 bg-gray-50 dark:bg-dark-700/50">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-gray-500">Slide {si + 1}</span>
+                                    <button onClick={() => { const next = (sec.settings.slides || []).filter((_, j) => j !== si); updateSection(idx, 'slides', next); }} className="p-1 text-red-400 hover:bg-red-50 rounded"><Trash2 className="w-3 h-3" /></button>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <input className={inputCls} value={slide.imageUrl || ''} onChange={e => { const next = [...(sec.settings.slides || [])]; next[si] = { ...next[si], imageUrl: e.target.value }; updateSection(idx, 'slides', next); }} placeholder="Background image URL" />
+                                    <button onClick={() => { setHeroUploadIdx(idx); setTimeout(() => heroInputRef.current?.click(), 0); }} disabled={applyingPreset} className="flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-bold disabled:opacity-60">{applyingPreset ? <Loader2 className="w-3 h-3 animate-spin" /> : <ImageIcon className="w-3 h-3" />}Upload</button>
+                                  </div>
+                                  <input className={inputCls} value={slide.title || ''} onChange={e => { const next = [...(sec.settings.slides || [])]; next[si] = { ...next[si], title: e.target.value }; updateSection(idx, 'slides', next); }} placeholder="Slide title" />
+                                  <input className={inputCls} value={slide.subtitle || ''} onChange={e => { const next = [...(sec.settings.slides || [])]; next[si] = { ...next[si], subtitle: e.target.value }; updateSection(idx, 'slides', next); }} placeholder="Subtitle" />
+                                  <div className="flex gap-2">
+                                    <input className={inputCls} value={slide.buttonText || ''} onChange={e => { const next = [...(sec.settings.slides || [])]; next[si] = { ...next[si], buttonText: e.target.value }; updateSection(idx, 'slides', next); }} placeholder="Button text" />
+                                    <input className={inputCls} value={slide.buttonLink || ''} onChange={e => { const next = [...(sec.settings.slides || [])]; next[si] = { ...next[si], buttonLink: e.target.value }; updateSection(idx, 'slides', next); }} placeholder="Link URL (e.g. /store/products)" />
+                                  </div>
+                                  <select className={inputCls} style={{ width: 'auto' }} value={slide.textPosition || 'left'} onChange={e => { const next = [...(sec.settings.slides || [])]; next[si] = { ...next[si], textPosition: e.target.value }; updateSection(idx, 'slides', next); }}>
+                                    <option value="left">Text Left</option>
+                                    <option value="center">Text Center</option>
+                                    <option value="right">Text Right</option>
+                                  </select>
+                                </div>
+                              ))}
+                              <button onClick={() => updateSection(idx, 'slides', [...(sec.settings.slides || []), { imageUrl: '', title: '', subtitle: '', buttonText: '', buttonLink: '/store/products', textPosition: 'left' }])} className="flex items-center gap-1 text-xs font-bold text-violet-600 hover:underline"><Plus className="w-3 h-3" /> Add slide</button>
+                            </div>
+                          ) : (
+                            <>
+                              <input className={inputCls} value={sec.settings.title || ''} onChange={e => updateSection(idx, 'title', e.target.value)} placeholder="Hero title" />
+                              <input className={inputCls} value={sec.settings.subtitle || ''} onChange={e => updateSection(idx, 'subtitle', e.target.value)} placeholder="Subtitle" />
+                              <div className="flex items-center gap-2">
+                                <input className={inputCls} value={sec.settings.imageUrl || ''} onChange={e => updateSection(idx, 'imageUrl', e.target.value)} placeholder="Background image URL" />
+                                <button onClick={() => { setHeroUploadIdx(idx); setTimeout(() => heroInputRef.current?.click(), 0); }} disabled={applyingPreset} className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-bold transition-colors disabled:opacity-60">{applyingPreset ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />}Upload</button>
+                              </div>
+                              <input className={inputCls} value={sec.settings.buttonText || ''} onChange={e => updateSection(idx, 'buttonText', e.target.value)} placeholder="Button text" />
+                              <input className={inputCls} value={sec.settings.buttonLink || ''} onChange={e => updateSection(idx, 'buttonLink', e.target.value)} placeholder="Button link (e.g. /store/products)" />
+                            </>
+                          )}
                         </>
                       )}
                       {sec.type === 'product-carousel' && (
@@ -797,18 +836,43 @@ ${mobileNavHTML}
                       )}
                       {sec.type === 'image-banner' && (
                         <>
-                          <div className="flex items-center gap-2">
-                            <input className={inputCls} value={sec.settings.imageUrl || ''} onChange={e => updateSection(idx, 'imageUrl', e.target.value)} placeholder="Image URL" />
-                            <button
-                              onClick={() => { setHeroUploadIdx(idx); setTimeout(() => heroInputRef.current?.click(), 0); }}
-                              disabled={applyingPreset}
-                              className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-bold transition-colors disabled:opacity-60"
-                            >
-                              {applyingPreset ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />}
-                              Upload
-                            </button>
+                          <div className="col-span-2 flex items-center gap-2">
+                            <label className="text-xs font-bold text-gray-500">Mode:</label>
+                            <select className={inputCls} style={{ width: 'auto' }} value={sec.settings.banners ? 'multi' : 'single'} onChange={e => { if (e.target.value === 'multi') { updateSection(idx, 'banners', sec.settings.banners || [{ imageUrl: sec.settings.imageUrl || '', linkUrl: sec.settings.linkUrl || '', altText: sec.settings.altText || '', openInNewTab: false }]); } else { const b0 = (sec.settings.banners || [])[0] || {}; updateSection(idx, 'imageUrl', b0.imageUrl || ''); updateSection(idx, 'linkUrl', b0.linkUrl || ''); updateSection(idx, 'altText', b0.altText || ''); } }}>
+                              <option value="single">Single Banner</option>
+                              <option value="multi">Multiple Banners</option>
+                            </select>
                           </div>
-                          <input className={inputCls} value={sec.settings.altText || ''} onChange={e => updateSection(idx, 'altText', e.target.value)} placeholder="Alt text" />
+                          {sec.settings.banners ? (
+                            <div className="col-span-2 space-y-2">
+                              {(sec.settings.banners || []).map((b, bi) => (
+                                <div key={bi} className="border border-gray-200 dark:border-dark-600 rounded-lg p-2 space-y-2 bg-gray-50 dark:bg-dark-700/50">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-xs font-bold text-gray-500">Banner {bi + 1}</span>
+                                    <button onClick={() => { const next = (sec.settings.banners || []).filter((_, j) => j !== bi); updateSection(idx, 'banners', next); }} className="p-1 text-red-400 hover:bg-red-50 rounded"><Trash2 className="w-3 h-3" /></button>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <input className={inputCls} value={b.imageUrl || ''} onChange={e => { const next = [...(sec.settings.banners || [])]; next[bi] = { ...next[bi], imageUrl: e.target.value }; updateSection(idx, 'banners', next); }} placeholder="Image URL" />
+                                    <button onClick={() => { setHeroUploadIdx(idx); setTimeout(() => heroInputRef.current?.click(), 0); }} disabled={applyingPreset} className="flex items-center gap-1 px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-bold disabled:opacity-60">{applyingPreset ? <Loader2 className="w-3 h-3 animate-spin" /> : <ImageIcon className="w-3 h-3" />}Upload</button>
+                                  </div>
+                                  <input className={inputCls} value={b.linkUrl || ''} onChange={e => { const next = [...(sec.settings.banners || [])]; next[bi] = { ...next[bi], linkUrl: e.target.value }; updateSection(idx, 'banners', next); }} placeholder="Link URL (e.g. /store/products or https://...)" />
+                                  <input className={inputCls} value={b.altText || ''} onChange={e => { const next = [...(sec.settings.banners || [])]; next[bi] = { ...next[bi], altText: e.target.value }; updateSection(idx, 'banners', next); }} placeholder="Alt text" />
+                                  <label className="flex items-center gap-1 text-xs font-bold text-gray-500"><input type="checkbox" checked={b.openInNewTab || false} onChange={e => { const next = [...(sec.settings.banners || [])]; next[bi] = { ...next[bi], openInNewTab: e.target.checked }; updateSection(idx, 'banners', next); }} /> Open in new tab</label>
+                                </div>
+                              ))}
+                              <button onClick={() => updateSection(idx, 'banners', [...(sec.settings.banners || []), { imageUrl: '', linkUrl: '', altText: '', openInNewTab: false }])} className="flex items-center gap-1 text-xs font-bold text-violet-600 hover:underline"><Plus className="w-3 h-3" /> Add banner</button>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex items-center gap-2">
+                                <input className={inputCls} value={sec.settings.imageUrl || ''} onChange={e => updateSection(idx, 'imageUrl', e.target.value)} placeholder="Image URL" />
+                                <button onClick={() => { setHeroUploadIdx(idx); setTimeout(() => heroInputRef.current?.click(), 0); }} disabled={applyingPreset} className="flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-bold transition-colors disabled:opacity-60">{applyingPreset ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />}Upload</button>
+                              </div>
+                              <input className={inputCls} value={sec.settings.linkUrl || ''} onChange={e => updateSection(idx, 'linkUrl', e.target.value)} placeholder="Link URL (e.g. /store/products or https://...)" />
+                              <input className={inputCls} value={sec.settings.altText || ''} onChange={e => updateSection(idx, 'altText', e.target.value)} placeholder="Alt text" />
+                              <label className="flex items-center gap-1 text-xs font-bold text-gray-500"><input type="checkbox" checked={sec.settings.openInNewTab || false} onChange={e => updateSection(idx, 'openInNewTab', e.target.checked)} /> Open link in new tab</label>
+                            </>
+                          )}
                         </>
                       )}
                       {sec.type === 'testimonial' && (

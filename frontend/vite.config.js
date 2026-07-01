@@ -55,6 +55,20 @@ export default defineConfig(({ mode }) => {
                   statuses: [0, 200]
                 }
               }
+            },
+            {
+              urlPattern: /\/uploads\/.*\.(webp|png|jpg|jpeg|gif|svg)$/i,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'uploaded-images-cache',
+                expiration: {
+                  maxEntries: 200,
+                  maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+                },
+                cacheableResponse: {
+                  statuses: [0, 200]
+                }
+              }
             }
           ]
         },
@@ -72,6 +86,17 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@': path.resolve(__dirname, './src'),
       },
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+            'ui-vendor': ['lucide-react'],
+          },
+        },
+      },
+      chunkSizeWarningLimit: 600,
     },
     server: {
       host: '0.0.0.0',

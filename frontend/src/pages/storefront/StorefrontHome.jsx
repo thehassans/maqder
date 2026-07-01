@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Loader2, Eye, Heart, ShoppingCart, Star, Check, Sparkles, TrendingUp } from 'lucide-react';
+import { ArrowRight, Loader2, Eye, Heart, ShoppingCart, Star, Check, Sparkles, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import SaudiRiyalSymbol from '../../components/storefront/SaudiRiyalSymbol';
 import storeApi from '../../lib/storeApi';
 import StorefrontSeo from '../../components/storefront/StorefrontSeo';
@@ -71,31 +71,7 @@ export default function StorefrontHome() {
     const s = section.settings || {};
     switch (section.type) {
       case 'hero':
-        return (
-          <div key={section.id} style={{
-            background: s.imageUrl ? `linear-gradient(rgba(0,0,0,0.25), rgba(0,0,0,0.25)), url(${s.imageUrl}) center/cover` : `linear-gradient(135deg, ${c('surface', '#f9fafb')} 0%, #fff 100%)`,
-            padding: '64px 40px', borderRadius: '20px', marginBottom: '40px',
-            position: 'relative', overflow: 'hidden',
-            border: s.imageUrl ? 'none' : `1px solid ${c('borderColor', '#e5e7eb')}`,
-            minHeight: '320px', display: 'flex', alignItems: 'center',
-          }}>
-            <div style={{ position: 'relative', zIndex: 1, maxWidth: '500px' }}>
-              <h2 style={{ color: s.imageUrl ? '#fff' : c('text', '#111'), fontSize: '38px', margin: '0 0 12px', fontWeight: 900, letterSpacing: '-1px', lineHeight: 1.1, textShadow: s.imageUrl ? '0 2px 12px rgba(0,0,0,0.3)' : 'none' }}>{s.title || t('welcomeStore')}</h2>
-              <p style={{ color: s.imageUrl ? '#fff' : c('textMuted', '#6b7280'), opacity: s.imageUrl ? 0.95 : 1, margin: '0 0 28px', fontSize: '16px', lineHeight: 1.6, textShadow: s.imageUrl ? '0 1px 8px rgba(0,0,0,0.3)' : 'none' }}>{s.subtitle || ''}</p>
-              <Link to={s.buttonLink || '/store/products'} style={{
-                display: 'inline-flex', alignItems: 'center', gap: '8px',
-                background: s.imageUrl ? '#fff' : c('primary', '#059669'), color: s.imageUrl ? c('primary', '#059669') : '#fff',
-                padding: '14px 28px', borderRadius: '12px', textDecoration: 'none', fontWeight: 700, fontSize: '15px',
-                transition: 'all 0.25s', boxShadow: s.imageUrl ? '0 4px 20px rgba(0,0,0,0.15)' : '0 4px 14px rgba(5,150,105,0.2)',
-              }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
-              >
-                {s.buttonText || t('shopNow')} <ArrowRight size={18} style={{ transform: isRTL ? 'scaleX(-1)' : 'none' }} />
-              </Link>
-            </div>
-          </div>
-        );
+        return <HeroCarousel key={section.id} settings={s} c={c} t={t} isRTL={isRTL} />;
       case 'product-carousel':
         return (
           <div key={section.id} style={{ marginBottom: '40px' }}>
@@ -160,11 +136,7 @@ export default function StorefrontHome() {
           </div>
         );
       case 'image-banner':
-        return (
-          <div key={section.id} style={{ marginBottom: '32px', borderRadius: '12px', overflow: 'hidden' }}>
-            {s.imageUrl && <img src={s.imageUrl} alt={s.altText || ''} style={{ width: '100%', display: 'block', maxHeight: '400px', objectFit: 'cover' }} />}
-          </div>
-        );
+        return <ImageBanner key={section.id} settings={s} c={c} t={t} isRTL={isRTL} />;
       case 'testimonial':
         return (
           <div key={section.id} style={{ marginBottom: '40px' }}>
@@ -311,7 +283,7 @@ export default function StorefrontHome() {
                           boxShadow: '0 8px 24px rgba(0,0,0,0.06)', position: 'relative',
                         }}>
                           {p.images?.[0]?.url ? (
-                            <img src={p.images[0].url} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <img src={p.images[0].url} alt={p.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           ) : (
                             <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                               <span style={{ fontSize: '11px', color: c('textMuted', '#9ca3af') }}>No image</span>
@@ -360,7 +332,7 @@ export default function StorefrontHome() {
                 onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; }}
               >
                 <div style={{ aspectRatio: '1', background: '#e5e7eb', overflow: 'hidden' }}>
-                  {item.image ? <img src={item.image} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} /> : null}
+                  {item.image ? <img src={item.image} alt={item.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} /> : null}
                 </div>
                 <div style={{ padding: '10px' }}>
                   <p style={{ fontSize: '12px', fontWeight: 600, margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#111' }}>{item.title}</p>
@@ -393,6 +365,260 @@ export default function StorefrontHome() {
       )}
     </div>
   );
+}
+
+// ==================== Hero Carousel Component ====================
+function HeroCarousel({ settings, c, t, isRTL }) {
+  const slides = settings.slides || [];
+  const autoPlay = settings.autoPlay !== false;
+  const interval = settings.interval || 5000;
+  const [current, setCurrent] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartX = useRef(0);
+  const dragDelta = useRef(0);
+  const containerRef = useRef(null);
+  const autoPlayRef = useRef(null);
+
+  // Build slides array: use multi-slide config if available, otherwise fall back to single slide
+  const allSlides = slides.length > 0 ? slides : [{
+    imageUrl: settings.imageUrl || '',
+    title: settings.title || t('welcomeStore'),
+    subtitle: settings.subtitle || '',
+    buttonText: settings.buttonText || t('shopNow'),
+    buttonLink: settings.buttonLink || '/store/products',
+    textPosition: settings.textPosition || 'left',
+  }].filter(s => s.imageUrl || s.title);
+
+  const slideCount = allSlides.length;
+  const isSingle = slideCount <= 1;
+
+  const goTo = useCallback((idx) => {
+    setCurrent(((idx % slideCount) + slideCount) % slideCount);
+  }, [slideCount]);
+
+  const next = useCallback(() => goTo(current + 1), [current, goTo]);
+  const prev = useCallback(() => goTo(current - 1), [current, goTo]);
+
+  // Auto-play
+  useEffect(() => {
+    if (!autoPlay || isSingle) return;
+    autoPlayRef.current = setInterval(() => {
+      setCurrent(prev => (prev + 1) % slideCount);
+    }, interval);
+    return () => clearInterval(autoPlayRef.current);
+  }, [autoPlay, isSingle, slideCount, interval]);
+
+  // Pause on hover
+  const pauseAuto = () => { if (autoPlayRef.current) clearInterval(autoPlayRef.current); };
+  const resumeAuto = () => {
+    if (!autoPlay || isSingle) return;
+    autoPlayRef.current = setInterval(() => setCurrent(prev => (prev + 1) % slideCount), interval);
+  };
+
+  // Touch/swipe handlers
+  const handleTouchStart = (e) => {
+    dragStartX.current = e.touches ? e.touches[0].clientX : e.clientX;
+    setIsDragging(true);
+    pauseAuto();
+  };
+  const handleTouchMove = (e) => {
+    if (!isDragging) return;
+    const x = e.touches ? e.touches[0].clientX : e.clientX;
+    dragDelta.current = x - dragStartX.current;
+  };
+  const handleTouchEnd = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    if (Math.abs(dragDelta.current) > 50) {
+      if (isRTL) {
+        dragDelta.current > 0 ? prev() : next();
+      } else {
+        dragDelta.current > 0 ? prev() : next();
+      }
+    }
+    dragDelta.current = 0;
+    resumeAuto();
+  };
+
+  if (allSlides.length === 0) return null;
+
+  return (
+    <div
+      ref={containerRef}
+      className="sf-hero-carousel"
+      style={{
+        position: 'relative', marginBottom: '40px', borderRadius: '20px', overflow: 'hidden',
+        minHeight: isSingle ? '320px' : '400px', background: '#f3f4f6',
+        touchAction: 'pan-y',
+      }}
+      onMouseEnter={pauseAuto}
+      onMouseLeave={resumeAuto}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Slides */}
+      <div style={{
+        display: 'flex', transition: isDragging ? 'none' : 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+        transform: `translateX(${isRTL ? '' : '-'}${current * 100}%)`,
+        direction: isRTL ? 'rtl' : 'ltr',
+      }}>
+        {allSlides.map((slide, idx) => {
+          const content = (
+            <div style={{
+              position: 'relative', zIndex: 1, maxWidth: '560px',
+              padding: '48px 40px', width: '100%',
+              display: 'flex', flexDirection: 'column',
+              alignItems: slide.textPosition === 'center' ? 'center' : slide.textPosition === 'right' ? 'flex-end' : 'flex-start',
+              textAlign: slide.textPosition === 'center' ? 'center' : slide.textPosition === 'right' ? 'right' : 'left',
+            }}>
+              {slide.title && (
+                <h2 style={{
+                  color: slide.imageUrl ? '#fff' : c('text', '#111'),
+                  fontSize: '38px', margin: '0 0 12px', fontWeight: 900, letterSpacing: '-1px', lineHeight: 1.1,
+                  textShadow: slide.imageUrl ? '0 2px 12px rgba(0,0,0,0.3)' : 'none',
+                }}>{slide.title}</h2>
+              )}
+              {slide.subtitle && (
+                <p style={{
+                  color: slide.imageUrl ? '#fff' : c('textMuted', '#6b7280'),
+                  opacity: slide.imageUrl ? 0.95 : 1, margin: '0 0 28px', fontSize: '16px', lineHeight: 1.6,
+                  textShadow: slide.imageUrl ? '0 1px 8px rgba(0,0,0,0.3)' : 'none',
+                }}>{slide.subtitle}</p>
+              )}
+              {slide.buttonText && (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '8px',
+                  background: slide.imageUrl ? '#fff' : c('primary', '#059669'),
+                  color: slide.imageUrl ? c('primary', '#059669') : '#fff',
+                  padding: '14px 28px', borderRadius: '12px', fontWeight: 700, fontSize: '15px',
+                  transition: 'all 0.25s', boxShadow: slide.imageUrl ? '0 4px 20px rgba(0,0,0,0.15)' : '0 4px 14px rgba(5,150,105,0.2)',
+                }}>
+                  {slide.buttonText} <ArrowRight size={18} style={{ transform: isRTL ? 'scaleX(-1)' : 'none' }} />
+                </span>
+              )}
+            </div>
+          );
+
+          const slideContent = slide.buttonLink ? (
+            <Link to={slide.buttonLink} style={{ textDecoration: 'none', display: 'block', width: '100%' }}>{content}</Link>
+          ) : content;
+
+          return (
+            <div key={idx} style={{
+              flex: '0 0 100%', minWidth: '100%', position: 'relative',
+              display: 'flex', alignItems: 'center',
+              background: slide.imageUrl
+                ? `linear-gradient(rgba(0,0,0,0.25), rgba(0,0,0,0.25)), url(${slide.imageUrl}) center/cover`
+                : `linear-gradient(135deg, ${c('surface', '#f9fafb')} 0%, #fff 100%)`,
+              border: slide.imageUrl ? 'none' : `1px solid ${c('borderColor', '#e5e7eb')}`,
+              minHeight: isSingle ? '320px' : '400px',
+            }}>
+              {slideContent}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Navigation arrows (multi-slide only) */}
+      {!isSingle && (
+        <>
+          <button
+            onClick={(e) => { e.stopPropagation(); prev(); }}
+            style={{
+              position: 'absolute', [isRTL ? 'right' : 'left']: '12px', top: '50%', transform: 'translateY(-50%)',
+              width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.9)',
+              border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              zIndex: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.15)', transition: 'all 0.2s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.9)'; e.currentTarget.style.transform = 'translateY(-50%) scale(1)'; }}
+          >
+            {isRTL ? <ChevronRight size={20} color="#333" /> : <ChevronLeft size={20} color="#333" />}
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); next(); }}
+            style={{
+              position: 'absolute', [isRTL ? 'left' : 'right']: '12px', top: '50%', transform: 'translateY(-50%)',
+              width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.9)',
+              border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              zIndex: 2, boxShadow: '0 2px 8px rgba(0,0,0,0.15)', transition: 'all 0.2s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.9)'; e.currentTarget.style.transform = 'translateY(-50%) scale(1)'; }}
+          >
+            {isRTL ? <ChevronLeft size={20} color="#333" /> : <ChevronRight size={20} color="#333" />}
+          </button>
+        </>
+      )}
+
+      {/* Dots indicator (multi-slide only) */}
+      {!isSingle && (
+        <div style={{
+          position: 'absolute', bottom: '16px', left: '50%', transform: 'translateX(-50%)',
+          display: 'flex', gap: '8px', zIndex: 2,
+        }}>
+          {allSlides.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={(e) => { e.stopPropagation(); goTo(idx); }}
+              style={{
+                width: idx === current ? '24px' : '8px', height: '8px', borderRadius: '999px',
+                background: idx === current ? '#fff' : 'rgba(255,255,255,0.5)',
+                border: 'none', cursor: 'pointer', transition: 'all 0.3s',
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      <style>{`
+        @media (max-width: 768px) {
+          .sf-hero-carousel { min-height: 280px !important; border-radius: 12px !important; }
+          .sf-hero-carousel h2 { font-size: 26px !important; }
+          .sf-hero-carousel p { font-size: 14px !important; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// ==================== Image Banner Component ====================
+function ImageBanner({ settings, c, t, isRTL }) {
+  const banners = settings.banners || [];
+  const single = { imageUrl: settings.imageUrl || '', linkUrl: settings.linkUrl || '', altText: settings.altText || '', openInNewTab: settings.openInNewTab || false };
+  const allBanners = banners.length > 0 ? banners : (single.imageUrl ? [single] : []);
+
+  if (allBanners.length === 0) return null;
+
+  return (
+    <div key="image-banner" style={{ marginBottom: '32px' }}>
+      {allBanners.length === 1 ? (
+        <BannerItem banner={allBanners[0]} />
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(allBanners.length, 3)}, 1fr)`, gap: '16px' }}>
+          {allBanners.map((b, i) => <BannerItem key={i} banner={b} />)}
+        </div>
+      )}
+    </div>
+  );
+
+  function BannerItem({ banner }) {
+    const img = (
+      <img
+        src={banner.imageUrl}
+        alt={banner.altText || ''}
+        loading="lazy"
+        style={{ width: '100%', display: 'block', maxHeight: '400px', objectFit: 'cover', borderRadius: '12px', transition: 'transform 0.4s ease' }}
+      />
+    );
+    if (banner.linkUrl) {
+      return banner.openInNewTab
+        ? <a href={banner.linkUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'block', overflow: 'hidden', borderRadius: '12px' }} onMouseEnter={e => e.currentTarget.querySelector('img').style.transform = 'scale(1.03)'} onMouseLeave={e => e.currentTarget.querySelector('img').style.transform = 'scale(1)'}>{img}</a>
+        : <Link to={banner.linkUrl} style={{ display: 'block', overflow: 'hidden', borderRadius: '12px' }} onMouseEnter={e => e.currentTarget.querySelector('img').style.transform = 'scale(1.03)'} onMouseLeave={e => e.currentTarget.querySelector('img').style.transform = 'scale(1)'}>{img}</Link>;
+    }
+    return <div style={{ borderRadius: '12px', overflow: 'hidden' }}>{img}</div>;
+  }
 }
 
 function FlashSaleSection({ settings, products, currency, colors, onQuickView }) {
@@ -469,7 +695,7 @@ function FlashSaleSection({ settings, products, currency, colors, onQuickView })
               <Link to={`/store/products/${slug}`} style={{ textDecoration: 'none', display: 'block' }}>
                 <div style={{ aspectRatio: '1', background: '#f3f4f6', overflow: 'hidden' }}>
                   {p.images?.[0]?.url ? (
-                    <img src={p.images[0].url} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={p.images[0].url} alt={p.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
                     <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: '11px' }}>No image</div>
                   )}
