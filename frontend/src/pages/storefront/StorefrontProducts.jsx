@@ -8,6 +8,7 @@ import { useI18n } from '../../store/storefrontI18n';
 import StorefrontSeo from '../../components/storefront/StorefrontSeo';
 import StorefrontBreadcrumbs from '../../components/storefront/StorefrontBreadcrumbs';
 import QuickViewModal from '../../components/storefront/QuickViewModal';
+import LiveSearch from '../../components/storefront/LiveSearch';
 import { SkeletonGrid } from '../../components/storefront/StorefrontUi';
 
 export default function StorefrontProducts() {
@@ -112,14 +113,7 @@ export default function StorefrontProducts() {
         </h1>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
           {/* Search */}
-          <form onSubmit={e => { e.preventDefault(); updateParam('search', e.target.elements.q.value); }} style={{ flex: 1, minWidth: '200px', display: 'flex' }}>
-            <input name="q" defaultValue={search} placeholder={t('search')} style={{
-              flex: 1, padding: '12px 16px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: isRTL ? '0 12px 12px 0' : '12px 0 0 12px', fontSize: '14px', outline: 'none', transition: 'border-color 0.2s',
-            }} />
-            <button type="submit" style={{ padding: '12px 20px', background: c('primary', '#4f46e5'), color: '#fff', border: 'none', borderRadius: isRTL ? '12px 0 0 12px' : '0 12px 12px 0', cursor: 'pointer', transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = '0.9'} onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
-              <Search size={16} />
-            </button>
-          </form>
+          <LiveSearch placeholder={t('search')} colors={colors} isRTL={isRTL} />
           {/* Sort */}
           <select value={sort} onChange={e => updateParam('sort', e.target.value)} style={{
             padding: '12px 16px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '12px', fontSize: '14px', background: '#fff', cursor: 'pointer', outline: 'none',

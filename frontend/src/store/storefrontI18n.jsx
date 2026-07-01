@@ -15,6 +15,9 @@ const translations = {
     // Home
     shopNow: 'Shop Now',
     viewAll: 'View all',
+    viewAllResults: 'View all results',
+    searching: 'Searching...',
+    clearWishlist: 'Clear wishlist',
     featuredProducts: 'Featured Products',
     categories: 'Categories',
     subscribe: 'Subscribe',
@@ -89,6 +92,10 @@ const translations = {
     cashOnDelivery: 'Cash on Delivery',
     creditCard: 'Credit Card',
     orderSummary: 'Order Summary',
+    reviewOrder: 'Review Order',
+    orderItems: 'Order Items',
+    back: 'Back',
+    edit: 'Edit',
     streetAddress: 'Street address',
     // Success/Cancel
     thankYou: 'Thank You!',
@@ -246,6 +253,9 @@ const translations = {
     // Home
     shopNow: 'تسوق الآن',
     viewAll: 'عرض الكل',
+    viewAllResults: 'عرض كل النتائج',
+    searching: 'جاري البحث...',
+    clearWishlist: 'مسح المفضلة',
     featuredProducts: 'المنتجات المميزة',
     categories: 'الفئات',
     subscribe: 'اشترك',
@@ -320,6 +330,10 @@ const translations = {
     cashOnDelivery: 'الدفع عند الاستلام',
     creditCard: 'بطاقة ائتمان',
     orderSummary: 'ملخص الطلب',
+    reviewOrder: 'مراجعة الطلب',
+    orderItems: 'عناصر الطلب',
+    back: 'رجوع',
+    edit: 'تعديل',
     streetAddress: 'عنوان الشارع',
     // Success/Cancel
     thankYou: 'شكراً لك!',

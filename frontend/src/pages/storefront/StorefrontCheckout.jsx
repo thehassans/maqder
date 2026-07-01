@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Loader2, CheckCircle, AlertCircle, ShoppingCart, Download, Printer } from 'lucide-react';
+import { Loader2, CheckCircle, AlertCircle, ShoppingCart, Download, Printer, ChevronRight, ChevronLeft, MapPin, CreditCard, FileText, Check } from 'lucide-react';
 import SaudiRiyalSymbol from '../../components/storefront/SaudiRiyalSymbol';
 import storeApi from '../../lib/storeApi';
 import { useCart } from '../../store/storefrontCart';
@@ -9,6 +9,12 @@ import { firePixelEvent } from '../../components/storefront/StorefrontLayout';
 import StorefrontSeo from '../../components/storefront/StorefrontSeo';
 import StorefrontBreadcrumbs from '../../components/storefront/StorefrontBreadcrumbs';
 
+const STEPS = [
+  { key: 'shipping', icon: MapPin, label: 'shippingDetails' },
+  { key: 'payment', icon: CreditCard, label: 'paymentMethod' },
+  { key: 'review', icon: FileText, label: 'reviewOrder' },
+];
+
 export default function StorefrontCheckout() {
   const navigate = useNavigate();
   const { items, cartTotal, clearCart, cartId, setCartEmail, trackCart } = useCart();
@@ -16,6 +22,7 @@ export default function StorefrontCheckout() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(null);
+  const [step, setStep] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState('cod');
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null);
@@ -173,6 +180,23 @@ export default function StorefrontCheckout() {
   const inputStyle = { width: '100%', padding: '12px 16px', border: '1px solid #e5e7eb', borderRadius: '12px', fontSize: '14px', outline: 'none', transition: 'border-color 0.2s' };
   const labelStyle = { display: 'block', fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '6px' };
 
+  const validateShipping = () => {
+    if (!form.name || !form.phone) { setError(t('namePhoneRequired')); return false; }
+    setError('');
+    return true;
+  };
+
+  const nextStep = () => {
+    if (step === 0 && !validateShipping()) return;
+    setStep(prev => Math.min(prev + 1, STEPS.length - 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const prevStep = () => {
+    setStep(prev => Math.max(prev - 1, 0));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '24px 20px' }}>
       <StorefrontSeo title={t('checkout')} />
@@ -182,70 +206,205 @@ export default function StorefrontCheckout() {
         <span style={{ fontSize: '13px', color: '#6b7280', background: '#f3f4f6', padding: '6px 14px', borderRadius: '999px', fontWeight: 700 }}>{t('guestCheckout')}</span>
       </div>
 
+      {/* Step indicator */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '32px', gap: '0' }}>
+        {STEPS.map((s, i) => {
+          const StepIcon = s.icon;
+          const isComplete = i < step;
+          const isActive = i === step;
+          return (
+            <React.Fragment key={s.key}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: isComplete ? '#059669' : isActive ? '#4f46e5' : '#e5e7eb', color: isComplete || isActive ? '#fff' : '#9ca3af',
+                  transition: 'all 0.3s', flexShrink: 0,
+                }}>
+                  {isComplete ? <Check size={18} /> : <StepIcon size={18} />}
+                </div>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: isActive ? '#4f46e5' : isComplete ? '#059669' : '#9ca3af', whiteSpace: 'nowrap' }}>
+                  {t(s.label)}
+                </span>
+              </div>
+              {i < STEPS.length - 1 && (
+                <div style={{ width: '40px', height: '2px', background: i < step ? '#059669' : '#e5e7eb', margin: '0 12px', transition: 'background 0.3s' }} />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+
       {error && <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '12px', padding: '14px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', color: '#dc2626', fontSize: '14px', fontWeight: 600 }}><AlertCircle size={16} /> {error}</div>}
 
       <form id="checkout-form" onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '32px' }} className="store-checkout-grid">
-        {/* Left: Customer info */}
+        {/* Left: Step content */}
         <div>
-          <h2 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '20px', letterSpacing: '-0.3px' }}>{t('shippingDetails')}</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+          {/* Step 0: Shipping */}
+          {step === 0 && (
             <div>
-              <label style={labelStyle}>{t('fullName')}</label>
-              <input style={inputStyle} value={form.name} onChange={e => update('name', e.target.value)} required />
+              <h2 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '20px', letterSpacing: '-0.3px' }}>{t('shippingDetails')}</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                <div>
+                  <label style={labelStyle}>{t('fullName')}</label>
+                  <input style={inputStyle} value={form.name} onChange={e => update('name', e.target.value)} required />
+                </div>
+                <div>
+                  <label style={labelStyle}>{t('phone')}</label>
+                  <input style={inputStyle} value={form.phone} onChange={e => update('phone', e.target.value)} required />
+                </div>
+              </div>
+              <div style={{ marginBottom: '12px' }}>
+                <label style={labelStyle}>{t('email')}</label>
+                <input style={inputStyle} type="email" value={form.email} onChange={e => update('email', e.target.value)} />
+              </div>
+              <div style={{ marginBottom: '12px' }}>
+                <label style={labelStyle}>{t('addressLine1')}</label>
+                <input style={inputStyle} value={form.addressLine1} onChange={e => update('addressLine1', e.target.value)} placeholder={t('streetAddress')} />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                <div>
+                  <label style={labelStyle}>{t('city')}</label>
+                  <input style={inputStyle} value={form.city} onChange={e => update('city', e.target.value)} />
+                </div>
+                <div>
+                  <label style={labelStyle}>{t('region')}</label>
+                  <input style={inputStyle} value={form.region} onChange={e => update('region', e.target.value)} />
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                <div>
+                  <label style={labelStyle}>{t('postalCode')}</label>
+                  <input style={inputStyle} value={form.postalCode} onChange={e => update('postalCode', e.target.value)} />
+                </div>
+                <div>
+                  <label style={labelStyle}>{t('country')}</label>
+                  <input style={inputStyle} value={form.country} onChange={e => update('country', e.target.value)} />
+                </div>
+              </div>
+              <div>
+                <label style={labelStyle}>{t('orderNotes')}</label>
+                <textarea style={{ ...inputStyle, minHeight: '60px' }} value={form.notes} onChange={e => update('notes', e.target.value)} placeholder={t('optionalNotes')} />
+              </div>
+              <button type="button" onClick={nextStep} style={{
+                marginTop: '24px', padding: '14px 32px', background: 'linear-gradient(135deg, #4f46e5, #6366f1)', color: '#fff', border: 'none', borderRadius: '14px',
+                fontWeight: 700, fontSize: '15px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', boxShadow: '0 4px 14px rgba(79,70,229,0.25)',
+              }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
+                {t('paymentMethod')} <ChevronRight size={18} style={{ transform: isRTL ? 'scaleX(-1)' : 'none' }} />
+              </button>
             </div>
-            <div>
-              <label style={labelStyle}>{t('phone')}</label>
-              <input style={inputStyle} value={form.phone} onChange={e => update('phone', e.target.value)} required />
-            </div>
-          </div>
-          <div style={{ marginBottom: '12px' }}>
-            <label style={labelStyle}>{t('email')}</label>
-            <input style={inputStyle} type="email" value={form.email} onChange={e => update('email', e.target.value)} />
-          </div>
-          <div style={{ marginBottom: '12px' }}>
-            <label style={labelStyle}>{t('addressLine1')}</label>
-            <input style={inputStyle} value={form.addressLine1} onChange={e => update('addressLine1', e.target.value)} placeholder={t('streetAddress')} />
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-            <div>
-              <label style={labelStyle}>{t('city')}</label>
-              <input style={inputStyle} value={form.city} onChange={e => update('city', e.target.value)} />
-            </div>
-            <div>
-              <label style={labelStyle}>{t('region')}</label>
-              <input style={inputStyle} value={form.region} onChange={e => update('region', e.target.value)} />
-            </div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-            <div>
-              <label style={labelStyle}>{t('postalCode')}</label>
-              <input style={inputStyle} value={form.postalCode} onChange={e => update('postalCode', e.target.value)} />
-            </div>
-            <div>
-              <label style={labelStyle}>{t('country')}</label>
-              <input style={inputStyle} value={form.country} onChange={e => update('country', e.target.value)} />
-            </div>
-          </div>
-          <div>
-            <label style={labelStyle}>{t('orderNotes')}</label>
-            <textarea style={{ ...inputStyle, minHeight: '60px' }} value={form.notes} onChange={e => update('notes', e.target.value)} placeholder={t('optionalNotes')} />
-          </div>
+          )}
 
-          {/* Payment method */}
-          <h2 style={{ fontSize: '20px', fontWeight: 800, marginTop: '28px', marginBottom: '14px', letterSpacing: '-0.3px' }}>{t('paymentMethod')}</h2>
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '14px 20px', border: paymentMethod === 'cod' ? '2px solid #4f46e5' : '1px solid #e5e7eb', borderRadius: '14px', cursor: 'pointer', transition: 'all 0.2s', background: paymentMethod === 'cod' ? '#eef2ff' : '#fff' }}>
-              <input type="radio" checked={paymentMethod === 'cod'} onChange={() => { setPaymentMethod('cod'); firePixelEvent('AddPaymentInfo', { value: finalTotal, currency: 'SAR', payment_method: 'cod' }); }} />
-              <span style={{ fontWeight: 700, fontSize: '14px' }}>{t('cashOnDelivery')}</span>
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '14px 20px', border: paymentMethod === 'moyasar' ? '2px solid #4f46e5' : '1px solid #e5e7eb', borderRadius: '14px', cursor: 'pointer', transition: 'all 0.2s', background: paymentMethod === 'moyasar' ? '#eef2ff' : '#fff' }}>
-              <input type="radio" checked={paymentMethod === 'moyasar'} onChange={() => { setPaymentMethod('moyasar'); firePixelEvent('AddPaymentInfo', { value: finalTotal, currency: 'SAR', payment_method: 'moyasar' }); }} />
-              <span style={{ fontWeight: 700, fontSize: '14px' }}>{t('creditCard')}</span>
-            </label>
-          </div>
+          {/* Step 1: Payment */}
+          {step === 1 && (
+            <div>
+              <h2 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '20px', letterSpacing: '-0.3px' }}>{t('paymentMethod')}</h2>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '14px 20px', border: paymentMethod === 'cod' ? '2px solid #4f46e5' : '1px solid #e5e7eb', borderRadius: '14px', cursor: 'pointer', transition: 'all 0.2s', background: paymentMethod === 'cod' ? '#eef2ff' : '#fff' }}>
+                  <input type="radio" checked={paymentMethod === 'cod'} onChange={() => { setPaymentMethod('cod'); firePixelEvent('AddPaymentInfo', { value: finalTotal, currency: 'SAR', payment_method: 'cod' }); }} />
+                  <span style={{ fontWeight: 700, fontSize: '14px' }}>{t('cashOnDelivery')}</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '14px 20px', border: paymentMethod === 'moyasar' ? '2px solid #4f46e5' : '1px solid #e5e7eb', borderRadius: '14px', cursor: 'pointer', transition: 'all 0.2s', background: paymentMethod === 'moyasar' ? '#eef2ff' : '#fff' }}>
+                  <input type="radio" checked={paymentMethod === 'moyasar'} onChange={() => { setPaymentMethod('moyasar'); firePixelEvent('AddPaymentInfo', { value: finalTotal, currency: 'SAR', payment_method: 'moyasar' }); }} />
+                  <span style={{ fontWeight: 700, fontSize: '14px' }}>{t('creditCard')}</span>
+                </label>
+              </div>
+
+              {/* Shipping info summary */}
+              <div style={{ marginTop: '24px', padding: '16px', background: '#f9fafb', borderRadius: '14px', border: '1px solid #f3f4f6' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: 700, margin: 0 }}>{t('shippingDetails')}</h3>
+                  <button type="button" onClick={() => setStep(0)} style={{ fontSize: '13px', color: '#4f46e5', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>{t('edit')}</button>
+                </div>
+                <p style={{ fontSize: '13px', color: '#4b5563', margin: 0, lineHeight: 1.6 }}>
+                  {form.name} • {form.phone}<br />
+                  {form.addressLine1}{form.addressLine2 ? `, ${form.addressLine2}` : ''}<br />
+                  {form.city}{form.region ? `, ${form.region}` : ''}{form.postalCode ? ` ${form.postalCode}` : ''}<br />
+                  {form.country}
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+                <button type="button" onClick={prevStep} style={{
+                  padding: '14px 24px', background: '#fff', color: '#374151', border: '1px solid #e5e7eb', borderRadius: '14px',
+                  fontWeight: 700, fontSize: '15px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s',
+                }} onMouseEnter={e => e.currentTarget.style.borderColor = '#4f46e5'} onMouseLeave={e => e.currentTarget.style.borderColor = '#e5e7eb'}>
+                  <ChevronLeft size={18} style={{ transform: isRTL ? 'scaleX(-1)' : 'none' }} /> {t('back')}
+                </button>
+                <button type="button" onClick={nextStep} style={{
+                  padding: '14px 32px', background: 'linear-gradient(135deg, #4f46e5, #6366f1)', color: '#fff', border: 'none', borderRadius: '14px',
+                  fontWeight: 700, fontSize: '15px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s', boxShadow: '0 4px 14px rgba(79,70,229,0.25)',
+                }} onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
+                  {t('reviewOrder')} <ChevronRight size={18} style={{ transform: isRTL ? 'scaleX(-1)' : 'none' }} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Review */}
+          {step === 2 && (
+            <div>
+              <h2 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '20px', letterSpacing: '-0.3px' }}>{t('reviewOrder')}</h2>
+
+              {/* Shipping review */}
+              <div style={{ padding: '16px', background: '#f9fafb', borderRadius: '14px', border: '1px solid #f3f4f6', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: 700, margin: 0 }}>{t('shippingDetails')}</h3>
+                  <button type="button" onClick={() => setStep(0)} style={{ fontSize: '13px', color: '#4f46e5', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>{t('edit')}</button>
+                </div>
+                <p style={{ fontSize: '13px', color: '#4b5563', margin: 0, lineHeight: 1.6 }}>
+                  {form.name} • {form.phone}<br />
+                  {form.addressLine1}{form.addressLine2 ? `, ${form.addressLine2}` : ''}<br />
+                  {form.city}{form.region ? `, ${form.region}` : ''}{form.postalCode ? ` ${form.postalCode}` : ''}<br />
+                  {form.country}
+                </p>
+              </div>
+
+              {/* Payment review */}
+              <div style={{ padding: '16px', background: '#f9fafb', borderRadius: '14px', border: '1px solid #f3f4f6', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: 700, margin: 0 }}>{t('paymentMethod')}</h3>
+                  <button type="button" onClick={() => setStep(1)} style={{ fontSize: '13px', color: '#4f46e5', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>{t('edit')}</button>
+                </div>
+                <p style={{ fontSize: '14px', fontWeight: 600, color: '#111', margin: 0 }}>
+                  {paymentMethod === 'cod' ? t('cashOnDelivery') : t('creditCard')}
+                </p>
+              </div>
+
+              {/* Items review */}
+              <div style={{ padding: '16px', background: '#f9fafb', borderRadius: '14px', border: '1px solid #f3f4f6' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 12px' }}>{t('orderItems')}</h3>
+                {items.map(item => (
+                  <div key={item.key} style={{ display: 'flex', gap: '10px', padding: '8px 0', borderBottom: '1px solid #f3f4f6' }}>
+                    {item.image && <img src={item.image} alt="" style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover' }} />}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: '13px', fontWeight: 600, margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</p>
+                      <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>{t('qtyLabel')}: {item.quantity} × {item.price} <SaudiRiyalSymbol size={9} color="#6b7280" /></p>
+                    </div>
+                    <span style={{ fontSize: '14px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '2px' }}>{item.price * item.quantity} <SaudiRiyalSymbol size={10} color="#111" /></span>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+                <button type="button" onClick={prevStep} style={{
+                  padding: '14px 24px', background: '#fff', color: '#374151', border: '1px solid #e5e7eb', borderRadius: '14px',
+                  fontWeight: 700, fontSize: '15px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s',
+                }} onMouseEnter={e => e.currentTarget.style.borderColor = '#4f46e5'} onMouseLeave={e => e.currentTarget.style.borderColor = '#e5e7eb'}>
+                  <ChevronLeft size={18} style={{ transform: isRTL ? 'scaleX(-1)' : 'none' }} /> {t('back')}
+                </button>
+                <button type="submit" disabled={loading} style={{
+                  padding: '14px 40px', background: 'linear-gradient(135deg, #059669, #10b981)', color: '#fff', border: 'none', borderRadius: '14px',
+                  fontWeight: 700, fontSize: '16px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: loading ? 0.6 : 1,
+                  transition: 'all 0.2s', boxShadow: '0 4px 14px rgba(5,150,105,0.25)',
+                }} onMouseEnter={e => { if (!loading) e.currentTarget.style.transform = 'translateY(-2px)'; }} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
+                  {loading ? <Loader2 size={18} className="animate-spin" /> : t('placeOrder')}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Right: Order summary */}
+        {/* Right: Order summary (always visible) */}
         <div>
           <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '20px', padding: '24px', position: 'sticky', top: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '20px', letterSpacing: '-0.3px' }}>{t('orderSummary')}</h2>
@@ -293,13 +452,6 @@ export default function StorefrontCheckout() {
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '20px', fontWeight: 800, paddingTop: '14px', borderTop: '1px solid #e5e7eb', marginTop: '10px' }}>
               <span>{t('total')}</span><span style={{ color: '#059669', display: 'flex', alignItems: 'center', gap: '3px' }}>{finalTotal} <SaudiRiyalSymbol size={15} color="#059669" /></span>
             </div>
-            <button type="submit" disabled={loading} style={{
-              width: '100%', marginTop: '24px', padding: '16px', background: 'linear-gradient(135deg, #4f46e5, #6366f1)', color: '#fff', border: 'none', borderRadius: '14px',
-              fontWeight: 700, fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: loading ? 0.6 : 1,
-              transition: 'all 0.2s', boxShadow: '0 4px 14px rgba(79,70,229,0.25)',
-            }} onMouseEnter={e => { if (!loading) e.currentTarget.style.transform = 'translateY(-2px)'; }} onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}>
-              {loading ? <Loader2 size={18} className="animate-spin" /> : t('placeOrder')}
-            </button>
           </div>
         </div>
       </form>

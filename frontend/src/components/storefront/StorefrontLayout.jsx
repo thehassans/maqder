@@ -6,6 +6,7 @@ import storeApi from '../../lib/storeApi';
 import { useCart } from '../../store/storefrontCart';
 import { useI18n } from '../../store/storefrontI18n';
 import MiniCartPreview from './MiniCartPreview';
+import WishlistDrawer from './WishlistDrawer';
 import CookieConsent from './CookieConsent';
 import MobileBottomNav from './MobileBottomNav';
 import BackToTop from './BackToTop';
@@ -142,6 +143,7 @@ export default function StorefrontLayout({ children }) {
   const [newsletterDone, setNewsletterDone] = useState(false);
   const [categories, setCategories] = useState([]);
   const [megaMenuOpen, setMegaMenuOpen] = useState(false);
+  const [wishlistOpen, setWishlistOpen] = useState(false);
   const megaMenuRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -377,12 +379,12 @@ export default function StorefrontLayout({ children }) {
             </button>
             {header.showCart !== false && (
               <>
-                <Link to="/store/wishlist" style={{ background: 'none', border: 'none', cursor: 'pointer', color: c('text', '#111827'), textDecoration: 'none', transition: 'transform 0.2s' }}
+                <button onClick={() => setWishlistOpen(true)} style={{ position: 'relative', background: 'none', border: 'none', cursor: 'pointer', color: c('text', '#111827'), transition: 'transform 0.2s' }}
                   onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
                   onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
                 >
                   <Heart size={22} />
-                </Link>
+                </button>
                 <button onClick={() => setIsOpen(true)} style={{ position: 'relative', background: 'none', border: 'none', cursor: 'pointer', color: c('text', '#111827'), transition: 'transform 0.2s' }}
                   onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
                   onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
@@ -545,6 +547,9 @@ export default function StorefrontLayout({ children }) {
 
       {/* Mini-cart drawer */}
       <MiniCartPreview />
+
+      {/* Wishlist drawer */}
+      <WishlistDrawer isOpen={wishlistOpen} onClose={() => setWishlistOpen(false)} />
 
       {/* Cookie consent banner */}
       <CookieConsent />
