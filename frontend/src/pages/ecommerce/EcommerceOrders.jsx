@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { ListOrdered, Search, Loader2, Eye, Package, DollarSign, TrendingUp, ShoppingBag, X, Download, CheckSquare, Printer } from 'lucide-react';
+import { ListOrdered, Search, Loader2, Eye, Package, DollarSign, TrendingUp, ShoppingBag, X, Download, CheckSquare, Printer, Truck, ChevronRight, PackageCheck, Zap } from 'lucide-react';
 import api from '../../lib/api';
 
 const STATUS_STYLES = {
@@ -44,6 +44,9 @@ export default function EcommerceOrders() {
   const [selected, setSelected] = useState(new Set());
   const [bulkStatus, setBulkStatus] = useState('');
   const [bulkLoading, setBulkLoading] = useState(false);
+  const [viewMode, setViewMode] = useState('table'); // 'table' or 'pipeline'
+  const [pipelineOrders, setPipelineOrders] = useState({ pending: [], confirmed: [], processing: [], shipped: [], delivered: [] });
+  const [actionLoading, setActionLoading] = useState({});
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -109,6 +112,47 @@ export default function EcommerceOrders() {
     }
   };
 
+  const handleQuickAction = async (orderId, action) => {
+    setActionLoading(prev => ({ ...prev, [orderId]: true }));
+    try {
+      if (action === 'ship') {
+        await api.post(`/ecommerce/fulfillment/ship/${orderId}`, {});
+      } else if (action === 'advance') {
+        const order = orders.find(o => o._id === orderId);
+        const nextStatus = { pending: 'confirmed', confirmed: 'processing', processing: 'shipped', shipped: 'delivered', delivered: 'completed' }[order?.status];
+        if (nextStatus) await api.patch(`/ecommerce/orders/${orderId}/status`, { status: nextStatus });
+      }
+      fetchOrders();
+    } catch (err) {
+      console.error('Quick action failed', err);
+    } finally {
+      setActionLoading(prev => ({ ...prev, [orderId]: false }));
+    }
+  };
+
+  const fetchPipeline = useCallback(async () => {
+    try {
+      const [pending, confirmed, processing, shipped, delivered] = await Promise.all([
+        api.get('/ecommerce/orders', { params: { status: 'pending', limit: 50 } }),
+        api.get('/ecommerce/orders', { params: { status: 'confirmed', limit: 50 } }),
+        api.get('/ecommerce/orders', { params: { status: 'processing', limit: 50 } }),
+        api.get('/ecommerce/orders', { params: { status: 'shipped', limit: 50 } }),
+        api.get('/ecommerce/orders', { params: { status: 'delivered', limit: 50 } }),
+      ]);
+      setPipelineOrders({
+        pending: pending.data.orders || [],
+        confirmed: confirmed.data.orders || [],
+        processing: processing.data.orders || [],
+        shipped: shipped.data.orders || [],
+        delivered: delivered.data.orders || [],
+      });
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => { if (viewMode === 'pipeline') fetchPipeline(); }, [viewMode, fetchPipeline]);
+
   const exportCsv = () => {
     const rows = orders.filter(o => selected.size === 0 || selected.has(o._id));
     const headers = ['Order Number', 'Customer', 'Email', 'Phone', 'City', 'Date', 'Line Items', 'Item Details', 'Subtotal', 'Discount', 'Shipping Cost', 'Tax', 'Total', 'Currency', 'Payment Status', 'Payment Method', 'Shipping Status', 'Courier', 'Tracking Number', 'Order Status'];
@@ -153,13 +197,19 @@ export default function EcommerceOrders() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-12">
-      <div className="flex items-center gap-3">
-        <div className="w-11 h-11 rounded-2xl bg-indigo-50 flex items-center justify-center">
-          <ListOrdered className="w-6 h-6 text-indigo-600" />
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-2xl bg-indigo-50 flex items-center justify-center">
+            <ListOrdered className="w-6 h-6 text-indigo-600" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white">Orders</h1>
+            <p className="text-sm text-gray-400">{total} order{total !== 1 ? 's' : ''} total</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white">Orders</h1>
-          <p className="text-sm text-gray-400">{total} order{total !== 1 ? 's' : ''} total</p>
+        <div className="flex gap-1 bg-gray-100 dark:bg-dark-700 rounded-xl p-1">
+          <button onClick={() => setViewMode('table')} className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${viewMode === 'table' ? 'bg-white dark:bg-dark-800 text-indigo-600 shadow-sm' : 'text-gray-500'}`}>Table</button>
+          <button onClick={() => setViewMode('pipeline')} className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${viewMode === 'pipeline' ? 'bg-white dark:bg-dark-800 text-indigo-600 shadow-sm' : 'text-gray-500'}`}>Pipeline</button>
         </div>
       </div>
 
@@ -274,8 +324,75 @@ export default function EcommerceOrders() {
         </div>
       )}
 
+      {/* Pipeline view */}
+      {viewMode === 'pipeline' && (
+        <div className="overflow-x-auto pb-4">
+          <div className="flex gap-4 min-w-max">
+            {[
+              { key: 'pending', label: 'Pending', color: 'amber' },
+              { key: 'confirmed', label: 'Confirmed', color: 'blue' },
+              { key: 'processing', label: 'Processing', color: 'indigo' },
+              { key: 'shipped', label: 'Shipped', color: 'violet' },
+              { key: 'delivered', label: 'Delivered', color: 'emerald' },
+            ].map(col => (
+              <div key={col.key} className="w-72 flex-shrink-0">
+                <div className={`flex items-center justify-between px-3 py-2 rounded-t-xl bg-${col.color}-50 dark:bg-${col.color}-900/20`}>
+                  <span className={`text-sm font-bold text-${col.color}-700 dark:text-${col.color}-400`}>{col.label}</span>
+                  <span className={`text-xs font-bold text-${col.color}-600 bg-${col.color}-100 dark:bg-${col.color}-900/40 px-2 py-0.5 rounded-full`}>{pipelineOrders[col.key]?.length || 0}</span>
+                </div>
+                <div className="bg-gray-50 dark:bg-dark-800 rounded-b-xl p-2 space-y-2 min-h-[200px]">
+                  {(pipelineOrders[col.key] || []).map(order => (
+                    <div key={order._id} className="bg-white dark:bg-dark-700 rounded-lg p-3 shadow-sm border border-gray-100 dark:border-dark-600 hover:shadow-md transition-shadow">
+                      <Link to={`/app/dashboard/ecommerce/orders/${order._id}`} className="block">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-bold text-indigo-600">{order.orderNumber}</span>
+                          <span className="text-xs font-bold text-gray-900 dark:text-white">{order.grandTotal?.toLocaleString()} {order.currency}</span>
+                        </div>
+                        <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 truncate">{order.customer?.name}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{order.lineItems?.length || 0} items · {order.payment?.method?.toUpperCase()}</p>
+                      </Link>
+                      {order.shipping?.trackingNumber && (
+                        <p className="text-xs text-violet-600 mt-1 flex items-center gap-1">
+                          <Truck className="w-3 h-3" /> {order.shipping.trackingNumber}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-1 mt-2">
+                        {col.key !== 'delivered' && (
+                          <button
+                            onClick={() => handleQuickAction(order._id, 'advance')}
+                            disabled={actionLoading[order._id]}
+                            className="flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-lg bg-indigo-50 text-indigo-600 text-xs font-bold hover:bg-indigo-100 transition-colors disabled:opacity-40"
+                          >
+                            {actionLoading[order._id] ? <Loader2 className="w-3 h-3 animate-spin" /> : <><ChevronRight className="w-3 h-3" /> Advance</>}
+                          </button>
+                        )}
+                        {col.key === 'processing' && (
+                          <button
+                            onClick={() => handleQuickAction(order._id, 'ship')}
+                            disabled={actionLoading[order._id]}
+                            className="flex-1 flex items-center justify-center gap-1 px-2 py-1 rounded-lg bg-violet-50 text-violet-600 text-xs font-bold hover:bg-violet-100 transition-colors disabled:opacity-40"
+                          >
+                            {actionLoading[order._id] ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Truck className="w-3 h-3" /> Ship</>}
+                          </button>
+                        )}
+                        <Link to={`/app/dashboard/ecommerce/orders/${order._id}`} className="px-2 py-1 rounded-lg bg-gray-50 text-gray-400 hover:bg-gray-100 transition-colors">
+                          <Eye className="w-3 h-3" />
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                  {(pipelineOrders[col.key] || []).length === 0 && (
+                    <div className="text-center py-8 text-xs text-gray-300">No orders</div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Orders table */}
-      {loading ? (
+      {viewMode === 'table' && (loading ? (
         <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>
       ) : orders.length === 0 ? (
         <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 px-6 py-16 text-center">
@@ -335,9 +452,31 @@ export default function EcommerceOrders() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <Link to={`/app/dashboard/ecommerce/orders/${order._id}`} className="inline-flex p-2 rounded-lg hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition-colors">
-                          <Eye className="w-4 h-4" />
-                        </Link>
+                        <div className="flex items-center justify-end gap-1">
+                          {order.status !== 'completed' && order.status !== 'cancelled' && order.status !== 'returned' && (
+                            <button
+                              onClick={() => handleQuickAction(order._id, 'advance')}
+                              disabled={actionLoading[order._id]}
+                              title="Advance to next status"
+                              className="inline-flex p-1.5 rounded-lg hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition-colors disabled:opacity-40"
+                            >
+                              {actionLoading[order._id] ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                            </button>
+                          )}
+                          {order.status === 'processing' && (
+                            <button
+                              onClick={() => handleQuickAction(order._id, 'ship')}
+                              disabled={actionLoading[order._id]}
+                              title="Create shipment"
+                              className="inline-flex p-1.5 rounded-lg hover:bg-violet-50 text-gray-400 hover:text-violet-600 transition-colors disabled:opacity-40"
+                            >
+                              {actionLoading[order._id] ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Truck className="w-3.5 h-3.5" />}
+                            </button>
+                          )}
+                          <Link to={`/app/dashboard/ecommerce/orders/${order._id}`} className="inline-flex p-1.5 rounded-lg hover:bg-indigo-50 text-gray-400 hover:text-indigo-600 transition-colors">
+                            <Eye className="w-3.5 h-3.5" />
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -355,7 +494,7 @@ export default function EcommerceOrders() {
             </div>
           )}
         </>
-      )}
+      ))}
     </div>
   );
 }

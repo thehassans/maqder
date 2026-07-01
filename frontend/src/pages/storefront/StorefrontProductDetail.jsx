@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Loader2, ShoppingCart, Check, Minus, Plus, ChevronRight, Star, Heart, ZoomIn, Truck, Share2, MessageCircle, ShieldCheck, RotateCcw, GitCompare, BellRing } from 'lucide-react';
+import { Loader2, ShoppingCart, Check, Minus, Plus, ChevronRight, Star, Heart, ZoomIn, Truck, Share2, MessageCircle, ShieldCheck, RotateCcw, GitCompare, BellRing, ThumbsUp, ImagePlus, X } from 'lucide-react';
 import SaudiRiyalSymbol from '../../components/storefront/SaudiRiyalSymbol';
 import storeApi from '../../lib/storeApi';
 import { useCart } from '../../store/storefrontCart';
@@ -26,6 +26,9 @@ export default function StorefrontProductDetail() {
   const [reviewForm, setReviewForm] = useState({ customerName: '', customerEmail: '', rating: 5, title: '', body: '' });
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewMessage, setReviewMessage] = useState('');
+  const [reviewImages, setReviewImages] = useState([]);
+  const [reviewImageUploading, setReviewImageUploading] = useState(false);
+  const [votedReviews, setVotedReviews] = useState(new Set());
   const { addItem } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { toggleCompare, isInCompare } = useCompare();
@@ -102,13 +105,50 @@ export default function StorefrontProductDetail() {
     setReviewSubmitting(true);
     setReviewMessage('');
     try {
-      await storeApi.post(`/reviews/product/${id}`, reviewForm);
+      await storeApi.post(`/reviews/product/${id}`, { ...reviewForm, images: reviewImages });
       setReviewMessage('Review submitted! It will appear after approval.');
       setReviewForm({ customerName: '', customerEmail: '', rating: 5, title: '', body: '' });
+      setReviewImages([]);
     } catch (err) {
       setReviewMessage(err.response?.data?.error || 'Failed to submit review');
     } finally {
       setReviewSubmitting(false);
+    }
+  };
+
+  const handleReviewImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setReviewImageUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await storeApi.post(`/reviews/product/${id}/upload-image`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setReviewImages(prev => [...prev, res.data.imageUrl]);
+    } catch {
+      setReviewMessage('Failed to upload image');
+    } finally {
+      setReviewImageUploading(false);
+    }
+  };
+
+  const handleHelpfulVote = async (reviewId) => {
+    if (votedReviews.has(reviewId)) return;
+    try {
+      const voterId = localStorage.getItem('maqder_voter_id') || `voter_${Date.now()}_${Math.random()}`;
+      localStorage.setItem('maqder_voter_id', voterId);
+      const res = await storeApi.post(`/reviews/${reviewId}/helpful`, { voterId });
+      if (!res.data.alreadyVoted) {
+        setReviews(prev => ({
+          ...prev,
+          reviews: prev.reviews.map(r => r._id === reviewId ? { ...r, helpfulVotes: res.data.helpfulVotes } : r),
+        }));
+      }
+      setVotedReviews(prev => new Set([...prev, reviewId]));
+    } catch {
+      // ignore
     }
   };
 
@@ -488,7 +528,19 @@ export default function StorefrontProductDetail() {
                   </div>
                   {r.title && <p style={{ fontWeight: 700, fontSize: '14px', marginBottom: '6px', color: '#111' }}>{r.title}</p>}
                   {r.body && <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '10px', lineHeight: 1.6 }}>{r.body}</p>}
-                  <p style={{ fontSize: '11px', color: '#d1d5db' }}>— {r.customerName} · {new Date(r.createdAt).toLocaleDateString(isRTL ? 'ar' : 'en')}</p>
+                  {r.images && r.images.length > 0 && (
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
+                      {r.images.map((img, idx) => (
+                        <img key={idx} src={img.url} alt={`Review photo ${idx + 1}`} style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #e5e7eb', cursor: 'pointer' }} onClick={() => window.open(img.url, '_blank')} />
+                      ))}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
+                    <p style={{ fontSize: '11px', color: '#d1d5db' }}>— {r.customerName} · {new Date(r.createdAt).toLocaleDateString(isRTL ? 'ar' : 'en')}</p>
+                    <button onClick={() => handleHelpfulVote(r._id)} disabled={votedReviews.has(r._id)} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', cursor: votedReviews.has(r._id) ? 'default' : 'pointer', fontSize: '11px', color: votedReviews.has(r._id) ? '#9ca3af' : '#6b7280', fontWeight: 600, padding: '4px 8px', borderRadius: '6px', transition: 'all 0.2s' }} onMouseEnter={e => { if (!votedReviews.has(r._id)) { e.currentTarget.style.background = '#f3f4f6'; e.currentTarget.style.color = '#111'; } }} onMouseLeave={e => { if (!votedReviews.has(r._id)) { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#6b7280'; } }}>
+                      <ThumbsUp size={12} /> {r.helpfulVotes || 0}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -516,7 +568,30 @@ export default function StorefrontProductDetail() {
             ))}
           </div>
           <input placeholder={t('reviewTitle')} value={reviewForm.title} onChange={e => setReviewForm({ ...reviewForm, title: e.target.value })} style={{ width: '100%', padding: '10px 14px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '10px', fontSize: '14px', marginBottom: '12px', outline: 'none', transition: 'border-color 0.2s' }} />
-          <textarea placeholder={t('yourReview')} value={reviewForm.body} onChange={e => setReviewForm({ ...reviewForm, body: e.target.value })} style={{ width: '100%', padding: '10px 14px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '10px', fontSize: '14px', minHeight: '80px', marginBottom: '16px', outline: 'none', transition: 'border-color 0.2s', resize: 'vertical' }} />
+          <textarea placeholder={t('yourReview')} value={reviewForm.body} onChange={e => setReviewForm({ ...reviewForm, body: e.target.value })} style={{ width: '100%', padding: '10px 14px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '10px', fontSize: '14px', minHeight: '80px', marginBottom: '12px', outline: 'none', transition: 'border-color 0.2s', resize: 'vertical' }} />
+          {/* Image upload */}
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '10px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: '#6b7280', transition: 'all 0.2s' }} onMouseEnter={e => { e.currentTarget.style.borderColor = '#111'; e.currentTarget.style.color = '#111'; }} onMouseLeave={e => { e.currentTarget.style.borderColor = c('borderColor', '#e5e7eb'); e.currentTarget.style.color = '#6b7280'; }}>
+                <ImagePlus size={16} /> Add Photo
+                <input type="file" accept="image/*" onChange={handleReviewImageUpload} style={{ display: 'none' }} disabled={reviewImageUploading || reviewImages.length >= 5} />
+              </label>
+              {reviewImageUploading && <span style={{ fontSize: '12px', color: '#9ca3af' }}>Uploading...</span>}
+              {reviewImages.length > 0 && <span style={{ fontSize: '12px', color: '#9ca3af' }}>{reviewImages.length}/5 photos</span>}
+            </div>
+            {reviewImages.length > 0 && (
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {reviewImages.map((url, idx) => (
+                  <div key={idx} style={{ position: 'relative' }}>
+                    <img src={url} alt={`Upload ${idx + 1}`} style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #e5e7eb' }} />
+                    <button type="button" onClick={() => setReviewImages(prev => prev.filter((_, i) => i !== idx))} style={{ position: 'absolute', top: '-4px', right: '-4px', width: '18px', height: '18px', borderRadius: '50%', background: '#dc2626', color: '#fff', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' }}>
+                      <X size={10} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
           <button type="submit" disabled={reviewSubmitting} style={{ padding: '12px 28px', background: '#111', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 700, fontSize: '14px', cursor: 'pointer', opacity: reviewSubmitting ? 0.6 : 1, transition: 'all 0.2s' }} onMouseEnter={e => { if (!reviewSubmitting) e.currentTarget.style.transform = 'translateY(-1px)'; }} onMouseLeave={e => { if (!reviewSubmitting) e.currentTarget.style.transform = 'translateY(0)'; }}>
             {reviewSubmitting ? t('submitting') : t('submitReview')}
           </button>

@@ -1,5 +1,9 @@
 import express from 'express';
 import mongoose from 'mongoose';
+import path from 'path';
+import fs from 'fs';
+import multer from 'multer';
+import sharp from 'sharp';
 import { protect } from '../middleware/auth.js';
 import Tenant from '../models/Tenant.js';
 import EcommerceProduct from '../models/EcommerceProduct.js';
@@ -7,6 +11,7 @@ import EcommerceReview from '../models/EcommerceReview.js';
 import { resolveTenantByHost } from '../middleware/resolveTenantByHost.js';
 
 const router = express.Router();
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
 
 const getTargetTenantId = async (user) => {
   if (user.tenantId) return user.tenantId;
@@ -38,11 +43,56 @@ router.get('/product/:productId', resolveTenantByHost, async (req, res) => {
   }
 });
 
+// Public: upload review image
+router.post('/product/:productId/upload-image', resolveTenantByHost, upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
+    const tenantId = req.storeTenant._id;
+    const tenantIdStr = tenantId.toString();
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'ecommerce', tenantIdStr, 'reviews');
+    if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
+    const filename = `review-${Date.now()}-${Math.round(Math.random() * 1E9)}.webp`;
+    const filepath = path.join(uploadsDir, filename);
+
+    await sharp(req.file.buffer)
+      .resize({ width: 800, height: 800, fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: 80 })
+      .toFile(filepath);
+
+    const imageUrl = `/uploads/ecommerce/${tenantIdStr}/reviews/${filename}`;
+    res.json({ imageUrl });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to upload image' });
+  }
+});
+
+// Public: vote a review as helpful
+router.post('/:id/helpful', resolveTenantByHost, async (req, res) => {
+  try {
+    const tenantId = req.storeTenant._id;
+    const voterId = req.body.voterId || req.ip || 'anonymous';
+    const review = await EcommerceReview.findOne({ _id: req.params.id, tenantId, status: 'approved' });
+    if (!review) return res.status(404).json({ error: 'Review not found' });
+
+    if (review.helpfulVoterIds.includes(voterId)) {
+      return res.json({ helpfulVotes: review.helpfulVotes, alreadyVoted: true });
+    }
+
+    review.helpfulVotes += 1;
+    review.helpfulVoterIds.push(voterId);
+    await review.save();
+    res.json({ helpfulVotes: review.helpfulVotes, alreadyVoted: false });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Public: submit a review
 router.post('/product/:productId', resolveTenantByHost, async (req, res) => {
   try {
     const tenantId = req.storeTenant._id;
-    const { customerName, customerEmail, rating, title, body, orderId } = req.body;
+    const { customerName, customerEmail, rating, title, body, orderId, images } = req.body;
 
     if (!customerName || !rating) return res.status(400).json({ error: 'Name and rating are required' });
     if (rating < 1 || rating > 5) return res.status(400).json({ error: 'Rating must be 1-5' });
@@ -76,6 +126,7 @@ router.post('/product/:productId', resolveTenantByHost, async (req, res) => {
       rating,
       title: title || '',
       body: body || '',
+      images: (images || []).slice(0, 5).map(url => ({ url })),
       verifiedPurchase,
       status: 'pending', // Reviews start as pending for moderation
     });

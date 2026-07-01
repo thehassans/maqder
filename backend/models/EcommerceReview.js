@@ -9,8 +9,10 @@ const ecommerceReviewSchema = new mongoose.Schema({
   rating: { type: Number, required: true, min: 1, max: 5 },
   title: { type: String, default: '' },
   body: { type: String, default: '' },
+  images: [{ url: String }],
   status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
   helpfulVotes: { type: Number, default: 0 },
+  helpfulVoterIds: [{ type: String }],
   verifiedPurchase: { type: Boolean, default: false },
 }, { timestamps: true });
 
