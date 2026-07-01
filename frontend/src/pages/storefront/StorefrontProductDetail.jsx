@@ -439,76 +439,82 @@ export default function StorefrontProductDetail() {
         </div>
       )}
 
-      {/* Reviews section */}
+      {/* Reviews section — ultra minimalistic */}
       <div style={{ marginTop: '60px' }}>
-        <h2 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '20px', letterSpacing: '-0.3px' }}>{t('customerReviews')}</h2>
-        {reviews.totalReviews > 0 && (
-          <div style={{ display: 'flex', gap: '32px', marginBottom: '28px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-            <div style={{ textAlign: 'center', minWidth: '140px', padding: '20px', background: '#fff', border: '1px solid #e5e7eb', borderRadius: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-              <p style={{ fontSize: '44px', fontWeight: 800, margin: '0 0 4px', letterSpacing: '-1px' }}>{reviews.avgRating.toFixed(1)}</p>
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '4px' }}>
-                {[1, 2, 3, 4, 5].map(n => (
-                  <Star key={n} size={16} className={n <= Math.round(reviews.avgRating) ? 'text-amber-400 fill-amber-400' : 'text-gray-200'} />
-                ))}
+        <h2 style={{ fontSize: '24px', fontWeight: 900, marginBottom: '24px', letterSpacing: '-0.5px', color: '#111' }}>{t('customerReviews')}</h2>
+        {reviews.totalReviews > 0 ? (
+          <>
+            <div style={{ display: 'flex', gap: '40px', marginBottom: '32px', flexWrap: 'wrap', alignItems: 'center' }}>
+              <div style={{ textAlign: 'center', minWidth: '100px' }}>
+                <p style={{ fontSize: '48px', fontWeight: 900, margin: '0 0 4px', letterSpacing: '-1.5px', color: '#111' }}>{reviews.avgRating.toFixed(1)}</p>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '4px' }}>
+                  {[1, 2, 3, 4, 5].map(n => (
+                    <Star key={n} size={14} style={{ color: n <= Math.round(reviews.avgRating) ? '#f59e0b' : '#e5e7eb', fill: n <= Math.round(reviews.avgRating) ? '#f59e0b' : '#e5e7eb' }} />
+                  ))}
+                </div>
+                <p style={{ color: '#9ca3af', fontSize: '12px', margin: 0, fontWeight: 500 }}>{reviews.totalReviews} {t('reviews')}</p>
               </div>
-              <p style={{ color: '#6b7280', fontSize: '13px', margin: 0, fontWeight: 500 }}>{reviews.totalReviews} {t('reviews')}</p>
-            </div>
-            <div style={{ flex: 1, minWidth: '200px' }}>
-              {[5, 4, 3, 2, 1].map(star => {
-                const count = reviews.reviews.filter(r => r.rating === star).length;
-                const pct = reviews.totalReviews > 0 ? (count / reviews.totalReviews) * 100 : 0;
-                return (
-                  <div key={star} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '12px', color: '#6b7280', minWidth: '24px' }}>{star}★</span>
-                    <div style={{ flex: 1, height: '8px', background: '#e5e7eb', borderRadius: '999px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${pct}%`, background: '#f59e0b', borderRadius: '999px', transition: 'width 0.3s' }} />
+              <div style={{ flex: 1, minWidth: '200px', maxWidth: '280px' }}>
+                {[5, 4, 3, 2, 1].map(star => {
+                  const count = reviews.reviews.filter(r => r.rating === star).length;
+                  const pct = reviews.totalReviews > 0 ? (count / reviews.totalReviews) * 100 : 0;
+                  return (
+                    <div key={star} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                      <span style={{ fontSize: '12px', color: '#6b7280', minWidth: '20px' }}>{star}</span>
+                      <div style={{ flex: 1, height: '6px', background: '#f3f4f6', borderRadius: '999px', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${pct}%`, background: '#f59e0b', borderRadius: '999px', transition: 'width 0.3s' }} />
+                      </div>
+                      <span style={{ fontSize: '11px', color: '#9ca3af', minWidth: '20px', textAlign: 'right' }}>{count}</span>
                     </div>
-                    <span style={{ fontSize: '12px', color: '#9ca3af', minWidth: '24px', textAlign: 'right' }}>{count}</span>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
+
+            {/* Review list */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '32px' }} className="store-reviews-grid">
+              {reviews.reviews.map(r => (
+                <div key={r._id} style={{ border: `1px solid #f3f4f6`, borderRadius: '12px', padding: '18px', background: '#fff' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                    <div style={{ display: 'flex' }}>
+                      {[1, 2, 3, 4, 5].map(n => (
+                        <Star key={n} size={12} style={{ color: n <= r.rating ? '#f59e0b' : '#e5e7eb', fill: n <= r.rating ? '#f59e0b' : '#e5e7eb' }} />
+                      ))}
+                    </div>
+                    {r.verifiedPurchase && <span style={{ fontSize: '10px', background: '#f0fdf4', color: '#16a34a', padding: '2px 8px', borderRadius: '999px', fontWeight: 600, letterSpacing: '0.02em' }}>{t('verified')}</span>}
+                  </div>
+                  {r.title && <p style={{ fontWeight: 700, fontSize: '14px', marginBottom: '6px', color: '#111' }}>{r.title}</p>}
+                  {r.body && <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '10px', lineHeight: 1.6 }}>{r.body}</p>}
+                  <p style={{ fontSize: '11px', color: '#d1d5db' }}>— {r.customerName} · {new Date(r.createdAt).toLocaleDateString(isRTL ? 'ar' : 'en')}</p>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div style={{ padding: '40px', textAlign: 'center', border: `1px dashed ${c('borderColor', '#e5e7eb')}`, borderRadius: '16px', background: '#fafafa' }}>
+            <p style={{ fontSize: '14px', color: '#9ca3af', margin: 0 }}>{t('noReviewsYet')}</p>
           </div>
         )}
 
-        {/* Review list */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }} className="store-reviews-grid">
-          {reviews.reviews.map(r => (
-            <div key={r._id} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <div style={{ display: 'flex' }}>
-                  {[1, 2, 3, 4, 5].map(n => (
-                    <Star key={n} size={12} className={n <= r.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-200'} />
-                  ))}
-                </div>
-                {r.verifiedPurchase && <span style={{ fontSize: '11px', background: '#d1fae5', color: '#059669', padding: '2px 6px', borderRadius: '999px', fontWeight: 'bold' }}>{t('verified')}</span>}
-              </div>
-              {r.title && <p style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '4px' }}>{r.title}</p>}
-              {r.body && <p style={{ fontSize: '13px', color: '#4b5563', marginBottom: '8px' }}>{r.body}</p>}
-              <p style={{ fontSize: '12px', color: '#9ca3af' }}>— {r.customerName} · {new Date(r.createdAt).toLocaleDateString(isRTL ? 'ar' : 'en')}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Review form */}
-        <form onSubmit={handleReviewSubmit} style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '20px' }}>
-          <h3 style={{ fontWeight: 'bold', fontSize: '16px', marginBottom: '12px' }}>{t('writeReview')}</h3>
-          {reviewMessage && <p style={{ fontSize: '13px', color: reviewMessage.includes('Failed') || reviewMessage.includes('already') ? '#dc2626' : '#059669', marginBottom: '12px' }}>{reviewMessage}</p>}
+        {/* Review form — minimal */}
+        <form onSubmit={handleReviewSubmit} style={{ border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '16px', padding: '24px', background: '#fff' }}>
+          <h3 style={{ fontWeight: 800, fontSize: '16px', marginBottom: '16px', color: '#111' }}>{t('writeReview')}</h3>
+          {reviewMessage && <p style={{ fontSize: '13px', color: reviewMessage.includes('Failed') || reviewMessage.includes('already') ? '#dc2626' : '#16a34a', marginBottom: '12px', fontWeight: 500 }}>{reviewMessage}</p>}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-            <input placeholder={t('yourName')} required value={reviewForm.customerName} onChange={e => setReviewForm({ ...reviewForm, customerName: e.target.value })} style={{ padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }} />
-            <input placeholder={t('emailOptional')} type="email" value={reviewForm.customerEmail} onChange={e => setReviewForm({ ...reviewForm, customerEmail: e.target.value })} style={{ padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }} />
+            <input placeholder={t('yourName')} required value={reviewForm.customerName} onChange={e => setReviewForm({ ...reviewForm, customerName: e.target.value })} style={{ padding: '10px 14px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '10px', fontSize: '14px', outline: 'none', transition: 'border-color 0.2s' }} />
+            <input placeholder={t('emailOptional')} type="email" value={reviewForm.customerEmail} onChange={e => setReviewForm({ ...reviewForm, customerEmail: e.target.value })} style={{ padding: '10px 14px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '10px', fontSize: '14px', outline: 'none', transition: 'border-color 0.2s' }} />
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-            <span style={{ fontSize: '14px', fontWeight: 'bold' }}>{t('rating')}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+            <span style={{ fontSize: '14px', fontWeight: 600, color: '#111' }}>{t('rating')}</span>
             {[1, 2, 3, 4, 5].map(n => (
-              <button key={n} type="button" onClick={() => setReviewForm({ ...reviewForm, rating: n })}>
-                <Star size={20} className={n <= reviewForm.rating ? 'text-amber-400 fill-amber-400' : 'text-gray-300'} />
+              <button key={n} type="button" onClick={() => setReviewForm({ ...reviewForm, rating: n })} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                <Star size={20} style={{ color: n <= reviewForm.rating ? '#f59e0b' : '#e5e7eb', fill: n <= reviewForm.rating ? '#f59e0b' : '#e5e7eb', transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.15)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'} />
               </button>
             ))}
           </div>
-          <input placeholder={t('reviewTitle')} value={reviewForm.title} onChange={e => setReviewForm({ ...reviewForm, title: e.target.value })} style={{ width: '100%', padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', marginBottom: '12px' }} />
-          <textarea placeholder={t('yourReview')} value={reviewForm.body} onChange={e => setReviewForm({ ...reviewForm, body: e.target.value })} style={{ width: '100%', padding: '10px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', minHeight: '80px', marginBottom: '12px' }} />
-          <button type="submit" disabled={reviewSubmitting} style={{ padding: '10px 24px', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', opacity: reviewSubmitting ? 0.6 : 1 }}>
+          <input placeholder={t('reviewTitle')} value={reviewForm.title} onChange={e => setReviewForm({ ...reviewForm, title: e.target.value })} style={{ width: '100%', padding: '10px 14px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '10px', fontSize: '14px', marginBottom: '12px', outline: 'none', transition: 'border-color 0.2s' }} />
+          <textarea placeholder={t('yourReview')} value={reviewForm.body} onChange={e => setReviewForm({ ...reviewForm, body: e.target.value })} style={{ width: '100%', padding: '10px 14px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '10px', fontSize: '14px', minHeight: '80px', marginBottom: '16px', outline: 'none', transition: 'border-color 0.2s', resize: 'vertical' }} />
+          <button type="submit" disabled={reviewSubmitting} style={{ padding: '12px 28px', background: '#111', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 700, fontSize: '14px', cursor: 'pointer', opacity: reviewSubmitting ? 0.6 : 1, transition: 'all 0.2s' }} onMouseEnter={e => { if (!reviewSubmitting) e.currentTarget.style.transform = 'translateY(-1px)'; }} onMouseLeave={e => { if (!reviewSubmitting) e.currentTarget.style.transform = 'translateY(0)'; }}>
             {reviewSubmitting ? t('submitting') : t('submitReview')}
           </button>
         </form>
