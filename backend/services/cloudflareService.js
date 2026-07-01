@@ -44,7 +44,7 @@ export function buildCloudflareAuthUrl(state) {
     response_type: 'code',
     client_id: getOAuthClientId(),
     redirect_uri: getCloudflareOAuthRedirectUrl(),
-    scope: 'account:read zone:read dns_records:edit',
+    scope: 'account:settings:read zone:read dns:write',
     state,
   });
   return `https://dash.cloudflare.com/oauth2/auth?${params.toString()}`;
