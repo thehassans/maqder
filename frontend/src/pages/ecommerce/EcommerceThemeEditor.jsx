@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Palette, Save, Loader2, Upload, RotateCcw, AlertCircle, CheckCircle, Eye, Layout, Type, ShoppingCart, Home, Monitor, Smartphone, GripVertical, Trash2, Plus, ImageIcon, Sparkles, Download, FileUp, Smartphone as PhoneIcon, Moon } from 'lucide-react';
+import { Palette, Save, Loader2, Upload, RotateCcw, AlertCircle, CheckCircle, Eye, Layout, Type, ShoppingCart, Home, Monitor, Smartphone, GripVertical, Trash2, Plus, ImageIcon, Sparkles, Download, FileUp, Smartphone as PhoneIcon, Moon, ChevronLeft, ChevronRight, Tag, Tablet, Maximize2, Package } from 'lucide-react';
 import api from '../../lib/api';
 
 const COLOR_FIELDS = [
@@ -60,10 +60,17 @@ export default function EcommerceThemeEditor() {
   const [importingTheme, setImportingTheme] = useState(false);
   const [draggedIdx, setDraggedIdx] = useState(null);
   const [dragOverIdx, setDragOverIdx] = useState(null);
+  const [previewPage, setPreviewPage] = useState('home');
+  const [previewSize, setPreviewSize] = useState(null); // null = auto per device
+  const [categories, setCategories] = useState([]);
+  const [categoryUploading, setCategoryUploading] = useState(null);
+  const [bannerUploadTarget, setBannerUploadTarget] = useState(null); // { secIdx, bannerIdx }
   const importInputRef = useRef(null);
   const previewRef = useRef(null);
   const logoInputRef = useRef(null);
   const heroInputRef = useRef(null);
+  const categoryImgRefs = useRef({});
+  const bannerUploadRef = useRef(null);
 
   const fetchTheme = useCallback(async () => {
     try {
@@ -85,8 +92,91 @@ export default function EcommerceThemeEditor() {
 
   useEffect(() => { fetchTheme(); }, [fetchTheme]);
 
+  const fetchCategories = useCallback(async () => {
+    try {
+      const res = await api.get('/ecommerce/categories');
+      setCategories(res.data?.categories || res.data || []);
+    } catch {}
+  }, []);
+
+  useEffect(() => { fetchCategories(); }, [fetchCategories]);
+
+  const handleSaveCategory = async (cat) => {
+    try {
+      if (cat._id) {
+        await api.put(`/ecommerce/categories/${cat._id}`, cat);
+      } else {
+        await api.post('/ecommerce/categories', cat);
+      }
+      fetchCategories();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to save category');
+    }
+  };
+
+  const handleDeleteCategory = async (id) => {
+    try {
+      await api.delete(`/ecommerce/categories/${id}`);
+      fetchCategories();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to delete category');
+    }
+  };
+
+  const handleUploadCategoryImage = async (file, catIdx) => {
+    if (!file) return null;
+    setCategoryUploading(catIdx);
+    try {
+      const fd = new FormData();
+      fd.append('image', file);
+      const res = await api.post('/ecommerce/theme/upload', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 120000,
+      });
+      return res.data?.imageUrl;
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to upload image');
+      return null;
+    } finally {
+      setCategoryUploading(null);
+    }
+  };
+
+  const handleUploadBannerImage = async (file, secIdx, bannerIdx) => {
+    if (!file) return;
+    setApplyingPreset(true);
+    try {
+      const fd = new FormData();
+      fd.append('image', file);
+      const res = await api.post('/ecommerce/theme/upload', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 120000,
+      });
+      const imageUrl = res.data?.imageUrl;
+      if (imageUrl) {
+        const sec = theme.homepage?.sections?.[secIdx];
+        if (sec?.settings?.banners && bannerIdx !== undefined) {
+          const next = [...sec.settings.banners];
+          next[bannerIdx] = { ...next[bannerIdx], imageUrl };
+          updateSection(secIdx, 'banners', next);
+        } else if (sec?.settings?.slides && bannerIdx !== undefined) {
+          const next = [...sec.settings.slides];
+          next[bannerIdx] = { ...next[bannerIdx], imageUrl };
+          updateSection(secIdx, 'slides', next);
+        } else {
+          updateSection(secIdx, 'imageUrl', imageUrl);
+        }
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to upload image');
+    } finally {
+      setApplyingPreset(false);
+      if (bannerUploadRef.current) bannerUploadRef.current.value = '';
+    }
+  };
+
   // Generate preview HTML from theme config
-  const generatePreviewHTML = (config, device = 'desktop') => {
+  const generatePreviewHTML = (config, device = 'desktop', page = 'home') => {
     if (!config) return '<html><body>Loading...</body></html>';
     const c = config.colors || {};
     const t = config.typography || {};
@@ -209,6 +299,79 @@ export default function EcommerceThemeEditor() {
         ${h.announcementBar.text || ''}
       </div>` : '';
 
+    // Page-specific preview content
+    const pageContentHTML = (() => {
+      if (page === 'product') {
+        return `<div style="padding:20px;max-width:960px;margin:0 auto">
+          <p style="font-size:12px;color:${c.textMuted||'#6b7280'};margin-bottom:16px">Home &rsaquo; Products &rsaquo; Sample Product</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+            <div style="background:${c.surface||'#f9fafb'};border-radius:12px;aspect-ratio:1;display:flex;align-items:center;justify-content:center;border:1px solid ${c.borderColor||'#e5e7eb'}">
+              <span style="color:${c.textMuted||'#9ca3af'};font-size:13px">Product Image</span>
+            </div>
+            <div>
+              <h1 style="font-size:22px;font-weight:800;color:${c.text||'#111'};margin:0 0 8px">Sample Product Name</h1>
+              <p style="font-size:24px;font-weight:700;color:${c.priceColor||'#059669'};margin:0 0 16px">249 SAR</p>
+              <p style="font-size:14px;color:${c.textMuted||'#6b7280'};margin-bottom:20px;line-height:1.6">A great product with amazing features. Perfect for everyday use and long-lasting quality.</p>
+              <button style="width:100%;background:${c.buttonBg||c.primary||'#4f46e5'};color:${c.buttonText||'#fff'};border:none;padding:14px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">Add to Cart</button>
+              <button style="width:100%;background:transparent;border:1.5px solid ${c.borderColor||'#e5e7eb'};color:${c.text||'#111'};padding:12px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;margin-top:8px">Buy Now</button>
+            </div>
+          </div>
+        </div>`;
+      }
+      if (page === 'cart') {
+        return `<div style="padding:20px;max-width:700px;margin:0 auto">
+          <h2 style="font-size:20px;font-weight:800;color:${c.text||'#111'};margin:0 0 20px">Your Cart (2 items)</h2>
+          ${[1,2].map(i => `<div style="display:flex;gap:14px;padding:14px;background:${c.surface||'#f9fafb'};border-radius:12px;border:1px solid ${c.borderColor||'#e5e7eb'};margin-bottom:10px">
+            <div style="width:72px;height:72px;background:${c.borderColor||'#e5e7eb'};border-radius:8px;flex-shrink:0"></div>
+            <div style="flex:1">
+              <p style="font-weight:700;color:${c.text||'#111'};margin:0 0 4px;font-size:14px">Sample Product ${i}</p>
+              <p style="color:${c.priceColor||'#059669'};font-weight:700;margin:0;font-size:15px">149 SAR</p>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <button style="width:28px;height:28px;border:1px solid ${c.borderColor||'#e5e7eb'};border-radius:6px;background:#fff;font-weight:700">-</button>
+              <span style="font-weight:700;color:${c.text||'#111'}">1</span>
+              <button style="width:28px;height:28px;border:1px solid ${c.borderColor||'#e5e7eb'};border-radius:6px;background:#fff;font-weight:700">+</button>
+            </div>
+          </div>`).join('')}
+          <div style="background:${c.surface||'#f9fafb'};border-radius:12px;padding:16px;margin-top:16px;border:1px solid ${c.borderColor||'#e5e7eb'}">
+            <div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="color:${c.textMuted||'#6b7280'}">Subtotal</span><span style="font-weight:700;color:${c.text||'#111'}">298 SAR</span></div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:14px"><span style="color:${c.textMuted||'#6b7280'}">Shipping</span><span style="font-weight:700;color:${c.priceColor||'#059669'}">Free</span></div>
+            <button style="width:100%;background:${c.buttonBg||c.primary||'#4f46e5'};color:${c.buttonText||'#fff'};border:none;padding:14px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer">Proceed to Checkout</button>
+          </div>
+        </div>`;
+      }
+      if (page === 'category') {
+        return `<div style="padding:20px;max-width:960px;margin:0 auto">
+          <h2 style="font-size:20px;font-weight:800;color:${c.text||'#111'};margin:0 0 16px">All Categories</h2>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px">
+            ${['Electronics','Fashion','Home & Living','Sports','Beauty','Books','Toys','Food'].map((cat, i) => `
+              <div style="background:${c.surface||'#f9fafb'};border:1px solid ${c.borderColor||'#e5e7eb'};border-radius:14px;overflow:hidden;text-align:center;padding-bottom:12px">
+                <div style="height:90px;background:linear-gradient(135deg,${c.primary||'#4f46e5'}22,${c.accent||'#7c3aed'}22);display:flex;align-items:center;justify-content:center;font-size:28px">🏷️</div>
+                <p style="font-size:13px;font-weight:700;color:${c.text||'#111'};margin:8px 0 0;padding:0 8px">${cat}</p>
+              </div>`).join('')}
+          </div>
+        </div>`;
+      }
+      if (page === 'orders') {
+        return `<div style="padding:20px;max-width:700px;margin:0 auto">
+          <h2 style="font-size:20px;font-weight:800;color:${c.text||'#111'};margin:0 0 20px">My Orders</h2>
+          ${[{id:'#ORD-001',status:'Delivered',date:'Jun 30',total:'349 SAR'},{id:'#ORD-002',status:'Processing',date:'Jul 1',total:'149 SAR'},{id:'#ORD-003',status:'Shipped',date:'Jul 2',total:'598 SAR'}].map(o => `
+            <div style="padding:16px;background:${c.surface||'#f9fafb'};border-radius:12px;border:1px solid ${c.borderColor||'#e5e7eb'};margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <p style="font-weight:800;color:${c.text||'#111'};margin:0 0 4px;font-size:14px">${o.id}</p>
+                <p style="font-size:12px;color:${c.textMuted||'#9ca3af'};margin:0">${o.date}</p>
+              </div>
+              <div style="text-align:right">
+                <span style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;background:${o.status==='Delivered'?'#dcfce7':o.status==='Processing'?'#fef9c3':'#dbeafe'};color:${o.status==='Delivered'?'#166534':o.status==='Processing'?'#854d0e':'#1e40af'}">${o.status}</span>
+                <p style="font-weight:700;color:${c.priceColor||'#059669'};margin:4px 0 0;font-size:14px">${o.total}</p>
+              </div>
+            </div>`).join('')}
+        </div>`;
+      }
+      // home - use sectionHTML
+      return `<div class="container">${sectionHTML}</div>`;
+    })();
+
     const mobileNavEnabled = config.mobileNav?.enabled !== false;
     const navStyle = config.mobileNav?.style || 'default';
     const accent = c.primary || '#4f46e5';
@@ -300,9 +463,7 @@ ${announcement}
     ${h.showCart ? '<a href="#">Cart (0)</a>' : ''}
   </div>
 </div>
-<div class="container">
-${sectionHTML}
-</div>
+${pageContentHTML}
 <div class="footer">
   <div class="footer-grid">
     <div>
@@ -331,11 +492,11 @@ ${mobileNavHTML}
       const doc = previewRef.current.contentDocument;
       if (doc) {
         doc.open();
-        doc.write(generatePreviewHTML(theme, previewDevice));
+        doc.write(generatePreviewHTML(theme, previewDevice, previewPage));
         doc.close();
       }
     }
-  }, [theme, previewDevice]);
+  }, [theme, previewDevice, previewPage]);
 
   const update = (path, value) => {
     setTheme(prev => {
@@ -615,10 +776,12 @@ ${mobileNavHTML}
             <button onClick={() => setActiveTab('cart')} className={tabCls('cart')}><ShoppingCart className="w-4 h-4" /> Cart</button>
             <button onClick={() => setActiveTab('mobilenav')} className={tabCls('mobilenav')}><Smartphone className="w-4 h-4" /> Mobile Nav</button>
             <button onClick={() => setActiveTab('darkmode')} className={tabCls('darkmode')}><Moon className="w-4 h-4" /> Dark Mode</button>
+            <button onClick={() => setActiveTab('categories')} className={tabCls('categories')}><Tag className="w-4 h-4" /> Categories</button>
           </div>
 
           {/* Hidden file inputs for image uploads */}
           <input ref={heroInputRef} type="file" accept="image/*" onChange={e => handleUploadImage(e, 'hero')} className="hidden" />
+          <input ref={bannerUploadRef} type="file" accept="image/*" className="hidden" onChange={e => { if (bannerUploadTarget) handleUploadBannerImage(e.target.files?.[0], bannerUploadTarget.secIdx, bannerUploadTarget.bannerIdx); }} />
 
           {/* Presets */}
           {activeTab === 'presets' && (
@@ -1125,6 +1288,104 @@ ${mobileNavHTML}
             </div>
           )}
 
+          {/* Categories */}
+          {activeTab === 'categories' && (
+            <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-bold text-gray-900 dark:text-white text-sm">Store Categories</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Add categories with images. These appear in your Category Grid section.</p>
+                </div>
+                <button
+                  onClick={() => setCategories(prev => [...prev, { _id: null, _tempId: Date.now(), name: '', nameAr: '', imageUrl: '', slug: '' }])}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-violet-600 text-white rounded-xl text-xs font-bold hover:bg-violet-700"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Add Category
+                </button>
+              </div>
+              <div className="space-y-3">
+                {categories.length === 0 && (
+                  <div className="text-center py-10 text-gray-400">
+                    <Tag className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                    <p className="text-sm">No categories yet. Click "Add Category" to start.</p>
+                  </div>
+                )}
+                {categories.map((cat, ci) => (
+                  <div key={cat._id || cat._tempId || ci} className="border border-gray-200 dark:border-dark-600 rounded-xl p-3 space-y-3">
+                    <div className="flex items-start gap-3">
+                      {/* Category image */}
+                      <div className="relative flex-shrink-0">
+                        <div
+                          className="w-16 h-16 rounded-xl border-2 border-dashed border-gray-200 dark:border-dark-600 bg-gray-50 dark:bg-dark-700 flex items-center justify-center cursor-pointer overflow-hidden hover:border-violet-400 transition-colors"
+                          onClick={() => { const inp = categoryImgRefs.current[ci]; if (inp) inp.click(); }}
+                        >
+                          {cat.imageUrl ? (
+                            <img src={cat.imageUrl} alt={cat.name} className="w-full h-full object-cover rounded-xl" />
+                          ) : (
+                            categoryUploading === ci ? <Loader2 className="w-5 h-5 animate-spin text-violet-500" /> : <ImageIcon className="w-5 h-5 text-gray-300" />
+                          )}
+                        </div>
+                        <input
+                          type="file" accept="image/*" className="hidden"
+                          ref={el => categoryImgRefs.current[ci] = el}
+                          onChange={async (e) => {
+                            const url = await handleUploadCategoryImage(e.target.files?.[0], ci);
+                            if (url) setCategories(prev => prev.map((c, i) => i === ci ? { ...c, imageUrl: url } : c));
+                          }}
+                        />
+                        <span className="absolute -bottom-1 -right-1 bg-violet-600 text-white rounded-full p-0.5"><ImageIcon className="w-2.5 h-2.5" /></span>
+                      </div>
+                      {/* Fields */}
+                      <div className="flex-1 space-y-2">
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            className={inputCls}
+                            value={cat.name || ''}
+                            onChange={e => setCategories(prev => prev.map((c, i) => i === ci ? { ...c, name: e.target.value } : c))}
+                            placeholder="Category name (EN)"
+                          />
+                          <input
+                            className={inputCls}
+                            value={cat.nameAr || ''}
+                            onChange={e => setCategories(prev => prev.map((c, i) => i === ci ? { ...c, nameAr: e.target.value } : c))}
+                            placeholder="اسم التصنيف (AR)"
+                            dir="rtl"
+                          />
+                        </div>
+                        <input
+                          className={inputCls}
+                          value={cat.slug || ''}
+                          onChange={e => setCategories(prev => prev.map((c, i) => i === ci ? { ...c, slug: e.target.value } : c))}
+                          placeholder="slug (e.g. electronics)"
+                        />
+                      </div>
+                      {/* Actions */}
+                      <div className="flex flex-col gap-1">
+                        <button
+                          onClick={() => handleSaveCategory(categories[ci])}
+                          className="p-2 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors"
+                          title="Save"
+                        >
+                          <CheckCircle className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (cat._id) handleDeleteCategory(cat._id);
+                            else setCategories(prev => prev.filter((_, i) => i !== ci));
+                          }}
+                          className="p-2 rounded-lg bg-red-50 text-red-400 hover:bg-red-100 transition-colors"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Cart */}
           {activeTab === 'cart' && (
             <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-5 space-y-4">
@@ -1144,33 +1405,123 @@ ${mobileNavHTML}
 
         {/* Right: Live Preview */}
         <div className="space-y-3 sticky top-4 self-start">
-          <div className="flex items-center justify-between">
+          {/* Preview header row */}
+          <div className="flex items-center justify-between gap-2 flex-wrap">
             <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2"><Eye className="w-4 h-4 text-gray-400" /> Live Preview</h3>
             <div className="flex gap-1 bg-gray-100 dark:bg-dark-700 rounded-lg p-1">
               <button onClick={() => setPreviewDevice('desktop')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${previewDevice === 'desktop' ? 'bg-white dark:bg-dark-800 text-gray-900 dark:text-white shadow-sm' : 'text-gray-400'}`}><Monitor className="w-3.5 h-3.5" /> Desktop</button>
               <button onClick={() => setPreviewDevice('mobile')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${previewDevice === 'mobile' ? 'bg-white dark:bg-dark-800 text-gray-900 dark:text-white shadow-sm' : 'text-gray-400'}`}><Smartphone className="w-3.5 h-3.5" /> Mobile</button>
             </div>
           </div>
+
+          {/* Page navigation */}
+          <div className="flex gap-1 flex-wrap">
+            {[{id:'home',label:'Home',icon:<Home className="w-3 h-3" />},{id:'product',label:'Product',icon:<Package className="w-3 h-3" />},{id:'cart',label:'Cart',icon:<ShoppingCart className="w-3 h-3" />},{id:'category',label:'Categories',icon:<Tag className="w-3 h-3" />},{id:'orders',label:'Orders',icon:<ChevronRight className="w-3 h-3" />}].map(pg => (
+              <button
+                key={pg.id}
+                onClick={() => setPreviewPage(pg.id)}
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                  previewPage === pg.id
+                    ? 'bg-violet-600 text-white border-violet-600'
+                    : 'border-gray-200 dark:border-dark-600 text-gray-500 hover:bg-gray-50'
+                }`}
+              >
+                {pg.icon}{pg.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Size/alignment controls */}
+          {previewDevice === 'desktop' && (
+            <div className="flex gap-1 items-center">
+              <span className="text-xs text-gray-400 font-bold">Width:</span>
+              {[{label:'Full',val:null},{label:'1440',val:1440},{label:'1280',val:1280},{label:'1024',val:1024},{label:'768',val:768}].map(s => (
+                <button
+                  key={String(s.val)}
+                  onClick={() => setPreviewSize(s.val)}
+                  className={`px-2 py-1 rounded-lg text-xs font-bold transition-all border ${
+                    previewSize === s.val
+                      ? 'bg-violet-600 text-white border-violet-600'
+                      : 'border-gray-200 dark:border-dark-600 text-gray-400 hover:bg-gray-50'
+                  }`}
+                >{s.label}</button>
+              ))}
+            </div>
+          )}
+          {previewDevice === 'mobile' && (
+            <div className="flex gap-1 items-center">
+              <span className="text-xs text-gray-400 font-bold">Size:</span>
+              {[{label:'iPhone SE',w:375,h:667},{label:'iPhone 15',w:390,h:844},{label:'Galaxy S',w:412,h:915}].map(s => (
+                <button
+                  key={s.label}
+                  onClick={() => setPreviewSize(s)}
+                  className={`px-2 py-1 rounded-lg text-xs font-bold transition-all border ${
+                    previewSize && previewSize.w === s.w
+                      ? 'bg-violet-600 text-white border-violet-600'
+                      : 'border-gray-200 dark:border-dark-600 text-gray-400 hover:bg-gray-50'
+                  }`}
+                >{s.label}</button>
+              ))}
+            </div>
+          )}
+
           <div className={`bg-gray-100 dark:bg-dark-900 rounded-2xl border border-gray-100 dark:border-dark-700 overflow-hidden flex items-center justify-center ${previewDevice === 'mobile' ? 'py-8' : ''}`}>
-            {previewDevice === 'mobile' ? (
-              <div className="relative" style={{ width: '375px', height: '667px' }}>
-                <div className="absolute inset-0 bg-black rounded-[2.5rem] shadow-xl p-2">
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-b-2xl z-10" />
-                  <iframe
-                    ref={previewRef}
-                    title="Theme Preview"
-                    className="w-full h-full rounded-[2rem] border-0 bg-white"
-                  />
+            {previewDevice === 'mobile' ? (() => {
+              const ms = (previewSize && previewSize.w) ? previewSize : { w: 375, h: 667 };
+              return (
+                <div className="relative" style={{ width: `${ms.w}px`, height: `${ms.h}px` }}>
+                  <div className="absolute inset-0 bg-black rounded-[2.5rem] shadow-xl p-2">
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-b-2xl z-10" />
+                    <iframe ref={previewRef} title="Theme Preview" className="w-full h-full rounded-[2rem] border-0 bg-white" />
+                  </div>
                 </div>
+              );
+            })() : (
+              <div style={{ width: previewSize ? `${previewSize}px` : '100%', transition: 'width 0.3s' }}>
+                <iframe ref={previewRef} title="Theme Preview" className="w-full border-0" style={{ height: '600px' }} />
               </div>
-            ) : (
-              <iframe
-                ref={previewRef}
-                title="Theme Preview"
-                className="w-full border-0"
-                style={{ height: '600px' }}
-              />
             )}
+          </div>
+
+          {/* Quick image upload shortcuts */}
+          <div className="bg-white dark:bg-dark-800 rounded-xl border border-gray-100 dark:border-dark-700 p-3">
+            <p className="text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">Quick Image Upload</p>
+            <div className="flex flex-wrap gap-2">
+              {/* Logo */}
+              <button
+                onClick={() => logoInputRef.current?.click()}
+                disabled={uploadingLogo}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-50 dark:bg-dark-700 border border-gray-200 dark:border-dark-600 hover:border-violet-400 transition-colors"
+              >
+                {uploadingLogo ? <Loader2 className="w-3 h-3 animate-spin" /> : <ImageIcon className="w-3 h-3 text-violet-500" />}
+                Logo
+              </button>
+              {/* Hero / banner images */}
+              {theme.homepage?.sections?.filter(s => s.enabled && (s.type === 'hero' || s.type === 'image-banner')).map((s, realIdx) => {
+                const secIdx = theme.homepage.sections.indexOf(s);
+                return (
+                  <button
+                    key={s.id || realIdx}
+                    onClick={() => {
+                      setBannerUploadTarget({ secIdx, bannerIdx: 0 });
+                      setTimeout(() => bannerUploadRef.current?.click(), 0);
+                    }}
+                    disabled={!!applyingPreset}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-50 dark:bg-dark-700 border border-gray-200 dark:border-dark-600 hover:border-violet-400 transition-colors"
+                  >
+                    {applyingPreset ? <Loader2 className="w-3 h-3 animate-spin" /> : <ImageIcon className="w-3 h-3 text-pink-500" />}
+                    {s.type === 'hero' ? 'Hero' : 'Banner'} {realIdx + 1}
+                  </button>
+                );
+              })}
+              {/* Category images */}
+              <button
+                onClick={() => setActiveTab('categories')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-50 dark:bg-dark-700 border border-gray-200 dark:border-dark-600 hover:border-violet-400 transition-colors"
+              >
+                <Tag className="w-3 h-3 text-emerald-500" /> Category Images
+              </button>
+            </div>
           </div>
         </div>
       </div>
