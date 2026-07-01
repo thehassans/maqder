@@ -106,6 +106,33 @@ router.get('/review-stats', async (req, res) => {
   }
 });
 
+// --- GET REVIEWS FOR A PRODUCT (public, approved only) ---
+router.get('/reviews/product/:slug', async (req, res) => {
+  try {
+    const tenantId = req.storeTenant._id;
+    const { slug } = req.params;
+
+    // Find product by slug
+    const product = await EcommerceProduct.findOne({ 'seo.slug': slug, tenantId, status: 'active' }).select('_id').lean();
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+
+    const reviews = await EcommerceReview.find({ tenantId, productId: product._id, status: 'approved' })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const totalReviews = reviews.length;
+    const avgRating = totalReviews > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews : 0;
+
+    res.json({
+      reviews,
+      totalReviews,
+      avgRating: Math.round(avgRating * 10) / 10,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // --- CATEGORY LANDING PAGE DATA ---
 router.get('/category/:slug', async (req, res) => {
   try {
