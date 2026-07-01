@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Palette, Save, Loader2, Upload, RotateCcw, AlertCircle, CheckCircle, Eye, Layout, Type, ShoppingCart, Home, Monitor, Smartphone, GripVertical, Trash2, Plus, ImageIcon, Sparkles, Download, FileUp, Smartphone as PhoneIcon, Moon, ChevronLeft, ChevronRight, Tag, Tablet, Maximize2, Package } from 'lucide-react';
+import { Palette, Save, Loader2, Upload, RotateCcw, AlertCircle, CheckCircle, Eye, Layout, Type, ShoppingCart, Home, Monitor, Smartphone, GripVertical, Trash2, Plus, ImageIcon, Sparkles, Download, FileUp, Smartphone as PhoneIcon, Moon, ChevronLeft, ChevronRight, Tag, Tablet, Maximize2, Package, Code, CreditCard, Layers } from 'lucide-react';
 import api from '../../lib/api';
 
 const COLOR_FIELDS = [
@@ -183,6 +183,8 @@ export default function EcommerceThemeEditor() {
     const h = config.header || {};
     const hn = config.headerNav || {};
     const f = config.footer || {};
+    const pc = config.productCard || {};
+    const mm = config.megaMenu || {};
     const sections = config.homepage?.sections || [];
 
     const sectionHTML = sections.filter(s => s.enabled).map(s => {
@@ -369,6 +371,48 @@ export default function EcommerceThemeEditor() {
         </div>`;
       }
       // home - use sectionHTML
+      if (page === 'checkout') {
+        return `<div style="padding:20px;max-width:800px;margin:0 auto">
+          <h2 style="font-size:20px;font-weight:800;color:${c.text||'#111'};margin:0 0 20px">Checkout</h2>
+          <div style="display:flex;gap:8px;margin-bottom:24px">
+            ${['Shipping','Payment','Confirmation'].map((step, i) => `
+              <div style="flex:1;text-align:center">
+                <div style="width:32px;height:32px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;${i===0?`background:${c.primary||'#4f46e5'};color:#fff`:`background:${c.surface||'#f3f4f6'};color:${c.textMuted||'#9ca3af'}`}">${i+1}</div>
+                <span style="font-size:11px;font-weight:700;color:${i===0?c.text||'#111':c.textMuted||'#9ca3af'}">${step}</span>
+              </div>`).join('<div style="flex:0 0 30px;height:2px;background:'+c.borderColor+';margin-top:15px"></div>')}
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 320px;gap:20px">
+            <div style="space-y:16px">
+              <div style="background:${c.surface||'#f9fafb'};border:1px solid ${c.borderColor||'#e5e7eb'};border-radius:12px;padding:16px;margin-bottom:12px">
+                <h3 style="font-size:15px;font-weight:800;color:${c.text||'#111'};margin:0 0 12px">Shipping Address</h3>
+                <input style="width:100%;padding:10px 12px;border:1px solid ${c.borderColor||'#e5e7eb'};border-radius:8px;margin-bottom:8px;font-size:13px;background:#fff" placeholder="Full name" />
+                <input style="width:100%;padding:10px 12px;border:1px solid ${c.borderColor||'#e5e7eb'};border-radius:8px;margin-bottom:8px;font-size:13px;background:#fff" placeholder="Address" />
+                <div style="display:flex;gap:8px">
+                  <input style="flex:1;padding:10px 12px;border:1px solid ${c.borderColor||'#e5e7eb'};border-radius:8px;font-size:13px;background:#fff" placeholder="City" />
+                  <input style="flex:1;padding:10px 12px;border:1px solid ${c.borderColor||'#e5e7eb'};border-radius:8px;font-size:13px;background:#fff" placeholder="Postal code" />
+                </div>
+              </div>
+              <div style="background:${c.surface||'#f9fafb'};border:1px solid ${c.borderColor||'#e5e7eb'};border-radius:12px;padding:16px">
+                <h3 style="font-size:15px;font-weight:800;color:${c.text||'#111'};margin:0 0 12px">Payment Method</h3>
+                ${['Credit Card','Apple Pay','Cash on Delivery'].map((pm, i) => `
+                  <label style="display:flex;align-items:center;gap:10px;padding:10px;border:1px solid ${i===0?c.primary||'#4f46e5':c.borderColor||'#e5e7eb'};border-radius:8px;margin-bottom:8px;cursor:pointer;font-size:13px;color:${c.text||'#111'}">
+                    <input type="radio" ${i===0?'checked':''} name="pm" style="accent-color:${c.primary||'#4f46e5'}" /> ${pm}
+                  </label>`).join('')}
+              </div>
+            </div>
+            <div style="background:${c.surface||'#f9fafb'};border:1px solid ${c.borderColor||'#e5e7eb'};border-radius:12px;padding:16px;height:fit-content">
+              <h3 style="font-size:15px;font-weight:800;color:${c.text||'#111'};margin:0 0 12px">Order Summary</h3>
+              ${['Product A - 149 SAR','Product B - 99 SAR'].map(item => `<div style="display:flex;justify-content:space-between;font-size:13px;color:${c.textMuted||'#6b7280'};margin-bottom:6px"><span>${item.split(' - ')[0]}</span><span>${item.split(' - ')[1]}</span></div>`).join('')}
+              <div style="border-top:1px solid ${c.borderColor||'#e5e7eb'};margin:10px 0;padding-top:10px">
+                <div style="display:flex;justify-content:space-between;font-size:13px;color:${c.textMuted||'#6b7280'};margin-bottom:4px"><span>Subtotal</span><span>248 SAR</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:13px;color:${c.textMuted||'#6b7280'};margin-bottom:4px"><span>Shipping</span><span style="color:${c.priceColor||'#059669'};font-weight:700">Free</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:16px;font-weight:800;color:${c.text||'#111'};margin-top:8px"><span>Total</span><span style="color:${c.priceColor||'#059669'}">248 SAR</span></div>
+              </div>
+              <button style="width:100%;background:${c.buttonBg||c.primary||'#4f46e5'};color:${c.buttonText||'#fff'};border:none;padding:14px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-top:12px">Place Order</button>
+            </div>
+          </div>
+        </div>`;
+      }
       return `<div class="container">${sectionHTML}</div>`;
     })();
 
@@ -439,6 +483,23 @@ export default function EcommerceThemeEditor() {
   .footer-grid{max-width:960px;margin:0 auto;display:flex;justify-content:space-between;flex-wrap:wrap;gap:20px}
   .footer h4{color:#fff;margin:0 0 8px;font-size:14px}
   .footer a{color:${c.footerText};text-decoration:none;font-size:13px;display:block;margin-bottom:4px}
+  .pcard{background:${c.surface||'#fff'};border:1px solid ${c.borderColor||'#e5e7eb'};border-radius:${pc.borderRadius ?? 12}px;overflow:hidden;transition:all 0.3s ease;cursor:pointer;position:relative}
+  .pcard:hover{${pc.hoverEffect === 'lift' ? 'transform:translateY(-4px);box-shadow:0 12px 24px rgba(0,0,0,0.1)' : pc.hoverEffect === 'zoom' ? 'transform:scale(1.03)' : pc.hoverEffect === 'glow' ? `box-shadow:0 0 20px ${c.primary||'#4f46e5'}44` : ''}}
+  .pcard-img{aspect-ratio:${pc.imageAspectRatio || '1/1'};background:${c.borderColor||'#f3f4f6'};display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .pcard-badge{position:absolute;top:${pc.badgePosition === 'bottom-left' ? 'auto' : '8px'};bottom:${pc.badgePosition === 'bottom-left' ? '8px' : 'auto'};left:${pc.badgePosition === 'top-right' || pc.badgePosition === 'bottom-right' ? 'auto' : '8px'};right:${pc.badgePosition === 'top-right' || pc.badgePosition === 'bottom-right' ? '8px' : 'auto'};background:${c.primary||'#4f46e5'};color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px}
+  .pcard-body{padding:10px 12px}
+  .pcard-title{font-size:13px;font-weight:600;color:${c.text||'#111'};margin:0 0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pcard-price{font-size:15px;font-weight:800;color:${c.priceColor||'#059669'};margin:0}
+  .pcard-qv{position:absolute;bottom:8px;right:8px;background:rgba(255,255,255,0.95);border:1px solid ${c.borderColor||'#e5e7eb'};border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;color:${c.text||'#111'};opacity:0;transition:opacity 0.2s}
+  .pcard:hover .pcard-qv{opacity:1}
+  .megamenu{position:absolute;top:100%;left:0;right:0;background:${c.headerBg||'#fff'};border:1px solid ${c.borderColor||'#e5e7eb'};box-shadow:0 12px 32px rgba(0,0,0,0.1);padding:20px;display:none;z-index:100}
+  .header:hover .megamenu{display:block}
+  .megamenu-grid{display:grid;grid-template-columns:repeat(${mm.columns || 4},1fr);gap:20px;max-width:960px;margin:0 auto}
+  .megamenu-col h5{font-size:13px;font-weight:800;color:${c.text||'#111'};margin:0 0 8px}
+  .megamenu-col a{display:block;font-size:12px;color:${c.textMuted||'#6b7280'};text-decoration:none;margin-bottom:4px}
+  .megamenu-promo{grid-column:-1/-2;background:linear-gradient(135deg,${c.primary||'#4f46e5'}22,${c.accent||'#7c3aed'}22);border-radius:12px;padding:16px;text-align:center}
+  .megamenu-promo h5{font-size:15px;font-weight:800;color:${c.text||'#111'};margin:0 0 4px}
+  .megamenu-promo p{font-size:12px;color:${c.textMuted||'#6b7280'};margin:0}
   ${device === 'mobile' ? `
   .container{max-width:100%;padding:16px}
   .header{padding:10px 16px}
@@ -462,6 +523,19 @@ ${announcement}
     ${h.showSearch && hn.style !== 'split' ? '<a href="#">Search</a>' : ''}
     ${h.showCart ? '<a href="#">Cart (0)</a>' : ''}
   </div>
+  ${mm.enabled ? `<div class="megamenu">
+    <div class="megamenu-grid">
+      ${(mm.columns || 4) > 1 ? Array.from({length: (mm.columns || 4) - 1}).map((_, ci) => `
+        <div class="megamenu-col">
+          <h5>${['Featured','New Arrivals','Top Selling','Collections'][ci] || 'Category'}</h5>
+          ${['Electronics','Fashion','Home & Living','Sports','Beauty','Books'].slice(0, 4).map(cat => `<a href="#">${cat}</a>`).join('')}
+        </div>`).join('') : ''}
+      ${mm.showPromo ? `<div class="megamenu-promo">
+        <h5>${mm.promoTitle || 'Special Offer'}</h5>
+        <p>${mm.promoText || 'Up to 50% off selected items'}</p>
+      </div>` : ''}
+    </div>
+  </div>` : ''}
 </div>
 ${pageContentHTML}
 <div class="footer">
@@ -777,6 +851,9 @@ ${mobileNavHTML}
             <button onClick={() => setActiveTab('mobilenav')} className={tabCls('mobilenav')}><Smartphone className="w-4 h-4" /> Mobile Nav</button>
             <button onClick={() => setActiveTab('darkmode')} className={tabCls('darkmode')}><Moon className="w-4 h-4" /> Dark Mode</button>
             <button onClick={() => setActiveTab('categories')} className={tabCls('categories')}><Tag className="w-4 h-4" /> Categories</button>
+            <button onClick={() => setActiveTab('productcard')} className={tabCls('productcard')}><Package className="w-4 h-4" /> Product Card</button>
+            <button onClick={() => setActiveTab('megamenu')} className={tabCls('megamenu')}><Layers className="w-4 h-4" /> Mega Menu</button>
+            <button onClick={() => setActiveTab('customcss')} className={tabCls('customcss')}><Code className="w-4 h-4" /> Custom CSS</button>
           </div>
 
           {/* Hidden file inputs for image uploads */}
@@ -1401,6 +1478,122 @@ ${mobileNavHTML}
               <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.cart?.freeShippingBar ?? true} onChange={e => updateCart('freeShippingBar', e.target.checked)} className="w-4 h-4 rounded" /> Show free shipping progress bar</label>
             </div>
           )}
+
+          {/* Product Card Designer */}
+          {activeTab === 'productcard' && (
+            <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-5 space-y-4">
+              <p className="text-sm text-gray-400">Customize how product cards look across your store.</p>
+              <div>
+                <label className={labelCls}>Card Border Radius</label>
+                <div className="flex items-center gap-3">
+                  <input type="range" min="0" max="24" value={theme.productCard?.borderRadius ?? 12} onChange={e => update('productCard.borderRadius', parseInt(e.target.value))} className="flex-1 accent-violet-600" />
+                  <span className="text-sm font-bold text-gray-700 dark:text-gray-300 w-12 text-right">{theme.productCard?.borderRadius ?? 12}px</span>
+                </div>
+              </div>
+              <div>
+                <label className={labelCls}>Image Aspect Ratio</label>
+                <select className={inputCls} value={theme.productCard?.imageAspectRatio || '1/1'} onChange={e => update('productCard.imageAspectRatio', e.target.value)}>
+                  <option value="1/1">Square (1:1)</option>
+                  <option value="3/4">Portrait (3:4)</option>
+                  <option value="4/3">Landscape (4:3)</option>
+                  <option value="16/9">Wide (16:9)</option>
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Hover Effect</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[{v:'none',l:'None'},{v:'lift',l:'Lift Up'},{v:'zoom',l:'Zoom In'},{v:'glow',l:'Glow'}].map(opt => (
+                    <button key={opt.v} onClick={() => update('productCard.hoverEffect', opt.v)} className={`p-3 rounded-xl border-2 text-sm font-bold transition-all ${(theme.productCard?.hoverEffect || 'none') === opt.v ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 dark:border-dark-600 text-gray-500 hover:border-gray-300'}`}>{opt.l}</button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className={labelCls}>Badge Position</label>
+                <select className={inputCls} value={theme.productCard?.badgePosition || 'top-left'} onChange={e => update('productCard.badgePosition', e.target.value)}>
+                  <option value="top-left">Top Left</option>
+                  <option value="top-right">Top Right</option>
+                  <option value="bottom-left">Bottom Left</option>
+                  <option value="bottom-right">Bottom Right</option>
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Show Badges</label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.productCard?.showSaleBadge ?? true} onChange={e => update('productCard.showSaleBadge', e.target.checked)} className="w-4 h-4 rounded" /> Sale badge</label>
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.productCard?.showNewBadge ?? false} onChange={e => update('productCard.showNewBadge', e.target.checked)} className="w-4 h-4 rounded" /> New badge</label>
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.productCard?.showOosBadge ?? true} onChange={e => update('productCard.showOosBadge', e.target.checked)} className="w-4 h-4 rounded" /> Out of stock</label>
+                </div>
+              </div>
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.productCard?.showQuickView ?? false} onChange={e => update('productCard.showQuickView', e.target.checked)} className="w-4 h-4 rounded" /> Show Quick View button on hover</label>
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.productCard?.showWishlistIcon ?? false} onChange={e => update('productCard.showWishlistIcon', e.target.checked)} className="w-4 h-4 rounded" /> Show wishlist heart icon</label>
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.productCard?.showRatingStars ?? true} onChange={e => update('productCard.showRatingStars', e.target.checked)} className="w-4 h-4 rounded" /> Show rating stars</label>
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.productCard?.showAddToCart ?? true} onChange={e => update('productCard.showAddToCart', e.target.checked)} className="w-4 h-4 rounded" /> Show Add to Cart button on card</label>
+            </div>
+          )}
+
+          {/* Mega Menu Builder */}
+          {activeTab === 'megamenu' && (
+            <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-5 space-y-4">
+              <p className="text-sm text-gray-400">Configure the mega menu dropdown that appears on header hover.</p>
+              <label className="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white"><input type="checkbox" checked={theme.megaMenu?.enabled ?? false} onChange={e => update('megaMenu.enabled', e.target.checked)} className="w-4 h-4 rounded" /> Enable Mega Menu</label>
+              {theme.megaMenu?.enabled && (
+                <>
+                  <div>
+                    <label className={labelCls}>Number of Columns</label>
+                    <input type="range" min="2" max="6" value={theme.megaMenu?.columns ?? 4} onChange={e => update('megaMenu.columns', parseInt(e.target.value))} className="w-full accent-violet-600" />
+                    <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{theme.megaMenu?.columns ?? 4} columns</span>
+                  </div>
+                  <div>
+                    <label className={labelCls}>Menu Items per Column</label>
+                    <p className="text-xs text-gray-400 mb-2">Add links to each mega menu column.</p>
+                    {(theme.megaMenu?.items || []).map((item, i) => (
+                      <div key={i} className="flex items-center gap-2 mb-2">
+                        <input className={inputCls} value={item.label || ''} onChange={e => { const next = [...(theme.megaMenu?.items || [])]; next[i] = { ...next[i], label: e.target.value }; update('megaMenu.items', next); }} placeholder="Label (e.g. Electronics)" />
+                        <input className={inputCls} value={item.link || ''} onChange={e => { const next = [...(theme.megaMenu?.items || [])]; next[i] = { ...next[i], link: e.target.value }; update('megaMenu.items', next); }} placeholder="Link (e.g. /store/category/electronics)" />
+                        <input type="number" min="0" className={inputCls} style={{ width: '70px' }} value={item.column ?? 0} onChange={e => { const next = [...(theme.megaMenu?.items || [])]; next[i] = { ...next[i], column: parseInt(e.target.value) || 0 }; update('megaMenu.items', next); }} placeholder="Col" />
+                        <button onClick={() => { const next = (theme.megaMenu?.items || []).filter((_, j) => j !== i); update('megaMenu.items', next); }} className="p-1.5 text-red-400 hover:bg-red-50 rounded"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    ))}
+                    <button onClick={() => update('megaMenu.items', [...(theme.megaMenu?.items || []), { label: '', link: '', column: 0 }])} className="flex items-center gap-1 text-xs font-bold text-violet-600 hover:underline"><Plus className="w-3 h-3" /> Add menu item</button>
+                  </div>
+                  <div className="pt-3 border-t border-gray-100 dark:border-dark-700">
+                    <label className="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white"><input type="checkbox" checked={theme.megaMenu?.showPromo ?? true} onChange={e => update('megaMenu.showPromo', e.target.checked)} className="w-4 h-4 rounded" /> Show promo banner in mega menu</label>
+                    {theme.megaMenu?.showPromo && (
+                      <div className="pl-6 mt-3 space-y-2">
+                        <input className={inputCls} value={theme.megaMenu?.promoTitle || ''} onChange={e => update('megaMenu.promoTitle', e.target.value)} placeholder="Promo title (e.g. Summer Sale)" />
+                        <input className={inputCls} value={theme.megaMenu?.promoText || ''} onChange={e => update('megaMenu.promoText', e.target.value)} placeholder="Promo text (e.g. Up to 50% off)" />
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Custom CSS Editor */}
+          {activeTab === 'customcss' && (
+            <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-5 space-y-4">
+              <p className="text-sm text-gray-400">Add custom CSS to override any theme styles. Changes appear in the live preview instantly.</p>
+              <div className="relative">
+                <textarea
+                  className="w-full font-mono text-xs p-4 rounded-xl border-2 border-gray-200 dark:border-dark-600 bg-gray-50 dark:bg-dark-900 text-gray-800 dark:text-gray-200 focus:border-violet-500 focus:outline-none transition-colors"
+                  rows="14"
+                  value={theme.customCss || ''}
+                  onChange={e => update('customCss', e.target.value)}
+                  placeholder={`/* Custom CSS — applies to the storefront */\n\n.my-custom-class {\n  color: red;\n  font-size: 18px;\n}\n\n/* Override product cards */\n.pcard {\n  box-shadow: 0 4px 12px rgba(0,0,0,0.08);\n}`}
+                  spellCheck={false}
+                />
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => update('customCss', '')} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-red-50 text-red-600 hover:bg-red-100 transition-colors"><RotateCcw className="w-3.5 h-3.5" /> Clear CSS</button>
+                <button onClick={() => { setPreviewPage('home'); }} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-violet-50 text-violet-600 hover:bg-violet-100 transition-colors"><Eye className="w-3.5 h-3.5" /> Preview on Home</button>
+              </div>
+              <div className="bg-violet-50 dark:bg-violet-900/20 rounded-xl p-3 text-xs text-violet-700 dark:text-violet-300">
+                <p className="font-bold mb-1">Available CSS classes:</p>
+                <p className="font-mono">.header, .logo, .nav, .container, .footer, .footer-grid, .pcard, .pcard-img, .pcard-body, .pcard-title, .pcard-price, .pcard-badge, .pcard-qv, .megamenu, .megamenu-grid, .megamenu-col, .megamenu-promo</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right: Live Preview */}
@@ -1416,7 +1609,7 @@ ${mobileNavHTML}
 
           {/* Page navigation */}
           <div className="flex gap-1 flex-wrap">
-            {[{id:'home',label:'Home',icon:<Home className="w-3 h-3" />},{id:'product',label:'Product',icon:<Package className="w-3 h-3" />},{id:'cart',label:'Cart',icon:<ShoppingCart className="w-3 h-3" />},{id:'category',label:'Categories',icon:<Tag className="w-3 h-3" />},{id:'orders',label:'Orders',icon:<ChevronRight className="w-3 h-3" />}].map(pg => (
+            {[{id:'home',label:'Home',icon:<Home className="w-3 h-3" />},{id:'product',label:'Product',icon:<Package className="w-3 h-3" />},{id:'cart',label:'Cart',icon:<ShoppingCart className="w-3 h-3" />},{id:'checkout',label:'Checkout',icon:<CreditCard className="w-3 h-3" />},{id:'category',label:'Categories',icon:<Tag className="w-3 h-3" />},{id:'orders',label:'Orders',icon:<ChevronRight className="w-3 h-3" />}].map(pg => (
               <button
                 key={pg.id}
                 onClick={() => setPreviewPage(pg.id)}
