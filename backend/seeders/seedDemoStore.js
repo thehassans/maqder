@@ -318,6 +318,7 @@ async function seedDemoStore() {
           colors: { primary: '#059669', secondary: '#10b981', accent: '#34d399', text: '#111827', textMuted: '#6b7280', borderColor: '#e5e7eb', priceColor: '#059669', salePriceColor: '#dc2626' },
           hero: { enabled: true, title: 'Welcome to Maqder', subtitle: 'Discover premium products at unbeatable prices', buttonText: 'Shop Now', buttonLink: '/store/products' },
           footer: { showAbout: true, showContact: true, showSocial: true, aboutText: 'Premium products, delivered with excellence across the Kingdom.' },
+          mobileNav: { enabled: true, style: 'default' },
         }};
         tenant.ecommerce.seo = tenant.ecommerce.seo || { metaTitle: 'Maqder — Premium Products', metaDescription: 'Shop premium products at Maqder.' };
         tenant.isActive = true;

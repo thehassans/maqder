@@ -95,6 +95,10 @@ const DEFAULT_THEME = {
     showRecommendations: true,
     freeShippingBar: true,
   },
+  mobileNav: {
+    enabled: true,
+    style: 'default', // default, modern, spotlight, pill
+  },
   customCss: '',
 };
 
@@ -338,6 +342,7 @@ function mergeDefaults(userConfig) {
     homepage: { ...DEFAULT_THEME.homepage, ...(userConfig.homepage || {}), sections: userConfig.homepage?.sections || DEFAULT_THEME.homepage.sections },
     productPage: { ...DEFAULT_THEME.productPage, ...(userConfig.productPage || {}) },
     cart: { ...DEFAULT_THEME.cart, ...(userConfig.cart || {}) },
+    mobileNav: { ...DEFAULT_THEME.mobileNav, ...(userConfig.mobileNav || {}) },
   };
 }
 
