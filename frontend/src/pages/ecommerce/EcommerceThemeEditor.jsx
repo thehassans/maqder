@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Palette, Save, Loader2, Upload, RotateCcw, AlertCircle, CheckCircle, Eye, Layout, Type, ShoppingCart, Home, Monitor, Smartphone, GripVertical, Trash2, Plus, ImageIcon, Sparkles, Download, FileUp, Smartphone as PhoneIcon, Moon, ChevronLeft, ChevronRight, Tag, Tablet, Maximize2, Package, Code, CreditCard, Layers } from 'lucide-react';
+import { Palette, Save, Loader2, Upload, RotateCcw, AlertCircle, CheckCircle, Eye, Layout, Type, ShoppingCart, Home, Monitor, Smartphone, GripVertical, Trash2, Plus, ImageIcon, Sparkles, Download, FileUp, Smartphone as PhoneIcon, Moon, ChevronLeft, ChevronRight, Tag, Tablet, Maximize2, Package, Code, CreditCard, Layers, MousePointerClick, Zap, Filter, Gift } from 'lucide-react';
 import api from '../../lib/api';
 
 const COLOR_FIELDS = [
@@ -185,6 +185,10 @@ export default function EcommerceThemeEditor() {
     const f = config.footer || {};
     const pc = config.productCard || {};
     const mm = config.megaMenu || {};
+    const btn = config.buttons || {};
+    const pp = config.promoPopup || {};
+    const pl = config.productListing || {};
+    const anim = config.animations || {};
     const sections = config.homepage?.sections || [];
 
     const sectionHTML = sections.filter(s => s.enabled).map(s => {
@@ -371,6 +375,37 @@ export default function EcommerceThemeEditor() {
         </div>`;
       }
       // home - use sectionHTML
+      if (page === 'listing') {
+        const cols = pl.gridColumns || 4;
+        const filterLayout = pl.filterLayout || 'top';
+        return `<div style="padding:20px;max-width:960px;margin:0 auto">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h2 style="font-size:20px;font-weight:800;color:${c.text||'#111'};margin:0">All Products</h2>
+            <select style="padding:8px 12px;border:1px solid ${c.borderColor||'#e5e7eb'};border-radius:8px;font-size:13px;background:${c.surface||'#f9fafb'};color:${c.text||'#111'}">
+              <option>Sort: Featured</option><option>Price: Low to High</option><option>Price: High to Low</option><option>Newest</option>
+            </select>
+          </div>
+          ${filterLayout === 'top' ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
+            ${['All','Electronics','Fashion','Home','Sports','Sale'].map((f,i) => `<span class="filter-chip ${i===0?'active':''}">${f}</span>`).join('')}
+          </div>` : ''}
+          <div style="display:grid;grid-template-columns:${filterLayout==='sidebar'?'200px 1fr':'1fr'};gap:20px">
+            ${filterLayout === 'sidebar' ? `<div style="background:${c.surface||'#f9fafb'};border:1px solid ${c.borderColor||'#e5e7eb'};border-radius:12px;padding:16px;height:fit-content">
+              <h4 style="font-size:13px;font-weight:800;color:${c.text||'#111'};margin:0 0 10px">Filters</h4>
+              ${['Category','Price Range','Brand','Rating'].map(ft => `<p style="font-size:12px;font-weight:700;color:${c.text||'#111'};margin:0 0 6px">${ft}</p><div style="margin-bottom:12px">${Array.from({length:2}).map(() => `<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:${c.textMuted||'#6b7280'};margin-bottom:3px"><input type="checkbox" style="accent-color:${c.primary||'#4f46e5'}" /> Option</label>`).join('')}</div>`).join('')}
+            </div>` : ''}
+            <div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:14px">
+              ${Array.from({length: 8}).map((_, i) => `
+                <div class="pcard">
+                  <div class="pcard-img"><span style="color:${c.textMuted||'#9ca3af'};font-size:11px">Product ${i+1}</span></div>
+                  <div class="pcard-body">
+                    <p class="pcard-title">Sample Product ${i+1}</p>
+                    <p class="pcard-price">${[99,149,199,249,79,129,179,89][i]} SAR</p>
+                  </div>
+                </div>`).join('')}
+            </div>
+          </div>
+        </div>`;
+      }
       if (page === 'checkout') {
         return `<div style="padding:20px;max-width:800px;margin:0 auto">
           <h2 style="font-size:20px;font-weight:800;color:${c.text||'#111'};margin:0 0 20px">Checkout</h2>
@@ -500,6 +535,22 @@ export default function EcommerceThemeEditor() {
   .megamenu-promo{grid-column:-1/-2;background:linear-gradient(135deg,${c.primary||'#4f46e5'}22,${c.accent||'#7c3aed'}22);border-radius:12px;padding:16px;text-align:center}
   .megamenu-promo h5{font-size:15px;font-weight:800;color:${c.text||'#111'};margin:0 0 4px}
   .megamenu-promo p{font-size:12px;color:${c.textMuted||'#6b7280'};margin:0}
+  .btn{background:${c.buttonBg||c.primary||'#4f46e5'};color:${c.buttonText||'#fff'};border:none;padding:${btn.paddingY||12}px ${btn.paddingX||24}px;border-radius:${btn.borderRadius??10}px;font-weight:700;font-size:14px;cursor:pointer;transition:all 0.25s ease;border:${btn.borderWidth||0}px solid ${btn.borderColor||'transparent'}}
+  .btn:hover{${btn.hoverEffect==='darken'?'filter:brightness(0.9)':btn.hoverEffect==='lift'?'transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,0.15)':btn.hoverEffect==='scale'?'transform:scale(1.05)':btn.hoverEffect==='glow'?`box-shadow:0 0 16px ${c.primary||'#4f46e5'}66`:'filter:brightness(0.95)'}}
+  .btn:active{transform:scale(0.98)}
+  ${anim.scrollAnimation === 'fade' ? `@keyframes secFade{from{opacity:0}to{opacity:1}}.container > div{animation:secFade 0.6s ease}` : ''}
+  ${anim.scrollAnimation === 'slide-up' ? `@keyframes secSlideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}.container > div{animation:secSlideUp 0.6s ease}` : ''}
+  ${anim.scrollAnimation === 'zoom' ? `@keyframes secZoom{from{opacity:0;transform:scale(0.95)}to{opacity:1;transform:scale(1)}}.container > div{animation:secZoom 0.5s ease}` : ''}
+  ${anim.hoverScale ? `.pcard:hover{transform:scale(1.05)}` : ''}
+  ${anim.stagger ? `.container > div:nth-child(1){animation-delay:0s}.container > div:nth-child(2){animation-delay:0.1s}.container > div:nth-child(3){animation-delay:0.2s}.container > div:nth-child(4){animation-delay:0.3s}.container > div:nth-child(5){animation-delay:0.4s}` : ''}
+  .promo-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:16px;box-shadow:0 24px 64px rgba(0,0,0,0.2);z-index:9999;max-width:480px;width:90%;overflow:hidden}
+  .promo-popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9998}
+  .promo-popup-img{width:100%;height:200px;object-fit:cover;background:linear-gradient(135deg,${c.primary||'#4f46e5'}22,${c.accent||'#7c3aed'}22)}
+  .promo-popup-body{padding:24px;text-align:center}
+  .promo-popup-close{position:absolute;top:8px;right:12px;font-size:24px;cursor:pointer;color:#999;z-index:10}
+  .filter-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;font-size:12px;font-weight:700;cursor:pointer;transition:all 0.2s}
+  .filter-chip.active{background:${c.primary||'#4f46e5'};color:#fff}
+  .filter-chip:not(.active){background:${c.surface||'#f3f4f6'};color:${c.textMuted||'#6b7280'};border:1px solid ${c.borderColor||'#e5e7eb'}}
   ${device === 'mobile' ? `
   .container{max-width:100%;padding:16px}
   .header{padding:10px 16px}
@@ -556,6 +607,18 @@ ${pageContentHTML}
   ${f.copyrightText ? `<p style="text-align:center;margin-top:16px;font-size:12px">${f.copyrightText}</p>` : ''}
 </div>
 ${mobileNavHTML}
+${pp.enabled ? `<div class="promo-popup-overlay"></div>
+<div class="promo-popup">
+  <span class="promo-popup-close">&times;</span>
+  ${pp.imageUrl ? `<img src="${pp.imageUrl}" class="promo-popup-img" />` : `<div class="promo-popup-img"></div>`}
+  <div class="promo-popup-body">
+    <h3 style="font-size:22px;font-weight:800;color:${c.text||'#111'};margin:0 0 8px">${pp.title || 'Special Offer!'}</h3>
+    <p style="font-size:14px;color:${c.textMuted||'#6b7280'};margin:0 0 16px">${pp.subtitle || 'Get 10% off your first order'}</p>
+    ${pp.discountCode ? `<div style="background:${c.surface||'#f3f4f6'};border:2px dashed ${c.primary||'#4f46e5'};border-radius:10px;padding:10px;margin-bottom:16px"><p style="font-size:11px;color:${c.textMuted||'#6b7280'};margin:0 0 2px">Use code:</p><p style="font-size:20px;font-weight:800;color:${c.primary||'#4f46e5'};margin:0;letter-spacing:2px">${pp.discountCode}</p></div>` : ''}
+    <button class="btn" style="width:100%">${pp.buttonText || 'Shop Now'}</button>
+    ${pp.showEmailField ? `<input style="width:100%;padding:10px 12px;border:1px solid ${c.borderColor||'#e5e7eb'};border-radius:8px;margin-top:8px;font-size:13px" placeholder="Enter your email" />` : ''}
+  </div>
+</div>` : ''}
 </body>
 </html>`;
   };
@@ -854,6 +917,10 @@ ${mobileNavHTML}
             <button onClick={() => setActiveTab('productcard')} className={tabCls('productcard')}><Package className="w-4 h-4" /> Product Card</button>
             <button onClick={() => setActiveTab('megamenu')} className={tabCls('megamenu')}><Layers className="w-4 h-4" /> Mega Menu</button>
             <button onClick={() => setActiveTab('customcss')} className={tabCls('customcss')}><Code className="w-4 h-4" /> Custom CSS</button>
+            <button onClick={() => setActiveTab('buttons')} className={tabCls('buttons')}><MousePointerClick className="w-4 h-4" /> Buttons</button>
+            <button onClick={() => setActiveTab('promopopup')} className={tabCls('promopopup')}><Gift className="w-4 h-4" /> Promo Popup</button>
+            <button onClick={() => setActiveTab('listing')} className={tabCls('listing')}><Filter className="w-4 h-4" /> Listing/Filters</button>
+            <button onClick={() => setActiveTab('animations')} className={tabCls('animations')}><Zap className="w-4 h-4" /> Animations</button>
           </div>
 
           {/* Hidden file inputs for image uploads */}
@@ -1594,6 +1661,190 @@ ${mobileNavHTML}
               </div>
             </div>
           )}
+
+          {/* Button Style Controls */}
+          {activeTab === 'buttons' && (
+            <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-5 space-y-4">
+              <p className="text-sm text-gray-400">Customize global button styles across your store.</p>
+              <div>
+                <label className={labelCls}>Border Radius</label>
+                <div className="flex items-center gap-3">
+                  <input type="range" min="0" max="30" value={theme.buttons?.borderRadius ?? 10} onChange={e => update('buttons.borderRadius', parseInt(e.target.value))} className="flex-1 accent-violet-600" />
+                  <span className="text-sm font-bold text-gray-700 dark:text-gray-300 w-12 text-right">{theme.buttons?.borderRadius ?? 10}px</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>Padding Y</label>
+                  <input type="number" min="4" max="24" className={inputCls} value={theme.buttons?.paddingY ?? 12} onChange={e => update('buttons.paddingY', parseInt(e.target.value))} />
+                </div>
+                <div>
+                  <label className={labelCls}>Padding X</label>
+                  <input type="number" min="8" max="48" className={inputCls} value={theme.buttons?.paddingX ?? 24} onChange={e => update('buttons.paddingX', parseInt(e.target.value))} />
+                </div>
+              </div>
+              <div>
+                <label className={labelCls}>Hover Effect</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[{v:'darken',l:'Darken'},{v:'lift',l:'Lift'},{v:'scale',l:'Scale Up'},{v:'glow',l:'Glow'}].map(opt => (
+                    <button key={opt.v} onClick={() => update('buttons.hoverEffect', opt.v)} className={`p-3 rounded-xl border-2 text-sm font-bold transition-all ${(theme.buttons?.hoverEffect || 'darken') === opt.v ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 dark:border-dark-600 text-gray-500 hover:border-gray-300'}`}>{opt.l}</button>
+                  ))}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>Border Width</label>
+                  <input type="number" min="0" max="4" className={inputCls} value={theme.buttons?.borderWidth ?? 0} onChange={e => update('buttons.borderWidth', parseInt(e.target.value))} />
+                </div>
+                <div>
+                  <label className={labelCls}>Border Color</label>
+                  <input type="color" className="w-full h-10 rounded-lg border border-gray-200 dark:border-dark-600" value={theme.buttons?.borderColor || '#e5e7eb'} onChange={e => update('buttons.borderColor', e.target.value)} />
+                </div>
+              </div>
+              <div className="pt-3 border-t border-gray-100 dark:border-dark-700">
+                <p className="text-xs font-bold text-gray-500 mb-2">Preview:</p>
+                <div className="flex gap-2 flex-wrap">
+                  <button className="btn" style={{ borderRadius: `${theme.buttons?.borderRadius ?? 10}px`, padding: `${theme.buttons?.paddingY ?? 12}px ${theme.buttons?.paddingX ?? 24}px`, background: theme.colors?.buttonBg || '#4f46e5', color: theme.colors?.buttonText || '#fff', border: `${theme.buttons?.borderWidth || 0}px solid ${theme.buttons?.borderColor || 'transparent'}` }}>Primary Button</button>
+                  <button className="btn" style={{ borderRadius: `${theme.buttons?.borderRadius ?? 10}px`, padding: `${theme.buttons?.paddingY ?? 12}px ${theme.buttons?.paddingX ?? 24}px`, background: 'transparent', color: theme.colors?.text || '#111', border: `1.5px solid ${theme.colors?.borderColor || '#e5e7eb'}` }}>Secondary</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Promo Popup Editor */}
+          {activeTab === 'promopopup' && (
+            <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-5 space-y-4">
+              <p className="text-sm text-gray-400">Show a promotional popup to visitors with a discount code.</p>
+              <label className="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white"><input type="checkbox" checked={theme.promoPopup?.enabled ?? false} onChange={e => update('promoPopup.enabled', e.target.checked)} className="w-4 h-4 rounded" /> Enable Promo Popup</label>
+              {theme.promoPopup?.enabled && (
+                <>
+                  <div>
+                    <label className={labelCls}>Trigger Type</label>
+                    <select className={inputCls} value={theme.promoPopup?.trigger || 'timed'} onChange={e => update('promoPopup.trigger', e.target.value)}>
+                      <option value="timed">After delay (seconds)</option>
+                      <option value="exit-intent">On exit intent</option>
+                      <option value="scroll">After scrolling 50%</option>
+                    </select>
+                  </div>
+                  {theme.promoPopup?.trigger === 'timed' && (
+                    <div>
+                      <label className={labelCls}>Delay (seconds)</label>
+                      <input type="number" min="1" max="60" className={inputCls} value={theme.promoPopup?.delay ?? 5} onChange={e => update('promoPopup.delay', parseInt(e.target.value))} />
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelCls}>Title</label>
+                      <input className={inputCls} value={theme.promoPopup?.title || ''} onChange={e => update('promoPopup.title', e.target.value)} placeholder="Special Offer!" />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Subtitle</label>
+                      <input className={inputCls} value={theme.promoPopup?.subtitle || ''} onChange={e => update('promoPopup.subtitle', e.target.value)} placeholder="Get 10% off your first order" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelCls}>Discount Code</label>
+                      <input className={inputCls} value={theme.promoPopup?.discountCode || ''} onChange={e => update('promoPopup.discountCode', e.target.value)} placeholder="WELCOME10" />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Button Text</label>
+                      <input className={inputCls} value={theme.promoPopup?.buttonText || ''} onChange={e => update('promoPopup.buttonText', e.target.value)} placeholder="Shop Now" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelCls}>Popup Image URL</label>
+                    <input className={inputCls} value={theme.promoPopup?.imageUrl || ''} onChange={e => update('promoPopup.imageUrl', e.target.value)} placeholder="https://..." />
+                  </div>
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.promoPopup?.showEmailField ?? false} onChange={e => update('promoPopup.showEmailField', e.target.checked)} className="w-4 h-4 rounded" /> Show email capture field</label>
+                    <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.promoPopup?.showOncePerSession ?? true} onChange={e => update('promoPopup.showOncePerSession', e.target.checked)} className="w-4 h-4 rounded" /> Show once per session</label>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Product Listing / Filters */}
+          {activeTab === 'listing' && (
+            <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-5 space-y-4">
+              <p className="text-sm text-gray-400">Customize the product listing page layout and filter style.</p>
+              <div>
+                <label className={labelCls}>Filter Layout</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[{v:'top',l:'Top Bar'},{v:'sidebar',l:'Sidebar'}].map(opt => (
+                    <button key={opt.v} onClick={() => update('productListing.filterLayout', opt.v)} className={`p-3 rounded-xl border-2 text-sm font-bold transition-all ${(theme.productListing?.filterLayout || 'top') === opt.v ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 dark:border-dark-600 text-gray-500 hover:border-gray-300'}`}>{opt.l}</button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className={labelCls}>Grid Columns (Desktop)</label>
+                <div className="flex items-center gap-3">
+                  <input type="range" min="2" max="6" value={theme.productListing?.gridColumns ?? 4} onChange={e => update('productListing.gridColumns', parseInt(e.target.value))} className="flex-1 accent-violet-600" />
+                  <span className="text-sm font-bold text-gray-700 dark:text-gray-300 w-12 text-right">{theme.productListing?.gridColumns ?? 4} cols</span>
+                </div>
+              </div>
+              <div>
+                <label className={labelCls}>Filter Chip Style</label>
+                <select className={inputCls} value={theme.productListing?.chipStyle || 'pill'} onChange={e => update('productListing.chipStyle', e.target.value)}>
+                  <option value="pill">Pill (rounded)</option>
+                  <option value="square">Square</option>
+                  <option value="underline">Underline</option>
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Sort Dropdown Position</label>
+                <select className={inputCls} value={theme.productListing?.sortPosition || 'right'} onChange={e => update('productListing.sortPosition', e.target.value)}>
+                  <option value="right">Top Right</option>
+                  <option value="left">Top Left</option>
+                  <option value="above">Above Grid</option>
+                </select>
+              </div>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.productListing?.showProductCount ?? true} onChange={e => update('productListing.showProductCount', e.target.checked)} className="w-4 h-4 rounded" /> Show product count</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.productListing?.showPriceFilter ?? true} onChange={e => update('productListing.showPriceFilter', e.target.checked)} className="w-4 h-4 rounded" /> Show price filter</label>
+              </div>
+              <div className="pt-3 border-t border-gray-100 dark:border-dark-700">
+                <button onClick={() => setPreviewPage('listing')} className="flex items-center gap-1.5 text-xs font-bold text-violet-600 hover:underline"><Eye className="w-3.5 h-3.5" /> View in preview</button>
+              </div>
+            </div>
+          )}
+
+          {/* Animation & Transitions */}
+          {activeTab === 'animations' && (
+            <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-5 space-y-4">
+              <p className="text-sm text-gray-400">Add scroll animations and hover effects to make your store feel alive.</p>
+              <div>
+                <label className={labelCls}>Section Scroll Animation</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[{v:'none',l:'None'},{v:'fade',l:'Fade In'},{v:'slide-up',l:'Slide Up'},{v:'zoom',l:'Zoom In'}].map(opt => (
+                    <button key={opt.v} onClick={() => update('animations.scrollAnimation', opt.v)} className={`p-3 rounded-xl border-2 text-sm font-bold transition-all ${(theme.animations?.scrollAnimation || 'none') === opt.v ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 dark:border-dark-600 text-gray-500 hover:border-gray-300'}`}>{opt.l}</button>
+                  ))}
+                </div>
+              </div>
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.animations?.stagger ?? false} onChange={e => update('animations.stagger', e.target.checked)} className="w-4 h-4 rounded" /> Stagger section animations (sequential delay)</label>
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.animations?.hoverScale ?? false} onChange={e => update('animations.hoverScale', e.target.checked)} className="w-4 h-4 rounded" /> Scale product cards on hover</label>
+              <div>
+                <label className={labelCls}>Animation Speed</label>
+                <select className={inputCls} value={theme.animations?.speed || 'normal'} onChange={e => update('animations.speed', e.target.value)}>
+                  <option value="fast">Fast (0.3s)</option>
+                  <option value="normal">Normal (0.6s)</option>
+                  <option value="slow">Slow (1s)</option>
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Page Transition</label>
+                <select className={inputCls} value={theme.animations?.pageTransition || 'none'} onChange={e => update('animations.pageTransition', e.target.value)}>
+                  <option value="none">None</option>
+                  <option value="fade">Fade</option>
+                  <option value="slide">Slide</option>
+                </select>
+              </div>
+              <div className="pt-3 border-t border-gray-100 dark:border-dark-700">
+                <button onClick={() => setPreviewPage('home')} className="flex items-center gap-1.5 text-xs font-bold text-violet-600 hover:underline"><Eye className="w-3.5 h-3.5" /> Preview on Home</button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right: Live Preview */}
@@ -1609,7 +1860,7 @@ ${mobileNavHTML}
 
           {/* Page navigation */}
           <div className="flex gap-1 flex-wrap">
-            {[{id:'home',label:'Home',icon:<Home className="w-3 h-3" />},{id:'product',label:'Product',icon:<Package className="w-3 h-3" />},{id:'cart',label:'Cart',icon:<ShoppingCart className="w-3 h-3" />},{id:'checkout',label:'Checkout',icon:<CreditCard className="w-3 h-3" />},{id:'category',label:'Categories',icon:<Tag className="w-3 h-3" />},{id:'orders',label:'Orders',icon:<ChevronRight className="w-3 h-3" />}].map(pg => (
+            {[{id:'home',label:'Home',icon:<Home className="w-3 h-3" />},{id:'product',label:'Product',icon:<Package className="w-3 h-3" />},{id:'listing',label:'Listing',icon:<Filter className="w-3 h-3" />},{id:'cart',label:'Cart',icon:<ShoppingCart className="w-3 h-3" />},{id:'checkout',label:'Checkout',icon:<CreditCard className="w-3 h-3" />},{id:'category',label:'Categories',icon:<Tag className="w-3 h-3" />},{id:'orders',label:'Orders',icon:<ChevronRight className="w-3 h-3" />}].map(pg => (
               <button
                 key={pg.id}
                 onClick={() => setPreviewPage(pg.id)}
