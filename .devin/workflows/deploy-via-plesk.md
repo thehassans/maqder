@@ -44,6 +44,12 @@ Required values:
 - `FRONTEND_URL`: `https://maqder.com`
 - `ZATCA_MODE`: `production` or `sandbox`
 
+Optional — Cloudflare domain integration:
+
+- `CLOUDFLARE_OAUTH_CLIENT_ID` + `CLOUDFLARE_OAUTH_CLIENT_SECRET`: register a Cloudflare OAuth app, then tenants can click "Login with Cloudflare" to auto-create DNS records. No API token required.
+- `CLOUDFLARE_FALLBACK_ORIGIN`: the origin your tenants' CNAMEs point to, e.g. `origin.maqder.com` (defaults to `origin.maqder.com`).
+- Legacy: `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ZONE_ID` still work for Cloudflare for SaaS custom hostnames.
+
 ## Step 3: Build and start containers
 
 // turbo
