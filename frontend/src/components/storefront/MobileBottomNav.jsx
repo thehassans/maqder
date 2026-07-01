@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Home, Search, ShoppingCart, Heart, User } from 'lucide-react';
 import { useCart } from '../../store/storefrontCart';
 import { useWishlist } from '../../store/storefrontWishlist';
@@ -56,6 +56,7 @@ function ModernNav({ items, isActive, c }) {
   const textRefs = useRef([]);
   const itemRefs = useRef([]);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const idx = items.findIndex(item => item.path && isActive(item.path));
@@ -87,7 +88,7 @@ function ModernNav({ items, isActive, c }) {
           <button
             key={i}
             ref={el => itemRefs.current[i] = el}
-            onClick={() => { setActiveIdx(i); item.action ? item.action() : null; }}
+            onClick={() => { setActiveIdx(i); item.action ? item.action() : navigate(item.path); }}
             style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
               background: 'none', border: 'none', cursor: 'pointer', padding: '4px 14px',
@@ -132,6 +133,7 @@ function ModernNav({ items, isActive, c }) {
 function SpotlightNav({ items, isActive, c }) {
   const [activeIdx, setActiveIdx] = useState(0);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const idx = items.findIndex(item => item.path && isActive(item.path));
@@ -157,7 +159,7 @@ function SpotlightNav({ items, isActive, c }) {
         return (
           <button
             key={i}
-            onClick={() => { setActiveIdx(i); item.action ? item.action() : null; }}
+            onClick={() => { setActiveIdx(i); item.action ? item.action() : navigate(item.path); }}
             style={{
               position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center',
               width: '48px', height: '48px', margin: '0 4px', background: 'none', border: 'none',
@@ -187,6 +189,7 @@ function SpotlightNav({ items, isActive, c }) {
 function PillNav({ items, isActive, c }) {
   const [activeIdx, setActiveIdx] = useState(0);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const idx = items.findIndex(item => item.path && isActive(item.path));
@@ -209,7 +212,7 @@ function PillNav({ items, isActive, c }) {
         return (
           <button
             key={i}
-            onClick={() => { setActiveIdx(i); item.action ? item.action() : null; }}
+            onClick={() => { setActiveIdx(i); item.action ? item.action() : navigate(item.path); }}
             style={{
               display: 'flex', alignItems: 'center', gap: '6px',
               padding: isActiveItem ? '8px 16px' : '8px',
