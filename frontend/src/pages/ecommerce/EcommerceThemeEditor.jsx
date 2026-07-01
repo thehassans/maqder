@@ -202,6 +202,43 @@ export default function EcommerceThemeEditor() {
         ${h.announcementBar.text || ''}
       </div>` : '';
 
+    const mobileNavEnabled = config.mobileNav?.enabled !== false;
+    const navStyle = config.mobileNav?.style || 'default';
+    const accent = c.primary || '#4f46e5';
+    const navIcons = ['🏠', '🔍', '🛒', '❤️'];
+    const navLabels = ['Home', 'Shop', 'Cart', 'Wishlist'];
+    let mobileNavHTML = '';
+    if (mobileNavEnabled) {
+      if (navStyle === 'default') {
+        mobileNavHTML = `<div style="position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,0.95);backdrop-filter:blur(12px);border-top:1px solid ${c.borderColor || '#e5e7eb'};display:flex;justify-content:space-around;padding:8px 0">
+          ${navIcons.map((ic, i) => `<div style="display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:20px">${ic}</span><span style="font-size:10px;font-weight:700;color:${i===0?accent:'#6b7280'}">${navLabels[i]}</span></div>`).join('')}
+        </div>`;
+      } else if (navStyle === 'modern') {
+        mobileNavHTML = `<div style="position:fixed;bottom:0;left:0;right:0;background:${c.surface || '#fff'};border-top:1px solid ${c.borderColor || '#e5e7eb'};display:flex;justify-content:space-around;padding:6px 0">
+          ${navIcons.map((ic, i) => `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 14px">
+            <span style="font-size:20px;${i===0?`animation:iconBounce 0.5s ease`:''}">${ic}</span>
+            <strong style="font-size:10px;color:${i===0?accent:'#9ca3af'}">${navLabels[i]}</strong>
+            ${i===0?`<div style="height:2px;width:30px;background:${accent};border-radius:999px;margin-top:3px"></div>`:'<div style="height:2px;width:0;margin-top:3px"></div>'}
+          </div>`).join('')}
+          <style>@keyframes iconBounce{0%,100%{transform:translateY(0)}20%{transform:translateY(-4px)}40%{transform:translateY(0)}60%{transform:translateY(-2px)}80%{transform:translateY(0)}}</style>
+        </div>`;
+      } else if (navStyle === 'spotlight') {
+        mobileNavHTML = `<div style="position:fixed;bottom:12px;left:50%;transform:translateX(-50%);display:flex;align-items:center;background:rgba(17,17,17,0.92);border-radius:16px;padding:8px 6px;box-shadow:0 8px 32px rgba(0,0,0,0.18)">
+          ${navIcons.map((ic, i) => { const dist=Math.abs(0-i); const op=i===0?1:Math.max(0,1-dist*0.6); return `<div style="position:relative;display:flex;align-items:center;justify-content:center;width:48px;height:48px;margin:0 4px">
+            <div style="position:absolute;width:48px;height:64px;background:radial-gradient(ellipse at center,${accent}55 0%,transparent 70%);border-radius:50%;filter:blur(8px);opacity:${op}"></div>
+            <span style="font-size:20px;position:relative">${ic}</span>
+          </div>`; }).join('')}
+        </div>`;
+      } else if (navStyle === 'pill') {
+        mobileNavHTML = `<div style="position:fixed;bottom:16px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:2px;background:${c.surface || '#fff'};border-radius:999px;padding:6px;box-shadow:0 4px 24px rgba(0,0,0,0.1)">
+          ${navIcons.map((ic, i) => `<div style="display:flex;align-items:center;gap:6px;padding:${i===0?'8px 16px':'8px'};border-radius:999px;background:${i===0?accent:'transparent'}">
+            <span style="font-size:18px">${ic}</span>
+            ${i===0?`<span style="font-size:12px;font-weight:700;color:#fff">${navLabels[i]}</span>`:''}
+          </div>`).join('')}
+        </div>`;
+      }
+    }
+
     return `<!DOCTYPE html>
 <html>
 <head>
@@ -254,6 +291,7 @@ ${sectionHTML}
   </div>
   ${f.copyrightText ? `<p style="text-align:center;margin-top:16px;font-size:12px">${f.copyrightText}</p>` : ''}
 </div>
+${mobileNavHTML}
 </body>
 </html>`;
   };
