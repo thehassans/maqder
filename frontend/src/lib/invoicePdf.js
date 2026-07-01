@@ -1271,8 +1271,11 @@ const generateInvoicePdf = async ({ invoice, language = 'en', tenant, sourceElem
   const fixedW = idxW + qtyW + unitW + taxW + totalW
   const descW = Math.max(110, Math.floor(contentW - fixedW))
 
+  const rowDescriptions = []
+
   const bodyRows = (lineItems.length ? lineItems : [{}]).map((l, idx) => {
     if (!l || !(l.raw?.productName || l.productName)) {
+      rowDescriptions.push('')
       return [
         '',
         shape(isRtl ? 'خدمة' : 'Service'),
@@ -1291,20 +1294,23 @@ const generateInvoicePdf = async ({ invoice, language = 'en', tenant, sourceElem
     const productNameAr = l.raw?.productNameAr || l.productNameAr || (hasArabicText(productNameEn) ? productNameEn : '')
     const descriptionEn = l.raw?.description || l.description || l.raw?.descriptionAr || l.descriptionAr || ''
     const descriptionAr = l.raw?.descriptionAr || l.descriptionAr || (hasArabicText(descriptionEn) ? descriptionEn : '')
-    const desc = uniqueTextLines(
-      toBilingualText(productNameEn, productNameAr, ''),
-      toBilingualText(descriptionEn, descriptionAr, '')
-    ).join('\n')
+    const nameText = toBilingualText(productNameEn, productNameAr, '')
+    const descText = toBilingualText(descriptionEn, descriptionAr, '')
+
+    rowDescriptions.push(descText)
 
     return [
       String(idx + 1),
-      shape(desc),
+      shape(nameText),
       String(quantity),
       money(unitPrice),
       money(taxAmount),
       money(lineTotalWithTax),
     ]
   })
+
+  const nameFontSize = Math.max(8, Math.min(14, bodyFontSize - 1))
+  const descFontSize = Math.max(7, Math.min(11, bodyFontSize - 3))
 
   autoTable(doc, {
     startY: y,
@@ -1319,13 +1325,13 @@ const generateInvoicePdf = async ({ invoice, language = 'en', tenant, sourceElem
     ]],
     body: bodyRows,
     styles: {
-      fontSize: Math.max(8, Math.min(14, bodyFontSize - 1)),
+      fontSize: nameFontSize,
       cellPadding: 4,
       font: bodyFontName,
       textColor: [15, 23, 42],
       lineColor: [226, 232, 240],
       lineWidth: 0.4,
-      valign: 'middle',
+      valign: 'top',
     },
     headStyles: {
       fillColor: rgbArr(theme.tableHeadFillRgb),
@@ -1334,12 +1340,43 @@ const generateInvoicePdf = async ({ invoice, language = 'en', tenant, sourceElem
     },
     alternateRowStyles: theme.altRowFillRgb ? { fillColor: rgbArr(theme.altRowFillRgb) } : {},
     columnStyles: {
-      0: { cellWidth: idxW, halign: 'center' },
-      1: { cellWidth: descW, halign: isRtl ? 'right' : 'left' },
-      2: { cellWidth: qtyW, halign: 'center' },
-      3: { cellWidth: unitW, halign: 'right' },
-      4: { cellWidth: taxW, halign: 'right' },
-      5: { cellWidth: totalW, halign: 'right', fontStyle: 'bold' },
+      0: { cellWidth: idxW, halign: 'center', valign: 'middle' },
+      1: { cellWidth: descW, halign: isRtl ? 'right' : 'left', valign: 'top' },
+      2: { cellWidth: qtyW, halign: 'center', valign: 'middle' },
+      3: { cellWidth: unitW, halign: 'right', valign: 'middle' },
+      4: { cellWidth: taxW, halign: 'right', valign: 'middle' },
+      5: { cellWidth: totalW, halign: 'right', fontStyle: 'bold', valign: 'middle' },
+    },
+    didParseCell: (data) => {
+      if (data.column.index === 1 && data.section === 'body' && rowDescriptions[data.row.index]) {
+        const descLines = doc.splitTextToSize(shape(rowDescriptions[data.row.index]), descW - 8)
+        const nameLines = doc.splitTextToSize(String(data.cell.text[0] || ''), descW - 8)
+        const neededHeight = nameLines.length * (nameFontSize * 1.15) + descLines.length * (descFontSize * 1.15) + 12
+        if (neededHeight > (data.cell.styles.minCellHeight || 0)) {
+          data.cell.styles.minCellHeight = neededHeight
+        }
+      }
+    },
+    didDrawCell: (data) => {
+      if (data.column.index === 1 && data.section === 'body' && rowDescriptions[data.row.index]) {
+        const { x, y, width } = data.cell
+        const padding = 4
+        const textX = isRtl ? x + width - padding : x + padding
+        const maxWidth = width - padding * 2
+
+        const nameLines = doc.splitTextToSize(String(data.cell.text[0] || ''), maxWidth)
+        let descY = y + padding + nameLines.length * (nameFontSize * 1.15) + 3
+
+        doc.setFontSize(descFontSize)
+        doc.setFont(bodyFontName, 'normal')
+        doc.setTextColor(100, 116, 139)
+
+        const descLines = doc.splitTextToSize(shape(rowDescriptions[data.row.index]), maxWidth)
+        doc.text(descLines, textX, descY, { align: isRtl ? 'right' : 'left', maxWidth })
+
+        doc.setFontSize(nameFontSize)
+        doc.setTextColor(15, 23, 42)
+      }
     },
     didDrawPage: () => {
       const pageNumber = doc.getCurrentPageInfo().pageNumber

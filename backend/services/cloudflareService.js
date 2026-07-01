@@ -15,6 +15,8 @@
  * The client does NOT need Cloudflare. They just add DNS records in their own provider.
  */
 
+import crypto from 'crypto';
+
 const CF_API = 'https://api.cloudflare.com/client/v4';
 
 const getGlobalToken = () => process.env.CLOUDFLARE_API_TOKEN || '';
@@ -35,11 +37,19 @@ export function isCloudflareOAuthConfigured() {
   return Boolean(getOAuthClientId() && getOAuthClientSecret());
 }
 
+export function generateCodeVerifier() {
+  return crypto.randomBytes(32).toString('base64url');
+}
+
+export function generateCodeChallenge(verifier) {
+  return crypto.createHash('sha256').update(verifier).digest('base64url');
+}
+
 export function getCloudflareOAuthRedirectUrl() {
   return process.env.CLOUDFLARE_OAUTH_REDIRECT_URL || `${process.env.FRONTEND_URL || 'https://maqder.com'}/api/ecommerce/domains/cloudflare/oauth-callback`;
 }
 
-export function buildCloudflareAuthUrl(state) {
+export function buildCloudflareAuthUrl(state, codeVerifier) {
   const params = new URLSearchParams({
     response_type: 'code',
     client_id: getOAuthClientId(),
@@ -47,20 +57,26 @@ export function buildCloudflareAuthUrl(state) {
     scope: 'account:settings:read zone:read dns:write',
     state,
   });
+  if (codeVerifier) {
+    params.append('code_challenge', generateCodeChallenge(codeVerifier));
+    params.append('code_challenge_method', 'S256');
+  }
   return `https://dash.cloudflare.com/oauth2/auth?${params.toString()}`;
 }
 
-export async function exchangeCloudflareCodeForToken(code) {
+export async function exchangeCloudflareCodeForToken(code, codeVerifier) {
+  const body = new URLSearchParams({
+    grant_type: 'authorization_code',
+    code,
+    client_id: getOAuthClientId(),
+    client_secret: getOAuthClientSecret(),
+    redirect_uri: getCloudflareOAuthRedirectUrl(),
+  });
+  if (codeVerifier) body.append('code_verifier', codeVerifier);
   const res = await fetch('https://api.cloudflare.com/oauth2/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'authorization_code',
-      code,
-      client_id: getOAuthClientId(),
-      client_secret: getOAuthClientSecret(),
-      redirect_uri: getCloudflareOAuthRedirectUrl(),
-    }),
+    body,
   });
   const data = await res.json();
   if (!res.ok || !data.access_token) {

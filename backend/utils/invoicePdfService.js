@@ -596,26 +596,32 @@ export const buildInvoicePdfBuffer = async ({ invoice, tenant, customerName, lan
   let rowY = cursorY + 28;
 
   lineItems.forEach((line, index) => {
+    const nameText = mergeUniqueLines(normalizeText(line?.productName), normalizeText(line?.productNameAr)).join('\n') || `Item ${index + 1}`;
+    const descText = mergeUniqueLines(normalizeText(line?.description), normalizeText(line?.descriptionAr)).join('\n');
     const rowValues = isTravelPdf
       ? [
           String(index + 1),
-          mergeUniqueLines(normalizeText(line?.productName), normalizeText(line?.productNameAr)).join('\n') || `Item ${index + 1}`,
+          nameText,
           toMoney(resolveLineDisplayPrice(invoice, line), invoice?.currency),
           toMoney(line?.lineTotalWithTax || line?.lineTotal, invoice?.currency),
           '',
         ]
       : [
           String(index + 1),
-          mergeUniqueLines(normalizeText(line?.productName), normalizeText(line?.productNameAr)).join('\n') || `Item ${index + 1}`,
+          nameText,
           String(Number(line?.quantity || 0)),
           toMoney(resolveLineDisplayPrice(invoice, line), invoice?.currency),
           `${Number(line?.taxRate || 0).toFixed(2)}%`,
           toMoney(line?.lineTotalWithTax || line?.lineTotal, invoice?.currency),
         ];
-    const rowHeight = Math.max(
+    const nameHeight = Math.max(
       24,
       ...rowValues.map((value, cellIndex) => measureWrappedLinesHeight(doc, [value], colWidths[cellIndex] - 10, englishFont, arabicFont, 9.5, 12))
     ) + 8;
+    const descHeight = descText
+      ? measureWrappedLinesHeight(doc, [descText], colWidths[1] - 10, englishFont, arabicFont, 8, 10) + 4
+      : 0;
+    const rowHeight = nameHeight + descHeight;
 
     if (rowY + rowHeight > pageHeight - margin - 120) {
       doc.addPage();
@@ -643,6 +649,15 @@ export const buildInvoicePdfBuffer = async ({ invoice, tenant, customerName, lan
       });
       currentX += colWidths[cellIndex];
     });
+    if (descText) {
+      drawWrappedLines(doc, [descText], tableX + 6, rowY + 15 + nameHeight - 8, colWidths[1] - 10, {
+        englishFont,
+        arabicFont,
+        fontSize: 8,
+        lineHeight: 10,
+        align: 'left',
+      });
+    }
     doc.line(tableX + tableWidth, rowY, tableX + tableWidth, rowY + rowHeight);
     rowY += rowHeight;
   });

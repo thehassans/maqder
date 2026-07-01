@@ -4,7 +4,7 @@ import { protect } from '../middleware/auth.js';
 import Tenant from '../models/Tenant.js';
 import EcommerceProduct from '../models/EcommerceProduct.js';
 import { clearTenantHostCache } from '../middleware/resolveTenantByHost.js';
-import { provisionCloudflareDomain, verifyDomainViaCloudflare, removeCloudflareDomain, getSSLStatus, isCloudflareConfigured, verifyCloudflareCredentials, listZones, isCloudflareOAuthConfigured, buildCloudflareAuthUrl, exchangeCloudflareCodeForToken, createCloudflareDnsRecord, deleteCloudflareDnsRecord, listZonesOAuth } from '../services/cloudflareService.js';
+import { provisionCloudflareDomain, verifyDomainViaCloudflare, removeCloudflareDomain, getSSLStatus, isCloudflareConfigured, verifyCloudflareCredentials, listZones, isCloudflareOAuthConfigured, buildCloudflareAuthUrl, exchangeCloudflareCodeForToken, createCloudflareDnsRecord, deleteCloudflareDnsRecord, listZonesOAuth, generateCodeVerifier } from '../services/cloudflareService.js';
 import { testWordPressConnection, runWordPressSync } from '../services/wordpressService.js';
 import { sendTenantEmail, buildEmailShell } from '../utils/tenantEmailService.js';
 
@@ -492,8 +492,9 @@ router.get('/domains/cloudflare/oauth-url', protect, async (req, res) => {
     if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
     if (!isCloudflareOAuthConfigured()) return res.status(400).json({ error: 'Cloudflare OAuth not configured by admin' });
 
-    const state = signCloudflareState({ tenantId: tenantId.toString(), userId: req.user._id.toString(), ts: Date.now() });
-    const url = buildCloudflareAuthUrl(state);
+    const codeVerifier = generateCodeVerifier();
+    const state = signCloudflareState({ tenantId: tenantId.toString(), userId: req.user._id.toString(), ts: Date.now(), codeVerifier });
+    const url = buildCloudflareAuthUrl(state, codeVerifier);
     res.json({ url });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -510,7 +511,7 @@ router.get('/domains/cloudflare/oauth-callback', async (req, res) => {
     const payload = verifyCloudflareState(state);
     if (!payload || !payload.tenantId) return res.status(400).send('Invalid or expired state');
 
-    const tokenRes = await exchangeCloudflareCodeForToken(code);
+    const tokenRes = await exchangeCloudflareCodeForToken(code, payload.codeVerifier);
     if (!tokenRes.success) return res.status(400).send(`Token exchange failed: ${tokenRes.error}`);
 
     // Determine fallback origin and list zones to auto-select the best one

@@ -25,6 +25,9 @@ import Payroll from '../models/Payroll.js';
 import JobCostEntry from '../models/JobCostEntry.js';
 import JobCostingJob from '../models/JobCostingJob.js';
 import LeadQuery from '../models/LeadQuery.js';
+import Quotation from '../models/Quotation.js';
+import DeliveryNote from '../models/DeliveryNote.js';
+import ReportSchedule from '../models/ReportSchedule.js';
 import IoTDevice from '../models/IoTDevice.js';
 import IoTReading from '../models/IoTReading.js';
 import {
@@ -1150,8 +1153,9 @@ router.delete('/tenants/:id/invoices', async (req, res) => {
 
     const tenantId = tenant._id;
 
-    const [invoiceDeletion, travelBookingReset, restaurantOrderReset, customerReset, emailReset] = await Promise.all([
+    const [invoiceDeletion, quotationDeletion, travelBookingReset, restaurantOrderReset, customerReset, emailReset] = await Promise.all([
       Invoice.deleteMany({ tenantId }),
+      Quotation.deleteMany({ tenantId }),
       TravelBooking.updateMany(
         { tenantId, invoiceId: { $ne: null } },
         { $set: { invoiceId: null, invoiceNumber: '', invoicedAt: null } }
@@ -1170,10 +1174,19 @@ router.delete('/tenants/:id/invoices', async (req, res) => {
       ),
     ]);
 
+    tenant.zatca = {
+      ...(tenant.zatca?.toObject?.() || tenant.zatca || {}),
+      invoiceCounter: 0,
+      lastInvoiceHash: '',
+    };
+    tenant.markModified('zatca');
+    await tenant.save();
+
     res.json({
       success: true,
       tenantId: String(tenantId),
       deletedInvoices: invoiceDeletion?.deletedCount || 0,
+      deletedQuotations: quotationDeletion?.deletedCount || 0,
       travelBookingsReset: travelBookingReset?.modifiedCount || 0,
       restaurantOrdersReset: restaurantOrderReset?.modifiedCount || 0,
       customersReset: customerReset?.modifiedCount || 0,
@@ -1225,6 +1238,9 @@ router.post('/tenants/:id/reset', async (req, res) => {
       ['whatsappTemplates', WhatsAppTemplate],
       ['whatsappQuickReplies', QuickReply],
       ['whatsappBroadcasts', Broadcast],
+      ['quotations', Quotation],
+      ['deliveryNotes', DeliveryNote],
+      ['reportSchedules', ReportSchedule],
     ];
 
     const results = await Promise.all(
@@ -1296,6 +1312,9 @@ router.delete('/tenants/:id', async (req, res) => {
       ['whatsappTemplates', WhatsAppTemplate],
       ['whatsappQuickReplies', QuickReply],
       ['whatsappBroadcasts', Broadcast],
+      ['quotations', Quotation],
+      ['deliveryNotes', DeliveryNote],
+      ['reportSchedules', ReportSchedule],
       ['users', User],
       ['employees', Employee]
     ];

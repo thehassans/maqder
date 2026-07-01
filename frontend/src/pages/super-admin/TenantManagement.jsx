@@ -42,7 +42,7 @@ export default function TenantManagement() {
   })
 
   const clearInvoicesMutation = useMutation({
-    mutationFn: (tenantId) => api.delete(`/super-admin/tenants/${tenantId}/invoices`).then(res => res.data),
+    mutationFn: (tenantId) => api.delete(`/super-admin/tenants/${tenantId}/invoices`, { timeout: 120000 }).then(res => res.data),
     onSuccess: (result) => {
       toast.success(
         language === 'ar'
@@ -70,7 +70,7 @@ export default function TenantManagement() {
   }
 
   const resetPanelMutation = useMutation({
-    mutationFn: (tenantId) => api.post(`/super-admin/tenants/${tenantId}/reset`).then(res => res.data),
+    mutationFn: (tenantId) => api.post(`/super-admin/tenants/${tenantId}/reset`, {}, { timeout: 120000 }).then(res => res.data),
     onSuccess: (result) => {
       const totals = Object.values(result?.deleted || {}).reduce((sum, v) => sum + (typeof v === 'number' ? v : 0), 0)
       toast.success(
@@ -84,7 +84,7 @@ export default function TenantManagement() {
   })
 
   const deleteTenantMutation = useMutation({
-    mutationFn: (tenantId) => api.delete(`/super-admin/tenants/${tenantId}`).then(res => res.data),
+    mutationFn: (tenantId) => api.delete(`/super-admin/tenants/${tenantId}`, { timeout: 120000 }).then(res => res.data),
     onSuccess: (data) => {
       toast.success(language === 'ar' ? 'تم حذف المستأجر بالكامل بنجاح' : 'Tenant completely deleted successfully')
       queryClient.invalidateQueries()

@@ -208,7 +208,7 @@ export default function RestaurantOrders() {
                 ×
               </button>
             </div>
-            
+             
             {receiptType === 'kitchen' && (
               <div className="mb-4 print:hidden">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
