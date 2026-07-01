@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Search, ShoppingCart, Heart, User } from 'lucide-react';
+import { Home, Search, ShoppingCart, Heart } from 'lucide-react';
 import { useCart } from '../../store/storefrontCart';
 import { useWishlist } from '../../store/storefrontWishlist';
 import { useI18n } from '../../store/storefrontI18n';

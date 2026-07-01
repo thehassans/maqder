@@ -562,7 +562,7 @@ export default function StorefrontLayout({ children }) {
       <NewsletterPopup />
 
       {/* Bottom padding for mobile nav */}
-      {theme?.mobileNav?.enabled !== false && <div className="md:hidden" style={{ height: '60px' }} />}
+      {theme?.mobileNav?.enabled !== false && <div className="md:hidden" style={{ height: ['spotlight', 'pill'].includes(theme?.mobileNav?.style) ? '80px' : '60px' }} />}
     </div>
     </ToastProvider>
   );
