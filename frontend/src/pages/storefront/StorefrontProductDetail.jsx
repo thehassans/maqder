@@ -38,6 +38,9 @@ export default function StorefrontProductDetail() {
   const [notifyEmail, setNotifyEmail] = useState('');
   const [notifyStatus, setNotifyStatus] = useState('');
 
+  // Color utility from theme
+  const c = (key, fallback) => data?.colors?.[key] || fallback;
+
   const handleNotifyStock = async (e) => {
     e.preventDefault();
     if (!notifyEmail.trim()) return;
