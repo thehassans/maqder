@@ -188,6 +188,7 @@ export default function Sidebar() {
         { path: '/app/dashboard/ecommerce/products', icon: Package, label: language === 'ar' ? 'المنتجات' : 'Products' },
         { path: '/app/dashboard/ecommerce/inventory', icon: Boxes, label: language === 'ar' ? 'المخزون' : 'Inventory' },
         { path: '/app/dashboard/ecommerce/customers', icon: Users, label: language === 'ar' ? 'العملاء' : 'Customers' },
+        { path: '/app/dashboard/ecommerce/sales-report', icon: BarChart3, label: language === 'ar' ? 'تقرير المبيعات' : 'Sales Report' },
         { path: '/app/dashboard/ecommerce/products/new', icon: PlusCircle, label: language === 'ar' ? 'إضافة منتج' : 'Add Product' },
         { path: '/app/dashboard/ecommerce/theme', icon: Palette, label: language === 'ar' ? 'تصميم المتجر' : 'Theme Editor' },
         { path: '/app/dashboard/ecommerce/domains', icon: Globe, label: language === 'ar' ? 'النطاقات' : 'Domains' },

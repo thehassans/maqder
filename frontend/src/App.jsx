@@ -160,6 +160,7 @@ import EcommerceGiftCards from './pages/ecommerce/EcommerceGiftCards'
 import EcommerceQuestions from './pages/ecommerce/EcommerceQuestions'
 import EcommerceInventory from './pages/ecommerce/EcommerceInventory'
 import EcommerceCustomers from './pages/ecommerce/EcommerceCustomers'
+import EcommerceSalesReport from './pages/ecommerce/EcommerceSalesReport'
 import EcommerceCoupons from './pages/ecommerce/EcommerceCoupons'
 import StorefrontHome from './pages/storefront/StorefrontHome'
 import StorefrontProducts from './pages/storefront/StorefrontProducts'
@@ -616,6 +617,7 @@ function App() {
         <Route path="ecommerce/questions" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceQuestions /></BusinessTypeRoute>} />
         <Route path="ecommerce/inventory" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceInventory /></BusinessTypeRoute>} />
         <Route path="ecommerce/customers" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceCustomers /></BusinessTypeRoute>} />
+        <Route path="ecommerce/sales-report" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceSalesReport /></BusinessTypeRoute>} />
         <Route path="ecommerce/settings" element={<BusinessTypeRoute allowedTypes={['ecommerce', 'trading']}><EcommerceStoreSettings /></BusinessTypeRoute>} />
 
         <Route path="restaurant/reservations" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantReservations /></BusinessTypeRoute>} />

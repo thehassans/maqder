@@ -228,6 +228,137 @@ router.get('/meta/analytics', protect, async (req, res) => {
   }
 });
 
+// --- SALES REPORT (detailed report with custom date range) ---
+router.get('/meta/sales-report', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found.' });
+
+    const startDate = req.query.startDate ? new Date(req.query.startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const endDate = req.query.endDate ? new Date(req.query.endDate + 'T23:59:59.999') : new Date();
+    const statusFilter = req.query.status ? { status: req.query.status } : { status: { $nin: ['cancelled', 'returned'] } };
+
+    const match = { tenantId, ...statusFilter, createdAt: { $gte: startDate, $lte: endDate } };
+
+    const [
+      summary,
+      dailySeries,
+      productPerformance,
+      categoryBreakdown,
+      paymentMethods,
+      statusDistribution,
+      topCustomers,
+      hourlyDistribution,
+      taxSummary,
+    ] = await Promise.all([
+      EcommerceOrder.aggregate([
+        { $match: match },
+        { $group: {
+          _id: null,
+          totalRevenue: { $sum: '$grandTotal' },
+          totalOrders: { $sum: 1 },
+          totalSubtotal: { $sum: '$subtotal' },
+          totalShipping: { $sum: '$shippingCost' },
+          totalTax: { $sum: '$taxTotal' },
+          totalDiscount: { $sum: '$discount' },
+          avgOrderValue: { $avg: '$grandTotal' },
+          minOrder: { $min: '$grandTotal' },
+          maxOrder: { $max: '$grandTotal' },
+          totalItems: { $sum: { $size: '$lineItems' } },
+        }},
+      ]),
+      EcommerceOrder.aggregate([
+        { $match: match },
+        { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } }, revenue: { $sum: '$grandTotal' }, orders: { $sum: 1 }, items: { $sum: { $size: '$lineItems' } } } },
+        { $sort: { _id: 1 } },
+      ]),
+      EcommerceOrder.aggregate([
+        { $match: match },
+        { $unwind: '$lineItems' },
+        { $group: {
+          _id: '$lineItems.productId',
+          title: { $first: '$lineItems.productTitle' },
+          sku: { $first: '$lineItems.sku' },
+          image: { $first: '$lineItems.productImage' },
+          qtySold: { $sum: '$lineItems.quantity' },
+          revenue: { $sum: '$lineItems.lineTotal' },
+          avgPrice: { $avg: '$lineItems.price' },
+          ordersCount: { $sum: 1 },
+        }},
+        { $sort: { revenue: -1 } },
+      ]),
+      EcommerceOrder.aggregate([
+        { $match: match },
+        { $unwind: '$lineItems' },
+        { $lookup: { from: 'ecommerceproducts', localField: 'lineItems.productId', foreignField: '_id', as: 'product' } },
+        { $unwind: { path: '$product', preserveNullAndEmptyArrays: true } },
+        { $group: { _id: { $ifNull: ['$product.category', 'Uncategorized'] }, revenue: { $sum: '$lineItems.lineTotal' }, qty: { $sum: '$lineItems.quantity' }, orders: { $sum: 1 } } },
+        { $sort: { revenue: -1 } },
+      ]),
+      EcommerceOrder.aggregate([
+        { $match: { tenantId, createdAt: { $gte: startDate, $lte: endDate } } },
+        { $group: { _id: '$payment.method', count: { $sum: 1 }, revenue: { $sum: '$grandTotal' } },
+        },
+      ]),
+      EcommerceOrder.aggregate([
+        { $match: { tenantId, createdAt: { $gte: startDate, $lte: endDate } } },
+        { $group: { _id: '$status', count: { $sum: 1 }, revenue: { $sum: '$grandTotal' } } },
+      ]),
+      EcommerceOrder.aggregate([
+        { $match: match },
+        { $group: { _id: '$customer.email', name: { $first: '$customer.name' }, email: { $first: '$customer.email' }, phone: { $first: '$customer.phone' }, orderCount: { $sum: 1 }, totalSpent: { $sum: '$grandTotal' }, avgOrder: { $avg: '$grandTotal' } } },
+        { $match: { _id: { $ne: null, $ne: '' } } },
+        { $sort: { totalSpent: -1 } },
+        { $limit: 20 },
+      ]),
+      EcommerceOrder.aggregate([
+        { $match: match },
+        { $group: { _id: { $hour: '$createdAt' }, orders: { $sum: 1 }, revenue: { $sum: '$grandTotal' } } },
+        { $sort: { _id: 1 } },
+      ]),
+      EcommerceOrder.aggregate([
+        { $match: match },
+        { $group: {
+          _id: null,
+          totalTax: { $sum: '$taxTotal' },
+          totalSubtotal: { $sum: '$subtotal' },
+          totalRevenue: { $sum: '$grandTotal' },
+          totalShipping: { $sum: '$shippingCost' },
+        }},
+      ]),
+    ]);
+
+    const s = summary[0] || {};
+    const tax = taxSummary[0] || {};
+
+    res.json({
+      period: { startDate: startDate.toISOString(), endDate: endDate.toISOString() },
+      summary: {
+        totalRevenue: s.totalRevenue || 0,
+        totalOrders: s.totalOrders || 0,
+        totalSubtotal: s.totalSubtotal || 0,
+        totalShipping: s.totalShipping || 0,
+        totalTax: s.totalTax || 0,
+        totalDiscount: s.totalDiscount || 0,
+        avgOrderValue: Math.round((s.avgOrderValue || 0) * 100) / 100,
+        minOrder: s.minOrder || 0,
+        maxOrder: s.maxOrder || 0,
+        totalItems: s.totalItems || 0,
+        effectiveTaxRate: tax.totalSubtotal > 0 ? Math.round((tax.totalTax / tax.totalSubtotal) * 1000) / 10 : 0,
+      },
+      dailySeries: dailySeries.map(d => ({ date: d._id, revenue: d.revenue, orders: d.orders, items: d.items })),
+      productPerformance: productPerformance.map(p => ({ ...p, productId: p._id, _id: undefined })),
+      categoryBreakdown: categoryBreakdown.map(c => ({ category: c._id, revenue: c.revenue, qty: c.qty, orders: c.orders })),
+      paymentMethods: paymentMethods.map(p => ({ method: p._id, count: p.count, revenue: p.revenue })),
+      statusDistribution: statusDistribution.map(s => ({ status: s._id, count: s.count, revenue: s.revenue })),
+      topCustomers: topCustomers.map(c => ({ ...c, email: c._id, _id: undefined })),
+      hourlyDistribution: hourlyDistribution.map(h => ({ hour: h._id, orders: h.orders, revenue: h.revenue })),
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // --- GET SINGLE ORDER ---
 router.get('/:id', protect, async (req, res) => {
   try {
