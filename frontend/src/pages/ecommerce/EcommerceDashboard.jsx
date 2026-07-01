@@ -57,11 +57,11 @@ export default function EcommerceDashboard() {
     return <div className="flex justify-center items-center h-[calc(100vh-8rem)]"><Loader2 className="w-8 h-8 animate-spin text-indigo-600" /></div>;
   }
 
-  const storeLive = settings.storeStatus === 'live';
+  const storeLive = settings?.storeStatus === 'live';
   const a = analytics || {};
   const PLATFORM_BASE = 'shop.maqder.com';
-  const subdomain = settings.subdomain || settings.slug || '';
-  const verifiedDomain = (settings.domains || []).find(d => d.status === 'verified');
+  const subdomain = settings?.subdomain || settings?.slug || '';
+  const verifiedDomain = (settings?.domains || []).find(d => d.status === 'verified');
   const storefrontUrl = verifiedDomain
     ? `https://${verifiedDomain.hostname}`
     : subdomain
@@ -91,10 +91,10 @@ export default function EcommerceDashboard() {
           </div>
           <div>
             <h1 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white">
-              {settings.storeName || 'E-Commerce Dashboard'}
+              {settings?.storeName || 'E-Commerce Dashboard'}
             </h1>
             <p className="text-sm text-gray-400">
-              {storeLive ? 'Store is live' : settings.storeStatus === 'paused' ? 'Store is paused' : 'Store is in draft mode'}
+              {storeLive ? 'Store is live' : settings?.storeStatus === 'paused' ? 'Store is paused' : 'Store is in draft mode'}
             </p>
           </div>
         </div>
