@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Search, Loader2, ChevronLeft, ChevronRight, SlidersHorizontal, Eye, Star, GitCompare, Check } from 'lucide-react';
+import { Search, Loader2, ChevronLeft, ChevronRight, SlidersHorizontal, Eye, Star, GitCompare, Check, Heart, ShoppingCart } from 'lucide-react';
 import SaudiRiyalSymbol from '../../components/storefront/SaudiRiyalSymbol';
 import storeApi from '../../lib/storeApi';
 import { useCompare } from '../../store/storefrontCompare';
+import { useWishlist } from '../../store/storefrontWishlist';
+import { useCart } from '../../store/storefrontCart';
 import { useI18n } from '../../store/storefrontI18n';
 import StorefrontSeo from '../../components/storefront/StorefrontSeo';
 import StorefrontBreadcrumbs from '../../components/storefront/StorefrontBreadcrumbs';
@@ -22,6 +24,8 @@ export default function StorefrontProducts() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [reviewStats, setReviewStats] = useState({});
   const { toggleCompare, isInCompare, count: compareCount } = useCompare();
+  const { isInWishlist, toggleWishlist } = useWishlist();
+  const { addItem } = useCart();
   const { t, isRTL } = useI18n();
 
   const search = searchParams.get('search') || '';
@@ -248,12 +252,28 @@ export default function StorefrontProducts() {
                   }} onMouseEnter={e => { e.currentTarget.style.opacity = 1; e.currentTarget.style.transform = 'scale(1.1)'; }} onMouseLeave={e => { e.currentTarget.style.opacity = 0; e.currentTarget.style.transform = 'scale(1)'; }} className="quick-view-btn">
                     <Eye size={16} color={c('primary', '#4f46e5')} />
                   </button>
+                  {/* Wishlist button */}
+                  <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWishlist(p); }} className="wishlist-btn"
+                    style={{ position: 'absolute', top: '10px', right: '54px', width: '36px', height: '36px', borderRadius: '50%', background: isInWishlist(p._id) ? '#ec4899' : 'rgba(255,255,255,0.95)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.12)', opacity: isInWishlist(p._id) ? 1 : 0, transition: 'all 0.25s' }}
+                    onMouseEnter={e => { e.currentTarget.style.opacity = 1; e.currentTarget.style.transform = 'scale(1.1)'; }} onMouseLeave={e => { e.currentTarget.style.opacity = isInWishlist(p._id) ? 1 : 0; e.currentTarget.style.transform = 'scale(1)'; }}>
+                    <Heart size={16} color={isInWishlist(p._id) ? '#fff' : '#ec4899'} fill={isInWishlist(p._id) ? '#fff' : 'none'} />
+                  </button>
                   {/* Compare button */}
                   <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleCompare(p._id); }} className="compare-btn"
-                    style={{ position: 'absolute', top: '10px', right: '54px', width: '36px', height: '36px', borderRadius: '50%', background: isInCompare(p._id) ? c('primary', '#4f46e5') : 'rgba(255,255,255,0.95)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.12)', opacity: isInCompare(p._id) ? 1 : 0, transition: 'all 0.25s' }}
+                    style={{ position: 'absolute', top: '10px', right: '98px', width: '36px', height: '36px', borderRadius: '50%', background: isInCompare(p._id) ? c('primary', '#4f46e5') : 'rgba(255,255,255,0.95)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.12)', opacity: isInCompare(p._id) ? 1 : 0, transition: 'all 0.25s' }}
                     onMouseEnter={e => { e.currentTarget.style.opacity = 1; e.currentTarget.style.transform = 'scale(1.1)'; }} onMouseLeave={e => { e.currentTarget.style.opacity = isInCompare(p._id) ? 1 : 0; e.currentTarget.style.transform = 'scale(1)'; }}>
                     {isInCompare(p._id) ? <Check size={16} color="#fff" /> : <GitCompare size={16} color={c('primary', '#4f46e5')} />}
                   </button>
+                  {/* Add to cart */}
+                  <div style={{ padding: '0 14px 14px' }}>
+                    <button onClick={(e) => { e.preventDefault(); addItem(p, 1); }} style={{
+                      width: '100%', padding: '10px', borderRadius: '10px', border: 'none', cursor: 'pointer',
+                      background: c('primary', '#4f46e5'), color: '#fff', fontWeight: 700, fontSize: '13px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'opacity 0.2s',
+                    }} onMouseEnter={e => e.currentTarget.style.opacity = '0.9'} onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
+                      <ShoppingCart size={15} /> {t('addToCart')}
+                    </button>
+                  </div>
                 </div>
               );
             })}
