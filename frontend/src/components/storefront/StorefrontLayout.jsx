@@ -550,7 +550,7 @@ export default function StorefrontLayout({ children }) {
       <CookieConsent />
 
       {/* Mobile bottom navigation */}
-      <MobileBottomNav />
+      <MobileBottomNav theme={theme} colors={colors} />
 
       {/* Back to top button */}
       <BackToTop />

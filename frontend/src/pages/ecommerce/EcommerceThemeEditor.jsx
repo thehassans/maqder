@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Palette, Save, Loader2, Upload, RotateCcw, AlertCircle, CheckCircle, Eye, Layout, Type, ShoppingCart, Home, Monitor, Smartphone, GripVertical, Trash2, Plus, ImageIcon, Sparkles, Download, FileUp } from 'lucide-react';
+import { Palette, Save, Loader2, Upload, RotateCcw, AlertCircle, CheckCircle, Eye, Layout, Type, ShoppingCart, Home, Monitor, Smartphone, GripVertical, Trash2, Plus, ImageIcon, Sparkles, Download, FileUp, Smartphone as PhoneIcon } from 'lucide-react';
 import api from '../../lib/api';
 
 const COLOR_FIELDS = [
@@ -545,6 +545,7 @@ ${sectionHTML}
             <button onClick={() => setActiveTab('footer')} className={tabCls('footer')}><Layout className="w-4 h-4" /> Footer</button>
             <button onClick={() => setActiveTab('product')} className={tabCls('product')}><Eye className="w-4 h-4" /> Product</button>
             <button onClick={() => setActiveTab('cart')} className={tabCls('cart')}><ShoppingCart className="w-4 h-4" /> Cart</button>
+            <button onClick={() => setActiveTab('mobilenav')} className={tabCls('mobilenav')}><Smartphone className="w-4 h-4" /> Mobile Nav</button>
           </div>
 
           {/* Hidden file inputs for image uploads */}
@@ -863,6 +864,40 @@ ${sectionHTML}
               <div>
                 <label className={labelCls}>Related Products Limit</label>
                 <input type="number" min="1" max="12" className={inputCls} value={theme.productPage?.relatedLimit || 4} onChange={e => updateProductPage('relatedLimit', parseInt(e.target.value) || 4)} />
+              </div>
+            </div>
+          )}
+
+          {/* Mobile Nav */}
+          {activeTab === 'mobilenav' && (
+            <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-5 space-y-4">
+              <div>
+                <label className={labelCls}>Bottom Nav Style</label>
+                <p className="text-xs text-gray-400 mb-3">Choose a mobile bottom navigation bar style. This will be shown to mobile visitors on your storefront.</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { value: 'default', label: 'Default', desc: 'Frosted glass bar with icons + labels' },
+                    { value: 'modern', label: 'Modern', desc: 'Animated underline + icon bounce' },
+                    { value: 'spotlight', label: 'Spotlight', desc: 'Dark floating bar with spotlight glow' },
+                    { value: 'pill', label: 'Pill', desc: 'Floating pill with expanding active item' },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => update('mobileNav.style', opt.value)}
+                      className={`text-left p-4 rounded-xl border-2 transition-all ${
+                        (theme.mobileNav?.style || 'default') === opt.value
+                          ? 'border-violet-500 bg-violet-50'
+                          : 'border-gray-200 dark:border-dark-600 hover:border-gray-300'
+                      }`}
+                    >
+                      <p className="font-bold text-sm text-gray-900 dark:text-white">{opt.label}</p>
+                      <p className="text-xs text-gray-400 mt-1">{opt.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="pt-3 border-t border-gray-100 dark:border-dark-700">
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.mobileNav?.enabled ?? true} onChange={e => update('mobileNav.enabled', e.target.checked)} className="w-4 h-4 rounded" /> Show bottom navigation on mobile</label>
               </div>
             </div>
           )}
