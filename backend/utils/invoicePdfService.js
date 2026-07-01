@@ -701,6 +701,16 @@ export const buildInvoicePdfBuffer = async ({ invoice, tenant, customerName, lan
     drawWrappedLines(doc, [normalizeText(invoice.notes)], margin + 12, footerY + 38, notesWidth - 24, { englishFont, arabicFont, fontSize: 10, lineHeight: 13 });
   }
 
+  if (invoice?.termsAndConditions) {
+    const tcHeight = measureWrappedLinesHeight(doc, [normalizeText(invoice.termsAndConditions)], pageWidth - margin * 2 - 24, englishFont, arabicFont, 9.5, 12) + 32;
+    let tcY = footerY + summaryHeight + 18;
+    tcY = ensurePageSpace(doc, tcY, tcHeight, margin, 46);
+    drawCard(doc, margin, tcY, pageWidth - margin * 2, tcHeight, [255, 255, 255]);
+    setDocFont(doc, englishFont, 'bold', 11);
+    doc.text('Terms & Conditions / الشروط والأحكام', margin + 12, tcY + 18);
+    drawWrappedLines(doc, [normalizeText(invoice.termsAndConditions)], margin + 12, tcY + 34, pageWidth - margin * 2 - 24, { englishFont, arabicFont, fontSize: 9.5, lineHeight: 12 });
+  }
+
   const arrayBuffer = doc.output('arraybuffer');
   return Buffer.from(arrayBuffer);
 };

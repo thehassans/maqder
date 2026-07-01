@@ -1470,6 +1470,27 @@ const generateInvoicePdf = async ({ invoice, language = 'en', tenant, sourceElem
     }
   }
 
+  if (invoice?.termsAndConditions) {
+    const tcY = totalsTop + totalsH + 14
+    const tcW = contentW
+    const tcText = shape(invoice.termsAndConditions)
+    setBodyFont(Math.max(bodyFontSize - 2, 7.5), 'normal')
+    const tcLines = doc.splitTextToSize(tcText, tcW - 24)
+    const tcHeight = Math.max(40, tcLines.length * (Math.max(bodyFontSize - 1, 8) * 1.3) + 28)
+
+    doc.setFillColor(255, 255, 255)
+    doc.setDrawColor(theme.boxStrokeRgb.r, theme.boxStrokeRgb.g, theme.boxStrokeRgb.b)
+    doc.roundedRect(contentLeft, tcY, tcW, tcHeight, 12, 12, 'FD')
+
+    setBodyFont(Math.max(bodyFontSize - 1, 8), 'bold')
+    doc.setTextColor(51, 65, 85)
+    doc.text(shape(toBilingualText('Terms & Conditions', 'الشروط والأحكام')), isRtl ? contentRightEdge - 12 : contentLeft + 12, tcY + 16, { align, maxWidth: tcW - 24 })
+
+    setBodyFont(Math.max(bodyFontSize - 2, 7.5), 'normal')
+    doc.setTextColor(71, 85, 105)
+    doc.text(tcLines, isRtl ? contentRightEdge - 12 : contentLeft + 12, tcY + 30, { align, maxWidth: tcW - 24 })
+  }
+
   const pageCount = doc.getNumberOfPages()
   const generatedAt = `${isRtl ? 'تاريخ الإنشاء' : 'Generated'}: ${formatDateTime(new Date(), language)}`
   const footerTextLines = footerLines.length > 0 ? footerLines : []

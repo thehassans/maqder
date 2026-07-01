@@ -120,6 +120,7 @@ const quotationSchema = new mongoose.Schema({
   convertedAt: { type: Date },
   notes: { type: String },
   internalNotes: { type: String },
+  termsAndConditions: { type: String },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   createdByName: { type: String },
   createdByNameAr: { type: String },

@@ -361,6 +361,18 @@ export default function QuotationDocumentPreview({ quotation, tenant, language =
           </div>
         </div>
 
+        {/* ── Section 4.5: Terms & Conditions ─────────────────── */}
+        {quotation?.termsAndConditions && (
+          <div className="mt-6 rounded-[1.5rem] border border-slate-200 bg-white p-5">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400 mb-3">
+              {language === 'ar' ? 'الشروط والأحكام' : 'Terms & Conditions'}
+            </p>
+            <p className="whitespace-pre-line text-sm leading-7 text-slate-600">
+              {quotation.termsAndConditions}
+            </p>
+          </div>
+        )}
+
         {/* ── Authorized Signature / Stamp ───────────────────── */}
         {quotation?.authorizedPersonSignature && (
           <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_220px]">

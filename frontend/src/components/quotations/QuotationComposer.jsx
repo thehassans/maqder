@@ -21,6 +21,8 @@ const emptyLine = {
   quantity: 1,
   unitPrice: '',
   taxRate: 15,
+  discount: 0,
+  discountType: 'fixed',
 }
 
 const selectableContexts = ['trading', 'construction', 'travel_agency', 'restaurant']
@@ -41,6 +43,7 @@ const buildQuotationFormValues = ({ quotation, tenant, defaultBusinessContext })
   subject: quotation?.subject || '',
   subjectAr: quotation?.subjectAr || '',
   notes: quotation?.notes || '',
+  termsAndConditions: quotation?.termsAndConditions || '',
   invoiceDiscount: Math.max(0, toNumber(quotation?.invoiceDiscount, 0)),
   buyer: quotation?.buyer || {},
   authorizedPersonName: quotation?.authorizedPersonName || '',
@@ -61,6 +64,8 @@ const buildQuotationFormValues = ({ quotation, tenant, defaultBusinessContext })
         quantity: Math.max(1, toNumber(line?.quantity, 1)),
         unitPrice: Math.max(0, toNumber(line?.unitPrice, 0)),
         taxRate: Math.max(0, toNumber(line?.taxRate, 15)),
+        discount: Math.max(0, toNumber(line?.discount, 0)),
+        discountType: line?.discountType || 'fixed',
       }))
     : [emptyLine],
 })
@@ -199,6 +204,8 @@ export default function QuotationComposer({ quotationId = '', initialQuotation =
           quantity: Math.max(1, toNumber(line.quantity, 1)),
           unitPrice: Math.max(0, toNumber(line.unitPrice, 0)),
           taxRate: Math.max(0, toNumber(line.taxRate, 15)),
+          discount: Math.max(0, toNumber(line.discount, 0)),
+          discountType: line.discountType === 'percentage' ? 'percentage' : 'fixed',
           taxCategory: 'S',
           taxAmount: toNumber(summaryLine.taxAmount, 0),
           lineTotal: toNumber(summaryLine.lineTotal, 0),
@@ -212,6 +219,7 @@ export default function QuotationComposer({ quotationId = '', initialQuotation =
       grandTotal: totals.grandTotal,
       subject: data?.subject || '',
       subjectAr: data?.subjectAr || '',
+      termsAndConditions: data?.termsAndConditions || '',
       authorizedPersonName: data?.authorizedPersonName || '',
       authorizedPersonNameAr: data?.authorizedPersonNameAr || '',
       authorizedPersonDesignation: data?.authorizedPersonDesignation || '',
@@ -407,19 +415,47 @@ export default function QuotationComposer({ quotationId = '', initialQuotation =
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
                       <div className="md:col-span-4">
                         <label className="label">{language === 'ar' ? 'الوصف' : 'Description'}</label>
-                        <input {...register(`lineItems.${index}.description`)} className="input" />
+                        <textarea {...register(`lineItems.${index}.description`)} className="input min-h-[80px]" placeholder={language === 'ar' ? '• النقطة الأولى\n• النقطة الثانية' : '• First point\n• Second point'} />
                       </div>
-                      <div className="md:col-span-3">
+                      <div className="md:col-span-4">
+                        <label className="label">{language === 'ar' ? 'الوصف بالعربية' : 'Arabic Description'}</label>
+                        <textarea {...register(`lineItems.${index}.descriptionAr`)} className="input min-h-[80px]" dir="rtl" placeholder={'• النقطة الأولى\n• النقطة الثانية'} />
+                      </div>
+                      <div className="md:col-span-2">
                         <label className="label">{language === 'ar' ? 'الكمية' : 'Qty'}</label>
                         <input type="number" min="1" step="1" {...register(`lineItems.${index}.quantity`)} className="input" />
                       </div>
-                      <div className="md:col-span-3">
+                      <div className="md:col-span-2">
                         <label className="label">{language === 'ar' ? 'سعر الوحدة' : 'Unit Price'}</label>
                         <input type="number" min="0" step="0.01" {...register(`lineItems.${index}.unitPrice`)} className="input" />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+                      <div className="md:col-span-3">
+                        <label className="label">{language === 'ar' ? 'خصم البند' : 'Line Discount'}</label>
+                        <input type="number" min="0" step="0.01" {...register(`lineItems.${index}.discount`)} className="input" />
+                      </div>
+                      <div className="md:col-span-3">
+                        <label className="label">{language === 'ar' ? 'نوع الخصم' : 'Discount Type'}</label>
+                        <select {...register(`lineItems.${index}.discountType`)} className="select">
+                          <option value="fixed">{language === 'ar' ? 'مبلغ ثابت' : 'Fixed Amount'}</option>
+                          <option value="percentage">{language === 'ar' ? 'نسبة مئوية' : 'Percentage'}</option>
+                        </select>
                       </div>
                       <div className="md:col-span-2">
                         <label className="label">{language === 'ar' ? 'الضريبة %' : 'Tax %'}</label>
                         <input type="number" min="0" step="0.01" {...register(`lineItems.${index}.taxRate`)} className="input" />
+                      </div>
+                      <div className="md:col-span-4 flex items-end">
+                        <button
+                          type="button"
+                          className="btn btn-ghost text-sm"
+                          onClick={() => append({ ...emptyLine, lineNumber: fields.length + 1 })}
+                        >
+                          <Plus className="w-4 h-4" />
+                          {language === 'ar' ? 'تكرار البند' : 'Duplicate Item'}
+                        </button>
                       </div>
                     </div>
 
@@ -523,6 +559,11 @@ export default function QuotationComposer({ quotationId = '', initialQuotation =
                 </div>
               </div>
             </div>
+          </div>
+
+          <div className="card p-6">
+            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'الشروط والأحكام' : 'Terms & Conditions'}</h3>
+            <textarea {...register('termsAndConditions')} rows="6" className="input min-h-[160px]" placeholder={language === 'ar' ? 'أدخل الشروط والأحكام...' : 'Enter terms and conditions...'} />
           </div>
 
           <div className="flex justify-end">
