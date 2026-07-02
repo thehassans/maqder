@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { GitCompare, X, Loader2, ShoppingCart, Check, Trash2 } from 'lucide-react';
 import SaudiRiyalSymbol from '../../components/storefront/SaudiRiyalSymbol';
 import storeApi from '../../lib/storeApi';
+import { optimizeImageUrl } from '../../lib/imageOptimizer';
 import { useCart } from '../../store/storefrontCart';
 import { useCompare } from '../../store/storefrontCompare';
 import StorefrontSeo from '../../components/storefront/StorefrontSeo';
@@ -102,7 +103,7 @@ export default function StorefrontCompare() {
                         <Link to={`/store/products/${slug}`} style={{ textDecoration: 'none' }}>
                           <div style={{ width: '100%', aspectRatio: '1', borderRadius: '12px', overflow: 'hidden', background: '#f3f4f6', marginBottom: '10px' }}>
                             {p.images?.[0]?.url ? (
-                              <img src={p.images[0].url} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} />
+                              <img src={optimizeImageUrl(p.images[0].url, { width: 200, quality: 80 })} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} />
                             ) : (
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#9ca3af', fontSize: '12px' }}>No image</div>
                             )}

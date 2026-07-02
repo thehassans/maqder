@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Loader2, Eye, Heart, ShoppingCart, Star, Check, Sparkles, TrendingUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import SaudiRiyalSymbol from '../../components/storefront/SaudiRiyalSymbol';
 import storeApi from '../../lib/storeApi';
+import { optimizeImageUrl } from '../../lib/imageOptimizer';
 import StorefrontSeo from '../../components/storefront/StorefrontSeo';
 import QuickViewModal from '../../components/storefront/QuickViewModal';
 import { useRecentlyViewed } from '../../store/recentlyViewed';
@@ -283,7 +284,7 @@ export default function StorefrontHome() {
                           boxShadow: '0 8px 24px rgba(0,0,0,0.06)', position: 'relative',
                         }}>
                           {p.images?.[0]?.url ? (
-                            <img src={p.images[0].url} alt={p.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <img src={optimizeImageUrl(p.images[0].url, { width: 400, quality: 80 })} alt={p.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           ) : (
                             <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                               <span style={{ fontSize: '11px', color: c('textMuted', '#9ca3af') }}>No image</span>
@@ -691,7 +692,7 @@ function FlashSaleSection({ settings, products, currency, colors, onQuickView })
               <Link to={`/store/products/${slug}`} style={{ textDecoration: 'none', display: 'block' }}>
                 <div style={{ aspectRatio: '1', background: '#f3f4f6', overflow: 'hidden' }}>
                   {p.images?.[0]?.url ? (
-                    <img src={p.images[0].url} alt={p.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img src={optimizeImageUrl(p.images[0].url, { width: 400, quality: 80 })} alt={p.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
                     <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: '11px' }}>No image</div>
                   )}
@@ -772,9 +773,9 @@ function ProductCard({ product, currency, colors, onQuickView }) {
         >
           {product.images?.[0]?.url ? (
             <>
-              <img className="sf-card-img" src={product.images[0].url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'opacity 0.4s ease, transform 0.5s cubic-bezier(0.4,0,0.2,1)', opacity: hoverImg && secondImg ? 0 : 1 }} />
+              <img className="sf-card-img" src={optimizeImageUrl(product.images[0].url, { width: 400, quality: 80 })} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'opacity 0.4s ease, transform 0.5s cubic-bezier(0.4,0,0.2,1)', opacity: hoverImg && secondImg ? 0 : 1 }} />
               {secondImg && (
-                <img className="sf-card-img2" src={secondImg} alt={product.title} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: hoverImg ? 1 : 0, transition: 'opacity 0.4s ease, transform 0.5s cubic-bezier(0.4,0,0.2,1)', transform: hoverImg ? 'scale(1.08)' : 'scale(1)' }} />
+                <img className="sf-card-img2" src={optimizeImageUrl(secondImg, { width: 400, quality: 80 })} alt={product.title} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: hoverImg ? 1 : 0, transition: 'opacity 0.4s ease, transform 0.5s cubic-bezier(0.4,0,0.2,1)', transform: hoverImg ? 'scale(1.08)' : 'scale(1)' }} />
               )}
             </>
           ) : (
