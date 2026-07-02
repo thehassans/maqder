@@ -117,8 +117,6 @@ export default defineConfig(({ mode }) => {
             'motion-vendor': ['framer-motion'],
             'toast-vendor': ['react-hot-toast'],
             'chart-vendor': ['recharts'],
-            'pdf-vendor': ['jspdf', 'jspdf-autotable', 'html2canvas'],
-            'sheet-vendor': ['xlsx'],
           },
         },
       },
