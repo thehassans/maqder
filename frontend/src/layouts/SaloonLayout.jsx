@@ -1,7 +1,9 @@
 import { Outlet } from 'react-router-dom'
+import { Suspense } from 'react'
 import { useSelector } from 'react-redux'
 import Header from '../components/layout/Header'
 import Sidebar from '../components/layout/Sidebar'
+import LoadingScreen from '../components/ui/LoadingScreen'
 
 export default function SaloonLayout() {
   const { sidebarCollapsed } = useSelector((state) => state.ui)
@@ -16,7 +18,9 @@ export default function SaloonLayout() {
       >
         <Header />
         <main className="p-4 lg:p-6">
-          <Outlet />
+          <Suspense fallback={<LoadingScreen />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>

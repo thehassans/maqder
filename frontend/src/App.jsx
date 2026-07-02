@@ -12,8 +12,10 @@ import AuthLayout from './layouts/AuthLayout'
 import SuperAdminLayout from './layouts/SuperAdminLayout'
 import MarketingLayout from './layouts/MarketingLayout'
 
+// Auth & Marketing (static — small, needed early)
 import Login from './pages/auth/Login'
 import ResetPassword from './pages/auth/ResetPassword'
+import InactiveTenant from './pages/auth/InactiveTenant'
 import MarketingHome from './pages/marketing/Home'
 import MarketingSolutions from './pages/marketing/Solutions'
 import SolutionDetail from './pages/marketing/SolutionDetail'
@@ -22,147 +24,148 @@ import MarketingAbout from './pages/marketing/About'
 import MarketingContact from './pages/marketing/Contact'
 import MarketingPrivacy from './pages/marketing/Privacy'
 import MarketingTerms from './pages/marketing/Terms'
-import InactiveTenant from './pages/auth/InactiveTenant'
-import KhayyatDashboard from './pages/khayyat/Dashboard'
-import KhayyatWorkers from './pages/khayyat/Workers'
-import KhayyatWorkerForm from './pages/khayyat/WorkerForm'
-import KhayyatWorkerAmounts from './pages/khayyat/WorkerAmounts'
-import KhayyatStitchings from './pages/khayyat/Stitchings'
-import KhayyatStitchingForm from './pages/khayyat/StitchingForm'
-import KhayyatEmbroideryDesigns from './pages/khayyat/EmbroideryDesigns'
-import KhayyatFabrics from './pages/khayyat/Fabrics'
-import KhayyatLaundry from './pages/khayyat/Laundry'
-import KhayyatLoyalty from './pages/khayyat/Loyalty'
-import KhayyatQuickInvoice from './pages/khayyat/QuickInvoice'
-import KhayyatCompleteOrder from './pages/khayyat/CompleteOrder'
-import Dashboard from './pages/Dashboard'
-import Invoices from './pages/invoices/Invoices'
-import InvoiceCreate from './pages/invoices/InvoiceCreate'
-import InvoiceCreateSell from './pages/invoices/InvoiceCreateSellPage'
-import InvoiceCreatePurchase from './pages/invoices/InvoiceCreatePurchasePage'
-import InvoiceEditPage from './pages/invoices/InvoiceEditPage'
-import InvoiceView from './pages/invoices/InvoiceView'
-import Quotations from './pages/quotations/Quotations'
-import QuotationCreatePage from './pages/quotations/QuotationCreatePage'
-import QuotationEditPage from './pages/quotations/QuotationEditPage'
-import QuotationView from './pages/quotations/QuotationView'
-import Employees from './pages/hr/Employees'
-import EmployeeForm from './pages/hr/EmployeeForm'
-import Payroll from './pages/hr/Payroll'
-import PayrollCalculators from './pages/hr/PayrollCalculators'
-import HRCompliance from './pages/hr/HRCompliance'
-import Attendance from './pages/hr/Attendance'
-import Hiring from './pages/hr/Hiring'
-import Leaves from './pages/hr/Leaves'
-import Performance from './pages/hr/Performance'
-import HRReports from './pages/hr/HRReports'
-import ExpenseClaims from './pages/hr/ExpenseClaims'
-import Products from './pages/inventory/Products'
-import ProductForm from './pages/inventory/ProductForm'
-import Warehouses from './pages/inventory/Warehouses'
-import WarehouseForm from './pages/inventory/WarehouseForm'
-import Settings from './pages/Settings'
-import Reports from './pages/Reports'
-import VatReturns from './pages/VatReturns'
-import Vouchers from './pages/finance/Vouchers'
-import Finance from './pages/Finance'
-import Backup from './pages/Backup'
-import Suppliers from './pages/Suppliers'
-import SupplierForm from './pages/SupplierForm'
-import SupplierPerformance from './pages/trading/SupplierPerformance'
-import PurchaseOrders from './pages/PurchaseOrders'
-import PurchaseOrderForm from './pages/PurchaseOrderForm'
-import GoodsReceiptNote from './pages/inventory/GoodsReceiptNote'
-import PurchaseReturns from './pages/inventory/PurchaseReturns'
-import ZatcaLogs from './pages/finance/ZatcaLogs'
-import Shipments from './pages/Shipments'
-import ShipmentForm from './pages/ShipmentForm'
-import DeliveryNotes from './pages/DeliveryNotes'
-import DeliveryNoteForm from './pages/DeliveryNoteForm'
-import TravelBookings from './pages/travel/TravelBookings'
-import TravelBookingForm from './pages/travel/TravelBookingForm'
-import RestaurantMenuItems from './pages/restaurant/RestaurantMenuItems'
-import RestaurantMenuItemForm from './pages/restaurant/RestaurantMenuItemForm'
-import RestaurantOrders from './pages/restaurant/RestaurantOrders'
-import RestaurantOrderForm from './pages/restaurant/RestaurantOrderForm'
-import RestaurantKitchen from './pages/restaurant/RestaurantKitchen'
-import RestaurantPOS from './pages/restaurant/RestaurantPOS'
-import RestaurantTables from './pages/restaurant/Tables'
-import RestaurantInventory from './pages/restaurant/Inventory'
-import RestaurantBranches from './pages/restaurant/Branches'
-import CashierPanel from './pages/restaurant/CashierPanel'
-import QRMenu from './pages/restaurant/QRMenu'
-import BoutiquePOS from './pages/boutique/BoutiquePOS'
-import BoutiqueProducts from './pages/boutique/BoutiqueProducts'
-import BoutiquePendingReturns from './pages/boutique/BoutiquePendingReturns'
-import Projects from './pages/Projects'
-import ProjectForm from './pages/ProjectForm'
-import Tasks from './pages/Tasks'
-import TaskForm from './pages/TaskForm'
-import BakalaPOS from './pages/bakala/BakalaPOS'
-import BakalaDashboard from './pages/bakala/BakalaDashboard'
-import BakalaProducts from './pages/bakala/BakalaProducts'
-import BakalaAddProduct from './pages/bakala/BakalaAddProduct'
-import BakalaProduce from './pages/bakala/BakalaProduce'
-import WeightScale from './pages/bakala/WeightScale'
-import InventoryAlerts from './pages/bakala/InventoryAlerts'
-import ExpiryWasteManagement from './pages/bakala/ExpiryWasteManagement'
-import Promotions from './pages/bakala/Promotions'
-import ProfitMargins from './pages/bakala/ProfitMargins'
-import AutoReorder from './pages/bakala/AutoReorder'
-import BarcodeLabelPrinting from './pages/bakala/BarcodeLabelPrinting'
-import DailyPnL from './pages/bakala/DailyPnL'
-import RestaurantReservations from './pages/restaurant/RestaurantReservations'
-import SaloonAppointments from './pages/saloon/SaloonAppointments'
-import LaundryDelivery from './pages/laundry/LaundryDelivery'
-import RentalMaintenance from './pages/car_rental/RentalMaintenance'
-import BoutiqueRentalCalendar from './pages/boutique/BoutiqueRentalCalendar'
-import ManpowerTimesheets from './pages/manpower/ManpowerTimesheets'
-import WorkshopServiceHistory from './pages/car_workshop/WorkshopServiceHistory'
-import KhayyatMeasurements from './pages/khayyat/KhayyatMeasurements'
-import RestaurantCombos from './pages/restaurant/RestaurantCombos'
-import RestaurantAnalytics from './pages/restaurant/RestaurantAnalytics'
-import RestaurantKDS from './pages/restaurant/RestaurantKDS'
-import RestaurantMess from './pages/restaurant/RestaurantMess'
-import RestaurantDelivery from './pages/restaurant/RestaurantDelivery'
-import BakalaShiftManagement from './pages/bakala/BakalaShiftManagement'
-import BakalaReturns from './pages/bakala/BakalaReturns'
-import BookStorePOS from './pages/bookstore/BookStorePOS'
-import BookStoreDashboard from './pages/bookstore/BookStoreDashboard'
-import BookStoreProducts from './pages/bookstore/BookStoreProducts'
-import BookStoreAddProduct from './pages/bookstore/BookStoreAddProduct'
-import BookStoreShiftManagement from './pages/bookstore/BookStoreShiftManagement'
-import BookStoreImport from './pages/bookstore/BookStoreImport'
-import BookStoreBestsellers from './pages/bookstore/BookStoreBestsellers'
-import BookStoreSupplyLists from './pages/bookstore/BookStoreSupplyLists'
-import BookStoreBuyBack from './pages/bookstore/BookStoreBuyBack'
-import BookStoreRentals from './pages/bookstore/BookStoreRentals'
-import BookStoreCourseEnrollments from './pages/bookstore/BookStoreCourseEnrollments'
-import BookStoreReports from './pages/bookstore/BookStoreReports'
-import EcommerceDashboard from './pages/ecommerce/EcommerceDashboard'
-import EcommerceOrders from './pages/ecommerce/EcommerceOrders'
-import EcommerceProducts from './pages/ecommerce/EcommerceProducts'
-import EcommerceAddProduct from './pages/ecommerce/EcommerceAddProduct'
-import EcommerceThemeEditor from './pages/ecommerce/EcommerceThemeEditor'
-import EcommerceDomains from './pages/ecommerce/EcommerceDomains'
-import EcommerceStoreSettings from './pages/ecommerce/EcommerceStoreSettings'
-import EcommerceProductDetail from './pages/ecommerce/EcommerceProductDetail'
-import EcommerceOrderDetail from './pages/ecommerce/EcommerceOrderDetail'
-import EcommercePayments from './pages/ecommerce/EcommercePayments'
-import EcommerceCouriers from './pages/ecommerce/EcommerceCouriers'
-import EcommercePixels from './pages/ecommerce/EcommercePixels'
-import EcommerceReviews from './pages/ecommerce/EcommerceReviews'
-import EcommerceNewsletter from './pages/ecommerce/EcommerceNewsletter'
-import EcommerceWordPress from './pages/ecommerce/EcommerceWordPress'
-import EcommerceAbandonedCarts from './pages/ecommerce/EcommerceAbandonedCarts'
-import EcommerceReturns from './pages/ecommerce/EcommerceReturns'
-import EcommerceGiftCards from './pages/ecommerce/EcommerceGiftCards'
-import EcommerceQuestions from './pages/ecommerce/EcommerceQuestions'
-import EcommerceInventory from './pages/ecommerce/EcommerceInventory'
-import EcommerceCustomers from './pages/ecommerce/EcommerceCustomers'
-import EcommerceSalesReport from './pages/ecommerce/EcommerceSalesReport'
-import EcommerceCoupons from './pages/ecommerce/EcommerceCoupons'
-import EcommerceBundles from './pages/ecommerce/EcommerceBundles'
+
+// Lazy-load all admin/dashboard pages for code-splitting
+const KhayyatDashboard = lazy(() => import('./pages/khayyat/Dashboard'))
+const KhayyatWorkers = lazy(() => import('./pages/khayyat/Workers'))
+const KhayyatWorkerForm = lazy(() => import('./pages/khayyat/WorkerForm'))
+const KhayyatWorkerAmounts = lazy(() => import('./pages/khayyat/WorkerAmounts'))
+const KhayyatStitchings = lazy(() => import('./pages/khayyat/Stitchings'))
+const KhayyatStitchingForm = lazy(() => import('./pages/khayyat/StitchingForm'))
+const KhayyatEmbroideryDesigns = lazy(() => import('./pages/khayyat/EmbroideryDesigns'))
+const KhayyatFabrics = lazy(() => import('./pages/khayyat/Fabrics'))
+const KhayyatLaundry = lazy(() => import('./pages/khayyat/Laundry'))
+const KhayyatLoyalty = lazy(() => import('./pages/khayyat/Loyalty'))
+const KhayyatQuickInvoice = lazy(() => import('./pages/khayyat/QuickInvoice'))
+const KhayyatCompleteOrder = lazy(() => import('./pages/khayyat/CompleteOrder'))
+const KhayyatMeasurements = lazy(() => import('./pages/khayyat/KhayyatMeasurements'))
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const Invoices = lazy(() => import('./pages/invoices/Invoices'))
+const InvoiceCreate = lazy(() => import('./pages/invoices/InvoiceCreate'))
+const InvoiceCreateSell = lazy(() => import('./pages/invoices/InvoiceCreateSellPage'))
+const InvoiceCreatePurchase = lazy(() => import('./pages/invoices/InvoiceCreatePurchasePage'))
+const InvoiceEditPage = lazy(() => import('./pages/invoices/InvoiceEditPage'))
+const InvoiceView = lazy(() => import('./pages/invoices/InvoiceView'))
+const Quotations = lazy(() => import('./pages/quotations/Quotations'))
+const QuotationCreatePage = lazy(() => import('./pages/quotations/QuotationCreatePage'))
+const QuotationEditPage = lazy(() => import('./pages/quotations/QuotationEditPage'))
+const QuotationView = lazy(() => import('./pages/quotations/QuotationView'))
+const Employees = lazy(() => import('./pages/hr/Employees'))
+const EmployeeForm = lazy(() => import('./pages/hr/EmployeeForm'))
+const Payroll = lazy(() => import('./pages/hr/Payroll'))
+const PayrollCalculators = lazy(() => import('./pages/hr/PayrollCalculators'))
+const HRCompliance = lazy(() => import('./pages/hr/HRCompliance'))
+const Attendance = lazy(() => import('./pages/hr/Attendance'))
+const Hiring = lazy(() => import('./pages/hr/Hiring'))
+const Leaves = lazy(() => import('./pages/hr/Leaves'))
+const Performance = lazy(() => import('./pages/hr/Performance'))
+const HRReports = lazy(() => import('./pages/hr/HRReports'))
+const ExpenseClaims = lazy(() => import('./pages/hr/ExpenseClaims'))
+const Products = lazy(() => import('./pages/inventory/Products'))
+const ProductForm = lazy(() => import('./pages/inventory/ProductForm'))
+const Warehouses = lazy(() => import('./pages/inventory/Warehouses'))
+const WarehouseForm = lazy(() => import('./pages/inventory/WarehouseForm'))
+const Settings = lazy(() => import('./pages/Settings'))
+const Reports = lazy(() => import('./pages/Reports'))
+const VatReturns = lazy(() => import('./pages/VatReturns'))
+const Vouchers = lazy(() => import('./pages/finance/Vouchers'))
+const Finance = lazy(() => import('./pages/Finance'))
+const Backup = lazy(() => import('./pages/Backup'))
+const Suppliers = lazy(() => import('./pages/Suppliers'))
+const SupplierForm = lazy(() => import('./pages/SupplierForm'))
+const SupplierPerformance = lazy(() => import('./pages/trading/SupplierPerformance'))
+const PurchaseOrders = lazy(() => import('./pages/PurchaseOrders'))
+const PurchaseOrderForm = lazy(() => import('./pages/PurchaseOrderForm'))
+const GoodsReceiptNote = lazy(() => import('./pages/inventory/GoodsReceiptNote'))
+const PurchaseReturns = lazy(() => import('./pages/inventory/PurchaseReturns'))
+const ZatcaLogs = lazy(() => import('./pages/finance/ZatcaLogs'))
+const Shipments = lazy(() => import('./pages/Shipments'))
+const ShipmentForm = lazy(() => import('./pages/ShipmentForm'))
+const DeliveryNotes = lazy(() => import('./pages/DeliveryNotes'))
+const DeliveryNoteForm = lazy(() => import('./pages/DeliveryNoteForm'))
+const TravelBookings = lazy(() => import('./pages/travel/TravelBookings'))
+const TravelBookingForm = lazy(() => import('./pages/travel/TravelBookingForm'))
+const RestaurantMenuItems = lazy(() => import('./pages/restaurant/RestaurantMenuItems'))
+const RestaurantMenuItemForm = lazy(() => import('./pages/restaurant/RestaurantMenuItemForm'))
+const RestaurantOrders = lazy(() => import('./pages/restaurant/RestaurantOrders'))
+const RestaurantOrderForm = lazy(() => import('./pages/restaurant/RestaurantOrderForm'))
+const RestaurantKitchen = lazy(() => import('./pages/restaurant/RestaurantKitchen'))
+const RestaurantPOS = lazy(() => import('./pages/restaurant/RestaurantPOS'))
+const RestaurantTables = lazy(() => import('./pages/restaurant/Tables'))
+const RestaurantInventory = lazy(() => import('./pages/restaurant/Inventory'))
+const RestaurantBranches = lazy(() => import('./pages/restaurant/Branches'))
+const CashierPanel = lazy(() => import('./pages/restaurant/CashierPanel'))
+const QRMenu = lazy(() => import('./pages/restaurant/QRMenu'))
+const BoutiquePOS = lazy(() => import('./pages/boutique/BoutiquePOS'))
+const BoutiqueProducts = lazy(() => import('./pages/boutique/BoutiqueProducts'))
+const BoutiquePendingReturns = lazy(() => import('./pages/boutique/BoutiquePendingReturns'))
+const Projects = lazy(() => import('./pages/Projects'))
+const ProjectForm = lazy(() => import('./pages/ProjectForm'))
+const Tasks = lazy(() => import('./pages/Tasks'))
+const TaskForm = lazy(() => import('./pages/TaskForm'))
+const BakalaPOS = lazy(() => import('./pages/bakala/BakalaPOS'))
+const BakalaDashboard = lazy(() => import('./pages/bakala/BakalaDashboard'))
+const BakalaProducts = lazy(() => import('./pages/bakala/BakalaProducts'))
+const BakalaAddProduct = lazy(() => import('./pages/bakala/BakalaAddProduct'))
+const BakalaProduce = lazy(() => import('./pages/bakala/BakalaProduce'))
+const WeightScale = lazy(() => import('./pages/bakala/WeightScale'))
+const InventoryAlerts = lazy(() => import('./pages/bakala/InventoryAlerts'))
+const ExpiryWasteManagement = lazy(() => import('./pages/bakala/ExpiryWasteManagement'))
+const Promotions = lazy(() => import('./pages/bakala/Promotions'))
+const ProfitMargins = lazy(() => import('./pages/bakala/ProfitMargins'))
+const AutoReorder = lazy(() => import('./pages/bakala/AutoReorder'))
+const BarcodeLabelPrinting = lazy(() => import('./pages/bakala/BarcodeLabelPrinting'))
+const DailyPnL = lazy(() => import('./pages/bakala/DailyPnL'))
+const RestaurantReservations = lazy(() => import('./pages/restaurant/RestaurantReservations'))
+const SaloonAppointments = lazy(() => import('./pages/saloon/SaloonAppointments'))
+const LaundryDelivery = lazy(() => import('./pages/laundry/LaundryDelivery'))
+const RentalMaintenance = lazy(() => import('./pages/car_rental/RentalMaintenance'))
+const BoutiqueRentalCalendar = lazy(() => import('./pages/boutique/BoutiqueRentalCalendar'))
+const ManpowerTimesheets = lazy(() => import('./pages/manpower/ManpowerTimesheets'))
+const WorkshopServiceHistory = lazy(() => import('./pages/car_workshop/WorkshopServiceHistory'))
+const RestaurantCombos = lazy(() => import('./pages/restaurant/RestaurantCombos'))
+const RestaurantAnalytics = lazy(() => import('./pages/restaurant/RestaurantAnalytics'))
+const RestaurantKDS = lazy(() => import('./pages/restaurant/RestaurantKDS'))
+const RestaurantMess = lazy(() => import('./pages/restaurant/RestaurantMess'))
+const RestaurantDelivery = lazy(() => import('./pages/restaurant/RestaurantDelivery'))
+const BakalaShiftManagement = lazy(() => import('./pages/bakala/BakalaShiftManagement'))
+const BakalaReturns = lazy(() => import('./pages/bakala/BakalaReturns'))
+const BookStorePOS = lazy(() => import('./pages/bookstore/BookStorePOS'))
+const BookStoreDashboard = lazy(() => import('./pages/bookstore/BookStoreDashboard'))
+const BookStoreProducts = lazy(() => import('./pages/bookstore/BookStoreProducts'))
+const BookStoreAddProduct = lazy(() => import('./pages/bookstore/BookStoreAddProduct'))
+const BookStoreShiftManagement = lazy(() => import('./pages/bookstore/BookStoreShiftManagement'))
+const BookStoreImport = lazy(() => import('./pages/bookstore/BookStoreImport'))
+const BookStoreBestsellers = lazy(() => import('./pages/bookstore/BookStoreBestsellers'))
+const BookStoreSupplyLists = lazy(() => import('./pages/bookstore/BookStoreSupplyLists'))
+const BookStoreBuyBack = lazy(() => import('./pages/bookstore/BookStoreBuyBack'))
+const BookStoreRentals = lazy(() => import('./pages/bookstore/BookStoreRentals'))
+const BookStoreCourseEnrollments = lazy(() => import('./pages/bookstore/BookStoreCourseEnrollments'))
+const BookStoreReports = lazy(() => import('./pages/bookstore/BookStoreReports'))
+const EcommerceDashboard = lazy(() => import('./pages/ecommerce/EcommerceDashboard'))
+const EcommerceOrders = lazy(() => import('./pages/ecommerce/EcommerceOrders'))
+const EcommerceProducts = lazy(() => import('./pages/ecommerce/EcommerceProducts'))
+const EcommerceAddProduct = lazy(() => import('./pages/ecommerce/EcommerceAddProduct'))
+const EcommerceThemeEditor = lazy(() => import('./pages/ecommerce/EcommerceThemeEditor'))
+const EcommerceDomains = lazy(() => import('./pages/ecommerce/EcommerceDomains'))
+const EcommerceStoreSettings = lazy(() => import('./pages/ecommerce/EcommerceStoreSettings'))
+const EcommerceProductDetail = lazy(() => import('./pages/ecommerce/EcommerceProductDetail'))
+const EcommerceOrderDetail = lazy(() => import('./pages/ecommerce/EcommerceOrderDetail'))
+const EcommercePayments = lazy(() => import('./pages/ecommerce/EcommercePayments'))
+const EcommerceCouriers = lazy(() => import('./pages/ecommerce/EcommerceCouriers'))
+const EcommercePixels = lazy(() => import('./pages/ecommerce/EcommercePixels'))
+const EcommerceReviews = lazy(() => import('./pages/ecommerce/EcommerceReviews'))
+const EcommerceNewsletter = lazy(() => import('./pages/ecommerce/EcommerceNewsletter'))
+const EcommerceWordPress = lazy(() => import('./pages/ecommerce/EcommerceWordPress'))
+const EcommerceAbandonedCarts = lazy(() => import('./pages/ecommerce/EcommerceAbandonedCarts'))
+const EcommerceReturns = lazy(() => import('./pages/ecommerce/EcommerceReturns'))
+const EcommerceGiftCards = lazy(() => import('./pages/ecommerce/EcommerceGiftCards'))
+const EcommerceQuestions = lazy(() => import('./pages/ecommerce/EcommerceQuestions'))
+const EcommerceInventory = lazy(() => import('./pages/ecommerce/EcommerceInventory'))
+const EcommerceCustomers = lazy(() => import('./pages/ecommerce/EcommerceCustomers'))
+const EcommerceSalesReport = lazy(() => import('./pages/ecommerce/EcommerceSalesReport'))
+const EcommerceCoupons = lazy(() => import('./pages/ecommerce/EcommerceCoupons'))
+const EcommerceBundles = lazy(() => import('./pages/ecommerce/EcommerceBundles'))
 import StorefrontLayout from './components/storefront/StorefrontLayout'
 import { CartProvider } from './store/storefrontCart'
 import { WishlistProvider } from './store/storefrontWishlist'
@@ -189,91 +192,91 @@ const StorefrontShippingPolicy = lazy(() => import('./pages/storefront/Storefron
 const StorefrontPrivacy = lazy(() => import('./pages/storefront/StorefrontPrivacy'))
 const StorefrontTerms = lazy(() => import('./pages/storefront/StorefrontTerms'))
 const StorefrontCategory = lazy(() => import('./pages/storefront/StorefrontCategory'))
-import IoT from './pages/IoT'
-import IoTDeviceForm from './pages/IoTDeviceForm'
-import Khata from './pages/finance/Khata'
-import JobCosting from './pages/JobCosting'
-import JobCostingForm from './pages/JobCostingForm'
-import MRP from './pages/MRP'
-import WhatsApp from './pages/WhatsApp'
-import Contacts from './pages/Contacts'
-import Expenses from './pages/Expenses'
-import ExpenseForm from './pages/ExpenseForm'
-import CustomerList from './pages/customers/CustomerList'
-import CustomerForm from './pages/customers/CustomerForm'
-import CustomerStatement from './pages/customers/CustomerStatement'
-import Users from './pages/Users'
-import SuperAdminDashboard from './pages/super-admin/SuperAdminDashboard'
-import TenantManagement from './pages/super-admin/TenantManagement'
-import TenantForm from './pages/super-admin/TenantForm'
-import TenantCustomization from './pages/super-admin/TenantCustomization'
-import UserManagement from './pages/super-admin/UserManagement'
-import IdentitySettings from './pages/super-admin/IdentitySettings'
-import GeminiSettings from './pages/super-admin/GeminiSettings'
-import EmailSettings from './pages/super-admin/EmailSettings'
-import SuperAdminMailbox from './pages/super-admin/SuperAdminMailbox'
-import SuperAdminWhatsApp from './pages/super-admin/SuperAdminWhatsApp'
-import WebsiteSettings from './pages/super-admin/WebsiteSettings'
-import ManpowerDashboard from './pages/manpower/ManpowerDashboard'
-import ManpowerWorkers from './pages/manpower/ManpowerWorkers'
-import ManpowerWorkerForm from './pages/manpower/ManpowerWorkerForm'
-import ManpowerWorkersBulk from './pages/manpower/ManpowerWorkersBulk'
-import ManpowerAssignments from './pages/manpower/ManpowerAssignments'
-import ManpowerAssignmentForm from './pages/manpower/ManpowerAssignmentForm'
-import ManpowerContractPrint from './pages/manpower/ManpowerContractPrint'
-import SystemSettings from './pages/super-admin/SystemSettings'
-import ZatcaManagement from './pages/super-admin/ZatcaManagement'
-import QueriesCRM from './pages/super-admin/QueriesCRM'
-import EmailCommunication from './pages/EmailCommunication'
-import FleetAssets from './pages/fleet/FleetAssets'
-import FleetAssetForm from './pages/fleet/FleetAssetForm'
-import MaintenanceAlerts from './pages/fleet/MaintenanceAlerts'
-import SaloonDashboard from './pages/saloon/SaloonDashboard'
-import Contracts from './pages/contracts/Contracts'
-import ContractForm from './pages/contracts/ContractForm'
-import LandedCosts from './pages/landed-costs/LandedCosts'
-import LandedCostForm from './pages/landed-costs/LandedCostForm'
-import Compliance from './pages/compliance/Compliance'
-import Communicate from './pages/Communicate'
-import SaudiCompliance from './pages/compliance/SaudiCompliance'
-import GovernmentIntegrations from './pages/tenant-settings/GovernmentIntegrations'
-import GovernmentIntegrationDetail from './pages/tenant-settings/GovernmentIntegrationDetail'
-import ZatcaDashboard from './pages/tenant-settings/ZatcaDashboard'
+const IoT = lazy(() => import('./pages/IoT'))
+const IoTDeviceForm = lazy(() => import('./pages/IoTDeviceForm'))
+const Khata = lazy(() => import('./pages/finance/Khata'))
+const JobCosting = lazy(() => import('./pages/JobCosting'))
+const JobCostingForm = lazy(() => import('./pages/JobCostingForm'))
+const MRP = lazy(() => import('./pages/MRP'))
+const WhatsApp = lazy(() => import('./pages/WhatsApp'))
+const Contacts = lazy(() => import('./pages/Contacts'))
+const Expenses = lazy(() => import('./pages/Expenses'))
+const ExpenseForm = lazy(() => import('./pages/ExpenseForm'))
+const CustomerList = lazy(() => import('./pages/customers/CustomerList'))
+const CustomerForm = lazy(() => import('./pages/customers/CustomerForm'))
+const CustomerStatement = lazy(() => import('./pages/customers/CustomerStatement'))
+const Users = lazy(() => import('./pages/Users'))
+const SuperAdminDashboard = lazy(() => import('./pages/super-admin/SuperAdminDashboard'))
+const TenantManagement = lazy(() => import('./pages/super-admin/TenantManagement'))
+const TenantForm = lazy(() => import('./pages/super-admin/TenantForm'))
+const TenantCustomization = lazy(() => import('./pages/super-admin/TenantCustomization'))
+const UserManagement = lazy(() => import('./pages/super-admin/UserManagement'))
+const IdentitySettings = lazy(() => import('./pages/super-admin/IdentitySettings'))
+const GeminiSettings = lazy(() => import('./pages/super-admin/GeminiSettings'))
+const EmailSettings = lazy(() => import('./pages/super-admin/EmailSettings'))
+const SuperAdminMailbox = lazy(() => import('./pages/super-admin/SuperAdminMailbox'))
+const SuperAdminWhatsApp = lazy(() => import('./pages/super-admin/SuperAdminWhatsApp'))
+const WebsiteSettings = lazy(() => import('./pages/super-admin/WebsiteSettings'))
+const ManpowerDashboard = lazy(() => import('./pages/manpower/ManpowerDashboard'))
+const ManpowerWorkers = lazy(() => import('./pages/manpower/ManpowerWorkers'))
+const ManpowerWorkerForm = lazy(() => import('./pages/manpower/ManpowerWorkerForm'))
+const ManpowerWorkersBulk = lazy(() => import('./pages/manpower/ManpowerWorkersBulk'))
+const ManpowerAssignments = lazy(() => import('./pages/manpower/ManpowerAssignments'))
+const ManpowerAssignmentForm = lazy(() => import('./pages/manpower/ManpowerAssignmentForm'))
+const ManpowerContractPrint = lazy(() => import('./pages/manpower/ManpowerContractPrint'))
+const SystemSettings = lazy(() => import('./pages/super-admin/SystemSettings'))
+const ZatcaManagement = lazy(() => import('./pages/super-admin/ZatcaManagement'))
+const QueriesCRM = lazy(() => import('./pages/super-admin/QueriesCRM'))
+const EmailCommunication = lazy(() => import('./pages/EmailCommunication'))
+const FleetAssets = lazy(() => import('./pages/fleet/FleetAssets'))
+const FleetAssetForm = lazy(() => import('./pages/fleet/FleetAssetForm'))
+const MaintenanceAlerts = lazy(() => import('./pages/fleet/MaintenanceAlerts'))
+const SaloonDashboard = lazy(() => import('./pages/saloon/SaloonDashboard'))
+const Contracts = lazy(() => import('./pages/contracts/Contracts'))
+const ContractForm = lazy(() => import('./pages/contracts/ContractForm'))
+const LandedCosts = lazy(() => import('./pages/landed-costs/LandedCosts'))
+const LandedCostForm = lazy(() => import('./pages/landed-costs/LandedCostForm'))
+const Compliance = lazy(() => import('./pages/compliance/Compliance'))
+const Communicate = lazy(() => import('./pages/Communicate'))
+const SaudiCompliance = lazy(() => import('./pages/compliance/SaudiCompliance'))
+const GovernmentIntegrations = lazy(() => import('./pages/tenant-settings/GovernmentIntegrations'))
+const GovernmentIntegrationDetail = lazy(() => import('./pages/tenant-settings/GovernmentIntegrationDetail'))
+const ZatcaDashboard = lazy(() => import('./pages/tenant-settings/ZatcaDashboard'))
 import CarRentalLayout from './layouts/CarRentalLayout'
 import WorkshopLayout from './layouts/WorkshopLayout'
-import FleetList from './pages/car-rental/FleetList'
-import CarForm from './pages/car-rental/CarForm'
-import CustomerRegistry from './pages/car-rental/CustomerRegistry'
-import CustomerKycForm from './pages/car-rental/CustomerForm'
-import ActiveRentals from './pages/car-rental/ActiveRentals'
-import CheckoutPOS from './pages/car-rental/CheckoutPOS'
-import CheckinPOS from './pages/car-rental/CheckinPOS'
-import ContractDetail from './pages/car-rental/ContractDetail'
-import WorkshopDashboard from './pages/workshop/WorkshopDashboard'
-import JobCards from './pages/workshop/JobCards'
-import Vehicles from './pages/workshop/Vehicles'
-import WorkshopInventory from './pages/workshop/WorkshopInventory'
-import CRMDashboard from './pages/crm/CRMDashboard'
-import CRMLeadsTab from './pages/crm/CRMLeadsTab'
-import CRMDealsTab from './pages/crm/CRMDealsTab'
-import CRMActivitiesTab from './pages/crm/CRMActivitiesTab'
+const FleetList = lazy(() => import('./pages/car-rental/FleetList'))
+const CarForm = lazy(() => import('./pages/car-rental/CarForm'))
+const CustomerRegistry = lazy(() => import('./pages/car-rental/CustomerRegistry'))
+const CustomerKycForm = lazy(() => import('./pages/car-rental/CustomerForm'))
+const ActiveRentals = lazy(() => import('./pages/car-rental/ActiveRentals'))
+const CheckoutPOS = lazy(() => import('./pages/car-rental/CheckoutPOS'))
+const CheckinPOS = lazy(() => import('./pages/car-rental/CheckinPOS'))
+const ContractDetail = lazy(() => import('./pages/car-rental/ContractDetail'))
+const WorkshopDashboard = lazy(() => import('./pages/workshop/WorkshopDashboard'))
+const JobCards = lazy(() => import('./pages/workshop/JobCards'))
+const Vehicles = lazy(() => import('./pages/workshop/Vehicles'))
+const WorkshopInventory = lazy(() => import('./pages/workshop/WorkshopInventory'))
+const CRMDashboard = lazy(() => import('./pages/crm/CRMDashboard'))
+const CRMLeadsTab = lazy(() => import('./pages/crm/CRMLeadsTab'))
+const CRMDealsTab = lazy(() => import('./pages/crm/CRMDealsTab'))
+const CRMActivitiesTab = lazy(() => import('./pages/crm/CRMActivitiesTab'))
 
 import LaundryLayout from './layouts/LaundryLayout'
-import LaundryPOS from './pages/laundry/LaundryPOS'
-import LaundryServices from './pages/laundry/LaundryServices'
-import LaundryKanban from './pages/laundry/LaundryKanban'
-import LaundryCustomers from './pages/laundry/LaundryCustomers'
-import LaundryInventory from './pages/laundry/LaundryInventory'
+const LaundryPOS = lazy(() => import('./pages/laundry/LaundryPOS'))
+const LaundryServices = lazy(() => import('./pages/laundry/LaundryServices'))
+const LaundryKanban = lazy(() => import('./pages/laundry/LaundryKanban'))
+const LaundryCustomers = lazy(() => import('./pages/laundry/LaundryCustomers'))
+const LaundryInventory = lazy(() => import('./pages/laundry/LaundryInventory'))
 
 import SaloonLayout from './layouts/SaloonLayout'
-import SaloonPOS from './pages/saloon/SaloonPOS'
-import SaloonServices from './pages/saloon/SaloonServices'
-import SaloonBarbers from './pages/saloon/SaloonBarbers'
-import QRServices from './pages/saloon/QRServices'
-import SaloonQueue from './pages/saloon/SaloonQueue'
-import Letterhead from './pages/Letterhead'
-import PublicMenu from './pages/public/PublicMenu'
-import PublicServices from './pages/public/PublicServices'
+const SaloonPOS = lazy(() => import('./pages/saloon/SaloonPOS'))
+const SaloonServices = lazy(() => import('./pages/saloon/SaloonServices'))
+const SaloonBarbers = lazy(() => import('./pages/saloon/SaloonBarbers'))
+const QRServices = lazy(() => import('./pages/saloon/QRServices'))
+const SaloonQueue = lazy(() => import('./pages/saloon/SaloonQueue'))
+const Letterhead = lazy(() => import('./pages/Letterhead'))
+const PublicMenu = lazy(() => import('./pages/public/PublicMenu'))
+const PublicServices = lazy(() => import('./pages/public/PublicServices'))
 
 import LoadingScreen from './components/ui/LoadingScreen'
 
@@ -364,8 +367,8 @@ function App() {
       </Route>
 
       {/* Public Application Routes */}
-      <Route path="/public/menu" element={<PublicMenu />} />
-      <Route path="/public/services" element={<PublicServices />} />
+      <Route path="/public/menu" element={<Suspense fallback={<LoadingScreen />}><PublicMenu /></Suspense>} />
+      <Route path="/public/services" element={<Suspense fallback={<LoadingScreen />}><PublicServices /></Suspense>} />
 
       {/* Auth Routes */}
       <Route element={<AuthLayout />}>

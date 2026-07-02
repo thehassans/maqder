@@ -1,7 +1,9 @@
 import { Outlet } from 'react-router-dom'
+import { Suspense } from 'react'
 import { useSelector } from 'react-redux'
 import Sidebar from '../components/layout/Sidebar'
 import Header from '../components/layout/Header'
+import LoadingScreen from '../components/ui/LoadingScreen'
 
 export default function LaundryLayout() {
   const { sidebarCollapsed } = useSelector(state => state.ui)
@@ -16,7 +18,9 @@ export default function LaundryLayout() {
       >
         <Header />
         <main className="p-4 lg:p-6">
-          <Outlet />
+          <Suspense fallback={<LoadingScreen />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>

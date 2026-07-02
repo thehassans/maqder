@@ -1,7 +1,9 @@
 import { Outlet } from 'react-router-dom'
+import { Suspense } from 'react'
 import { useSelector } from 'react-redux'
 import Sidebar from '../components/layout/Sidebar'
 import Header from '../components/layout/Header'
+import LoadingScreen from '../components/ui/LoadingScreen'
 
 /**
  * CarRentalLayout — dedicated shell for tenants with businessType: 'car_rental'.
@@ -21,7 +23,9 @@ export default function CarRentalLayout() {
       >
         <Header />
         <main className="p-4 lg:p-6">
-          <Outlet />
+          <Suspense fallback={<LoadingScreen />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>

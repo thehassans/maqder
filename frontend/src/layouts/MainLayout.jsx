@@ -1,8 +1,10 @@
 import { Outlet, Navigate, useLocation } from 'react-router-dom'
+import { Suspense } from 'react'
 import { useSelector } from 'react-redux'
 import Sidebar from '../components/layout/Sidebar'
 import Header from '../components/layout/Header'
 import OfflineBanner from '../components/ui/OfflineBanner'
+import LoadingScreen from '../components/ui/LoadingScreen'
 import TerminationBanner, { TerminationBlocker, InactiveBlocker, isTenantTerminated, isTenantInactive } from '../components/ui/TerminationBanner'
 import { getTenantBusinessTypes } from '../lib/businessTypes'
 
@@ -34,7 +36,9 @@ export default function MainLayout() {
         <TerminationBanner />
         <Header />
         <main className="p-4 lg:p-6">
-          <Outlet />
+          <Suspense fallback={<LoadingScreen />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
       </div>
