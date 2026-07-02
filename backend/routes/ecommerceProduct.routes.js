@@ -119,6 +119,8 @@ router.post('/', protect, async (req, res) => {
       requiresShipping: body.requiresShipping ?? true,
       images: body.images || [],
       seo: body.seo || {},
+      specifications: body.specifications || {},
+      shortDescription: body.shortDescription || '',
       createdBy: req.user._id,
     });
 
@@ -142,6 +144,7 @@ router.put('/:id', protect, async (req, res) => {
       'taxRate', 'taxIncluded', 'currency', 'hasVariants', 'option1Name', 'option2Name',
       'option3Name', 'variants', 'stockQuantity', 'trackInventory', 'continueSellingWhenOOS',
       'sku', 'barcode', 'weight', 'weightUnit', 'requiresShipping', 'images', 'seo',
+      'specifications', 'shortDescription',
     ];
 
     const update = { updatedBy: req.user._id };

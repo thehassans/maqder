@@ -100,6 +100,18 @@ const ecommerceProductSchema = new mongoose.Schema({
     isPublic: { type: Boolean, default: true },
     createdAt: { type: Date, default: Date.now },
   }],
+  // Specifications for accordion display on PDP
+  specifications: {
+    dimensions: { type: String, default: '' },
+    material: { type: String, default: '' },
+    weight: { type: String, default: '' },
+    color: { type: String, default: '' },
+    careInstructions: { type: String, default: '' },
+    warranty: { type: String, default: '' },
+    countryOfOrigin: { type: String, default: '' },
+  },
+  // Short description for product cards and quick views
+  shortDescription: { type: String, default: '' },
 }, { timestamps: true });
 
 // Auto-generate SEO slug from title if not provided

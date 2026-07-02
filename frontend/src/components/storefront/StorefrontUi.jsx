@@ -131,6 +131,18 @@ export function StorefrontGlobalStyles() {
       [dir="rtl"] body { font-family: 'Tajawal', 'Cairo', 'Noto Sans Arabic', sans-serif; }
       @media (max-width: 768px) { .sf-footer-grid { grid-template-columns: 1fr 1fr !important; gap: 32px !important; } }
       @media (max-width: 480px) { .sf-footer-grid { grid-template-columns: 1fr !important; gap: 24px !important; } }
+      /* Touch-friendly tap targets — minimum 44px for mobile */
+      @media (max-width: 768px) {
+        .sf-tap-target { min-height: 44px; min-width: 44px; }
+        button, a.sf-tap-link { min-height: 40px; }
+        .sf-mobile-action-btn { min-height: 48px; min-width: 48px; padding: 12px; }
+      }
+      /* Prevent text selection on touch swipe elements */
+      .sf-no-select { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+      /* Smooth touch scrolling */
+      .sf-touch-scroll { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+      /* Safe area padding for bottom nav */
+      .sf-safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
     `}</style>
   );
 }

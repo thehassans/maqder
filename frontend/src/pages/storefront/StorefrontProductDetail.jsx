@@ -12,6 +12,8 @@ import StorefrontSeo from '../../components/storefront/StorefrontSeo';
 import StorefrontBreadcrumbs from '../../components/storefront/StorefrontBreadcrumbs';
 import { useRecentlyViewed } from '../../store/recentlyViewed';
 import { ProductDetailSkeleton, useToast } from '../../components/storefront/StorefrontUi';
+import Accordion from '../../components/storefront/Accordion';
+import { useSwipeGesture } from '../../hooks/useSwipeGesture';
 
 export default function StorefrontProductDetail() {
   const { id } = useParams();
@@ -46,6 +48,21 @@ export default function StorefrontProductDetail() {
 
   // Color utility from theme
   const c = (key, fallback) => data?.colors?.[key] || fallback;
+
+  // Swipe gestures for mobile image gallery
+  const imageSwipe = useSwipeGesture({
+    onSwipeLeft: () => {
+      if (data?.product?.images?.length > 1) {
+        setSelectedImage(prev => Math.min(prev + 1, data.product.images.length - 1));
+      }
+    },
+    onSwipeRight: () => {
+      if (data?.product?.images?.length > 1) {
+        setSelectedImage(prev => Math.max(prev - 1, 0));
+      }
+    },
+    threshold: 40,
+  });
 
   const handleNotifyStock = async (e) => {
     e.preventDefault();
@@ -212,9 +229,11 @@ export default function StorefrontProductDetail() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '56px', alignItems: 'start', marginTop: '24px' }} className="store-pd-grid">
         {/* Images */}
-        <div className="store-pd-gallery" style={{ position: 'sticky', top: '20px' }}>
+        <div className="store-pd-gallery sf-no-select" style={{ position: 'sticky', top: '20px' }}>
           <div style={{ aspectRatio: '1', borderRadius: '24px', overflow: 'hidden', background: '#f8f8f8', marginBottom: '16px', position: 'relative', cursor: 'zoom-in', boxShadow: '0 2px 20px rgba(0,0,0,0.04)', border: '1px solid #f0f0f0' }}
             onClick={() => setZoomed(true)}
+            onTouchStart={imageSwipe.onTouchStart}
+            onTouchEnd={imageSwipe.onTouchEnd}
             onMouseMove={(e) => {
               const rect = e.currentTarget.getBoundingClientRect();
               const x = ((e.clientX - rect.left) / rect.width) * 100;
@@ -240,7 +259,7 @@ export default function StorefrontProductDetail() {
                 <button key={idx} onClick={() => setSelectedImage(idx)} style={{
                   width: '72px', height: '72px', borderRadius: '14px', overflow: 'hidden', border: selectedImage === idx ? '2px solid #111' : '1px solid #eee', cursor: 'pointer', flexShrink: 0, transition: 'all 0.25s', opacity: selectedImage === idx ? 1 : 0.6,
                 }} onMouseEnter={e => { if (selectedImage !== idx) { e.currentTarget.style.borderColor = '#ddd'; e.currentTarget.style.opacity = '0.85'; } }} onMouseLeave={e => { if (selectedImage !== idx) { e.currentTarget.style.borderColor = '#eee'; e.currentTarget.style.opacity = '0.6'; } }}>
-                  <img src={img.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={img.url} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </button>
               ))}
             </div>
@@ -478,13 +497,33 @@ export default function StorefrontProductDetail() {
             </div>
           )}
 
-          {/* Description */}
-          {product.description && (
-            <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: '28px' }}>
-              <h3 style={{ fontWeight: 700, fontSize: '14px', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#111' }}>{t('description')}</h3>
-              <div style={{ fontSize: '15px', color: '#555', lineHeight: 1.8 }} dangerouslySetInnerHTML={{ __html: product.description }} />
-            </div>
-          )}
+          {/* Accordion: Description, Specifications, Shipping & Returns */}
+          <Accordion
+            colors={data?.colors}
+            isRTL={isRTL}
+            items={[
+              { title: t('description'), content: product.description, raw: true },
+              {
+                title: t('specifications') || 'Specifications',
+                content: product.specifications ? [
+                  product.specifications.dimensions && `${t('dimensions') || 'Dimensions'}: ${product.specifications.dimensions}`,
+                  product.specifications.material && `${t('material') || 'Material'}: ${product.specifications.material}`,
+                  product.specifications.weight && `${t('weight') || 'Weight'}: ${product.specifications.weight}`,
+                  product.specifications.color && `${t('color') || 'Color'}: ${product.specifications.color}`,
+                  product.specifications.warranty && `${t('warranty') || 'Warranty'}: ${product.specifications.warranty}`,
+                  product.specifications.countryOfOrigin && `${t('countryOfOrigin') || 'Country of Origin'}: ${product.specifications.countryOfOrigin}`,
+                ].filter(Boolean).join('\n') : '',
+              },
+              {
+                title: t('shippingReturns') || 'Shipping & Returns',
+                content: `${t('shippingReturnsDesc') || 'Free shipping on orders over 200 SAR. 7-day return policy. Items must be in original condition with tags attached.'}`,
+              },
+              {
+                title: t('careInstructions') || 'Care Instructions',
+                content: product.specifications?.careInstructions || (t('careInstructionsDefault') || 'Follow care label instructions. Machine wash cold with similar colors. Do not bleach. Tumble dry low.'),
+              },
+            ].filter(item => item.content && item.content.trim())}
+          />
         </div>
       </div>
 

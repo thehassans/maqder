@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { getMe, setTenantInactive } from './store/slices/authSlice'
@@ -163,29 +163,32 @@ import EcommerceCustomers from './pages/ecommerce/EcommerceCustomers'
 import EcommerceSalesReport from './pages/ecommerce/EcommerceSalesReport'
 import EcommerceCoupons from './pages/ecommerce/EcommerceCoupons'
 import EcommerceBundles from './pages/ecommerce/EcommerceBundles'
-import StorefrontHome from './pages/storefront/StorefrontHome'
-import StorefrontProducts from './pages/storefront/StorefrontProducts'
-import StorefrontProductDetail from './pages/storefront/StorefrontProductDetail'
-import StorefrontCheckout from './pages/storefront/StorefrontCheckout'
-import StorefrontCheckoutSuccess from './pages/storefront/StorefrontCheckoutSuccess'
-import StorefrontCheckoutCancel from './pages/storefront/StorefrontCheckoutCancel'
 import StorefrontLayout from './components/storefront/StorefrontLayout'
 import { CartProvider } from './store/storefrontCart'
 import { WishlistProvider } from './store/storefrontWishlist'
 import { CompareProvider } from './store/storefrontCompare'
 import { StorefrontI18nProvider } from './store/storefrontI18n'
-import StorefrontWishlist from './pages/storefront/StorefrontWishlist'
-import StorefrontOrderTracking from './pages/storefront/StorefrontOrderTracking'
-import StorefrontReturnRequest from './pages/storefront/StorefrontReturnRequest'
-import StorefrontCompare from './pages/storefront/StorefrontCompare'
-import StorefrontAccount from './pages/storefront/StorefrontAccount'
-import StorefrontContact from './pages/storefront/StorefrontContact'
-import StorefrontFAQ from './pages/storefront/StorefrontFAQ'
-import StorefrontAbout from './pages/storefront/StorefrontAbout'
-import StorefrontShippingPolicy from './pages/storefront/StorefrontShippingPolicy'
-import StorefrontPrivacy from './pages/storefront/StorefrontPrivacy'
-import StorefrontTerms from './pages/storefront/StorefrontTerms'
-import StorefrontCategory from './pages/storefront/StorefrontCategory'
+import { ProductDetailSkeleton } from './components/storefront/StorefrontUi'
+
+// Lazy-load storefront pages for code-splitting
+const StorefrontHome = lazy(() => import('./pages/storefront/StorefrontHome'))
+const StorefrontProducts = lazy(() => import('./pages/storefront/StorefrontProducts'))
+const StorefrontProductDetail = lazy(() => import('./pages/storefront/StorefrontProductDetail'))
+const StorefrontCheckout = lazy(() => import('./pages/storefront/StorefrontCheckout'))
+const StorefrontCheckoutSuccess = lazy(() => import('./pages/storefront/StorefrontCheckoutSuccess'))
+const StorefrontCheckoutCancel = lazy(() => import('./pages/storefront/StorefrontCheckoutCancel'))
+const StorefrontWishlist = lazy(() => import('./pages/storefront/StorefrontWishlist'))
+const StorefrontOrderTracking = lazy(() => import('./pages/storefront/StorefrontOrderTracking'))
+const StorefrontReturnRequest = lazy(() => import('./pages/storefront/StorefrontReturnRequest'))
+const StorefrontCompare = lazy(() => import('./pages/storefront/StorefrontCompare'))
+const StorefrontAccount = lazy(() => import('./pages/storefront/StorefrontAccount'))
+const StorefrontContact = lazy(() => import('./pages/storefront/StorefrontContact'))
+const StorefrontFAQ = lazy(() => import('./pages/storefront/StorefrontFAQ'))
+const StorefrontAbout = lazy(() => import('./pages/storefront/StorefrontAbout'))
+const StorefrontShippingPolicy = lazy(() => import('./pages/storefront/StorefrontShippingPolicy'))
+const StorefrontPrivacy = lazy(() => import('./pages/storefront/StorefrontPrivacy'))
+const StorefrontTerms = lazy(() => import('./pages/storefront/StorefrontTerms'))
+const StorefrontCategory = lazy(() => import('./pages/storefront/StorefrontCategory'))
 import IoT from './pages/IoT'
 import IoTDeviceForm from './pages/IoTDeviceForm'
 import Khata from './pages/finance/Khata'
@@ -766,24 +769,24 @@ function App() {
       </Route>
 
       {/* ───── Public Storefront ───── */}
-      <Route path="/store" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontHome /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/products" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontProducts /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/category/:slug" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontCategory /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/products/:id" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontProductDetail /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/checkout" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontCheckout /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/wishlist" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontWishlist /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/compare" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontCompare /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/account" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontAccount /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/contact" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontContact /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/faq" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontFAQ /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/about" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontAbout /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/shipping-policy" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontShippingPolicy /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/track-order" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontOrderTracking /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/returns" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontReturnRequest /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/privacy" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontPrivacy /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/terms" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontTerms /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/checkout/success" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontCheckoutSuccess /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/checkout/cancel" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><StorefrontCheckoutCancel /></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontHome /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store/products" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontProducts /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store/category/:slug" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontCategory /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store/products/:id" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontProductDetail /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store/checkout" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontCheckout /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store/wishlist" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontWishlist /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store/compare" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontCompare /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store/account" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontAccount /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store/contact" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontContact /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store/faq" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontFAQ /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store/about" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontAbout /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store/shipping-policy" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontShippingPolicy /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store/track-order" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontOrderTracking /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store/returns" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontReturnRequest /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store/privacy" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontPrivacy /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store/terms" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontTerms /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/checkout/success" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontCheckoutSuccess /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/checkout/cancel" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontCheckoutCancel /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
 
       {/* Catch all */}
       <Route path="*" element={<Navigate to="/" replace />} />

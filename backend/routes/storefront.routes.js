@@ -38,6 +38,68 @@ router.get('/info', async (req, res) => {
   }
 });
 
+// --- AUTOCOMPLETE SEARCH (lightweight, fuzzy) ---
+router.get('/search/autocomplete', async (req, res) => {
+  try {
+    const tenantId = req.storeTenant._id;
+    const { q, limit = 6 } = req.query;
+    if (!q || q.trim().length < 1) return res.json({ products: [], suggestions: [] });
+
+    const query = q.trim();
+    // Fuzzy matching: escape regex special chars, then build a flexible pattern
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // Match products where title starts with or contains the query (case-insensitive)
+    const titleRegex = new RegExp(escaped, 'i');
+
+    const products = await EcommerceProduct.find({
+      tenantId, status: 'active',
+      $or: [
+        { title: titleRegex },
+        { tags: { $in: [titleRegex] } },
+        { category: titleRegex },
+        { brand: titleRegex },
+      ],
+    })
+      .select('title basePrice compareAtPrice images category brand seo.slug hasVariants variants.sku variants.price variants.stockQuantity')
+      .limit(Number(limit))
+      .lean();
+
+    // Also return category/brand suggestions
+    const categories = await EcommerceProduct.distinct('category', {
+      tenantId, status: 'active', category: titleRegex,
+    });
+    const brands = await EcommerceProduct.distinct('brand', {
+      tenantId, status: 'active', brand: titleRegex, brand: { $ne: '' },
+    });
+
+    res.json({
+      products,
+      suggestions: {
+        categories: categories.slice(0, 3),
+        brands: brands.filter(Boolean).slice(0, 3),
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- POPULAR SEARCHES ---
+router.get('/search/popular', async (req, res) => {
+  try {
+    const tenantId = req.storeTenant._id;
+    // Aggregate top-selling product titles as popular searches
+    const popular = await EcommerceProduct.find({ tenantId, status: 'active', salesCount: { $gt: 0 } })
+      .select('title')
+      .sort({ salesCount: -1 })
+      .limit(8)
+      .lean();
+    res.json({ terms: popular.map(p => p.title) });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // --- LIST PRODUCTS (public, active only) ---
 router.get('/products', async (req, res) => {
   try {

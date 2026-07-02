@@ -66,8 +66,9 @@ export function CartProvider({ children }) {
       }
       return prevId;
     });
+    // Optimistic update: add item immediately
+    const key = `${product._id}_${variantId || 'default'}`;
     setItems(prev => {
-      const key = `${product._id}_${variantId || 'default'}`;
       const existing = prev.find(i => i.key === key);
       if (existing) {
         return prev.map(i => i.key === key ? { ...i, quantity: i.quantity + quantity } : i);
@@ -84,6 +85,17 @@ export function CartProvider({ children }) {
       }];
     });
     setIsOpen(true);
+    // Return rollback function in case caller needs to undo on failure
+    return () => {
+      setItems(prev => {
+        const existing = prev.find(i => i.key === key);
+        if (!existing) return prev;
+        if (existing.quantity <= quantity) {
+          return prev.filter(i => i.key !== key);
+        }
+        return prev.map(i => i.key === key ? { ...i, quantity: i.quantity - quantity } : i);
+      });
+    };
   }, []);
 
   const removeItem = useCallback((key) => {

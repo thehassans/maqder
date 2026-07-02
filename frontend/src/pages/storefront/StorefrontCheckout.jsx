@@ -37,6 +37,7 @@ export default function StorefrontCheckout() {
     name: '', email: '', phone: '',
     addressLine1: '', addressLine2: '', city: '', region: '', postalCode: '', country: 'Saudi Arabia', notes: '',
   });
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const update = (key, value) => {
     setForm(prev => ({ ...prev, [key]: value }));
@@ -44,6 +45,24 @@ export default function StorefrontCheckout() {
       setCartEmail(value);
       trackCart(value);
     }
+  };
+
+  // Inline validation on blur
+  const validateField = (key) => {
+    const val = (form[key] || '').trim();
+    let err = '';
+    if (key === 'name' && !val) err = t('nameRequired') || 'Name is required';
+    if (key === 'phone' && !val) err = t('phoneRequired') || 'Phone is required';
+    if (key === 'phone' && val && !/^[+]?[0-9\s-]{8,}$/.test(val)) err = t('phoneInvalid') || 'Invalid phone number';
+    if (key === 'email' && val && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) err = t('emailInvalid') || 'Invalid email';
+    if (key === 'addressLine1' && !val) err = t('addressRequired') || 'Address is required';
+    if (key === 'city' && !val) err = t('cityRequired') || 'City is required';
+    setFieldErrors(prev => ({ ...prev, [key]: err }));
+    return !err;
+  };
+
+  const clearFieldError = (key) => {
+    if (fieldErrors[key]) setFieldErrors(prev => { const n = { ...prev }; delete n[key]; return n; });
   };
 
   // Fire InitiateCheckout pixel event
@@ -179,11 +198,19 @@ export default function StorefrontCheckout() {
 
   const inputStyle = { width: '100%', padding: '12px 16px', border: '1px solid #e5e7eb', borderRadius: '12px', fontSize: '14px', outline: 'none', transition: 'border-color 0.2s' };
   const labelStyle = { display: 'block', fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '6px' };
+  const errorInputStyle = { ...inputStyle, borderColor: '#dc2626' };
+  const errorLabelStyle = { fontSize: '12px', color: '#dc2626', fontWeight: 600, marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' };
 
   const validateShipping = () => {
-    if (!form.name || !form.phone) { setError(t('namePhoneRequired')); return false; }
-    setError('');
-    return true;
+    const errors = {};
+    if (!form.name.trim()) errors.name = t('nameRequired') || 'Name is required';
+    if (!form.phone.trim()) errors.phone = t('phoneRequired') || 'Phone is required';
+    else if (!/^[+]?[0-9\s-]{8,}$/.test(form.phone.trim())) errors.phone = t('phoneInvalid') || 'Invalid phone number';
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) errors.email = t('emailInvalid') || 'Invalid email';
+    if (!form.addressLine1.trim()) errors.addressLine1 = t('addressRequired') || 'Address is required';
+    if (!form.city.trim()) errors.city = t('cityRequired') || 'City is required';
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const nextStep = () => {
@@ -246,25 +273,30 @@ export default function StorefrontCheckout() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                 <div>
                   <label style={labelStyle}>{t('fullName')}</label>
-                  <input style={inputStyle} value={form.name} onChange={e => update('name', e.target.value)} required />
+                  <input style={fieldErrors.name ? errorInputStyle : inputStyle} value={form.name} onChange={e => { update('name', e.target.value); clearFieldError('name'); }} onBlur={() => validateField('name')} required />
+                  {fieldErrors.name && <p style={errorLabelStyle}><AlertCircle size={12} /> {fieldErrors.name}</p>}
                 </div>
                 <div>
                   <label style={labelStyle}>{t('phone')}</label>
-                  <input style={inputStyle} value={form.phone} onChange={e => update('phone', e.target.value)} required />
+                  <input style={fieldErrors.phone ? errorInputStyle : inputStyle} value={form.phone} onChange={e => { update('phone', e.target.value); clearFieldError('phone'); }} onBlur={() => validateField('phone')} required />
+                  {fieldErrors.phone && <p style={errorLabelStyle}><AlertCircle size={12} /> {fieldErrors.phone}</p>}
                 </div>
               </div>
               <div style={{ marginBottom: '12px' }}>
                 <label style={labelStyle}>{t('email')}</label>
-                <input style={inputStyle} type="email" value={form.email} onChange={e => update('email', e.target.value)} />
+                <input style={fieldErrors.email ? errorInputStyle : inputStyle} type="email" value={form.email} onChange={e => { update('email', e.target.value); clearFieldError('email'); }} onBlur={() => validateField('email')} />
+                {fieldErrors.email && <p style={errorLabelStyle}><AlertCircle size={12} /> {fieldErrors.email}</p>}
               </div>
               <div style={{ marginBottom: '12px' }}>
                 <label style={labelStyle}>{t('addressLine1')}</label>
-                <input style={inputStyle} value={form.addressLine1} onChange={e => update('addressLine1', e.target.value)} placeholder={t('streetAddress')} />
+                <input style={fieldErrors.addressLine1 ? errorInputStyle : inputStyle} value={form.addressLine1} onChange={e => { update('addressLine1', e.target.value); clearFieldError('addressLine1'); }} onBlur={() => validateField('addressLine1')} placeholder={t('streetAddress')} />
+                {fieldErrors.addressLine1 && <p style={errorLabelStyle}><AlertCircle size={12} /> {fieldErrors.addressLine1}</p>}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                 <div>
                   <label style={labelStyle}>{t('city')}</label>
-                  <input style={inputStyle} value={form.city} onChange={e => update('city', e.target.value)} />
+                  <input style={fieldErrors.city ? errorInputStyle : inputStyle} value={form.city} onChange={e => { update('city', e.target.value); clearFieldError('city'); }} onBlur={() => validateField('city')} />
+                  {fieldErrors.city && <p style={errorLabelStyle}><AlertCircle size={12} /> {fieldErrors.city}</p>}
                 </div>
                 <div>
                   <label style={labelStyle}>{t('region')}</label>

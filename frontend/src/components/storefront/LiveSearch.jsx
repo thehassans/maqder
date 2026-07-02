@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, X, Loader2 } from 'lucide-react';
+import { Search, X, Loader2, TrendingUp, Tag } from 'lucide-react';
 import SaudiRiyalSymbol from './SaudiRiyalSymbol';
 import storeApi from '../../lib/storeApi';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +8,8 @@ import { useI18n } from '../../store/storefrontI18n';
 export default function LiveSearch({ placeholder, colors, isRTL }) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
+  const [suggestions, setSuggestions] = useState({ categories: [], brands: [] });
+  const [popular, setPopular] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [highlightIdx, setHighlightIdx] = useState(-1);
@@ -18,19 +20,27 @@ export default function LiveSearch({ placeholder, colors, isRTL }) {
 
   const c = (key, fallback) => (colors && colors[key]) || fallback;
 
+  // Fetch popular searches on mount
+  useEffect(() => {
+    storeApi.get('/search/popular').then(res => setPopular(res.data.terms || [])).catch(() => {});
+  }, []);
+
   const doSearch = useCallback(async (q) => {
     if (!q.trim() || q.trim().length < 2) {
       setResults([]);
+      setSuggestions({ categories: [], brands: [] });
       setIsOpen(false);
       return;
     }
     setLoading(true);
     try {
-      const res = await storeApi.get(`/products?search=${encodeURIComponent(q)}&limit=6`);
+      const res = await storeApi.get(`/search/autocomplete?q=${encodeURIComponent(q)}&limit=6`);
       setResults(res.data.products || []);
+      setSuggestions(res.data.suggestions || { categories: [], brands: [] });
       setIsOpen(true);
     } catch {
       setResults([]);
+      setSuggestions({ categories: [], brands: [] });
     } finally {
       setLoading(false);
     }
@@ -40,21 +50,30 @@ export default function LiveSearch({ placeholder, colors, isRTL }) {
     setQuery(val);
     setHighlightIdx(-1);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => doSearch(val), 300);
+    debounceRef.current = setTimeout(() => doSearch(val), 250);
   };
 
   const handleKeyDown = (e) => {
-    if (!isOpen || results.length === 0) return;
+    if (!isOpen || (results.length === 0 && suggestions.categories.length === 0 && suggestions.brands.length === 0)) return;
+    const totalItems = results.length + suggestions.categories.length + suggestions.brands.length;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setHighlightIdx(prev => Math.min(prev + 1, results.length - 1));
+      setHighlightIdx(prev => Math.min(prev + 1, totalItems - 1));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setHighlightIdx(prev => Math.max(prev - 1, -1));
     } else if (e.key === 'Enter' && highlightIdx >= 0) {
       e.preventDefault();
-      const product = results[highlightIdx];
-      goToProduct(product);
+      if (highlightIdx < results.length) {
+        goToProduct(results[highlightIdx]);
+      } else {
+        const catIdx = highlightIdx - results.length;
+        if (catIdx < suggestions.categories.length) {
+          goToCategory(suggestions.categories[catIdx]);
+        } else {
+          goToBrand(suggestions.brands[catIdx - suggestions.categories.length]);
+        }
+      }
     } else if (e.key === 'Escape') {
       setIsOpen(false);
     }
@@ -65,6 +84,18 @@ export default function LiveSearch({ placeholder, colors, isRTL }) {
     setIsOpen(false);
     setQuery('');
     navigate(`/store/products/${slug}`);
+  };
+
+  const goToCategory = (cat) => {
+    setIsOpen(false);
+    setQuery('');
+    navigate(`/store/products?category=${encodeURIComponent(cat)}`);
+  };
+
+  const goToBrand = (brand) => {
+    setIsOpen(false);
+    setQuery('');
+    navigate(`/store/products?brand=${encodeURIComponent(brand)}`);
   };
 
   const goToSearchPage = () => {
@@ -91,7 +122,7 @@ export default function LiveSearch({ placeholder, colors, isRTL }) {
           value={query}
           onChange={e => handleInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          onFocus={() => results.length > 0 && setIsOpen(true)}
+          onFocus={() => { if (results.length > 0 || popular.length > 0) setIsOpen(true); }}
           placeholder={placeholder || t('search')}
           style={{
             flex: 1, padding: '12px 16px', border: `1px solid ${c('borderColor', '#e5e7eb')}`,
@@ -115,22 +146,71 @@ export default function LiveSearch({ placeholder, colors, isRTL }) {
         </button>
       </div>
 
-      {isOpen && (query.trim().length >= 2) && (
+      {isOpen && (query.trim().length >= 2 || (query.trim().length === 0 && popular.length > 0)) && (
         <div style={{
           position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200,
           background: '#fff', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '0 0 12px 12px',
           boxShadow: '0 12px 32px rgba(0,0,0,0.12)', overflow: 'hidden', marginTop: '-1px',
+          maxHeight: '480px', overflowY: 'auto',
         }}>
-          {loading && results.length === 0 ? (
+          {/* Popular searches (when no query) */}
+          {query.trim().length === 0 && popular.length > 0 && (
+            <div style={{ padding: '12px 16px' }}>
+              <p style={{ fontSize: '11px', fontWeight: 700, color: c('textMuted', '#9ca3af'), textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <TrendingUp size={12} /> {t('popularSearches') || 'Popular Searches'}
+              </p>
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {popular.map((term, i) => (
+                  <button key={i} onClick={() => { setQuery(term); doSearch(term); }} style={{
+                    padding: '6px 14px', borderRadius: '999px', border: `1px solid ${c('borderColor', '#e5e7eb')}`,
+                    background: '#fff', fontSize: '12px', fontWeight: 600, color: c('text', '#111'), cursor: 'pointer', transition: 'all 0.15s',
+                  }} onMouseEnter={e => { e.currentTarget.style.background = c('surface', '#f9fafb'); e.currentTarget.style.borderColor = c('primary', '#4f46e5'); }} onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = c('borderColor', '#e5e7eb'); }}>
+                    {term}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Loading state */}
+          {loading && results.length === 0 && query.trim().length >= 2 && (
             <div style={{ padding: '24px', textAlign: 'center', color: c('textMuted', '#9ca3af'), fontSize: '13px' }}>
               <Loader2 size={20} className="animate-spin" style={{ margin: '0 auto 8px' }} />
               {t('searching')}
             </div>
-          ) : results.length === 0 ? (
+          )}
+
+          {/* No results */}
+          {!loading && results.length === 0 && query.trim().length >= 2 && (
             <div style={{ padding: '20px', textAlign: 'center', color: c('textMuted', '#9ca3af'), fontSize: '13px' }}>
               {t('noProducts')}
             </div>
-          ) : (
+          )}
+
+          {/* Category & Brand suggestions */}
+          {query.trim().length >= 2 && (suggestions.categories.length > 0 || suggestions.brands.length > 0) && (
+            <div style={{ padding: '8px 16px', borderBottom: `1px solid ${c('borderColor', '#e5e7eb')}` }}>
+              {suggestions.categories.map((cat, i) => (
+                <div key={`cat-${i}`} onClick={() => goToCategory(cat)} style={{
+                  display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 0', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: c('text', '#111'),
+                }} onMouseEnter={e => e.currentTarget.style.color = c('primary', '#4f46e5')} onMouseLeave={e => e.currentTarget.style.color = c('text', '#111')}>
+                  <Tag size={14} style={{ color: c('textMuted', '#9ca3af') }} /> {cat}
+                  <span style={{ fontSize: '11px', color: c('textMuted', '#9ca3af'), fontWeight: 400 }}>— {t('category') || 'Category'}</span>
+                </div>
+              ))}
+              {suggestions.brands.map((brand, i) => (
+                <div key={`brand-${i}`} onClick={() => goToBrand(brand)} style={{
+                  display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 0', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: c('text', '#111'),
+                }} onMouseEnter={e => e.currentTarget.style.color = c('primary', '#4f46e5')} onMouseLeave={e => e.currentTarget.style.color = c('text', '#111')}>
+                  <Search size={14} style={{ color: c('textMuted', '#9ca3af') }} /> {brand}
+                  <span style={{ fontSize: '11px', color: c('textMuted', '#9ca3af'), fontWeight: 400 }}>— {t('brand') || 'Brand'}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Product results */}
+          {results.length > 0 && (
             <>
               {results.map((product, i) => {
                 const slug = product.seo?.slug || product._id;

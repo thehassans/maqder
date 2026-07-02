@@ -13,6 +13,7 @@ import BackToTop from './BackToTop';
 import SalesNotificationPopup from './SalesNotificationPopup';
 import AbandonedCartReminder from './AbandonedCartReminder';
 import NewsletterPopup from './NewsletterPopup';
+import LiveSearch from './LiveSearch';
 import { ToastProvider, ScrollToTop, StorefrontGlobalStyles } from './StorefrontUi';
 
 // Inject pixel scripts into <head> based on store config
@@ -278,57 +279,8 @@ export default function StorefrontLayout({ children }) {
 
           {/* Search */}
           {header.showSearch !== false && (
-            <div ref={searchRef} style={{ flex: 1, maxWidth: '400px', position: 'relative' }} className="hidden md:block">
-              <form onSubmit={handleSearch} style={{ display: 'flex' }}>
-                <input
-                  type="text"
-                  placeholder={t('search')}
-                  value={searchQuery}
-                  onChange={e => { setSearchQuery(e.target.value); setShowSuggestions(true); }}
-                  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                  style={{ flex: 1, padding: '10px 16px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: isRTL ? '0 10px 10px 0' : '10px 0 0 10px', fontSize: '14px', outline: 'none', transition: 'border-color 0.2s', background: c('surface', '#f9fafb') }}
-                />
-                <button type="submit" style={{ padding: '10px 18px', backgroundColor: c('primary', '#059669'), color: '#fff', border: 'none', borderRadius: isRTL ? '10px 0 0 10px' : '0 10px 10px 0', cursor: 'pointer', transition: 'opacity 0.2s' }}
-                  onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
-                  onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-                >
-                  <Search size={16} />
-                </button>
-              </form>
-              {/* Search suggestions */}
-              {showSuggestions && suggestions.length > 0 && (
-                <div style={{
-                  position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '6px',
-                  background: '#fff', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '14px',
-                  boxShadow: '0 12px 32px rgba(0,0,0,0.12)', zIndex: 200, overflow: 'hidden',
-                }}>
-                  {suggestions.map(p => {
-                    const slug = p.seo?.slug || p._id;
-                    return (
-                      <Link key={p._id} to={`/store/products/${slug}`} onClick={() => { setShowSuggestions(false); setSearchQuery(''); }}
-                        style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', textDecoration: 'none', borderBottom: '1px solid #f3f4f6', transition: 'background 0.15s' }}
-                        onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                      >
-                        <div style={{ width: '40px', height: '40px', borderRadius: '8px', overflow: 'hidden', background: '#f3f4f6', flexShrink: 0 }}>
-                          {p.images?.[0]?.url ? <img src={p.images[0].url} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ fontSize: '13px', fontWeight: 600, margin: 0, color: c('text', '#111'), overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.title}</p>
-                          <p style={{ fontSize: '12px', color: c('priceColor', '#059669'), fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '2px' }}>{p.basePrice} <SaudiRiyalSymbol size={10} color={c('priceColor', '#059669')} /></p>
-                        </div>
-                      </Link>
-                    );
-                  })}
-                  <Link to={`/store/products?search=${encodeURIComponent(searchQuery)}`} onClick={() => setShowSuggestions(false)}
-                    style={{ display: 'block', padding: '10px 14px', textAlign: 'center', fontSize: '13px', fontWeight: 700, color: c('primary', '#4f46e5'), textDecoration: 'none', transition: 'background 0.15s' }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    {t('seeAllResults')} →
-                  </Link>
-                </div>
-              )}
+            <div className="hidden md:block" style={{ flex: 1, maxWidth: '400px' }}>
+              <LiveSearch placeholder={t('search')} colors={colors} isRTL={isRTL} />
             </div>
           )}
 
@@ -429,9 +381,9 @@ export default function StorefrontLayout({ children }) {
         {/* Mobile menu */}
         {mobileMenuOpen && (
           <div style={{ padding: '12px 20px', borderTop: `1px solid ${c('borderColor', '#e5e7eb')}` }} className="md:hidden">
-            <form onSubmit={handleSearch} style={{ display: 'flex', marginBottom: '12px' }}>
-              <input type="text" placeholder={t('search')} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ flex: 1, padding: '8px', border: `1px solid ${c('borderColor', '#e5e7eb')}`, borderRadius: '8px', fontSize: '14px' }} />
-            </form>
+            <div style={{ marginBottom: '12px' }}>
+              <LiveSearch placeholder={t('search')} colors={colors} isRTL={isRTL} />
+            </div>
             <Link to="/store/products" onClick={() => setMobileMenuOpen(false)} style={{ display: 'block', padding: '8px 0', color: c('text', '#111827'), textDecoration: 'none' }}>{t('allProducts')}</Link>
           </div>
         )}
