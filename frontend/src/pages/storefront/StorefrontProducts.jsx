@@ -226,7 +226,7 @@ export default function StorefrontProducts() {
                   borderRadius: '16px', overflow: 'hidden', position: 'relative',
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                 }} className="product-card" onMouseEnter={e => { e.currentTarget.querySelector('.card-thumbs')?.style.setProperty('opacity', '1'); e.currentTarget.style.transform = 'translateY(-6px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(0,0,0,0.1)'; e.currentTarget.style.borderColor = c('primary', '#4f46e5') + '40'; }}
-                  onMouseLeave={e => { e.currentTarget.querySelector('.card-thumbs')?.style.setProperty('opacity', '0'); const img = e.currentTarget.querySelector('.card-main-img'); if (img && images[0]) img.src = images[0].url; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; e.currentTarget.style.borderColor = c('borderColor', '#e5e7eb'); }}>
+                  onMouseLeave={e => { e.currentTarget.querySelector('.card-thumbs')?.style.setProperty('opacity', '0'); const img = e.currentTarget.querySelector('.card-main-img'); if (img && images[0]) img.src = optimizeImageUrl(images[0].url, { width: 400, quality: 80 }); e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; e.currentTarget.style.borderColor = c('borderColor', '#e5e7eb'); }}>
                   <Link to={`/store/products/${slug}`} style={{ textDecoration: 'none', display: 'block' }}>
                     <div style={{ aspectRatio: '1', background: c('borderColor', '#e5e7eb'), overflow: 'hidden', position: 'relative' }}>
                       {hasSale && (

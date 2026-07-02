@@ -103,7 +103,7 @@ export default function StorefrontCompare() {
                         <Link to={`/store/products/${slug}`} style={{ textDecoration: 'none' }}>
                           <div style={{ width: '100%', aspectRatio: '1', borderRadius: '12px', overflow: 'hidden', background: '#f3f4f6', marginBottom: '10px' }}>
                             {p.images?.[0]?.url ? (
-                              <img src={optimizeImageUrl(p.images[0].url, { width: 200, quality: 80 })} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} />
+                              <img src={optimizeImageUrl(p.images[0].url, { width: 200, quality: 80 })} alt={p.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} />
                             ) : (
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#9ca3af', fontSize: '12px' }}>No image</div>
                             )}

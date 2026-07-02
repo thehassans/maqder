@@ -603,7 +603,7 @@ function ImageBanner({ settings, c, t, isRTL }) {
   function BannerItem({ banner }) {
     const img = (
       <img
-        src={banner.imageUrl}
+        src={optimizeImageUrl(banner.imageUrl, { width: 800, quality: 80 })}
         alt={banner.altText || ''}
         loading="lazy"
         style={{ width: '100%', display: 'block', maxHeight: '400px', objectFit: 'cover', borderRadius: '12px', transition: 'transform 0.4s ease' }}

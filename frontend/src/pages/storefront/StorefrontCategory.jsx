@@ -101,7 +101,7 @@ export default function StorefrontCategory() {
               <Link to={`/store/products/${slug}`} style={{ textDecoration: 'none', display: 'block' }}>
                 <div style={{ aspectRatio: '1', background: c('borderColor', '#e5e7eb'), overflow: 'hidden' }}>
                   {p.images?.[0]?.url ? (
-                    <img src={optimizeImageUrl(p.images[0].url, { width: 400, quality: 80 })} alt={p.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s' }} />
+                    <img src={optimizeImageUrl(p.images[0].url, { width: 400, quality: 80 })} alt={p.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s' }} />
                   ) : (
                     <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: '12px' }}>No image</div>
                   )}
