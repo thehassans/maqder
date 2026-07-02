@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Palette, Save, Loader2, Upload, RotateCcw, AlertCircle, CheckCircle, Eye, Layout, Type, ShoppingCart, Home, Monitor, Smartphone, GripVertical, Trash2, Plus, ImageIcon, Sparkles, Download, FileUp, Smartphone as PhoneIcon, Moon, ChevronLeft, ChevronRight, Tag, Tablet, Maximize2, Package, Code, CreditCard, Layers, MousePointerClick, Zap, Filter, Gift, ShieldCheck, Search, AlertTriangle, Megaphone } from 'lucide-react';
+import { Palette, Save, Loader2, Upload, RotateCcw, AlertCircle, CheckCircle, Eye, Layout, Type, ShoppingCart, Home, Monitor, Smartphone, GripVertical, Trash2, Plus, ImageIcon, Sparkles, Download, FileUp, Smartphone as PhoneIcon, Moon, ChevronLeft, ChevronRight, Tag, Tablet, Maximize2, Package, Code, CreditCard, Layers, MousePointerClick, Zap, Filter, Gift, ShieldCheck, Search, AlertTriangle, Megaphone, Cookie, MessageCircle, Anchor, GitBranch } from 'lucide-react';
 import api from '../../lib/api';
 
 const COLOR_FIELDS = [
@@ -193,6 +193,10 @@ export default function EcommerceThemeEditor() {
     const se = config.searchExp || {};
     const es = config.emptyStates || {};
     const ab = config.announcementBar || {};
+    const bc = config.breadcrumbs || {};
+    const sb = config.stickyBar || {};
+    const sf = config.socialFloat || {};
+    const cc = config.cookieConsent || {};
     const sections = config.homepage?.sections || [];
 
     const sectionHTML = sections.filter(s => s.enabled).map(s => {
@@ -313,8 +317,17 @@ export default function EcommerceThemeEditor() {
     // Page-specific preview content
     const pageContentHTML = (() => {
       if (page === 'product') {
+        const bcSep = bc.separator === 'arrow' ? '&rsaquo;' : bc.separator === 'slash' ? '/' : bc.separator === 'dot' ? '&bull;' : '&rsaquo;';
+        const bcAlign = bc.alignment || 'left';
+        const bcHTML = bc.enabled !== false ? `<nav class="breadcrumb" style="text-align:${bcAlign};margin-bottom:16px;font-size:${bc.fontSize || 12}px;padding:8px 0">
+          <a href="#" style="color:${bc.linkColor || c.textMuted || '#6b7280'};text-decoration:none">Home</a>
+          <span style="color:${bc.separatorColor || c.textMuted || '#9ca3af'};margin:0 6px">${bcSep}</span>
+          <a href="#" style="color:${bc.linkColor || c.textMuted || '#6b7280'};text-decoration:none">Products</a>
+          <span style="color:${bc.separatorColor || c.textMuted || '#9ca3af'};margin:0 6px">${bcSep}</span>
+          <span style="color:${bc.activeColor || c.text || '#111'};font-weight:600">Sample Product</span>
+        </nav>` : '';
         return `<div style="padding:20px;max-width:960px;margin:0 auto">
-          <p style="font-size:12px;color:${c.textMuted||'#6b7280'};margin-bottom:16px">Home &rsaquo; Products &rsaquo; Sample Product</p>
+          ${bcHTML}
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
             <div style="background:${c.surface||'#f9fafb'};border-radius:12px;aspect-ratio:1;display:flex;align-items:center;justify-content:center;border:1px solid ${c.borderColor||'#e5e7eb'}">
               <span style="color:${c.textMuted||'#9ca3af'};font-size:13px">Product Image</span>
@@ -595,6 +608,15 @@ export default function EcommerceThemeEditor() {
   .search-result-item:hover{background:${c.surface||'#f3f4f6'}}
   .search-result-img{width:40px;height:40px;border-radius:8px;background:${c.borderColor||'#f3f4f6'};flex-shrink:0}
   .search-popular{display:flex;gap:6px;flex-wrap:wrap;padding:8px 0 4px;border-top:1px solid ${c.borderColor||'#e5e7eb'};margin-top:8px}
+  .breadcrumb{max-width:960px;margin:0 auto;display:flex;align-items:center;flex-wrap:wrap}
+  .breadcrumb a:hover{text-decoration:underline}
+  .sticky-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid ${c.borderColor||'#e5e7eb'};box-shadow:0 -4px 16px rgba(0,0,0,0.08);padding:10px 20px;z-index:100;display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:960px;margin:0 auto}
+  .sticky-bar-price{font-size:18px;font-weight:800;color:${c.priceColor||'#059669'}}
+  .sticky-bar-name{font-size:13px;color:${c.textMuted||'#6b7280'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
+  .float-btn{position:fixed;width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.15);z-index:90;transition:transform 0.2s}
+  .float-btn:hover{transform:scale(1.1)}
+  ${sf.pulse ? `@keyframes floatPulse{0%{box-shadow:0 4px 12px rgba(0,0,0,0.15),0 0 0 0 ${sf.whatsappColor || '#25D366'}44}70%{box-shadow:0 4px 12px rgba(0,0,0,0.15),0 0 0 16px ${sf.whatsappColor || '#25D366'}00}100%{box-shadow:0 4px 12px rgba(0,0,0,0.15),0 0 0 0 ${sf.whatsappColor || '#25D366'}00}}.float-btn{animation:floatPulse 2s infinite}` : ''}
+  .cookie-banner{position:fixed;${cc.position === 'top' ? 'top:0' : 'bottom:0'};left:0;right:0;background:${cc.bgColor || '#1f2937'};color:${cc.textColor || '#f9fafb'};padding:${cc.padding || 16}px 20px;z-index:9997;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;box-shadow:0 ${cc.position === 'top' ? '4px' : '-4px'} 16px rgba(0,0,0,0.15)}
   ${device === 'mobile' ? `
   .container{max-width:100%;padding:16px}
   .header{padding:10px 16px}
@@ -668,6 +690,33 @@ ${pp.enabled ? `<div class="promo-popup-overlay"></div>
     ${pp.discountCode ? `<div style="background:${c.surface||'#f3f4f6'};border:2px dashed ${c.primary||'#4f46e5'};border-radius:10px;padding:10px;margin-bottom:16px"><p style="font-size:11px;color:${c.textMuted||'#6b7280'};margin:0 0 2px">Use code:</p><p style="font-size:20px;font-weight:800;color:${c.primary||'#4f46e5'};margin:0;letter-spacing:2px">${pp.discountCode}</p></div>` : ''}
     <button class="btn" style="width:100%">${pp.buttonText || 'Shop Now'}</button>
     ${pp.showEmailField ? `<input style="width:100%;padding:10px 12px;border:1px solid ${c.borderColor||'#e5e7eb'};border-radius:8px;margin-top:8px;font-size:13px" placeholder="Enter your email" />` : ''}
+  </div>
+</div>` : ''}
+${sb.enabled && page === 'product' ? `<div class="sticky-bar">
+  <div style="display:flex;align-items:center;gap:12px">
+    <div style="width:40px;height:40px;background:${c.borderColor||'#f3f4f6'};border-radius:8px;flex-shrink:0"></div>
+    <div>
+      <p class="sticky-bar-name">Sample Product Name</p>
+      <p class="sticky-bar-price">249 SAR</p>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px">
+    ${sb.showQuantity ? `<div style="display:flex;align-items:center;gap:6px;border:1px solid ${c.borderColor||'#e5e7eb'};border-radius:8px;padding:2px">
+      <button style="width:24px;height:24px;border:none;background:transparent;font-weight:700;font-size:14px">-</button>
+      <span style="font-weight:700;font-size:13px">1</span>
+      <button style="width:24px;height:24px;border:none;background:transparent;font-weight:700;font-size:14px">+</button>
+    </div>` : ''}
+    <button class="btn" style="padding:10px 20px">${sb.buttonText || 'Add to Cart'}</button>
+  </div>
+</div>` : ''}
+${sf.enabled ? `${sf.showWhatsapp !== false ? `<a href="#" class="float-btn" style="background:${sf.whatsappColor || '#25D366'};${sf.position === 'left' ? 'left:20px' : 'right:20px'};bottom:${sf.offset || 20}px"><svg width="26" height="26" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg></a>` : ''}` : ''}
+${cc.enabled ? `<div class="cookie-banner">
+  <div style="flex:1;min-width:200px">
+    <p style="margin:0;font-size:${cc.fontSize || 13}px;line-height:1.5">${cc.message || 'We use cookies to improve your experience. By continuing to browse, you agree to our use of cookies.'}</p>
+  </div>
+  <div style="display:flex;gap:8px;flex-shrink:0">
+    ${cc.showDecline ? `<button style="padding:8px 16px;border-radius:8px;border:1px solid ${cc.textColor || '#f9fafb'};background:transparent;color:${cc.textColor || '#f9fafb'};font-size:13px;font-weight:600;cursor:pointer">${cc.declineText || 'Decline'}</button>` : ''}
+    <button style="padding:8px 20px;border-radius:8px;border:none;background:${cc.acceptBgColor || c.primary || '#4f46e5'};color:${cc.acceptTextColor || '#fff'};font-size:13px;font-weight:700;cursor:pointer">${cc.acceptText || 'Accept'}</button>
   </div>
 </div>` : ''}
 </body>
@@ -976,6 +1025,10 @@ ${pp.enabled ? `<div class="promo-popup-overlay"></div>
             <button onClick={() => setActiveTab('search')} className={tabCls('search')}><Search className="w-4 h-4" /> Search</button>
             <button onClick={() => setActiveTab('emptystates')} className={tabCls('emptystates')}><AlertTriangle className="w-4 h-4" /> Empty States</button>
             <button onClick={() => setActiveTab('announcement')} className={tabCls('announcement')}><Megaphone className="w-4 h-4" /> Announcement</button>
+            <button onClick={() => setActiveTab('breadcrumbs')} className={tabCls('breadcrumbs')}><GitBranch className="w-4 h-4" /> Breadcrumbs</button>
+            <button onClick={() => setActiveTab('stickybar')} className={tabCls('stickybar')}><Anchor className="w-4 h-4" /> Sticky Bar</button>
+            <button onClick={() => setActiveTab('socialfloat')} className={tabCls('socialfloat')}><MessageCircle className="w-4 h-4" /> Social Float</button>
+            <button onClick={() => setActiveTab('cookie')} className={tabCls('cookie')}><Cookie className="w-4 h-4" /> Cookie Consent</button>
           </div>
 
           {/* Hidden file inputs for image uploads */}
@@ -2091,6 +2144,191 @@ ${pp.enabled ? `<div class="promo-popup-overlay"></div>
                     </div>
                   </div>
                   <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.announcementBar?.closeable ?? false} onChange={e => update('announcementBar.closeable', e.target.checked)} className="w-4 h-4 rounded" /> Show close (dismiss) button</label>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Breadcrumb Styling */}
+          {activeTab === 'breadcrumbs' && (
+            <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-5 space-y-4">
+              <p className="text-sm text-gray-400">Customize breadcrumb navigation shown on product and category pages.</p>
+              <label className="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white"><input type="checkbox" checked={theme.breadcrumbs?.enabled ?? true} onChange={e => update('breadcrumbs.enabled', e.target.checked)} className="w-4 h-4 rounded" /> Enable Breadcrumbs</label>
+              {theme.breadcrumbs?.enabled !== false && (
+                <>
+                  <div>
+                    <label className={labelCls}>Separator Type</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[{v:'arrow',l:'Arrow ›'},{v:'slash',l:'Slash /'},{v:'dot',l:'Dot •'}].map(opt => (
+                        <button key={opt.v} onClick={() => update('breadcrumbs.separator', opt.v)} className={`p-3 rounded-xl border-2 text-sm font-bold transition-all ${(theme.breadcrumbs?.separator || 'arrow') === opt.v ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 dark:border-dark-600 text-gray-500'}`}>{opt.l}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelCls}>Alignment</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[{v:'left',l:'Left'},{v:'center',l:'Center'},{v:'right',l:'Right'}].map(opt => (
+                        <button key={opt.v} onClick={() => update('breadcrumbs.alignment', opt.v)} className={`p-3 rounded-xl border-2 text-sm font-bold transition-all ${(theme.breadcrumbs?.alignment || 'left') === opt.v ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 dark:border-dark-600 text-gray-500'}`}>{opt.l}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelCls}>Font Size (px)</label>
+                    <input type="number" min="10" max="18" className={inputCls} value={theme.breadcrumbs?.fontSize ?? 12} onChange={e => update('breadcrumbs.fontSize', parseInt(e.target.value))} />
+                  </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className={labelCls}>Link Color</label>
+                      <input type="color" className="w-full h-10 rounded-lg border border-gray-200 dark:border-dark-600" value={theme.breadcrumbs?.linkColor || '#6b7280'} onChange={e => update('breadcrumbs.linkColor', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Separator Color</label>
+                      <input type="color" className="w-full h-10 rounded-lg border border-gray-200 dark:border-dark-600" value={theme.breadcrumbs?.separatorColor || '#9ca3af'} onChange={e => update('breadcrumbs.separatorColor', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Active Color</label>
+                      <input type="color" className="w-full h-10 rounded-lg border border-gray-200 dark:border-dark-600" value={theme.breadcrumbs?.activeColor || '#111827'} onChange={e => update('breadcrumbs.activeColor', e.target.value)} />
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.breadcrumbs?.showOnHome ?? false} onChange={e => update('breadcrumbs.showOnHome', e.target.checked)} className="w-4 h-4 rounded" /> Show on home page</label>
+                  <div className="pt-3 border-t border-gray-100 dark:border-dark-700">
+                    <button onClick={() => setPreviewPage('product')} className="flex items-center gap-1.5 text-xs font-bold text-violet-600 hover:underline"><Eye className="w-3.5 h-3.5" /> Preview on Product page</button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Sticky Add-to-Cart Bar */}
+          {activeTab === 'stickybar' && (
+            <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-5 space-y-4">
+              <p className="text-sm text-gray-400">Show a sticky bar at the bottom of product pages with price and add-to-cart button.</p>
+              <label className="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white"><input type="checkbox" checked={theme.stickyBar?.enabled ?? false} onChange={e => update('stickyBar.enabled', e.target.checked)} className="w-4 h-4 rounded" /> Enable Sticky Add-to-Cart Bar</label>
+              {theme.stickyBar?.enabled && (
+                <>
+                  <div>
+                    <label className={labelCls}>Button Text</label>
+                    <input className={inputCls} value={theme.stickyBar?.buttonText || ''} onChange={e => update('stickyBar.buttonText', e.target.value)} placeholder="Add to Cart" />
+                  </div>
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.stickyBar?.showQuantity ?? true} onChange={e => update('stickyBar.showQuantity', e.target.checked)} className="w-4 h-4 rounded" /> Show quantity selector</label>
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.stickyBar?.showProductImage ?? true} onChange={e => update('stickyBar.showProductImage', e.target.checked)} className="w-4 h-4 rounded" /> Show product thumbnail</label>
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.stickyBar?.showOnMobile ?? true} onChange={e => update('stickyBar.showOnMobile', e.target.checked)} className="w-4 h-4 rounded" /> Show on mobile devices</label>
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.stickyBar?.hideOnScrollUp ?? false} onChange={e => update('stickyBar.hideOnScrollUp', e.target.checked)} className="w-4 h-4 rounded" /> Hide when scrolling up</label>
+                  <div>
+                    <label className={labelCls}>Trigger Position (scroll %)</label>
+                    <div className="flex items-center gap-3">
+                      <input type="range" min="0" max="80" value={theme.stickyBar?.triggerScroll ?? 30} onChange={e => update('stickyBar.triggerScroll', parseInt(e.target.value))} className="flex-1 accent-violet-600" />
+                      <span className="text-sm font-bold text-gray-700 dark:text-gray-300 w-12 text-right">{theme.stickyBar?.triggerScroll ?? 30}%</span>
+                    </div>
+                  </div>
+                  <div className="pt-3 border-t border-gray-100 dark:border-dark-700">
+                    <button onClick={() => setPreviewPage('product')} className="flex items-center gap-1.5 text-xs font-bold text-violet-600 hover:underline"><Eye className="w-3.5 h-3.5" /> Preview on Product page</button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* WhatsApp / Social Floating Buttons */}
+          {activeTab === 'socialfloat' && (
+            <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-5 space-y-4">
+              <p className="text-sm text-gray-400">Add floating social media buttons (WhatsApp, Instagram, etc.) that stay visible while scrolling.</p>
+              <label className="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white"><input type="checkbox" checked={theme.socialFloat?.enabled ?? false} onChange={e => update('socialFloat.enabled', e.target.checked)} className="w-4 h-4 rounded" /> Enable Floating Buttons</label>
+              {theme.socialFloat?.enabled && (
+                <>
+                  <div>
+                    <label className={labelCls}>Position</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button onClick={() => update('socialFloat.position', 'right')} className={`p-3 rounded-xl border-2 text-sm font-bold transition-all ${(theme.socialFloat?.position || 'right') === 'right' ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 dark:border-dark-600 text-gray-500'}`}>Bottom Right</button>
+                      <button onClick={() => update('socialFloat.position', 'left')} className={`p-3 rounded-xl border-2 text-sm font-bold transition-all ${theme.socialFloat?.position === 'left' ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 dark:border-dark-600 text-gray-500'}`}>Bottom Left</button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelCls}>Vertical Offset (px from bottom)</label>
+                    <input type="number" min="0" max="100" className={inputCls} value={theme.socialFloat?.offset ?? 20} onChange={e => update('socialFloat.offset', parseInt(e.target.value))} />
+                  </div>
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.socialFloat?.pulse ?? true} onChange={e => update('socialFloat.pulse', e.target.checked)} className="w-4 h-4 rounded" /> Pulse animation</label>
+                  <div className="border-t border-gray-100 dark:border-dark-700 pt-4">
+                    <h4 className="font-bold text-sm text-gray-900 dark:text-white mb-3">WhatsApp</h4>
+                    <label className="flex items-center gap-2 text-sm mb-2"><input type="checkbox" checked={theme.socialFloat?.showWhatsapp ?? true} onChange={e => update('socialFloat.showWhatsapp', e.target.checked)} className="w-4 h-4 rounded" /> Show WhatsApp button</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={labelCls}>WhatsApp Number</label>
+                        <input className={inputCls} value={theme.socialFloat?.whatsappNumber || ''} onChange={e => update('socialFloat.whatsappNumber', e.target.value)} placeholder="+966500000000" />
+                      </div>
+                      <div>
+                        <label className={labelCls}>Button Color</label>
+                        <input type="color" className="w-full h-10 rounded-lg border border-gray-200 dark:border-dark-600" value={theme.socialFloat?.whatsappColor || '#25D366'} onChange={e => update('socialFloat.whatsappColor', e.target.value)} />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="border-t border-gray-100 dark:border-dark-700 pt-4">
+                    <h4 className="font-bold text-sm text-gray-900 dark:text-white mb-3">Other Social Links</h4>
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.socialFloat?.showInstagram ?? false} onChange={e => update('socialFloat.showInstagram', e.target.checked)} className="w-4 h-4 rounded" /> Show Instagram</label>
+                      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.socialFloat?.showFacebook ?? false} onChange={e => update('socialFloat.showFacebook', e.target.checked)} className="w-4 h-4 rounded" /> Show Facebook</label>
+                      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.socialFloat?.showTwitter ?? false} onChange={e => update('socialFloat.showTwitter', e.target.checked)} className="w-4 h-4 rounded" /> Show Twitter / X</label>
+                      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.socialFloat?.showTelegram ?? false} onChange={e => update('socialFloat.showTelegram', e.target.checked)} className="w-4 h-4 rounded" /> Show Telegram</label>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Cookie Consent Banner */}
+          {activeTab === 'cookie' && (
+            <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-5 space-y-4">
+              <p className="text-sm text-gray-400">Show a cookie consent banner to comply with privacy regulations.</p>
+              <label className="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white"><input type="checkbox" checked={theme.cookieConsent?.enabled ?? false} onChange={e => update('cookieConsent.enabled', e.target.checked)} className="w-4 h-4 rounded" /> Enable Cookie Consent Banner</label>
+              {theme.cookieConsent?.enabled && (
+                <>
+                  <div>
+                    <label className={labelCls}>Banner Message</label>
+                    <textarea className={inputCls} rows="3" value={theme.cookieConsent?.message || ''} onChange={e => update('cookieConsent.message', e.target.value)} placeholder="We use cookies to improve your experience. By continuing to browse, you agree to our use of cookies." />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Position</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button onClick={() => update('cookieConsent.position', 'bottom')} className={`p-3 rounded-xl border-2 text-sm font-bold transition-all ${(theme.cookieConsent?.position || 'bottom') === 'bottom' ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 dark:border-dark-600 text-gray-500'}`}>Bottom</button>
+                      <button onClick={() => update('cookieConsent.position', 'top')} className={`p-3 rounded-xl border-2 text-sm font-bold transition-all ${theme.cookieConsent?.position === 'top' ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 dark:border-dark-600 text-gray-500'}`}>Top</button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelCls}>Accept Button Text</label>
+                      <input className={inputCls} value={theme.cookieConsent?.acceptText || ''} onChange={e => update('cookieConsent.acceptText', e.target.value)} placeholder="Accept" />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Decline Button Text</label>
+                      <input className={inputCls} value={theme.cookieConsent?.declineText || ''} onChange={e => update('cookieConsent.declineText', e.target.value)} placeholder="Decline" />
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.cookieConsent?.showDecline ?? true} onChange={e => update('cookieConsent.showDecline', e.target.checked)} className="w-4 h-4 rounded" /> Show decline button</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelCls}>Banner Background</label>
+                      <input type="color" className="w-full h-10 rounded-lg border border-gray-200 dark:border-dark-600" value={theme.cookieConsent?.bgColor || '#1f2937'} onChange={e => update('cookieConsent.bgColor', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Text Color</label>
+                      <input type="color" className="w-full h-10 rounded-lg border border-gray-200 dark:border-dark-600" value={theme.cookieConsent?.textColor || '#f9fafb'} onChange={e => update('cookieConsent.textColor', e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelCls}>Accept Button BG</label>
+                      <input type="color" className="w-full h-10 rounded-lg border border-gray-200 dark:border-dark-600" value={theme.cookieConsent?.acceptBgColor || '#4f46e5'} onChange={e => update('cookieConsent.acceptBgColor', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Accept Button Text</label>
+                      <input type="color" className="w-full h-10 rounded-lg border border-gray-200 dark:border-dark-600" value={theme.cookieConsent?.acceptTextColor || '#ffffff'} onChange={e => update('cookieConsent.acceptTextColor', e.target.value)} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelCls}>Font Size (px)</label>
+                    <input type="number" min="11" max="18" className={inputCls} value={theme.cookieConsent?.fontSize ?? 13} onChange={e => update('cookieConsent.fontSize', parseInt(e.target.value))} />
+                  </div>
                 </>
               )}
             </div>
