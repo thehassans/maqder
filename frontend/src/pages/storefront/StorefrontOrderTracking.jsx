@@ -46,7 +46,7 @@ export default function StorefrontOrderTracking() {
 
   const handleMultiLookup = async (e) => {
     e.preventDefault();
-    if (!multiPhone) { setMultiError(t('phoneRequired')); return; }
+    if (!multiPhone) { setMultiError(t('trackOrderPhoneRequired')); return; }
     setMultiLoading(true);
     setMultiError('');
     setMultiOrders(null);
