@@ -6,6 +6,7 @@ import {
   ShieldCheck, AlertTriangle, CheckCircle2, XCircle, Activity,
   KeyRound, RefreshCw, FileSearch, Link2, Zap, Download, Upload,
   ChevronDown, ChevronRight, Loader2, Clock, ZapOff, RotateCcw,
+  Building2, FileText,
 } from 'lucide-react'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'

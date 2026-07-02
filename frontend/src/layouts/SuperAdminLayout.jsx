@@ -1,5 +1,5 @@
-﻿import { Outlet, NavLink } from 'react-router-dom'
-import { Suspense } from 'react'
+﻿import { Outlet, NavLink, useLocation } from 'react-router-dom'
+import { Suspense, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { 
   LayoutDashboard, 
@@ -15,7 +15,8 @@ import {
   Globe,
   Smartphone,
   HelpCircle,
-  Store
+  Store,
+  ChevronDown
 } from 'lucide-react'
 import { logout } from '../store/slices/authSlice'
 import { setTheme, setLanguage } from '../store/slices/uiSlice'
@@ -23,14 +24,19 @@ import { useTranslation } from '../lib/translations'
 
 export default function SuperAdminLayout() {
   const dispatch = useDispatch()
+  const location = useLocation()
   const { theme, language } = useSelector((state) => state.ui)
   const { t } = useTranslation(language)
 
-  const navItems = [
+  const primaryNavItems = [
     { path: '/super-admin', icon: LayoutDashboard, label: t('dashboard'), end: true },
     { path: '/super-admin/tenants', icon: Building2, label: t('tenants') },
     { path: '/super-admin/resellers', icon: Store, label: language === 'ar' ? 'الموزعون' : 'Resellers' },
     { path: '/super-admin/queries', icon: HelpCircle, label: t('queries') },
+    { path: '/super-admin/zatca', icon: ShieldCheck, label: 'ZATCA' },
+  ]
+
+  const moreNavItems = [
     { path: '/super-admin/website', icon: Globe, label: t('websiteSettings') },
     { path: '/super-admin/email', icon: Mail, label: t('email') },
     { path: '/super-admin/mailbox', icon: Inbox, label: t('mailbox') },
@@ -38,8 +44,9 @@ export default function SuperAdminLayout() {
     { path: '/super-admin/identity', icon: ShieldCheck, label: t('identitySettings') },
     { path: '/super-admin/gemini', icon: Settings, label: t('geminiSettings') },
     { path: '/super-admin/system-settings', icon: Settings, label: t('systemSettings') },
-    { path: '/super-admin/zatca', icon: ShieldCheck, label: 'ZATCA' },
   ]
+
+  const [moreOpen, setMoreOpen] = useState(false)
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-dark-900">
@@ -54,7 +61,7 @@ export default function SuperAdminLayout() {
           </div>
 
           <nav className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => (
+            {primaryNavItems.map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}
@@ -71,6 +78,42 @@ export default function SuperAdminLayout() {
                 {item.label}
               </NavLink>
             ))}
+
+            <div className="relative">
+              <button
+                onClick={() => setMoreOpen(!moreOpen)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  moreOpen || moreNavItems.some(item => location.pathname === item.path || location.pathname.startsWith(item.path + '/'))
+                    ? 'bg-white/20 text-white'
+                    : 'text-white/70 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                More
+                <ChevronDown className={`w-4 h-4 transition-transform ${moreOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {moreOpen && (
+                <div className="absolute top-full right-0 mt-2 w-56 bg-white dark:bg-dark-800 rounded-xl shadow-xl border border-gray-100 dark:border-dark-700 py-2 z-50">
+                  {moreNavItems.map((item) => (
+                    <NavLink
+                      key={item.path}
+                      to={item.path}
+                      end={item.end}
+                      onClick={() => setMoreOpen(false)}
+                      className={({ isActive }) =>
+                        `flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+                          isActive
+                            ? 'bg-[#1a3d28]/10 text-[#1a3d28] dark:bg-white/10 dark:text-white font-medium'
+                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-dark-700'
+                        }`
+                      }
+                    >
+                      <item.icon className="w-4 h-4" />
+                      {item.label}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
           </nav>
 
           <div className="flex items-center gap-3">
@@ -101,7 +144,7 @@ export default function SuperAdminLayout() {
 
       {/* Main Content */}
       <main className="p-6">
-        <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
+        <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" /></div>}>
           <Outlet />
         </Suspense>
       </main>
