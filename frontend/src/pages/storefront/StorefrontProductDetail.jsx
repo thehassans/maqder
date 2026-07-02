@@ -608,7 +608,7 @@ export default function StorefrontProductDetail() {
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                 }} onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-6px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(0,0,0,0.1)'; }} onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; }}>
                   <div style={{ aspectRatio: '1', background: '#e5e7eb', overflow: 'hidden' }}>
-                    {p.images?.[0]?.url ? <img src={p.images[0].url} alt={p.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} /> : null}
+                    {p.images?.[0]?.url ? <img src={optimizeImageUrl(p.images[0].url, { width: 400, quality: 80 })} alt={p.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} /> : null}
                   </div>
                   <div style={{ padding: '14px' }}>
                     <p style={{ fontWeight: 600, fontSize: '14px', margin: '0 0 6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#111' }}>{p.title}</p>
@@ -753,7 +753,7 @@ export default function StorefrontProductDetail() {
         <div onClick={() => setZoomed(false)} style={{
           position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'zoom-out', padding: '20px',
         }}>
-          <img src={product.images[selectedImage].url} alt={product.title} style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', borderRadius: '8px' }} />
+          <img src={optimizeImageUrl(product.images[selectedImage].url, { width: 1200, quality: 90 })} alt={product.title} style={{ maxWidth: '90%', maxHeight: '90%', objectFit: 'contain', borderRadius: '8px' }} />
           <button onClick={() => setZoomed(false)} style={{ position: 'absolute', top: '20px', right: '20px', background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '50%', width: '40px', height: '40px', cursor: 'pointer', color: '#fff', fontSize: '20px' }}>×</button>
         </div>
       )}
