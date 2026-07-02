@@ -15,6 +15,7 @@ import AbandonedCartReminder from './AbandonedCartReminder';
 import NewsletterPopup from './NewsletterPopup';
 import LiveSearch from './LiveSearch';
 import { ToastProvider, ScrollToTop, StorefrontGlobalStyles } from './StorefrontUi';
+import { optimizeImageUrl } from '../../lib/imageOptimizer';
 
 // Inject pixel scripts into <head> based on store config
 function injectPixelScripts(pixels) {
@@ -227,7 +228,7 @@ export default function StorefrontLayout({ children }) {
             onMouseLeave={e => e.currentTarget.style.opacity = '1'}
           >
             {header.logoImageUrl ? (
-              <img src={header.logoImageUrl} alt="logo" style={{ height: `${header.logoSize || 34}px` }} />
+              <img src={optimizeImageUrl(header.logoImageUrl, { width: 200, quality: 90 })} alt="logo" style={{ height: `${header.logoSize || 34}px` }} />
             ) : (
               <>
                 <div style={{
@@ -390,7 +391,7 @@ export default function StorefrontLayout({ children }) {
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
                 {header.logoImageUrl ? (
-                  <img src={header.logoImageUrl} alt="logo" style={{ height: '32px' }} />
+                  <img src={optimizeImageUrl(header.logoImageUrl, { width: 200, quality: 90 })} alt="logo" style={{ height: '32px' }} />
                 ) : (
                   <span style={{ fontWeight: 800, fontSize: '20px', color: c('text', '#111'), letterSpacing: '-0.5px' }}>
                     {header.logoText || storeInfo?.storeName || 'Store'}

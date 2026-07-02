@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ShoppingBag, X, MapPin } from 'lucide-react';
 import storeApi from '../../lib/storeApi';
+import { optimizeImageUrl } from '../../lib/imageOptimizer';
 
 export default function SalesNotificationPopup() {
   const [sales, setSales] = useState([]);
@@ -73,7 +74,7 @@ export default function SalesNotificationPopup() {
         onClick={() => setVisible(false)}
       >
         {currentSale.productImage ? (
-          <img src={currentSale.productImage} alt="" style={{ width: '48px', height: '48px', borderRadius: '10px', objectFit: 'cover', flexShrink: 0 }} />
+          <img src={optimizeImageUrl(currentSale.productImage, { width: 100, quality: 80 })} alt="" style={{ width: '48px', height: '48px', borderRadius: '10px', objectFit: 'cover', flexShrink: 0 }} />
         ) : (
           <div style={{ width: '48px', height: '48px', borderRadius: '10px', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <ShoppingBag size={20} color="#9ca3af" />
