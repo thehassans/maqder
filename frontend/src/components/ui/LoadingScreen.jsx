@@ -1,4 +1,4 @@
-export default function LoadingScreen() {
+﻿export default function LoadingScreen() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 flex items-center justify-center">
       <div className="text-center">
@@ -28,7 +28,7 @@ export default function LoadingScreen() {
           </svg>
         </div>
         <div className="w-auto h-20 flex items-center justify-center mb-6 mx-auto">
-          <img src="/maqdernewlogo.png" alt="Maqder" className="h-full w-auto object-contain" />
+          <img src="/maqdernewlogo.webp" alt="Maqder" className="h-full w-auto object-contain" />
         </div>
         <p className="text-primary-200">Loading your workspace...</p>
       </div>

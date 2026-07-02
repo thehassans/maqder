@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { MenuToggleIcon } from '@/components/ui/menu-toggle-icon';
@@ -58,11 +58,11 @@ export function Header3({ isArabic, setIsArabic }) {
           <NavigationMenu className="hidden md:flex">
             <NavigationMenuList className="gap-2">
               {[
-                { href: '#', label: isArabic ? 'الرئيسية' : 'Home' },
-                { href: '#features', label: isArabic ? 'المميزات' : 'Features' },
-                { href: '#modules', label: isArabic ? 'الوحدات' : 'Modules' },
-                { href: '#pricing', label: isArabic ? 'الأسعار' : 'Pricing' },
-                { href: '#contact', label: isArabic ? 'اتصل بنا' : 'Contact' },
+                { href: '#', label: isArabic ? 'Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©' : 'Home' },
+                { href: '#features', label: isArabic ? 'Ø§Ù„Ù…Ù…ÙŠØ²Ø§Øª' : 'Features' },
+                { href: '#modules', label: isArabic ? 'Ø§Ù„ÙˆØ­Ø¯Ø§Øª' : 'Modules' },
+                { href: '#pricing', label: isArabic ? 'Ø§Ù„Ø£Ø³Ø¹Ø§Ø±' : 'Pricing' },
+                { href: '#contact', label: isArabic ? 'Ø§ØªØµÙ„ Ø¨Ù†Ø§' : 'Contact' },
               ].map((link) => (
                 <NavigationMenuItem key={link.label}>
                   <NavigationMenuLink href={link.href} className="px-4 py-2 hover:bg-accent hover:text-accent-foreground rounded-md text-sm font-medium transition-colors">
@@ -79,13 +79,13 @@ export function Header3({ isArabic, setIsArabic }) {
             className="flex items-center gap-2 px-3 py-2 rounded-full border border-gray-200 text-sm font-medium hover:bg-gray-50 transition-colors"
           >
             <GlobeIcon className="w-4 h-4" />
-            {isArabic ? 'English' : 'عربي'}
+            {isArabic ? 'English' : 'Ø¹Ø±Ø¨ÙŠ'}
           </button>
           <Button variant="outline" asChild>
-            <a href="/login">{isArabic ? 'تسجيل الدخول' : 'Sign In'}</a>
+            <a href="/login">{isArabic ? 'ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„' : 'Sign In'}</a>
           </Button>
           <Button asChild>
-            <a href="/login">{isArabic ? 'ابدأ الآن' : 'Get Started'}</a>
+            <a href="/login">{isArabic ? 'Ø§Ø¨Ø¯Ø£ Ø§Ù„Ø¢Ù†' : 'Get Started'}</a>
           </Button>
         </div>
         <Button
@@ -103,11 +103,11 @@ export function Header3({ isArabic, setIsArabic }) {
       <MobileMenu open={open} className="flex flex-col justify-between gap-2 overflow-y-auto">
         <div className="flex flex-col gap-4 mt-8">
           {[
-            { href: '#', label: isArabic ? 'الرئيسية' : 'Home' },
-            { href: '#features', label: isArabic ? 'المميزات' : 'Features' },
-            { href: '#modules', label: isArabic ? 'الوحدات' : 'Modules' },
-            { href: '#pricing', label: isArabic ? 'الأسعار' : 'Pricing' },
-            { href: '#contact', label: isArabic ? 'اتصل بنا' : 'Contact' },
+            { href: '#', label: isArabic ? 'Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©' : 'Home' },
+            { href: '#features', label: isArabic ? 'Ø§Ù„Ù…Ù…ÙŠØ²Ø§Øª' : 'Features' },
+            { href: '#modules', label: isArabic ? 'Ø§Ù„ÙˆØ­Ø¯Ø§Øª' : 'Modules' },
+            { href: '#pricing', label: isArabic ? 'Ø§Ù„Ø£Ø³Ø¹Ø§Ø±' : 'Pricing' },
+            { href: '#contact', label: isArabic ? 'Ø§ØªØµÙ„ Ø¨Ù†Ø§' : 'Contact' },
           ].map((link) => (
             <a key={link.label} href={link.href} className="text-lg font-medium p-2 hover:bg-accent rounded-md" onClick={() => setOpen(false)}>
               {link.label}
@@ -119,15 +119,15 @@ export function Header3({ isArabic, setIsArabic }) {
             className="flex justify-center items-center gap-2 px-4 py-3 rounded-md border border-gray-200 font-medium hover:bg-gray-50 transition-colors"
           >
             <GlobeIcon className="w-5 h-5" />
-            {isArabic ? 'Switch to English' : 'التبديل للعربية'}
+            {isArabic ? 'Switch to English' : 'Ø§Ù„ØªØ¨Ø¯ÙŠÙ„ Ù„Ù„Ø¹Ø±Ø¨ÙŠØ©'}
           </button>
         </div>
         <div className="flex flex-col gap-2 mt-auto pb-4">
           <Button variant="outline" className="w-full bg-transparent" asChild>
-            <a href="/login">{isArabic ? 'تسجيل الدخول' : 'Sign In'}</a>
+            <a href="/login">{isArabic ? 'ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„' : 'Sign In'}</a>
           </Button>
           <Button className="w-full" asChild>
-            <a href="/login">{isArabic ? 'ابدأ الآن' : 'Get Started'}</a>
+            <a href="/login">{isArabic ? 'Ø§Ø¨Ø¯Ø£ Ø§Ù„Ø¢Ù†' : 'Get Started'}</a>
           </Button>
         </div>
       </MobileMenu>
@@ -234,7 +234,7 @@ const companyLinks = [
   {
     title: 'Customer Stories',
     href: '#',
-    description: 'See how we’ve helped our clients succeed',
+    description: 'See how weâ€™ve helped our clients succeed',
     icon: Star,
   },
   {
@@ -293,5 +293,5 @@ function useScroll(threshold) {
 }
 
 const WordmarkIcon = (props) => (
-  <img src="/maqderlogolandingpage.png" alt="Maqder" className="h-24 w-auto object-contain" />
+  <img src="/maqderlogolandingpage.webp" alt="Maqder" className="h-24 w-auto object-contain" />
 );

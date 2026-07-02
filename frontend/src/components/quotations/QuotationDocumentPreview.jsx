@@ -1,10 +1,10 @@
-import { getInvoiceBranding } from '../../lib/invoiceBranding'
+﻿import { getInvoiceBranding } from '../../lib/invoiceBranding'
 import { formatCurrency } from '../../lib/currency'
 
 const formatDate = (value, language = 'en') => {
-  if (!value) return '—'
+  if (!value) return 'â€”'
   const date = value instanceof Date ? value : new Date(value)
-  if (Number.isNaN(date.getTime())) return '—'
+  if (Number.isNaN(date.getTime())) return 'â€”'
   return date.toLocaleDateString(language === 'ar' ? 'ar-SA' : 'en-US', {
     year: 'numeric',
     month: 'short',
@@ -23,21 +23,21 @@ const joinAddress = (address = {}) =>
     address?.country,
   ].filter(Boolean)
 
-const pickLocalizedText = (primary, secondary) => primary || secondary || '—'
+const pickLocalizedText = (primary, secondary) => primary || secondary || 'â€”'
 
 const getStatusLabel = (status, language = 'en') => {
   const value = String(status || 'draft').trim().toLowerCase()
   const map = {
-    draft:     language === 'ar' ? 'مسودة'      : 'Draft',
-    sent:      language === 'ar' ? 'مرسل'       : 'Sent',
-    accepted:  language === 'ar' ? 'مقبول'      : 'Accepted',
-    approved:  language === 'ar' ? 'معتمد'      : 'Approved',
-    rejected:  language === 'ar' ? 'مرفوض'     : 'Rejected',
-    expired:   language === 'ar' ? 'منتهي'      : 'Expired',
-    cancelled: language === 'ar' ? 'ملغي'       : 'Cancelled',
-    converted: language === 'ar' ? 'تم التحويل' : 'Converted',
+    draft:     language === 'ar' ? 'Ù…Ø³ÙˆØ¯Ø©'      : 'Draft',
+    sent:      language === 'ar' ? 'Ù…Ø±Ø³Ù„'       : 'Sent',
+    accepted:  language === 'ar' ? 'Ù…Ù‚Ø¨ÙˆÙ„'      : 'Accepted',
+    approved:  language === 'ar' ? 'Ù…Ø¹ØªÙ…Ø¯'      : 'Approved',
+    rejected:  language === 'ar' ? 'Ù…Ø±ÙÙˆØ¶'     : 'Rejected',
+    expired:   language === 'ar' ? 'Ù…Ù†ØªÙ‡ÙŠ'      : 'Expired',
+    cancelled: language === 'ar' ? 'Ù…Ù„ØºÙŠ'       : 'Cancelled',
+    converted: language === 'ar' ? 'ØªÙ… Ø§Ù„ØªØ­ÙˆÙŠÙ„' : 'Converted',
   }
-  return map[value] || status || '—'
+  return map[value] || status || 'â€”'
 }
 
 const getStatusTone = (status) => {
@@ -53,7 +53,7 @@ const getStatusTone = (status) => {
 
 export default function QuotationDocumentPreview({ quotation, tenant, language = 'en' }) {
   const branding = getInvoiceBranding(tenant, language, quotation?.businessContext || 'trading')
-  const logoSrc = branding?.logoSrc || tenant?.business?.logoUrl || tenant?.branding?.logo || '/maqdernewlogo.png'
+  const logoSrc = branding?.logoSrc || tenant?.business?.logoUrl || tenant?.branding?.logo || '/maqdernewlogo.webp'
 
   const companyName = language === 'ar'
     ? pickLocalizedText(tenant?.business?.legalNameAr, tenant?.business?.legalNameEn)
@@ -78,20 +78,20 @@ export default function QuotationDocumentPreview({ quotation, tenant, language =
   const itemCount = lineItems.length
 
   return (
-    /* ── Outer wrapper: pure white, no dark bg anywhere ── */
+    /* â”€â”€ Outer wrapper: pure white, no dark bg anywhere â”€â”€ */
     <div className="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-[0_28px_90px_-48px_rgba(15,23,42,0.18)]">
 
-      {/* Top accent stripe — uses CSS variable so it matches brand color */}
+      {/* Top accent stripe â€” uses CSS variable so it matches brand color */}
       <div style={{ background: 'var(--color-primary-500, #16a34a)', height: 3 }} />
 
-      {/* Watermark logo — very faint */}
+      {/* Watermark logo â€” very faint */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
         {logoSrc ? <img src={logoSrc} alt="" className="h-56 w-56 object-contain opacity-[0.03]" /> : null}
       </div>
 
       <div className="relative px-7 pb-8 pt-7">
 
-        {/* ── Section 1: Header ────────────────────────────────── */}
+        {/* â”€â”€ Section 1: Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_268px] lg:items-start">
 
           {/* Left: Logo + company */}
@@ -105,10 +105,10 @@ export default function QuotationDocumentPreview({ quotation, tenant, language =
             </div>
             <div className="min-w-0 flex-1 pt-1">
               <p className="text-[10px] uppercase tracking-[0.3em] text-slate-400">
-                {language === 'ar' ? 'عرض سعر احترافي' : 'Commercial Quotation'}
+                {language === 'ar' ? 'Ø¹Ø±Ø¶ Ø³Ø¹Ø± Ø§Ø­ØªØ±Ø§ÙÙŠ' : 'Commercial Quotation'}
               </p>
               <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
-                {language === 'ar' ? 'عرض سعر' : 'Quotation'}
+                {language === 'ar' ? 'Ø¹Ø±Ø¶ Ø³Ø¹Ø±' : 'Quotation'}
               </h2>
               <p className="mt-1.5 text-sm font-semibold text-slate-800">{companyName}</p>
               {companySecondary !== companyName && (
@@ -117,11 +117,11 @@ export default function QuotationDocumentPreview({ quotation, tenant, language =
             </div>
           </div>
 
-          {/* Right: meta card — light only */}
+          {/* Right: meta card â€” light only */}
           <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
             <div className="flex items-center justify-between gap-3 mb-4">
               <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">
-                {language === 'ar' ? 'الحالة' : 'Status'}
+                {language === 'ar' ? 'Ø§Ù„Ø­Ø§Ù„Ø©' : 'Status'}
               </p>
               <span className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${getStatusTone(quotation?.status)}`}>
                 {getStatusLabel(quotation?.status, language)}
@@ -131,17 +131,17 @@ export default function QuotationDocumentPreview({ quotation, tenant, language =
             <div className="space-y-3">
               <div>
                 <p className="text-[10px] uppercase tracking-[0.18em] text-slate-400">
-                  {language === 'ar' ? 'رقم العرض' : 'Quotation #'}
+                  {language === 'ar' ? 'Ø±Ù‚Ù… Ø§Ù„Ø¹Ø±Ø¶' : 'Quotation #'}
                 </p>
                 <p className="mt-1 text-lg font-bold text-slate-900 tracking-tight">
-                  {quotation?.quotationNumber || '—'}
+                  {quotation?.quotationNumber || 'â€”'}
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <p className="text-[10px] uppercase tracking-[0.16em] text-slate-400">
-                    {language === 'ar' ? 'تاريخ الإصدار' : 'Issue Date'}
+                    {language === 'ar' ? 'ØªØ§Ø±ÙŠØ® Ø§Ù„Ø¥ØµØ¯Ø§Ø±' : 'Issue Date'}
                   </p>
                   <p className="mt-1 text-sm font-semibold text-slate-800">
                     {formatDate(quotation?.issueDate, language)}
@@ -149,7 +149,7 @@ export default function QuotationDocumentPreview({ quotation, tenant, language =
                 </div>
                 <div>
                   <p className="text-[10px] uppercase tracking-[0.16em] text-slate-400">
-                    {language === 'ar' ? 'صالح حتى' : 'Valid Until'}
+                    {language === 'ar' ? 'ØµØ§Ù„Ø­ Ø­ØªÙ‰' : 'Valid Until'}
                   </p>
                   <p className="mt-1 text-sm font-semibold text-slate-800">
                     {formatDate(quotation?.validUntil, language)}
@@ -160,11 +160,11 @@ export default function QuotationDocumentPreview({ quotation, tenant, language =
           </div>
         </div>
 
-        {/* ── Section 1.5: Subject ─────────────────────────────── */}
+        {/* â”€â”€ Section 1.5: Subject â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {quotation?.subject && (
           <div className="mt-6 rounded-[1.5rem] border border-slate-200 bg-white p-5">
             <p className="text-[10px] uppercase tracking-[0.25em] text-slate-400 mb-2">
-              {language === 'ar' ? 'الموضوع' : 'Subject'}
+              {language === 'ar' ? 'Ø§Ù„Ù…ÙˆØ¶ÙˆØ¹' : 'Subject'}
             </p>
             <p className="text-base font-semibold text-slate-900">
               {language === 'ar'
@@ -174,20 +174,20 @@ export default function QuotationDocumentPreview({ quotation, tenant, language =
           </div>
         )}
 
-        {/* ── Section 2: FROM / TO ─────────────────────────────── */}
+        {/* â”€â”€ Section 2: FROM / TO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
 
-          {/* FROM — white card */}
+          {/* FROM â€” white card */}
           <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5">
             <p className="text-[10px] uppercase tracking-[0.25em] text-slate-400 mb-3">
-              {language === 'ar' ? 'من' : 'Prepared By'}
+              {language === 'ar' ? 'Ù…Ù†' : 'Prepared By'}
             </p>
             <p className="text-base font-bold text-slate-900">{companyName}</p>
             <div className="mt-3 space-y-1.5 text-sm text-slate-600">
               {tenant?.business?.vatNumber && (
                 <div className="flex items-center gap-2">
                   <span className="text-slate-400 text-[11px] w-8 shrink-0">
-                    {language === 'ar' ? 'ض.ق' : 'VAT'}
+                    {language === 'ar' ? 'Ø¶.Ù‚' : 'VAT'}
                   </span>
                   <span className="font-medium text-slate-800">{tenant.business.vatNumber}</span>
                 </div>
@@ -201,7 +201,7 @@ export default function QuotationDocumentPreview({ quotation, tenant, language =
               {tenant?.business?.contactEmail && (
                 <div className="flex items-center gap-2">
                   <span className="text-slate-400 text-[11px] w-8 shrink-0">
-                    {language === 'ar' ? 'بريد' : 'Email'}
+                    {language === 'ar' ? 'Ø¨Ø±ÙŠØ¯' : 'Email'}
                   </span>
                   <span className="font-medium text-slate-800 break-all">{tenant.business.contactEmail}</span>
                 </div>
@@ -209,17 +209,17 @@ export default function QuotationDocumentPreview({ quotation, tenant, language =
             </div>
           </div>
 
-          {/* TO — light blue tint card (NO dark bg) */}
+          {/* TO â€” light blue tint card (NO dark bg) */}
           <div className="rounded-[1.5rem] border border-blue-100 bg-blue-50/50 p-5">
             <p className="text-[10px] uppercase tracking-[0.25em] text-blue-400 mb-3">
-              {language === 'ar' ? 'إلى' : 'Prepared For'}
+              {language === 'ar' ? 'Ø¥Ù„Ù‰' : 'Prepared For'}
             </p>
             <p className="text-base font-bold text-slate-900">{buyerName}</p>
             <div className="mt-3 space-y-1.5 text-sm text-slate-600">
               {quotation?.buyer?.vatNumber && (
                 <div className="flex items-center gap-2">
                   <span className="text-blue-400 text-[11px] w-8 shrink-0">
-                    {language === 'ar' ? 'ض.ق' : 'VAT'}
+                    {language === 'ar' ? 'Ø¶.Ù‚' : 'VAT'}
                   </span>
                   <span className="font-medium text-slate-800">{quotation.buyer.vatNumber}</span>
                 </div>
@@ -227,7 +227,7 @@ export default function QuotationDocumentPreview({ quotation, tenant, language =
               {quotation?.buyer?.contactPhone && (
                 <div className="flex items-center gap-2">
                   <span className="text-blue-400 text-[11px] w-8 shrink-0">
-                    {language === 'ar' ? 'هاتف' : 'Tel'}
+                    {language === 'ar' ? 'Ù‡Ø§ØªÙ' : 'Tel'}
                   </span>
                   <span className="font-medium text-slate-800">{quotation.buyer.contactPhone}</span>
                 </div>
@@ -235,7 +235,7 @@ export default function QuotationDocumentPreview({ quotation, tenant, language =
               {quotation?.buyer?.contactEmail && (
                 <div className="flex items-center gap-2">
                   <span className="text-blue-400 text-[11px] w-8 shrink-0">
-                    {language === 'ar' ? 'بريد' : 'Email'}
+                    {language === 'ar' ? 'Ø¨Ø±ÙŠØ¯' : 'Email'}
                   </span>
                   <span className="font-medium text-slate-800 truncate">{quotation.buyer.contactEmail}</span>
                 </div>
@@ -244,7 +244,7 @@ export default function QuotationDocumentPreview({ quotation, tenant, language =
             {buyerAddress.length > 0 && (
               <div className="mt-3 rounded-xl border border-blue-100 bg-white/70 px-3.5 py-2.5">
                 <p className="text-[10px] uppercase tracking-[0.18em] text-blue-400 mb-1.5">
-                  {language === 'ar' ? 'العنوان' : 'Address'}
+                  {language === 'ar' ? 'Ø§Ù„Ø¹Ù†ÙˆØ§Ù†' : 'Address'}
                 </p>
                 <div className="space-y-0.5 text-xs text-slate-700">
                   {buyerAddress.map((line, i) => <p key={`${line}-${i}`}>{line}</p>)}
@@ -254,26 +254,26 @@ export default function QuotationDocumentPreview({ quotation, tenant, language =
           </div>
         </div>
 
-        {/* ── Section 3: Line items table ──────────────────────── */}
+        {/* â”€â”€ Section 3: Line items table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="mt-6 overflow-hidden rounded-[1.5rem] border border-slate-200">
           <table className="min-w-full divide-y divide-slate-100 text-sm">
             <thead>
               <tr className="bg-slate-50">
                 <th className="px-4 py-3 text-start text-[11px] font-semibold uppercase tracking-wider text-slate-500">#</th>
                 <th className="px-4 py-3 text-start text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                  {language === 'ar' ? 'البند' : 'Item'}
+                  {language === 'ar' ? 'Ø§Ù„Ø¨Ù†Ø¯' : 'Item'}
                 </th>
                 <th className="px-4 py-3 text-start text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                  {language === 'ar' ? 'الوصف' : 'Description'}
+                  {language === 'ar' ? 'Ø§Ù„ÙˆØµÙ' : 'Description'}
                 </th>
                 <th className="px-4 py-3 text-end text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                  {language === 'ar' ? 'الكمية' : 'Qty'}
+                  {language === 'ar' ? 'Ø§Ù„ÙƒÙ…ÙŠØ©' : 'Qty'}
                 </th>
                 <th className="px-4 py-3 text-end text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                  {language === 'ar' ? 'السعر' : 'Price'}
+                  {language === 'ar' ? 'Ø§Ù„Ø³Ø¹Ø±' : 'Price'}
                 </th>
                 <th className="px-4 py-3 text-end text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                  {language === 'ar' ? 'الإجمالي' : 'Total'}
+                  {language === 'ar' ? 'Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ' : 'Total'}
                 </th>
               </tr>
             </thead>
@@ -303,7 +303,7 @@ export default function QuotationDocumentPreview({ quotation, tenant, language =
               }) : (
                 <tr>
                   <td className="px-4 py-8 text-center text-slate-400" colSpan="6">
-                    {language === 'ar' ? 'لا توجد بنود' : 'No quotation items'}
+                    {language === 'ar' ? 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¨Ù†ÙˆØ¯' : 'No quotation items'}
                   </td>
                 </tr>
               )}
@@ -311,16 +311,16 @@ export default function QuotationDocumentPreview({ quotation, tenant, language =
           </table>
         </div>
 
-        {/* ── Section 4: Totals + Notes ────────────────────────── */}
+        {/* â”€â”€ Section 4: Totals + Notes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
 
           {/* Notes */}
           <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/60 p-5">
             <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400 mb-3">
-              {language === 'ar' ? 'ملاحظات العرض' : 'Quotation Notes'}
+              {language === 'ar' ? 'Ù…Ù„Ø§Ø­Ø¸Ø§Øª Ø§Ù„Ø¹Ø±Ø¶' : 'Quotation Notes'}
             </p>
             <p className="whitespace-pre-line text-sm leading-7 text-slate-600">
-              {quotation?.notes || '—'}
+              {quotation?.notes || 'â€”'}
             </p>
           </div>
 
@@ -328,30 +328,30 @@ export default function QuotationDocumentPreview({ quotation, tenant, language =
           <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/60 p-5">
             <div className="space-y-2.5">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">{language === 'ar' ? 'عدد البنود' : 'Items'}</span>
+                <span className="text-slate-500">{language === 'ar' ? 'Ø¹Ø¯Ø¯ Ø§Ù„Ø¨Ù†ÙˆØ¯' : 'Items'}</span>
                 <span className="font-semibold text-slate-800">{itemCount}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">{language === 'ar' ? 'الإجمالي الفرعي' : 'Subtotal'}</span>
+                <span className="text-slate-500">{language === 'ar' ? 'Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ÙØ±Ø¹ÙŠ' : 'Subtotal'}</span>
                 <span className="font-semibold text-slate-800">{formatCurrency(totals.subtotal, { language, currency })}</span>
               </div>
               {totals.totalDiscount > 0 && (
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-500">{language === 'ar' ? 'الخصم' : 'Discount'}</span>
-                  <span className="font-semibold text-rose-600">− {formatCurrency(totals.totalDiscount, { language, currency })}</span>
+                  <span className="text-slate-500">{language === 'ar' ? 'Ø§Ù„Ø®ØµÙ…' : 'Discount'}</span>
+                  <span className="font-semibold text-rose-600">âˆ’ {formatCurrency(totals.totalDiscount, { language, currency })}</span>
                 </div>
               )}
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">{language === 'ar' ? 'الضريبة (VAT)' : 'VAT'}</span>
+                <span className="text-slate-500">{language === 'ar' ? 'Ø§Ù„Ø¶Ø±ÙŠØ¨Ø© (VAT)' : 'VAT'}</span>
                 <span className="font-semibold text-slate-800">{formatCurrency(totals.totalTax, { language, currency })}</span>
               </div>
             </div>
 
-            {/* Grand total — light accent row */}
+            {/* Grand total â€” light accent row */}
             <div className="mt-4 rounded-xl border border-slate-200 bg-white px-4 py-3.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  {language === 'ar' ? 'الإجمالي النهائي' : 'Grand Total'}
+                  {language === 'ar' ? 'Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠ' : 'Grand Total'}
                 </span>
                 <span className="text-xl font-bold tracking-tight text-slate-900">
                   {formatCurrency(totals.grandTotal, { language, currency })}
@@ -361,11 +361,11 @@ export default function QuotationDocumentPreview({ quotation, tenant, language =
           </div>
         </div>
 
-        {/* ── Section 4.5: Terms & Conditions ─────────────────── */}
+        {/* â”€â”€ Section 4.5: Terms & Conditions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {quotation?.termsAndConditions && (
           <div className="mt-6 rounded-[1.5rem] border border-slate-200 bg-white p-5">
             <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400 mb-3">
-              {language === 'ar' ? 'الشروط والأحكام' : 'Terms & Conditions'}
+              {language === 'ar' ? 'Ø§Ù„Ø´Ø±ÙˆØ· ÙˆØ§Ù„Ø£Ø­ÙƒØ§Ù…' : 'Terms & Conditions'}
             </p>
             <p className="whitespace-pre-line text-sm leading-7 text-slate-600">
               {quotation.termsAndConditions}
@@ -373,12 +373,12 @@ export default function QuotationDocumentPreview({ quotation, tenant, language =
           </div>
         )}
 
-        {/* ── Authorized Signature / Stamp ───────────────────── */}
+        {/* â”€â”€ Authorized Signature / Stamp â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {quotation?.authorizedPersonSignature && (
           <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_220px]">
             <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5">
               <p className="text-[10px] uppercase tracking-[0.25em] text-slate-400 mb-3">
-                {language === 'ar' ? 'الموثّق / المفوّض' : 'Authorized By'}
+                {language === 'ar' ? 'Ø§Ù„Ù…ÙˆØ«Ù‘Ù‚ / Ø§Ù„Ù…ÙÙˆÙ‘Ø¶' : 'Authorized By'}
               </p>
               <div className="flex items-start gap-4">
                 <img
@@ -407,7 +407,7 @@ export default function QuotationDocumentPreview({ quotation, tenant, language =
             <div className="rounded-[1.5rem] border border-dashed border-blue-200 bg-blue-50/40 p-4 flex flex-col items-center justify-center text-center">
               <div className="w-24 h-24 rounded-full border-2 border-blue-500/40 flex items-center justify-center p-3 mb-2">
                 <span className="text-[10px] font-bold text-blue-600 uppercase text-center leading-tight">
-                  {language === 'ar' ? 'ختم الشركة الإلكتروني' : 'Electronic Company Stamp'}
+                  {language === 'ar' ? 'Ø®ØªÙ… Ø§Ù„Ø´Ø±ÙƒØ© Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ' : 'Electronic Company Stamp'}
                 </span>
               </div>
               <p className="text-xs font-semibold text-slate-700">{companyName}</p>
@@ -416,28 +416,28 @@ export default function QuotationDocumentPreview({ quotation, tenant, language =
           </div>
         )}
 
-        {/* ── Footer ───────────────────────────────────────────── */}
+        {/* â”€â”€ Footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="mt-6 pt-4 border-t border-slate-100">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] text-slate-400">
             <div className="space-y-1">
               <p className="font-semibold text-slate-500">{companyName}</p>
               <p>
-                {tenant?.business?.vatNumber ? `${language === 'ar' ? 'الرقم الضريبي' : 'VAT'}: ${tenant.business.vatNumber}` : ''}
-                {tenant?.business?.vatNumber && tenant?.business?.crNumber ? ' · ' : ''}
+                {tenant?.business?.vatNumber ? `${language === 'ar' ? 'Ø§Ù„Ø±Ù‚Ù… Ø§Ù„Ø¶Ø±ÙŠØ¨ÙŠ' : 'VAT'}: ${tenant.business.vatNumber}` : ''}
+                {tenant?.business?.vatNumber && tenant?.business?.crNumber ? ' Â· ' : ''}
                 {tenant?.business?.crNumber ? `CR: ${tenant.business.crNumber}` : ''}
               </p>
               <p>
-                {tenant?.business?.contactPhone ? `${language === 'ar' ? 'الهاتف' : 'Phone'}: ${tenant.business.contactPhone}` : ''}
+                {tenant?.business?.contactPhone ? `${language === 'ar' ? 'Ø§Ù„Ù‡Ø§ØªÙ' : 'Phone'}: ${tenant.business.contactPhone}` : ''}
               </p>
             </div>
             <div className={`space-y-1 ${language === 'ar' ? 'sm:text-start' : 'sm:text-end'}`}>
               {tenant?.business?.contactEmail && (
-                <p>{language === 'ar' ? 'البريد' : 'Email'}: {tenant.business.contactEmail}</p>
+                <p>{language === 'ar' ? 'Ø§Ù„Ø¨Ø±ÙŠØ¯' : 'Email'}: {tenant.business.contactEmail}</p>
               )}
               {tenant?.business?.website && (
-                <p>{language === 'ar' ? 'الموقع' : 'Website'}: {tenant.business.website}</p>
+                <p>{language === 'ar' ? 'Ø§Ù„Ù…ÙˆÙ‚Ø¹' : 'Website'}: {tenant.business.website}</p>
               )}
-              <p>{language === 'ar' ? 'وثيقة سرية' : 'Confidential Document'}</p>
+              <p>{language === 'ar' ? 'ÙˆØ«ÙŠÙ‚Ø© Ø³Ø±ÙŠØ©' : 'Confidential Document'}</p>
             </div>
           </div>
         </div>

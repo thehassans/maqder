@@ -1,4 +1,4 @@
-import { Outlet, Link, useLocation } from 'react-router-dom'
+﻿import { Outlet, Link, useLocation } from 'react-router-dom'
 import { useMemo, useState, Suspense } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Globe, Menu, X, Phone, Mail, MapPin } from 'lucide-react'
@@ -25,11 +25,11 @@ export default function MarketingLayout() {
 
   const navItems = useMemo(
     () => [
-      { to: '/', labelEn: 'Home', labelAr: 'الرئيسية' },
-      { to: '/solutions', labelEn: 'Solutions', labelAr: 'الحلول' },
-      { to: '/pricing', labelEn: 'Pricing', labelAr: 'الأسعار' },
-      { to: '/about', labelEn: 'About', labelAr: 'من نحن' },
-      { to: '/contact', labelEn: 'Contact', labelAr: 'تواصل معنا' },
+      { to: '/', labelEn: 'Home', labelAr: 'Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©' },
+      { to: '/solutions', labelEn: 'Solutions', labelAr: 'Ø§Ù„Ø­Ù„ÙˆÙ„' },
+      { to: '/pricing', labelEn: 'Pricing', labelAr: 'Ø§Ù„Ø£Ø³Ø¹Ø§Ø±' },
+      { to: '/about', labelEn: 'About', labelAr: 'Ù…Ù† Ù†Ø­Ù†' },
+      { to: '/contact', labelEn: 'Contact', labelAr: 'ØªÙˆØ§ØµÙ„ Ù…Ø¹Ù†Ø§' },
     ],
     []
   )
@@ -44,7 +44,7 @@ export default function MarketingLayout() {
           <div className="h-28 flex items-center justify-between gap-3">
             <Link to="/" className="flex items-center gap-3">
               <div className="w-full h-24 flex items-center justify-center flex-shrink-0">
-                <img src="/maqderlogolandingpage.png" alt="Maqder" className="h-full w-auto object-contain" />
+                <img src="/maqderlogolandingpage.webp" alt="Maqder" className="h-full w-auto object-contain" />
               </div>
             </Link>
 
@@ -98,7 +98,7 @@ export default function MarketingLayout() {
                 to="/login"
                 className="hidden sm:inline-flex items-center rounded-full bg-gradient-to-r from-[#1f6b43] to-[#155234] px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-900/20 transition-all hover:from-[#185636] hover:to-[#12472d] hover:shadow-xl hover:shadow-emerald-900/30 hover:-translate-y-0.5"
               >
-                {isArabic ? 'تسجيل الدخول' : 'Login'}
+                {isArabic ? 'ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„' : 'Login'}
               </Link>
 
               <button
@@ -135,7 +135,7 @@ export default function MarketingLayout() {
                   onClick={() => setOpen(false)}
                   className="block rounded-xl bg-gradient-to-r from-[#1f6b43] to-[#155234] px-4 py-2 text-center font-semibold text-white"
                 >
-                  {isArabic ? 'تسجيل الدخول' : 'Login'}
+                  {isArabic ? 'ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„' : 'Login'}
                 </Link>
               </div>
             </motion.div>
@@ -152,34 +152,34 @@ export default function MarketingLayout() {
           <div className="grid md:grid-cols-4 gap-8">
             <div>
               <div className="w-auto h-20 flex items-center justify-start">
-                <img src="/maqderlogolandingpage.png" alt="Maqder" className="h-full w-auto object-contain" />
+                <img src="/maqderlogolandingpage.webp" alt="Maqder" className="h-full w-auto object-contain" />
               </div>
               <p className="mt-2 text-sm leading-relaxed text-slate-500">
                 {isArabic
-                  ? 'منصة ERP متكاملة للشركات السعودية مع امتثال كامل لهيئة الزكاة والضريبة والجمارك.'
+                  ? 'Ù…Ù†ØµØ© ERP Ù…ØªÙƒØ§Ù…Ù„Ø© Ù„Ù„Ø´Ø±ÙƒØ§Øª Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠØ© Ù…Ø¹ Ø§Ù…ØªØ«Ø§Ù„ ÙƒØ§Ù…Ù„ Ù„Ù‡ÙŠØ¦Ø© Ø§Ù„Ø²ÙƒØ§Ø© ÙˆØ§Ù„Ø¶Ø±ÙŠØ¨Ø© ÙˆØ§Ù„Ø¬Ù…Ø§Ø±Ùƒ.'
                   : 'A complete ERP platform for Saudi businesses with full ZATCA compliance.'}
               </p>
             </div>
 
             <div>
-              <div className="mb-3 font-semibold text-slate-900">{isArabic ? 'الروابط' : 'Links'}</div>
+              <div className="mb-3 font-semibold text-slate-900">{isArabic ? 'Ø§Ù„Ø±ÙˆØ§Ø¨Ø·' : 'Links'}</div>
               <div className="space-y-2 text-sm">
-                <Link to="/pricing" className="block text-slate-500 transition hover:text-slate-950">{isArabic ? 'الأسعار' : 'Pricing'}</Link>
-                <Link to="/about" className="block text-slate-500 transition hover:text-slate-950">{isArabic ? 'من نحن' : 'About'}</Link>
-                <Link to="/contact" className="block text-slate-500 transition hover:text-slate-950">{isArabic ? 'تواصل معنا' : 'Contact'}</Link>
+                <Link to="/pricing" className="block text-slate-500 transition hover:text-slate-950">{isArabic ? 'Ø§Ù„Ø£Ø³Ø¹Ø§Ø±' : 'Pricing'}</Link>
+                <Link to="/about" className="block text-slate-500 transition hover:text-slate-950">{isArabic ? 'Ù…Ù† Ù†Ø­Ù†' : 'About'}</Link>
+                <Link to="/contact" className="block text-slate-500 transition hover:text-slate-950">{isArabic ? 'ØªÙˆØ§ØµÙ„ Ù…Ø¹Ù†Ø§' : 'Contact'}</Link>
               </div>
             </div>
 
             <div>
-              <div className="mb-3 font-semibold text-slate-900">{isArabic ? 'قانوني' : 'Legal'}</div>
+              <div className="mb-3 font-semibold text-slate-900">{isArabic ? 'Ù‚Ø§Ù†ÙˆÙ†ÙŠ' : 'Legal'}</div>
               <div className="space-y-2 text-sm">
-                <Link to="/privacy" className="block text-slate-500 transition hover:text-slate-950">{isArabic ? 'سياسة الخصوصية' : 'Privacy'}</Link>
-                <Link to="/terms" className="block text-slate-500 transition hover:text-slate-950">{isArabic ? 'الشروط' : 'Terms'}</Link>
+                <Link to="/privacy" className="block text-slate-500 transition hover:text-slate-950">{isArabic ? 'Ø³ÙŠØ§Ø³Ø© Ø§Ù„Ø®ØµÙˆØµÙŠØ©' : 'Privacy'}</Link>
+                <Link to="/terms" className="block text-slate-500 transition hover:text-slate-950">{isArabic ? 'Ø§Ù„Ø´Ø±ÙˆØ·' : 'Terms'}</Link>
               </div>
             </div>
 
             <div>
-              <div className="mb-3 font-semibold text-slate-900">{isArabic ? 'تواصل' : 'Contact'}</div>
+              <div className="mb-3 font-semibold text-slate-900">{isArabic ? 'ØªÙˆØ§ØµÙ„' : 'Contact'}</div>
               <div className="space-y-2 text-sm text-slate-500">
                 <div>{phone}</div>
                 <div>{data?.contactEmail || 'info@maqder.com'}</div>
@@ -190,7 +190,7 @@ export default function MarketingLayout() {
 
           <div className="mt-10 flex flex-col justify-between gap-3 border-t border-slate-200 pt-6 text-xs text-slate-400 sm:flex-row">
             <div> {new Date().getFullYear()} {data?.brandName || 'Maqder ERP'}</div>
-            <div>{isArabic ? 'جميع الحقوق محفوظة' : 'All rights reserved'}</div>
+            <div>{isArabic ? 'Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø­Ù‚ÙˆÙ‚ Ù…Ø­ÙÙˆØ¸Ø©' : 'All rights reserved'}</div>
           </div>
         </div>
       </footer>

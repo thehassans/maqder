@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Header } from '../components/ui/header-3'
 import { HeroSection } from '../components/ui/hero-3'
@@ -68,137 +68,137 @@ const features = [
   {
     icon: FileText,
     title: 'ZATCA E-Invoicing',
-    titleAr: 'الفوترة الإلكترونية',
+    titleAr: 'Ø§Ù„ÙÙˆØªØ±Ø© Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠØ©',
     description: 'Fully compliant with Saudi ZATCA Phase 2 requirements. Automatic QR code generation, XML signing, and real-time submission.',
-    descriptionAr: 'متوافق بالكامل مع متطلبات المرحلة الثانية من هيئة الزكاة والضريبة والجمارك',
+    descriptionAr: 'Ù…ØªÙˆØ§ÙÙ‚ Ø¨Ø§Ù„ÙƒØ§Ù…Ù„ Ù…Ø¹ Ù…ØªØ·Ù„Ø¨Ø§Øª Ø§Ù„Ù…Ø±Ø­Ù„Ø© Ø§Ù„Ø«Ø§Ù†ÙŠØ© Ù…Ù† Ù‡ÙŠØ¦Ø© Ø§Ù„Ø²ÙƒØ§Ø© ÙˆØ§Ù„Ø¶Ø±ÙŠØ¨Ø© ÙˆØ§Ù„Ø¬Ù…Ø§Ø±Ùƒ',
   },
   {
     icon: Users,
     title: 'HR & Payroll',
-    titleAr: 'الموارد البشرية والرواتب',
+    titleAr: 'Ø§Ù„Ù…ÙˆØ§Ø±Ø¯ Ø§Ù„Ø¨Ø´Ø±ÙŠØ© ÙˆØ§Ù„Ø±ÙˆØ§ØªØ¨',
     description: 'Complete employee management with GOSI calculations, WPS file generation, leave tracking, and Iqama expiry alerts.',
-    descriptionAr: 'إدارة كاملة للموظفين مع حسابات التأمينات وملفات حماية الأجور',
+    descriptionAr: 'Ø¥Ø¯Ø§Ø±Ø© ÙƒØ§Ù…Ù„Ø© Ù„Ù„Ù…ÙˆØ¸ÙÙŠÙ† Ù…Ø¹ Ø­Ø³Ø§Ø¨Ø§Øª Ø§Ù„ØªØ£Ù…ÙŠÙ†Ø§Øª ÙˆÙ…Ù„ÙØ§Øª Ø­Ù…Ø§ÙŠØ© Ø§Ù„Ø£Ø¬ÙˆØ±',
   },
   {
     icon: Package,
     title: 'Inventory Management',
-    titleAr: 'إدارة المخزون',
+    titleAr: 'Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù…Ø®Ø²ÙˆÙ†',
     description: 'Multi-warehouse support, stock tracking, automatic reorder points, and barcode scanning integration.',
-    descriptionAr: 'دعم متعدد المستودعات وتتبع المخزون ونقاط إعادة الطلب التلقائية',
+    descriptionAr: 'Ø¯Ø¹Ù… Ù…ØªØ¹Ø¯Ø¯ Ø§Ù„Ù…Ø³ØªÙˆØ¯Ø¹Ø§Øª ÙˆØªØªØ¨Ø¹ Ø§Ù„Ù…Ø®Ø²ÙˆÙ† ÙˆÙ†Ù‚Ø§Ø· Ø¥Ø¹Ø§Ø¯Ø© Ø§Ù„Ø·Ù„Ø¨ Ø§Ù„ØªÙ„Ù‚Ø§Ø¦ÙŠØ©',
   },
   {
     icon: Receipt,
     title: 'Expense Management',
-    titleAr: 'إدارة المصروفات',
+    titleAr: 'Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù…ØµØ±ÙˆÙØ§Øª',
     description: 'Track company expenses with approval workflows, categorization, and integration with financial reports.',
-    descriptionAr: 'تتبع مصروفات الشركة مع سير عمل الموافقات والتصنيف',
+    descriptionAr: 'ØªØªØ¨Ø¹ Ù…ØµØ±ÙˆÙØ§Øª Ø§Ù„Ø´Ø±ÙƒØ© Ù…Ø¹ Ø³ÙŠØ± Ø¹Ù…Ù„ Ø§Ù„Ù…ÙˆØ§ÙÙ‚Ø§Øª ÙˆØ§Ù„ØªØµÙ†ÙŠÙ',
   },
   {
     icon: Truck,
     title: 'Purchase & Suppliers',
-    titleAr: 'المشتريات والموردين',
+    titleAr: 'Ø§Ù„Ù…Ø´ØªØ±ÙŠØ§Øª ÙˆØ§Ù„Ù…ÙˆØ±Ø¯ÙŠÙ†',
     description: 'Manage suppliers, create purchase orders, track shipments, and automate procurement workflows.',
-    descriptionAr: 'إدارة الموردين وأوامر الشراء وتتبع الشحنات',
+    descriptionAr: 'Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù…ÙˆØ±Ø¯ÙŠÙ† ÙˆØ£ÙˆØ§Ù…Ø± Ø§Ù„Ø´Ø±Ø§Ø¡ ÙˆØªØªØ¨Ø¹ Ø§Ù„Ø´Ø­Ù†Ø§Øª',
   },
   {
     icon: BarChart3,
     title: 'Financial Reports',
-    titleAr: 'التقارير المالية',
+    titleAr: 'Ø§Ù„ØªÙ‚Ø§Ø±ÙŠØ± Ø§Ù„Ù…Ø§Ù„ÙŠØ©',
     description: 'Comprehensive VAT returns, profit/loss statements, and real-time financial dashboards.',
-    descriptionAr: 'إقرارات ضريبة القيمة المضافة الشاملة ولوحات المعلومات المالية',
+    descriptionAr: 'Ø¥Ù‚Ø±Ø§Ø±Ø§Øª Ø¶Ø±ÙŠØ¨Ø© Ø§Ù„Ù‚ÙŠÙ…Ø© Ø§Ù„Ù…Ø¶Ø§ÙØ© Ø§Ù„Ø´Ø§Ù…Ù„Ø© ÙˆÙ„ÙˆØ­Ø§Øª Ø§Ù„Ù…Ø¹Ù„ÙˆÙ…Ø§Øª Ø§Ù„Ù…Ø§Ù„ÙŠØ©',
   },
   {
     icon: ClipboardList,
     title: 'Project Management',
-    titleAr: 'إدارة المشاريع',
+    titleAr: 'Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù…Ø´Ø§Ø±ÙŠØ¹',
     description: 'Create projects, assign tasks, track progress, and manage job costing with detailed breakdowns.',
-    descriptionAr: 'إنشاء المشاريع وتعيين المهام وتتبع التقدم وإدارة تكاليف العمل',
+    descriptionAr: 'Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ù…Ø´Ø§Ø±ÙŠØ¹ ÙˆØªØ¹ÙŠÙŠÙ† Ø§Ù„Ù…Ù‡Ø§Ù… ÙˆØªØªØ¨Ø¹ Ø§Ù„ØªÙ‚Ø¯Ù… ÙˆØ¥Ø¯Ø§Ø±Ø© ØªÙƒØ§Ù„ÙŠÙ Ø§Ù„Ø¹Ù…Ù„',
   },
   {
     icon: Factory,
     title: 'MRP & Manufacturing',
-    titleAr: 'تخطيط موارد التصنيع',
+    titleAr: 'ØªØ®Ø·ÙŠØ· Ù…ÙˆØ§Ø±Ø¯ Ø§Ù„ØªØµÙ†ÙŠØ¹',
     description: 'Material Requirements Planning with BOM management, production orders, and capacity planning.',
-    descriptionAr: 'تخطيط متطلبات المواد مع إدارة قائمة المواد وأوامر الإنتاج',
+    descriptionAr: 'ØªØ®Ø·ÙŠØ· Ù…ØªØ·Ù„Ø¨Ø§Øª Ø§Ù„Ù…ÙˆØ§Ø¯ Ù…Ø¹ Ø¥Ø¯Ø§Ø±Ø© Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ù…ÙˆØ§Ø¯ ÙˆØ£ÙˆØ§Ù…Ø± Ø§Ù„Ø¥Ù†ØªØ§Ø¬',
   },
   {
     icon: Cpu,
     title: 'IoT Integration',
-    titleAr: 'تكامل إنترنت الأشياء',
+    titleAr: 'ØªÙƒØ§Ù…Ù„ Ø¥Ù†ØªØ±Ù†Øª Ø§Ù„Ø£Ø´ÙŠØ§Ø¡',
     description: 'Connect sensors and devices for real-time monitoring of temperature, humidity, and equipment status.',
-    descriptionAr: 'ربط أجهزة الاستشعار للمراقبة في الوقت الفعلي',
+    descriptionAr: 'Ø±Ø¨Ø· Ø£Ø¬Ù‡Ø²Ø© Ø§Ù„Ø§Ø³ØªØ´Ø¹Ø§Ø± Ù„Ù„Ù…Ø±Ø§Ù‚Ø¨Ø© ÙÙŠ Ø§Ù„ÙˆÙ‚Øª Ø§Ù„ÙØ¹Ù„ÙŠ',
   },
   {
     icon: MessageCircle,
     title: 'WhatsApp Business',
-    titleAr: 'واتساب للأعمال',
+    titleAr: 'ÙˆØ§ØªØ³Ø§Ø¨ Ù„Ù„Ø£Ø¹Ù…Ø§Ù„',
     description: 'Send invoices, payment reminders, and notifications directly to customers via WhatsApp.',
-    descriptionAr: 'إرسال الفواتير والتذكيرات والإشعارات عبر واتساب',
+    descriptionAr: 'Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„ÙÙˆØ§ØªÙŠØ± ÙˆØ§Ù„ØªØ°ÙƒÙŠØ±Ø§Øª ÙˆØ§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª Ø¹Ø¨Ø± ÙˆØ§ØªØ³Ø§Ø¨',
   },
   {
     icon: Globe,
     title: 'Multi-Language',
-    titleAr: 'متعدد اللغات',
+    titleAr: 'Ù…ØªØ¹Ø¯Ø¯ Ø§Ù„Ù„ØºØ§Øª',
     description: 'Full Arabic and English support with RTL layout. Switch languages instantly across the entire system.',
-    descriptionAr: 'دعم كامل للعربية والإنجليزية مع تخطيط RTL',
+    descriptionAr: 'Ø¯Ø¹Ù… ÙƒØ§Ù…Ù„ Ù„Ù„Ø¹Ø±Ø¨ÙŠØ© ÙˆØ§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠØ© Ù…Ø¹ ØªØ®Ø·ÙŠØ· RTL',
   },
   {
     icon: Shield,
     title: 'Enterprise Security',
-    titleAr: 'أمان المؤسسات',
+    titleAr: 'Ø£Ù…Ø§Ù† Ø§Ù„Ù…Ø¤Ø³Ø³Ø§Øª',
     description: 'Role-based access control, audit logs, two-factor authentication, and encrypted data storage.',
-    descriptionAr: 'التحكم في الوصول والسجلات والمصادقة الثنائية',
+    descriptionAr: 'Ø§Ù„ØªØ­ÙƒÙ… ÙÙŠ Ø§Ù„ÙˆØµÙˆÙ„ ÙˆØ§Ù„Ø³Ø¬Ù„Ø§Øª ÙˆØ§Ù„Ù…ØµØ§Ø¯Ù‚Ø© Ø§Ù„Ø«Ù†Ø§Ø¦ÙŠØ©',
   },
 ]
 
 const stats = [
-  { value: '99.9%', label: 'Uptime', labelAr: 'وقت التشغيل' },
-  { value: '50K+', label: 'Invoices/Day', labelAr: 'فاتورة يومياً' },
-  { value: '500+', label: 'Companies', labelAr: 'شركة' },
-  { value: '24/7', label: 'Support', labelAr: 'دعم فني' },
+  { value: '99.9%', label: 'Uptime', labelAr: 'ÙˆÙ‚Øª Ø§Ù„ØªØ´ØºÙŠÙ„' },
+  { value: '50K+', label: 'Invoices/Day', labelAr: 'ÙØ§ØªÙˆØ±Ø© ÙŠÙˆÙ…ÙŠØ§Ù‹' },
+  { value: '500+', label: 'Companies', labelAr: 'Ø´Ø±ÙƒØ©' },
+  { value: '24/7', label: 'Support', labelAr: 'Ø¯Ø¹Ù… ÙÙ†ÙŠ' },
 ]
 
 const modules = [
-  { icon: FileText, name: 'E-Invoicing', nameAr: 'الفوترة الإلكترونية', color: 'from-emerald-500 to-teal-600' },
-  { icon: Users, name: 'HR Management', nameAr: 'إدارة الموارد البشرية', color: 'from-blue-500 to-indigo-600' },
-  { icon: Calculator, name: 'Payroll & GOSI', nameAr: 'الرواتب والتأمينات', color: 'from-purple-500 to-violet-600' },
-  { icon: Package, name: 'Inventory', nameAr: 'المخزون', color: 'from-orange-500 to-amber-600' },
-  { icon: Warehouse, name: 'Warehouses', nameAr: 'المستودعات', color: 'from-cyan-500 to-sky-600' },
-  { icon: Truck, name: 'Procurement', nameAr: 'المشتريات', color: 'from-rose-500 to-pink-600' },
-  { icon: Receipt, name: 'Expenses', nameAr: 'المصروفات', color: 'from-red-500 to-rose-600' },
-  { icon: ClipboardList, name: 'Projects', nameAr: 'المشاريع', color: 'from-lime-500 to-green-600' },
-  { icon: Factory, name: 'Manufacturing', nameAr: 'التصنيع', color: 'from-slate-500 to-gray-600' },
-  { icon: LineChart, name: 'Reports', nameAr: 'التقارير', color: 'from-fuchsia-500 to-purple-600' },
-  { icon: UserCheck, name: 'Contacts', nameAr: 'جهات الاتصال', color: 'from-teal-500 to-emerald-600' },
-  { icon: Settings, name: 'Settings', nameAr: 'الإعدادات', color: 'from-gray-500 to-slate-600' },
+  { icon: FileText, name: 'E-Invoicing', nameAr: 'Ø§Ù„ÙÙˆØªØ±Ø© Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠØ©', color: 'from-emerald-500 to-teal-600' },
+  { icon: Users, name: 'HR Management', nameAr: 'Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù…ÙˆØ§Ø±Ø¯ Ø§Ù„Ø¨Ø´Ø±ÙŠØ©', color: 'from-blue-500 to-indigo-600' },
+  { icon: Calculator, name: 'Payroll & GOSI', nameAr: 'Ø§Ù„Ø±ÙˆØ§ØªØ¨ ÙˆØ§Ù„ØªØ£Ù…ÙŠÙ†Ø§Øª', color: 'from-purple-500 to-violet-600' },
+  { icon: Package, name: 'Inventory', nameAr: 'Ø§Ù„Ù…Ø®Ø²ÙˆÙ†', color: 'from-orange-500 to-amber-600' },
+  { icon: Warehouse, name: 'Warehouses', nameAr: 'Ø§Ù„Ù…Ø³ØªÙˆØ¯Ø¹Ø§Øª', color: 'from-cyan-500 to-sky-600' },
+  { icon: Truck, name: 'Procurement', nameAr: 'Ø§Ù„Ù…Ø´ØªØ±ÙŠØ§Øª', color: 'from-rose-500 to-pink-600' },
+  { icon: Receipt, name: 'Expenses', nameAr: 'Ø§Ù„Ù…ØµØ±ÙˆÙØ§Øª', color: 'from-red-500 to-rose-600' },
+  { icon: ClipboardList, name: 'Projects', nameAr: 'Ø§Ù„Ù…Ø´Ø§Ø±ÙŠØ¹', color: 'from-lime-500 to-green-600' },
+  { icon: Factory, name: 'Manufacturing', nameAr: 'Ø§Ù„ØªØµÙ†ÙŠØ¹', color: 'from-slate-500 to-gray-600' },
+  { icon: LineChart, name: 'Reports', nameAr: 'Ø§Ù„ØªÙ‚Ø§Ø±ÙŠØ±', color: 'from-fuchsia-500 to-purple-600' },
+  { icon: UserCheck, name: 'Contacts', nameAr: 'Ø¬Ù‡Ø§Øª Ø§Ù„Ø§ØªØµØ§Ù„', color: 'from-teal-500 to-emerald-600' },
+  { icon: Settings, name: 'Settings', nameAr: 'Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª', color: 'from-gray-500 to-slate-600' },
 ]
 
 const testimonials = [
   {
     name: 'Ahmed Al-Rashid',
-    nameAr: 'أحمد الراشد',
+    nameAr: 'Ø£Ø­Ù…Ø¯ Ø§Ù„Ø±Ø§Ø´Ø¯',
     role: 'CFO, Tech Solutions',
-    roleAr: 'المدير المالي، حلول التقنية',
+    roleAr: 'Ø§Ù„Ù…Ø¯ÙŠØ± Ø§Ù„Ù…Ø§Ù„ÙŠØŒ Ø­Ù„ÙˆÙ„ Ø§Ù„ØªÙ‚Ù†ÙŠØ©',
     content: 'Maqder ERP transformed our invoicing process. ZATCA compliance is now automatic and hassle-free.',
-    contentAr: 'حوّل Maqder ERP عملية الفوترة لدينا. الامتثال لهيئة الزكاة أصبح تلقائياً وسهلاً.',
+    contentAr: 'Ø­ÙˆÙ‘Ù„ Maqder ERP Ø¹Ù…Ù„ÙŠØ© Ø§Ù„ÙÙˆØªØ±Ø© Ù„Ø¯ÙŠÙ†Ø§. Ø§Ù„Ø§Ù…ØªØ«Ø§Ù„ Ù„Ù‡ÙŠØ¦Ø© Ø§Ù„Ø²ÙƒØ§Ø© Ø£ØµØ¨Ø­ ØªÙ„Ù‚Ø§Ø¦ÙŠØ§Ù‹ ÙˆØ³Ù‡Ù„Ø§Ù‹.',
     rating: 5,
   },
   {
     name: 'Sara Mohammed',
-    nameAr: 'سارة محمد',
+    nameAr: 'Ø³Ø§Ø±Ø© Ù…Ø­Ù…Ø¯',
     role: 'HR Director, Retail Group',
-    roleAr: 'مديرة الموارد البشرية، مجموعة التجزئة',
+    roleAr: 'Ù…Ø¯ÙŠØ±Ø© Ø§Ù„Ù…ÙˆØ§Ø±Ø¯ Ø§Ù„Ø¨Ø´Ø±ÙŠØ©ØŒ Ù…Ø¬Ù…ÙˆØ¹Ø© Ø§Ù„ØªØ¬Ø²Ø¦Ø©',
     content: 'The HR module with GOSI calculations saved us countless hours. Payroll is now processed in minutes.',
-    contentAr: 'وحدة الموارد البشرية مع حسابات التأمينات وفرت علينا ساعات لا تحصى.',
+    contentAr: 'ÙˆØ­Ø¯Ø© Ø§Ù„Ù…ÙˆØ§Ø±Ø¯ Ø§Ù„Ø¨Ø´Ø±ÙŠØ© Ù…Ø¹ Ø­Ø³Ø§Ø¨Ø§Øª Ø§Ù„ØªØ£Ù…ÙŠÙ†Ø§Øª ÙˆÙØ±Øª Ø¹Ù„ÙŠÙ†Ø§ Ø³Ø§Ø¹Ø§Øª Ù„Ø§ ØªØ­ØµÙ‰.',
     rating: 5,
   },
   {
     name: 'Khalid Hassan',
-    nameAr: 'خالد حسن',
+    nameAr: 'Ø®Ø§Ù„Ø¯ Ø­Ø³Ù†',
     role: 'Operations Manager',
-    roleAr: 'مدير العمليات',
+    roleAr: 'Ù…Ø¯ÙŠØ± Ø§Ù„Ø¹Ù…Ù„ÙŠØ§Øª',
     content: 'Multi-warehouse inventory tracking with real-time updates. Exactly what we needed for our growth.',
-    contentAr: 'تتبع المخزون متعدد المستودعات مع التحديثات الفورية. بالضبط ما نحتاجه لنمونا.',
+    contentAr: 'ØªØªØ¨Ø¹ Ø§Ù„Ù…Ø®Ø²ÙˆÙ† Ù…ØªØ¹Ø¯Ø¯ Ø§Ù„Ù…Ø³ØªÙˆØ¯Ø¹Ø§Øª Ù…Ø¹ Ø§Ù„ØªØ­Ø¯ÙŠØ«Ø§Øª Ø§Ù„ÙÙˆØ±ÙŠØ©. Ø¨Ø§Ù„Ø¶Ø¨Ø· Ù…Ø§ Ù†Ø­ØªØ§Ø¬Ù‡ Ù„Ù†Ù…ÙˆÙ†Ø§.',
     rating: 5,
   },
 ]
@@ -206,10 +206,10 @@ const testimonials = [
 const pricingPlans = [
   {
     name: 'Starter',
-    nameAr: 'البداية',
+    nameAr: 'Ø§Ù„Ø¨Ø¯Ø§ÙŠØ©',
     price: '299',
     period: '/month',
-    periodAr: '/شهر',
+    periodAr: '/Ø´Ù‡Ø±',
     features: [
       'Up to 500 invoices/month',
       'ZATCA Phase 2 Compliance',
@@ -218,20 +218,20 @@ const pricingPlans = [
       'Email Support',
     ],
     featuresAr: [
-      'حتى 500 فاتورة/شهر',
-      'امتثال المرحلة الثانية',
-      '5 مستخدمين',
-      'تقارير أساسية',
-      'دعم البريد الإلكتروني',
+      'Ø­ØªÙ‰ 500 ÙØ§ØªÙˆØ±Ø©/Ø´Ù‡Ø±',
+      'Ø§Ù…ØªØ«Ø§Ù„ Ø§Ù„Ù…Ø±Ø­Ù„Ø© Ø§Ù„Ø«Ø§Ù†ÙŠØ©',
+      '5 Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ†',
+      'ØªÙ‚Ø§Ø±ÙŠØ± Ø£Ø³Ø§Ø³ÙŠØ©',
+      'Ø¯Ø¹Ù… Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ',
     ],
     popular: false,
   },
   {
     name: 'Professional',
-    nameAr: 'الاحترافية',
+    nameAr: 'Ø§Ù„Ø§Ø­ØªØ±Ø§ÙÙŠØ©',
     price: '699',
     period: '/month',
-    periodAr: '/شهر',
+    periodAr: '/Ø´Ù‡Ø±',
     features: [
       'Unlimited Invoices',
       'Full ERP Modules',
@@ -241,20 +241,20 @@ const pricingPlans = [
       'API Access',
     ],
     featuresAr: [
-      'فواتير غير محدودة',
-      'جميع وحدات ERP',
-      '25 مستخدم',
-      'تحليلات متقدمة',
-      'دعم ذو أولوية',
-      'وصول API',
+      'ÙÙˆØ§ØªÙŠØ± ØºÙŠØ± Ù…Ø­Ø¯ÙˆØ¯Ø©',
+      'Ø¬Ù…ÙŠØ¹ ÙˆØ­Ø¯Ø§Øª ERP',
+      '25 Ù…Ø³ØªØ®Ø¯Ù…',
+      'ØªØ­Ù„ÙŠÙ„Ø§Øª Ù…ØªÙ‚Ø¯Ù…Ø©',
+      'Ø¯Ø¹Ù… Ø°Ùˆ Ø£ÙˆÙ„ÙˆÙŠØ©',
+      'ÙˆØµÙˆÙ„ API',
     ],
     popular: true,
   },
   {
     name: 'Enterprise',
-    nameAr: 'المؤسسات',
+    nameAr: 'Ø§Ù„Ù…Ø¤Ø³Ø³Ø§Øª',
     price: 'Custom',
-    priceAr: 'مخصص',
+    priceAr: 'Ù…Ø®ØµØµ',
     period: '',
     periodAr: '',
     features: [
@@ -266,12 +266,12 @@ const pricingPlans = [
       'On-site Training',
     ],
     featuresAr: [
-      'كل ما في الاحترافية',
-      'مستخدمون غير محدودون',
-      'خادم مخصص',
-      'تكاملات مخصصة',
-      'دعم هاتفي 24/7',
-      'تدريب في الموقع',
+      'ÙƒÙ„ Ù…Ø§ ÙÙŠ Ø§Ù„Ø§Ø­ØªØ±Ø§ÙÙŠØ©',
+      'Ù…Ø³ØªØ®Ø¯Ù…ÙˆÙ† ØºÙŠØ± Ù…Ø­Ø¯ÙˆØ¯ÙˆÙ†',
+      'Ø®Ø§Ø¯Ù… Ù…Ø®ØµØµ',
+      'ØªÙƒØ§Ù…Ù„Ø§Øª Ù…Ø®ØµØµØ©',
+      'Ø¯Ø¹Ù… Ù‡Ø§ØªÙÙŠ 24/7',
+      'ØªØ¯Ø±ÙŠØ¨ ÙÙŠ Ø§Ù„Ù…ÙˆÙ‚Ø¹',
     ],
     popular: false,
   },
@@ -279,120 +279,120 @@ const pricingPlans = [
 
 const complianceLogos = [
   { src: '/ZATCA_Logo.svg', alt: 'ZATCA', imageClassName: 'scale-[1.35]' },
-  { src: '/saudi-vision-2030-logo.png', alt: 'Saudi Vision 2030', imageClassName: 'scale-100' },
+  { src: '/saudi-vision-2030-logo.webp', alt: 'Saudi Vision 2030', imageClassName: 'scale-100' },
 ]
 
 const solutionsData = [
   {
     title: 'Trading & Supply Chain',
-    titleAr: 'التجارة وسلاسل الإمداد',
+    titleAr: 'Ø§Ù„ØªØ¬Ø§Ø±Ø© ÙˆØ³Ù„Ø§Ø³Ù„ Ø§Ù„Ø¥Ù…Ø¯Ø§Ø¯',
     icon: Building2,
-    image: '/images/solutions/trading.png',
+    image: '/images/solutions/trading.webp',
     color: 'from-blue-500 to-indigo-600',
     description: 'Complete wholesale, retail, and advanced inventory tracking.',
-    descriptionAr: 'تتبع شامل لتجارة الجملة والتجزئة والمخزون المتقدم.',
+    descriptionAr: 'ØªØªØ¨Ø¹ Ø´Ø§Ù…Ù„ Ù„ØªØ¬Ø§Ø±Ø© Ø§Ù„Ø¬Ù…Ù„Ø© ÙˆØ§Ù„ØªØ¬Ø²Ø¦Ø© ÙˆØ§Ù„Ù…Ø®Ø²ÙˆÙ† Ø§Ù„Ù…ØªÙ‚Ø¯Ù….',
     longDescription: 'Optimize your entire supply chain with multi-warehouse tracking, automated reorder points, comprehensive supplier management, and seamless ZATCA e-invoicing for B2B and B2C transactions.',
-    longDescriptionAr: 'قم بتحسين سلسلة التوريد الخاصة بك بالكامل مع تتبع المستودعات المتعددة ونقاط إعادة الطلب الآلية وإدارة الموردين الشاملة والفوترة الإلكترونية السلسة لمعاملات B2B و B2C.',
+    longDescriptionAr: 'Ù‚Ù… Ø¨ØªØ­Ø³ÙŠÙ† Ø³Ù„Ø³Ù„Ø© Ø§Ù„ØªÙˆØ±ÙŠØ¯ Ø§Ù„Ø®Ø§ØµØ© Ø¨Ùƒ Ø¨Ø§Ù„ÙƒØ§Ù…Ù„ Ù…Ø¹ ØªØªØ¨Ø¹ Ø§Ù„Ù…Ø³ØªÙˆØ¯Ø¹Ø§Øª Ø§Ù„Ù…ØªØ¹Ø¯Ø¯Ø© ÙˆÙ†Ù‚Ø§Ø· Ø¥Ø¹Ø§Ø¯Ø© Ø§Ù„Ø·Ù„Ø¨ Ø§Ù„Ø¢Ù„ÙŠØ© ÙˆØ¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù…ÙˆØ±Ø¯ÙŠÙ† Ø§Ù„Ø´Ø§Ù…Ù„Ø© ÙˆØ§Ù„ÙÙˆØªØ±Ø© Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠØ© Ø§Ù„Ø³Ù„Ø³Ø© Ù„Ù…Ø¹Ø§Ù…Ù„Ø§Øª B2B Ùˆ B2C.',
     features: ['Multi-warehouse inventory', 'Automated purchase orders', 'Real-time stock valuation', 'ZATCA B2B & B2C invoicing'],
-    featuresAr: ['مخزون متعدد المستودعات', 'أوامر شراء مؤتمتة', 'تقييم المخزون في الوقت الفعلي', 'فواتير ZATCA B2B و B2C'],
+    featuresAr: ['Ù…Ø®Ø²ÙˆÙ† Ù…ØªØ¹Ø¯Ø¯ Ø§Ù„Ù…Ø³ØªÙˆØ¯Ø¹Ø§Øª', 'Ø£ÙˆØ§Ù…Ø± Ø´Ø±Ø§Ø¡ Ù…Ø¤ØªÙ…ØªØ©', 'ØªÙ‚ÙŠÙŠÙ… Ø§Ù„Ù…Ø®Ø²ÙˆÙ† ÙÙŠ Ø§Ù„ÙˆÙ‚Øª Ø§Ù„ÙØ¹Ù„ÙŠ', 'ÙÙˆØ§ØªÙŠØ± ZATCA B2B Ùˆ B2C'],
     email: 'trading@test.com'
   },
   {
     title: 'Construction & Contracting',
-    titleAr: 'المقاولات والبناء',
+    titleAr: 'Ø§Ù„Ù…Ù‚Ø§ÙˆÙ„Ø§Øª ÙˆØ§Ù„Ø¨Ù†Ø§Ø¡',
     icon: HardHat,
-    image: '/images/solutions/construction.png',
+    image: '/images/solutions/construction.webp',
     color: 'from-orange-500 to-red-600',
     description: 'Project management, job costing, and fleet tracking.',
-    descriptionAr: 'إدارة المشاريع وحساب تكاليف العمليات وتتبع الأسطول.',
+    descriptionAr: 'Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù…Ø´Ø§Ø±ÙŠØ¹ ÙˆØ­Ø³Ø§Ø¨ ØªÙƒØ§Ù„ÙŠÙ Ø§Ù„Ø¹Ù…Ù„ÙŠØ§Øª ÙˆØªØªØ¨Ø¹ Ø§Ù„Ø£Ø³Ø·ÙˆÙ„.',
     longDescription: 'Take control of your construction projects with precise job costing, material requisitions, fleet and machinery maintenance tracking, and detailed project profitability reports.',
-    longDescriptionAr: 'تحكم في مشاريع البناء الخاصة بك من خلال حساب دقيق لتكاليف العمل، وطلبات المواد، وتتبع صيانة الأسطول والآلات، وتقارير ربحية المشروع المفصلة.',
+    longDescriptionAr: 'ØªØ­ÙƒÙ… ÙÙŠ Ù…Ø´Ø§Ø±ÙŠØ¹ Ø§Ù„Ø¨Ù†Ø§Ø¡ Ø§Ù„Ø®Ø§ØµØ© Ø¨Ùƒ Ù…Ù† Ø®Ù„Ø§Ù„ Ø­Ø³Ø§Ø¨ Ø¯Ù‚ÙŠÙ‚ Ù„ØªÙƒØ§Ù„ÙŠÙ Ø§Ù„Ø¹Ù…Ù„ØŒ ÙˆØ·Ù„Ø¨Ø§Øª Ø§Ù„Ù…ÙˆØ§Ø¯ØŒ ÙˆØªØªØ¨Ø¹ ØµÙŠØ§Ù†Ø© Ø§Ù„Ø£Ø³Ø·ÙˆÙ„ ÙˆØ§Ù„Ø¢Ù„Ø§ØªØŒ ÙˆØªÙ‚Ø§Ø±ÙŠØ± Ø±Ø¨Ø­ÙŠØ© Ø§Ù„Ù…Ø´Ø±ÙˆØ¹ Ø§Ù„Ù…ÙØµÙ„Ø©.',
     features: ['Detailed Job Costing', 'Project Management & Tasks', 'Heavy Machinery Fleet Tracking', 'Subcontractor Invoicing'],
-    featuresAr: ['حساب مفصل لتكاليف العمل', 'إدارة المشاريع والمهام', 'تتبع أسطول الآليات الثقيلة', 'فواتير المقاولين من الباطن'],
+    featuresAr: ['Ø­Ø³Ø§Ø¨ Ù…ÙØµÙ„ Ù„ØªÙƒØ§Ù„ÙŠÙ Ø§Ù„Ø¹Ù…Ù„', 'Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù…Ø´Ø§Ø±ÙŠØ¹ ÙˆØ§Ù„Ù…Ù‡Ø§Ù…', 'ØªØªØ¨Ø¹ Ø£Ø³Ø·ÙˆÙ„ Ø§Ù„Ø¢Ù„ÙŠØ§Øª Ø§Ù„Ø«Ù‚ÙŠÙ„Ø©', 'ÙÙˆØ§ØªÙŠØ± Ø§Ù„Ù…Ù‚Ø§ÙˆÙ„ÙŠÙ† Ù…Ù† Ø§Ù„Ø¨Ø§Ø·Ù†'],
     email: 'construction@test.com'
   },
   {
     title: 'Travel & Tourism',
-    titleAr: 'السياحة والسفر',
+    titleAr: 'Ø§Ù„Ø³ÙŠØ§Ø­Ø© ÙˆØ§Ù„Ø³ÙØ±',
     icon: Globe,
-    image: '/images/solutions/travel.png',
+    image: '/images/solutions/travel.webp',
     color: 'from-sky-500 to-cyan-600',
     description: 'Flight bookings, margin scheme taxation, and itineraries.',
-    descriptionAr: 'حجوزات الطيران ونظام ضريبة الهامش والمسارات.',
+    descriptionAr: 'Ø­Ø¬ÙˆØ²Ø§Øª Ø§Ù„Ø·ÙŠØ±Ø§Ù† ÙˆÙ†Ø¸Ø§Ù… Ø¶Ø±ÙŠØ¨Ø© Ø§Ù„Ù‡Ø§Ù…Ø´ ÙˆØ§Ù„Ù…Ø³Ø§Ø±Ø§Øª.',
     longDescription: 'Tailored for travel agencies, our system supports complex Margin Scheme VAT calculations, passenger tracking, flight ticket logs, and comprehensive booking profitability analysis.',
-    longDescriptionAr: 'مصمم خصيصاً لوكالات السفر، يدعم نظامنا حسابات ضريبة القيمة المضافة المعقدة (نظام الهامش)، وتتبع الركاب، وسجلات تذاكر الطيران، والتحليل الشامل لربحية الحجوزات.',
+    longDescriptionAr: 'Ù…ØµÙ…Ù… Ø®ØµÙŠØµØ§Ù‹ Ù„ÙˆÙƒØ§Ù„Ø§Øª Ø§Ù„Ø³ÙØ±ØŒ ÙŠØ¯Ø¹Ù… Ù†Ø¸Ø§Ù…Ù†Ø§ Ø­Ø³Ø§Ø¨Ø§Øª Ø¶Ø±ÙŠØ¨Ø© Ø§Ù„Ù‚ÙŠÙ…Ø© Ø§Ù„Ù…Ø¶Ø§ÙØ© Ø§Ù„Ù…Ø¹Ù‚Ø¯Ø© (Ù†Ø¸Ø§Ù… Ø§Ù„Ù‡Ø§Ù…Ø´)ØŒ ÙˆØªØªØ¨Ø¹ Ø§Ù„Ø±ÙƒØ§Ø¨ØŒ ÙˆØ³Ø¬Ù„Ø§Øª ØªØ°Ø§ÙƒØ± Ø§Ù„Ø·ÙŠØ±Ø§Ù†ØŒ ÙˆØ§Ù„ØªØ­Ù„ÙŠÙ„ Ø§Ù„Ø´Ø§Ù…Ù„ Ù„Ø±Ø¨Ø­ÙŠØ© Ø§Ù„Ø­Ø¬ÙˆØ²Ø§Øª.',
     features: ['Margin Scheme VAT (ZATCA)', 'Flight & Hotel Booking Logs', 'Passenger Manifests', 'Supplier Payment Tracking'],
-    featuresAr: ['ضريبة القيمة المضافة بنظام الهامش', 'سجلات حجوزات الطيران والفنادق', 'قوائم الركاب', 'تتبع مدفوعات الموردين'],
+    featuresAr: ['Ø¶Ø±ÙŠØ¨Ø© Ø§Ù„Ù‚ÙŠÙ…Ø© Ø§Ù„Ù…Ø¶Ø§ÙØ© Ø¨Ù†Ø¸Ø§Ù… Ø§Ù„Ù‡Ø§Ù…Ø´', 'Ø³Ø¬Ù„Ø§Øª Ø­Ø¬ÙˆØ²Ø§Øª Ø§Ù„Ø·ÙŠØ±Ø§Ù† ÙˆØ§Ù„ÙÙ†Ø§Ø¯Ù‚', 'Ù‚ÙˆØ§Ø¦Ù… Ø§Ù„Ø±ÙƒØ§Ø¨', 'ØªØªØ¨Ø¹ Ù…Ø¯ÙÙˆØ¹Ø§Øª Ø§Ù„Ù…ÙˆØ±Ø¯ÙŠÙ†'],
     email: 'travel@test.com'
   },
   {
     title: 'Restaurant & Cafe',
-    titleAr: 'المطاعم والمقاهي',
+    titleAr: 'Ø§Ù„Ù…Ø·Ø§Ø¹Ù… ÙˆØ§Ù„Ù…Ù‚Ø§Ù‡ÙŠ',
     icon: PieChart,
-    image: '/images/solutions/restaurant.png',
+    image: '/images/solutions/restaurant.webp',
     color: 'from-amber-500 to-orange-500',
     description: 'Table management, kitchen displays, and smart POS.',
-    descriptionAr: 'إدارة الطاولات وشاشات المطبخ ونقاط البيع الذكية.',
+    descriptionAr: 'Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø·Ø§ÙˆÙ„Ø§Øª ÙˆØ´Ø§Ø´Ø§Øª Ø§Ù„Ù…Ø·Ø¨Ø® ÙˆÙ†Ù‚Ø§Ø· Ø§Ù„Ø¨ÙŠØ¹ Ø§Ù„Ø°ÙƒÙŠØ©.',
     longDescription: 'A lightning-fast, touch-friendly POS integrated with a Kitchen Display System (KDS). Manage table reservations, recipe ingredients, shift cash registers, and deliver exceptional dining experiences.',
-    longDescriptionAr: 'نظام نقاط بيع فائق السرعة وسهل الاستخدام باللمس ومتكامل مع شاشة المطبخ (KDS). قم بإدارة حجوزات الطاولات ومكونات الوصفات وسجلات النقد للورديات.',
+    longDescriptionAr: 'Ù†Ø¸Ø§Ù… Ù†Ù‚Ø§Ø· Ø¨ÙŠØ¹ ÙØ§Ø¦Ù‚ Ø§Ù„Ø³Ø±Ø¹Ø© ÙˆØ³Ù‡Ù„ Ø§Ù„Ø§Ø³ØªØ®Ø¯Ø§Ù… Ø¨Ø§Ù„Ù„Ù…Ø³ ÙˆÙ…ØªÙƒØ§Ù…Ù„ Ù…Ø¹ Ø´Ø§Ø´Ø© Ø§Ù„Ù…Ø·Ø¨Ø® (KDS). Ù‚Ù… Ø¨Ø¥Ø¯Ø§Ø±Ø© Ø­Ø¬ÙˆØ²Ø§Øª Ø§Ù„Ø·Ø§ÙˆÙ„Ø§Øª ÙˆÙ…ÙƒÙˆÙ†Ø§Øª Ø§Ù„ÙˆØµÙØ§Øª ÙˆØ³Ø¬Ù„Ø§Øª Ø§Ù„Ù†Ù‚Ø¯ Ù„Ù„ÙˆØ±Ø¯ÙŠØ§Øª.',
     features: ['Touch-friendly Smart POS', 'Kitchen Display System (KDS)', 'Table & Area Management', 'Recipe & Ingredient Tracking'],
-    featuresAr: ['نظام نقاط بيع ذكي باللمس', 'نظام عرض المطبخ (KDS)', 'إدارة الطاولات والمناطق', 'تتبع الوصفات والمكونات'],
+    featuresAr: ['Ù†Ø¸Ø§Ù… Ù†Ù‚Ø§Ø· Ø¨ÙŠØ¹ Ø°ÙƒÙŠ Ø¨Ø§Ù„Ù„Ù…Ø³', 'Ù†Ø¸Ø§Ù… Ø¹Ø±Ø¶ Ø§Ù„Ù…Ø·Ø¨Ø® (KDS)', 'Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø·Ø§ÙˆÙ„Ø§Øª ÙˆØ§Ù„Ù…Ù†Ø§Ø·Ù‚', 'ØªØªØ¨Ø¹ Ø§Ù„ÙˆØµÙØ§Øª ÙˆØ§Ù„Ù…ÙƒÙˆÙ†Ø§Øª'],
     email: 'restaurant@test.com'
   },
   {
     title: 'Car Rental',
-    titleAr: 'تأجير السيارات',
+    titleAr: 'ØªØ£Ø¬ÙŠØ± Ø§Ù„Ø³ÙŠØ§Ø±Ø§Øª',
     icon: Truck,
-    image: '/images/solutions/car-rental.png',
+    image: '/images/solutions/car-rental.webp',
     color: 'from-rose-500 to-red-600',
     description: 'Vehicle tracking, rental contracts, and maintenance logs.',
-    descriptionAr: 'تتبع المركبات وعقود التأجير وسجلات الصيانة.',
+    descriptionAr: 'ØªØªØ¨Ø¹ Ø§Ù„Ù…Ø±ÙƒØ¨Ø§Øª ÙˆØ¹Ù‚ÙˆØ¯ Ø§Ù„ØªØ£Ø¬ÙŠØ± ÙˆØ³Ø¬Ù„Ø§Øª Ø§Ù„ØµÙŠØ§Ù†Ø©.',
     longDescription: 'Manage your rental fleet with ease. Create dynamic rental agreements, track vehicle availability, monitor maintenance schedules, and automatically calculate late return fees.',
-    longDescriptionAr: 'إدارة أسطول التأجير الخاص بك بسهولة. إنشاء اتفاقيات تأجير ديناميكية، وتتبع توفر المركبات، ومراقبة جداول الصيانة، وحساب رسوم التأخير تلقائياً.',
+    longDescriptionAr: 'Ø¥Ø¯Ø§Ø±Ø© Ø£Ø³Ø·ÙˆÙ„ Ø§Ù„ØªØ£Ø¬ÙŠØ± Ø§Ù„Ø®Ø§Øµ Ø¨Ùƒ Ø¨Ø³Ù‡ÙˆÙ„Ø©. Ø¥Ù†Ø´Ø§Ø¡ Ø§ØªÙØ§Ù‚ÙŠØ§Øª ØªØ£Ø¬ÙŠØ± Ø¯ÙŠÙ†Ø§Ù…ÙŠÙƒÙŠØ©ØŒ ÙˆØªØªØ¨Ø¹ ØªÙˆÙØ± Ø§Ù„Ù…Ø±ÙƒØ¨Ø§ØªØŒ ÙˆÙ…Ø±Ø§Ù‚Ø¨Ø© Ø¬Ø¯Ø§ÙˆÙ„ Ø§Ù„ØµÙŠØ§Ù†Ø©ØŒ ÙˆØ­Ø³Ø§Ø¨ Ø±Ø³ÙˆÙ… Ø§Ù„ØªØ£Ø®ÙŠØ± ØªÙ„Ù‚Ø§Ø¦ÙŠØ§Ù‹.',
     features: ['Dynamic Rental Contracts', 'Fleet Availability Calendar', 'Damage Check-in/Check-out', 'Automated Late Fees'],
-    featuresAr: ['عقود تأجير ديناميكية', 'تقويم توفر الأسطول', 'فحص الأضرار عند التسليم والاستلام', 'رسوم التأخير التلقائية'],
+    featuresAr: ['Ø¹Ù‚ÙˆØ¯ ØªØ£Ø¬ÙŠØ± Ø¯ÙŠÙ†Ø§Ù…ÙŠÙƒÙŠØ©', 'ØªÙ‚ÙˆÙŠÙ… ØªÙˆÙØ± Ø§Ù„Ø£Ø³Ø·ÙˆÙ„', 'ÙØ­Øµ Ø§Ù„Ø£Ø¶Ø±Ø§Ø± Ø¹Ù†Ø¯ Ø§Ù„ØªØ³Ù„ÙŠÙ… ÙˆØ§Ù„Ø§Ø³ØªÙ„Ø§Ù…', 'Ø±Ø³ÙˆÙ… Ø§Ù„ØªØ£Ø®ÙŠØ± Ø§Ù„ØªÙ„Ù‚Ø§Ø¦ÙŠØ©'],
     email: 'rental@test.com'
   },
   {
     title: 'Laundry Services',
-    titleAr: 'خدمات المغاسل',
+    titleAr: 'Ø®Ø¯Ù…Ø§Øª Ø§Ù„Ù…ØºØ§Ø³Ù„',
     icon: Sparkles,
-    image: '/images/solutions/laundry.png',
+    image: '/images/solutions/laundry.webp',
     color: 'from-emerald-500 to-teal-600',
     description: 'Garment tracking, weight billing, and touch POS.',
-    descriptionAr: 'تتبع الملابس والفواتير بالوزن ونقاط البيع باللمس.',
+    descriptionAr: 'ØªØªØ¨Ø¹ Ø§Ù„Ù…Ù„Ø§Ø¨Ø³ ÙˆØ§Ù„ÙÙˆØ§ØªÙŠØ± Ø¨Ø§Ù„ÙˆØ²Ù† ÙˆÙ†Ù‚Ø§Ø· Ø§Ù„Ø¨ÙŠØ¹ Ø¨Ø§Ù„Ù„Ù…Ø³.',
     longDescription: 'Streamline your laundry operations with precise garment tracking, automated weight-based billing, express service surcharges, and integrated WhatsApp notifications when clothes are ready.',
-    longDescriptionAr: 'تبسيط عمليات المغسلة الخاصة بك مع التتبع الدقيق للملابس، والفوترة الآلية على أساس الوزن، ورسوم الخدمة السريعة، وإشعارات الواتساب المتكاملة عندما تكون الملابس جاهزة.',
+    longDescriptionAr: 'ØªØ¨Ø³ÙŠØ· Ø¹Ù…Ù„ÙŠØ§Øª Ø§Ù„Ù…ØºØ³Ù„Ø© Ø§Ù„Ø®Ø§ØµØ© Ø¨Ùƒ Ù…Ø¹ Ø§Ù„ØªØªØ¨Ø¹ Ø§Ù„Ø¯Ù‚ÙŠÙ‚ Ù„Ù„Ù…Ù„Ø§Ø¨Ø³ØŒ ÙˆØ§Ù„ÙÙˆØªØ±Ø© Ø§Ù„Ø¢Ù„ÙŠØ© Ø¹Ù„Ù‰ Ø£Ø³Ø§Ø³ Ø§Ù„ÙˆØ²Ù†ØŒ ÙˆØ±Ø³ÙˆÙ… Ø§Ù„Ø®Ø¯Ù…Ø© Ø§Ù„Ø³Ø±ÙŠØ¹Ø©ØŒ ÙˆØ¥Ø´Ø¹Ø§Ø±Ø§Øª Ø§Ù„ÙˆØ§ØªØ³Ø§Ø¨ Ø§Ù„Ù…ØªÙƒØ§Ù…Ù„Ø© Ø¹Ù†Ø¯Ù…Ø§ ØªÙƒÙˆÙ† Ø§Ù„Ù…Ù„Ø§Ø¨Ø³ Ø¬Ø§Ù‡Ø²Ø©.',
     features: ['Garment Tracking Tags', 'Weight-based Billing', 'Express Service Management', 'WhatsApp Ready Alerts'],
-    featuresAr: ['علامات تتبع الملابس', 'الفوترة بناءً على الوزن', 'إدارة الخدمة السريعة', 'إشعارات الواتساب للجاهزية'],
+    featuresAr: ['Ø¹Ù„Ø§Ù…Ø§Øª ØªØªØ¨Ø¹ Ø§Ù„Ù…Ù„Ø§Ø¨Ø³', 'Ø§Ù„ÙÙˆØªØ±Ø© Ø¨Ù†Ø§Ø¡Ù‹ Ø¹Ù„Ù‰ Ø§Ù„ÙˆØ²Ù†', 'Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø®Ø¯Ù…Ø© Ø§Ù„Ø³Ø±ÙŠØ¹Ø©', 'Ø¥Ø´Ø¹Ø§Ø±Ø§Øª Ø§Ù„ÙˆØ§ØªØ³Ø§Ø¨ Ù„Ù„Ø¬Ø§Ù‡Ø²ÙŠØ©'],
     email: 'laundry@test.com'
   },
   {
     title: 'Saloon & Barber Shop',
-    titleAr: 'صالونات الحلاقة والتجميل',
+    titleAr: 'ØµØ§Ù„ÙˆÙ†Ø§Øª Ø§Ù„Ø­Ù„Ø§Ù‚Ø© ÙˆØ§Ù„ØªØ¬Ù…ÙŠÙ„',
     icon: Scissors,
-    image: '/images/solutions/saloon.png',
+    image: '/images/solutions/saloon.webp',
     color: 'from-purple-500 to-fuchsia-600',
     description: 'Appointments scheduling, staff commissions, and service POS.',
-    descriptionAr: 'جدولة المواعيد وعمولات الموظفين ونقاط بيع الخدمات.',
+    descriptionAr: 'Ø¬Ø¯ÙˆÙ„Ø© Ø§Ù„Ù…ÙˆØ§Ø¹ÙŠØ¯ ÙˆØ¹Ù…ÙˆÙ„Ø§Øª Ø§Ù„Ù…ÙˆØ¸ÙÙŠÙ† ÙˆÙ†Ù‚Ø§Ø· Ø¨ÙŠØ¹ Ø§Ù„Ø®Ø¯Ù…Ø§Øª.',
     longDescription: 'Elevate your grooming business with sleek appointment scheduling, automated staff commission calculations, premium service catalogs, and customer loyalty tracking.',
-    longDescriptionAr: 'ارتق بأعمال الصالون الخاصة بك مع جدولة المواعيد الأنيقة، وحسابات عمولات الموظفين الآلية، وقوائم الخدمات المتميزة، وتتبع ولاء العملاء.',
+    longDescriptionAr: 'Ø§Ø±ØªÙ‚ Ø¨Ø£Ø¹Ù…Ø§Ù„ Ø§Ù„ØµØ§Ù„ÙˆÙ† Ø§Ù„Ø®Ø§ØµØ© Ø¨Ùƒ Ù…Ø¹ Ø¬Ø¯ÙˆÙ„Ø© Ø§Ù„Ù…ÙˆØ§Ø¹ÙŠØ¯ Ø§Ù„Ø£Ù†ÙŠÙ‚Ø©ØŒ ÙˆØ­Ø³Ø§Ø¨Ø§Øª Ø¹Ù…ÙˆÙ„Ø§Øª Ø§Ù„Ù…ÙˆØ¸ÙÙŠÙ† Ø§Ù„Ø¢Ù„ÙŠØ©ØŒ ÙˆÙ‚ÙˆØ§Ø¦Ù… Ø§Ù„Ø®Ø¯Ù…Ø§Øª Ø§Ù„Ù…ØªÙ…ÙŠØ²Ø©ØŒ ÙˆØªØªØ¨Ø¹ ÙˆÙ„Ø§Ø¡ Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡.',
     features: ['Staff Commission Tracking', 'Appointment Scheduling', 'Service Variations POS', 'Customer Loyalty'],
-    featuresAr: ['تتبع عمولات الموظفين', 'جدولة المواعيد', 'نظام نقاط البيع للخدمات', 'ولاء العملاء'],
+    featuresAr: ['ØªØªØ¨Ø¹ Ø¹Ù…ÙˆÙ„Ø§Øª Ø§Ù„Ù…ÙˆØ¸ÙÙŠÙ†', 'Ø¬Ø¯ÙˆÙ„Ø© Ø§Ù„Ù…ÙˆØ§Ø¹ÙŠØ¯', 'Ù†Ø¸Ø§Ù… Ù†Ù‚Ø§Ø· Ø§Ù„Ø¨ÙŠØ¹ Ù„Ù„Ø®Ø¯Ù…Ø§Øª', 'ÙˆÙ„Ø§Ø¡ Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡'],
     email: 'saloon@test.com'
   },
   {
     title: 'Supermarket & Bakala',
-    titleAr: 'السوبرماركت والبقالة',
+    titleAr: 'Ø§Ù„Ø³ÙˆØ¨Ø±Ù…Ø§Ø±ÙƒØª ÙˆØ§Ù„Ø¨Ù‚Ø§Ù„Ø©',
     icon: Package,
-    image: '/images/solutions/trading.png',
+    image: '/images/solutions/trading.webp',
     color: 'from-green-500 to-emerald-600',
     description: 'Fast barcode scanning, scale integration, and inventory.',
-    descriptionAr: 'مسح الباركود السريع، تكامل الميزان، والمخزون.',
+    descriptionAr: 'Ù…Ø³Ø­ Ø§Ù„Ø¨Ø§Ø±ÙƒÙˆØ¯ Ø§Ù„Ø³Ø±ÙŠØ¹ØŒ ØªÙƒØ§Ù…Ù„ Ø§Ù„Ù…ÙŠØ²Ø§Ù†ØŒ ÙˆØ§Ù„Ù…Ø®Ø²ÙˆÙ†.',
     longDescription: 'A highly efficient POS system tailored for supermarkets and local Bakalas. Seamlessly integrated with barcode scanners, weighing scales, and real-time inventory tracking to keep your shelves stocked.',
-    longDescriptionAr: 'نظام نقاط بيع عالي الكفاءة مصمم خصيصاً للسوبرماركت والبقالات المحلية. متكامل بسلاسة مع ماسحات الباركود وموازين الوزن وتتبع المخزون في الوقت الفعلي.',
+    longDescriptionAr: 'Ù†Ø¸Ø§Ù… Ù†Ù‚Ø§Ø· Ø¨ÙŠØ¹ Ø¹Ø§Ù„ÙŠ Ø§Ù„ÙƒÙØ§Ø¡Ø© Ù…ØµÙ…Ù… Ø®ØµÙŠØµØ§Ù‹ Ù„Ù„Ø³ÙˆØ¨Ø±Ù…Ø§Ø±ÙƒØª ÙˆØ§Ù„Ø¨Ù‚Ø§Ù„Ø§Øª Ø§Ù„Ù…Ø­Ù„ÙŠØ©. Ù…ØªÙƒØ§Ù…Ù„ Ø¨Ø³Ù„Ø§Ø³Ø© Ù…Ø¹ Ù…Ø§Ø³Ø­Ø§Øª Ø§Ù„Ø¨Ø§Ø±ÙƒÙˆØ¯ ÙˆÙ…ÙˆØ§Ø²ÙŠÙ† Ø§Ù„ÙˆØ²Ù† ÙˆØªØªØ¨Ø¹ Ø§Ù„Ù…Ø®Ø²ÙˆÙ† ÙÙŠ Ø§Ù„ÙˆÙ‚Øª Ø§Ù„ÙØ¹Ù„ÙŠ.',
     features: ['Barcode Scanner & Scale Ready', 'Fast Checkout POS', 'Expiry Date Tracking', 'Supplier Direct Orders'],
-    featuresAr: ['متوافق مع ماسح الباركود والميزان', 'نقاط بيع سريعة الدفع', 'تتبع تاريخ الصلاحية', 'طلبات الموردين المباشرة'],
+    featuresAr: ['Ù…ØªÙˆØ§ÙÙ‚ Ù…Ø¹ Ù…Ø§Ø³Ø­ Ø§Ù„Ø¨Ø§Ø±ÙƒÙˆØ¯ ÙˆØ§Ù„Ù…ÙŠØ²Ø§Ù†', 'Ù†Ù‚Ø§Ø· Ø¨ÙŠØ¹ Ø³Ø±ÙŠØ¹Ø© Ø§Ù„Ø¯ÙØ¹', 'ØªØªØ¨Ø¹ ØªØ§Ø±ÙŠØ® Ø§Ù„ØµÙ„Ø§Ø­ÙŠØ©', 'Ø·Ù„Ø¨Ø§Øª Ø§Ù„Ù…ÙˆØ±Ø¯ÙŠÙ† Ø§Ù„Ù…Ø¨Ø§Ø´Ø±Ø©'],
     email: 'bakala@test.com'
   }
 ]
@@ -440,11 +440,11 @@ export default function Landing() {
             className="text-center mb-16"
           >
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              {isArabic ? 'كل ما تحتاجه لإدارة أعمالك' : 'Everything You Need to Run Your Business'}
+              {isArabic ? 'ÙƒÙ„ Ù…Ø§ ØªØ­ØªØ§Ø¬Ù‡ Ù„Ø¥Ø¯Ø§Ø±Ø© Ø£Ø¹Ù…Ø§Ù„Ùƒ' : 'Everything You Need to Run Your Business'}
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               {isArabic
-                ? 'منصة متكاملة تجمع جميع أدوات إدارة الأعمال في مكان واحد'
+                ? 'Ù…Ù†ØµØ© Ù…ØªÙƒØ§Ù…Ù„Ø© ØªØ¬Ù…Ø¹ Ø¬Ù…ÙŠØ¹ Ø£Ø¯ÙˆØ§Øª Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø£Ø¹Ù…Ø§Ù„ ÙÙŠ Ù…ÙƒØ§Ù† ÙˆØ§Ø­Ø¯'
                 : 'A unified platform that brings all your business management tools together'}
             </p>
           </motion.div>
@@ -487,11 +487,11 @@ export default function Landing() {
             className="text-center mb-16"
           >
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              {isArabic ? 'وحدات النظام' : 'System Modules'}
+              {isArabic ? 'ÙˆØ­Ø¯Ø§Øª Ø§Ù„Ù†Ø¸Ø§Ù…' : 'System Modules'}
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               {isArabic
-                ? 'اختر الوحدات التي تناسب احتياجات عملك'
+                ? 'Ø§Ø®ØªØ± Ø§Ù„ÙˆØ­Ø¯Ø§Øª Ø§Ù„ØªÙŠ ØªÙ†Ø§Ø³Ø¨ Ø§Ø­ØªÙŠØ§Ø¬Ø§Øª Ø¹Ù…Ù„Ùƒ'
                 : 'Choose the modules that fit your business needs'}
             </p>
           </motion.div>
@@ -537,25 +537,25 @@ export default function Landing() {
             >
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/20 rounded-full text-emerald-400 font-medium text-sm mb-6">
                 <Shield className="w-4 h-4" />
-                {isArabic ? 'امتثال كامل' : 'Full Compliance'}
+                {isArabic ? 'Ø§Ù…ØªØ«Ø§Ù„ ÙƒØ§Ù…Ù„' : 'Full Compliance'}
               </div>
               <h2 className="text-3xl sm:text-4xl font-bold mb-6">
                 {isArabic
-                  ? 'مزود خدمات الفوترة الإلكترونية - متوافق 100% مع متطلبات ZATCA'
+                  ? 'Ù…Ø²ÙˆØ¯ Ø®Ø¯Ù…Ø§Øª Ø§Ù„ÙÙˆØªØ±Ø© Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠØ© - Ù…ØªÙˆØ§ÙÙ‚ 100% Ù…Ø¹ Ù…ØªØ·Ù„Ø¨Ø§Øª ZATCA'
                   : 'Provision of E-Invoicing Services - 100% ZATCA Phase 2 Compliant'}
               </h2>
               <p className="text-xl text-gray-300 mb-8 leading-relaxed">
                 {isArabic
-                  ? 'تقديم خدمات الفوترة الإلكترونية مع فواتير موقعة رقمياً ورموز QR وتكامل مباشر مع بوابة ZATCA'
+                  ? 'ØªÙ‚Ø¯ÙŠÙ… Ø®Ø¯Ù…Ø§Øª Ø§Ù„ÙÙˆØªØ±Ø© Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠØ© Ù…Ø¹ ÙÙˆØ§ØªÙŠØ± Ù…ÙˆÙ‚Ø¹Ø© Ø±Ù‚Ù…ÙŠØ§Ù‹ ÙˆØ±Ù…ÙˆØ² QR ÙˆØªÙƒØ§Ù…Ù„ Ù…Ø¨Ø§Ø´Ø± Ù…Ø¹ Ø¨ÙˆØ§Ø¨Ø© ZATCA'
                   : 'Providing E-Invoicing Services with digitally signed e-invoices, QR codes, and direct ZATCA gateway integration'}
               </p>
               <ul className="space-y-4">
                 {[
-                  { en: 'Automatic XML generation & signing', ar: 'إنشاء وتوقيع XML تلقائي' },
-                  { en: 'Real-time ZATCA submission', ar: 'إرسال فوري لهيئة الزكاة' },
-                  { en: 'QR code with all required fields', ar: 'رمز QR مع جميع الحقول المطلوبة' },
-                  { en: 'Credit notes & debit notes', ar: 'إشعارات دائنة ومدينة' },
-                  { en: 'B2B and B2C invoices', ar: 'فواتير الأعمال والمستهلكين' },
+                  { en: 'Automatic XML generation & signing', ar: 'Ø¥Ù†Ø´Ø§Ø¡ ÙˆØªÙˆÙ‚ÙŠØ¹ XML ØªÙ„Ù‚Ø§Ø¦ÙŠ' },
+                  { en: 'Real-time ZATCA submission', ar: 'Ø¥Ø±Ø³Ø§Ù„ ÙÙˆØ±ÙŠ Ù„Ù‡ÙŠØ¦Ø© Ø§Ù„Ø²ÙƒØ§Ø©' },
+                  { en: 'QR code with all required fields', ar: 'Ø±Ù…Ø² QR Ù…Ø¹ Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø­Ù‚ÙˆÙ„ Ø§Ù„Ù…Ø·Ù„ÙˆØ¨Ø©' },
+                  { en: 'Credit notes & debit notes', ar: 'Ø¥Ø´Ø¹Ø§Ø±Ø§Øª Ø¯Ø§Ø¦Ù†Ø© ÙˆÙ…Ø¯ÙŠÙ†Ø©' },
+                  { en: 'B2B and B2C invoices', ar: 'ÙÙˆØ§ØªÙŠØ± Ø§Ù„Ø£Ø¹Ù…Ø§Ù„ ÙˆØ§Ù„Ù…Ø³ØªÙ‡Ù„ÙƒÙŠÙ†' },
                 ].map((item, i) => (
                   <li key={i} className="flex items-center gap-3">
                     <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
@@ -576,28 +576,28 @@ export default function Landing() {
                     <FileCheck className="w-8 h-8 text-white" />
                   </div>
                   <div>
-                    <p className="text-gray-400 text-sm">{isArabic ? 'رقم الفاتورة' : 'Invoice Number'}</p>
+                    <p className="text-gray-400 text-sm">{isArabic ? 'Ø±Ù‚Ù… Ø§Ù„ÙØ§ØªÙˆØ±Ø©' : 'Invoice Number'}</p>
                     <p className="text-white font-bold text-xl">INV-2024-000123</p>
                   </div>
                 </div>
                 <div className="space-y-4">
                   <div className="flex justify-between py-3 border-b border-white/10">
-                    <span className="text-gray-400">{isArabic ? 'المبلغ' : 'Amount'}</span>
+                    <span className="text-gray-400">{isArabic ? 'Ø§Ù„Ù…Ø¨Ù„Øº' : 'Amount'}</span>
                     <span className="text-white font-semibold">SAR 5,750.00</span>
                   </div>
                   <div className="flex justify-between py-3 border-b border-white/10">
-                    <span className="text-gray-400">{isArabic ? 'الضريبة' : 'VAT (15%)'}</span>
+                    <span className="text-gray-400">{isArabic ? 'Ø§Ù„Ø¶Ø±ÙŠØ¨Ø©' : 'VAT (15%)'}</span>
                     <span className="text-white font-semibold">SAR 862.50</span>
                   </div>
                   <div className="flex justify-between py-3">
-                    <span className="text-gray-400">{isArabic ? 'الإجمالي' : 'Total'}</span>
+                    <span className="text-gray-400">{isArabic ? 'Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ' : 'Total'}</span>
                     <span className="text-emerald-400 font-bold text-xl">SAR 6,612.50</span>
                   </div>
                 </div>
                 <div className="mt-6 flex items-center gap-3 p-3 bg-emerald-500/20 rounded-xl">
                   <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                   <span className="text-emerald-300 text-sm font-medium">
-                    {isArabic ? 'تم الإرسال والاعتماد من ZATCA' : 'Submitted & Approved by ZATCA'}
+                    {isArabic ? 'ØªÙ… Ø§Ù„Ø¥Ø±Ø³Ø§Ù„ ÙˆØ§Ù„Ø§Ø¹ØªÙ…Ø§Ø¯ Ù…Ù† ZATCA' : 'Submitted & Approved by ZATCA'}
                   </span>
                 </div>
               </div>
@@ -622,14 +622,14 @@ export default function Landing() {
           >
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md text-white rounded-full font-medium text-sm mb-6 border border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.1)]">
               <Sparkles className="w-4 h-4 text-primary-400" />
-              {isArabic ? 'حلول مصممة لنشاطك' : 'Tailored Solutions'}
+              {isArabic ? 'Ø­Ù„ÙˆÙ„ Ù…ØµÙ…Ù…Ø© Ù„Ù†Ø´Ø§Ø·Ùƒ' : 'Tailored Solutions'}
             </div>
             <h2 className="text-4xl sm:text-5xl font-bold text-white mb-6 tracking-tight">
-              {isArabic ? 'صناعتك، بطريقتنا' : 'Your Industry, Our Expertise'}
+              {isArabic ? 'ØµÙ†Ø§Ø¹ØªÙƒØŒ Ø¨Ø·Ø±ÙŠÙ‚ØªÙ†Ø§' : 'Your Industry, Our Expertise'}
             </h2>
             <p className="text-xl text-gray-400 max-w-3xl mx-auto font-light">
               {isArabic
-                ? 'اختر نوع نشاطك التجاري واستكشف كيف يسهل نظام مقدر إدارة عملياتك اليومية بأناقة وفعالية.'
+                ? 'Ø§Ø®ØªØ± Ù†ÙˆØ¹ Ù†Ø´Ø§Ø·Ùƒ Ø§Ù„ØªØ¬Ø§Ø±ÙŠ ÙˆØ§Ø³ØªÙƒØ´Ù ÙƒÙŠÙ ÙŠØ³Ù‡Ù„ Ù†Ø¸Ø§Ù… Ù…Ù‚Ø¯Ø± Ø¥Ø¯Ø§Ø±Ø© Ø¹Ù…Ù„ÙŠØ§ØªÙƒ Ø§Ù„ÙŠÙˆÙ…ÙŠØ© Ø¨Ø£Ù†Ø§Ù‚Ø© ÙˆÙØ¹Ø§Ù„ÙŠØ©.'
                 : 'Select your business type and explore how Maqder streamlines your daily operations with elegance and efficiency.'}
             </p>
           </motion.div>
@@ -681,7 +681,7 @@ export default function Landing() {
                   </p>
                   
                   <div className="inline-flex items-center justify-between w-full p-4 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/10 backdrop-blur-lg text-white font-medium transition-all duration-300 transform group-hover:-translate-y-1">
-                    <span>{isArabic ? 'عرض التفاصيل' : 'View Details'}</span>
+                    <span>{isArabic ? 'Ø¹Ø±Ø¶ Ø§Ù„ØªÙØ§ØµÙŠÙ„' : 'View Details'}</span>
                     <ArrowRight className={`w-5 h-5 ${isArabic ? 'rotate-180' : ''}`} />
                   </div>
                 </div>
@@ -760,7 +760,7 @@ export default function Landing() {
                 </p>
 
                 <h3 className="text-lg font-bold text-gray-900 mb-6 uppercase tracking-wider text-sm">
-                  {isArabic ? 'المميزات الرئيسية' : 'Key Features'}
+                  {isArabic ? 'Ø§Ù„Ù…Ù…ÙŠØ²Ø§Øª Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©' : 'Key Features'}
                 </h3>
                 
                 <div className="grid sm:grid-cols-2 gap-4 mb-10">
@@ -781,7 +781,7 @@ export default function Landing() {
                     className={`flex-1 inline-flex items-center justify-center gap-2 py-4 rounded-xl text-white font-semibold shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-0.5 bg-gradient-to-r ${selectedSolution.color}`}
                   >
                     <Play className="w-5 h-5 fill-current" />
-                    <span>{isArabic ? 'إطلاق النسخة التجريبية' : 'Launch Live Demo'}</span>
+                    <span>{isArabic ? 'Ø¥Ø·Ù„Ø§Ù‚ Ø§Ù„Ù†Ø³Ø®Ø© Ø§Ù„ØªØ¬Ø±ÙŠØ¨ÙŠØ©' : 'Launch Live Demo'}</span>
                   </Link>
                   <a
                     href="#contact"
@@ -789,7 +789,7 @@ export default function Landing() {
                     className="flex-1 inline-flex items-center justify-center gap-2 py-4 rounded-xl text-gray-700 bg-gray-100 hover:bg-gray-200 font-semibold transition-colors"
                   >
                     <Headphones className="w-5 h-5" />
-                    <span>{isArabic ? 'تواصل مع المبيعات' : 'Contact Sales'}</span>
+                    <span>{isArabic ? 'ØªÙˆØ§ØµÙ„ Ù…Ø¹ Ø§Ù„Ù…Ø¨ÙŠØ¹Ø§Øª' : 'Contact Sales'}</span>
                   </a>
                 </div>
               </div>
@@ -808,7 +808,7 @@ export default function Landing() {
             className="text-center mb-16"
           >
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              {isArabic ? 'ماذا يقول عملاؤنا' : 'What Our Customers Say'}
+              {isArabic ? 'Ù…Ø§Ø°Ø§ ÙŠÙ‚ÙˆÙ„ Ø¹Ù…Ù„Ø§Ø¤Ù†Ø§' : 'What Our Customers Say'}
             </h2>
           </motion.div>
 
@@ -859,10 +859,10 @@ export default function Landing() {
             className="text-center mb-16"
           >
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              {isArabic ? 'خطط الأسعار' : 'Pricing Plans'}
+              {isArabic ? 'Ø®Ø·Ø· Ø§Ù„Ø£Ø³Ø¹Ø§Ø±' : 'Pricing Plans'}
             </h2>
             <p className="text-xl text-gray-600">
-              {isArabic ? 'اختر الخطة المناسبة لحجم أعمالك' : 'Choose the plan that fits your business size'}
+              {isArabic ? 'Ø§Ø®ØªØ± Ø§Ù„Ø®Ø·Ø© Ø§Ù„Ù…Ù†Ø§Ø³Ø¨Ø© Ù„Ø­Ø¬Ù… Ø£Ø¹Ù…Ø§Ù„Ùƒ' : 'Choose the plan that fits your business size'}
             </p>
           </motion.div>
 
@@ -882,7 +882,7 @@ export default function Landing() {
               >
                 {plan.popular && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-primary-600 to-primary-700 text-white text-sm font-semibold rounded-full">
-                    {isArabic ? 'الأكثر شيوعاً' : 'Most Popular'}
+                    {isArabic ? 'Ø§Ù„Ø£ÙƒØ«Ø± Ø´ÙŠÙˆØ¹Ø§Ù‹' : 'Most Popular'}
                   </div>
                 )}
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">
@@ -909,7 +909,7 @@ export default function Landing() {
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  {isArabic ? 'ابدأ الآن' : 'Get Started'}
+                  {isArabic ? 'Ø§Ø¨Ø¯Ø£ Ø§Ù„Ø¢Ù†' : 'Get Started'}
                 </button>
               </motion.div>
             ))}
@@ -927,11 +927,11 @@ export default function Landing() {
               viewport={{ once: true }}
             >
               <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-                {isArabic ? 'تواصل معنا' : 'Get in Touch'}
+                {isArabic ? 'ØªÙˆØ§ØµÙ„ Ù…Ø¹Ù†Ø§' : 'Get in Touch'}
               </h2>
               <p className="text-xl text-gray-600 mb-8">
                 {isArabic
-                  ? 'فريقنا جاهز لمساعدتك في البدء مع Maqder ERP'
+                  ? 'ÙØ±ÙŠÙ‚Ù†Ø§ Ø¬Ø§Ù‡Ø² Ù„Ù…Ø³Ø§Ø¹Ø¯ØªÙƒ ÙÙŠ Ø§Ù„Ø¨Ø¯Ø¡ Ù…Ø¹ Maqder ERP'
                   : 'Our team is ready to help you get started with Maqder ERP'}
               </p>
               <div className="space-y-6">
@@ -940,7 +940,7 @@ export default function Landing() {
                     <Phone className="w-6 h-6 text-primary-600" />
                   </div>
                   <div>
-                    <p className="text-gray-500 text-sm">{isArabic ? 'الهاتف / واتساب' : 'Phone / WhatsApp'}</p>
+                    <p className="text-gray-500 text-sm">{isArabic ? 'Ø§Ù„Ù‡Ø§ØªÙ / ÙˆØ§ØªØ³Ø§Ø¨' : 'Phone / WhatsApp'}</p>
                     <a href="https://wa.me/966596775485" target="_blank" rel="noreferrer" className="flex items-center gap-2 text-gray-900 font-semibold hover:text-emerald-600 transition">
                       <span dir="ltr">+966 59 677 5485</span>
                       <MessageCircle className="w-4 h-4 text-emerald-500" />
@@ -952,7 +952,7 @@ export default function Landing() {
                     <Mail className="w-6 h-6 text-primary-600" />
                   </div>
                   <div>
-                    <p className="text-gray-500 text-sm">{isArabic ? 'البريد الإلكتروني' : 'Email'}</p>
+                    <p className="text-gray-500 text-sm">{isArabic ? 'Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ' : 'Email'}</p>
                     <a href="mailto:support@maqder.com" className="text-gray-900 font-semibold hover:text-primary-600 transition">support@maqder.com</a>
                   </div>
                 </div>
@@ -961,8 +961,8 @@ export default function Landing() {
                     <MapPin className="w-6 h-6 text-primary-600" />
                   </div>
                   <div>
-                    <p className="text-gray-500 text-sm">{isArabic ? 'الموقع' : 'Location'}</p>
-                    <p className="text-gray-900 font-semibold">{isArabic ? 'الرياض، المملكة العربية السعودية' : 'Riyadh, Saudi Arabia'}</p>
+                    <p className="text-gray-500 text-sm">{isArabic ? 'Ø§Ù„Ù…ÙˆÙ‚Ø¹' : 'Location'}</p>
+                    <p className="text-gray-900 font-semibold">{isArabic ? 'Ø§Ù„Ø±ÙŠØ§Ø¶ØŒ Ø§Ù„Ù…Ù…Ù„ÙƒØ© Ø§Ù„Ø¹Ø±Ø¨ÙŠØ© Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠØ©' : 'Riyadh, Saudi Arabia'}</p>
                   </div>
                 </div>
               </div>
@@ -978,50 +978,50 @@ export default function Landing() {
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {isArabic ? 'الاسم' : 'Name'}
+                        {isArabic ? 'Ø§Ù„Ø§Ø³Ù…' : 'Name'}
                       </label>
                       <input
                         type="text"
                         className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition"
-                        placeholder={isArabic ? 'أدخل اسمك' : 'Enter your name'}
+                        placeholder={isArabic ? 'Ø£Ø¯Ø®Ù„ Ø§Ø³Ù…Ùƒ' : 'Enter your name'}
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {isArabic ? 'البريد الإلكتروني' : 'Email'}
+                        {isArabic ? 'Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ' : 'Email'}
                       </label>
                       <input
                         type="email"
                         className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition"
-                        placeholder={isArabic ? 'أدخل بريدك الإلكتروني' : 'Enter your email'}
+                        placeholder={isArabic ? 'Ø£Ø¯Ø®Ù„ Ø¨Ø±ÙŠØ¯Ùƒ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ' : 'Enter your email'}
                       />
                     </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {isArabic ? 'الشركة' : 'Company'}
+                      {isArabic ? 'Ø§Ù„Ø´Ø±ÙƒØ©' : 'Company'}
                     </label>
                     <input
                       type="text"
                       className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition"
-                      placeholder={isArabic ? 'اسم الشركة' : 'Company name'}
+                      placeholder={isArabic ? 'Ø§Ø³Ù… Ø§Ù„Ø´Ø±ÙƒØ©' : 'Company name'}
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      {isArabic ? 'الرسالة' : 'Message'}
+                      {isArabic ? 'Ø§Ù„Ø±Ø³Ø§Ù„Ø©' : 'Message'}
                     </label>
                     <textarea
                       rows={4}
                       className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition resize-none"
-                      placeholder={isArabic ? 'اكتب رسالتك هنا...' : 'Write your message here...'}
+                      placeholder={isArabic ? 'Ø§ÙƒØªØ¨ Ø±Ø³Ø§Ù„ØªÙƒ Ù‡Ù†Ø§...' : 'Write your message here...'}
                     />
                   </div>
                   <button
                     type="submit"
                     className="w-full py-4 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-semibold shadow-lg shadow-primary-500/30 hover:shadow-xl transition"
                   >
-                    {isArabic ? 'إرسال الرسالة' : 'Send Message'}
+                    {isArabic ? 'Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø±Ø³Ø§Ù„Ø©' : 'Send Message'}
                   </button>
                 </form>
               </div>
@@ -1039,11 +1039,11 @@ export default function Landing() {
             viewport={{ once: true }}
           >
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6">
-              {isArabic ? 'ابدأ رحلتك مع Maqder ERP اليوم' : 'Start Your Journey with Maqder ERP Today'}
+              {isArabic ? 'Ø§Ø¨Ø¯Ø£ Ø±Ø­Ù„ØªÙƒ Ù…Ø¹ Maqder ERP Ø§Ù„ÙŠÙˆÙ…' : 'Start Your Journey with Maqder ERP Today'}
             </h2>
             <p className="text-xl text-primary-100 mb-8">
               {isArabic
-                ? 'انضم إلى أكثر من 500 شركة سعودية تثق في Maqder ERP'
+                ? 'Ø§Ù†Ø¶Ù… Ø¥Ù„Ù‰ Ø£ÙƒØ«Ø± Ù…Ù† 500 Ø´Ø±ÙƒØ© Ø³Ø¹ÙˆØ¯ÙŠØ© ØªØ«Ù‚ ÙÙŠ Maqder ERP'
                 : 'Join 500+ Saudi companies that trust Maqder ERP'}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -1051,7 +1051,7 @@ export default function Landing() {
                 to="/login"
                 className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-primary-700 rounded-2xl font-semibold text-lg shadow-xl hover:shadow-2xl transition-all hover:-translate-y-0.5"
               >
-                {isArabic ? 'ابدأ مجاناً' : 'Start Free Trial'}
+                {isArabic ? 'Ø§Ø¨Ø¯Ø£ Ù…Ø¬Ø§Ù†Ø§Ù‹' : 'Start Free Trial'}
                 <ArrowRight className="w-5 h-5" />
               </Link>
               <a
@@ -1059,7 +1059,7 @@ export default function Landing() {
                 className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 text-white rounded-2xl font-semibold text-lg hover:bg-white/20 transition border border-white/20"
               >
                 <Headphones className="w-5 h-5" />
-                {isArabic ? 'تحدث مع المبيعات' : 'Talk to Sales'}
+                {isArabic ? 'ØªØ­Ø¯Ø« Ù…Ø¹ Ø§Ù„Ù…Ø¨ÙŠØ¹Ø§Øª' : 'Talk to Sales'}
               </a>
             </div>
           </motion.div>
@@ -1073,49 +1073,49 @@ export default function Landing() {
             <div>
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-auto h-10 flex items-center justify-center">
-                  <img src="/maqdernewlogo.png" alt="Maqder" className="h-full w-auto object-contain" />
+                  <img src="/maqdernewlogo.webp" alt="Maqder" className="h-full w-auto object-contain" />
                 </div>
               </div>
               <p className="text-gray-500 leading-relaxed">
                 {isArabic
-                  ? 'مزود خدمات الفوترة الإلكترونية ونظام ERP متكامل للشركات السعودية مع امتثال كامل لهيئة الزكاة والضريبة والجمارك'
+                  ? 'Ù…Ø²ÙˆØ¯ Ø®Ø¯Ù…Ø§Øª Ø§Ù„ÙÙˆØªØ±Ø© Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠØ© ÙˆÙ†Ø¸Ø§Ù… ERP Ù…ØªÙƒØ§Ù…Ù„ Ù„Ù„Ø´Ø±ÙƒØ§Øª Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠØ© Ù…Ø¹ Ø§Ù…ØªØ«Ø§Ù„ ÙƒØ§Ù…Ù„ Ù„Ù‡ÙŠØ¦Ø© Ø§Ù„Ø²ÙƒØ§Ø© ÙˆØ§Ù„Ø¶Ø±ÙŠØ¨Ø© ÙˆØ§Ù„Ø¬Ù…Ø§Ø±Ùƒ'
                   : 'E-Invoicing Services Provider and complete ERP system for Saudi businesses with full ZATCA compliance'}
               </p>
             </div>
             <div>
-              <h4 className="text-white font-semibold mb-4">{isArabic ? 'المنتج' : 'Product'}</h4>
+              <h4 className="text-white font-semibold mb-4">{isArabic ? 'Ø§Ù„Ù…Ù†ØªØ¬' : 'Product'}</h4>
               <ul className="space-y-3">
-                <li><a href="#features" className="hover:text-white transition">{isArabic ? 'المميزات' : 'Features'}</a></li>
-                <li><a href="#modules" className="hover:text-white transition">{isArabic ? 'الوحدات' : 'Modules'}</a></li>
-                <li><a href="#pricing" className="hover:text-white transition">{isArabic ? 'الأسعار' : 'Pricing'}</a></li>
+                <li><a href="#features" className="hover:text-white transition">{isArabic ? 'Ø§Ù„Ù…Ù…ÙŠØ²Ø§Øª' : 'Features'}</a></li>
+                <li><a href="#modules" className="hover:text-white transition">{isArabic ? 'Ø§Ù„ÙˆØ­Ø¯Ø§Øª' : 'Modules'}</a></li>
+                <li><a href="#pricing" className="hover:text-white transition">{isArabic ? 'Ø§Ù„Ø£Ø³Ø¹Ø§Ø±' : 'Pricing'}</a></li>
               </ul>
             </div>
             <div>
-              <h4 className="text-white font-semibold mb-4">{isArabic ? 'الشركة' : 'Company'}</h4>
+              <h4 className="text-white font-semibold mb-4">{isArabic ? 'Ø§Ù„Ø´Ø±ÙƒØ©' : 'Company'}</h4>
               <ul className="space-y-3">
-                <li><a href="#" className="hover:text-white transition">{isArabic ? 'من نحن' : 'About Us'}</a></li>
-                <li><a href="#contact" className="hover:text-white transition">{isArabic ? 'تواصل معنا' : 'Contact'}</a></li>
-                <li><a href="#" className="hover:text-white transition">{isArabic ? 'الوظائف' : 'Careers'}</a></li>
+                <li><a href="#" className="hover:text-white transition">{isArabic ? 'Ù…Ù† Ù†Ø­Ù†' : 'About Us'}</a></li>
+                <li><a href="#contact" className="hover:text-white transition">{isArabic ? 'ØªÙˆØ§ØµÙ„ Ù…Ø¹Ù†Ø§' : 'Contact'}</a></li>
+                <li><a href="#" className="hover:text-white transition">{isArabic ? 'Ø§Ù„ÙˆØ¸Ø§Ø¦Ù' : 'Careers'}</a></li>
               </ul>
             </div>
             <div>
-              <h4 className="text-white font-semibold mb-4">{isArabic ? 'قانوني' : 'Legal'}</h4>
+              <h4 className="text-white font-semibold mb-4">{isArabic ? 'Ù‚Ø§Ù†ÙˆÙ†ÙŠ' : 'Legal'}</h4>
               <ul className="space-y-3">
-                <li><a href="#" className="hover:text-white transition">{isArabic ? 'سياسة الخصوصية' : 'Privacy Policy'}</a></li>
-                <li><a href="#" className="hover:text-white transition">{isArabic ? 'شروط الخدمة' : 'Terms of Service'}</a></li>
+                <li><a href="#" className="hover:text-white transition">{isArabic ? 'Ø³ÙŠØ§Ø³Ø© Ø§Ù„Ø®ØµÙˆØµÙŠØ©' : 'Privacy Policy'}</a></li>
+                <li><a href="#" className="hover:text-white transition">{isArabic ? 'Ø´Ø±ÙˆØ· Ø§Ù„Ø®Ø¯Ù…Ø©' : 'Terms of Service'}</a></li>
               </ul>
             </div>
           </div>
           <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-gray-500 text-sm">
-              © 2024 Maqder ERP. {isArabic ? 'جميع الحقوق محفوظة.' : 'All rights reserved.'}
+              Â© 2024 Maqder ERP. {isArabic ? 'Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø­Ù‚ÙˆÙ‚ Ù…Ø­ÙÙˆØ¸Ø©.' : 'All rights reserved.'}
             </p>
             <div className="flex flex-col gap-1">
               <p className="text-gray-500 text-sm">
-                {isArabic ? 'صنع بواسطة مؤسسة حلول القوى العاملة الشرقية' : 'Built by Eastern Workforce Solutions Establishment'}
+                {isArabic ? 'ØµÙ†Ø¹ Ø¨ÙˆØ§Ø³Ø·Ø© Ù…Ø¤Ø³Ø³Ø© Ø­Ù„ÙˆÙ„ Ø§Ù„Ù‚ÙˆÙ‰ Ø§Ù„Ø¹Ø§Ù…Ù„Ø© Ø§Ù„Ø´Ø±Ù‚ÙŠØ©' : 'Built by Eastern Workforce Solutions Establishment'}
               </p>
               <p className="text-gray-500 text-sm opacity-70">
-                {isArabic ? 'Eastern Workforce Solutions Establishment' : 'مؤسسة حلول القوى العاملة الشرقية'}
+                {isArabic ? 'Eastern Workforce Solutions Establishment' : 'Ù…Ø¤Ø³Ø³Ø© Ø­Ù„ÙˆÙ„ Ø§Ù„Ù‚ÙˆÙ‰ Ø§Ù„Ø¹Ø§Ù…Ù„Ø© Ø§Ù„Ø´Ø±Ù‚ÙŠØ©'}
               </p>
             </div>
           </div>

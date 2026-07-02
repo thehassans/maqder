@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { useForm } from 'react-hook-form'
@@ -12,7 +12,7 @@ import DailyAyat from '../../components/ui/DailyAyat'
 
 const complianceLogos = [
   { src: '/ZATCA_Logo.svg', alt: 'ZATCA', cardClassName: 'w-48', imageClassName: 'scale-[1.35]' },
-  { src: '/saudi-vision-2030-logo.png', alt: 'Saudi Vision 2030', cardClassName: 'w-36', imageClassName: 'scale-100' },
+  { src: '/saudi-vision-2030-logo.webp', alt: 'Saudi Vision 2030', cardClassName: 'w-36', imageClassName: 'scale-100' },
   { src: '/saudi_tech_mob_en.svg', alt: 'Saudi Tech MOB', cardClassName: 'w-36', imageClassName: 'scale-100' },
 ]
 
@@ -38,13 +38,13 @@ export default function Login() {
   const location = useLocation()
 
   const errorStr = typeof error === 'string' ? error : (error ? String(error?.message || error?.error || '') : '')
-  const isAccountNotFound = /account does not exist|الحساب غير موجود/i.test(errorStr)
-  const isInvalidCredentials = /invalid credentials|بيانات الدخول غير صحيحة|incorrect/i.test(errorStr)
-  const isAccountLocked = /temporarily locked|مؤقتاً مقفل|مؤقتاً مغلق/i.test(errorStr)
+  const isAccountNotFound = /account does not exist|Ø§Ù„Ø­Ø³Ø§Ø¨ ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯/i.test(errorStr)
+  const isInvalidCredentials = /invalid credentials|Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø¯Ø®ÙˆÙ„ ØºÙŠØ± ØµØ­ÙŠØ­Ø©|incorrect/i.test(errorStr)
+  const isAccountLocked = /temporarily locked|Ù…Ø¤Ù‚ØªØ§Ù‹ Ù…Ù‚ÙÙ„|Ù…Ø¤Ù‚ØªØ§Ù‹ Ù…ØºÙ„Ù‚/i.test(errorStr)
   const friendlyError = isInvalidCredentials
-    ? (language === 'ar' ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة. يرجى المحاولة مرة أخرى.' : 'Email or password may be incorrect. Please try again.')
+    ? (language === 'ar' ? 'Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ Ø£Ùˆ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± ØºÙŠØ± ØµØ­ÙŠØ­Ø©. ÙŠØ±Ø¬Ù‰ Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø© Ù…Ø±Ø© Ø£Ø®Ø±Ù‰.' : 'Email or password may be incorrect. Please try again.')
     : isAccountLocked
-    ? (language === 'ar' ? 'تم قفل الحساب مؤقتاً بسبب محاولات كثيرة. حاول مرة أخرى لاحقاً.' : 'Account is temporarily locked due to too many attempts. Please try again later.')
+    ? (language === 'ar' ? 'ØªÙ… Ù‚ÙÙ„ Ø§Ù„Ø­Ø³Ø§Ø¨ Ù…Ø¤Ù‚ØªØ§Ù‹ Ø¨Ø³Ø¨Ø¨ Ù…Ø­Ø§ÙˆÙ„Ø§Øª ÙƒØ«ÙŠØ±Ø©. Ø­Ø§ÙˆÙ„ Ù…Ø±Ø© Ø£Ø®Ø±Ù‰ Ù„Ø§Ø­Ù‚Ø§Ù‹.' : 'Account is temporarily locked due to too many attempts. Please try again later.')
     : errorStr
 
   const demoEmail = searchParams.get('demoEmail')
@@ -125,10 +125,10 @@ export default function Login() {
         <div className="flex flex-col items-center gap-4 text-center">
           <Loader2 className="w-12 h-12 text-white animate-spin mx-auto" />
           <h2 className="text-xl font-semibold text-white">
-            {language === 'ar' ? 'جاري تسجيل الدخول...' : 'Logging you in...'}
+            {language === 'ar' ? 'Ø¬Ø§Ø±ÙŠ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„...' : 'Logging you in...'}
           </h2>
           <p className="text-white/70">
-            {language === 'ar' ? 'إعداد مساحة العمل الخاصة بك' : 'Preparing your workspace'}
+            {language === 'ar' ? 'Ø¥Ø¹Ø¯Ø§Ø¯ Ù…Ø³Ø§Ø­Ø© Ø§Ù„Ø¹Ù…Ù„ Ø§Ù„Ø®Ø§ØµØ© Ø¨Ùƒ' : 'Preparing your workspace'}
           </p>
         </div>
       </div>
@@ -147,7 +147,7 @@ export default function Login() {
           {/* Logo */}
           <div className="flex items-center gap-3 -ml-4 -mt-4 mb-4">
             <div className="w-full h-40 flex items-center justify-start">
-              <img src="/maqdernewlogo.png" alt="Maqder" className="h-full w-auto object-contain object-left scale-110 origin-left" />
+              <img src="/maqdernewlogo.webp" alt="Maqder" className="h-full w-auto object-contain object-left scale-110 origin-left" />
             </div>
           </div>
 
@@ -155,13 +155,13 @@ export default function Login() {
           <div className="space-y-8">
             <div>
               <h1 className="text-5xl font-bold leading-tight mb-4">
-                {language === 'ar' ? 'نظام ERP متكامل' : 'Complete ERP System'}
+                {language === 'ar' ? 'Ù†Ø¸Ø§Ù… ERP Ù…ØªÙƒØ§Ù…Ù„' : 'Complete ERP System'}
                 <br />
-                <span className="text-white/80">{language === 'ar' ? 'متوافق مع السعودية' : 'Saudi Compliant'}</span>
+                <span className="text-white/80">{language === 'ar' ? 'Ù…ØªÙˆØ§ÙÙ‚ Ù…Ø¹ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠØ©' : 'Saudi Compliant'}</span>
               </h1>
               <p className="text-xl text-white/70 max-w-md">
                 {language === 'ar' 
-                  ? 'الفوترة الإلكترونية، الموارد البشرية، المخزون - كل شيء في مكان واحد'
+                  ? 'Ø§Ù„ÙÙˆØªØ±Ø© Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠØ©ØŒ Ø§Ù„Ù…ÙˆØ§Ø±Ø¯ Ø§Ù„Ø¨Ø´Ø±ÙŠØ©ØŒ Ø§Ù„Ù…Ø®Ø²ÙˆÙ† - ÙƒÙ„ Ø´ÙŠØ¡ ÙÙŠ Ù…ÙƒØ§Ù† ÙˆØ§Ø­Ø¯'
                   : 'E-Invoicing, HR & Payroll, Inventory - All in one platform'}
               </p>
             </div>
@@ -169,9 +169,9 @@ export default function Login() {
             {/* Features */}
             <div className="grid grid-cols-1 gap-4">
               {[
-                { icon: Shield, text: language === 'ar' ? 'متوافق مع فاتورة المرحلة الثانية' : 'ZATCA Phase 2 Compliant' },
-                { icon: Zap, text: language === 'ar' ? 'حسابات GOSI و EOSB التلقائية' : 'Auto GOSI & EOSB Calculations' },
-                { icon: Globe, text: language === 'ar' ? 'دعم كامل للغة العربية' : 'Full Arabic RTL Support' },
+                { icon: Shield, text: language === 'ar' ? 'Ù…ØªÙˆØ§ÙÙ‚ Ù…Ø¹ ÙØ§ØªÙˆØ±Ø© Ø§Ù„Ù…Ø±Ø­Ù„Ø© Ø§Ù„Ø«Ø§Ù†ÙŠØ©' : 'ZATCA Phase 2 Compliant' },
+                { icon: Zap, text: language === 'ar' ? 'Ø­Ø³Ø§Ø¨Ø§Øª GOSI Ùˆ EOSB Ø§Ù„ØªÙ„Ù‚Ø§Ø¦ÙŠØ©' : 'Auto GOSI & EOSB Calculations' },
+                { icon: Globe, text: language === 'ar' ? 'Ø¯Ø¹Ù… ÙƒØ§Ù…Ù„ Ù„Ù„ØºØ© Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©' : 'Full Arabic RTL Support' },
               ].map((feature, i) => (
                 <motion.div
                   key={i}
@@ -195,7 +195,7 @@ export default function Login() {
           {/* Footer */}
           <div className="text-white/50 text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              2024 Maqder ERP. {language === 'ar' ? 'صنع بواسطة Eastern Workforce Solutions Establishment' : 'Built by Eastern Workforce Solutions Establishment'}
+              2024 Maqder ERP. {language === 'ar' ? 'ØµÙ†Ø¹ Ø¨ÙˆØ§Ø³Ø·Ø© Eastern Workforce Solutions Establishment' : 'Built by Eastern Workforce Solutions Establishment'}
             </div>
             <div className="flex items-center gap-4 text-white/70">
               <a href="tel:+966596775485" title="Call Us" className="hover:text-white transition-colors">
@@ -227,23 +227,23 @@ export default function Login() {
               className="flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm border border-gray-200 hover:shadow-md transition-all text-sm font-medium text-gray-600"
             >
               <Globe className="w-4 h-4" />
-              {language === 'ar' ? 'English' : 'العربية'}
+              {language === 'ar' ? 'English' : 'Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©'}
             </button>
           </div>
 
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-            <img src="/maqderlogolandingpage.png" alt="Maqder" className="h-24 w-auto object-contain object-center" />
+            <img src="/maqderlogolandingpage.webp" alt="Maqder" className="h-24 w-auto object-contain object-center" />
           </div>
 
           {/* Header */}
           <div className="text-center lg:text-start mb-10">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              {isForgotPassword ? (language === 'ar' ? 'استعادة كلمة المرور' : 'Reset Password') : t('welcomeBack') + ' 👋'}
+              {isForgotPassword ? (language === 'ar' ? 'Ø§Ø³ØªØ¹Ø§Ø¯Ø© ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±' : 'Reset Password') : t('welcomeBack') + ' ðŸ‘‹'}
             </h1>
             <p className="text-gray-500 text-lg">
               {isForgotPassword 
-                ? (language === 'ar' ? 'أدخل بريدك الإلكتروني لإرسال رابط إعادة التعيين' : 'Enter your email to receive a reset link') 
+                ? (language === 'ar' ? 'Ø£Ø¯Ø®Ù„ Ø¨Ø±ÙŠØ¯Ùƒ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ Ù„Ø¥Ø±Ø³Ø§Ù„ Ø±Ø§Ø¨Ø· Ø¥Ø¹Ø§Ø¯Ø© Ø§Ù„ØªØ¹ÙŠÙŠÙ†' : 'Enter your email to receive a reset link') 
                 : t('signInToContinue')}
             </p>
           </div>
@@ -264,11 +264,11 @@ export default function Login() {
                   </div>
                   <div className="flex-1">
                     <h3 className="text-lg font-bold text-gray-900 tracking-tight">
-                      {language === 'ar' ? 'الحساب غير موجود' : 'Account does not exist'}
+                      {language === 'ar' ? 'Ø§Ù„Ø­Ø³Ø§Ø¨ ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯' : 'Account does not exist'}
                     </h3>
                     <p className="mt-1 text-sm text-gray-500 leading-relaxed">
                       {language === 'ar'
-                        ? 'لم نتمكن من العثور على حساب بهذه البيانات. تحقق من بريدك الإلكتروني أو تواصل مع فريق المبيعات لإنشاء حسابك.'
+                        ? 'Ù„Ù… Ù†ØªÙ…ÙƒÙ† Ù…Ù† Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ Ø­Ø³Ø§Ø¨ Ø¨Ù‡Ø°Ù‡ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª. ØªØ­Ù‚Ù‚ Ù…Ù† Ø¨Ø±ÙŠØ¯Ùƒ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ Ø£Ùˆ ØªÙˆØ§ØµÙ„ Ù…Ø¹ ÙØ±ÙŠÙ‚ Ø§Ù„Ù…Ø¨ÙŠØ¹Ø§Øª Ù„Ø¥Ù†Ø´Ø§Ø¡ Ø­Ø³Ø§Ø¨Ùƒ.'
                         : "We couldn't find an account with these details. Please check your email or contact our sales team to get you set up."}
                     </p>
                     <button
@@ -276,7 +276,7 @@ export default function Login() {
                       onClick={() => setShowContactOptions(true)}
                       className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-[#244D33] hover:text-[#1e3f2a] transition-colors"
                     >
-                      {language === 'ar' ? 'تواصل مع المبيعات' : 'Contact Sales'}
+                      {language === 'ar' ? 'ØªÙˆØ§ØµÙ„ Ù…Ø¹ Ø§Ù„Ù…Ø¨ÙŠØ¹Ø§Øª' : 'Contact Sales'}
                       <ArrowRight className="w-4 h-4" />
                     </button>
                   </div>
@@ -337,7 +337,7 @@ export default function Login() {
                   onClick={() => setIsForgotPassword(false)}
                   className="text-sm font-medium text-gray-500 hover:text-gray-800 transition-colors"
                 >
-                  {language === 'ar' ? 'العودة لتسجيل الدخول' : 'Back to Login'}
+                  {language === 'ar' ? 'Ø§Ù„Ø¹ÙˆØ¯Ø© Ù„ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„' : 'Back to Login'}
                 </button>
                 <button
                   type="submit"
@@ -345,7 +345,7 @@ export default function Login() {
                   className="px-6 h-12 bg-gradient-to-r from-[#244D33] to-[#1e3f2a] hover:from-[#1e3f2a] hover:to-[#163121] text-white font-semibold rounded-xl shadow-md disabled:opacity-70 transition-all flex items-center gap-2"
                 >
                   {forgotPasswordStatus === 'loading' ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                  {language === 'ar' ? 'إرسال الرابط' : 'Send Link'}
+                  {language === 'ar' ? 'Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø±Ø§Ø¨Ø·' : 'Send Link'}
                 </button>
               </div>
             </form>
@@ -382,7 +382,7 @@ export default function Login() {
                     type={showPassword ? 'text' : 'password'}
                     {...register('password', { required: 'Password is required' })}
                     className={`w-full h-14 ps-12 pe-14 bg-white border-2 ${errors.password ? 'border-red-300 focus:border-red-500' : 'border-gray-200 focus:border-[#244D33]'} rounded-2xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-[#244D33]/10 transition-all`}
-                    placeholder="••••••••"
+                    placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                   />
                   <button
                     type="button"
@@ -433,13 +433,13 @@ export default function Login() {
           {/* Footer */}
           <div className="mt-10 text-center">
             <p className="text-gray-500">
-              {language === 'ar' ? 'ليس لديك حساب؟' : "Don't have an account?"}{' '}
+              {language === 'ar' ? 'Ù„ÙŠØ³ Ù„Ø¯ÙŠÙƒ Ø­Ø³Ø§Ø¨ØŸ' : "Don't have an account?"}{' '}
               <button
                 type="button"
                 onClick={() => setShowContactOptions((current) => !current)}
                 className="inline-flex items-center gap-1 text-[#244D33] hover:text-[#1e3f2a] font-semibold transition-colors"
               >
-                {language === 'ar' ? 'تواصل معنا' : 'Contact Sales'}
+                {language === 'ar' ? 'ØªÙˆØ§ØµÙ„ Ù…Ø¹Ù†Ø§' : 'Contact Sales'}
                 <ChevronDown className={`w-4 h-4 transition-transform ${showContactOptions ? 'rotate-180' : ''}`} />
               </button>
             </p>
@@ -447,7 +447,7 @@ export default function Login() {
               <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <a href={`tel:${salesPhone}`} className="flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 shadow-sm transition-all hover:border-[#244D33] hover:text-[#244D33] hover:shadow-md">
                   <Phone className="w-4 h-4" />
-                  {language === 'ar' ? 'اتصال' : 'Call'}
+                  {language === 'ar' ? 'Ø§ØªØµØ§Ù„' : 'Call'}
                 </a>
                 <a href={`https://wa.me/${whatsappNumber}?text=${contactSalesSubject}`} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 shadow-sm transition-all hover:border-[#244D33] hover:text-[#244D33] hover:shadow-md">
                   <MessageCircle className="w-4 h-4" />
@@ -455,7 +455,7 @@ export default function Login() {
                 </a>
                 <a href={`mailto:${salesEmail}?subject=${contactSalesSubject}`} className="flex items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 shadow-sm transition-all hover:border-[#244D33] hover:text-[#244D33] hover:shadow-md">
                   <Mail className="w-4 h-4" />
-                  {language === 'ar' ? 'بريد' : 'Email'}
+                  {language === 'ar' ? 'Ø¨Ø±ÙŠØ¯' : 'Email'}
                 </a>
               </div>
             ) : null}
@@ -463,7 +463,7 @@ export default function Login() {
 
           {/* Trust Badges */}
           <div className="mt-10 pt-8 border-t border-gray-200">
-            <p className="text-center text-xs text-gray-400 mb-4">{language === 'ar' ? 'معتمد من' : 'Trusted & Certified'}</p>
+            <p className="text-center text-xs text-gray-400 mb-4">{language === 'ar' ? 'Ù…Ø¹ØªÙ…Ø¯ Ù…Ù†' : 'Trusted & Certified'}</p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               {complianceLogos.map((logo) => (
                 <div key={logo.alt} className={`flex h-20 ${logo.cardClassName} items-center justify-center overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm`}>

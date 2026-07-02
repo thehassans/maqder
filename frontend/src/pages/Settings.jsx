@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector, useDispatch } from 'react-redux'
 import { useForm } from 'react-hook-form'
@@ -18,9 +18,9 @@ import CarRentalApiSettings from '../components/settings/CarRentalApiSettings'
 import GovernmentIntegrations from './tenant-settings/GovernmentIntegrations'
 
 const invoiceBrandingContexts = [
-  { key: 'trading', labelEn: 'Trading Invoice', labelAr: 'فاتورة تجارة' },
-  { key: 'construction', labelEn: 'Contracting Invoice', labelAr: 'فاتورة مقاولات' },
-  { key: 'travel_agency', labelEn: 'Travel Agency Invoice', labelAr: 'فاتورة وكالة سفر' },
+  { key: 'trading', labelEn: 'Trading Invoice', labelAr: 'ÙØ§ØªÙˆØ±Ø© ØªØ¬Ø§Ø±Ø©' },
+  { key: 'construction', labelEn: 'Contracting Invoice', labelAr: 'ÙØ§ØªÙˆØ±Ø© Ù…Ù‚Ø§ÙˆÙ„Ø§Øª' },
+  { key: 'travel_agency', labelEn: 'Travel Agency Invoice', labelAr: 'ÙØ§ØªÙˆØ±Ø© ÙˆÙƒØ§Ù„Ø© Ø³ÙØ±' },
 ]
 
 const buildInvoiceBrandingProfilesState = (tenant) => invoiceBrandingContexts.reduce((acc, item) => {
@@ -73,7 +73,7 @@ export default function Settings() {
   const [invoiceBodyFontSize, setInvoiceBodyFontSize] = useState(12)
   const [invoiceHeadingFontSize, setInvoiceHeadingFontSize] = useState(18)
   const [showVision2030, setShowVision2030] = useState(true)
-  const [vision2030LogoDataUrl, setVision2030LogoDataUrl] = useState('/saudi-vision-2030-logo.png')
+  const [vision2030LogoDataUrl, setVision2030LogoDataUrl] = useState('/saudi-vision-2030-logo.webp')
   const [invoiceBrandingProfiles, setInvoiceBrandingProfiles] = useState(() => buildInvoiceBrandingProfilesState(null))
   // Restaurant settings
   const [restAutoStatus, setRestAutoStatus] = useState(false)
@@ -89,13 +89,13 @@ export default function Settings() {
   const [waOnOrderReady, setWaOnOrderReady] = useState(false)
   const [waOnOrderServed, setWaOnOrderServed] = useState(false)
   const [waOpenMsgEn, setWaOpenMsgEn] = useState('We are now open! Visit us today.')
-  const [waOpenMsgAr, setWaOpenMsgAr] = useState('نحن الآن مفتوحون! زورنا اليوم.')
+  const [waOpenMsgAr, setWaOpenMsgAr] = useState('Ù†Ø­Ù† Ø§Ù„Ø¢Ù† Ù…ÙØªÙˆØ­ÙˆÙ†! Ø²ÙˆØ±Ù†Ø§ Ø§Ù„ÙŠÙˆÙ….')
   const [waOrderPlacedMsgEn, setWaOrderPlacedMsgEn] = useState('Your order has been placed. Order #: {{orderNumber}}')
-  const [waOrderPlacedMsgAr, setWaOrderPlacedMsgAr] = useState('تم استلام طلبك. رقم الطلب: {{orderNumber}}')
+  const [waOrderPlacedMsgAr, setWaOrderPlacedMsgAr] = useState('ØªÙ… Ø§Ø³ØªÙ„Ø§Ù… Ø·Ù„Ø¨Ùƒ. Ø±Ù‚Ù… Ø§Ù„Ø·Ù„Ø¨: {{orderNumber}}')
   const [waOrderReadyMsgEn, setWaOrderReadyMsgEn] = useState('Your order is ready for pickup/delivery. Order #: {{orderNumber}}')
-  const [waOrderReadyMsgAr, setWaOrderReadyMsgAr] = useState('طلبك جاهز للاستلام/التوصيل. رقم الطلب: {{orderNumber}}')
+  const [waOrderReadyMsgAr, setWaOrderReadyMsgAr] = useState('Ø·Ù„Ø¨Ùƒ Ø¬Ø§Ù‡Ø² Ù„Ù„Ø§Ø³ØªÙ„Ø§Ù…/Ø§Ù„ØªÙˆØµÙŠÙ„. Ø±Ù‚Ù… Ø§Ù„Ø·Ù„Ø¨: {{orderNumber}}')
   const [waOrderServedMsgEn, setWaOrderServedMsgEn] = useState('Your order has been served. Thank you! Order #: {{orderNumber}}')
-  const [waOrderServedMsgAr, setWaOrderServedMsgAr] = useState('تم تقديم طلبك. شكراً لك! رقم الطلب: {{orderNumber}}')
+  const [waOrderServedMsgAr, setWaOrderServedMsgAr] = useState('ØªÙ… ØªÙ‚Ø¯ÙŠÙ… Ø·Ù„Ø¨Ùƒ. Ø´ÙƒØ±Ø§Ù‹ Ù„Ùƒ! Ø±Ù‚Ù… Ø§Ù„Ø·Ù„Ø¨: {{orderNumber}}')
   const [waNotifyPhones, setWaNotifyPhones] = useState('')
   // Bakala settings
   const [bakalaRequireShift, setBakalaRequireShift] = useState(true)
@@ -133,7 +133,7 @@ export default function Settings() {
     setInvoiceBodyFontSize(typography.bodyFontSize)
     setInvoiceHeadingFontSize(typography.headingFontSize)
     setShowVision2030(tenant.settings?.invoiceBranding?.showVision2030 !== false)
-    setVision2030LogoDataUrl(tenant.settings?.invoiceBranding?.vision2030Logo || '/saudi-vision-2030-logo.png')
+    setVision2030LogoDataUrl(tenant.settings?.invoiceBranding?.vision2030Logo || '/saudi-vision-2030-logo.webp')
     setInvoiceBrandingProfiles(buildInvoiceBrandingProfilesState(tenant))
     // Restaurant settings init
     const rs = tenant.settings?.restaurant || {}
@@ -151,13 +151,13 @@ export default function Settings() {
     setWaOnOrderReady(wa.autoSendOnOrderReady || false)
     setWaOnOrderServed(wa.autoSendOnOrderServed || false)
     setWaOpenMsgEn(wa.openMessageEn || 'We are now open! Visit us today.')
-    setWaOpenMsgAr(wa.openMessageAr || 'نحن الآن مفتوحون! زورنا اليوم.')
+    setWaOpenMsgAr(wa.openMessageAr || 'Ù†Ø­Ù† Ø§Ù„Ø¢Ù† Ù…ÙØªÙˆØ­ÙˆÙ†! Ø²ÙˆØ±Ù†Ø§ Ø§Ù„ÙŠÙˆÙ….')
     setWaOrderPlacedMsgEn(wa.orderPlacedMessageEn || 'Your order has been placed. Order #: {{orderNumber}}')
-    setWaOrderPlacedMsgAr(wa.orderPlacedMessageAr || 'تم استلام طلبك. رقم الطلب: {{orderNumber}}')
+    setWaOrderPlacedMsgAr(wa.orderPlacedMessageAr || 'ØªÙ… Ø§Ø³ØªÙ„Ø§Ù… Ø·Ù„Ø¨Ùƒ. Ø±Ù‚Ù… Ø§Ù„Ø·Ù„Ø¨: {{orderNumber}}')
     setWaOrderReadyMsgEn(wa.orderReadyMessageEn || 'Your order is ready for pickup/delivery. Order #: {{orderNumber}}')
-    setWaOrderReadyMsgAr(wa.orderReadyMessageAr || 'طلبك جاهز للاستلام/التوصيل. رقم الطلب: {{orderNumber}}')
+    setWaOrderReadyMsgAr(wa.orderReadyMessageAr || 'Ø·Ù„Ø¨Ùƒ Ø¬Ø§Ù‡Ø² Ù„Ù„Ø§Ø³ØªÙ„Ø§Ù…/Ø§Ù„ØªÙˆØµÙŠÙ„. Ø±Ù‚Ù… Ø§Ù„Ø·Ù„Ø¨: {{orderNumber}}')
     setWaOrderServedMsgEn(wa.orderServedMessageEn || 'Your order has been served. Thank you! Order #: {{orderNumber}}')
-    setWaOrderServedMsgAr(wa.orderServedMessageAr || 'تم تقديم طلبك. شكراً لك! رقم الطلب: {{orderNumber}}')
+    setWaOrderServedMsgAr(wa.orderServedMessageAr || 'ØªÙ… ØªÙ‚Ø¯ÙŠÙ… Ø·Ù„Ø¨Ùƒ. Ø´ÙƒØ±Ø§Ù‹ Ù„Ùƒ! Ø±Ù‚Ù… Ø§Ù„Ø·Ù„Ø¨: {{orderNumber}}')
     setWaNotifyPhones(Array.isArray(wa.notifyPhoneList) ? wa.notifyPhoneList.join(', ') : '')
     // Bakala settings init
     setBakalaRequireShift(tenant.settings?.bakala?.requireShift !== false)
@@ -245,7 +245,7 @@ export default function Settings() {
     mutationFn: (data) => api.put('/tenants/current', data),
     onSuccess: (res) => {
       const updated = res?.data
-      toast.success(language === 'ar' ? 'تم حفظ الإعدادات' : 'Settings saved')
+      toast.success(language === 'ar' ? 'ØªÙ… Ø­ÙØ¸ Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª' : 'Settings saved')
       if (updated) {
         queryClient.setQueryData(['tenant-settings'], updated)
         dispatch(updateTenant(updated))
@@ -291,14 +291,14 @@ export default function Settings() {
 
   const tabs = [
     { id: 'company', label: t('companySettings'), icon: Building2 },
-    { id: 'govIntegrations', label: language === 'ar' ? 'التكاملات الحكومية' : 'Government Integrations', icon: Shield },
-    { id: 'preferences', label: language === 'ar' ? 'التفضيلات' : 'Preferences', icon: Palette },
-    { id: 'setupMachine', label: language === 'ar' ? 'إعداد الدفع الإلكتروني' : 'Payment Terminal', icon: CreditCard },
-    { id: 'hardware', label: language === 'ar' ? 'الأجهزة والطباعة' : 'Hardware & Printers', icon: Terminal },
-    ...(hasRestaurant ? [{ id: 'restaurant', label: language === 'ar' ? 'إعدادات المطعم' : 'Restaurant', icon: UtensilsCrossed }] : []),
-    ...(hasBakala ? [{ id: 'bakala', label: language === 'ar' ? 'إعدادات البقالة' : 'Bakala', icon: Building2 }] : []),
-    ...(hasBookstore ? [{ id: 'bookstore', label: language === 'ar' ? 'إعدادات المكتبة' : 'Bookstore', icon: BookOpen }] : []),
-    { id: 'backup', label: language === 'ar' ? 'النسخ الاحتياطي' : 'Backup', icon: Database },
+    { id: 'govIntegrations', label: language === 'ar' ? 'Ø§Ù„ØªÙƒØ§Ù…Ù„Ø§Øª Ø§Ù„Ø­ÙƒÙˆÙ…ÙŠØ©' : 'Government Integrations', icon: Shield },
+    { id: 'preferences', label: language === 'ar' ? 'Ø§Ù„ØªÙØ¶ÙŠÙ„Ø§Øª' : 'Preferences', icon: Palette },
+    { id: 'setupMachine', label: language === 'ar' ? 'Ø¥Ø¹Ø¯Ø§Ø¯ Ø§Ù„Ø¯ÙØ¹ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ' : 'Payment Terminal', icon: CreditCard },
+    { id: 'hardware', label: language === 'ar' ? 'Ø§Ù„Ø£Ø¬Ù‡Ø²Ø© ÙˆØ§Ù„Ø·Ø¨Ø§Ø¹Ø©' : 'Hardware & Printers', icon: Terminal },
+    ...(hasRestaurant ? [{ id: 'restaurant', label: language === 'ar' ? 'Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ù…Ø·Ø¹Ù…' : 'Restaurant', icon: UtensilsCrossed }] : []),
+    ...(hasBakala ? [{ id: 'bakala', label: language === 'ar' ? 'Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ø¨Ù‚Ø§Ù„Ø©' : 'Bakala', icon: Building2 }] : []),
+    ...(hasBookstore ? [{ id: 'bookstore', label: language === 'ar' ? 'Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ù…ÙƒØªØ¨Ø©' : 'Bookstore', icon: BookOpen }] : []),
+    { id: 'backup', label: language === 'ar' ? 'Ø§Ù„Ù†Ø³Ø® Ø§Ù„Ø§Ø­ØªÙŠØ§Ø·ÙŠ' : 'Backup', icon: Database },
   ]
 
   const downloadBackup = async () => {
@@ -320,7 +320,7 @@ export default function Settings() {
       a.remove()
       window.URL.revokeObjectURL(url)
     } catch (err) {
-      toast.error(err.response?.data?.error || (language === 'ar' ? 'فشل تحميل النسخة الاحتياطية' : 'Failed to download backup'))
+      toast.error(err.response?.data?.error || (language === 'ar' ? 'ÙØ´Ù„ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ù†Ø³Ø®Ø© Ø§Ù„Ø§Ø­ØªÙŠØ§Ø·ÙŠØ©' : 'Failed to download backup'))
     } finally {
       setDownloadingBackup(false)
     }
@@ -331,7 +331,7 @@ export default function Settings() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('settings')}</h1>
         <p className="text-gray-500 dark:text-gray-400 mt-1">
-          {language === 'ar' ? 'إدارة إعدادات الشركة والنظام' : 'Manage company and system settings'}
+          {language === 'ar' ? 'Ø¥Ø¯Ø§Ø±Ø© Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ø´Ø±ÙƒØ© ÙˆØ§Ù„Ù†Ø¸Ø§Ù…' : 'Manage company and system settings'}
         </p>
       </div>
 
@@ -368,67 +368,67 @@ export default function Settings() {
               }))} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="label">{language === 'ar' ? 'الاسم القانوني (EN)' : 'Legal Name (EN)'}</label>
+                    <label className="label">{language === 'ar' ? 'Ø§Ù„Ø§Ø³Ù… Ø§Ù„Ù‚Ø§Ù†ÙˆÙ†ÙŠ (EN)' : 'Legal Name (EN)'}</label>
                     <input {...register('legalNameEn')} className="input" />
                   </div>
                   <div>
-                    <label className="label">{language === 'ar' ? 'الاسم القانوني (AR)' : 'Legal Name (AR)'}</label>
+                    <label className="label">{language === 'ar' ? 'Ø§Ù„Ø§Ø³Ù… Ø§Ù„Ù‚Ø§Ù†ÙˆÙ†ÙŠ (AR)' : 'Legal Name (AR)'}</label>
                     <input {...register('legalNameAr')} className="input" dir="rtl" />
                   </div>
                   <div>
-                    <label className="label">{language === 'ar' ? 'الرقم الضريبي' : 'VAT Number'}</label>
+                    <label className="label">{language === 'ar' ? 'Ø§Ù„Ø±Ù‚Ù… Ø§Ù„Ø¶Ø±ÙŠØ¨ÙŠ' : 'VAT Number'}</label>
                     <input {...register('vatNumber')} className="input" />
                   </div>
                   <div>
-                    <label className="label">{language === 'ar' ? 'السجل التجاري' : 'CR Number'}</label>
+                    <label className="label">{language === 'ar' ? 'Ø§Ù„Ø³Ø¬Ù„ Ø§Ù„ØªØ¬Ø§Ø±ÙŠ' : 'CR Number'}</label>
                     <input {...register('crNumber')} className="input" />
                   </div>
                   <div>
-                    <label className="label">{language === 'ar' ? 'المدينة' : 'City'}</label>
+                    <label className="label">{language === 'ar' ? 'Ø§Ù„Ù…Ø¯ÙŠÙ†Ø©' : 'City'}</label>
                     <input {...register('address.city')} className="input" />
                   </div>
                   <div>
-                    <label className="label">{language === 'ar' ? 'المدينة (AR)' : 'City (AR)'}</label>
+                    <label className="label">{language === 'ar' ? 'Ø§Ù„Ù…Ø¯ÙŠÙ†Ø© (AR)' : 'City (AR)'}</label>
                     <input {...register('address.cityAr')} className="input" dir="rtl" />
                   </div>
                   <div>
-                    <label className="label">{language === 'ar' ? 'الحي' : 'District'}</label>
+                    <label className="label">{language === 'ar' ? 'Ø§Ù„Ø­ÙŠ' : 'District'}</label>
                     <input {...register('address.district')} className="input" />
                   </div>
                   <div>
-                    <label className="label">{language === 'ar' ? 'الحي (AR)' : 'District (AR)'}</label>
+                    <label className="label">{language === 'ar' ? 'Ø§Ù„Ø­ÙŠ (AR)' : 'District (AR)'}</label>
                     <input {...register('address.districtAr')} className="input" dir="rtl" />
                   </div>
                   <div>
-                    <label className="label">{language === 'ar' ? 'الشارع' : 'Street'}</label>
+                    <label className="label">{language === 'ar' ? 'Ø§Ù„Ø´Ø§Ø±Ø¹' : 'Street'}</label>
                     <input {...register('address.street')} className="input" />
                   </div>
                   <div>
-                    <label className="label">{language === 'ar' ? 'الشارع (AR)' : 'Street (AR)'}</label>
+                    <label className="label">{language === 'ar' ? 'Ø§Ù„Ø´Ø§Ø±Ø¹ (AR)' : 'Street (AR)'}</label>
                     <input {...register('address.streetAr')} className="input" dir="rtl" />
                   </div>
                   <div>
-                    <label className="label">{language === 'ar' ? 'الرمز البريدي' : 'Postal Code'}</label>
+                    <label className="label">{language === 'ar' ? 'Ø§Ù„Ø±Ù…Ø² Ø§Ù„Ø¨Ø±ÙŠØ¯ÙŠ' : 'Postal Code'}</label>
                     <input {...register('address.postalCode')} className="input" />
                   </div>
                   <div>
-                    <label className="label">{language === 'ar' ? 'رقم المبنى' : 'Building Number'}</label>
+                    <label className="label">{language === 'ar' ? 'Ø±Ù‚Ù… Ø§Ù„Ù…Ø¨Ù†Ù‰' : 'Building Number'}</label>
                     <input {...register('address.buildingNumber')} className="input" />
                   </div>
                   <div>
-                    <label className="label">{language === 'ar' ? 'الرقم الإضافي' : 'Additional Number'}</label>
+                    <label className="label">{language === 'ar' ? 'Ø§Ù„Ø±Ù‚Ù… Ø§Ù„Ø¥Ø¶Ø§ÙÙŠ' : 'Additional Number'}</label>
                     <input {...register('address.additionalNumber')} className="input" />
                   </div>
                   <div>
-                    <label className="label">{language === 'ar' ? 'الدولة' : 'Country'}</label>
+                    <label className="label">{language === 'ar' ? 'Ø§Ù„Ø¯ÙˆÙ„Ø©' : 'Country'}</label>
                     <input {...register('address.country')} className="input" placeholder="SA" />
                   </div>
                   <div>
-                    <label className="label">{language === 'ar' ? 'البريد الإلكتروني' : 'Email'}</label>
+                    <label className="label">{language === 'ar' ? 'Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ' : 'Email'}</label>
                     <input type="email" {...register('contactEmail')} className="input" />
                   </div>
                   <div>
-                    <label className="label">{language === 'ar' ? 'الهاتف' : 'Phone'}</label>
+                    <label className="label">{language === 'ar' ? 'Ø§Ù„Ù‡Ø§ØªÙ' : 'Phone'}</label>
                     <input {...register('contactPhone')} className="input" />
                   </div>
                 </div>
@@ -437,47 +437,47 @@ export default function Settings() {
                 <div className="pt-6 border-t border-gray-200 dark:border-dark-600">
                   <h4 className="text-md font-semibold mb-4 flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-blue-500" />
-                    {language === 'ar' ? 'العنوان الوطني' : 'National Address'}
+                    {language === 'ar' ? 'Ø§Ù„Ø¹Ù†ÙˆØ§Ù† Ø§Ù„ÙˆØ·Ù†ÙŠ' : 'National Address'}
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="label">{language === 'ar' ? 'رقم الإثبات' : 'Proof Number'}</label>
+                      <label className="label">{language === 'ar' ? 'Ø±Ù‚Ù… Ø§Ù„Ø¥Ø«Ø¨Ø§Øª' : 'Proof Number'}</label>
                       <input {...register('nationalAddress.proofNumber')} className="input" />
                     </div>
                     <div>
-                      <label className="label">{language === 'ar' ? 'حساب العميل' : 'Customer Account'}</label>
+                      <label className="label">{language === 'ar' ? 'Ø­Ø³Ø§Ø¨ Ø§Ù„Ø¹Ù…ÙŠÙ„' : 'Customer Account'}</label>
                       <input {...register('nationalAddress.customerAccount')} className="input" />
                     </div>
                     <div>
-                      <label className="label">{language === 'ar' ? 'تاريخ الإصدار الأصلي' : 'Original Date'}</label>
+                      <label className="label">{language === 'ar' ? 'ØªØ§Ø±ÙŠØ® Ø§Ù„Ø¥ØµØ¯Ø§Ø± Ø§Ù„Ø£ØµÙ„ÙŠ' : 'Original Date'}</label>
                       <input type="date" {...register('nationalAddress.originalDate')} className="input" />
                     </div>
                     <div>
-                      <label className="label">{language === 'ar' ? 'تاريخ الانتهاء' : 'Expiration Date'}</label>
+                      <label className="label">{language === 'ar' ? 'ØªØ§Ø±ÙŠØ® Ø§Ù„Ø§Ù†ØªÙ‡Ø§Ø¡' : 'Expiration Date'}</label>
                       <input type="date" {...register('nationalAddress.expirationDate')} className="input" />
                     </div>
                     <div>
-                      <label className="label">{language === 'ar' ? 'تاريخ التسجيل' : 'Registration Date'}</label>
+                      <label className="label">{language === 'ar' ? 'ØªØ§Ø±ÙŠØ® Ø§Ù„ØªØ³Ø¬ÙŠÙ„' : 'Registration Date'}</label>
                       <input type="date" {...register('nationalAddress.regDate')} className="input" />
                     </div>
                     <div>
-                      <label className="label">{language === 'ar' ? 'العنوان المختصر' : 'Short Address'}</label>
+                      <label className="label">{language === 'ar' ? 'Ø§Ù„Ø¹Ù†ÙˆØ§Ù† Ø§Ù„Ù…Ø®ØªØµØ±' : 'Short Address'}</label>
                       <input {...register('nationalAddress.shortAddress')} className="input" />
                     </div>
                     <div>
-                      <label className="label">{language === 'ar' ? 'رقم المبنى' : 'Building No'}</label>
+                      <label className="label">{language === 'ar' ? 'Ø±Ù‚Ù… Ø§Ù„Ù…Ø¨Ù†Ù‰' : 'Building No'}</label>
                       <input {...register('nationalAddress.buildingNo')} className="input" />
                     </div>
                     <div>
-                      <label className="label">{language === 'ar' ? 'الحي' : 'Neighborhood'}</label>
+                      <label className="label">{language === 'ar' ? 'Ø§Ù„Ø­ÙŠ' : 'Neighborhood'}</label>
                       <input {...register('nationalAddress.neighborhood')} className="input" />
                     </div>
                     <div>
-                      <label className="label">{language === 'ar' ? 'المنطقة' : 'Region'}</label>
+                      <label className="label">{language === 'ar' ? 'Ø§Ù„Ù…Ù†Ø·Ù‚Ø©' : 'Region'}</label>
                       <input {...register('nationalAddress.region')} className="input" />
                     </div>
                     <div className="md:col-span-2">
-                      <label className="label">{language === 'ar' ? 'رابط QR للتحقق' : 'QR Verification URL'}</label>
+                      <label className="label">{language === 'ar' ? 'Ø±Ø§Ø¨Ø· QR Ù„Ù„ØªØ­Ù‚Ù‚' : 'QR Verification URL'}</label>
                       <input {...register('nationalAddress.qrCodeUrl')} className="input" />
                     </div>
                   </div>
@@ -487,35 +487,35 @@ export default function Settings() {
                 <div className="pt-6 border-t border-gray-200 dark:border-dark-600">
                   <h4 className="text-md font-semibold mb-4 flex items-center gap-2">
                     <Briefcase className="w-4 h-4 text-amber-500" />
-                    {language === 'ar' ? 'السجل التجاري' : 'Commercial Registration'}
+                    {language === 'ar' ? 'Ø§Ù„Ø³Ø¬Ù„ Ø§Ù„ØªØ¬Ø§Ø±ÙŠ' : 'Commercial Registration'}
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="label">{language === 'ar' ? 'الرقم الوطني الموحد' : 'CR Number'}</label>
+                      <label className="label">{language === 'ar' ? 'Ø§Ù„Ø±Ù‚Ù… Ø§Ù„ÙˆØ·Ù†ÙŠ Ø§Ù„Ù…ÙˆØ­Ø¯' : 'CR Number'}</label>
                       <input {...register('commercialRegistration.crNumber')} className="input" />
                     </div>
                     <div>
-                      <label className="label">{language === 'ar' ? 'تاريخ الإصدار' : 'Issue Date'}</label>
+                      <label className="label">{language === 'ar' ? 'ØªØ§Ø±ÙŠØ® Ø§Ù„Ø¥ØµØ¯Ø§Ø±' : 'Issue Date'}</label>
                       <input type="date" {...register('commercialRegistration.issueDate')} className="input" />
                     </div>
                     <div>
-                      <label className="label">{language === 'ar' ? 'نوع الكيان (EN)' : 'Company Type (EN)'}</label>
+                      <label className="label">{language === 'ar' ? 'Ù†ÙˆØ¹ Ø§Ù„ÙƒÙŠØ§Ù† (EN)' : 'Company Type (EN)'}</label>
                       <input {...register('commercialRegistration.companyType')} className="input" />
                     </div>
                     <div>
-                      <label className="label">{language === 'ar' ? 'نوع الكيان (AR)' : 'Company Type (AR)'}</label>
+                      <label className="label">{language === 'ar' ? 'Ù†ÙˆØ¹ Ø§Ù„ÙƒÙŠØ§Ù† (AR)' : 'Company Type (AR)'}</label>
                       <input {...register('commercialRegistration.companyTypeAr')} className="input" dir="rtl" />
                     </div>
                     <div>
-                      <label className="label">{language === 'ar' ? 'حالة السجل (EN)' : 'Company Status (EN)'}</label>
+                      <label className="label">{language === 'ar' ? 'Ø­Ø§Ù„Ø© Ø§Ù„Ø³Ø¬Ù„ (EN)' : 'Company Status (EN)'}</label>
                       <input {...register('commercialRegistration.companyStatus')} className="input" />
                     </div>
                     <div>
-                      <label className="label">{language === 'ar' ? 'حالة السجل (AR)' : 'Company Status (AR)'}</label>
+                      <label className="label">{language === 'ar' ? 'Ø­Ø§Ù„Ø© Ø§Ù„Ø³Ø¬Ù„ (AR)' : 'Company Status (AR)'}</label>
                       <input {...register('commercialRegistration.companyStatusAr')} className="input" dir="rtl" />
                     </div>
                     <div className="md:col-span-2">
-                      <label className="label">{language === 'ar' ? 'رابط QR للتحقق' : 'QR Verification URL'}</label>
+                      <label className="label">{language === 'ar' ? 'Ø±Ø§Ø¨Ø· QR Ù„Ù„ØªØ­Ù‚Ù‚' : 'QR Verification URL'}</label>
                       <input {...register('commercialRegistration.qrCodeUrl')} className="input" />
                     </div>
                   </div>
@@ -525,42 +525,42 @@ export default function Settings() {
                 <div className="pt-6 border-t border-gray-200 dark:border-dark-600">
                   <h4 className="text-md font-semibold mb-4 flex items-center gap-2">
                     <Receipt className="w-4 h-4 text-teal-500" />
-                    {language === 'ar' ? 'شهادة تسجيل ضريبة القيمة المضافة' : 'VAT Registration Certificate'}
+                    {language === 'ar' ? 'Ø´Ù‡Ø§Ø¯Ø© ØªØ³Ø¬ÙŠÙ„ Ø¶Ø±ÙŠØ¨Ø© Ø§Ù„Ù‚ÙŠÙ…Ø© Ø§Ù„Ù…Ø¶Ø§ÙØ©' : 'VAT Registration Certificate'}
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="label">{language === 'ar' ? 'رقم الشهادة' : 'Certificate No'}</label>
+                      <label className="label">{language === 'ar' ? 'Ø±Ù‚Ù… Ø§Ù„Ø´Ù‡Ø§Ø¯Ø©' : 'Certificate No'}</label>
                       <input {...register('vatCertificate.certificateNo')} className="input" />
                     </div>
                     <div>
-                      <label className="label">{language === 'ar' ? 'تاريخ الشهادة' : 'Certificate Date'}</label>
+                      <label className="label">{language === 'ar' ? 'ØªØ§Ø±ÙŠØ® Ø§Ù„Ø´Ù‡Ø§Ø¯Ø©' : 'Certificate Date'}</label>
                       <input type="date" {...register('vatCertificate.certificateDate')} className="input" />
                     </div>
                     <div>
-                      <label className="label">{language === 'ar' ? 'تاريخ التسجيل الفعّال' : 'Effective Registration Date'}</label>
+                      <label className="label">{language === 'ar' ? 'ØªØ§Ø±ÙŠØ® Ø§Ù„ØªØ³Ø¬ÙŠÙ„ Ø§Ù„ÙØ¹Ù‘Ø§Ù„' : 'Effective Registration Date'}</label>
                       <input type="date" {...register('vatCertificate.effectiveDate')} className="input" />
                     </div>
                     <div>
-                      <label className="label">{language === 'ar' ? 'تاريخ أول إقرار ضريبي' : 'First Filing Due Date'}</label>
+                      <label className="label">{language === 'ar' ? 'ØªØ§Ø±ÙŠØ® Ø£ÙˆÙ„ Ø¥Ù‚Ø±Ø§Ø± Ø¶Ø±ÙŠØ¨ÙŠ' : 'First Filing Due Date'}</label>
                       <input type="date" {...register('vatCertificate.firstFilingDueDate')} className="input" />
                     </div>
                     <div>
-                      <label className="label">{language === 'ar' ? 'الفترة الضريبية (EN)' : 'Tax Period (EN)'}</label>
+                      <label className="label">{language === 'ar' ? 'Ø§Ù„ÙØªØ±Ø© Ø§Ù„Ø¶Ø±ÙŠØ¨ÙŠØ© (EN)' : 'Tax Period (EN)'}</label>
                       <input {...register('vatCertificate.taxPeriod')} className="input" />
                     </div>
                     <div>
-                      <label className="label">{language === 'ar' ? 'الفترة الضريبية (AR)' : 'Tax Period (AR)'}</label>
+                      <label className="label">{language === 'ar' ? 'Ø§Ù„ÙØªØ±Ø© Ø§Ù„Ø¶Ø±ÙŠØ¨ÙŠØ© (AR)' : 'Tax Period (AR)'}</label>
                       <input {...register('vatCertificate.taxPeriodAr')} className="input" dir="rtl" />
                     </div>
                     <div className="md:col-span-2">
-                      <label className="label">{language === 'ar' ? 'رابط QR للتحقق' : 'QR Verification URL'}</label>
+                      <label className="label">{language === 'ar' ? 'Ø±Ø§Ø¨Ø· QR Ù„Ù„ØªØ­Ù‚Ù‚' : 'QR Verification URL'}</label>
                       <input {...register('vatCertificate.qrCodeUrl')} className="input" />
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <label className="label flex items-center gap-2"><Image className="w-4 h-4" />{language === 'ar' ? 'شعار لوحة الإدارة' : 'Admin Panel Logo'}</label>
+                  <label className="label flex items-center gap-2"><Image className="w-4 h-4" />{language === 'ar' ? 'Ø´Ø¹Ø§Ø± Ù„ÙˆØ­Ø© Ø§Ù„Ø¥Ø¯Ø§Ø±Ø©' : 'Admin Panel Logo'}</label>
                   <div className="card-glass p-4 mt-2">
                     <div className="flex items-center gap-4">
                       <div className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-dark-700 border border-gray-200 dark:border-dark-600 flex items-center justify-center overflow-hidden">
@@ -573,7 +573,7 @@ export default function Settings() {
                       <div className="flex-1">
                         <input type="file" accept="image/*" onChange={handleLogoFile} className="input" />
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                          {language === 'ar' ? 'يتم تطبيق الشعار على الشريط الجانبي وترويسة الفواتير' : 'This logo is used in the sidebar and invoice header'}
+                          {language === 'ar' ? 'ÙŠØªÙ… ØªØ·Ø¨ÙŠÙ‚ Ø§Ù„Ø´Ø¹Ø§Ø± Ø¹Ù„Ù‰ Ø§Ù„Ø´Ø±ÙŠØ· Ø§Ù„Ø¬Ø§Ù†Ø¨ÙŠ ÙˆØªØ±ÙˆÙŠØ³Ø© Ø§Ù„ÙÙˆØ§ØªÙŠØ±' : 'This logo is used in the sidebar and invoice header'}
                         </p>
                       </div>
                     </div>
@@ -596,7 +596,7 @@ export default function Settings() {
 
           {activeTab === 'preferences' && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card p-6">
-              <h3 className="text-lg font-semibold mb-6">{language === 'ar' ? 'التفضيلات' : 'Preferences'}</h3>
+              <h3 className="text-lg font-semibold mb-6">{language === 'ar' ? 'Ø§Ù„ØªÙØ¶ÙŠÙ„Ø§Øª' : 'Preferences'}</h3>
               <div className="space-y-6">
                 <div>
                   <label className="label flex items-center gap-2"><Globe className="w-4 h-4" />{t('language')}</label>
@@ -635,32 +635,32 @@ export default function Settings() {
                 </div>
 
                 <div className="pt-2">
-                  <label className="label flex items-center gap-2"><FileText className="w-4 h-4" />{language === 'ar' ? 'تصميم PDF للفواتير' : 'Invoice PDF Design'}</label>
+                  <label className="label flex items-center gap-2"><FileText className="w-4 h-4" />{language === 'ar' ? 'ØªØµÙ…ÙŠÙ… PDF Ù„Ù„ÙÙˆØ§ØªÙŠØ±' : 'Invoice PDF Design'}</label>
                   <div className="card-glass p-4 mt-2">
                     <div className="mt-3">
-                      <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'عرض العملة' : 'Currency Display'}</label>
+                      <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'Ø¹Ø±Ø¶ Ø§Ù„Ø¹Ù…Ù„Ø©' : 'Currency Display'}</label>
                       <select value={invoiceCurrencyDisplay} onChange={(e) => setInvoiceCurrencyDisplay(e.target.value === 'icon' ? 'icon' : 'text')} className="select mt-1 w-full md:w-1/2">
-                        <option value="text">{language === 'ar' ? 'نص (SAR)' : 'Text (SAR)'}</option>
-                        <option value="icon">{language === 'ar' ? 'رمز الريال السعودي (﷼)' : 'Saudi Riyal Icon (﷼)'}</option>
+                        <option value="text">{language === 'ar' ? 'Ù†Øµ (SAR)' : 'Text (SAR)'}</option>
+                        <option value="icon">{language === 'ar' ? 'Ø±Ù…Ø² Ø§Ù„Ø±ÙŠØ§Ù„ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠ (ï·¼)' : 'Saudi Riyal Icon (ï·¼)'}</option>
                       </select>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
                       <div>
-                        <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'نمط تسلسل الإيصالات' : 'Receipt Sequence Pattern'}</label>
+                        <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'Ù†Ù…Ø· ØªØ³Ù„Ø³Ù„ Ø§Ù„Ø¥ÙŠØµØ§Ù„Ø§Øª' : 'Receipt Sequence Pattern'}</label>
                         <input value={invoiceSequencePattern} onChange={(e) => setInvoiceSequencePattern(e.target.value)} placeholder="RCPT-{N}" className="input mt-1" />
-                        <p className="text-[10px] text-gray-500 mt-1">{language === 'ar' ? 'استخدم {N} للرقم المتسلسل.' : 'Use {N} for sequential number.'}</p>
+                        <p className="text-[10px] text-gray-500 mt-1">{language === 'ar' ? 'Ø§Ø³ØªØ®Ø¯Ù… {N} Ù„Ù„Ø±Ù‚Ù… Ø§Ù„Ù…ØªØ³Ù„Ø³Ù„.' : 'Use {N} for sequential number.'}</p>
                       </div>
                       <div>
-                        <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'لغة واتساب للطلبات' : 'Orders WhatsApp Language'}</label>
+                        <label className="text-xs text-gray-500 dark:text-gray-400">{language === 'ar' ? 'Ù„ØºØ© ÙˆØ§ØªØ³Ø§Ø¨ Ù„Ù„Ø·Ù„Ø¨Ø§Øª' : 'Orders WhatsApp Language'}</label>
                         <select value={khayyatWhatsappLanguage} onChange={(e) => setKhayyatWhatsappLanguage(e.target.value)} className="select mt-1">
-                          <option value="both">{language === 'ar' ? 'عربي وإنجليزي' : 'Arabic & English'}</option>
-                          <option value="ar">{language === 'ar' ? 'عربي فقط' : 'Arabic Only'}</option>
-                          <option value="en">{language === 'ar' ? 'إنجليزي فقط' : 'English Only'}</option>
+                          <option value="both">{language === 'ar' ? 'Ø¹Ø±Ø¨ÙŠ ÙˆØ¥Ù†Ø¬Ù„ÙŠØ²ÙŠ' : 'Arabic & English'}</option>
+                          <option value="ar">{language === 'ar' ? 'Ø¹Ø±Ø¨ÙŠ ÙÙ‚Ø·' : 'Arabic Only'}</option>
+                          <option value="en">{language === 'ar' ? 'Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ ÙÙ‚Ø·' : 'English Only'}</option>
                         </select>
                       </div>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                      {language === 'ar' ? 'يتم تطبيق هذا القالب عند تحميل PDF من شاشة الفواتير.' : 'This template is used when downloading invoice PDFs.'}
+                      {language === 'ar' ? 'ÙŠØªÙ… ØªØ·Ø¨ÙŠÙ‚ Ù‡Ø°Ø§ Ø§Ù„Ù‚Ø§Ù„Ø¨ Ø¹Ù†Ø¯ ØªØ­Ù…ÙŠÙ„ PDF Ù…Ù† Ø´Ø§Ø´Ø© Ø§Ù„ÙÙˆØ§ØªÙŠØ±.' : 'This template is used when downloading invoice PDFs.'}
                     </p>
                   </div>
                 </div>
@@ -668,18 +668,18 @@ export default function Settings() {
 
 
                 <div className="pt-2">
-                  <label className="label flex items-center gap-2"><Palette className="w-4 h-4" />{language === 'ar' ? 'ألوان العلامة' : 'Brand Colors'}</label>
+                  <label className="label flex items-center gap-2"><Palette className="w-4 h-4" />{language === 'ar' ? 'Ø£Ù„ÙˆØ§Ù† Ø§Ù„Ø¹Ù„Ø§Ù…Ø©' : 'Brand Colors'}</label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                     <div className="card-glass p-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{language === 'ar' ? 'اللون الأساسي' : 'Primary'}</span>
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{language === 'ar' ? 'Ø§Ù„Ù„ÙˆÙ† Ø§Ù„Ø£Ø³Ø§Ø³ÙŠ' : 'Primary'}</span>
                         <input type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="h-9 w-12 rounded-lg border border-gray-200 dark:border-dark-600 bg-transparent" />
                       </div>
                       <input value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="input mt-3" />
                     </div>
                     <div className="card-glass p-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{language === 'ar' ? 'اللون الثانوي' : 'Secondary'}</span>
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{language === 'ar' ? 'Ø§Ù„Ù„ÙˆÙ† Ø§Ù„Ø«Ø§Ù†ÙˆÙŠ' : 'Secondary'}</span>
                         <input type="color" value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} className="h-9 w-12 rounded-lg border border-gray-200 dark:border-dark-600 bg-transparent" />
                       </div>
                       <input value={secondaryColor} onChange={(e) => setSecondaryColor(e.target.value)} className="input mt-3" />
@@ -688,43 +688,43 @@ export default function Settings() {
                 </div>
 
                 <div>
-                  <label className="label flex items-center gap-2"><Palette className="w-4 h-4" />{language === 'ar' ? 'نمط الواجهة' : 'UI Style'}</label>
+                  <label className="label flex items-center gap-2"><Palette className="w-4 h-4" />{language === 'ar' ? 'Ù†Ù…Ø· Ø§Ù„ÙˆØ§Ø¬Ù‡Ø©' : 'UI Style'}</label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                     <div className="card-glass p-4">
-                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{language === 'ar' ? 'الهيدر' : 'Header'}</p>
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{language === 'ar' ? 'Ø§Ù„Ù‡ÙŠØ¯Ø±' : 'Header'}</p>
                       <div className="flex gap-3">
                         <button
                           type="button"
                           onClick={() => setHeaderStyle('glass')}
                           className={`flex-1 p-3 rounded-xl border-2 transition-all ${headerStyle === 'glass' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-dark-600'}`}
                         >
-                          <span className="font-medium">{language === 'ar' ? 'زجاجي' : 'Glass'}</span>
+                          <span className="font-medium">{language === 'ar' ? 'Ø²Ø¬Ø§Ø¬ÙŠ' : 'Glass'}</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => setHeaderStyle('solid')}
                           className={`flex-1 p-3 rounded-xl border-2 transition-all ${headerStyle === 'solid' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-dark-600'}`}
                         >
-                          <span className="font-medium">{language === 'ar' ? 'صلب' : 'Solid'}</span>
+                          <span className="font-medium">{language === 'ar' ? 'ØµÙ„Ø¨' : 'Solid'}</span>
                         </button>
                       </div>
                     </div>
                     <div className="card-glass p-4">
-                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{language === 'ar' ? 'القائمة الجانبية' : 'Sidebar'}</p>
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{language === 'ar' ? 'Ø§Ù„Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø¬Ø§Ù†Ø¨ÙŠØ©' : 'Sidebar'}</p>
                       <div className="flex gap-3">
                         <button
                           type="button"
                           onClick={() => setSidebarStyle('solid')}
                           className={`flex-1 p-3 rounded-xl border-2 transition-all ${sidebarStyle === 'solid' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-dark-600'}`}
                         >
-                          <span className="font-medium">{language === 'ar' ? 'صلب' : 'Solid'}</span>
+                          <span className="font-medium">{language === 'ar' ? 'ØµÙ„Ø¨' : 'Solid'}</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => setSidebarStyle('glass')}
                           className={`flex-1 p-3 rounded-xl border-2 transition-all ${sidebarStyle === 'glass' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-dark-600'}`}
                         >
-                          <span className="font-medium">{language === 'ar' ? 'زجاجي' : 'Glass'}</span>
+                          <span className="font-medium">{language === 'ar' ? 'Ø²Ø¬Ø§Ø¬ÙŠ' : 'Glass'}</span>
                         </button>
                       </div>
                     </div>
@@ -762,7 +762,7 @@ export default function Settings() {
                             headingFontSize: Number(invoiceHeadingFontSize || 18),
                           },
                           showVision2030,
-                          vision2030Logo: vision2030LogoDataUrl || tenant?.settings?.invoiceBranding?.vision2030Logo || '/saudi-vision-2030-logo.png',
+                          vision2030Logo: vision2030LogoDataUrl || tenant?.settings?.invoiceBranding?.vision2030Logo || '/saudi-vision-2030-logo.webp',
                           contextProfiles: invoiceBrandingContexts.reduce((acc, item) => {
                             const profile = invoiceBrandingProfiles?.[item.key] || {}
                             acc[item.key] = {
@@ -828,7 +828,7 @@ export default function Settings() {
               <div>
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                   <Clock className="w-5 h-5 text-primary-500" />
-                  {language === 'ar' ? 'الفتح والإغلاق التلقائي' : 'Auto Open / Close'}
+                  {language === 'ar' ? 'Ø§Ù„ÙØªØ­ ÙˆØ§Ù„Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„ØªÙ„Ù‚Ø§Ø¦ÙŠ' : 'Auto Open / Close'}
                 </h3>
                 <div className="space-y-4">
                   <label className="flex items-center gap-3">
@@ -839,17 +839,17 @@ export default function Settings() {
                       className="w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                     />
                     <span className="text-sm text-gray-700 dark:text-gray-300">
-                      {language === 'ar' ? 'تفعيل التحديث التلقائي للحالة (مفتوح/مغلق)' : 'Enable automatic status update (Open/Closed)'}
+                      {language === 'ar' ? 'ØªÙØ¹ÙŠÙ„ Ø§Ù„ØªØ­Ø¯ÙŠØ« Ø§Ù„ØªÙ„Ù‚Ø§Ø¦ÙŠ Ù„Ù„Ø­Ø§Ù„Ø© (Ù…ÙØªÙˆØ­/Ù…ØºÙ„Ù‚)' : 'Enable automatic status update (Open/Closed)'}
                     </span>
                   </label>
                   {restAutoStatus && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-8">
                       <div>
-                        <label className="label text-sm">{language === 'ar' ? 'وقت الفتح' : 'Opening Time'}</label>
+                        <label className="label text-sm">{language === 'ar' ? 'ÙˆÙ‚Øª Ø§Ù„ÙØªØ­' : 'Opening Time'}</label>
                         <input type="time" value={restOpenTime} onChange={(e) => setRestOpenTime(e.target.value)} className="input" />
                       </div>
                       <div>
-                        <label className="label text-sm">{language === 'ar' ? 'وقت الإغلاق' : 'Closing Time'}</label>
+                        <label className="label text-sm">{language === 'ar' ? 'ÙˆÙ‚Øª Ø§Ù„Ø¥ØºÙ„Ø§Ù‚' : 'Closing Time'}</label>
                         <input type="time" value={restCloseTime} onChange={(e) => setRestCloseTime(e.target.value)} className="input" />
                       </div>
                       <label className="flex items-center gap-3 sm:col-span-2">
@@ -860,17 +860,17 @@ export default function Settings() {
                           className="w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                         />
                         <span className="text-sm text-gray-700 dark:text-gray-300">
-                          {language === 'ar' ? 'إرسال إشعار عند تغيير الحالة' : 'Send notification on status change'}
+                          {language === 'ar' ? 'Ø¥Ø±Ø³Ø§Ù„ Ø¥Ø´Ø¹Ø§Ø± Ø¹Ù†Ø¯ ØªØºÙŠÙŠØ± Ø§Ù„Ø­Ø§Ù„Ø©' : 'Send notification on status change'}
                         </span>
                       </label>
                       {restNotify && (
                         <div className="sm:col-span-2">
-                          <label className="label text-sm">{language === 'ar' ? 'رقم الهاتف للإشعارات' : 'Notification Phone'}</label>
+                          <label className="label text-sm">{language === 'ar' ? 'Ø±Ù‚Ù… Ø§Ù„Ù‡Ø§ØªÙ Ù„Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª' : 'Notification Phone'}</label>
                           <input
                             type="tel"
                             value={restNotifyPhone}
                             onChange={(e) => setRestNotifyPhone(e.target.value)}
-                            placeholder={language === 'ar' ? 'مثال: 9665XXXXXXXX' : 'e.g. 9665XXXXXXXX'}
+                            placeholder={language === 'ar' ? 'Ù…Ø«Ø§Ù„: 9665XXXXXXXX' : 'e.g. 9665XXXXXXXX'}
                             className="input"
                           />
                         </div>
@@ -884,41 +884,41 @@ export default function Settings() {
               <div>
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                   <MessageCircle className="w-5 h-5 text-green-500" />
-                  {language === 'ar' ? 'إرسال واتساب التلقائي' : 'WhatsApp Auto-Send'}
+                  {language === 'ar' ? 'Ø¥Ø±Ø³Ø§Ù„ ÙˆØ§ØªØ³Ø§Ø¨ Ø§Ù„ØªÙ„Ù‚Ø§Ø¦ÙŠ' : 'WhatsApp Auto-Send'}
                 </h3>
                 <div className="space-y-4">
                   <label className="flex items-center justify-between p-3 rounded-xl border border-gray-200 dark:border-dark-700">
-                    <span className="font-medium text-sm">{language === 'ar' ? 'تفعيل الإرسال التلقائي' : 'Enable Auto-Send'}</span>
+                    <span className="font-medium text-sm">{language === 'ar' ? 'ØªÙØ¹ÙŠÙ„ Ø§Ù„Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„ØªÙ„Ù‚Ø§Ø¦ÙŠ' : 'Enable Auto-Send'}</span>
                     <input type="checkbox" checked={waAutoSend} onChange={(e) => setWaAutoSend(e.target.checked)} className="h-4 w-4 rounded" />
                   </label>
 
                   {waAutoSend && (
                     <div className="space-y-3 pl-4 border-s-2 border-green-200 dark:border-green-900">
                       <label className="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-dark-800">
-                        <span className="text-sm">{language === 'ar' ? 'إرسال عند فتح المطعم' : 'Send on Restaurant Open'}</span>
+                        <span className="text-sm">{language === 'ar' ? 'Ø¥Ø±Ø³Ø§Ù„ Ø¹Ù†Ø¯ ÙØªØ­ Ø§Ù„Ù…Ø·Ø¹Ù…' : 'Send on Restaurant Open'}</span>
                         <input type="checkbox" checked={waOnOpen} onChange={(e) => setWaOnOpen(e.target.checked)} className="h-4 w-4 rounded" />
                       </label>
                       <label className="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-dark-800">
-                        <span className="text-sm">{language === 'ar' ? 'إرسال عند إنشاء طلب' : 'Send on Order Placed'}</span>
+                        <span className="text-sm">{language === 'ar' ? 'Ø¥Ø±Ø³Ø§Ù„ Ø¹Ù†Ø¯ Ø¥Ù†Ø´Ø§Ø¡ Ø·Ù„Ø¨' : 'Send on Order Placed'}</span>
                         <input type="checkbox" checked={waOnOrderPlaced} onChange={(e) => setWaOnOrderPlaced(e.target.checked)} className="h-4 w-4 rounded" />
                       </label>
                       <label className="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-dark-800">
-                        <span className="text-sm">{language === 'ar' ? 'إرسال عند جاهزية الطلب' : 'Send on Order Ready'}</span>
+                        <span className="text-sm">{language === 'ar' ? 'Ø¥Ø±Ø³Ø§Ù„ Ø¹Ù†Ø¯ Ø¬Ø§Ù‡Ø²ÙŠØ© Ø§Ù„Ø·Ù„Ø¨' : 'Send on Order Ready'}</span>
                         <input type="checkbox" checked={waOnOrderReady} onChange={(e) => setWaOnOrderReady(e.target.checked)} className="h-4 w-4 rounded" />
                       </label>
                       <label className="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-dark-800">
-                        <span className="text-sm">{language === 'ar' ? 'إرسال عند تقديم الطلب' : 'Send on Order Served'}</span>
+                        <span className="text-sm">{language === 'ar' ? 'Ø¥Ø±Ø³Ø§Ù„ Ø¹Ù†Ø¯ ØªÙ‚Ø¯ÙŠÙ… Ø§Ù„Ø·Ù„Ø¨' : 'Send on Order Served'}</span>
                         <input type="checkbox" checked={waOnOrderServed} onChange={(e) => setWaOnOrderServed(e.target.checked)} className="h-4 w-4 rounded" />
                       </label>
 
                       {waOnOpen && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
-                            <label className="label text-xs">{language === 'ar' ? 'رسالة الفتح (EN)' : 'Open Message (EN)'}</label>
+                            <label className="label text-xs">{language === 'ar' ? 'Ø±Ø³Ø§Ù„Ø© Ø§Ù„ÙØªØ­ (EN)' : 'Open Message (EN)'}</label>
                             <textarea className="input text-sm" rows={2} value={waOpenMsgEn} onChange={(e) => setWaOpenMsgEn(e.target.value)} />
                           </div>
                           <div>
-                            <label className="label text-xs">{language === 'ar' ? 'رسالة الفتح (AR)' : 'Open Message (AR)'}</label>
+                            <label className="label text-xs">{language === 'ar' ? 'Ø±Ø³Ø§Ù„Ø© Ø§Ù„ÙØªØ­ (AR)' : 'Open Message (AR)'}</label>
                             <textarea className="input text-sm" rows={2} value={waOpenMsgAr} onChange={(e) => setWaOpenMsgAr(e.target.value)} dir="rtl" />
                           </div>
                         </div>
@@ -927,11 +927,11 @@ export default function Settings() {
                       {waOnOrderPlaced && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
-                            <label className="label text-xs">{language === 'ar' ? 'رسالة الطلب (EN)' : 'Order Placed (EN)'}</label>
+                            <label className="label text-xs">{language === 'ar' ? 'Ø±Ø³Ø§Ù„Ø© Ø§Ù„Ø·Ù„Ø¨ (EN)' : 'Order Placed (EN)'}</label>
                             <textarea className="input text-sm" rows={2} value={waOrderPlacedMsgEn} onChange={(e) => setWaOrderPlacedMsgEn(e.target.value)} />
                           </div>
                           <div>
-                            <label className="label text-xs">{language === 'ar' ? 'رسالة الطلب (AR)' : 'Order Placed (AR)'}</label>
+                            <label className="label text-xs">{language === 'ar' ? 'Ø±Ø³Ø§Ù„Ø© Ø§Ù„Ø·Ù„Ø¨ (AR)' : 'Order Placed (AR)'}</label>
                             <textarea className="input text-sm" rows={2} value={waOrderPlacedMsgAr} onChange={(e) => setWaOrderPlacedMsgAr(e.target.value)} dir="rtl" />
                           </div>
                         </div>
@@ -940,11 +940,11 @@ export default function Settings() {
                       {waOnOrderReady && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
-                            <label className="label text-xs">{language === 'ar' ? 'رسالة الجاهزية (EN)' : 'Order Ready (EN)'}</label>
+                            <label className="label text-xs">{language === 'ar' ? 'Ø±Ø³Ø§Ù„Ø© Ø§Ù„Ø¬Ø§Ù‡Ø²ÙŠØ© (EN)' : 'Order Ready (EN)'}</label>
                             <textarea className="input text-sm" rows={2} value={waOrderReadyMsgEn} onChange={(e) => setWaOrderReadyMsgEn(e.target.value)} />
                           </div>
                           <div>
-                            <label className="label text-xs">{language === 'ar' ? 'رسالة الجاهزية (AR)' : 'Order Ready (AR)'}</label>
+                            <label className="label text-xs">{language === 'ar' ? 'Ø±Ø³Ø§Ù„Ø© Ø§Ù„Ø¬Ø§Ù‡Ø²ÙŠØ© (AR)' : 'Order Ready (AR)'}</label>
                             <textarea className="input text-sm" rows={2} value={waOrderReadyMsgAr} onChange={(e) => setWaOrderReadyMsgAr(e.target.value)} dir="rtl" />
                           </div>
                         </div>
@@ -953,11 +953,11 @@ export default function Settings() {
                       {waOnOrderServed && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
-                            <label className="label text-xs">{language === 'ar' ? 'رسالة التقديم (EN)' : 'Order Served (EN)'}</label>
+                            <label className="label text-xs">{language === 'ar' ? 'Ø±Ø³Ø§Ù„Ø© Ø§Ù„ØªÙ‚Ø¯ÙŠÙ… (EN)' : 'Order Served (EN)'}</label>
                             <textarea className="input text-sm" rows={2} value={waOrderServedMsgEn} onChange={(e) => setWaOrderServedMsgEn(e.target.value)} />
                           </div>
                           <div>
-                            <label className="label text-xs">{language === 'ar' ? 'رسالة التقديم (AR)' : 'Order Served (AR)'}</label>
+                            <label className="label text-xs">{language === 'ar' ? 'Ø±Ø³Ø§Ù„Ø© Ø§Ù„ØªÙ‚Ø¯ÙŠÙ… (AR)' : 'Order Served (AR)'}</label>
                             <textarea className="input text-sm" rows={2} value={waOrderServedMsgAr} onChange={(e) => setWaOrderServedMsgAr(e.target.value)} dir="rtl" />
                           </div>
                         </div>
@@ -965,9 +965,9 @@ export default function Settings() {
 
                       {waOnOpen && (
                         <div>
-                          <label className="label text-xs">{language === 'ar' ? 'أرقام الإشعار (مفصولة بفواصل)' : 'Notification Phones (comma-separated)'}</label>
+                          <label className="label text-xs">{language === 'ar' ? 'Ø£Ø±Ù‚Ø§Ù… Ø§Ù„Ø¥Ø´Ø¹Ø§Ø± (Ù…ÙØµÙˆÙ„Ø© Ø¨ÙÙˆØ§ØµÙ„)' : 'Notification Phones (comma-separated)'}</label>
                           <input className="input text-sm" value={waNotifyPhones} onChange={(e) => setWaNotifyPhones(e.target.value)} placeholder="+9665xxxxxxxx, +9665yyyyyyyy" />
-                          <p className="text-xs text-gray-400 mt-1">{language === 'ar' ? 'سيتم إرسال رسالة الفتح لهذه الأرقام يومياً' : 'Open notification will be sent to these numbers daily'}</p>
+                          <p className="text-xs text-gray-400 mt-1">{language === 'ar' ? 'Ø³ÙŠØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø±Ø³Ø§Ù„Ø© Ø§Ù„ÙØªØ­ Ù„Ù‡Ø°Ù‡ Ø§Ù„Ø£Ø±Ù‚Ø§Ù… ÙŠÙˆÙ…ÙŠØ§Ù‹' : 'Open notification will be sent to these numbers daily'}</p>
                         </div>
                       )}
                     </div>
@@ -979,18 +979,18 @@ export default function Settings() {
               <div>
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                   <Printer className="w-5 h-5 text-primary-500" />
-                  {language === 'ar' ? 'إعدادات الطابعات' : 'Printer Settings'}
+                  {language === 'ar' ? 'Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ø·Ø§Ø¨Ø¹Ø§Øª' : 'Printer Settings'}
                 </h3>
                 <div className="space-y-4">
                   {(restPrinters || []).map((printer, idx) => (
                     <div key={idx} className="border rounded-xl p-4 space-y-3 bg-gray-50 dark:bg-dark-800">
                       <div className="flex justify-between items-center">
-                        <span className="font-medium text-sm">{language === 'ar' ? `الطابعة ${idx + 1}` : `Printer ${idx + 1}`}</span>
+                        <span className="font-medium text-sm">{language === 'ar' ? `Ø§Ù„Ø·Ø§Ø¨Ø¹Ø© ${idx + 1}` : `Printer ${idx + 1}`}</span>
                         <button
                           onClick={() => setRestPrinters(prev => prev.filter((_, i) => i !== idx))}
                           className="text-red-500 hover:text-red-700 text-sm"
                         >
-                          {language === 'ar' ? 'حذف' : 'Remove'}
+                          {language === 'ar' ? 'Ø­Ø°Ù' : 'Remove'}
                         </button>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1001,7 +1001,7 @@ export default function Settings() {
                             next[idx] = { ...next[idx], name: e.target.value }
                             setRestPrinters(next)
                           }}
-                          placeholder={language === 'ar' ? 'اسم الطابعة' : 'Printer Name'}
+                          placeholder={language === 'ar' ? 'Ø§Ø³Ù… Ø§Ù„Ø·Ø§Ø¨Ø¹Ø©' : 'Printer Name'}
                           className="input text-sm"
                         />
                         <select
@@ -1013,8 +1013,8 @@ export default function Settings() {
                           }}
                           className="input text-sm"
                         >
-                          <option value="kitchen">{language === 'ar' ? 'مطبخ' : 'Kitchen'}</option>
-                          <option value="receipt">{language === 'ar' ? 'فاتورة' : 'Receipt'}</option>
+                          <option value="kitchen">{language === 'ar' ? 'Ù…Ø·Ø¨Ø®' : 'Kitchen'}</option>
+                          <option value="receipt">{language === 'ar' ? 'ÙØ§ØªÙˆØ±Ø©' : 'Receipt'}</option>
                         </select>
                         <select
                           value={printer.type || 'network'}
@@ -1025,7 +1025,7 @@ export default function Settings() {
                           }}
                           className="input text-sm"
                         >
-                          <option value="network">{language === 'ar' ? 'شبكة (IP)' : 'Network (IP)'}</option>
+                          <option value="network">{language === 'ar' ? 'Ø´Ø¨ÙƒØ© (IP)' : 'Network (IP)'}</option>
                           <option value="usb">USB</option>
                           <option value="bluetooth">Bluetooth</option>
                         </select>
@@ -1036,7 +1036,7 @@ export default function Settings() {
                             next[idx] = { ...next[idx], ipAddress: e.target.value }
                             setRestPrinters(next)
                           }}
-                          placeholder={language === 'ar' ? 'عنوان IP' : 'IP Address'}
+                          placeholder={language === 'ar' ? 'Ø¹Ù†ÙˆØ§Ù† IP' : 'IP Address'}
                           className="input text-sm"
                         />
                         <input
@@ -1061,7 +1061,7 @@ export default function Settings() {
                             }}
                             className="rounded"
                           />
-                          {language === 'ar' ? 'مفعّلة' : 'Enabled'}
+                          {language === 'ar' ? 'Ù…ÙØ¹Ù‘Ù„Ø©' : 'Enabled'}
                         </label>
                       </div>
                     </div>
@@ -1070,7 +1070,7 @@ export default function Settings() {
                     onClick={() => setRestPrinters([...restPrinters, { name: '', role: 'kitchen', type: 'network', ipAddress: '', port: 9100, enabled: false, paperWidth: 80 }])}
                     className="btn btn-outline text-sm w-full"
                   >
-                    + {language === 'ar' ? 'إضافة طابعة' : 'Add Printer'}
+                    + {language === 'ar' ? 'Ø¥Ø¶Ø§ÙØ© Ø·Ø§Ø¨Ø¹Ø©' : 'Add Printer'}
                   </button>
                 </div>
               </div>
@@ -1120,19 +1120,19 @@ export default function Settings() {
           {activeTab === 'bakala' && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card p-6 space-y-8">
               <div>
-                <h3 className="text-lg font-semibold mb-2">{language === 'ar' ? 'إعدادات البقالة' : 'Bakala Settings'}</h3>
+                <h3 className="text-lg font-semibold mb-2">{language === 'ar' ? 'Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ø¨Ù‚Ø§Ù„Ø©' : 'Bakala Settings'}</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-                  {language === 'ar' ? 'إدارة إعدادات نقاط البيع والورديات' : 'Manage POS and shift settings'}
+                  {language === 'ar' ? 'Ø¥Ø¯Ø§Ø±Ø© Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ù†Ù‚Ø§Ø· Ø§Ù„Ø¨ÙŠØ¹ ÙˆØ§Ù„ÙˆØ±Ø¯ÙŠØ§Øª' : 'Manage POS and shift settings'}
                 </p>
               </div>
 
               <div className="space-y-6">
                 <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-dark-700/50 rounded-xl">
                   <div>
-                    <p className="font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'اشتراط فتح الوردية' : 'Require Shift Open'}</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'Ø§Ø´ØªØ±Ø§Ø· ÙØªØ­ Ø§Ù„ÙˆØ±Ø¯ÙŠØ©' : 'Require Shift Open'}</p>
                     <p className="text-sm text-gray-500">
                       {language === 'ar'
-                        ? 'عند التفعيل، يجب فتح الوردية قبل استخدام نقاط البيع'
+                        ? 'Ø¹Ù†Ø¯ Ø§Ù„ØªÙØ¹ÙŠÙ„ØŒ ÙŠØ¬Ø¨ ÙØªØ­ Ø§Ù„ÙˆØ±Ø¯ÙŠØ© Ù‚Ø¨Ù„ Ø§Ø³ØªØ®Ø¯Ø§Ù… Ù†Ù‚Ø§Ø· Ø§Ù„Ø¨ÙŠØ¹'
                         : 'When enabled, a shift must be opened before using the POS'}
                     </p>
                   </div>
@@ -1176,19 +1176,19 @@ export default function Settings() {
           {activeTab === 'bookstore' && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card p-6 space-y-8">
               <div>
-                <h3 className="text-lg font-semibold mb-2">{language === 'ar' ? 'إعدادات المكتبة' : 'Bookstore Settings'}</h3>
+                <h3 className="text-lg font-semibold mb-2">{language === 'ar' ? 'Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ù…ÙƒØªØ¨Ø©' : 'Bookstore Settings'}</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-                  {language === 'ar' ? 'إدارة إعدادات نقاط البيع والورديات في المكتبة' : 'Manage bookstore POS and shift settings'}
+                  {language === 'ar' ? 'Ø¥Ø¯Ø§Ø±Ø© Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ù†Ù‚Ø§Ø· Ø§Ù„Ø¨ÙŠØ¹ ÙˆØ§Ù„ÙˆØ±Ø¯ÙŠØ§Øª ÙÙŠ Ø§Ù„Ù…ÙƒØªØ¨Ø©' : 'Manage bookstore POS and shift settings'}
                 </p>
               </div>
 
               <div className="space-y-6">
                 <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-dark-700/50 rounded-xl">
                   <div>
-                    <p className="font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'اشتراط فتح الوردية' : 'Require Shift Open'}</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'Ø§Ø´ØªØ±Ø§Ø· ÙØªØ­ Ø§Ù„ÙˆØ±Ø¯ÙŠØ©' : 'Require Shift Open'}</p>
                     <p className="text-sm text-gray-500">
                       {language === 'ar'
-                        ? 'عند التفعيل، يجب فتح الوردية قبل استخدام نقاط البيع في المكتبة'
+                        ? 'Ø¹Ù†Ø¯ Ø§Ù„ØªÙØ¹ÙŠÙ„ØŒ ÙŠØ¬Ø¨ ÙØªØ­ Ø§Ù„ÙˆØ±Ø¯ÙŠØ© Ù‚Ø¨Ù„ Ø§Ø³ØªØ®Ø¯Ø§Ù… Ù†Ù‚Ø§Ø· Ø§Ù„Ø¨ÙŠØ¹ ÙÙŠ Ø§Ù„Ù…ÙƒØªØ¨Ø©'
                         : 'When enabled, a shift must be opened before using the bookstore POS'}
                     </p>
                   </div>
@@ -1231,10 +1231,10 @@ export default function Settings() {
 
           {activeTab === 'backup' && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card p-6">
-              <h3 className="text-lg font-semibold mb-2">{language === 'ar' ? 'النسخ الاحتياطي' : 'Backup'}</h3>
+              <h3 className="text-lg font-semibold mb-2">{language === 'ar' ? 'Ø§Ù„Ù†Ø³Ø® Ø§Ù„Ø§Ø­ØªÙŠØ§Ø·ÙŠ' : 'Backup'}</h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 {language === 'ar'
-                  ? 'قم بتنزيل نسخة احتياطية كاملة من بيانات المستأجر. قد يستغرق التحميل وقتاً حسب حجم البيانات.'
+                  ? 'Ù‚Ù… Ø¨ØªÙ†Ø²ÙŠÙ„ Ù†Ø³Ø®Ø© Ø§Ø­ØªÙŠØ§Ø·ÙŠØ© ÙƒØ§Ù…Ù„Ø© Ù…Ù† Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ù…Ø³ØªØ£Ø¬Ø±. Ù‚Ø¯ ÙŠØ³ØªØºØ±Ù‚ Ø§Ù„ØªØ­Ù…ÙŠÙ„ ÙˆÙ‚ØªØ§Ù‹ Ø­Ø³Ø¨ Ø­Ø¬Ù… Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª.'
                   : 'Download a full tenant backup. Download time depends on dataset size.'}
               </p>
 
@@ -1245,7 +1245,7 @@ export default function Settings() {
                   ) : (
                     <>
                       <Download className="w-4 h-4" />
-                      {language === 'ar' ? 'تنزيل النسخة الاحتياطية' : 'Download Backup'}
+                      {language === 'ar' ? 'ØªÙ†Ø²ÙŠÙ„ Ø§Ù„Ù†Ø³Ø®Ø© Ø§Ù„Ø§Ø­ØªÙŠØ§Ø·ÙŠØ©' : 'Download Backup'}
                     </>
                   )}
                 </button>

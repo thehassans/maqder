@@ -28,13 +28,13 @@ const ORDER_STATUSES = [
 ];
 
 const THAWB_TYPES = [
-  { value: 'saudi', label: 'Saudi', labelAr: 'سعودي', image: '/thawbs/saudi.png' },
-  { value: 'qatari', label: 'Qatari', labelAr: 'قطري', image: '/thawbs/qatari.png' },
-  { value: 'emirati', label: 'Emirati', labelAr: 'إماراتي', image: '/thawbs/emirati.png' },
-  { value: 'kuwaiti', label: 'Kuwaiti', labelAr: 'كويتي', image: '/thawbs/kuwati.png' },
-  { value: 'omani', label: 'Omani', labelAr: 'عماني', image: '/thawbs/omani.png' },
-  { value: 'bahraini', label: 'Bahraini', labelAr: 'بحريني', image: '/thawbs/Bahrini.png' },
-  { value: 'noum', label: 'Noum', labelAr: 'نوم', image: '/thawbs/noum.png' }
+  { value: 'saudi', label: 'Saudi', labelAr: 'سعودي', image: '/thawbs/saudi.webp' },
+  { value: 'qatari', label: 'Qatari', labelAr: 'قطري', image: '/thawbs/qatari.webp' },
+  { value: 'emirati', label: 'Emirati', labelAr: 'إماراتي', image: '/thawbs/emirati.webp' },
+  { value: 'kuwaiti', label: 'Kuwaiti', labelAr: 'كويتي', image: '/thawbs/kuwati.webp' },
+  { value: 'omani', label: 'Omani', labelAr: 'عماني', image: '/thawbs/omani.webp' },
+  { value: 'bahraini', label: 'Bahraini', labelAr: 'بحريني', image: '/thawbs/Bahrini.webp' },
+  { value: 'noum', label: 'Noum', labelAr: 'نوم', image: '/thawbs/noum.webp' }
 ];
 
 const RELATION_TYPES = [
@@ -1262,58 +1262,58 @@ const StitchingForm = () => {
     {
       key: 'collar', name: '', enabled: true, sortOrder: 0,
       options: [
-        { key: 'classic',  name: '', image: '/thawbs/styles/collar_classic.png' },
-        { key: 'round',    name: '', image: '/thawbs/styles/collar_round.png' },
-        { key: 'mandarin', name: '', image: '/thawbs/styles/collar_mandarin.png' },
-        { key: 'open',     name: '', image: '/thawbs/styles/collar_open.png' },
-        { key: 'v_neck',   name: '', image: '/thawbs/styles/collar_v_neck.png' },
-        { key: 'chinese',  name: '', image: '/thawbs/styles/collar_chinese.png' },
+        { key: 'classic',  name: '', image: '/thawbs/styles/collar_classic.webp' },
+        { key: 'round',    name: '', image: '/thawbs/styles/collar_round.webp' },
+        { key: 'mandarin', name: '', image: '/thawbs/styles/collar_mandarin.webp' },
+        { key: 'open',     name: '', image: '/thawbs/styles/collar_open.webp' },
+        { key: 'v_neck',   name: '', image: '/thawbs/styles/collar_v_neck.webp' },
+        { key: 'chinese',  name: '', image: '/thawbs/styles/collar_chinese.webp' },
       ]
     },
     {
       key: 'bain', name: '', enabled: true, sortOrder: 1,
       options: [
-        { key: 'hidden',  name: '', image: '/thawbs/styles/bain_hidden.png' },
-        { key: 'visible', name: '', image: '/thawbs/styles/bain_visible.png' },
-        { key: 'zip',     name: '', image: '/thawbs/styles/bain_zip.png' },
-        { key: 'half',    name: '', image: '/thawbs/styles/bain_half.png' },
-        { key: 'full',    name: '', image: '/thawbs/styles/bain_full.png' },
+        { key: 'hidden',  name: '', image: '/thawbs/styles/bain_hidden.webp' },
+        { key: 'visible', name: '', image: '/thawbs/styles/bain_visible.webp' },
+        { key: 'zip',     name: '', image: '/thawbs/styles/bain_zip.webp' },
+        { key: 'half',    name: '', image: '/thawbs/styles/bain_half.webp' },
+        { key: 'full',    name: '', image: '/thawbs/styles/bain_full.webp' },
       ]
     },
     {
       key: 'cuff', name: '', enabled: true, sortOrder: 2,
       options: [
-        { key: 'single', name: '', image: '/thawbs/styles/cuff_single.png' },
-        { key: 'double', name: '', image: '/thawbs/styles/cuff_double.png' },
-        { key: 'round',  name: '', image: '/thawbs/styles/cuff_round.png' },
-        { key: 'angled', name: '', image: '/thawbs/styles/cuff_angled.png' },
-        { key: 'wide',   name: '', image: '/thawbs/styles/cuff_wide.png' },
+        { key: 'single', name: '', image: '/thawbs/styles/cuff_single.webp' },
+        { key: 'double', name: '', image: '/thawbs/styles/cuff_double.webp' },
+        { key: 'round',  name: '', image: '/thawbs/styles/cuff_round.webp' },
+        { key: 'angled', name: '', image: '/thawbs/styles/cuff_angled.webp' },
+        { key: 'wide',   name: '', image: '/thawbs/styles/cuff_wide.webp' },
       ]
     },
     {
       key: 'pocket', name: '', enabled: true, sortOrder: 3,
       options: [
-        { key: 'none',  name: '', image: '/thawbs/styles/pocket_none.png' },
-        { key: 'chest', name: '', image: '/thawbs/styles/pocket_chest.png' },
-        { key: 'side',  name: '', image: '/thawbs/styles/pocket_side.png' },
-        { key: 'both',  name: '', image: '/thawbs/styles/pocket_both.png' },
+        { key: 'none',  name: '', image: '/thawbs/styles/pocket_none.webp' },
+        { key: 'chest', name: '', image: '/thawbs/styles/pocket_chest.webp' },
+        { key: 'side',  name: '', image: '/thawbs/styles/pocket_side.webp' },
+        { key: 'both',  name: '', image: '/thawbs/styles/pocket_both.webp' },
       ]
     },
     {
       key: 'buttons', name: '', enabled: true, sortOrder: 4,
       options: [
-        { key: 'classic', name: '', image: '/thawbs/styles/buttons_classic.png' },
-        { key: 'hidden',  name: '', image: '/thawbs/styles/buttons_hidden.png' },
-        { key: 'snap',    name: '', image: '/thawbs/styles/buttons_snap.png' },
-        { key: 'premium', name: '', image: '/thawbs/styles/buttons_premium.png' },
-        { key: 'golden',  name: '', image: '/thawbs/styles/buttons_golden.png' },
+        { key: 'classic', name: '', image: '/thawbs/styles/buttons_classic.webp' },
+        { key: 'hidden',  name: '', image: '/thawbs/styles/buttons_hidden.webp' },
+        { key: 'snap',    name: '', image: '/thawbs/styles/buttons_snap.webp' },
+        { key: 'premium', name: '', image: '/thawbs/styles/buttons_premium.webp' },
+        { key: 'golden',  name: '', image: '/thawbs/styles/buttons_golden.webp' },
       ]
     },
     {
       key: 'embroidery', name: '', enabled: true, sortOrder: 5,
       options: [
-        { key: 'none',    name: '', image: '/thawbs/styles/embroidery_none.png' },
-        { key: 'name',    name: '', image: '/thawbs/styles/embroidery_name.png' },
+        { key: 'none',    name: '', image: '/thawbs/styles/embroidery_none.webp' },
+        { key: 'name',    name: '', image: '/thawbs/styles/embroidery_name.webp' },
         { key: 'logo',    name: '' },
         { key: 'premium', name: '' },
         { key: 'arabic',  name: '' },

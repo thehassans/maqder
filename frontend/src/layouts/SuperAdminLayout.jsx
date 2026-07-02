@@ -1,4 +1,4 @@
-import { Outlet, NavLink } from 'react-router-dom'
+﻿import { Outlet, NavLink } from 'react-router-dom'
 import { Suspense } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { 
@@ -45,7 +45,7 @@ export default function SuperAdminLayout() {
       <header className="sticky top-0 z-50 bg-[#1a3d28] text-white">
         <div className="flex items-center justify-between px-6 h-16">
           <div className="flex items-center gap-6">
-            <img src="/maqdernewlogo.png" alt="Maqder" className="h-14 w-auto object-contain transform scale-150 origin-left" />
+            <img src="/maqdernewlogo.webp" alt="Maqder" className="h-14 w-auto object-contain transform scale-150 origin-left" />
             <span className="text-sm font-medium bg-white/20 text-white px-3 py-1 rounded-full whitespace-nowrap ml-8">
               {t('superAdmin')}
             </span>
