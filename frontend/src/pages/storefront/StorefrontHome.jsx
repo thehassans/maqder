@@ -333,7 +333,7 @@ export default function StorefrontHome() {
                 onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; }}
               >
                 <div style={{ aspectRatio: '1', background: '#e5e7eb', overflow: 'hidden' }}>
-                  {item.image ? <img src={item.image} alt={item.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} /> : null}
+                  {item.image ? <img src={optimizeImageUrl(item.image, { width: 200, quality: 80 })} alt={item.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} /> : null}
                 </div>
                 <div style={{ padding: '10px' }}>
                   <p style={{ fontSize: '12px', fontWeight: 600, margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#111' }}>{item.title}</p>

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Loader2, CheckCircle, AlertCircle, ShoppingCart, Download, Printer, ChevronRight, ChevronLeft, MapPin, CreditCard, FileText, Check } from 'lucide-react';
 import SaudiRiyalSymbol from '../../components/storefront/SaudiRiyalSymbol';
 import storeApi from '../../lib/storeApi';
+import { optimizeImageUrl } from '../../lib/imageOptimizer';
 import { useCart } from '../../store/storefrontCart';
 import { useI18n } from '../../store/storefrontI18n';
 import { firePixelEvent } from '../../components/storefront/StorefrontLayout';
@@ -407,7 +408,7 @@ export default function StorefrontCheckout() {
                 <h3 style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 12px' }}>{t('orderItems')}</h3>
                 {items.map(item => (
                   <div key={item.key} style={{ display: 'flex', gap: '10px', padding: '8px 0', borderBottom: '1px solid #f3f4f6' }}>
-                    {item.image && <img src={item.image} alt="" style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover' }} />}
+                    {item.image && <img src={optimizeImageUrl(item.image, { width: 100, quality: 80 })} alt="" style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover' }} />}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontSize: '13px', fontWeight: 600, margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</p>
                       <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>{t('qtyLabel')}: {item.quantity} × {item.price} <SaudiRiyalSymbol size={9} color="#6b7280" /></p>
@@ -443,7 +444,7 @@ export default function StorefrontCheckout() {
             <div style={{ marginBottom: '16px' }}>
               {items.map(item => (
                 <div key={item.key} style={{ display: 'flex', gap: '10px', padding: '10px 0', borderBottom: '1px solid #f3f4f6' }}>
-                  {item.image && <img src={item.image} alt="" style={{ width: '52px', height: '52px', borderRadius: '10px', objectFit: 'cover' }} />}
+                  {item.image && <img src={optimizeImageUrl(item.image, { width: 100, quality: 80 })} alt="" style={{ width: '52px', height: '52px', borderRadius: '10px', objectFit: 'cover' }} />}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: '13px', fontWeight: 600, margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</p>
                     <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>{t('qtyLabel')}: {item.quantity} × {item.price} <SaudiRiyalSymbol size={9} color="#6b7280" /></p>

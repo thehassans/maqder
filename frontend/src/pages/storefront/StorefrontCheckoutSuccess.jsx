@@ -4,6 +4,7 @@ import { CheckCircle, Loader2, Package, Truck, RotateCcw, User, Printer, Chevron
 import SaudiRiyalSymbol from '../../components/storefront/SaudiRiyalSymbol';
 import { firePixelEvent } from '../../components/storefront/StorefrontLayout';
 import storeApi from '../../lib/storeApi';
+import { optimizeImageUrl } from '../../lib/imageOptimizer';
 import StorefrontSeo from '../../components/storefront/StorefrontSeo';
 
 export default function StorefrontCheckoutSuccess() {
@@ -98,7 +99,7 @@ export default function StorefrontCheckoutSuccess() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {orderItems.slice(0, 4).map((item, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                {item.image && <img src={item.image} alt={item.title} style={{ width: '48px', height: '48px', borderRadius: '10px', objectFit: 'cover', flexShrink: 0 }} />}
+                {item.image && <img src={optimizeImageUrl(item.image, { width: 100, quality: 80 })} alt={item.title} style={{ width: '48px', height: '48px', borderRadius: '10px', objectFit: 'cover', flexShrink: 0 }} />}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ fontSize: '14px', fontWeight: 600, color: '#111', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</p>
                   <p style={{ fontSize: '12px', color: '#9ca3af', margin: '2px 0 0' }}>Qty: {item.quantity}</p>
