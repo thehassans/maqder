@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, Suspense } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Globe, Menu, X, Phone, Mail, MapPin } from 'lucide-react'
 import { useSelector, useDispatch } from 'react-redux'
@@ -143,7 +143,9 @@ export default function MarketingLayout() {
         </AnimatePresence>
       </header>
 
-      <Outlet />
+      <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
+        <Outlet />
+      </Suspense>
 
       <footer className="border-t border-slate-200 bg-white/80 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">

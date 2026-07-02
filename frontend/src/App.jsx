@@ -12,18 +12,20 @@ import AuthLayout from './layouts/AuthLayout'
 import SuperAdminLayout from './layouts/SuperAdminLayout'
 import MarketingLayout from './layouts/MarketingLayout'
 
-// Auth & Marketing (static — small, needed early)
+// Auth (static — needed early for login flow)
 import Login from './pages/auth/Login'
 import ResetPassword from './pages/auth/ResetPassword'
 import InactiveTenant from './pages/auth/InactiveTenant'
-import MarketingHome from './pages/marketing/Home'
-import MarketingSolutions from './pages/marketing/Solutions'
-import SolutionDetail from './pages/marketing/SolutionDetail'
-import MarketingPricing from './pages/marketing/Pricing'
-import MarketingAbout from './pages/marketing/About'
-import MarketingContact from './pages/marketing/Contact'
-import MarketingPrivacy from './pages/marketing/Privacy'
-import MarketingTerms from './pages/marketing/Terms'
+
+// Lazy-load marketing pages (separate from app, only needed on public site)
+const MarketingHome = lazy(() => import('./pages/marketing/Home'))
+const MarketingSolutions = lazy(() => import('./pages/marketing/Solutions'))
+const SolutionDetail = lazy(() => import('./pages/marketing/SolutionDetail'))
+const MarketingPricing = lazy(() => import('./pages/marketing/Pricing'))
+const MarketingAbout = lazy(() => import('./pages/marketing/About'))
+const MarketingContact = lazy(() => import('./pages/marketing/Contact'))
+const MarketingPrivacy = lazy(() => import('./pages/marketing/Privacy'))
+const MarketingTerms = lazy(() => import('./pages/marketing/Terms'))
 
 // Lazy-load all admin/dashboard pages for code-splitting
 const KhayyatDashboard = lazy(() => import('./pages/khayyat/Dashboard'))
