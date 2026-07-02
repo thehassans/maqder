@@ -7,15 +7,23 @@ import { applyTenantBranding } from './lib/branding'
 import { getTenantBusinessTypes } from './lib/businessTypes'
 import { ErrorBoundary } from './lib/errorBoundary'
 
-import MainLayout from './layouts/MainLayout'
-import AuthLayout from './layouts/AuthLayout'
-import SuperAdminLayout from './layouts/SuperAdminLayout'
-import MarketingLayout from './layouts/MarketingLayout'
+// Lazy-load all layouts for code-splitting
+const MainLayout = lazy(() => import('./layouts/MainLayout'))
+const AuthLayout = lazy(() => import('./layouts/AuthLayout'))
+const SuperAdminLayout = lazy(() => import('./layouts/SuperAdminLayout'))
+const MarketingLayout = lazy(() => import('./layouts/MarketingLayout'))
+const CarRentalLayout = lazy(() => import('./layouts/CarRentalLayout'))
+const WorkshopLayout = lazy(() => import('./layouts/WorkshopLayout'))
+const LaundryLayout = lazy(() => import('./layouts/LaundryLayout'))
+const SaloonLayout = lazy(() => import('./layouts/SaloonLayout'))
 
-// Auth (static — needed early for login flow)
-import Login from './pages/auth/Login'
-import ResetPassword from './pages/auth/ResetPassword'
-import InactiveTenant from './pages/auth/InactiveTenant'
+// Auth pages (lazy — only needed at login)
+const Login = lazy(() => import('./pages/auth/Login'))
+const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'))
+const InactiveTenant = lazy(() => import('./pages/auth/InactiveTenant'))
+
+// Storefront shell (lazy — encapsulates layout + all providers)
+const StorefrontShell = lazy(() => import('./components/storefront/StorefrontShell'))
 
 // Lazy-load marketing pages (separate from app, only needed on public site)
 const MarketingHome = lazy(() => import('./pages/marketing/Home'))
@@ -168,12 +176,6 @@ const EcommerceCustomers = lazy(() => import('./pages/ecommerce/EcommerceCustome
 const EcommerceSalesReport = lazy(() => import('./pages/ecommerce/EcommerceSalesReport'))
 const EcommerceCoupons = lazy(() => import('./pages/ecommerce/EcommerceCoupons'))
 const EcommerceBundles = lazy(() => import('./pages/ecommerce/EcommerceBundles'))
-import StorefrontLayout from './components/storefront/StorefrontLayout'
-import { CartProvider } from './store/storefrontCart'
-import { WishlistProvider } from './store/storefrontWishlist'
-import { CompareProvider } from './store/storefrontCompare'
-import { StorefrontI18nProvider } from './store/storefrontI18n'
-import { ProductDetailSkeleton } from './components/storefront/StorefrontUi'
 
 // Lazy-load storefront pages for code-splitting
 const StorefrontHome = lazy(() => import('./pages/storefront/StorefrontHome'))
@@ -244,8 +246,6 @@ const SaudiCompliance = lazy(() => import('./pages/compliance/SaudiCompliance'))
 const GovernmentIntegrations = lazy(() => import('./pages/tenant-settings/GovernmentIntegrations'))
 const GovernmentIntegrationDetail = lazy(() => import('./pages/tenant-settings/GovernmentIntegrationDetail'))
 const ZatcaDashboard = lazy(() => import('./pages/tenant-settings/ZatcaDashboard'))
-import CarRentalLayout from './layouts/CarRentalLayout'
-import WorkshopLayout from './layouts/WorkshopLayout'
 const FleetList = lazy(() => import('./pages/car-rental/FleetList'))
 const CarForm = lazy(() => import('./pages/car-rental/CarForm'))
 const CustomerRegistry = lazy(() => import('./pages/car-rental/CustomerRegistry'))
@@ -263,14 +263,12 @@ const CRMLeadsTab = lazy(() => import('./pages/crm/CRMLeadsTab'))
 const CRMDealsTab = lazy(() => import('./pages/crm/CRMDealsTab'))
 const CRMActivitiesTab = lazy(() => import('./pages/crm/CRMActivitiesTab'))
 
-import LaundryLayout from './layouts/LaundryLayout'
 const LaundryPOS = lazy(() => import('./pages/laundry/LaundryPOS'))
 const LaundryServices = lazy(() => import('./pages/laundry/LaundryServices'))
 const LaundryKanban = lazy(() => import('./pages/laundry/LaundryKanban'))
 const LaundryCustomers = lazy(() => import('./pages/laundry/LaundryCustomers'))
 const LaundryInventory = lazy(() => import('./pages/laundry/LaundryInventory'))
 
-import SaloonLayout from './layouts/SaloonLayout'
 const SaloonPOS = lazy(() => import('./pages/saloon/SaloonPOS'))
 const SaloonServices = lazy(() => import('./pages/saloon/SaloonServices'))
 const SaloonBarbers = lazy(() => import('./pages/saloon/SaloonBarbers'))
@@ -357,7 +355,7 @@ function App() {
   return (
     <Routes>
       {/* Public Marketing Website */}
-      <Route path="/" element={<MarketingLayout />}>
+      <Route path="/" element={<Suspense fallback={<LoadingScreen />}><MarketingLayout /></Suspense>}>
         <Route index element={<MarketingHome />} />
         <Route path="solutions" element={<MarketingSolutions />} />
         <Route path="solutions/:slug" element={<SolutionDetail />} />
@@ -373,7 +371,7 @@ function App() {
       <Route path="/public/services" element={<Suspense fallback={<LoadingScreen />}><PublicServices /></Suspense>} />
 
       {/* Auth Routes */}
-      <Route element={<AuthLayout />}>
+      <Route element={<Suspense fallback={<LoadingScreen />}><AuthLayout /></Suspense>}>
         <Route path="/login" element={<Login />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/inactive" element={<InactiveTenant />} />
@@ -410,7 +408,7 @@ function App() {
         path="/super-admin"
         element={
           <ProtectedRoute allowedRoles={['super_admin']}>
-            <SuperAdminLayout />
+            <Suspense fallback={<LoadingScreen />}><SuperAdminLayout /></Suspense>
           </ProtectedRoute>
         }
       >
@@ -439,7 +437,7 @@ function App() {
         path="/app/dashboard"
         element={
           <ProtectedRoute redirectSuperAdmin>
-            <MainLayout />
+            <Suspense fallback={<LoadingScreen />}><MainLayout /></Suspense>
           </ProtectedRoute>
         }
       >
@@ -695,7 +693,7 @@ function App() {
         element={
           <ProtectedRoute redirectSuperAdmin>
             <BusinessTypeRoute allowedTypes={['car_rental']}>
-              <CarRentalLayout />
+              <Suspense fallback={<LoadingScreen />}><CarRentalLayout /></Suspense>
             </BusinessTypeRoute>
           </ProtectedRoute>
         }
@@ -724,7 +722,7 @@ function App() {
         element={
           <ProtectedRoute redirectSuperAdmin>
             <BusinessTypeRoute allowedTypes={['car_workshop']}>
-              <WorkshopLayout />
+              <Suspense fallback={<LoadingScreen />}><WorkshopLayout /></Suspense>
             </BusinessTypeRoute>
           </ProtectedRoute>
         }
@@ -741,7 +739,7 @@ function App() {
         element={
           <ProtectedRoute redirectSuperAdmin>
             <BusinessTypeRoute allowedTypes={['laundry']}>
-              <LaundryLayout />
+              <Suspense fallback={<LoadingScreen />}><LaundryLayout /></Suspense>
             </BusinessTypeRoute>
           </ProtectedRoute>
         }
@@ -759,7 +757,7 @@ function App() {
         element={
           <ProtectedRoute redirectSuperAdmin>
             <BusinessTypeRoute allowedTypes={['saloon']}>
-              <SaloonLayout />
+              <Suspense fallback={<LoadingScreen />}><SaloonLayout /></Suspense>
             </BusinessTypeRoute>
           </ProtectedRoute>
         }
@@ -774,24 +772,24 @@ function App() {
       </Route>
 
       {/* ───── Public Storefront ───── */}
-      <Route path="/store" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontHome /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/products" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontProducts /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/category/:slug" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontCategory /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/products/:id" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontProductDetail /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/checkout" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontCheckout /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/wishlist" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontWishlist /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/compare" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontCompare /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/account" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontAccount /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/contact" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontContact /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/faq" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontFAQ /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/about" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontAbout /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/shipping-policy" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontShippingPolicy /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/track-order" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontOrderTracking /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/returns" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontReturnRequest /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/privacy" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontPrivacy /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/store/terms" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontTerms /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/checkout/success" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontCheckoutSuccess /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
-      <Route path="/checkout/cancel" element={<StorefrontI18nProvider><WishlistProvider><CompareProvider><CartProvider><StorefrontLayout><Suspense fallback={<ProductDetailSkeleton />}><StorefrontCheckoutCancel /></Suspense></StorefrontLayout></CartProvider></CompareProvider></WishlistProvider></StorefrontI18nProvider>} />
+      <Route path="/store" element={<Suspense fallback={<LoadingScreen />}><StorefrontShell><StorefrontHome /></StorefrontShell></Suspense>} />
+      <Route path="/store/products" element={<Suspense fallback={<LoadingScreen />}><StorefrontShell><StorefrontProducts /></StorefrontShell></Suspense>} />
+      <Route path="/store/category/:slug" element={<Suspense fallback={<LoadingScreen />}><StorefrontShell><StorefrontCategory /></StorefrontShell></Suspense>} />
+      <Route path="/store/products/:id" element={<Suspense fallback={<LoadingScreen />}><StorefrontShell><StorefrontProductDetail /></StorefrontShell></Suspense>} />
+      <Route path="/store/checkout" element={<Suspense fallback={<LoadingScreen />}><StorefrontShell><StorefrontCheckout /></StorefrontShell></Suspense>} />
+      <Route path="/store/wishlist" element={<Suspense fallback={<LoadingScreen />}><StorefrontShell><StorefrontWishlist /></StorefrontShell></Suspense>} />
+      <Route path="/store/compare" element={<Suspense fallback={<LoadingScreen />}><StorefrontShell><StorefrontCompare /></StorefrontShell></Suspense>} />
+      <Route path="/store/account" element={<Suspense fallback={<LoadingScreen />}><StorefrontShell><StorefrontAccount /></StorefrontShell></Suspense>} />
+      <Route path="/store/contact" element={<Suspense fallback={<LoadingScreen />}><StorefrontShell><StorefrontContact /></StorefrontShell></Suspense>} />
+      <Route path="/store/faq" element={<Suspense fallback={<LoadingScreen />}><StorefrontShell><StorefrontFAQ /></StorefrontShell></Suspense>} />
+      <Route path="/store/about" element={<Suspense fallback={<LoadingScreen />}><StorefrontShell><StorefrontAbout /></StorefrontShell></Suspense>} />
+      <Route path="/store/shipping-policy" element={<Suspense fallback={<LoadingScreen />}><StorefrontShell><StorefrontShippingPolicy /></StorefrontShell></Suspense>} />
+      <Route path="/store/track-order" element={<Suspense fallback={<LoadingScreen />}><StorefrontShell><StorefrontOrderTracking /></StorefrontShell></Suspense>} />
+      <Route path="/store/returns" element={<Suspense fallback={<LoadingScreen />}><StorefrontShell><StorefrontReturnRequest /></StorefrontShell></Suspense>} />
+      <Route path="/store/privacy" element={<Suspense fallback={<LoadingScreen />}><StorefrontShell><StorefrontPrivacy /></StorefrontShell></Suspense>} />
+      <Route path="/store/terms" element={<Suspense fallback={<LoadingScreen />}><StorefrontShell><StorefrontTerms /></StorefrontShell></Suspense>} />
+      <Route path="/checkout/success" element={<Suspense fallback={<LoadingScreen />}><StorefrontShell><StorefrontCheckoutSuccess /></StorefrontShell></Suspense>} />
+      <Route path="/checkout/cancel" element={<Suspense fallback={<LoadingScreen />}><StorefrontShell><StorefrontCheckoutCancel /></StorefrontShell></Suspense>} />
 
       {/* Catch all */}
       <Route path="*" element={<Navigate to="/" replace />} />
