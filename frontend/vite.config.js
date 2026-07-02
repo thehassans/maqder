@@ -24,7 +24,6 @@ export default defineConfig(({ mode }) => {
           navigateFallback: '/index.html',
           globPatterns: ['**/*.{js,css,html,ico,svg,woff,woff2}'],
           globIgnores: [
-            '**/MaqderFavicon.png',
             '**/saudi-vision-2030-logo.png',
             '**/images/laundry/**',
           ],
