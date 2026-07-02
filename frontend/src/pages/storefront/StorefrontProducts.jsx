@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Search, Loader2, ChevronLeft, ChevronRight, SlidersHorizontal, Eye, Star, GitCompare, Check, Heart, ShoppingCart } from 'lucide-react';
 import SaudiRiyalSymbol from '../../components/storefront/SaudiRiyalSymbol';
 import storeApi from '../../lib/storeApi';
+import { optimizeImageUrl } from '../../lib/imageOptimizer';
 import { useCompare } from '../../store/storefrontCompare';
 import { useWishlist } from '../../store/storefrontWishlist';
 import { useCart } from '../../store/storefrontCart';
@@ -234,7 +235,7 @@ export default function StorefrontProducts() {
                         </div>
                       )}
                       {images[0]?.url ? (
-                        <img src={images[0].url} alt={p.title} loading="lazy" className="card-main-img" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} />
+                        <img src={optimizeImageUrl(images[0].url, { width: 400, quality: 80 })} alt={p.title} loading="lazy" className="card-main-img" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} />
                       ) : (
                         <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: c('textMuted', '#6b7280'), fontSize: '12px' }}>{t('noImage')}</div>
                       )}

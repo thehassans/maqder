@@ -13,7 +13,9 @@ import StorefrontBreadcrumbs from '../../components/storefront/StorefrontBreadcr
 import { useRecentlyViewed } from '../../store/recentlyViewed';
 import { ProductDetailSkeleton, useToast } from '../../components/storefront/StorefrontUi';
 import Accordion from '../../components/storefront/Accordion';
+import BottomSheet from '../../components/storefront/BottomSheet';
 import { useSwipeGesture } from '../../hooks/useSwipeGesture';
+import { optimizeImageUrl } from '../../lib/imageOptimizer';
 
 export default function StorefrontProductDetail() {
   const { id } = useParams();
@@ -45,6 +47,7 @@ export default function StorefrontProductDetail() {
   const [fbtProducts, setFbtProducts] = useState([]);
   const [fbtSelected, setFbtSelected] = useState(new Set());
   const [fbtLoading, setFbtLoading] = useState(false);
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
 
   // Color utility from theme
   const c = (key, fallback) => data?.colors?.[key] || fallback;
@@ -213,7 +216,7 @@ export default function StorefrontProductDetail() {
     : product.basePrice;
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 20px' }}>
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 20px 90px' }}>
       <StorefrontSeo
         title={`${product.title} — ${product.basePrice} ${currency}`}
         description={product.seo?.metaDescription || product.description?.replace(/<[^>]*>/g, '').slice(0, 160) || product.title}
@@ -244,7 +247,7 @@ export default function StorefrontProductDetail() {
           >
             {product.images?.[selectedImage]?.url ? (
               <>
-                <img src={product.images[selectedImage].url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.2s ease', transform: hoverZoom.active ? `scale(2)` : 'scale(1)', transformOrigin: `${hoverZoom.x}% ${hoverZoom.y}%` }} />
+                <img src={optimizeImageUrl(product.images[selectedImage].url, { width: 800, quality: 85 })} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.2s ease', transform: hoverZoom.active ? `scale(2)` : 'scale(1)', transformOrigin: `${hoverZoom.x}% ${hoverZoom.y}%` }} />
                 <div style={{ position: 'absolute', bottom: '14px', right: '14px', background: 'rgba(255,255,255,0.85)', borderRadius: '12px', padding: '8px 12px', display: 'flex', alignItems: 'center', gap: '5px', color: '#111', fontSize: '12px', fontWeight: 600, backdropFilter: 'blur(12px)', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
                   <ZoomIn size={14} /> {t('zoom')}
                 </div>
@@ -772,6 +775,87 @@ export default function StorefrontProductDetail() {
           </div>
         </div>
       )}
+
+      {/* Sticky mobile add-to-cart bar */}
+      <div className="md:hidden" style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
+        background: '#fff', borderTop: '1px solid #e5e7eb',
+        padding: '12px 16px', paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))',
+        boxShadow: '0 -4px 20px rgba(0,0,0,0.08)',
+        display: 'flex', alignItems: 'center', gap: '12px',
+      }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontSize: '11px', color: '#999', margin: 0, fontWeight: 600 }}>{t('price')}</p>
+          <p style={{ fontSize: '18px', fontWeight: 800, color: '#111', margin: 0, display: 'flex', alignItems: 'center', gap: '2px' }}>
+            {currentPrice} <SaudiRiyalSymbol size={14} color="#111" />
+          </p>
+        </div>
+        <button
+          onClick={() => {
+            if (product.hasVariants && product.variants?.length > 0 && !selectedVariant) {
+              setMobileSheetOpen(true);
+            } else {
+              handleAddToCart();
+            }
+          }}
+          style={{
+            flex: '1 1 160px', padding: '14px 24px', background: added ? '#059669' : '#111',
+            color: '#fff', border: 'none', borderRadius: '14px', fontWeight: 700, fontSize: '15px',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+            minHeight: '48px', transition: 'all 0.2s',
+          }}
+        >
+          {added ? <><Check size={18} /> {t('added')}</> : <><ShoppingCart size={18} /> {t('addToCart')}</>}
+        </button>
+      </div>
+
+      {/* Mobile BottomSheet for variant selection */}
+      <BottomSheet
+        isOpen={mobileSheetOpen}
+        onClose={() => setMobileSheetOpen(false)}
+        title={t('options') || 'Options'}
+        colors={data?.colors}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {product.variants?.filter(v => v.isActive).map(v => {
+            const outOfStock = v.trackInventory && v.stockQuantity <= 0;
+            return (
+              <button
+                key={v._id}
+                onClick={() => { setSelectedVariant(v._id); setMobileSheetOpen(false); }}
+                disabled={outOfStock}
+                style={{
+                  padding: '14px 18px', borderRadius: '14px',
+                  border: selectedVariant === v._id ? '2px solid #111' : '1px solid #e5e7eb',
+                  background: selectedVariant === v._id ? '#f9fafb' : '#fff',
+                  cursor: outOfStock ? 'not-allowed' : 'pointer', fontSize: '15px', fontWeight: 600,
+                  opacity: outOfStock ? 0.35 : 1, textAlign: isRTL ? 'right' : 'left',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  minHeight: '48px',
+                }}
+              >
+                <span>{[v.option1Value, v.option2Value, v.option3Value].filter(Boolean).join(' / ')}</span>
+                <span style={{ fontWeight: 800, display: 'flex', alignItems: 'center', gap: '2px' }}>
+                  {v.price || product.basePrice} <SaudiRiyalSymbol size={12} color="#111" />
+                </span>
+              </button>
+            );
+          })}
+          {selectedVariant && (
+            <button
+              onClick={() => { handleAddToCart(); setMobileSheetOpen(false); }}
+              style={{
+                marginTop: '8px', padding: '16px', background: '#111', color: '#fff',
+                border: 'none', borderRadius: '14px', fontWeight: 700, fontSize: '16px',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                minHeight: '52px',
+              }}
+            >
+              <ShoppingCart size={18} /> {t('addToCart')}
+            </button>
+          )}
+        </div>
+      </BottomSheet>
 
     </div>
   );

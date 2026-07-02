@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Search, ShoppingCart, X, Menu, Instagram, Twitter, Facebook, Heart, Mail, Phone, MapPin, Send, ShieldCheck, Truck, CreditCard, RotateCcw, ChevronDown, LayoutGrid, Tag, Moon, Sun } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { ShoppingCart, X, Menu, Instagram, Twitter, Facebook, Heart, Mail, Phone, MapPin, Send, ShieldCheck, Truck, CreditCard, RotateCcw, ChevronDown, LayoutGrid, Tag, Moon, Sun } from 'lucide-react';
 import SaudiRiyalSymbol from './SaudiRiyalSymbol';
 import storeApi from '../../lib/storeApi';
 import { useCart } from '../../store/storefrontCart';
@@ -140,7 +140,6 @@ export function setPixelConfig(pixels) {
 
 export default function StorefrontLayout({ children }) {
   const [storeInfo, setStoreInfo] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [newsletterDone, setNewsletterDone] = useState(false);
   const [categories, setCategories] = useState([]);
@@ -150,7 +149,6 @@ export default function StorefrontLayout({ children }) {
     try { return localStorage.getItem('maqder_dark_mode') === 'true'; } catch { return false; }
   });
   const megaMenuRef = useRef(null);
-  const navigate = useNavigate();
   const location = useLocation();
   const { cartCount, isOpen, setIsOpen } = useCart();
   const { lang, toggleLang, t, isRTL } = useI18n();
@@ -193,36 +191,8 @@ export default function StorefrontLayout({ children }) {
     try { localStorage.setItem('maqder_dark_mode', String(next)); } catch {}
   };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      firePixelEvent('Search', { search_string: searchQuery.trim() });
-      navigate(`/store/products?search=${encodeURIComponent(searchQuery)}`);
-    }
-    setShowSuggestions(false);
-  };
-
-  const [suggestions, setSuggestions] = useState([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const searchRef = useRef(null);
-  const debounceRef = useRef(null);
-
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (searchQuery.trim().length < 2) { setSuggestions([]); return; }
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const res = await storeApi.get(`/products?search=${encodeURIComponent(searchQuery)}&limit=5`);
-        setSuggestions(res.data.products || []);
-        setShowSuggestions(true);
-      } catch { setSuggestions([]); }
-    }, 300);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [searchQuery]);
-
   useEffect(() => {
     const handler = (e) => {
-      if (searchRef.current && !searchRef.current.contains(e.target)) setShowSuggestions(false);
       if (megaMenuRef.current && !megaMenuRef.current.contains(e.target)) setMegaMenuOpen(false);
     };
     document.addEventListener('mousedown', handler);
