@@ -113,6 +113,7 @@ export default defineConfig(({ mode }) => {
             'toast-vendor': ['react-hot-toast'],
             'chart-vendor': ['recharts'],
             'axios-vendor': ['axios'],
+            'form-vendor': ['react-hook-form'],
           },
         },
       },
