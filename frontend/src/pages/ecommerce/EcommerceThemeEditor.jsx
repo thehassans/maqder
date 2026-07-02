@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Palette, Save, Loader2, Upload, RotateCcw, AlertCircle, CheckCircle, Eye, Layout, Type, ShoppingCart, Home, Monitor, Smartphone, GripVertical, Trash2, Plus, ImageIcon, Sparkles, Download, FileUp, Smartphone as PhoneIcon, Moon, ChevronLeft, ChevronRight, Tag, Tablet, Maximize2, Package, Code, CreditCard, Layers, MousePointerClick, Zap, Filter, Gift } from 'lucide-react';
+import { Palette, Save, Loader2, Upload, RotateCcw, AlertCircle, CheckCircle, Eye, Layout, Type, ShoppingCart, Home, Monitor, Smartphone, GripVertical, Trash2, Plus, ImageIcon, Sparkles, Download, FileUp, Smartphone as PhoneIcon, Moon, ChevronLeft, ChevronRight, Tag, Tablet, Maximize2, Package, Code, CreditCard, Layers, MousePointerClick, Zap, Filter, Gift, ShieldCheck, Search, AlertTriangle, Megaphone } from 'lucide-react';
 import api from '../../lib/api';
 
 const COLOR_FIELDS = [
@@ -189,6 +189,10 @@ export default function EcommerceThemeEditor() {
     const pp = config.promoPopup || {};
     const pl = config.productListing || {};
     const anim = config.animations || {};
+    const tb = config.trustBadges || {};
+    const se = config.searchExp || {};
+    const es = config.emptyStates || {};
+    const ab = config.announcementBar || {};
     const sections = config.homepage?.sections || [];
 
     const sectionHTML = sections.filter(s => s.enabled).map(s => {
@@ -300,9 +304,10 @@ export default function EcommerceThemeEditor() {
       }
     }).join('');
 
-    const announcement = h.announcementBar?.enabled ? `
-      <div style="background:${h.announcementBar.bgColor || c.primary};color:${h.announcementBar.textColor || '#fff'};padding:8px;text-align:center;font-size:13px">
-        ${h.announcementBar.text || ''}
+    const announcement = ab.enabled ? `
+      <div style="background:${ab.bgType === 'gradient' ? `linear-gradient(90deg,${ab.bgColor1 || c.primary},${ab.bgColor2 || c.accent || '#7c3aed'})` : (ab.bgColor || c.primary)};color:${ab.textColor || '#fff'};padding:${ab.padding || 8}px;text-align:center;font-size:${ab.fontSize || 13}px;position:relative;${ab.closeable ? 'padding-right:32px' : ''}">
+        ${ab.text || 'Welcome to our store!'}
+        ${ab.closeable ? '<span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:18px;opacity:0.7">&times;</span>' : ''}
       </div>` : '';
 
     // Page-specific preview content
@@ -375,6 +380,37 @@ export default function EcommerceThemeEditor() {
         </div>`;
       }
       // home - use sectionHTML
+      if (page === '404') {
+        return `<div style="padding:60px 20px;max-width:600px;margin:0 auto;text-align:center">
+          <h1 style="font-size:${es.f404Size || 72}px;font-weight:900;color:${c.primary||'#4f46e5'};margin:0 0 8px;line-height:1">404</h1>
+          <h2 style="font-size:20px;font-weight:800;color:${c.text||'#111'};margin:0 0 8px">${es.f404Title || 'Page not found'}</h2>
+          <p style="font-size:14px;color:${c.textMuted||'#6b7280'};margin:0 0 24px;line-height:1.6">${es.f404Desc || 'The page you are looking for does not exist or has been moved.'}</p>
+          <button class="btn">${es.f404BtnText || 'Back to Home'}</button>
+        </div>`;
+      }
+      if (page === 'emptycart') {
+        return `<div style="padding:60px 20px;max-width:500px;margin:0 auto;text-align:center">
+          <div style="width:80px;height:80px;margin:0 auto 20px;background:${c.surface||'#f3f4f6'};border-radius:50%;display:flex;align-items:center;justify-content:center">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="${c.textMuted||'#9ca3af'}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+          </div>
+          <h2 style="font-size:20px;font-weight:800;color:${c.text||'#111'};margin:0 0 8px">${es.emptyCartTitle || 'Your cart is empty'}</h2>
+          <p style="font-size:14px;color:${c.textMuted||'#6b7280'};margin:0 0 24px">${es.emptyCartDesc || "Looks like you haven't added anything yet."}</p>
+          <button class="btn">${es.emptyCartBtnText || 'Start Shopping'}</button>
+        </div>`;
+      }
+      if (page === 'noresults') {
+        return `<div style="padding:60px 20px;max-width:500px;margin:0 auto;text-align:center">
+          <div style="width:80px;height:80px;margin:0 auto 20px;background:${c.surface||'#f3f4f6'};border-radius:50%;display:flex;align-items:center;justify-content:center">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="${c.textMuted||'#9ca3af'}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </div>
+          <h2 style="font-size:20px;font-weight:800;color:${c.text||'#111'};margin:0 0 8px">${es.noResultsTitle || 'No results found'}</h2>
+          <p style="font-size:14px;color:${c.textMuted||'#6b7280'};margin:0 0 24px">${es.noResultsDesc || "We couldn't find any products matching your search."}</p>
+          <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:20px">
+            ${['Electronics','Fashion','Home','Sports'].map(t => `<span class="filter-chip">${t}</span>`).join('')}
+          </div>
+          <button class="btn">${es.noResultsBtnText || 'Browse All Products'}</button>
+        </div>`;
+      }
       if (page === 'listing') {
         const cols = pl.gridColumns || 4;
         const filterLayout = pl.filterLayout || 'top';
@@ -551,6 +587,14 @@ export default function EcommerceThemeEditor() {
   .filter-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;font-size:12px;font-weight:700;cursor:pointer;transition:all 0.2s}
   .filter-chip.active{background:${c.primary||'#4f46e5'};color:#fff}
   .filter-chip:not(.active){background:${c.surface||'#f3f4f6'};color:${c.textMuted||'#6b7280'};border:1px solid ${c.borderColor||'#e5e7eb'}}
+  .trust-badge{display:flex;align-items:center;gap:8px;padding:10px 16px;background:${c.surface||'#f9fafb'};border:1px solid ${c.borderColor||'#e5e7eb'};border-radius:10px;font-size:12px;font-weight:600;color:${c.text||'#111'}}
+  .trust-badge svg{flex-shrink:0}
+  .trust-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;padding:16px 20px;max-width:960px;margin:0 auto}
+  .search-dropdown{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid ${c.borderColor||'#e5e7eb'};border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,0.1);padding:12px;z-index:50;display:none}
+  .search-result-item{display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;cursor:pointer}
+  .search-result-item:hover{background:${c.surface||'#f3f4f6'}}
+  .search-result-img{width:40px;height:40px;border-radius:8px;background:${c.borderColor||'#f3f4f6'};flex-shrink:0}
+  .search-popular{display:flex;gap:6px;flex-wrap:wrap;padding:8px 0 4px;border-top:1px solid ${c.borderColor||'#e5e7eb'};margin-top:8px}
   ${device === 'mobile' ? `
   .container{max-width:100%;padding:16px}
   .header{padding:10px 16px}
@@ -589,6 +633,13 @@ ${announcement}
   </div>` : ''}
 </div>
 ${pageContentHTML}
+${tb.enabled && (page === 'home' || page === 'product' || page === 'cart' || page === 'checkout') ? `<div class="trust-row">
+  ${tb.showSecure ? `<div class="trust-badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${c.primary||'#4f46e5'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Secure Checkout</div>` : ''}
+  ${tb.showFreeShip ? `<div class="trust-badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${c.primary||'#4f46e5'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> Free Shipping</div>` : ''}
+  ${tb.showReturns ? `<div class="trust-badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${c.primary||'#4f46e5'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg> Easy Returns</div>` : ''}
+  ${tb.showSupport ? `<div class="trust-badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${c.primary||'#4f46e5'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> 24/7 Support</div>` : ''}
+  ${tb.showWarranty ? `<div class="trust-badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${c.primary||'#4f46e5'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg> Quality Guaranteed</div>` : ''}
+</div>` : ''}
 <div class="footer">
   <div class="footer-grid">
     <div>
@@ -921,6 +972,10 @@ ${pp.enabled ? `<div class="promo-popup-overlay"></div>
             <button onClick={() => setActiveTab('promopopup')} className={tabCls('promopopup')}><Gift className="w-4 h-4" /> Promo Popup</button>
             <button onClick={() => setActiveTab('listing')} className={tabCls('listing')}><Filter className="w-4 h-4" /> Listing/Filters</button>
             <button onClick={() => setActiveTab('animations')} className={tabCls('animations')}><Zap className="w-4 h-4" /> Animations</button>
+            <button onClick={() => setActiveTab('trustbadges')} className={tabCls('trustbadges')}><ShieldCheck className="w-4 h-4" /> Trust Badges</button>
+            <button onClick={() => setActiveTab('search')} className={tabCls('search')}><Search className="w-4 h-4" /> Search</button>
+            <button onClick={() => setActiveTab('emptystates')} className={tabCls('emptystates')}><AlertTriangle className="w-4 h-4" /> Empty States</button>
+            <button onClick={() => setActiveTab('announcement')} className={tabCls('announcement')}><Megaphone className="w-4 h-4" /> Announcement</button>
           </div>
 
           {/* Hidden file inputs for image uploads */}
@@ -1845,6 +1900,201 @@ ${pp.enabled ? `<div class="promo-popup-overlay"></div>
               </div>
             </div>
           )}
+
+          {/* Trust Badges */}
+          {activeTab === 'trustbadges' && (
+            <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-5 space-y-4">
+              <p className="text-sm text-gray-400">Show trust signals on product, cart, and checkout pages to increase conversions.</p>
+              <label className="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white"><input type="checkbox" checked={theme.trustBadges?.enabled ?? true} onChange={e => update('trustBadges.enabled', e.target.checked)} className="w-4 h-4 rounded" /> Enable Trust Badges</label>
+              {theme.trustBadges?.enabled && (
+                <>
+                  <div>
+                    <label className={labelCls}>Show on Pages</label>
+                    <div className="flex gap-4 flex-wrap">
+                      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.trustBadges?.showOnHome ?? false} onChange={e => update('trustBadges.showOnHome', e.target.checked)} className="w-4 h-4 rounded" /> Home</label>
+                      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.trustBadges?.showOnProduct ?? true} onChange={e => update('trustBadges.showOnProduct', e.target.checked)} className="w-4 h-4 rounded" /> Product</label>
+                      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.trustBadges?.showOnCart ?? true} onChange={e => update('trustBadges.showOnCart', e.target.checked)} className="w-4 h-4 rounded" /> Cart</label>
+                      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.trustBadges?.showOnCheckout ?? true} onChange={e => update('trustBadges.showOnCheckout', e.target.checked)} className="w-4 h-4 rounded" /> Checkout</label>
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelCls}>Badge Types</label>
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.trustBadges?.showSecure ?? true} onChange={e => update('trustBadges.showSecure', e.target.checked)} className="w-4 h-4 rounded" /> Secure Checkout (shield icon)</label>
+                      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.trustBadges?.showFreeShip ?? true} onChange={e => update('trustBadges.showFreeShip', e.target.checked)} className="w-4 h-4 rounded" /> Free Shipping (truck icon)</label>
+                      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.trustBadges?.showReturns ?? true} onChange={e => update('trustBadges.showReturns', e.target.checked)} className="w-4 h-4 rounded" /> Easy Returns (refresh icon)</label>
+                      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.trustBadges?.showSupport ?? false} onChange={e => update('trustBadges.showSupport', e.target.checked)} className="w-4 h-4 rounded" /> 24/7 Support (chat icon)</label>
+                      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.trustBadges?.showWarranty ?? false} onChange={e => update('trustBadges.showWarranty', e.target.checked)} className="w-4 h-4 rounded" /> Quality Guaranteed (badge icon)</label>
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelCls}>Badge Style</label>
+                    <select className={inputCls} value={theme.trustBadges?.style || 'row'} onChange={e => update('trustBadges.style', e.target.value)}>
+                      <option value="row">Horizontal Row</option>
+                      <option value="grid">Grid (2 columns)</option>
+                      <option value="compact">Compact (icons only)</option>
+                    </select>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Search Experience */}
+          {activeTab === 'search' && (
+            <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-5 space-y-4">
+              <p className="text-sm text-gray-400">Customize the search bar and autocomplete experience.</p>
+              <div>
+                <label className={labelCls}>Search Bar Style</label>
+                <select className={inputCls} value={theme.searchExp?.barStyle || 'rounded'} onChange={e => update('searchExp.barStyle', e.target.value)}>
+                  <option value="rounded">Rounded</option>
+                  <option value="pill">Pill</option>
+                  <option value="square">Square</option>
+                  <option value="underline">Underline Only</option>
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Search Bar Size</label>
+                <select className={inputCls} value={theme.searchExp?.barSize || 'medium'} onChange={e => update('searchExp.barSize', e.target.value)}>
+                  <option value="small">Small</option>
+                  <option value="medium">Medium</option>
+                  <option value="large">Large</option>
+                </select>
+              </div>
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.searchExp?.showAutocomplete ?? true} onChange={e => update('searchExp.showAutocomplete', e.target.checked)} className="w-4 h-4 rounded" /> Show autocomplete suggestions</label>
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.searchExp?.showProductImages ?? true} onChange={e => update('searchExp.showProductImages', e.target.checked)} className="w-4 h-4 rounded" /> Show product images in results</label>
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.searchExp?.showPrices ?? true} onChange={e => update('searchExp.showPrices', e.target.checked)} className="w-4 h-4 rounded" /> Show prices in results</label>
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.searchExp?.showPopularSearches ?? true} onChange={e => update('searchExp.showPopularSearches', e.target.checked)} className="w-4 h-4 rounded" /> Show popular searches</label>
+              <div>
+                <label className={labelCls}>Placeholder Text</label>
+                <input className={inputCls} value={theme.searchExp?.placeholder || ''} onChange={e => update('searchExp.placeholder', e.target.value)} placeholder="Search for products..." />
+              </div>
+              <div>
+                <label className={labelCls}>Max Results in Dropdown</label>
+                <input type="number" min="3" max="12" className={inputCls} value={theme.searchExp?.maxResults ?? 5} onChange={e => update('searchExp.maxResults', parseInt(e.target.value))} />
+              </div>
+            </div>
+          )}
+
+          {/* Empty States / 404 Pages */}
+          {activeTab === 'emptystates' && (
+            <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-5 space-y-4">
+              <p className="text-sm text-gray-400">Customize empty state and error pages with your own text and CTAs.</p>
+              <div className="border-b border-gray-100 dark:border-dark-700 pb-4">
+                <h4 className="font-bold text-sm text-gray-900 dark:text-white mb-3">404 Page</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelCls}>Title</label>
+                    <input className={inputCls} value={theme.emptyStates?.f404Title || ''} onChange={e => update('emptyStates.f404Title', e.target.value)} placeholder="Page not found" />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Button Text</label>
+                    <input className={inputCls} value={theme.emptyStates?.f404BtnText || ''} onChange={e => update('emptyStates.f404BtnText', e.target.value)} placeholder="Back to Home" />
+                  </div>
+                </div>
+                <div className="mt-2">
+                  <label className={labelCls}>Description</label>
+                  <input className={inputCls} value={theme.emptyStates?.f404Desc || ''} onChange={e => update('emptyStates.f404Desc', e.target.value)} placeholder="The page you are looking for does not exist." />
+                </div>
+                <div className="mt-2">
+                  <label className={labelCls}>404 Number Size</label>
+                  <input type="number" min="40" max="120" className={inputCls} value={theme.emptyStates?.f404Size ?? 72} onChange={e => update('emptyStates.f404Size', parseInt(e.target.value))} />
+                </div>
+                <button onClick={() => setPreviewPage('404')} className="mt-2 flex items-center gap-1.5 text-xs font-bold text-violet-600 hover:underline"><Eye className="w-3.5 h-3.5" /> Preview 404</button>
+              </div>
+              <div className="border-b border-gray-100 dark:border-dark-700 pb-4">
+                <h4 className="font-bold text-sm text-gray-900 dark:text-white mb-3">Empty Cart</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelCls}>Title</label>
+                    <input className={inputCls} value={theme.emptyStates?.emptyCartTitle || ''} onChange={e => update('emptyStates.emptyCartTitle', e.target.value)} placeholder="Your cart is empty" />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Button Text</label>
+                    <input className={inputCls} value={theme.emptyStates?.emptyCartBtnText || ''} onChange={e => update('emptyStates.emptyCartBtnText', e.target.value)} placeholder="Start Shopping" />
+                  </div>
+                </div>
+                <div className="mt-2">
+                  <label className={labelCls}>Description</label>
+                  <input className={inputCls} value={theme.emptyStates?.emptyCartDesc || ''} onChange={e => update('emptyStates.emptyCartDesc', e.target.value)} placeholder="Looks like you haven't added anything yet." />
+                </div>
+                <button onClick={() => setPreviewPage('emptycart')} className="mt-2 flex items-center gap-1.5 text-xs font-bold text-violet-600 hover:underline"><Eye className="w-3.5 h-3.5" /> Preview Empty Cart</button>
+              </div>
+              <div>
+                <h4 className="font-bold text-sm text-gray-900 dark:text-white mb-3">No Search Results</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelCls}>Title</label>
+                    <input className={inputCls} value={theme.emptyStates?.noResultsTitle || ''} onChange={e => update('emptyStates.noResultsTitle', e.target.value)} placeholder="No results found" />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Button Text</label>
+                    <input className={inputCls} value={theme.emptyStates?.noResultsBtnText || ''} onChange={e => update('emptyStates.noResultsBtnText', e.target.value)} placeholder="Browse All Products" />
+                  </div>
+                </div>
+                <div className="mt-2">
+                  <label className={labelCls}>Description</label>
+                  <input className={inputCls} value={theme.emptyStates?.noResultsDesc || ''} onChange={e => update('emptyStates.noResultsDesc', e.target.value)} placeholder="We couldn't find any products matching your search." />
+                </div>
+                <button onClick={() => setPreviewPage('noresults')} className="mt-2 flex items-center gap-1.5 text-xs font-bold text-violet-600 hover:underline"><Eye className="w-3.5 h-3.5" /> Preview No Results</button>
+              </div>
+            </div>
+          )}
+
+          {/* Announcement Bar Designer */}
+          {activeTab === 'announcement' && (
+            <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-gray-100 dark:border-dark-700 p-5 space-y-4">
+              <p className="text-sm text-gray-400">Customize the announcement bar at the top of your store.</p>
+              <label className="flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white"><input type="checkbox" checked={theme.announcementBar?.enabled ?? true} onChange={e => update('announcementBar.enabled', e.target.checked)} className="w-4 h-4 rounded" /> Enable Announcement Bar</label>
+              {theme.announcementBar?.enabled && (
+                <>
+                  <div>
+                    <label className={labelCls}>Announcement Text</label>
+                    <input className={inputCls} value={theme.announcementBar?.text || ''} onChange={e => update('announcementBar.text', e.target.value)} placeholder="Free shipping on orders over 200 SAR!" />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Background Type</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button onClick={() => update('announcementBar.bgType', 'solid')} className={`p-3 rounded-xl border-2 text-sm font-bold transition-all ${(theme.announcementBar?.bgType || 'solid') === 'solid' ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 dark:border-dark-600 text-gray-500'}`}>Solid Color</button>
+                      <button onClick={() => update('announcementBar.bgType', 'gradient')} className={`p-3 rounded-xl border-2 text-sm font-bold transition-all ${theme.announcementBar?.bgType === 'gradient' ? 'border-violet-500 bg-violet-50 text-violet-700' : 'border-gray-200 dark:border-dark-600 text-gray-500'}`}>Gradient</button>
+                    </div>
+                  </div>
+                  {theme.announcementBar?.bgType === 'gradient' ? (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={labelCls}>Gradient Start</label>
+                        <input type="color" className="w-full h-10 rounded-lg border border-gray-200 dark:border-dark-600" value={theme.announcementBar?.bgColor1 || '#4f46e5'} onChange={e => update('announcementBar.bgColor1', e.target.value)} />
+                      </div>
+                      <div>
+                        <label className={labelCls}>Gradient End</label>
+                        <input type="color" className="w-full h-10 rounded-lg border border-gray-200 dark:border-dark-600" value={theme.announcementBar?.bgColor2 || '#7c3aed'} onChange={e => update('announcementBar.bgColor2', e.target.value)} />
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className={labelCls}>Background Color</label>
+                      <input type="color" className="w-full h-10 rounded-lg border border-gray-200 dark:border-dark-600" value={theme.announcementBar?.bgColor || '#4f46e5'} onChange={e => update('announcementBar.bgColor', e.target.value)} />
+                    </div>
+                  )}
+                  <div>
+                    <label className={labelCls}>Text Color</label>
+                    <input type="color" className="w-full h-10 rounded-lg border border-gray-200 dark:border-dark-600" value={theme.announcementBar?.textColor || '#ffffff'} onChange={e => update('announcementBar.textColor', e.target.value)} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={labelCls}>Font Size (px)</label>
+                      <input type="number" min="10" max="20" className={inputCls} value={theme.announcementBar?.fontSize ?? 13} onChange={e => update('announcementBar.fontSize', parseInt(e.target.value))} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Padding (px)</label>
+                      <input type="number" min="4" max="20" className={inputCls} value={theme.announcementBar?.padding ?? 8} onChange={e => update('announcementBar.padding', parseInt(e.target.value))} />
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={theme.announcementBar?.closeable ?? false} onChange={e => update('announcementBar.closeable', e.target.checked)} className="w-4 h-4 rounded" /> Show close (dismiss) button</label>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Right: Live Preview */}
@@ -1860,7 +2110,7 @@ ${pp.enabled ? `<div class="promo-popup-overlay"></div>
 
           {/* Page navigation */}
           <div className="flex gap-1 flex-wrap">
-            {[{id:'home',label:'Home',icon:<Home className="w-3 h-3" />},{id:'product',label:'Product',icon:<Package className="w-3 h-3" />},{id:'listing',label:'Listing',icon:<Filter className="w-3 h-3" />},{id:'cart',label:'Cart',icon:<ShoppingCart className="w-3 h-3" />},{id:'checkout',label:'Checkout',icon:<CreditCard className="w-3 h-3" />},{id:'category',label:'Categories',icon:<Tag className="w-3 h-3" />},{id:'orders',label:'Orders',icon:<ChevronRight className="w-3 h-3" />}].map(pg => (
+            {[{id:'home',label:'Home',icon:<Home className="w-3 h-3" />},{id:'product',label:'Product',icon:<Package className="w-3 h-3" />},{id:'listing',label:'Listing',icon:<Filter className="w-3 h-3" />},{id:'cart',label:'Cart',icon:<ShoppingCart className="w-3 h-3" />},{id:'checkout',label:'Checkout',icon:<CreditCard className="w-3 h-3" />},{id:'category',label:'Categories',icon:<Tag className="w-3 h-3" />},{id:'orders',label:'Orders',icon:<ChevronRight className="w-3 h-3" />},{id:'404',label:'404',icon:<AlertTriangle className="w-3 h-3" />},{id:'emptycart',label:'Empty Cart',icon:<ShoppingCart className="w-3 h-3" />},{id:'noresults',label:'No Results',icon:<Search className="w-3 h-3" />}].map(pg => (
               <button
                 key={pg.id}
                 onClick={() => setPreviewPage(pg.id)}
