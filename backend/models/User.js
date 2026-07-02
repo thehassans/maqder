@@ -14,9 +14,10 @@ const userSchema = new mongoose.Schema({
   avatar: { type: String },
   role: {
     type: String,
-    enum: ['super_admin', 'admin', 'manager', 'accountant', 'hr_manager', 'inventory_manager', 'sales', 'kitchen_staff', 'viewer'],
+    enum: ['super_admin', 'reseller', 'admin', 'manager', 'accountant', 'hr_manager', 'inventory_manager', 'sales', 'kitchen_staff', 'viewer'],
     default: 'viewer'
   },
+  resellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Reseller', default: null, index: true },
   permissions: [{
     module: { type: String },
     actions: [{ type: String, enum: ['create', 'read', 'update', 'delete', 'approve', 'export'] }]

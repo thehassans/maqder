@@ -11,6 +11,7 @@ import { ErrorBoundary } from './lib/errorBoundary'
 const MainLayout = lazy(() => import('./layouts/MainLayout'))
 const AuthLayout = lazy(() => import('./layouts/AuthLayout'))
 const SuperAdminLayout = lazy(() => import('./layouts/SuperAdminLayout'))
+const ResellerLayout = lazy(() => import('./layouts/ResellerLayout'))
 const MarketingLayout = lazy(() => import('./layouts/MarketingLayout'))
 const CarRentalLayout = lazy(() => import('./layouts/CarRentalLayout'))
 const WorkshopLayout = lazy(() => import('./layouts/WorkshopLayout'))
@@ -221,6 +222,9 @@ const EmailSettings = lazy(() => import('./pages/super-admin/EmailSettings'))
 const SuperAdminMailbox = lazy(() => import('./pages/super-admin/SuperAdminMailbox'))
 const SuperAdminWhatsApp = lazy(() => import('./pages/super-admin/SuperAdminWhatsApp'))
 const WebsiteSettings = lazy(() => import('./pages/super-admin/WebsiteSettings'))
+const ResellerManagement = lazy(() => import('./pages/super-admin/ResellerManagement'))
+const ResellerDashboard = lazy(() => import('./pages/reseller/ResellerDashboard'))
+const ResellerTenants = lazy(() => import('./pages/reseller/ResellerTenants'))
 const ManpowerDashboard = lazy(() => import('./pages/manpower/ManpowerDashboard'))
 const ManpowerWorkers = lazy(() => import('./pages/manpower/ManpowerWorkers'))
 const ManpowerWorkerForm = lazy(() => import('./pages/manpower/ManpowerWorkerForm'))
@@ -307,8 +311,15 @@ function ProtectedRoute({ children, allowedRoles, redirectSuperAdmin }) {
   if (redirectSuperAdmin && user?.role === 'super_admin') {
     return <Navigate to="/super-admin" replace />
   }
+
+  // Redirect reseller to their panel if they try to access regular routes
+  if (redirectSuperAdmin && user?.role === 'reseller') {
+    return <Navigate to="/reseller" replace />
+  }
   
   if (allowedRoles && !allowedRoles.includes(user?.role)) {
+    if (user?.role === 'super_admin') return <Navigate to="/super-admin" replace />
+    if (user?.role === 'reseller') return <Navigate to="/reseller" replace />
     return <Navigate to="/app/dashboard" replace />
   }
 
@@ -422,6 +433,7 @@ function App() {
           </Route>
           <Route path="users" element={<UserManagement />} />
           <Route path="queries" element={<QueriesCRM />} />
+        <Route path="resellers" element={<ResellerManagement />} />
         <Route path="website" element={<WebsiteSettings />} />
         <Route path="email" element={<EmailSettings />} />
         <Route path="mailbox" element={<SuperAdminMailbox />} />
@@ -430,6 +442,19 @@ function App() {
         <Route path="gemini" element={<GeminiSettings />} />
         <Route path="system-settings" element={<SystemSettings />} />
         <Route path="zatca" element={<ZatcaManagement />} />
+      </Route>
+
+      {/* Reseller Panel Routes */}
+      <Route
+        path="/reseller"
+        element={
+          <ProtectedRoute allowedRoles={['reseller']}>
+            <Suspense fallback={<LoadingScreen />}><ResellerLayout /></Suspense>
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<ResellerDashboard />} />
+        <Route path="tenants" element={<ResellerTenants />} />
       </Route>
 
       {/* Main App Routes */}

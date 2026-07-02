@@ -539,6 +539,7 @@ const tenantSchema = new mongoose.Schema({
     sidebarStyle: { type: String, enum: ['glass', 'solid'], default: 'solid' }
   },
   isActive: { type: Boolean, default: true },
+  resellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Reseller', default: null, index: true },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, {
   timestamps: true

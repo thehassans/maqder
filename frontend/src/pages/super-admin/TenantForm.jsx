@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Save, Building2, CreditCard, User, Shield, FileText, Image, MapPin, Briefcase, Receipt, KeyRound, Eye, EyeOff } from 'lucide-react'
+import { ArrowLeft, Save, Building2, CreditCard, User, Shield, FileText, Image, MapPin, Briefcase, Receipt, KeyRound, Eye, EyeOff, Users } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
@@ -52,6 +52,13 @@ export default function TenantForm() {
     queryFn: () => api.get(`/super-admin/tenants/${id}`).then(res => res.data),
     enabled: isEdit,
   })
+
+  const { data: resellersData } = useQuery({
+    queryKey: ['resellers'],
+    queryFn: () => api.get('/super-admin/resellers').then(res => res.data),
+    staleTime: 5 * 60 * 1000,
+  })
+  const resellers = resellersData?.resellers || []
 
   useEffect(() => {
     if (!tenant?.tenant) return
@@ -112,6 +119,7 @@ export default function TenantForm() {
 
     const nextPayload = {
       ...data,
+      resellerId: data?.resellerId || null,
       business: {
         ...(data?.business || {}),
         address: {
@@ -682,6 +690,28 @@ export default function TenantForm() {
             />
           </motion.div>
         )}
+
+        {/* Reseller Assignment */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="card p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg"><Users className="w-5 h-5 text-indigo-600" /></div>
+            <h3 className="text-lg font-semibold">{language === 'ar' ? 'تعيين الموزع' : 'Reseller Assignment'}</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="label">{language === 'ar' ? 'الموزع' : 'Reseller'}</label>
+              <select {...register('resellerId')} className="select">
+                <option value="">{language === 'ar' ? '— بدون موزع —' : '— No reseller —'}</option>
+                {resellers.filter(r => r.isActive).map(r => (
+                  <option key={r._id} value={r._id}>{r.name}{r.company ? ` (${r.company})` : ''}</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                {language === 'ar' ? 'تعيين موزع لهذا المستأجر. سيتمكن الموزع من عرض بيانات الاشتراك فقط.' : 'Assign a reseller to this tenant. The reseller can view subscription details only.'}
+              </p>
+            </div>
+          </div>
+        </motion.div>
 
         {/* Subscription */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="card p-6">

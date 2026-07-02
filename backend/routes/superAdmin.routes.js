@@ -800,7 +800,7 @@ router.post('/settings/ai/test', async (req, res) => {
 // @route   GET /api/super-admin/tenants
 router.get('/tenants', async (req, res) => {
   try {
-    const { page = 1, limit = 20, status, plan, search } = req.query;
+    const { page = 1, limit = 20, status, plan, search, resellerId } = req.query;
     const parsedPage = Number.parseInt(page, 10);
     const parsedLimit = Number.parseInt(limit, 10);
     const safePage = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
@@ -811,6 +811,7 @@ router.get('/tenants', async (req, res) => {
     if (status === 'active') query.isActive = true;
     if (status === 'inactive') query.isActive = false;
     if (plan) query['subscription.plan'] = plan;
+    if (resellerId) query.resellerId = resellerId;
     if (normalizedSearch) {
       query.$or = [
         { name: { $regex: normalizedSearch, $options: 'i' } },
@@ -821,7 +822,7 @@ router.get('/tenants', async (req, res) => {
     
     const tenants = await withQueryTimeout(
       Tenant.find(query)
-        .select('name slug businessType businessTypes business subscription isActive createdAt settings.communication.email')
+        .select('name slug businessType businessTypes business subscription isActive createdAt resellerId settings.communication.email')
         .sort({ createdAt: -1 })
         .skip((safePage - 1) * safeLimit)
         .limit(safeLimit)
@@ -894,7 +895,7 @@ router.get('/tenants/:id', async (req, res) => {
 // @route   POST /api/super-admin/tenants
 router.post('/tenants', async (req, res) => {
   try {
-    const { name, slug, businessType, businessTypes, business, subscription, adminUser, branding, settings, zatca, personalEmail, phoneNumber, billingCleared } = req.body;
+    const { name, slug, businessType, businessTypes, business, subscription, adminUser, branding, settings, zatca, personalEmail, phoneNumber, billingCleared, resellerId } = req.body;
 
     const nextBusinessTypes = normalizeBusinessTypes(businessTypes || businessType);
     const primaryBusinessType = businessType && nextBusinessTypes.includes(businessType)
@@ -910,6 +911,7 @@ router.post('/tenants', async (req, res) => {
       businessType: primaryBusinessType,
       businessTypes: nextBusinessTypes,
       business,
+      ...(resellerId ? { resellerId } : {}),
       ...(settings ? { settings: mergeTenantEmailSettings({ existingTenant: { settings: {}, slug }, incomingSettings: settings }) } : {}),
       ...(branding ? { branding } : {}),
       ...(zatca ? { zatca: { phase: zatca.phase || 1 } } : {}),

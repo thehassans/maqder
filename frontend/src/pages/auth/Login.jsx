@@ -77,6 +77,8 @@ export default function Login() {
       let redirectPath = '/app/dashboard';
       if (result.user?.role === 'super_admin') {
         redirectPath = '/super-admin';
+      } else if (result.user?.role === 'reseller') {
+        redirectPath = '/reseller';
       } else if (businessTypes.includes('bakala')) {
         redirectPath = '/app/dashboard/bakala/pos';
       } else if (businessTypes.includes('boutique')) {
