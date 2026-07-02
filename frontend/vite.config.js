@@ -20,9 +20,14 @@ export default defineConfig(({ mode }) => {
           type: 'module'
         },
         workbox: {
-          maximumFileSizeToCacheInBytes: 10000000,
+          maximumFileSizeToCacheInBytes: 3000000,
           navigateFallback: '/index.html',
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2,ttf,eot}'],
+          globPatterns: ['**/*.{js,css,html,ico,svg,woff,woff2}'],
+          globIgnores: [
+            '**/MaqderFavicon.png',
+            '**/saudi-vision-2030-logo.png',
+            '**/images/laundry/**',
+          ],
           runtimeCaching: [
             {
               urlPattern: ({ url }) => url.pathname.startsWith('/api'),
@@ -63,6 +68,20 @@ export default defineConfig(({ mode }) => {
                 cacheName: 'uploaded-images-cache',
                 expiration: {
                   maxEntries: 200,
+                  maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+                },
+                cacheableResponse: {
+                  statuses: [0, 200]
+                }
+              }
+            },
+            {
+              urlPattern: /\.(?:png|jpg|jpeg|webp|gif|ttf)$/i,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'static-assets-cache',
+                expiration: {
+                  maxEntries: 60,
                   maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
                 },
                 cacheableResponse: {
