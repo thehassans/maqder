@@ -659,6 +659,7 @@ export default function Landing() {
                     <img 
                       src={solution.image} 
                       alt={solution.title} 
+                      loading="lazy"
                       className="w-full h-[calc(100%-1.5rem)] object-cover object-top opacity-50 group-hover:opacity-90 transition-opacity duration-500 filter blur-[1px] group-hover:blur-none"
                     />
                   </div>
@@ -716,7 +717,7 @@ export default function Landing() {
               
               <div className="relative h-72 sm:h-96 w-full bg-gray-900 p-4 sm:p-8 flex items-center justify-center overflow-hidden">
                 <div className="absolute inset-0">
-                  <img src={selectedSolution.image} className="w-full h-full object-cover opacity-20 blur-sm" alt={selectedSolution.title} />
+                  <img src={selectedSolution.image} loading="lazy" className="w-full h-full object-cover opacity-20 blur-sm" alt={selectedSolution.title} />
                   <div className={`absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/80 to-transparent`} />
                 </div>
 
@@ -734,6 +735,7 @@ export default function Landing() {
                   <div className="relative w-full h-48 sm:h-64 overflow-hidden group">
                     <img 
                       src={selectedSolution.image} 
+                      loading="lazy"
                       className="w-full h-auto object-cover object-top transition-transform duration-[3000ms] ease-linear group-hover:-translate-y-[20%]" 
                       alt={selectedSolution.title} 
                     />

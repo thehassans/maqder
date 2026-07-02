@@ -78,7 +78,7 @@ export default function SolutionDetail() {
               <div className={`pointer-events-none absolute inset-0 scale-110 rounded-3xl ${solution.glow} blur-3xl`} />
               <div className="relative rounded-[2rem] border border-white/[0.08] bg-white/[0.02] p-2 backdrop-blur-sm shadow-[0_0_0_1px_rgba(255,255,255,0.04),0_40px_100px_-20px_rgba(0,0,0,0.9)] group">
                 <div className="overflow-hidden rounded-[1.5rem] border border-white/[0.05] bg-[#071209]">
-                  <img src={solution.image} alt={isArabic ? solution.nameAr : solution.nameEn} className="w-full h-auto object-cover transform transition-transform duration-700 group-hover:scale-105" />
+                  <img src={solution.image} alt={isArabic ? solution.nameAr : solution.nameEn} loading="lazy" className="w-full h-auto object-cover transform transition-transform duration-700 group-hover:scale-105" />
                 </div>
               </div>
             </motion.div>

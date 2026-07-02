@@ -429,7 +429,7 @@ export default function MarketingHome() {
                   <div className={`absolute -right-8 -top-8 h-32 w-32 rounded-bl-full ${demo.glow} transition-transform group-hover:scale-110`} />
                   <div className="relative z-10 flex h-full flex-col">
                     <div className="mb-6 relative h-40 w-full overflow-hidden rounded-2xl border border-slate-100">
-                      <img src={demo.image} alt={isArabic ? demo.nameAr : demo.nameEn} className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105" />
+                      <img src={demo.image} alt={isArabic ? demo.nameAr : demo.nameEn} loading="lazy" className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                       <div className={`absolute bottom-3 left-3 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${demo.accent} shadow-md`}>
                         <Icon className="h-5 w-5 text-white" />

@@ -23,10 +23,6 @@ export default defineConfig(({ mode }) => {
           maximumFileSizeToCacheInBytes: 3000000,
           navigateFallback: '/index.html',
           globPatterns: ['**/*.{js,css,html,ico,svg,woff,woff2}'],
-          globIgnores: [
-            '**/saudi-vision-2030-logo.png',
-            '**/images/laundry/**',
-          ],
           runtimeCaching: [
             {
               urlPattern: ({ url }) => url.pathname.startsWith('/api'),
