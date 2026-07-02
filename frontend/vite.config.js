@@ -117,6 +117,7 @@ export default defineConfig(({ mode }) => {
             'motion-vendor': ['framer-motion'],
             'toast-vendor': ['react-hot-toast'],
             'chart-vendor': ['recharts'],
+            'axios-vendor': ['axios'],
           },
         },
       },
