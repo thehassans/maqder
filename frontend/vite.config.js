@@ -93,8 +93,10 @@ export default defineConfig(({ mode }) => {
           manualChunks: {
             'react-vendor': ['react', 'react-dom', 'react-router-dom'],
             'redux-vendor': ['@reduxjs/toolkit', 'react-redux'],
+            'query-vendor': ['@tanstack/react-query'],
             'ui-vendor': ['lucide-react'],
             'motion-vendor': ['framer-motion'],
+            'toast-vendor': ['react-hot-toast'],
           },
         },
       },
