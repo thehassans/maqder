@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Clock } from 'lucide-react';
 import SaudiRiyalSymbol from './SaudiRiyalSymbol';
 import storeApi from '../../lib/storeApi';
+import { optimizeImageUrl } from '../../lib/imageOptimizer';
 
 const STORAGE_KEY = 'maqder_recently_viewed';
 const MAX_ITEMS = 8;
@@ -51,7 +52,7 @@ export default function RecentlyViewed() {
             <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '16px', overflow: 'hidden', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }} onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-6px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(0,0,0,0.1)'; }} onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'; }}>
               <div style={{ aspectRatio: '1', background: '#f3f4f6', overflow: 'hidden' }}>
                 {item.image ? (
-                  <img src={item.image} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s' }} />
+                  <img src={optimizeImageUrl(item.image, { width: 200, quality: 80 })} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s' }} />
                 ) : (
                   <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: '11px' }}>No image</div>
                 )}

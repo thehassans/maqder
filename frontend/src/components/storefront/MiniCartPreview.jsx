@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ShoppingCart, X, Plus, Minus, Trash2, Heart, Tag, Gift, Check } from 'lucide-react';
 import SaudiRiyalSymbol from './SaudiRiyalSymbol';
 import storeApi from '../../lib/storeApi';
+import { optimizeImageUrl } from '../../lib/imageOptimizer';
 import { useCart } from '../../store/storefrontCart';
 import { useWishlist } from '../../store/storefrontWishlist';
 import { useI18n } from '../../store/storefrontI18n';
@@ -111,7 +112,7 @@ export default function MiniCartPreview() {
               {items.map(item => (
                 <div key={item.key} style={{ display: 'flex', gap: '12px', paddingBottom: '14px', borderBottom: '1px solid #f3f4f6' }}>
                   <div style={{ width: '64px', height: '64px', borderRadius: '12px', overflow: 'hidden', background: '#f3f4f6', flexShrink: 0 }}>
-                    {item.image && <img src={item.image} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                    {item.image && <img src={optimizeImageUrl(item.image, { width: 100, quality: 80 })} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: '14px', fontWeight: 700, margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</p>

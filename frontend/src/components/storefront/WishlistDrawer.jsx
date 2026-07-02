@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, X, Trash2, ShoppingCart, Check } from 'lucide-react';
 import SaudiRiyalSymbol from './SaudiRiyalSymbol';
+import { optimizeImageUrl } from '../../lib/imageOptimizer';
 import { useWishlist } from '../../store/storefrontWishlist';
 import { useCart } from '../../store/storefrontCart';
 import { useI18n } from '../../store/storefrontI18n';
@@ -54,7 +55,7 @@ export default function WishlistDrawer({ isOpen, onClose }) {
               {items.map(item => (
                 <div key={item.productId} style={{ display: 'flex', gap: '12px', paddingBottom: '14px', borderBottom: '1px solid #f3f4f6' }}>
                   <Link to={`/store/products/${item.slug}`} onClick={onClose} style={{ width: '64px', height: '64px', borderRadius: '12px', overflow: 'hidden', background: '#f3f4f6', flexShrink: 0 }}>
-                    {item.image && <img src={item.image} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                    {item.image && <img src={optimizeImageUrl(item.image, { width: 100, quality: 80 })} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                   </Link>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <Link to={`/store/products/${item.slug}`} onClick={onClose} style={{ textDecoration: 'none' }}>

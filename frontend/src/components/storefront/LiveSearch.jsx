@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, X, Loader2, TrendingUp, Tag } from 'lucide-react';
 import SaudiRiyalSymbol from './SaudiRiyalSymbol';
 import storeApi from '../../lib/storeApi';
+import { optimizeImageUrl } from '../../lib/imageOptimizer';
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../../store/storefrontI18n';
 
@@ -228,7 +229,7 @@ export default function LiveSearch({ placeholder, colors, isRTL }) {
                   >
                     <div style={{ width: '44px', height: '44px', borderRadius: '8px', overflow: 'hidden', background: c('borderColor', '#e5e7eb'), flexShrink: 0 }}>
                       {product.images?.[0]?.url ? (
-                        <img src={product.images[0].url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        <img src={optimizeImageUrl(product.images[0].url, { width: 100, quality: 80 })} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
                         <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#9ca3af' }}>No img</div>
                       )}

@@ -262,7 +262,7 @@ export default function StorefrontProductDetail() {
                 <button key={idx} onClick={() => setSelectedImage(idx)} style={{
                   width: '72px', height: '72px', borderRadius: '14px', overflow: 'hidden', border: selectedImage === idx ? '2px solid #111' : '1px solid #eee', cursor: 'pointer', flexShrink: 0, transition: 'all 0.25s', opacity: selectedImage === idx ? 1 : 0.6,
                 }} onMouseEnter={e => { if (selectedImage !== idx) { e.currentTarget.style.borderColor = '#ddd'; e.currentTarget.style.opacity = '0.85'; } }} onMouseLeave={e => { if (selectedImage !== idx) { e.currentTarget.style.borderColor = '#eee'; e.currentTarget.style.opacity = '0.6'; } }}>
-                  <img src={img.url} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={optimizeImageUrl(img.url, { width: 200, quality: 80 })} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </button>
               ))}
             </div>
@@ -670,7 +670,7 @@ export default function StorefrontProductDetail() {
                   {r.images && r.images.length > 0 && (
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
                       {r.images.map((img, idx) => (
-                        <img key={idx} src={img.url} alt={`Review photo ${idx + 1}`} style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #e5e7eb', cursor: 'pointer' }} onClick={() => window.open(img.url, '_blank')} />
+                        <img key={idx} src={optimizeImageUrl(img.url, { width: 200, quality: 80 })} alt={`Review photo ${idx + 1}`} style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #e5e7eb', cursor: 'pointer' }} onClick={() => window.open(img.url, '_blank')} />
                       ))}
                     </div>
                   )}
@@ -870,7 +870,7 @@ function FBTItem({ product, checked, alwaysChecked, onToggle }) {
         <Link to={`/store/products/${slug}`}>
           <div style={{ width: '120px', height: '120px', borderRadius: '12px', overflow: 'hidden', margin: '0 auto', border: '1px solid #e5e7eb', opacity: checked ? 1 : 0.5, transition: 'opacity 0.2s' }}>
             {product.images?.[0]?.url ? (
-              <img src={product.images[0].url} alt={product.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img src={optimizeImageUrl(product.images[0].url, { width: 200, quality: 80 })} alt={product.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
               <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f3f4f6' }}>
                 <Package size={24} color="#9ca3af" />

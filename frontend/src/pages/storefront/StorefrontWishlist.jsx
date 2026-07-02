@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, Trash2, ShoppingCart, Share2, Check } from 'lucide-react';
 import SaudiRiyalSymbol from '../../components/storefront/SaudiRiyalSymbol';
+import { optimizeImageUrl } from '../../lib/imageOptimizer';
 import { useWishlist } from '../../store/storefrontWishlist';
 import { useCart } from '../../store/storefrontCart';
 import StorefrontSeo from '../../components/storefront/StorefrontSeo';
@@ -50,7 +51,7 @@ export default function StorefrontWishlist() {
             <Link to={`/store/products/${item.slug}`}>
               <div style={{ aspectRatio: '1', background: '#e5e7eb', overflow: 'hidden' }}>
                 {item.image ? (
-                  <img src={item.image} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} />
+                  <img src={optimizeImageUrl(item.image, { width: 400, quality: 80 })} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }} />
                 ) : (
                   <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: '12px' }}>No image</div>
                 )}

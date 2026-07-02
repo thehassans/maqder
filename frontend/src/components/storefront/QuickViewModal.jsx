@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { X, ShoppingCart, Check, Minus, Plus, Eye } from 'lucide-react';
 import SaudiRiyalSymbol from './SaudiRiyalSymbol';
 import storeApi from '../../lib/storeApi';
+import { optimizeImageUrl } from '../../lib/imageOptimizer';
 import { useCart } from '../../store/storefrontCart';
 import { useI18n } from '../../store/storefrontI18n';
 
@@ -67,7 +68,7 @@ export default function QuickViewModal({ product, onClose, currency = 'SAR' }) {
           {/* Image */}
           <div style={{ width: '300px', flexShrink: 0, background: '#f3f4f6' }}>
             {product.images?.[0]?.url ? (
-              <img src={product.images[0].url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover', minHeight: '300px' }} />
+              <img src={optimizeImageUrl(product.images[0].url, { width: 400, quality: 80 })} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover', minHeight: '300px' }} />
             ) : (
               <div style={{ minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: '14px' }}>{t('noImage')}</div>
             )}

@@ -245,11 +245,11 @@ export default function StorefrontProducts() {
                           display: 'flex', gap: '4px', opacity: 0, transition: 'opacity 0.2s', zIndex: 2,
                         }}>
                           {images.slice(0, 5).map((img, i) => (
-                            <div key={i} onClick={(e) => { e.preventDefault(); e.stopPropagation(); const mainImg = e.currentTarget.closest('.product-card').querySelector('.card-main-img'); if (mainImg) mainImg.src = img.url; }} style={{
+                            <div key={i} onClick={(e) => { e.preventDefault(); e.stopPropagation(); const mainImg = e.currentTarget.closest('.product-card').querySelector('.card-main-img'); if (mainImg) mainImg.src = optimizeImageUrl(img.url, { width: 400, quality: 80 }); }} style={{
                               width: '32px', height: '32px', borderRadius: '6px', overflow: 'hidden',
                               border: '2px solid rgba(255,255,255,0.8)', cursor: 'pointer', background: '#fff',
                             }}>
-                              <img src={img.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              <img src={optimizeImageUrl(img.url, { width: 100, quality: 80 })} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             </div>
                           ))}
                         </div>
