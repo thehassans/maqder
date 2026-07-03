@@ -21,6 +21,7 @@ import {
 import { logout } from '../store/slices/authSlice'
 import { setTheme, setLanguage } from '../store/slices/uiSlice'
 import { useTranslation } from '../lib/translations'
+import LoadingScreen from '../components/ui/LoadingScreen'
 
 export default function SuperAdminLayout() {
   const dispatch = useDispatch()
@@ -144,7 +145,7 @@ export default function SuperAdminLayout() {
 
       {/* Main Content */}
       <main className="p-6">
-        <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" /></div>}>
+        <Suspense fallback={<LoadingScreen />}>
           <Outlet />
         </Suspense>
       </main>

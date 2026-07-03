@@ -22,7 +22,7 @@ export default defineConfig(({ mode }) => {
         workbox: {
           maximumFileSizeToCacheInBytes: 3000000,
           navigateFallback: '/index.html',
-          globPatterns: ['**/*.{js,css,html,ico,svg,woff,woff2}'],
+          globPatterns: ['**/*.{js,css,html,ico,svg,png,woff,woff2}'],
           runtimeCaching: [
             {
               urlPattern: ({ url }) => url.pathname.startsWith('/api'),
@@ -90,9 +90,23 @@ export default defineConfig(({ mode }) => {
           name: 'Maqder ERP & POS',
           short_name: 'Maqder',
           description: 'Offline-First POS and ERP System',
-          theme_color: '#ffffff',
+          theme_color: '#1a3d28',
           display: 'standalone',
-          background_color: '#ffffff'
+          background_color: '#1a3d28',
+          icons: [
+            {
+              src: '/MaqderFavicon.png',
+              sizes: '192x192',
+              type: 'image/png',
+              purpose: 'any maskable',
+            },
+            {
+              src: '/MaqderFavicon.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'any maskable',
+            },
+          ],
         }
       })
     ],

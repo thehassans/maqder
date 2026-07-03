@@ -6,6 +6,7 @@ import { NavLink } from 'react-router-dom'
 import { logout } from '../store/slices/authSlice'
 import { setTheme, setLanguage } from '../store/slices/uiSlice'
 import { useTranslation } from '../lib/translations'
+import LoadingScreen from '../components/ui/LoadingScreen'
 
 export default function ResellerLayout() {
   const dispatch = useDispatch()
@@ -73,7 +74,7 @@ export default function ResellerLayout() {
       </header>
 
       <main className="p-6">
-        <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
+        <Suspense fallback={<LoadingScreen />}>
           <Outlet />
         </Suspense>
       </main>
