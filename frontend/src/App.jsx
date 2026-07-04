@@ -212,6 +212,7 @@ const CustomerForm = lazy(() => import('./pages/customers/CustomerForm'))
 const CustomerStatement = lazy(() => import('./pages/customers/CustomerStatement'))
 const Users = lazy(() => import('./pages/Users'))
 const SuperAdminDashboard = lazy(() => import('./pages/super-admin/SuperAdminDashboard'))
+const PosSessions = lazy(() => import('./pages/super-admin/PosSessions'))
 const TenantManagement = lazy(() => import('./pages/super-admin/TenantManagement'))
 const TenantForm = lazy(() => import('./pages/super-admin/TenantForm'))
 const TenantCustomization = lazy(() => import('./pages/super-admin/TenantCustomization'))
@@ -424,6 +425,7 @@ function App() {
         }
       >
         <Route index element={<SuperAdminDashboard />} />
+        <Route path="pos-sessions" element={<PosSessions />} />
           <Route path="tenants" element={<TenantManagement />} />
           <Route path="tenants/new" element={<TenantForm />} />
           <Route path="tenants/:id" element={<TenantForm />} />

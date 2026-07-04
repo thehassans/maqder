@@ -16,7 +16,8 @@ import {
   Smartphone,
   HelpCircle,
   Store,
-  ChevronDown
+  ChevronDown,
+  Monitor
 } from 'lucide-react'
 import { logout } from '../store/slices/authSlice'
 import { setTheme, setLanguage } from '../store/slices/uiSlice'
@@ -32,6 +33,7 @@ export default function SuperAdminLayout() {
   const primaryNavItems = [
     { path: '/super-admin', icon: LayoutDashboard, label: t('dashboard'), end: true },
     { path: '/super-admin/tenants', icon: Building2, label: t('tenants') },
+    { path: '/super-admin/pos-sessions', icon: Monitor, label: language === 'ar' ? 'جلسات نقاط البيع' : 'POS Sessions' },
     { path: '/super-admin/resellers', icon: Store, label: language === 'ar' ? 'الموزعون' : 'Resellers' },
     { path: '/super-admin/queries', icon: HelpCircle, label: t('queries') },
     { path: '/super-admin/zatca', icon: ShieldCheck, label: 'ZATCA' },

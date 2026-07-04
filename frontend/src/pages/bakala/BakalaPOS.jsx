@@ -5,8 +5,9 @@ import { getProductByBarcode, saveOfflineInvoice } from '../../lib/bakalaDb';
 import { ShoppingCart, CreditCard, Wallet, Send, RefreshCw, Server, WifiOff, ArrowLeft, Search, Plus, Minus, Trash2, LogOut, Smartphone, Keyboard, Users, CheckCircle2, Scale, Plug, Unplug, Printer, Archive } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import PosSessions from './PosSessions';
+import { updateTenant } from '../../store/slices/authSlice';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import { generateZatcaQrValue } from '../../lib/zatcaQr';
@@ -14,8 +15,10 @@ import { getThermalPrinterSettings, getBodyWidthCss, getPageCss } from '../../li
 
 export default function BakalaPOS() {
   const navigate = useNavigate();
-  const { tenant } = useSelector(state => state.auth);
-  const scalePrefix = (tenant?.settings?.hardwareSettings?.scaleBarcodePrefix || '21').substring(0, 2).padEnd(2, '0');
+  const dispatch = useDispatch();
+  const { tenant, user } = useSelector(state => state.auth);
+  const hw = tenant?.settings?.hardwareSettings || {};
+  const scalePrefix = (hw.scaleBarcodePrefix || '21').substring(0, 2).padEnd(2, '0');
   
   const { cartItems, addItem, addWeightedItem, updateQuantity, removeItem, clearCart, totals, holdBill, autoHoldBill, recallBill, getHeldBills } = useCartEngine();
   const { isOnline, pendingCount, syncOfflineData } = useBakalaSync();
@@ -34,6 +37,13 @@ export default function BakalaPOS() {
     printer: 'disconnected', // disconnected | connected | checking | not_configured
     cashDrawer: 'disconnected',
   });
+  const [showPrinterConfig, setShowPrinterConfig] = useState(false);
+  const [printerConfig, setPrinterConfig] = useState({
+    printerIpAddress: hw.printerIpAddress || '192.168.1.100',
+    printerPort: hw.printerPort || 9100,
+    cashDrawerKickCode: hw.cashDrawerKickCode || '27,112,0,50,250',
+  });
+  const [savingPrinterConfig, setSavingPrinterConfig] = useState(false);
 
   // Weight Scale Modal
   const [showWeighModal, setShowWeighModal] = useState(false);
@@ -242,8 +252,6 @@ export default function BakalaPOS() {
   }, [scalePort]);
 
   // ===== Device Connection Manager (Scanner / Printer / Cash Drawer) =====
-  const hw = tenant?.settings?.hardwareSettings || {};
-
   const updateDeviceStatus = (key, status) => {
     setDeviceStatus((prev) => ({ ...prev, [key]: status }));
   };
@@ -335,6 +343,32 @@ export default function BakalaPOS() {
     }
   };
 
+  const savePrinterConfig = async () => {
+    setSavingPrinterConfig(true);
+    try {
+      const payload = {
+        ...hw,
+        receiptPrinterType: 'network',
+        printerIpAddress: printerConfig.printerIpAddress,
+        printerPort: Number(printerConfig.printerPort) || 9100,
+        cashDrawerKickCode: printerConfig.cashDrawerKickCode,
+      };
+      const res = await api.put('/tenants/current', { settings: { hardwareSettings: payload } });
+      if (res.data?.tenant) {
+        dispatch(updateTenant(res.data.tenant));
+      }
+      toast.success('Printer settings saved');
+      setShowPrinterConfig(false);
+      // Re-test the connection now that settings are saved
+      await connectPrinter();
+      await connectCashDrawer();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to save printer settings');
+    } finally {
+      setSavingPrinterConfig(false);
+    }
+  };
+
   // Smart auto-connect: try to reconnect known devices on mount
   useEffect(() => {
     let cancelled = false;
@@ -372,6 +406,54 @@ export default function BakalaPOS() {
     autoConnect();
     return () => { cancelled = true; };
   }, [hw.printerIpAddress, hw.printerPort, hw.receiptPrinterType, hw.cashDrawerKickCode]);
+
+  // ===== POS session heartbeat for super-admin live monitoring =====
+  const tabIdRef = useRef(`pos-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+  const heartbeatIntervalRef = useRef(null);
+
+  const sendPosHeartbeat = async () => {
+    if (!tenant?._id || !user?._id) return;
+    try {
+      await api.post('/pos-terminal/heartbeat', {
+        tenantId: tenant._id,
+        tabId: tabIdRef.current,
+        deviceStatus: {
+          scanner: deviceStatus.scanner,
+          printer: deviceStatus.printer,
+          cashDrawer: deviceStatus.cashDrawer,
+          scale: scalePort ? 'connected' : 'disconnected',
+        },
+      });
+    } catch (err) {
+      // Silently fail — heartbeat is best-effort monitoring
+    }
+  };
+
+  const closePosSession = async () => {
+    if (!tenant?._id || !user?._id) return;
+    try {
+      await api.post('/pos-terminal/close', {
+        tenantId: tenant._id,
+        tabId: tabIdRef.current,
+      });
+    } catch (err) {
+      // silently fail
+    }
+  };
+
+  useEffect(() => {
+    sendPosHeartbeat();
+    heartbeatIntervalRef.current = setInterval(sendPosHeartbeat, 30000);
+    const handleVisibility = () => {
+      if (!document.hidden) sendPosHeartbeat();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      clearInterval(heartbeatIntervalRef.current);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      closePosSession();
+    };
+  }, [tenant?._id, user?._id, deviceStatus.scanner, deviceStatus.printer, deviceStatus.cashDrawer, scalePort]);
 
   const handleAddWeighedToCart = () => {
     if (!weighProduct) {
@@ -490,7 +572,6 @@ export default function BakalaPOS() {
     clearCart();
 
     // Get hardware + thermal settings
-    const hw = tenant?.settings?.hardwareSettings || {};
     const thermal = getThermalPrinterSettings(tenant);
 
     // Open cash drawer on cash payment (network printer only)
@@ -810,7 +891,13 @@ export default function BakalaPOS() {
             <div className="flex items-center gap-2">
               {[
                 { key: 'scanner', label: 'Scanner', icon: Smartphone, onClick: () => connectScanner(false) },
-                { key: 'printer', label: 'Printer', icon: Printer, onClick: connectPrinter },
+                { key: 'printer', label: 'Printer', icon: Printer, onClick: () => {
+                  if (deviceStatus.printer === 'connected') {
+                    connectPrinter();
+                  } else {
+                    setShowPrinterConfig(true);
+                  }
+                }},
                 { key: 'cashDrawer', label: 'Drawer', icon: Archive, onClick: connectCashDrawer },
               ].map(({ key, label, icon: Icon, onClick }) => {
                 const status = deviceStatus[key];
@@ -849,6 +936,72 @@ export default function BakalaPOS() {
               })}
             </div>
           </div>
+
+          {showPrinterConfig && (
+            <div className="mb-3 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-gray-700">Configure Network Printer</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowPrinterConfig(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-gray-500">Printer IP Address</label>
+                  <input
+                    type="text"
+                    value={printerConfig.printerIpAddress}
+                    onChange={(e) => setPrinterConfig((prev) => ({ ...prev, printerIpAddress: e.target.value }))}
+                    className="input mt-1 w-full text-sm"
+                    placeholder="192.168.1.100"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500">Port</label>
+                  <input
+                    type="number"
+                    value={printerConfig.printerPort}
+                    onChange={(e) => setPrinterConfig((prev) => ({ ...prev, printerPort: Number(e.target.value) || 0 }))}
+                    className="input mt-1 w-full text-sm"
+                    placeholder="9100"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="text-xs font-medium text-gray-500">Cash Drawer Kick Code (comma separated)</label>
+                  <input
+                    type="text"
+                    value={printerConfig.cashDrawerKickCode}
+                    onChange={(e) => setPrinterConfig((prev) => ({ ...prev, cashDrawerKickCode: e.target.value }))}
+                    className="input mt-1 w-full text-sm"
+                    placeholder="27,112,0,50,250"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowPrinterConfig(false)}
+                  className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={savePrinterConfig}
+                  disabled={savingPrinterConfig}
+                  className="px-4 py-2 bg-emerald-500 text-white text-sm font-bold rounded-lg hover:bg-emerald-600 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {savingPrinterConfig && <RefreshCw className="w-4 h-4 animate-spin" />}
+                  Save & Connect
+                </button>
+              </div>
+            </div>
+          )}
+
           <form onSubmit={handleScannerSubmit} className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input 
