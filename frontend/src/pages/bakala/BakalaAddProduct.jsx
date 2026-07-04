@@ -10,6 +10,7 @@ import toast from 'react-hot-toast'
 import BarcodeScanner from '../../components/ui/BarcodeScanner'
 import { useBakalaSync } from '../../hooks/useBakalaSync'
 import { savePendingProduct, checkBarcodeExistsOffline, addProductToCache } from '../../lib/bakalaDb'
+import { useAutoTranslate } from '../../hooks/useAutoTranslate'
 import { v4 as uuidv4 } from 'uuid'
 
 const EMPTY_FORM = {
@@ -34,7 +35,10 @@ export default function BakalaAddProduct() {
   const [quickAddModal, setQuickAddModal] = useState(null) // { type, label } or null
   const [quickAddValue, setQuickAddValue] = useState('')
   const [quickAddLoading, setQuickAddLoading] = useState(false)
+  const [translatingName, setTranslatingName] = useState(false)
   const quickAddInputRef = useRef(null)
+  const translateTimerRef = useRef(null)
+  const { translate, isTranslating } = useAutoTranslate()
 
   const barcodeRef = useRef(null)
   const nameRef = useRef(null)
@@ -287,14 +291,29 @@ export default function BakalaAddProduct() {
     return Math.round(((r - c) / r) * 100)
   })()
 
-  // Mirror the other-language name when one is entered and the other is empty
+  // Auto-translate name when one language is entered and the other is empty
   const handleNameChange = (lang, value) => {
     const patch = lang === 'en' ? { name: value } : { nameAr: value }
-    const otherKey = lang === 'en' ? 'nameAr' : 'name'
-    if (value && !form[otherKey]) {
-      patch[otherKey] = value
-    }
     update(patch)
+
+    // Debounced auto-translate to the other language
+    if (translateTimerRef.current) clearTimeout(translateTimerRef.current)
+    if (!value.trim()) return
+
+    const otherKey = lang === 'en' ? 'nameAr' : 'name'
+    // Only auto-translate if the other field is empty or was auto-filled before
+    if (form[otherKey] && form[otherKey] !== form[lang === 'en' ? 'name' : 'nameAr']) return
+
+    translateTimerRef.current = setTimeout(async () => {
+      setTranslatingName(true)
+      const fromLang = lang === 'en' ? 'en' : 'ar'
+      const toLang = lang === 'en' ? 'ar' : 'en'
+      const translated = await translate(value, fromLang, toLang)
+      if (translated) {
+        update({ [otherKey]: translated })
+      }
+      setTranslatingName(false)
+    }, 800)
   }
 
   // Format price to 2 decimals on blur
@@ -479,7 +498,10 @@ export default function BakalaAddProduct() {
                 <input ref={nameRef} type="text" value={form.name} onChange={(e) => handleNameChange('en', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name (Arabic)</label>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                  Name (Arabic)
+                  {translatingName && <span className="text-xs text-emerald-600 flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> Translating...</span>}
+                </label>
                 <input type="text" dir="rtl" value={form.nameAr} onChange={(e) => handleNameChange('ar', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none text-right" />
               </div>
 
