@@ -80,9 +80,10 @@ import {
   RotateCcw,
   Gift,
   HelpCircle,
-  Globe2
+  Globe2,
+  PanelLeftClose
 } from 'lucide-react'
-import { toggleSidebarCollapse, setMobileMenuOpen } from '../../store/slices/uiSlice'
+import { toggleSidebarCollapse, setMobileMenuOpen, setHideSidebar } from '../../store/slices/uiSlice'
 import { useTranslation } from '../../lib/translations'
 import { getTenantBusinessTypes } from '../../lib/businessTypes'
 
@@ -605,6 +606,15 @@ export default function Sidebar() {
             </>
           )}
         </button>
+        {!sidebarCollapsed && (
+          <button
+            onClick={() => dispatch(setHideSidebar(true))}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 mt-1 text-xs text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-xl transition-colors"
+          >
+            <PanelLeftClose className="w-4 h-4" />
+            <span>{language === 'ar' ? 'Ø¥Ø®ÙØ§Ø¡ Ø§Ù„Ø´Ø±ÙŠØ·' : 'Hide sidebar'}</span>
+          </button>
+        )}
       </div>
     </>
   )

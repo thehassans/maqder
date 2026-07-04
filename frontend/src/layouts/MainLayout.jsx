@@ -1,15 +1,18 @@
 import { Outlet, Navigate, useLocation } from 'react-router-dom'
 import { Suspense } from 'react'
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 import Sidebar from '../components/layout/Sidebar'
 import Header from '../components/layout/Header'
 import OfflineBanner from '../components/ui/OfflineBanner'
 import LoadingScreen from '../components/ui/LoadingScreen'
 import TerminationBanner, { TerminationBlocker, InactiveBlocker, isTenantTerminated, isTenantInactive } from '../components/ui/TerminationBanner'
 import { getTenantBusinessTypes } from '../lib/businessTypes'
+import { setHideSidebar } from '../store/slices/uiSlice'
+import { PanelLeft } from 'lucide-react'
 
 export default function MainLayout() {
-  const { sidebarCollapsed } = useSelector((state) => state.ui)
+  const { sidebarCollapsed, hideSidebar } = useSelector((state) => state.ui)
+  const dispatch = useDispatch()
   const { tenant } = useSelector((state) => state.auth)
   const location = useLocation()
 
@@ -27,10 +30,19 @@ export default function MainLayout() {
     <div className="min-h-screen bg-gray-50 dark:bg-dark-900 flex flex-col">
       <OfflineBanner />
       <div className="flex flex-1">
-        <Sidebar />
+        {!hideSidebar && <Sidebar />}
+        {hideSidebar && (
+          <button
+            onClick={() => dispatch(setHideSidebar(false))}
+            className="hidden lg:flex fixed top-20 left-2 z-50 p-2.5 rounded-xl bg-white dark:bg-dark-800 shadow-lg border border-gray-200 dark:border-dark-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-700 transition-colors"
+            title="Show sidebar"
+          >
+            <PanelLeft className="w-5 h-5" />
+          </button>
+        )}
         <div
           className={`flex-1 transition-all duration-300 w-full flex flex-col ${
-            sidebarCollapsed ? 'lg:ms-20' : 'lg:ms-72'
+            hideSidebar ? '' : (sidebarCollapsed ? 'lg:ms-20' : 'lg:ms-72')
           }`}
         >
         <TerminationBanner />

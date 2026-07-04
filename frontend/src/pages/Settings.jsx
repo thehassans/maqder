@@ -3,11 +3,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector, useDispatch } from 'react-redux'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
-import { Building2, Shield, Globe, Palette, Bell, Save, Key, CheckCircle, Image, Database, Download, FileText, CreditCard, Terminal, Car, UtensilsCrossed, Clock, Printer, MapPin, Briefcase, Receipt, MessageCircle, BookOpen } from 'lucide-react'
+import { Building2, Shield, Globe, Palette, Bell, Save, Key, CheckCircle, Image, Database, Download, FileText, CreditCard, Terminal, Car, UtensilsCrossed, Clock, Printer, MapPin, Briefcase, Receipt, MessageCircle, BookOpen, PanelLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
-import { setLanguage, setTheme } from '../store/slices/uiSlice'
+import { setLanguage, setTheme, setHideSidebar } from '../store/slices/uiSlice'
 import { updateTenant } from '../store/slices/authSlice'
 import { useLiveTranslation } from '../lib/liveTranslation'
 import { getInvoiceBrandingProfile, getInvoiceTemplateId, getInvoiceTypography, INVOICE_FONT_OPTIONS } from '../lib/invoiceBranding'
@@ -47,7 +47,7 @@ const updateInvoiceBrandingProfileState = (profiles, contextKey, patch) => ({
 export default function Settings() {
   const dispatch = useDispatch()
   const queryClient = useQueryClient()
-  const { language, theme } = useSelector((state) => state.ui)
+  const { language, theme, hideSidebar } = useSelector((state) => state.ui)
   const { t } = useTranslation(language)
   const [activeTab, setActiveTab] = useState('company')
   const [downloadingBackup, setDownloadingBackup] = useState(false)
@@ -632,6 +632,23 @@ export default function Settings() {
                       <span className="font-medium">{t('dark')}</span>
                     </button>
                   </div>
+                </div>
+
+                <div>
+                  <label className="label flex items-center gap-2"><PanelLeft className="w-4 h-4" />{language === 'ar' ? 'Sidebar Navigation' : 'Sidebar Navigation'}</label>
+                  <label className="mt-2 flex items-center justify-between p-4 rounded-xl border-2 border-gray-200 dark:border-dark-600 cursor-pointer hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors">
+                    <div>
+                      <span className="font-medium text-sm">{language === 'ar' ? 'Hide sidebar navigation' : 'Hide sidebar navigation'}</span>
+                      <p className="text-xs text-gray-500 mt-0.5">{language === 'ar' ? 'Hides the sidebar for more screen space. A floating button appears to show it again.' : 'Hides the sidebar for more screen space. A floating button appears to show it again.'}</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={hideSidebar}
+                      onChange={(e) => dispatch(setHideSidebar(e.target.checked))}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500 relative" />
+                  </label>
                 </div>
 
                 <div className="pt-2">

@@ -11,11 +11,17 @@ const getInitialTheme = () => {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
+const getInitialHideSidebar = () => {
+  const saved = localStorage.getItem('hideSidebar')
+  return saved === 'true'
+}
+
 const initialState = {
   language: getInitialLanguage(),
   theme: getInitialTheme(),
   sidebarOpen: true,
   sidebarCollapsed: false,
+  hideSidebar: getInitialHideSidebar(),
   mobileMenuOpen: false,
 }
 
@@ -47,8 +53,16 @@ const uiSlice = createSlice({
     setMobileMenuOpen: (state, action) => {
       state.mobileMenuOpen = action.payload
     },
+    setHideSidebar: (state, action) => {
+      state.hideSidebar = action.payload
+      localStorage.setItem('hideSidebar', String(action.payload))
+    },
+    toggleHideSidebar: (state) => {
+      state.hideSidebar = !state.hideSidebar
+      localStorage.setItem('hideSidebar', String(state.hideSidebar))
+    },
   },
 })
 
-export const { setLanguage, setTheme, toggleSidebar, toggleSidebarCollapse, setMobileMenuOpen } = uiSlice.actions
+export const { setLanguage, setTheme, toggleSidebar, toggleSidebarCollapse, setMobileMenuOpen, setHideSidebar, toggleHideSidebar } = uiSlice.actions
 export default uiSlice.reducer
