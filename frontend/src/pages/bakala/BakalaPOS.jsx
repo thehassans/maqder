@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useCartEngine } from '../../hooks/useCartEngine';
 import { useBakalaSync } from '../../hooks/useBakalaSync';
 import { getProductByBarcode, saveOfflineInvoice } from '../../lib/bakalaDb';
-import { ShoppingCart, CreditCard, Wallet, Send, RefreshCw, Server, WifiOff, ArrowLeft, Search, Plus, Minus, Trash2, LogOut, Smartphone, Keyboard, Users, CheckCircle2, Scale, Plug, Unplug } from 'lucide-react';
+import { ShoppingCart, CreditCard, Wallet, Send, RefreshCw, Server, WifiOff, ArrowLeft, Search, Plus, Minus, Trash2, LogOut, Smartphone, Keyboard, Users, CheckCircle2, Scale, Plug, Unplug, Printer, Archive } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -29,6 +29,11 @@ export default function BakalaPOS() {
   const [splitCard, setSplitCard] = useState('');
   const [scannerConnected, setScannerConnected] = useState(false);
   const [showRecallModal, setShowRecallModal] = useState(false);
+  const [deviceStatus, setDeviceStatus] = useState({
+    scanner: 'disconnected', // disconnected | connected | checking | unsupported
+    printer: 'disconnected', // disconnected | connected | checking | not_configured
+    cashDrawer: 'disconnected',
+  });
 
   // Weight Scale Modal
   const [showWeighModal, setShowWeighModal] = useState(false);
@@ -235,6 +240,138 @@ export default function BakalaPOS() {
       }
     };
   }, [scalePort]);
+
+  // ===== Device Connection Manager (Scanner / Printer / Cash Drawer) =====
+  const hw = tenant?.settings?.hardwareSettings || {};
+
+  const updateDeviceStatus = (key, status) => {
+    setDeviceStatus((prev) => ({ ...prev, [key]: status }));
+  };
+
+  const connectScanner = async (auto = false) => {
+    if (!('serial' in navigator)) {
+      updateDeviceStatus('scanner', 'unsupported');
+      if (!auto) toast.error('Web Serial not supported. Use Chrome or Edge.');
+      return;
+    }
+    updateDeviceStatus('scanner', 'checking');
+    try {
+      // Try previously allowed serial ports first (smart auto-connect)
+      const existingPorts = await navigator.serial.getPorts();
+      if (auto && existingPorts.length > 0) {
+        setScannerConnected(true);
+        updateDeviceStatus('scanner', 'connected');
+        toast.success('Scanner auto-connected');
+        return;
+      }
+      // Otherwise request a new port (requires user gesture)
+      const port = await navigator.serial.requestPort();
+      if (port) {
+        setScannerConnected(true);
+        updateDeviceStatus('scanner', 'connected');
+        toast.success('Scanner Connected via Serial');
+      }
+    } catch (err) {
+      if (!auto) {
+        // Keyboard wedge fallback when user cancels or no serial device
+        setScannerConnected(true);
+        updateDeviceStatus('scanner', 'connected');
+        barcodeInputRef.current?.focus();
+        toast.success('Scanner Ready (Keyboard Mode)');
+      } else {
+        updateDeviceStatus('scanner', 'disconnected');
+      }
+    }
+  };
+
+  const testPrinterConnection = async () => {
+    if (hw.receiptPrinterType !== 'network' || !hw.printerIpAddress) {
+      return { ok: false, reason: 'not_configured' };
+    }
+    try {
+      await api.post('/tenants/test-printer', {
+        ipAddress: hw.printerIpAddress,
+        port: Number(hw.printerPort) || 9100,
+      });
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, reason: 'offline' };
+    }
+  };
+
+  const connectPrinter = async () => {
+    updateDeviceStatus('printer', 'checking');
+    const result = await testPrinterConnection();
+    if (result.ok) {
+      updateDeviceStatus('printer', 'connected');
+      toast.success('Printer connected');
+    } else if (result.reason === 'not_configured') {
+      updateDeviceStatus('printer', 'not_configured');
+      toast('Printer not configured in Settings > Hardware', { icon: '⚙️' });
+    } else {
+      updateDeviceStatus('printer', 'disconnected');
+      toast.error('Printer unreachable');
+    }
+  };
+
+  const connectCashDrawer = async () => {
+    if (hw.receiptPrinterType !== 'network' || !hw.printerIpAddress) {
+      updateDeviceStatus('cashDrawer', 'not_configured');
+      toast('Cash drawer requires a configured network printer', { icon: '⚙️' });
+      return;
+    }
+    updateDeviceStatus('cashDrawer', 'checking');
+    try {
+      await api.post('/tenants/test-cash-drawer', {
+        ipAddress: hw.printerIpAddress,
+        port: Number(hw.printerPort) || 9100,
+        kickCode: hw.cashDrawerKickCode,
+      });
+      updateDeviceStatus('cashDrawer', 'connected');
+      toast.success('Cash drawer connected');
+    } catch (err) {
+      updateDeviceStatus('cashDrawer', 'disconnected');
+      toast.error('Cash drawer unreachable');
+    }
+  };
+
+  // Smart auto-connect: try to reconnect known devices on mount
+  useEffect(() => {
+    let cancelled = false;
+    const autoConnect = async () => {
+      // Scanner: reconnect previously allowed serial ports without user gesture
+      if ('serial' in navigator) {
+        try {
+          const ports = await navigator.serial.getPorts();
+          if (!cancelled && ports.length > 0) {
+            setScannerConnected(true);
+            updateDeviceStatus('scanner', 'connected');
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+      // Printer & Cash Drawer: ping saved network settings
+      const printerResult = await testPrinterConnection();
+      if (!cancelled) {
+        updateDeviceStatus('printer', printerResult.ok ? 'connected' : printerResult.reason === 'not_configured' ? 'not_configured' : 'disconnected');
+      }
+      if (!cancelled && printerResult.ok) {
+        try {
+          await api.post('/tenants/test-cash-drawer', {
+            ipAddress: hw.printerIpAddress,
+            port: Number(hw.printerPort) || 9100,
+            kickCode: hw.cashDrawerKickCode,
+          });
+          updateDeviceStatus('cashDrawer', 'connected');
+        } catch (e) {
+          updateDeviceStatus('cashDrawer', 'disconnected');
+        }
+      }
+    };
+    autoConnect();
+    return () => { cancelled = true; };
+  }, [hw.printerIpAddress, hw.printerPort, hw.receiptPrinterType, hw.cashDrawerKickCode]);
 
   const handleAddWeighedToCart = () => {
     if (!weighProduct) {
@@ -666,40 +803,51 @@ export default function BakalaPOS() {
       {/* RIGHT PANEL: Actions & Fast Menu (40%) */}
       <div className="w-[40%] flex flex-col bg-[#F8F9FA]">
         
-        {/* Search Bar & Scanner Status */}
+        {/* Search Bar & Device Connection Status */}
         <div className="px-6 pt-6 pb-2">
-          <div className="flex justify-between items-center mb-3">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
             <h2 className="font-bold text-gray-700">Search Products</h2>
-            {scannerConnected ? (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-full text-xs font-bold border border-emerald-100">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                Scanner Connected
-              </div>
-            ) : (
-              <button 
-                type="button"
-                onClick={async () => {
-                  try {
-                    if ('serial' in navigator) {
-                      await navigator.serial.requestPort();
-                      setScannerConnected(true);
-                      toast.success('Scanner Connected via Serial');
-                    } else {
-                      // Fallback to keyboard wedge logic
-                      setScannerConnected(true);
-                      barcodeInputRef.current?.focus();
-                      toast.success('Scanner Ready (Keyboard Mode)');
-                    }
-                  } catch (err) {
-                    toast.error('Failed to connect scanner');
-                  }
-                }}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 rounded-full text-xs font-bold transition-colors"
-              >
-                <div className="w-2 h-2 rounded-full bg-gray-400"></div>
-                Connect Scanner
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {[
+                { key: 'scanner', label: 'Scanner', icon: Smartphone, onClick: () => connectScanner(false) },
+                { key: 'printer', label: 'Printer', icon: Printer, onClick: connectPrinter },
+                { key: 'cashDrawer', label: 'Drawer', icon: Archive, onClick: connectCashDrawer },
+              ].map(({ key, label, icon: Icon, onClick }) => {
+                const status = deviceStatus[key];
+                const isConnected = status === 'connected';
+                const isChecking = status === 'checking';
+                const isNotConfigured = status === 'not_configured';
+                const isUnsupported = status === 'unsupported';
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={onClick}
+                    disabled={isChecking}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-colors border ${
+                      isConnected
+                        ? 'bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100'
+                        : isChecking
+                        ? 'bg-amber-50 text-amber-600 border-amber-100'
+                        : isNotConfigured || isUnsupported
+                        ? 'bg-gray-100 text-gray-400 border-gray-200'
+                        : 'bg-rose-50 text-rose-600 border-rose-100 hover:bg-rose-100'
+                    }`}
+                    title={isNotConfigured ? 'Not configured in Settings > Hardware' : isUnsupported ? 'Not supported in this browser' : isConnected ? 'Connected' : 'Click to connect'}
+                  >
+                    {isChecking ? (
+                      <RefreshCw className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <>
+                        <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : isNotConfigured || isUnsupported ? 'bg-gray-400' : 'bg-rose-500'}`} />
+                        <Icon className="w-3 h-3" />
+                      </>
+                    )}
+                    {isConnected ? label : isChecking ? 'Checking' : isNotConfigured ? `${label} Off` : isUnsupported ? 'N/A' : `Connect ${label}`}
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <form onSubmit={handleScannerSubmit} className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
