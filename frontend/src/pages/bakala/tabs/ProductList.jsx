@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit2, Trash2, Search, Loader, Download, QrCode, PackagePlus, Boxes } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, Loader, Download, QrCode, PackagePlus, Boxes, WifiOff } from 'lucide-react';
 import Barcode from 'react-barcode';
 import api from '../../../lib/api';
 import toast from 'react-hot-toast';
+import { getAllProducts } from '../../../lib/bakalaDb';
 
 export default function ProductList() {
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [viewBarcodeProduct, setViewBarcodeProduct] = useState(null);
@@ -28,16 +30,30 @@ export default function ProductList() {
   const fetchItems = async () => {
     try {
       setLoading(true);
+      if (!navigator.onLine) {
+        const cached = await getAllProducts();
+        setItems(cached);
+        setIsOffline(true);
+        return;
+      }
+      setIsOffline(false);
       const res = await api.get('/bakala-products');
       setItems(res.data);
     } catch (err) {
-      toast.error('Failed to load products');
+      // Fallback to cache if API fails
+      try {
+        const cached = await getAllProducts();
+        setItems(cached);
+      } catch {
+        toast.error('Failed to load products');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const fetchDropdownData = async () => {
+    if (!navigator.onLine) return;
     try {
       const [catRes, brandRes, unitRes] = await Promise.all([
         api.get('/bakala-products/categories'),
@@ -55,6 +71,15 @@ export default function ProductList() {
   useEffect(() => {
     fetchItems();
     fetchDropdownData();
+    
+    const handleOnline = () => { setIsOffline(false); fetchItems(); };
+    const handleOffline = () => { setIsOffline(true); fetchItems(); };
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
 
   const handleSubmit = async (e) => {

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { getOfflineInvoices, removeOfflineInvoice, saveProductsCache } from '../lib/bakalaDb';
+import { getOfflineInvoices, removeOfflineInvoice, saveProductsCache, getPendingProducts, removePendingProduct, addProductToCache, getPendingProductsCount } from '../lib/bakalaDb';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
 
@@ -8,10 +8,13 @@ export const useBakalaSync = () => {
   const [syncing, setSyncing] = useState(false);
   const syncingRef = useRef(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const [pendingProductsCount, setPendingProductsCount] = useState(0);
 
   const checkPending = useCallback(async () => {
     const invoices = await getOfflineInvoices();
     setPendingCount(invoices.length);
+    const pendingProds = await getPendingProductsCount();
+    setPendingProductsCount(pendingProds);
   }, []);
 
   const syncOfflineData = useCallback(async () => {
@@ -31,7 +34,30 @@ export const useBakalaSync = () => {
         console.error('Failed to sync products', err);
       }
 
-      // 2. Sync offline invoices to server
+      // 2. Sync pending products (offline-created) to server
+      try {
+        const pendingProds = await getPendingProducts();
+        if (pendingProds.length > 0) {
+          const res = await api.post('/bakala-products/sync-pending', { products: pendingProds });
+          if (res.data.success) {
+            // Add synced products to local cache and remove from pending
+            for (const item of res.data.synced) {
+              await addProductToCache(item.product);
+              await removePendingProduct(item.pendingId);
+            }
+            if (res.data.synced.length > 0) {
+              toast.success(`Synced ${res.data.synced.length} offline products`);
+            }
+            if (res.data.errors && res.data.errors.length > 0) {
+              toast.error(`Failed to sync ${res.data.errors.length} product(s): ${res.data.errors[0].error}`);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to sync pending products', err);
+      }
+
+      // 3. Sync offline invoices to server
       const invoices = await getOfflineInvoices();
       if (invoices.length > 0) {
         const response = await api.post('/bakala/sync', { invoices });
@@ -87,5 +113,5 @@ export const useBakalaSync = () => {
     };
   }, [syncOfflineData, checkPending]);
 
-  return { isOnline, syncing, pendingCount, syncOfflineData };
+  return { isOnline, syncing, pendingCount, pendingProductsCount, syncOfflineData };
 };

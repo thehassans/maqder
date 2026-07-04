@@ -289,6 +289,61 @@ router.delete('/:id', protect, async (req, res) => {
   }
 });
 
+// POST sync-pending — bulk sync offline-created products
+router.post('/sync-pending', protect, async (req, res) => {
+  try {
+    const tenantId = await getTargetTenantId(req.user);
+    if (!tenantId) return res.status(400).json({ error: 'No tenant found for this user.' });
+
+    const { products } = req.body;
+    if (!Array.isArray(products) || products.length === 0) {
+      return res.status(400).json({ error: 'No products provided' });
+    }
+
+    const synced = [];
+    const errors = [];
+
+    for (const pending of products) {
+      try {
+        const body = { ...pending };
+        // Auto-generate barcode if missing
+        if (!body.primaryBarcode || !String(body.primaryBarcode).trim()) {
+          body.primaryBarcode = `INT${Date.now()}${Math.floor(Math.random() * 100)}`;
+        }
+        if (!Array.isArray(body.barcodes) || body.barcodes.length === 0) {
+          body.barcodes = [body.primaryBarcode];
+        }
+
+        // Check for duplicate barcode
+        const exists = await BakalaProduct.findOne({ tenantId, primaryBarcode: body.primaryBarcode });
+        if (exists) {
+          errors.push({ pendingId: pending.pendingId, error: 'Barcode already exists', product: exists });
+          continue;
+        }
+
+        // Remove fields that shouldn't be passed directly
+        delete body.pendingId;
+        delete body.timestamp;
+        delete body._id;
+
+        const product = new BakalaProduct({
+          ...body,
+          tenantId,
+          createdBy: req.user._id,
+        });
+        await product.save();
+        synced.push({ pendingId: pending.pendingId, product });
+      } catch (err) {
+        errors.push({ pendingId: pending.pendingId, error: err.message });
+      }
+    }
+
+    res.status(201).json({ success: true, synced, errors });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // --- CATEGORIES ---
 router.get('/categories', protect, async (req, res) => {
   try {

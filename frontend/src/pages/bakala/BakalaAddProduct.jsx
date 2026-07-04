@@ -3,11 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import {
   ScanLine, Camera, Plus, Save, PackageCheck, ArrowLeft, Loader2,
   Barcode as BarcodeIcon, Tag, Layers, Boxes, CheckCircle2, AlertTriangle, Edit2,
-  X, Sparkles,
+  X, Sparkles, WifiOff, Upload,
 } from 'lucide-react'
 import api from '../../lib/api'
 import toast from 'react-hot-toast'
 import BarcodeScanner from '../../components/ui/BarcodeScanner'
+import { useBakalaSync } from '../../hooks/useBakalaSync'
+import { savePendingProduct, checkBarcodeExistsOffline, addProductToCache } from '../../lib/bakalaDb'
+import { v4 as uuidv4 } from 'uuid'
 
 const EMPTY_FORM = {
   name: '', nameAr: '', primaryBarcode: '', category: '', brand: '',
@@ -17,6 +20,7 @@ const EMPTY_FORM = {
 
 export default function BakalaAddProduct() {
   const navigate = useNavigate()
+  const { isOnline, pendingProductsCount, syncOfflineData } = useBakalaSync()
   const [form, setForm] = useState(EMPTY_FORM)
   const [categories, setCategories] = useState([])
   const [brands, setBrands] = useState([])
@@ -41,6 +45,7 @@ export default function BakalaAddProduct() {
   const update = (patch) => setForm((prev) => ({ ...prev, ...patch }))
 
   const fetchDropdowns = async () => {
+    if (!navigator.onLine) return
     try {
       const [catRes, brandRes, unitRes] = await Promise.all([
         api.get('/bakala-products/categories'),
@@ -60,6 +65,13 @@ export default function BakalaAddProduct() {
     setTimeout(() => barcodeRef.current?.focus(), 200)
   }, [])
 
+  // Auto-sync when coming back online
+  useEffect(() => {
+    if (isOnline && pendingProductsCount > 0) {
+      syncOfflineData()
+    }
+  }, [isOnline, pendingProductsCount, syncOfflineData])
+
   // Clean raw scanner input (some scanners inject whitespace/newlines)
   const cleanBarcode = (raw) => String(raw || '').replace(/[\s\n\r\t]+/g, '').trim()
 
@@ -72,6 +84,25 @@ export default function BakalaAddProduct() {
     setCheckingBarcode(true)
     setExistingProduct(null)
     update({ primaryBarcode: code })
+
+    // Offline: check IndexedDB only
+    if (!navigator.onLine) {
+      try {
+        const result = await checkBarcodeExistsOffline(code)
+        if (result.exists) {
+          setExistingProduct(result.product)
+          toast.error('This barcode already exists locally.')
+        } else {
+          setTimeout(() => nameRef.current?.focus(), 50)
+        }
+      } finally {
+        checkingRef.current = false
+        setCheckingBarcode(false)
+      }
+      return
+    }
+
+    // Online: check server
     try {
       const res = await api.get(`/bakala-products/barcode/${encodeURIComponent(code)}`)
       if (res.data?.found) {
@@ -198,25 +229,51 @@ export default function BakalaAddProduct() {
 
     setSaving(true)
     try {
+      let primaryBarcode = noBarcode ? '' : form.primaryBarcode.trim()
+      // Auto-generate barcode if none provided
+      if (!primaryBarcode) {
+        primaryBarcode = `INT${Date.now()}${Math.floor(Math.random() * 100)}`
+      }
+
       const payload = {
         ...form,
-        primaryBarcode: noBarcode ? '' : form.primaryBarcode.trim(),
+        primaryBarcode,
+        barcodes: [primaryBarcode],
         costPrice: Number(form.costPrice) || 0,
         retailPrice: Number(form.retailPrice) || 0,
         stockQuantity: Number(form.stockQuantity) || 0,
         minimumStockAlertLevel: Number(form.minimumStockAlertLevel) || 0,
         expiryDate: form.expiryDate || null,
       }
-      const res = await api.post('/bakala-products', payload)
-      toast.success(`${res.data.name} added`)
-      setRecentlyAdded((p) => [res.data, ...p].slice(0, 8))
+
+      if (navigator.onLine) {
+        // Online: save to server directly
+        const res = await api.post('/bakala-products', payload)
+        toast.success(`${res.data.name} added`)
+        setRecentlyAdded((p) => [res.data, ...p].slice(0, 8))
+      } else {
+        // Offline: save to IndexedDB pending_products
+        const pendingProduct = {
+          ...payload,
+          pendingId: uuidv4(),
+          timestamp: Date.now(),
+        }
+        await savePendingProduct(pendingProduct)
+        // Also add to local cache so it appears in POS immediately
+        await addProductToCache(pendingProduct)
+        toast.success(`${payload.name} saved offline. Will sync when online.`, {
+          icon: '📡',
+          duration: 4000,
+        })
+        setRecentlyAdded((p) => [pendingProduct, ...p].slice(0, 8))
+      }
       resetForNext()
     } catch (err) {
       if (err.response?.status === 409) {
         toast.error('A product with this barcode already exists.')
         if (err.response?.data?.product) setExistingProduct(err.response.data.product)
       } else {
-        toast.error(err.response?.data?.error || 'Failed to save product')
+        toast.error(err.response?.data?.error || err.message || 'Failed to save product')
       }
     } finally {
       setSaving(false)
@@ -323,16 +380,34 @@ export default function BakalaAddProduct() {
             <ArrowLeft className="w-5 h-5 text-gray-500" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Add Product</h1>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              Add Product
+              {!isOnline && (
+                <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-lg">
+                  <WifiOff className="w-3 h-3" /> Offline Mode
+                </span>
+              )}
+            </h1>
             <p className="text-gray-500 text-sm">Scan a barcode or add manually. Items are saved instantly so you can keep scanning.</p>
           </div>
         </div>
-        <button
-          onClick={() => navigate('/app/dashboard/bakala/products')}
-          className="text-sm font-semibold text-gray-500 hover:text-gray-900"
-        >
-          View all products
-        </button>
+        <div className="flex items-center gap-3">
+          {pendingProductsCount > 0 && (
+            <button
+              onClick={() => syncOfflineData()}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              {pendingProductsCount} pending sync
+            </button>
+          )}
+          <button
+            onClick={() => navigate('/app/dashboard/bakala/products')}
+            className="text-sm font-semibold text-gray-500 hover:text-gray-900"
+          >
+            View all products
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
