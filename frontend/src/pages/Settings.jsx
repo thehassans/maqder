@@ -3,15 +3,17 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector, useDispatch } from 'react-redux'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
-import { Building2, Shield, Globe, Palette, Bell, Save, Key, CheckCircle, Image, Database, Download, FileText, CreditCard, Terminal, Car, UtensilsCrossed, Clock, Printer, MapPin, Briefcase, Receipt, MessageCircle, BookOpen, PanelLeft } from 'lucide-react'
+import { Building2, Shield, Globe, Palette, Bell, Save, Key, CheckCircle, Image, Database, Download, FileText, CreditCard, Terminal, Car, UtensilsCrossed, Clock, Printer, MapPin, Briefcase, Receipt, MessageCircle, BookOpen, PanelLeft, Eye, EyeOff, Menu } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
-import { setLanguage, setTheme, setHideSidebar } from '../store/slices/uiSlice'
+import { setLanguage, setTheme, setHideSidebar, toggleHiddenMenuItem, setHiddenMenuItems } from '../store/slices/uiSlice'
 import { updateTenant } from '../store/slices/authSlice'
 import { useLiveTranslation } from '../lib/liveTranslation'
 import { getInvoiceBrandingProfile, getInvoiceTemplateId, getInvoiceTypography, INVOICE_FONT_OPTIONS } from '../lib/invoiceBranding'
 import { invoiceTemplateOptions } from '../lib/invoiceTemplates'
+import { getNavSections } from '../lib/sidebarConfig'
+import { getTenantBusinessTypes } from '../lib/businessTypes'
 import PosTerminalSettings from '../components/settings/PosTerminalSettings'
 import HardwareSettings from '../components/settings/HardwareSettings'
 import CarRentalApiSettings from '../components/settings/CarRentalApiSettings'
@@ -44,10 +46,160 @@ const updateInvoiceBrandingProfileState = (profiles, contextKey, patch) => ({
   },
 })
 
+function MenuVisibilitySettings() {
+  const dispatch = useDispatch()
+  const { language, hiddenMenuItems } = useSelector((state) => state.ui)
+  const { tenant, user } = useSelector((state) => state.auth)
+  const { t } = useTranslation(language)
+  const [expandedSections, setExpandedSections] = useState({})
+  const [searchQuery, setSearchQuery] = useState('')
+  const hiddenSet = new Set(hiddenMenuItems || [])
+
+  if (!tenant) return null
+
+  const si = tenant?.settings?.saudiIntegrations || {}
+  const isZatcaPhase1 = (tenant?.zatca?.phase || 1) === 1
+  const business = tenant?.business || {}
+  const isZatcaPhase1Ready = isZatcaPhase1 && !!business.vatNumber && !!(business.legalNameEn || business.legalNameAr) && !!(business.address?.city && business.address?.country)
+  const hasZatca = si.zatcaConnectionStatus === 'connected' || tenant?.zatca?.isOnboarded || isZatcaPhase1Ready
+  const hasElm = si.elmConnectionStatus === 'connected'
+  const hasQiwa = si.qiwaConnectionStatus === 'connected'
+  const hasGosi = si.gosiConnectionStatus === 'connected'
+
+  const govChildren = []
+  if (hasZatca) govChildren.push({ path: '/app/dashboard/tenant-settings/government-integrations/zatca', label: language === 'ar' ? `بوابة زاتكا ${isZatcaPhase1 ? '(المرحلة 1)' : ''}` : `ZATCA${isZatcaPhase1 ? ' Phase 1' : ''} Portal` })
+  if (hasElm) govChildren.push({ path: '/app/dashboard/tenant-settings/government-integrations/elm', label: language === 'ar' ? 'بوابة علم / يقين' : 'Elm Portal' })
+  if (hasQiwa) govChildren.push({ path: '/app/dashboard/tenant-settings/government-integrations/qiwa', label: language === 'ar' ? 'بوابة قوى' : 'Qiwa Portal' })
+  if (hasGosi) govChildren.push({ path: '/app/dashboard/tenant-settings/government-integrations/gosi', label: language === 'ar' ? 'بوابة التأمينات / مدد' : 'GOSI/Mudad Portal' })
+
+  const businessTypes = getTenantBusinessTypes(tenant)
+  const navSections = getNavSections({ language, t, tenant, businessTypes, govChildren })
+
+  const hasAccess = (module, action) => {
+    if (!user?.role) return false
+    if (user.role === 'admin' || user.role === 'superadmin') return true
+    if (user.role === 'owner') return true
+    if (!user.permissions?.[module]) return false
+    const perm = user.permissions[module]
+    if (perm === true) return true
+    if (perm === false) return false
+    if (typeof perm === 'object' && !Array.isArray(perm)) {
+      const actions = Array.isArray(perm.actions) ? perm.actions : []
+      return actions.includes(action)
+    }
+    const actions = Array.isArray(perm?.actions) ? perm.actions : []
+    return actions.includes(action)
+  }
+
+  const visibleSections = navSections.map((section) => {
+    if (Array.isArray(section.businessTypes) && !section.businessTypes.some((type) => businessTypes.includes(type))) {
+      return { ...section, items: [] }
+    }
+    const items = (Array.isArray(section.items) ? section.items : []).filter((item) => {
+      if (Array.isArray(item?.businessTypes) && !item.businessTypes.some((type) => businessTypes.includes(type))) return false
+      if (Array.isArray(item?.excludeBusinessTypes) && item.excludeBusinessTypes.some((type) => businessTypes.includes(type))) return false
+      if (item.requireAddon && !tenant?.subscription?.[item.requireAddon]) return false
+      if (!item?.perm) return true
+      return hasAccess(item.perm.module, item.perm.action)
+    })
+    return { ...section, items }
+  }).filter((section) => section.items?.length > 0)
+
+  const toggleSection = (title) => {
+    setExpandedSections((prev) => ({ ...prev, [title]: !prev[title] }))
+  }
+
+  const toggleItem = (path) => {
+    dispatch(toggleHiddenMenuItem(path))
+  }
+
+  const showAll = () => {
+    const visiblePaths = new Set()
+    visibleSections.forEach((section) => {
+      section.items.forEach((item) => {
+        if (item.path) visiblePaths.add(item.path)
+      })
+    })
+    dispatch(setHiddenMenuItems(Array.from(new Set((hiddenMenuItems || []).filter((p) => !visiblePaths.has(p))))))
+  }
+
+  const filteredSections = visibleSections.map((section) => {
+    if (!searchQuery) return section
+    const q = searchQuery.toLowerCase()
+    const items = section.items.filter((item) => {
+      const label = typeof item.label === 'string' ? item.label.toLowerCase() : ''
+      const title = typeof section.title === 'string' ? section.title.toLowerCase() : ''
+      return label.includes(q) || title.includes(q)
+    })
+    return { ...section, items }
+  }).filter((section) => section.items?.length > 0)
+
+  return (
+    <div className="border-t border-gray-100 dark:border-dark-700 pt-6">
+      <div className="flex items-center justify-between mb-4">
+        <label className="label flex items-center gap-2"><Menu className="w-4 h-4" />{language === 'ar' ? 'إظهار/إخفاء عناصر القائمة' : 'Menu Item Visibility'}</label>
+        <button
+          onClick={showAll}
+          className="text-xs px-3 py-1.5 rounded-lg border border-gray-200 dark:border-dark-600 hover:bg-gray-50 dark:hover:bg-dark-700/50 transition-colors"
+        >
+          {language === 'ar' ? 'إظهار الكل' : 'Show All'}
+        </button>
+      </div>
+      <p className="text-xs text-gray-500 mb-3">{language === 'ar' ? 'أخفِ العناصر التي لا تستخدمها من شريط التنقل الجانبي.' : 'Hide items you do not use from the sidebar navigation.'}</p>
+      <input
+        type="text"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        placeholder={language === 'ar' ? 'ابحث في القائمة...' : 'Search menu items...'}
+        className="input mb-4 w-full md:w-1/2"
+      />
+      <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+        {filteredSections.map((section) => (
+          <div key={section.title} className="rounded-xl border border-gray-200 dark:border-dark-600 overflow-hidden">
+            <button
+              onClick={() => toggleSection(section.title)}
+              className="w-full flex items-center justify-between p-3 text-sm font-medium bg-gray-50 dark:bg-dark-700/50 hover:bg-gray-100 dark:hover:bg-dark-700 transition-colors"
+            >
+              <span>{section.title}</span>
+              <span className="text-xs text-gray-400">{section.items.length}</span>
+            </button>
+            {(expandedSections[section.title] || searchQuery) && (
+              <div className="p-2 space-y-1">
+                {section.items.map((item) => {
+                  const Icon = item.icon
+                  const path = item.path
+                  const isHidden = path ? hiddenSet.has(path) : false
+                  return (
+                    <button
+                      key={path || item.label}
+                      onClick={() => toggleItem(path)}
+                      className={`w-full flex items-center justify-between p-2 rounded-lg text-sm transition-colors ${isHidden ? 'text-gray-400 hover:bg-gray-50 dark:hover:bg-dark-700/50' : 'hover:bg-primary-50 dark:hover:bg-primary-900/10'}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {Icon && <Icon className="w-4 h-4" />}
+                        <span>{item.label}</span>
+                      </div>
+                      {isHidden ? <EyeOff className="w-4 h-4 text-gray-400" /> : <Eye className="w-4 h-4 text-primary-500" />}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        ))}
+        {filteredSections.length === 0 && (
+          <p className="text-sm text-gray-500 text-center py-6">{language === 'ar' ? 'لا توجد عناصر مطابقة' : 'No matching menu items'}</p>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function Settings() {
   const dispatch = useDispatch()
   const queryClient = useQueryClient()
-  const { language, theme, hideSidebar } = useSelector((state) => state.ui)
+  const { language, theme, hideSidebar, hiddenMenuItems } = useSelector((state) => state.ui)
+  const { user } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
   const [activeTab, setActiveTab] = useState('company')
   const [downloadingBackup, setDownloadingBackup] = useState(false)
@@ -650,6 +802,8 @@ export default function Settings() {
                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-500 relative" />
                   </label>
                 </div>
+
+                <MenuVisibilitySettings />
 
                 <div className="pt-2">
                   <label className="label flex items-center gap-2"><FileText className="w-4 h-4" />{language === 'ar' ? 'ØªØµÙ…ÙŠÙ… PDF Ù„Ù„ÙÙˆØ§ØªÙŠØ±' : 'Invoice PDF Design'}</label>
