@@ -12,6 +12,7 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
     printerIpAddress: '192.168.1.100',
     printerPort: 9100,
     cashDrawerKickCode: '27,112,0,50,250',
+    openCashDrawerOnCashPayment: true,
     barcodeScannerPrefix: '',
     barcodeScannerSuffix: 'Enter',
     scaleBarcodePrefix: '21',
@@ -397,7 +398,7 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
             <button
               type="button"
               onClick={handleTestCashDrawer}
-              disabled={drawerTesting}
+              disabled={drawerTesting || hardware.receiptPrinterType !== 'network'}
               className="btn btn-outline text-sm gap-2"
             >
               {drawerTesting ? (
@@ -408,6 +409,26 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
             </button>
           </div>
         </div>
+
+        {/* Auto-open cash drawer on cash payment */}
+        <label className="mt-4 flex items-center justify-between p-3 bg-gray-50 dark:bg-dark-700/50 rounded-xl cursor-pointer">
+          <div>
+            <span className="font-semibold text-sm">
+              {language === 'ar' ? 'فتح الدرج تلقائياً عند الدفع النقدي' : 'Auto-open drawer on cash payment'}
+            </span>
+            <p className="text-xs text-gray-500">
+              {language === 'ar' ? 'يفتح درج النقود تلقائياً بعد كل عملية دفع نقدي' : 'Automatically opens the cash drawer after each cash checkout'}
+            </p>
+          </div>
+          <input
+            type="checkbox"
+            name="openCashDrawerOnCashPayment"
+            checked={hardware.openCashDrawerOnCashPayment ?? true}
+            onChange={(e) => setHardware(prev => ({ ...prev, openCashDrawerOnCashPayment: e.target.checked }))}
+            className="sr-only peer"
+          />
+          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500 relative" />
+        </label>
         {drawerResult && (
           <div className={`mt-3 flex items-center gap-2 text-sm font-semibold ${drawerResult.success ? 'text-green-600' : 'text-red-600'}`}>
             {drawerResult.success ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}

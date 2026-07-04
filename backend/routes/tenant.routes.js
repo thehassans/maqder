@@ -566,4 +566,93 @@ router.post('/test-thermal-print', authorize('admin'), async (req, res) => {
   socket.connect(Number(port), ipAddress);
 });
 
+// @route   POST /api/tenants/print-receipt
+// @desc    Print a receipt via ESC/POS to network printer (and optionally open cash drawer)
+router.post('/print-receipt', authorize('admin'), async (req, res) => {
+  const net = await import('net');
+  const { ipAddress, port, receipt, openCashDrawer, kickCode, encoding, paperWidth, cutAtEnd } = req.body;
+
+  if (!ipAddress || !port) {
+    return res.status(400).json({ error: 'Printer IP address and port are required' });
+  }
+
+  const enc = encoding || 'utf8';
+  const esc = '\x1B';
+  const chars = paperWidth === 58 ? 32 : 48;
+
+  // Build ESC/POS payload
+  const parts = [];
+
+  // Init printer
+  parts.push(Buffer.from(esc + '@', 'ascii'));
+
+  // Print receipt lines if provided
+  if (receipt && Array.isArray(receipt.lines)) {
+    for (const line of receipt.lines) {
+      if (line.type === 'center') {
+        parts.push(Buffer.from(esc + 'a' + '\x01', 'ascii')); // align center
+      } else if (line.type === 'right') {
+        parts.push(Buffer.from(esc + 'a' + '\x02', 'ascii')); // align right
+      } else {
+        parts.push(Buffer.from(esc + 'a' + '\x00', 'ascii')); // align left
+      }
+      if (line.bold) {
+        parts.push(Buffer.from(esc + 'E' + '\x01', 'ascii')); // bold on
+      }
+      if (line.size === 'double') {
+        parts.push(Buffer.from(esc + '!' + '\x10', 'ascii')); // double width+height
+      }
+      parts.push(Buffer.from((line.text || '') + '\n', enc));
+      if (line.bold || line.size === 'double') {
+        parts.push(Buffer.from(esc + 'E' + '\x00', 'ascii')); // bold off
+        parts.push(Buffer.from(esc + '!' + '\x00', 'ascii')); // normal size
+      }
+    }
+    // Reset alignment
+    parts.push(Buffer.from(esc + 'a' + '\x00', 'ascii'));
+  }
+
+  // Open cash drawer if requested
+  if (openCashDrawer) {
+    const kickDigits = (kickCode || '27,112,0,50,250')
+      .split(',')
+      .map((s) => parseInt(s.trim(), 10))
+      .filter((n) => !isNaN(n));
+    if (kickDigits.length > 0) {
+      parts.push(Buffer.from(kickDigits));
+    }
+  }
+
+  // Paper cut
+  if (cutAtEnd !== false) {
+    parts.push(Buffer.from(esc + 'i', 'ascii')); // full cut
+  }
+
+  const payload = Buffer.concat(parts);
+
+  const socket = new net.Socket();
+  const timeout = 5000;
+
+  socket.setTimeout(timeout);
+
+  socket.on('connect', () => {
+    socket.write(payload, () => {
+      socket.end();
+      res.json({ ok: true, message: `Receipt sent to ${ipAddress}:${port}${openCashDrawer ? ' + cash drawer opened' : ''}` });
+    });
+  });
+
+  socket.on('timeout', () => {
+    socket.destroy();
+    res.status(408).json({ ok: false, error: `Connection timed out (${timeout}ms)` });
+  });
+
+  socket.on('error', (err) => {
+    socket.destroy();
+    res.status(502).json({ ok: false, error: `Cannot reach printer: ${err.message}` });
+  });
+
+  socket.connect(Number(port), ipAddress);
+});
+
 export default router;

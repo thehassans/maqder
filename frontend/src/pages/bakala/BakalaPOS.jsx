@@ -352,8 +352,89 @@ export default function BakalaPOS() {
     await saveOfflineInvoice(invoice);
     clearCart();
 
-    // Auto-print receipt on every checkout
-    printReceipt(invoice, paymentMethod);
+    // Get hardware + thermal settings
+    const hw = tenant?.settings?.hardwareSettings || {};
+    const thermal = getThermalPrinterSettings(tenant);
+
+    // Open cash drawer on cash payment (network printer only)
+    if (paymentMethod === 'cash' && hw.openCashDrawerOnCashPayment && hw.receiptPrinterType === 'network') {
+      try {
+        await api.post('/tenants/test-cash-drawer', {
+          ipAddress: hw.printerIpAddress,
+          port: hw.printerPort,
+          kickCode: hw.cashDrawerKickCode,
+        });
+      } catch (err) {
+        console.error('Cash drawer open failed:', err);
+      }
+    }
+
+    // Auto-print receipt if enabled
+    if (thermal.autoPrint) {
+      if (hw.receiptPrinterType === 'network') {
+        // Send ESC/POS receipt directly to network printer
+        printReceiptESCPOS(invoice, paymentMethod, hw, thermal);
+      } else {
+        // Browser-based print (opens new window)
+        printReceipt(invoice, paymentMethod);
+      }
+    }
+  };
+
+  // Send ESC/POS receipt to network printer via backend
+  const printReceiptESCPOS = async (order, paymentMethod, hw, thermal) => {
+    const businessNameEn = tenant?.business?.legalNameEn || tenant?.name || 'Maqder POS';
+    const businessNameAr = tenant?.business?.legalNameAr || tenant?.name || 'مقدر نقاط البيع';
+    const vatNumber = tenant?.business?.vatNumber || '';
+    const dateStr = new Date().toLocaleString('en-US');
+    const items = order.lineItems || [];
+    const pmLabel = paymentMethod === 'cash' ? 'Cash' : paymentMethod === 'card' ? 'Card' : paymentMethod === 'split' ? 'Split' : paymentMethod;
+
+    const lines = [
+      { type: 'center', bold: true, size: 'double', text: businessNameEn },
+      { type: 'center', bold: true, text: businessNameAr },
+      { type: 'center', text: 'SIMPLIFIED TAX INVOICE' },
+    ];
+    if (vatNumber) lines.push({ type: 'center', text: `VAT: ${vatNumber}` });
+    lines.push({ text: '--------------------------------' });
+    lines.push({ text: `Date: ${dateStr}` });
+    lines.push({ text: `Payment: ${pmLabel}` });
+    lines.push({ text: '--------------------------------' });
+    lines.push({ bold: true, text: 'Item                    Total' });
+
+    for (const item of items) {
+      const name = (item.productName || item.productNameAr || 'Item').substring(0, 20);
+      const total = Number(item.lineTotalWithTax || (item.unitPrice * item.quantity)).toFixed(2);
+      lines.push({ text: `${name.padEnd(20)} ${total.padStart(8)}` });
+    }
+
+    lines.push({ text: '--------------------------------' });
+    lines.push({ text: `Subtotal:       SAR ${Number(order.subtotal || 0).toFixed(2)}` });
+    lines.push({ text: `VAT (15%):      SAR ${Number(order.totalTax || 0).toFixed(2)}` });
+    lines.push({ bold: true, size: 'double', text: `TOTAL:          SAR ${Number(order.grandTotal || 0).toFixed(2)}` });
+
+    if (thermal.showFooter) {
+      lines.push({ type: 'center', text: thermal.footerTextEn || 'Thank you!' });
+      lines.push({ type: 'center', text: thermal.footerTextAr || 'شكراً' });
+    }
+    lines.push({ text: '' });
+    lines.push({ text: '' });
+
+    try {
+      await api.post('/tenants/print-receipt', {
+        ipAddress: hw.printerIpAddress,
+        port: hw.printerPort,
+        receipt: { lines },
+        openCashDrawer: false, // already opened above if needed
+        encoding: thermal.encoding,
+        paperWidth: thermal.paperWidth,
+        cutAtEnd: thermal.cutAtEnd,
+      });
+    } catch (err) {
+      console.error('ESC/POS print failed:', err);
+      // Fallback to browser print
+      printReceipt(order, paymentMethod);
+    }
   };
 
   const printReceipt = (order, paymentMethod = 'cash') => {
