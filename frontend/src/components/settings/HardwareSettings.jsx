@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Printer, Box, Camera, Save, Receipt, Wifi } from 'lucide-react';
+import { Printer, Box, Camera, Save, Receipt, Wifi, Loader2, CheckCircle2, XCircle, Send } from 'lucide-react';
 import { useTranslation } from '../../lib/translations';
 import { DEFAULT_THERMAL_SETTINGS, PRINTER_MODELS, applyPrinterModel } from '../../lib/thermalPrinter';
 import api from '../../lib/api';
@@ -47,6 +47,10 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
 
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
+  const [drawerTesting, setDrawerTesting] = useState(false);
+  const [drawerResult, setDrawerResult] = useState(null);
+  const [printTesting, setPrintTesting] = useState(false);
+  const [printResult, setPrintResult] = useState(null);
 
   const handleTestConnection = async () => {
     setTesting(true);
@@ -61,6 +65,41 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
       setTestResult({ success: false, message: err.response?.data?.error || err.message || 'Connection failed' });
     } finally {
       setTesting(false);
+    }
+  };
+
+  const handleTestCashDrawer = async () => {
+    setDrawerTesting(true);
+    setDrawerResult(null);
+    try {
+      const res = await api.post('/tenants/test-cash-drawer', {
+        ipAddress: hardware.printerIpAddress,
+        port: hardware.printerPort,
+        kickCode: hardware.cashDrawerKickCode,
+      });
+      setDrawerResult({ success: true, message: res.data?.message || 'Cash drawer opened successfully' });
+    } catch (err) {
+      setDrawerResult({ success: false, message: err.response?.data?.error || err.message || 'Failed to open cash drawer' });
+    } finally {
+      setDrawerTesting(false);
+    }
+  };
+
+  const handleTestThermalPrint = async () => {
+    setPrintTesting(true);
+    setPrintResult(null);
+    try {
+      const res = await api.post('/tenants/test-thermal-print', {
+        ipAddress: hardware.printerIpAddress,
+        port: hardware.printerPort,
+        paperWidth: thermal.paperWidth,
+        encoding: thermal.encoding,
+      });
+      setPrintResult({ success: true, message: res.data?.message || 'Test receipt printed successfully' });
+    } catch (err) {
+      setPrintResult({ success: false, message: err.response?.data?.error || err.message || 'Failed to print test receipt' });
+    } finally {
+      setPrintTesting(false);
     }
   };
 
@@ -354,7 +393,34 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
               {language === 'ar' ? 'الكود الافتراضي لطابعات Epson/Star' : 'Default ESC/POS kick code for Epson/Star printers.'}
             </p>
           </div>
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={handleTestCashDrawer}
+              disabled={drawerTesting}
+              className="btn btn-outline text-sm gap-2"
+            >
+              {drawerTesting ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> {language === 'ar' ? 'جاري الفتح...' : 'Opening...'}</>
+              ) : (
+                <><Box className="w-4 h-4" /> {language === 'ar' ? 'اختبار فتح الدرج' : 'Test Open Drawer'}</>
+              )}
+            </button>
+          </div>
         </div>
+        {drawerResult && (
+          <div className={`mt-3 flex items-center gap-2 text-sm font-semibold ${drawerResult.success ? 'text-green-600' : 'text-red-600'}`}>
+            {drawerResult.success ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+            {drawerResult.message}
+          </div>
+        )}
+        {hardware.receiptPrinterType !== 'network' && (
+          <p className="mt-3 text-xs text-amber-600 dark:text-amber-400">
+            {language === 'ar'
+              ? 'اختبار فتح الدرج يتطلب طابعة شبكة متصلة (ESC/POS). تأكد من اختيار "طابعة شبكة" في إعدادات الطابعة.'
+              : 'Cash drawer test requires a connected network printer (ESC/POS). Make sure "Network Printer" is selected in Printer Settings.'}
+          </p>
+        )}
       </div>
 
       {/* Scanner / Scale Section */}
@@ -385,6 +451,44 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
             </select>
           </div>
         </div>
+      </div>
+
+      {/* Test Print Section */}
+      <div className="card p-6">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Send className="w-5 h-5 text-blue-500" />
+          {language === 'ar' ? 'اختبار الطباعة الحرارية' : 'Thermal Printer Test Print'}
+        </h3>
+        <p className="text-sm text-gray-500 mb-4">
+          {language === 'ar'
+            ? 'أرسل إيصال اختبار إلى الطابعة الحرارية للتحقق من عملها بشكل صحيح.'
+            : 'Send a test receipt to the thermal printer to verify it is working correctly.'}
+        </p>
+        <button
+          type="button"
+          onClick={handleTestThermalPrint}
+          disabled={printTesting || hardware.receiptPrinterType !== 'network'}
+          className="btn btn-outline text-sm gap-2"
+        >
+          {printTesting ? (
+            <><Loader2 className="w-4 h-4 animate-spin" /> {language === 'ar' ? 'جاري الطباعة...' : 'Printing...'}</>
+          ) : (
+            <><Send className="w-4 h-4" /> {language === 'ar' ? 'إرسال إيصال اختبار' : 'Send Test Receipt'}</>
+          )}
+        </button>
+        {printResult && (
+          <div className={`mt-3 flex items-center gap-2 text-sm font-semibold ${printResult.success ? 'text-green-600' : 'text-red-600'}`}>
+            {printResult.success ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+            {printResult.message}
+          </div>
+        )}
+        {hardware.receiptPrinterType !== 'network' && (
+          <p className="mt-3 text-xs text-amber-600 dark:text-amber-400">
+            {language === 'ar'
+              ? 'اختبار الطباعة يتطلب طابعة شبكة متصلة (ESC/POS).'
+              : 'Test print requires a connected network printer (ESC/POS).'}
+          </p>
+        )}
       </div>
 
       <div className="flex justify-end">

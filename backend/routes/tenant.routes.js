@@ -441,4 +441,129 @@ router.get('/backup', authorize('admin'), async (req, res) => {
   }
 });
 
+// @route   POST /api/tenants/test-printer
+// @desc    Test network printer connection via TCP
+router.post('/test-printer', authorize('admin'), async (req, res) => {
+  const net = await import('net');
+  const { ipAddress, port } = req.body;
+
+  if (!ipAddress || !port) {
+    return res.status(400).json({ error: 'IP address and port are required' });
+  }
+
+  const socket = new net.Socket();
+  const timeout = 5000;
+
+  socket.setTimeout(timeout);
+
+  socket.on('connect', () => {
+    socket.destroy();
+    res.json({ ok: true, message: `Connected to printer at ${ipAddress}:${port}` });
+  });
+
+  socket.on('timeout', () => {
+    socket.destroy();
+    res.status(408).json({ ok: false, error: `Connection timed out (${timeout}ms)` });
+  });
+
+  socket.on('error', (err) => {
+    socket.destroy();
+    res.status(502).json({ ok: false, error: `Cannot reach printer: ${err.message}` });
+  });
+
+  socket.connect(Number(port), ipAddress);
+});
+
+// @route   POST /api/tenants/test-cash-drawer
+// @desc    Test cash drawer by sending kick code to network printer
+router.post('/test-cash-drawer', authorize('admin'), async (req, res) => {
+  const net = await import('net');
+  const { ipAddress, port, kickCode } = req.body;
+
+  if (!ipAddress || !port) {
+    return res.status(400).json({ error: 'Printer IP address and port are required' });
+  }
+
+  const kickDigits = (kickCode || '27,112,0,50,250')
+    .split(',')
+    .map((s) => parseInt(s.trim(), 10))
+    .filter((n) => !isNaN(n));
+
+  if (kickDigits.length === 0) {
+    return res.status(400).json({ error: 'Invalid kick code format' });
+  }
+
+  const kickBuffer = Buffer.from(kickDigits);
+  const socket = new net.Socket();
+  const timeout = 5000;
+
+  socket.setTimeout(timeout);
+
+  socket.on('connect', () => {
+    socket.write(kickBuffer, () => {
+      socket.end();
+      res.json({ ok: true, message: `Cash drawer kick command sent to ${ipAddress}:${port}` });
+    });
+  });
+
+  socket.on('timeout', () => {
+    socket.destroy();
+    res.status(408).json({ ok: false, error: `Connection timed out (${timeout}ms)` });
+  });
+
+  socket.on('error', (err) => {
+    socket.destroy();
+    res.status(502).json({ ok: false, error: `Cannot reach printer: ${err.message}` });
+  });
+
+  socket.connect(Number(port), ipAddress);
+});
+
+// @route   POST /api/tenants/test-thermal-print
+// @desc    Send a test receipt to thermal printer
+router.post('/test-thermal-print', authorize('admin'), async (req, res) => {
+  const net = await import('net');
+  const { ipAddress, port, paperWidth, encoding } = req.body;
+
+  if (!ipAddress || !port) {
+    return res.status(400).json({ error: 'Printer IP address and port are required' });
+  }
+
+  const esc = '\x1B';
+  const init = Buffer.from(esc + '@', 'ascii');
+  const title = Buffer.from('*** TEST RECEIPT ***\n', encoding || 'utf8');
+  const line = Buffer.from('Maqder ERP Printer Test\n', encoding || 'utf8');
+  const date = Buffer.from(`Date: ${new Date().toLocaleString()}\n`, encoding || 'utf8');
+  const paper = paperWidth === 58 ? 32 : 48;
+  const separator = Buffer.from('-'.repeat(paper) + '\n', 'ascii');
+  const footer = Buffer.from('If you can read this,\nyour printer is working!\n\n\n', encoding || 'utf8');
+  const cut = Buffer.from(esc + 'i', 'ascii');
+
+  const payload = Buffer.concat([init, title, separator, line, date, separator, footer, cut]);
+
+  const socket = new net.Socket();
+  const timeout = 5000;
+
+  socket.setTimeout(timeout);
+
+  socket.on('connect', () => {
+    socket.write(payload, () => {
+      socket.end();
+      res.json({ ok: true, message: `Test receipt sent to ${ipAddress}:${port}` });
+    });
+  });
+
+  socket.on('timeout', () => {
+    socket.destroy();
+    res.status(408).json({ ok: false, error: `Connection timed out (${timeout}ms)` });
+  });
+
+  socket.on('error', (err) => {
+    socket.destroy();
+    res.status(502).json({ ok: false, error: `Cannot reach printer: ${err.message}` });
+  });
+
+  socket.connect(Number(port), ipAddress);
+});
+
 export default router;
