@@ -16,8 +16,51 @@ import {
   MessageCircle,
   Phone,
   Globe,
+  Rocket,
+  Building2,
+  Gem,
+  Lock,
 } from 'lucide-react'
 import api from '../lib/api'
+
+const fallbackPricingPlans = [
+  {
+    id: 'starter',
+    nameEn: 'Starter',
+    nameAr: 'البداية',
+    priceMonthly: 299,
+    priceYearly: 2990,
+    popular: false,
+    featuresEn: ['ZATCA E-Invoicing', 'Up to 500 invoices/month', 'Inventory & Warehouses', 'Basic Reports', 'Up to 5 users', 'Email Support'],
+    featuresAr: ['الفوترة الإلكترونية', 'حتى 500 فاتورة/شهر', 'المخزون والمستودعات', 'تقارير أساسية', 'حتى 5 مستخدمين', 'دعم بالبريد'],
+  },
+  {
+    id: 'professional',
+    nameEn: 'Professional',
+    nameAr: 'الاحترافية',
+    priceMonthly: 699,
+    priceYearly: 6990,
+    popular: true,
+    featuresEn: ['Everything in Starter', 'Unlimited Invoices', 'HR & Payroll (GOSI/WPS)', 'Expenses & Finance', 'Projects & Tasks', 'Advanced Reports', 'Up to 25 users', 'Priority Support'],
+    featuresAr: ['كل ما في البداية', 'فواتير غير محدودة', 'الموارد البشرية والرواتب', 'المصروفات والمالية', 'المشاريع والمهام', 'تقارير متقدمة', 'حتى 25 مستخدم', 'دعم ذو أولوية'],
+  },
+  {
+    id: 'enterprise',
+    nameEn: 'Enterprise',
+    nameAr: 'المؤسسات',
+    priceMonthly: 0,
+    priceYearly: 0,
+    popular: false,
+    featuresEn: ['Everything in Professional', 'Unlimited users', 'Dedicated Account Manager', 'Custom Integrations', 'On-premise Option', '24/7 Phone Support', 'SLA Guarantee'],
+    featuresAr: ['كل ما في الاحترافية', 'مستخدمون غير محدودين', 'مدير حساب مخصص', 'تكاملات مخصصة', 'خيار الخادم الخاص', 'دعم هاتفي 24/7', 'ضمان SLA'],
+  },
+]
+
+const planMeta = {
+  starter: { icon: Rocket, color: 'from-emerald-500 to-teal-600', shadow: 'shadow-emerald-500/20' },
+  professional: { icon: Crown, color: 'from-amber-400 to-orange-500', shadow: 'shadow-amber-500/25' },
+  enterprise: { icon: Building2, color: 'from-violet-500 to-indigo-600', shadow: 'shadow-violet-500/20' },
+}
 
 const complianceLogos = [
   { src: '/ZATCA_Logo.svg', alt: 'ZATCA', cardClassName: 'w-48', imageClassName: 'scale-[1.35]' },
@@ -37,6 +80,8 @@ export default function DemoCheckout() {
   const [paymentLoading, setPaymentLoading] = useState(false)
   const [paymentError, setPaymentError] = useState('')
   const [mounted, setMounted] = useState(false)
+  const [websiteSettings, setWebsiteSettings] = useState(null)
+  const [settingsLoading, setSettingsLoading] = useState(true)
 
   const isDemo = tenant?.isDemo === true
   const isUpgraded = tenant?.demoUpgraded === true
@@ -49,17 +94,43 @@ export default function DemoCheckout() {
     }
   }, [isDemo, isUpgraded, navigate])
 
-  const plans = useMemo(
-    () => [
-      { id: 'starter', nameEn: 'Starter', nameAr: 'البداية', priceMonthly: 299, priceYearly: 2990 },
-      { id: 'professional', nameEn: 'Professional', nameAr: 'الاحترافية', priceMonthly: 699, priceYearly: 6990 },
-      { id: 'enterprise', nameEn: 'Enterprise', nameAr: 'المؤسسات', priceMonthly: 0, priceYearly: 0 },
-    ],
-    []
-  )
+  useEffect(() => {
+    let cancelled = false
+    setSettingsLoading(true)
+    api.get('/public/website')
+      .then((res) => {
+        if (!cancelled) setWebsiteSettings(res.data)
+      })
+      .catch(() => {
+        if (!cancelled) setWebsiteSettings(null)
+      })
+      .finally(() => {
+        if (!cancelled) setSettingsLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [])
+
+  const plans = useMemo(() => {
+    const configured = websiteSettings?.pricing?.plans
+    if (Array.isArray(configured) && configured.length > 0) {
+      return configured.map((p) => {
+        const fallback = fallbackPricingPlans.find((f) => f.id === p.id)
+        return {
+          ...fallback,
+          ...p,
+          priceMonthly: Number(p.priceMonthly ?? fallback?.priceMonthly ?? 0),
+          priceYearly: Number(p.priceYearly ?? fallback?.priceYearly ?? 0),
+          featuresEn: p.featuresEn?.length ? p.featuresEn : fallback?.featuresEn,
+          featuresAr: p.featuresAr?.length ? p.featuresAr : fallback?.featuresAr,
+        }
+      })
+    }
+    return fallbackPricingPlans
+  }, [websiteSettings])
 
   const selectedPlanObj = plans.find((p) => p.id === selectedPlan) || plans[1]
   const amount = selectedBilling === 'yearly' ? selectedPlanObj.priceYearly : selectedPlanObj.priceMonthly
+  const currency = websiteSettings?.pricing?.currency || 'SAR'
 
   const handleUpgrade = async () => {
     if (selectedPlan === 'enterprise') {
@@ -152,22 +223,6 @@ export default function DemoCheckout() {
             </div>
           </div>
 
-          <div className="mt-8">
-            <p className="text-center text-xs text-white/50 mb-4">
-              {isArabic ? 'معتمد من' : 'Trusted & Certified'}
-            </p>
-            <div className="flex flex-wrap items-center justify-start gap-4">
-              {complianceLogos.map((logo) => (
-                <div
-                  key={logo.alt}
-                  className={`flex h-20 ${logo.cardClassName} items-center justify-center overflow-hidden rounded-2xl border border-white/20 bg-white/10 px-4 py-3`}
-                >
-                  <img src={logo.src} alt={logo.alt} className={`max-h-full max-w-full object-contain ${logo.imageClassName}`} />
-                </div>
-              ))}
-            </div>
-          </div>
-
           <div className="text-white/50 text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-8">
             <div>
               2024 Maqder ERP. {isArabic ? 'صنع بواسطة Eastern Workforce Solutions Establishment' : 'Built by Eastern Workforce Solutions Establishment'}
@@ -188,12 +243,19 @@ export default function DemoCheckout() {
       </div>
 
       {/* Right Panel — Checkout */}
-      <div className="w-full md:w-1/2 flex items-center justify-center p-6 md:p-12 bg-gradient-to-br from-gray-50 to-white dark:from-dark-900 dark:to-dark-800">
+      <div className="relative w-full md:w-1/2 flex items-center justify-center p-6 md:p-10 bg-gradient-to-br from-slate-50 via-white to-emerald-50/40 dark:from-dark-900 dark:via-dark-850 dark:to-dark-900 overflow-hidden">
+        {/* Premium ambient background */}
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute -top-28 -right-28 h-[28rem] w-[28rem] rounded-full bg-emerald-200/40 dark:bg-emerald-900/20 blur-3xl" />
+          <div className="absolute -bottom-20 -left-20 h-[24rem] w-[24rem] rounded-full bg-amber-200/30 dark:bg-amber-900/10 blur-3xl" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.8),transparent_60%)] dark:bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.03),transparent_60%)]" />
+        </div>
+
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="w-full max-w-lg"
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+          className="relative w-full max-w-xl"
         >
           {/* Mobile logo */}
           <div className="md:hidden flex items-center justify-center mb-6">
@@ -201,229 +263,273 @@ export default function DemoCheckout() {
           </div>
 
           {/* Header */}
-          <div className="text-center mb-8">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0f3d2e] to-[#1a5d44] shadow-lg shadow-[#0f3d2e]/20">
-              <Crown className="h-8 w-8 text-amber-300" />
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          <div className="text-center mb-6">
+            <h1 className="text-3xl md:text-4xl font-black text-gray-900 dark:text-white mb-2 tracking-tight">
               {isArabic ? 'اختر خطتك' : 'Choose Your Plan'}
             </h1>
-            <p className="text-gray-500 dark:text-gray-400 text-lg">
+            <p className="text-gray-500 dark:text-gray-400 text-base md:text-lg">
               {isArabic ? 'خطوة واحدة تفصلك عن النسخة الكاملة' : 'One step away from the full version'}
             </p>
           </div>
 
-          {/* Plan cards */}
-          <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {plans.map((plan) => {
-              const isSelected = selectedPlan === plan.id
-              const price = selectedBilling === 'yearly' ? plan.priceYearly : plan.priceMonthly
-              return (
+          {/* Premium checkout card */}
+          <div className="rounded-[2rem] bg-white/85 dark:bg-dark-800/80 backdrop-blur-2xl border border-white/70 dark:border-white/10 shadow-[0_25px_80px_-20px_rgba(15,61,46,0.15)] dark:shadow-[0_25px_80px_-20px_rgba(0,0,0,0.4)] p-6 md:p-8">
+            {/* Plan cards */}
+            <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {plans.map((plan) => {
+                const isSelected = selectedPlan === plan.id
+                const meta = planMeta[plan.id]
+                const Icon = meta.icon
+                const price = selectedBilling === 'yearly' ? plan.priceYearly : plan.priceMonthly
+                return (
+                  <button
+                    key={plan.id}
+                    onClick={() => setSelectedPlan(plan.id)}
+                    className={`group relative flex flex-col rounded-2xl border-2 p-4 text-left transition-all duration-200 ${
+                      isSelected
+                        ? 'border-[#0f3d2e] bg-gradient-to-br from-[#0f3d2e]/[0.06] to-[#1a5d44]/[0.04] dark:from-[#0f3d2e]/20 dark:to-[#1a5d44]/10 shadow-lg shadow-[#0f3d2e]/10'
+                        : 'border-gray-100 dark:border-dark-600 bg-white dark:bg-dark-700 hover:border-gray-300 dark:hover:border-dark-500 hover:shadow-md'
+                    }`}
+                  >
+                    {plan.popular && (
+                      <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-3 py-0.5 text-[10px] font-bold text-white shadow-sm">
+                        {isArabic ? 'الأكثر شيوعاً' : 'POPULAR'}
+                      </span>
+                    )}
+                    <div className="mb-3">
+                      <div className={`inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${meta.color} text-white shadow-lg ${meta.shadow} transition-transform group-hover:scale-105`}>
+                        <Icon className="h-5 w-5" />
+                      </div>
+                    </div>
+                    <div className="mb-1.5 flex items-center gap-2">
+                      <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 transition ${isSelected ? 'border-[#0f3d2e] bg-[#0f3d2e]' : 'border-gray-300 dark:border-dark-500'}`}>
+                        {isSelected && <Check className="h-3 w-3 text-white" />}
+                      </div>
+                      <p className="text-sm font-bold text-gray-900 dark:text-white">{isArabic ? plan.nameAr : plan.nameEn}</p>
+                    </div>
+                    {plan.priceMonthly > 0 ? (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        <span className="text-lg font-black text-gray-900 dark:text-white">{price}</span> {currency}
+                        <span className="ml-0.5">
+                          {selectedBilling === 'yearly' ? (isArabic ? '/سنة' : '/yr') : (isArabic ? '/شهر' : '/mo')}
+                        </span>
+                      </p>
+                    ) : (
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{isArabic ? 'تواصل معنا' : 'Contact us'}</p>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Selected plan features */}
+            {(selectedPlanObj.featuresEn?.length > 0 || selectedPlanObj.featuresAr?.length > 0) && (
+              <div className="mb-6 rounded-2xl bg-gradient-to-br from-emerald-50/90 to-white dark:from-emerald-900/10 dark:to-dark-700/50 border border-emerald-100/80 dark:border-emerald-900/20 p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+                    <Gem className="h-3.5 w-3.5" />
+                  </div>
+                  <span className="text-sm font-bold text-gray-900 dark:text-white">
+                    {isArabic ? 'ما تحصل عليه' : 'What you get'}
+                  </span>
+                </div>
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {(isArabic ? selectedPlanObj.featuresAr : selectedPlanObj.featuresEn).slice(0, 6).map((feature, i) => (
+                    <li key={i} className="flex items-start gap-2 text-xs text-gray-600 dark:text-gray-300">
+                      <Check className="h-3.5 w-3.5 text-emerald-600 mt-0.5 shrink-0" />
+                      <span className="leading-relaxed">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Billing cycle toggle */}
+            {selectedPlan !== 'enterprise' && (
+              <div className="mb-6 flex items-center gap-2 rounded-2xl bg-gray-100/80 dark:bg-dark-700/80 p-1">
                 <button
-                  key={plan.id}
-                  onClick={() => setSelectedPlan(plan.id)}
-                  className={`relative flex flex-col rounded-2xl border-2 p-4 text-left transition-all ${
-                    isSelected
-                      ? 'border-[#0f3d2e] bg-[#0f3d2e]/[0.03] dark:bg-[#0f3d2e]/10 shadow-md'
-                      : 'border-gray-200 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
+                  onClick={() => setSelectedBilling('monthly')}
+                  className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition ${
+                    selectedBilling === 'monthly'
+                      ? 'bg-white dark:bg-dark-800 text-[#0f3d2e] dark:text-white shadow-sm'
+                      : 'text-gray-500 dark:text-gray-400'
                   }`}
                 >
-                  {plan.id === 'professional' && (
-                    <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-3 py-0.5 text-[10px] font-bold text-white shadow-sm">
-                      {isArabic ? 'الأكثر شيوعاً' : 'POPULAR'}
-                    </span>
-                  )}
-                  <div className="mb-2 flex items-center gap-2">
-                    <div
-                      className={`flex h-5 w-5 items-center justify-center rounded-full border-2 transition ${
-                        isSelected ? 'border-[#0f3d2e] bg-[#0f3d2e]' : 'border-gray-300 dark:border-dark-500'
-                      }`}
-                    >
-                      {isSelected && <Check className="h-3 w-3 text-white" />}
-                    </div>
-                    <p className="text-sm font-bold text-gray-900 dark:text-white">{isArabic ? plan.nameAr : plan.nameEn}</p>
-                  </div>
-                  {plan.priceMonthly > 0 ? (
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      <span className="text-lg font-black text-gray-900 dark:text-white">{price}</span> SAR
-                      <span className="ml-0.5">
-                        {selectedBilling === 'yearly' ? (isArabic ? '/سنة' : '/yr') : (isArabic ? '/شهر' : '/mo')}
-                      </span>
-                    </p>
-                  ) : (
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{isArabic ? 'تواصل معنا' : 'Contact us'}</p>
-                  )}
+                  {isArabic ? 'شهري' : 'Monthly'}
                 </button>
-              )
-            })}
-          </div>
+                <button
+                  onClick={() => setSelectedBilling('yearly')}
+                  className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition ${
+                    selectedBilling === 'yearly'
+                      ? 'bg-white dark:bg-dark-800 text-[#0f3d2e] dark:text-white shadow-sm'
+                      : 'text-gray-500 dark:text-gray-400'
+                  }`}
+                >
+                  {isArabic ? 'سنوي' : 'Yearly'}
+                  <span className="ml-1.5 text-xs text-emerald-500">−17%</span>
+                </button>
+              </div>
+            )}
 
-          {/* Billing cycle toggle */}
-          {selectedPlan !== 'enterprise' && (
-            <div className="mb-6 flex items-center gap-2 rounded-2xl bg-gray-50 dark:bg-dark-700 p-1">
-              <button
-                onClick={() => setSelectedBilling('monthly')}
-                className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition ${
-                  selectedBilling === 'monthly'
-                    ? 'bg-white dark:bg-dark-800 text-[#0f3d2e] dark:text-white shadow-sm'
-                    : 'text-gray-500 dark:text-gray-400'
-                }`}
-              >
-                {isArabic ? 'شهري' : 'Monthly'}
-              </button>
-              <button
-                onClick={() => setSelectedBilling('yearly')}
-                className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition ${
-                  selectedBilling === 'yearly'
-                    ? 'bg-white dark:bg-dark-800 text-[#0f3d2e] dark:text-white shadow-sm'
-                    : 'text-gray-500 dark:text-gray-400'
-                }`}
-              >
-                {isArabic ? 'سنوي' : 'Yearly'}
-                <span className="ml-1.5 text-xs text-emerald-500">−17%</span>
-              </button>
+            {/* Amount display */}
+            {selectedPlan !== 'enterprise' && (
+              <div className="mb-6 flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-50 via-white to-emerald-50 dark:from-emerald-900/10 dark:via-dark-700/30 dark:to-emerald-900/10 border border-emerald-100/60 dark:border-emerald-900/20 py-5">
+                <div className="text-center">
+                  <span className="text-5xl font-black tracking-tight text-gray-900 dark:text-white">{amount}</span>
+                  <span className="ml-1 text-lg font-bold text-gray-500 dark:text-gray-400">{currency}</span>
+                  <span className="ml-1 text-sm text-gray-400 dark:text-gray-500">
+                    {selectedBilling === 'yearly' ? (isArabic ? '/سنة' : '/year') : (isArabic ? '/شهر' : '/month')}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Payment Method Selector */}
+            <div className="mb-6">
+              <label className="mb-3 block text-center text-sm font-bold text-gray-700 dark:text-gray-300">
+                {isArabic ? 'اختر طريقة الدفع' : 'Select Payment Method'}
+              </label>
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+                {/* Credit Card */}
+                <button
+                  onClick={() => setPaymentMethod('creditcard')}
+                  className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 p-3 transition-all ${
+                    paymentMethod === 'creditcard'
+                      ? 'border-[#0f3d2e] bg-[#0f3d2e]/[0.03] dark:bg-[#0f3d2e]/10 shadow-md'
+                      : 'border-gray-100 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
+                  }`}
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#0f3d2e] to-[#1a5d44] text-white">
+                    <CreditCard className="h-5 w-5" />
+                  </div>
+                  <span className="text-xs font-bold text-gray-800 dark:text-white">
+                    {isArabic ? 'بطاقة' : 'Card'}
+                  </span>
+                </button>
+
+                {/* Apple Pay */}
+                <button
+                  onClick={() => setPaymentMethod('applepay')}
+                  className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 p-3 transition-all ${
+                    paymentMethod === 'applepay'
+                      ? 'border-[#0f3d2e] bg-[#0f3d2e]/[0.03] dark:bg-[#0f3d2e]/10 shadow-md'
+                      : 'border-gray-100 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
+                  }`}
+                >
+                  <img src="/applepay.webp" alt="Apple Pay" className="h-10 w-auto object-contain" />
+                  <span className="text-xs font-bold text-gray-800 dark:text-white">Apple Pay</span>
+                </button>
+
+                {/* Tabby */}
+                <button
+                  onClick={() => setPaymentMethod('tabby')}
+                  className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 p-3 transition-all ${
+                    paymentMethod === 'tabby'
+                      ? 'border-[#0f3d2e] bg-[#0f3d2e]/[0.03] dark:bg-[#0f3d2e]/10 shadow-md'
+                      : 'border-gray-100 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
+                  }`}
+                >
+                  <img src="/tabby.png" alt="Tabby" className="h-8 w-auto object-contain" />
+                  <span className="text-[10px] font-bold text-gray-800 dark:text-white">Tabby</span>
+                </button>
+
+                {/* Tamara */}
+                <button
+                  onClick={() => setPaymentMethod('tamara')}
+                  className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 p-3 transition-all ${
+                    paymentMethod === 'tamara'
+                      ? 'border-[#0f3d2e] bg-[#0f3d2e]/[0.03] dark:bg-[#0f3d2e]/10 shadow-md'
+                      : 'border-gray-100 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
+                  }`}
+                >
+                  <img src="/tamara.webp" alt="Tamara" className="h-8 w-auto object-contain" />
+                  <span className="text-[10px] font-bold text-gray-800 dark:text-white">Tamara</span>
+                </button>
+
+                {/* STC Pay */}
+                <div className="relative flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-gray-100 dark:border-dark-600 p-3 opacity-60 cursor-not-allowed">
+                  <span className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full bg-gray-500 px-2 py-0.5 text-[9px] font-bold text-white">
+                    {isArabic ? 'قريباً' : 'Soon'}
+                  </span>
+                  <img src="/stcpay.webp" alt="STC Pay" className="h-8 w-auto object-contain" />
+                  <span className="text-[10px] font-bold text-gray-800 dark:text-white">STC Pay</span>
+                </div>
+              </div>
+
+              {/* Tabby/Tamara info badge */}
+              {(paymentMethod === 'tabby' || paymentMethod === 'tamara') && (
+                <div className="mt-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/10 px-4 py-2.5 text-center text-xs text-emerald-700 dark:text-emerald-400 font-medium">
+                  {paymentMethod === 'tabby'
+                    ? (isArabic ? 'قسّمها على 4 دفعات بدون فوائد مع تابي' : 'Split into 4 interest-free payments with Tabby')
+                    : (isArabic ? 'ادفع لاحقاً مع تمارا' : 'Pay later with Tamara')}
+                </div>
+              )}
             </div>
-          )}
 
-          {/* Amount display */}
-          {selectedPlan !== 'enterprise' && (
-            <div className="mb-6 flex items-end justify-center gap-1 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-dark-700 dark:to-dark-600 py-6">
-              <span className="text-5xl font-black tracking-tight text-gray-900 dark:text-white">{amount}</span>
-              <span className="pb-1.5 text-lg font-bold text-gray-500 dark:text-gray-400">SAR</span>
-              <span className="pb-1.5 text-sm text-gray-400 dark:text-gray-500">
-                {selectedBilling === 'yearly' ? (isArabic ? '/سنة' : '/year') : (isArabic ? '/شهر' : '/month')}
+            {/* Error */}
+            {paymentError && (
+              <div className="mb-4 rounded-xl bg-red-50 dark:bg-red-900/20 px-4 py-3 text-xs text-red-600 dark:text-red-400 whitespace-pre-wrap break-all max-h-40 overflow-y-auto">
+                {paymentError}
+              </div>
+            )}
+
+            {/* CTA */}
+            <button
+              onClick={handleUpgrade}
+              disabled={paymentLoading || settingsLoading}
+              className="flex w-full items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-[#0f3d2e] to-[#1a5d44] px-6 py-4 text-base font-bold text-white shadow-xl shadow-[#0f3d2e]/25 transition hover:shadow-2xl hover:shadow-[#0f3d2e]/35 hover:-translate-y-0.5 disabled:opacity-60 disabled:hover:translate-y-0"
+            >
+              {paymentLoading ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  {isArabic ? 'جاري المعالجة...' : 'Processing...'}
+                </>
+              ) : selectedPlan === 'enterprise' ? (
+                <>
+                  <Crown className="h-5 w-5" />
+                  {isArabic ? 'تواصل مع المبيعات' : 'Contact Sales'}
+                </>
+              ) : (
+                <>
+                  <Lock className="h-5 w-5" />
+                  {isArabic ? 'ادفع الآن' : 'Pay Now'}
+                  <ArrowRight className="h-5 w-5" />
+                </>
+              )}
+            </button>
+
+            {/* Trust badges */}
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+              <span className="flex items-center gap-1.5">
+                <Shield className="h-3.5 w-3.5" />
+                {isArabic ? 'دفع آمن' : 'Secure'}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Zap className="h-3.5 w-3.5" />
+                {isArabic ? 'تفعيل فوري' : 'Instant access'}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Globe className="h-3.5 w-3.5" />
+                Visa, Mada, Apple Pay, Tabby, Tamara
               </span>
             </div>
-          )}
 
-          {/* Payment Method Selector */}
-          <div className="mb-5">
-            <label className="mb-3 block text-center text-sm font-semibold text-gray-700 dark:text-gray-300">
-              {isArabic ? 'اختر طريقة الدفع' : 'Select Payment Method'}
-            </label>
-            <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-              {/* Credit Card */}
-              <button
-                onClick={() => setPaymentMethod('creditcard')}
-                className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 p-3 transition-all ${
-                  paymentMethod === 'creditcard'
-                    ? 'border-[#0f3d2e] bg-[#0f3d2e]/[0.03] dark:bg-[#0f3d2e]/10 shadow-md'
-                    : 'border-gray-200 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
-                }`}
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#0f3d2e] to-[#1a5d44] text-white">
-                  <CreditCard className="h-5 w-5" />
-                </div>
-                <span className="text-xs font-bold text-gray-800 dark:text-white">
-                  {isArabic ? 'بطاقة' : 'Card'}
-                </span>
-              </button>
-
-              {/* Apple Pay */}
-              <button
-                onClick={() => setPaymentMethod('applepay')}
-                className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 p-3 transition-all ${
-                  paymentMethod === 'applepay'
-                    ? 'border-[#0f3d2e] bg-[#0f3d2e]/[0.03] dark:bg-[#0f3d2e]/10 shadow-md'
-                    : 'border-gray-200 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
-                }`}
-              >
-                <img src="/applepay.webp" alt="Apple Pay" className="h-10 w-auto object-contain" />
-                <span className="text-xs font-bold text-gray-800 dark:text-white">Apple Pay</span>
-              </button>
-
-              {/* Tabby */}
-              <button
-                onClick={() => setPaymentMethod('tabby')}
-                className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 p-3 transition-all ${
-                  paymentMethod === 'tabby'
-                    ? 'border-[#0f3d2e] bg-[#0f3d2e]/[0.03] dark:bg-[#0f3d2e]/10 shadow-md'
-                    : 'border-gray-200 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
-                }`}
-              >
-                <img src="/tabby.png" alt="Tabby" className="h-8 w-auto object-contain" />
-                <span className="text-[10px] font-bold text-gray-800 dark:text-white">Tabby</span>
-              </button>
-
-              {/* Tamara */}
-              <button
-                onClick={() => setPaymentMethod('tamara')}
-                className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 p-3 transition-all ${
-                  paymentMethod === 'tamara'
-                    ? 'border-[#0f3d2e] bg-[#0f3d2e]/[0.03] dark:bg-[#0f3d2e]/10 shadow-md'
-                    : 'border-gray-200 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
-                }`}
-              >
-                <img src="/tamara.webp" alt="Tamara" className="h-8 w-auto object-contain" />
-                <span className="text-[10px] font-bold text-gray-800 dark:text-white">Tamara</span>
-              </button>
-
-              {/* STC Pay */}
-              <div className="relative flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-gray-200 dark:border-dark-600 p-3 opacity-60 cursor-not-allowed">
-                <span className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full bg-gray-500 px-2 py-0.5 text-[9px] font-bold text-white">
-                  {isArabic ? 'قريباً' : 'Soon'}
-                </span>
-                <img src="/stcpay.webp" alt="STC Pay" className="h-8 w-auto object-contain" />
-                <span className="text-[10px] font-bold text-gray-800 dark:text-white">STC Pay</span>
+            {/* Trusted & Certified compliance logos */}
+            <div className="mt-6 pt-6 border-t border-gray-100 dark:border-dark-600">
+              <p className="text-center text-[10px] uppercase tracking-wider font-semibold text-gray-400 dark:text-gray-500 mb-3">
+                {isArabic ? 'معتمد وموثوق من' : 'Trusted & Certified'}
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                {complianceLogos.map((logo) => (
+                  <div
+                    key={logo.alt}
+                    className={`flex h-14 ${logo.cardClassName} items-center justify-center overflow-hidden rounded-xl border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-700 px-3 py-2`}
+                  >
+                    <img src={logo.src} alt={logo.alt} className={`max-h-full max-w-full object-contain ${logo.imageClassName}`} />
+                  </div>
+                ))}
               </div>
             </div>
-
-            {/* Tabby/Tamara info badge */}
-            {(paymentMethod === 'tabby' || paymentMethod === 'tamara') && (
-              <div className="mt-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/10 px-4 py-2.5 text-center text-xs text-emerald-700 dark:text-emerald-400 font-medium">
-                {paymentMethod === 'tabby'
-                  ? (isArabic ? 'قسّمها على 4 دفعات بدون فوائد مع تابي' : 'Split into 4 interest-free payments with Tabby')
-                  : (isArabic ? 'ادفع لاحقاً مع تمارا' : 'Pay later with Tamara')}
-              </div>
-            )}
-          </div>
-
-          {/* Error */}
-          {paymentError && (
-            <div className="mb-4 rounded-xl bg-red-50 dark:bg-red-900/20 px-4 py-3 text-xs text-red-600 dark:text-red-400 whitespace-pre-wrap break-all max-h-40 overflow-y-auto">
-              {paymentError}
-            </div>
-          )}
-
-          {/* CTA */}
-          <button
-            onClick={handleUpgrade}
-            disabled={paymentLoading}
-            className="flex w-full items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-[#0f3d2e] to-[#1a5d44] px-6 py-4 text-base font-bold text-white shadow-lg shadow-[#0f3d2e]/20 transition hover:shadow-xl hover:shadow-[#0f3d2e]/30 disabled:opacity-60"
-          >
-            {paymentLoading ? (
-              <>
-                <Loader2 className="h-5 w-5 animate-spin" />
-                {isArabic ? 'جاري المعالجة...' : 'Processing...'}
-              </>
-            ) : selectedPlan === 'enterprise' ? (
-              <>
-                <Crown className="h-5 w-5" />
-                {isArabic ? 'تواصل مع المبيعات' : 'Contact Sales'}
-              </>
-            ) : (
-              <>
-                <CreditCard className="h-5 w-5" />
-                {isArabic ? 'ادفع الآن' : 'Pay Now'}
-                <ArrowRight className="h-5 w-5" />
-              </>
-            )}
-          </button>
-
-          {/* Trust badges */}
-          <div className="mt-6 flex items-center justify-center gap-5 text-xs text-gray-400 dark:text-gray-500">
-            <span className="flex items-center gap-1.5">
-              <Shield className="h-3.5 w-3.5" />
-              {isArabic ? 'دفع آمن' : 'Secure'}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Zap className="h-3.5 w-3.5" />
-              {isArabic ? 'تفعيل فوري' : 'Instant access'}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Globe className="h-3.5 w-3.5" />
-              Visa, Mada, Apple Pay, Tabby, Tamara
-            </span>
           </div>
         </motion.div>
       </div>
