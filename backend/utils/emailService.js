@@ -457,6 +457,99 @@ export const sendInvoiceEmail = async ({ tenant, invoice, recipient, customerNam
   return { sent: true, to: recipients, language: preferredLanguage };
 };
 
+export const sendDemoWelcomeEmail = async ({ email, tenant, businessType, trialEndDate, preferredLanguage } = {}) => {
+  try {
+    const settings = await getGlobalSettings();
+    const config = resolveEmailConfig(settings, { allowEnvFallback: false });
+
+    if (!config.enabled) {
+      return { sent: false, reason: 'email_disabled' };
+    }
+
+    ensureEmailConfigured(config);
+
+    const recipients = dedupeRecipients(email);
+    if (recipients.length === 0) {
+      return { sent: false, reason: 'missing_recipient' };
+    }
+
+    const brandName = config.brandName;
+    const salesEmail = String(settings?.email?.salesEmail || config.replyTo || config.fromEmail || '').trim();
+    const loginUrl = 'https://maqder.com/login';
+    const trialEndStr = trialEndDate
+      ? new Date(trialEndDate).toLocaleDateString(preferredLanguage === 'ar' ? 'ar-SA' : 'en-GB')
+      : '';
+
+    const subject = preferredLanguage === 'ar'
+      ? `مرحباً بك في ${brandName} — تجربتك المجانية جاهزة!`
+      : `Welcome to ${brandName} — Your Free Trial is Ready!`;
+
+    const bodyEn = `Hello,
+
+Welcome to ${brandName}! Your 7-day free demo account has been created successfully.
+
+Here are your account details:
+• Login URL: ${loginUrl}
+• Email: ${email}
+• Business Type: ${businessType}
+• Trial Expires: ${trialEndStr}
+
+During your trial, you'll have full access to all features. If you have any questions, our sales team is here to help — just reply to this email.
+
+Ready to upgrade? Click "Get Full Version" in your dashboard header to continue your journey with ${brandName}.
+
+Best regards,
+The ${brandName} Sales Team`;
+
+    const bodyAr = `مرحباً بك،
+
+تم إنشاء حسابك التجريبي المجاني لمدة 7 أيام في ${brandName} بنجاح.
+
+تفاصيل حسابك:
+• رابط الدخول: ${loginUrl}
+• البريد الإلكتروني: ${email}
+• نوع النشاط: ${businessType}
+• تنتهي التجربة في: ${trialEndStr}
+
+خلال فترة التجربة، سيكون لديك وصول كامل لجميع الميزات. إذا كان لديك أي أسئلة، فريق المبيعات لدينا جاهز لمساعدتك — فقط قم بالرد على هذا البريد.
+
+جاهز للترقية؟ اضغط على "احصل على النسخة الكاملة" في رأس لوحة التحكم لمتابعة رحلتك مع ${brandName}.
+
+مع تحيات،
+فريق مبيعات ${brandName}`;
+
+    const html = buildBilingualEmailShell({
+      brandName,
+      title: subject,
+      sections: [
+        {
+          title: `Welcome to ${brandName}`,
+          body: bodyEn,
+          dir: 'ltr',
+        },
+        {
+          title: `مرحباً بك في ${brandName}`,
+          body: bodyAr,
+          dir: 'rtl',
+        },
+      ],
+    });
+
+    await sendEmailWithConfig({
+      config,
+      to: recipients,
+      subject,
+      html,
+      replyTo: salesEmail || config.replyTo,
+    });
+
+    return { sent: true, to: recipients };
+  } catch (error) {
+    logger.error(`Failed to send demo welcome email: ${error.message}`);
+    return { sent: false, reason: 'send_failed', error: error.message };
+  }
+};
+
 export const maskEmailSecret = (value) => {
   if (!value) return '';
   const text = String(value);

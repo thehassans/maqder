@@ -28,6 +28,7 @@ import {
 } from 'lucide-react'
 import { usePublicWebsiteSettings } from '../../lib/website'
 import { SOLUTIONS } from '../../lib/solutionsContent'
+import TrialSignup from '../../components/marketing/TrialSignup'
 
 const fade = {
   initial: { opacity: 0, y: 18 },
@@ -455,6 +456,27 @@ export default function MarketingHome() {
               )
             })}
           </div>
+        </div>
+      </section>
+
+      {/* ── TRIAL SIGNUP ── */}
+      <section className="bg-gradient-to-b from-slate-50 to-white py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-12 text-center">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-800">
+              <Sparkles className="h-4 w-4" />
+              {isArabic ? 'ØªØ¬Ø±Ø¨Ø© Ù…Ø¬Ø§Ù†ÙŠØ©' : 'Free Trial'}
+            </div>
+            <h2 className="text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
+              {isArabic ? 'Ø¬Ø±Ù‘Ø¨ Ø§Ù„Ù†Ø¸Ø§Ù… Ø¨Ù†ÙØ³Ùƒ Ù…Ø¬Ø§Ù†Ø§Ù‹' : 'Try It Yourself — Free'}
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-500">
+              {isArabic
+                ? 'Ø§Ø®ØªØ± Ù†ÙˆØ¹ Ù†Ø´Ø§Ø·Ùƒ ÙˆØ£Ø¯Ø®Ù„ Ø¨Ø±ÙŠØ¯ Gmail Ù„Ø¥Ù†Ø´Ø§Ø¡ Ø­Ø³Ø§Ø¨ ØªØ¬Ø±ÙŠØ¨ÙŠ ÙƒØ§Ù…Ù„ Ù„Ù…Ø¯Ø© 7 Ø£ÙŠØ§Ù….'
+                : 'Select your business type and enter your Gmail to create a full demo account for 7 days.'}
+            </p>
+          </div>
+          <TrialSignup />
         </div>
       </section>
 

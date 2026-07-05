@@ -158,6 +158,15 @@ const systemSettingsSchema = new mongoose.Schema({
   },
   xssProtection: { type: Boolean, default: true },
   mongoSanitize: { type: Boolean, default: true },
+  payment: {
+    moyasar: {
+      enabled: { type: Boolean, default: false },
+      publishableKey: { type: String, default: '' },
+      secretKey: { type: String, default: '' },
+      webhookSecret: { type: String, default: '' },
+      environment: { type: String, enum: ['test', 'live'], default: 'test' },
+    },
+  },
 }, {
   timestamps: true
 });

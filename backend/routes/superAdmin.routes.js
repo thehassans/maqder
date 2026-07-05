@@ -28,6 +28,7 @@ import LeadQuery from '../models/LeadQuery.js';
 import Quotation from '../models/Quotation.js';
 import DeliveryNote from '../models/DeliveryNote.js';
 import ReportSchedule from '../models/ReportSchedule.js';
+import DemoUser from '../models/DemoUser.js';
 import IoTDevice from '../models/IoTDevice.js';
 import IoTReading from '../models/IoTReading.js';
 import {
@@ -2323,6 +2324,183 @@ router.post('/leads/:id/send-demo', async (req, res) => {
   } catch (error) {
     console.error('[Send Demo] Error:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// ── Demo Users ─────────────────────────────────────────────────────────────────
+
+// @route   GET /api/super-admin/demo-users
+router.get('/demo-users', async (req, res) => {
+  try {
+    const { page = 1, limit = 20, search, status, businessType } = req.query;
+    const parsedPage = Number.parseInt(page, 10);
+    const parsedLimit = Number.parseInt(limit, 10);
+    const safePage = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+    const safeLimit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? Math.min(parsedLimit, 100) : 20;
+
+    const query = {};
+    if (status === 'upgraded') query.isUpgraded = true;
+    if (status === 'trial') query.isUpgraded = false;
+    if (businessType) query.businessType = businessType;
+    if (search) {
+      query.$or = [
+        { email: { $regex: String(search).trim(), $options: 'i' } },
+      ];
+    }
+
+    const demoUsers = await DemoUser.find(query)
+      .sort({ createdAt: -1 })
+      .skip((safePage - 1) * safeLimit)
+      .limit(safeLimit)
+      .populate('tenantId', 'name slug isActive isDemo demoTrialEndsAt demoUpgraded subscription')
+      .lean();
+
+    const total = await DemoUser.countDocuments(query);
+
+    res.json({
+      demoUsers,
+      pagination: { page: safePage, limit: safeLimit, total, pages: Math.ceil(total / safeLimit) },
+    });
+  } catch (error) {
+    sendRouteError(res, error);
+  }
+});
+
+// @route   GET /api/super-admin/demo-users/stats
+router.get('/demo-users/stats', async (req, res) => {
+  try {
+    const stats = await Promise.all([
+      DemoUser.countDocuments(),
+      DemoUser.countDocuments({ isUpgraded: false }),
+      DemoUser.countDocuments({ isUpgraded: true }),
+    ]);
+
+    const byBusinessType = await DemoUser.aggregate([
+      { $group: { _id: '$businessType', count: { $sum: 1 } } },
+    ]);
+
+    res.json({
+      total: stats[0],
+      trial: stats[1],
+      upgraded: stats[2],
+      byBusinessType,
+    });
+  } catch (error) {
+    sendRouteError(res, error);
+  }
+});
+
+// ── Payment Gateway Settings ───────────────────────────────────────────────────
+
+// @route   GET /api/super-admin/settings/payment
+router.get('/settings/payment', async (req, res) => {
+  try {
+    const settings = await getGlobalSettings();
+    const payment = settings?.payment?.toObject?.() || settings?.payment || {};
+    const moyasar = payment?.moyasar || {};
+
+    res.json({
+      payment: {
+        moyasar: {
+          enabled: moyasar.enabled === true,
+          publishableKey: moyasar.publishableKey || '',
+          hasSecretKey: !!moyasar.secretKey,
+          secretKeyMasked: maskSecret(moyasar.secretKey),
+          hasWebhookSecret: !!moyasar.webhookSecret,
+          webhookSecretMasked: maskSecret(moyasar.webhookSecret),
+          environment: moyasar.environment || 'test',
+        },
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   PUT /api/super-admin/settings/payment
+router.put('/settings/payment', async (req, res) => {
+  try {
+    const payload = req.body?.payment || req.body || {};
+    const moyasarPayload = payload?.moyasar || {};
+
+    const settings = await getGlobalSettings();
+    const currentPayment = settings?.payment?.toObject?.() || settings?.payment || {};
+    const currentMoyasar = currentPayment?.moyasar || {};
+
+    const nextMoyasar = {
+      enabled: moyasarPayload.enabled !== undefined ? moyasarPayload.enabled === true : currentMoyasar.enabled,
+      publishableKey: String(moyasarPayload.publishableKey || currentMoyasar.publishableKey || '').trim(),
+      environment: moyasarPayload.environment || currentMoyasar.environment || 'test',
+    };
+
+    if (moyasarPayload.secretKey !== undefined) {
+      const trimmed = String(moyasarPayload.secretKey || '').trim();
+      nextMoyasar.secretKey = trimmed || currentMoyasar.secretKey || '';
+    } else {
+      nextMoyasar.secretKey = currentMoyasar.secretKey || '';
+    }
+
+    if (moyasarPayload.webhookSecret !== undefined) {
+      const trimmed = String(moyasarPayload.webhookSecret || '').trim();
+      nextMoyasar.webhookSecret = trimmed || currentMoyasar.webhookSecret || '';
+    } else {
+      nextMoyasar.webhookSecret = currentMoyasar.webhookSecret || '';
+    }
+
+    settings.payment = { moyasar: nextMoyasar };
+    settings.markModified('payment');
+    await settings.save();
+
+    res.json({
+      payment: {
+        moyasar: {
+          enabled: nextMoyasar.enabled,
+          publishableKey: nextMoyasar.publishableKey,
+          hasSecretKey: !!nextMoyasar.secretKey,
+          secretKeyMasked: maskSecret(nextMoyasar.secretKey),
+          hasWebhookSecret: !!nextMoyasar.webhookSecret,
+          webhookSecretMasked: maskSecret(nextMoyasar.webhookSecret),
+          environment: nextMoyasar.environment,
+        },
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   POST /api/super-admin/demo-users/:id/upgrade
+router.post('/demo-users/:id/upgrade', async (req, res) => {
+  try {
+    const { plan = 'professional', billingCycle = 'monthly' } = req.body;
+
+    const demoUser = await DemoUser.findById(req.params.id);
+    if (!demoUser) {
+      return res.status(404).json({ error: 'Demo user not found' });
+    }
+
+    const now = new Date();
+    const endDate = new Date(now.getTime() + (billingCycle === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000);
+
+    await Tenant.findByIdAndUpdate(demoUser.tenantId, {
+      isDemo: false,
+      demoUpgraded: true,
+      'subscription.plan': plan,
+      'subscription.status': 'active',
+      'subscription.startDate': now,
+      'subscription.endDate': endDate,
+      'subscription.billingCycle': billingCycle,
+    });
+
+    demoUser.isUpgraded = true;
+    demoUser.upgradedAt = now;
+    demoUser.plan = plan;
+    demoUser.billingCycle = billingCycle;
+    await demoUser.save();
+
+    res.json({ success: true, demoUser });
+  } catch (error) {
+    sendRouteError(res, error);
   }
 });
 

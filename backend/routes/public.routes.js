@@ -5,6 +5,9 @@ import User from '../models/User.js'
 import SystemSettings from '../models/SystemSettings.js'
 import RestaurantMenuItem from '../models/RestaurantMenuItem.js'
 import SaloonService from '../models/SaloonService.js'
+import DemoUser from '../models/DemoUser.js'
+import { sendDemoWelcomeEmail } from '../utils/emailService.js'
+import { normalizeBusinessTypes, BUSINESS_TYPES } from '../utils/businessTypes.js'
 
 const router = express.Router()
 const parsedDatabaseQueryTimeoutMs = Number(process.env.MONGODB_QUERY_TIMEOUT_MS || 10000)
@@ -137,6 +140,9 @@ router.get('/website', async (req, res) => {
     const settings = await getGlobalSettings()
     const website = mergeWebsiteDefaults(settings.website)
 
+    const payment = settings?.payment?.toObject?.() || settings?.payment || {}
+    const moyasar = payment?.moyasar || {}
+
     res.json({
       ...website,
       demo: {
@@ -145,6 +151,8 @@ router.get('/website', async (req, res) => {
         email: website?.demo?.email || 'demo@maqder.com',
         hasPassword: !!website?.demo?.password,
         passwordMasked: maskSecret(website?.demo?.password),
+        moyasarEnabled: moyasar.enabled === true,
+        moyasarPublishableKey: moyasar.publishableKey || '',
       },
     })
   } catch (error) {
@@ -248,6 +256,145 @@ router.post('/demo-login', async (req, res) => {
       },
     })
   } catch (error) {
+    sendRouteError(res, error)
+  }
+})
+
+router.post('/demo-signup', async (req, res) => {
+  try {
+    const databaseReady = await req.app.locals.waitForDatabaseReady?.()
+    if (!databaseReady) {
+      return res.status(503).json({ error: 'Service temporarily unavailable. Please try again in a moment.' })
+    }
+
+    const { email, businessType } = req.body
+
+    const normalizedEmail = String(email || '').trim().toLowerCase()
+    if (!normalizedEmail) {
+      return res.status(400).json({ error: 'Email is required' })
+    }
+
+    if (!normalizedEmail.endsWith('@gmail.com')) {
+      return res.status(400).json({ error: 'Please use a Gmail address to sign up for a demo' })
+    }
+
+    const normalizedBusinessTypes = normalizeBusinessTypes(businessType)
+    if (normalizedBusinessTypes.length === 0) {
+      return res.status(400).json({ error: 'Valid business type is required' })
+    }
+    const primaryBusinessType = normalizedBusinessTypes[0]
+
+    const existingDemo = await DemoUser.findOne({ email: normalizedEmail })
+    if (existingDemo) {
+      return res.status(409).json({
+        error: 'A demo account already exists for this email',
+        existingDemo: true,
+        tenantSlug: existingDemo.tenantId ? String(existingDemo.tenantId) : null,
+      })
+    }
+
+    const trialStartDate = new Date()
+    const trialEndDate = new Date(trialStartDate.getTime() + 7 * 24 * 60 * 60 * 1000)
+
+    const slugBase = `demo-${normalizedEmail.replace(/[^a-z0-9]/g, '').slice(0, 15)}-${Date.now().toString(36)}`
+    const password = `Demo${Date.now().toString(36).slice(-6)}@`
+
+    const tenant = await Tenant.create({
+      name: `Demo - ${normalizedEmail}`,
+      slug: slugBase,
+      businessType: primaryBusinessType,
+      businessTypes: normalizedBusinessTypes,
+      business: {
+        legalNameAr: `عرض تجريبي - ${normalizedEmail}`,
+        legalNameEn: `Demo - ${normalizedEmail}`,
+        vatNumber: `DEMO-${Date.now()}`,
+        crNumber: `CR-${Date.now()}`,
+        contactEmail: normalizedEmail,
+      },
+      subscription: {
+        plan: 'trial',
+        status: 'active',
+        startDate: trialStartDate,
+        endDate: trialEndDate,
+        maxUsers: 10,
+        maxInvoices: 500,
+        billingCycle: 'monthly',
+        price: 0,
+      },
+      isDemo: true,
+      demoEmail: normalizedEmail,
+      demoTrialEndsAt: trialEndDate,
+      demoUpgraded: false,
+      isActive: true,
+    })
+
+    const user = await User.create({
+      email: normalizedEmail,
+      password,
+      firstName: 'Demo',
+      lastName: 'User',
+      firstNameAr: 'تجريبي',
+      lastNameAr: 'مستخدم',
+      tenantId: tenant._id,
+      role: 'admin',
+      isActive: true,
+    })
+
+    const demoUser = await DemoUser.create({
+      email: normalizedEmail,
+      tenantId: tenant._id,
+      businessType: primaryBusinessType,
+      businessTypes: normalizedBusinessTypes,
+      trialStartDate,
+      trialEndDate,
+      isActive: true,
+    })
+
+    const welcomeEmail = await sendDemoWelcomeEmail({
+      email: normalizedEmail,
+      tenant,
+      businessType: primaryBusinessType,
+      trialEndDate,
+      preferredLanguage: 'en',
+    })
+
+    const token = generateToken(user._id)
+
+    res.status(201).json({
+      token,
+      message: 'Demo account created successfully',
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        firstNameAr: user.firstNameAr,
+        lastNameAr: user.lastNameAr,
+        role: user.role,
+        permissions: user.permissions,
+        preferences: user.preferences,
+        avatar: user.avatar,
+      },
+      tenant: {
+        _id: tenant._id,
+        name: tenant.name,
+        slug: tenant.slug,
+        businessType: tenant.businessType,
+        businessTypes: tenant.businessTypes,
+        business: tenant.business,
+        settings: tenant.settings,
+        branding: tenant.branding,
+        subscription: tenant.subscription,
+        isDemo: tenant.isDemo,
+        demoTrialEndsAt: tenant.demoTrialEndsAt,
+        demoUpgraded: tenant.demoUpgraded,
+      },
+      welcomeEmail,
+    })
+  } catch (error) {
+    if (error?.code === 11000) {
+      return res.status(409).json({ error: 'A demo account already exists for this email' })
+    }
     sendRouteError(res, error)
   }
 })

@@ -17,7 +17,9 @@ import {
   HelpCircle,
   Store,
   ChevronDown,
-  Monitor
+  Monitor,
+  CreditCard,
+  Crown
 } from 'lucide-react'
 import { logout } from '../store/slices/authSlice'
 import { setTheme, setLanguage } from '../store/slices/uiSlice'
@@ -40,6 +42,8 @@ export default function SuperAdminLayout() {
   ]
 
   const moreNavItems = [
+    { path: '/super-admin/demo-users', icon: Crown, label: language === 'ar' ? 'مستخدمو التجربة' : 'Demo Users' },
+    { path: '/super-admin/payment-settings', icon: CreditCard, label: language === 'ar' ? 'إعدادات الدفع' : 'Payment Settings' },
     { path: '/super-admin/website', icon: Globe, label: t('websiteSettings') },
     { path: '/super-admin/email', icon: Mail, label: t('email') },
     { path: '/super-admin/mailbox', icon: Inbox, label: t('mailbox') },

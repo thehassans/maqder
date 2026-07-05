@@ -82,6 +82,17 @@ export const demoLogin = createAsyncThunk('auth/demoLogin', async (_, { rejectWi
   }
 })
 
+export const demoSignup = createAsyncThunk('auth/demoSignup', async ({ email, businessType }, { rejectWithValue }) => {
+  try {
+    const { data } = await api.post('/public/demo-signup', { email, businessType })
+    localStorage.setItem('token', data.token)
+    persistAuthSnapshot(data)
+    return data
+  } catch (error) {
+    return rejectWithValue(error.userMessage || error.response?.data?.error || 'Demo signup failed')
+  }
+})
+
 export const getMe = createAsyncThunk(
   'auth/getMe',
   async (_, { rejectWithValue }) => {
@@ -161,6 +172,21 @@ const authSlice = createSlice({
         state.token = action.payload.token
       })
       .addCase(demoLogin.rejected, (state, action) => {
+        state.isLoading = false
+        state.error = action.payload
+      })
+      .addCase(demoSignup.pending, (state) => {
+        state.isLoading = true
+        state.error = null
+      })
+      .addCase(demoSignup.fulfilled, (state, action) => {
+        state.isLoading = false
+        state.isAuthenticated = true
+        state.user = action.payload.user
+        state.tenant = action.payload.tenant
+        state.token = action.payload.token
+      })
+      .addCase(demoSignup.rejected, (state, action) => {
         state.isLoading = false
         state.error = action.payload
       })

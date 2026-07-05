@@ -224,6 +224,9 @@ const EmailSettings = lazy(() => import('./pages/super-admin/EmailSettings'))
 const SuperAdminMailbox = lazy(() => import('./pages/super-admin/SuperAdminMailbox'))
 const SuperAdminWhatsApp = lazy(() => import('./pages/super-admin/SuperAdminWhatsApp'))
 const WebsiteSettings = lazy(() => import('./pages/super-admin/WebsiteSettings'))
+const DemoUsers = lazy(() => import('./pages/super-admin/DemoUsers'))
+const PaymentSettings = lazy(() => import('./pages/super-admin/PaymentSettings'))
+const PaymentResult = lazy(() => import('./pages/PaymentResult'))
 const ResellerManagement = lazy(() => import('./pages/super-admin/ResellerManagement'))
 const ResellerDashboard = lazy(() => import('./pages/reseller/ResellerDashboard'))
 const ResellerTenants = lazy(() => import('./pages/reseller/ResellerTenants'))
@@ -395,6 +398,7 @@ function App() {
       {/* Public Application Routes */}
       <Route path="/public/menu" element={<Suspense fallback={<LoadingScreen />}><PublicMenu /></Suspense>} />
       <Route path="/public/services" element={<Suspense fallback={<LoadingScreen />}><PublicServices /></Suspense>} />
+      <Route path="/payment-result" element={<Suspense fallback={<LoadingScreen />}><PaymentResult /></Suspense>} />
 
       {/* Auth Routes */}
       <Route element={<Suspense fallback={<LoadingScreen />}><AuthLayout /></Suspense>}>
@@ -451,6 +455,8 @@ function App() {
           <Route path="queries" element={<QueriesCRM />} />
         <Route path="resellers" element={<ResellerManagement />} />
         <Route path="website" element={<WebsiteSettings />} />
+        <Route path="demo-users" element={<DemoUsers />} />
+        <Route path="payment-settings" element={<PaymentSettings />} />
         <Route path="email" element={<EmailSettings />} />
         <Route path="mailbox" element={<SuperAdminMailbox />} />
         <Route path="whatsapp" element={<SuperAdminWhatsApp />} />

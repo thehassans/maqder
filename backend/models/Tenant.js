@@ -560,6 +560,10 @@ const tenantSchema = new mongoose.Schema({
     sidebarStyle: { type: String, enum: ['glass', 'solid'], default: 'solid' }
   },
   isActive: { type: Boolean, default: true },
+  isDemo: { type: Boolean, default: false, index: true },
+  demoEmail: { type: String, default: '', index: true },
+  demoTrialEndsAt: { type: Date, default: null },
+  demoUpgraded: { type: Boolean, default: false },
   resellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Reseller', default: null, index: true },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, {

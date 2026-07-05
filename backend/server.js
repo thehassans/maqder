@@ -59,6 +59,7 @@ import tenantComplianceRoutes from './routes/tenantCompliance.routes.js';
 import superAdminZatcaRoutes from './routes/superAdminZatca.routes.js';
 import resellerRoutes from './routes/reseller.routes.js';
 import resellerPanelRoutes from './routes/resellerPanel.routes.js';
+import paymentRoutes from './routes/payment.routes.js';
 import rentalCarRoutes from './routes/rentalCar.routes.js';
 import rentalCustomerRoutes from './routes/rentalCustomer.routes.js';
 import rentalContractRoutes from './routes/rentalContract.routes.js';
@@ -446,6 +447,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
 // API Routes
 app.use('/api/public', publicRoutes);
+app.use('/api/payments', paymentRoutes);
 app.use('/api/webhooks', ensureDatabaseReady, webhookRoutes);
 app.use('/api/webhooks/zatca', ensureDatabaseReady, zatcaWebhookRoutes);
 app.use('/api/auth', ensureDatabaseReady, authRoutes);
