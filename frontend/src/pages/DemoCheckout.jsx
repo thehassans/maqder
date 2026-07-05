@@ -95,6 +95,8 @@ export default function DemoCheckout() {
     }
   }, [isDemo, isUpgraded, navigate])
 
+  const primaryBusinessType = getPrimaryBusinessType(tenant)
+
   useEffect(() => {
     let cancelled = false
     setSettingsLoading(true)
@@ -110,8 +112,6 @@ export default function DemoCheckout() {
       })
     return () => { cancelled = true }
   }, [primaryBusinessType])
-
-  const primaryBusinessType = getPrimaryBusinessType(tenant)
 
   const plans = useMemo(() => {
     const configured = websiteSettings?.pricing?.plans
