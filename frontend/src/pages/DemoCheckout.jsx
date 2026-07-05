@@ -135,7 +135,7 @@ export default function DemoCheckout() {
   const amount = selectedBilling === 'yearly' ? selectedPlanObj.priceYearly : selectedPlanObj.priceMonthly
   const currency = websiteSettings?.pricing?.currency || 'SAR'
   const isZatcaPhase2 = tenant?.zatca?.phase === 2
-  const zatcaAddon = isZatcaPhase2 ? 400 : 0
+  const zatcaAddon = isZatcaPhase2 ? (selectedBilling === 'yearly' ? 400 : 50) : 0
   const totalAmount = amount + zatcaAddon
 
   const handleUpgrade = async () => {
