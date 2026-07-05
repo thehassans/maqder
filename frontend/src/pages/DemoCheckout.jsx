@@ -83,6 +83,7 @@ export default function DemoCheckout() {
   const [mounted, setMounted] = useState(false)
   const [websiteSettings, setWebsiteSettings] = useState(null)
   const [settingsLoading, setSettingsLoading] = useState(true)
+  const [zatcaPhase2Enabled, setZatcaPhase2Enabled] = useState(tenant?.zatca?.phase === 2 || false)
 
   const isDemo = tenant?.isDemo === true
   const isUpgraded = tenant?.demoUpgraded === true
@@ -134,8 +135,7 @@ export default function DemoCheckout() {
   const selectedPlanObj = plans.find((p) => p.id === selectedPlan) || plans[1]
   const amount = selectedBilling === 'yearly' ? selectedPlanObj.priceYearly : selectedPlanObj.priceMonthly
   const currency = websiteSettings?.pricing?.currency || 'SAR'
-  const isZatcaPhase2 = tenant?.zatca?.phase === 2
-  const zatcaAddon = isZatcaPhase2 ? (selectedBilling === 'yearly' ? 400 : 50) : 0
+  const zatcaAddon = zatcaPhase2Enabled ? (selectedBilling === 'yearly' ? 400 : 50) : 0
   const totalAmount = amount + zatcaAddon
 
   const handleUpgrade = async () => {
@@ -377,6 +377,39 @@ export default function DemoCheckout() {
               </div>
             )}
 
+            {/* ZATCA Phase 2 toggle */}
+            {selectedPlan !== 'enterprise' && (
+              <div className="mb-6 flex items-center justify-between rounded-2xl bg-white dark:bg-dark-800 border border-gray-100 dark:border-dark-700 p-4 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400">
+                    <Shield className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-gray-900 dark:text-white">
+                      {isArabic ? 'تفعيل فاتورة المرحلة الثانية' : 'Enable ZATCA Phase 2'}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      {isArabic ? 'إضافة فاتورة + زكاة متوافقة' : 'Adds e-invoicing + ZATCA compliance'}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setZatcaPhase2Enabled((v) => !v)}
+                  className={`relative h-7 w-12 rounded-full transition-colors ${
+                    zatcaPhase2Enabled ? 'bg-[#0f3d2e]' : 'bg-gray-300 dark:bg-dark-600'
+                  }`}
+                  aria-label={isArabic ? 'تفعيل المرحلة الثانية' : 'Toggle ZATCA Phase 2'}
+                >
+                  <span
+                    className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-transform ${
+                      zatcaPhase2Enabled ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+            )}
+
             {/* Amount display */}
             {selectedPlan !== 'enterprise' && (
               <div className="mb-6 rounded-2xl bg-gradient-to-r from-emerald-50 via-white to-emerald-50 dark:from-emerald-900/10 dark:via-dark-700/30 dark:to-emerald-900/10 border border-emerald-100/60 dark:border-emerald-900/20 p-5">
@@ -394,7 +427,7 @@ export default function DemoCheckout() {
                     <span>{isArabic ? `خطة ${selectedPlanObj.nameAr}` : `${selectedPlanObj.nameEn} plan`}</span>
                     <span className="font-medium">{amount} {currency}</span>
                   </div>
-                  {isZatcaPhase2 && (
+                  {zatcaPhase2Enabled && (
                     <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-400">
                       <span className="flex items-center gap-1.5">
                         <Shield className="h-4 w-4" />
