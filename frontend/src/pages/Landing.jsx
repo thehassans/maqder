@@ -1101,8 +1101,8 @@ export default function Landing() {
             <div>
               <h4 className="text-white font-semibold mb-4">{isArabic ? 'Ù‚Ø§Ù†ÙˆÙ†ÙŠ' : 'Legal'}</h4>
               <ul className="space-y-3">
-                <li><a href="#" className="hover:text-white transition">{isArabic ? 'Ø³ÙŠØ§Ø³Ø© Ø§Ù„Ø®ØµÙˆØµÙŠØ©' : 'Privacy Policy'}</a></li>
-                <li><a href="#" className="hover:text-white transition">{isArabic ? 'Ø´Ø±ÙˆØ· Ø§Ù„Ø®Ø¯Ù…Ø©' : 'Terms of Service'}</a></li>
+                <li><a href="/privacy" className="hover:text-white transition">{isArabic ? 'Ø³ÙŠØ§Ø³Ø© Ø§Ù„Ø®ØµÙˆØµÙŠØ©' : 'Privacy Policy'}</a></li>
+                <li><a href="/terms" className="hover:text-white transition">{isArabic ? 'Ø´Ø±ÙˆØ· Ø§Ù„Ø®Ø¯Ù…Ø©' : 'Terms of Service'}</a></li>
               </ul>
             </div>
           </div>
