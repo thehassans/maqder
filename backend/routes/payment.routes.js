@@ -52,7 +52,8 @@ router.post('/create-payment', protect, async (req, res) => {
 
     const finalAmount = Math.round(Number(amount) * 100)
 
-    const callbackUrl = `${req.protocol}://${req.get('host')}/api/payments/callback`
+    const frontendUrls = (process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`).split(',')[0].trim()
+    const callbackUrl = `${frontendUrls.replace(/\/$/, '')}/api/payments/callback`
 
     const response = await fetch(`${MOYASAR_API_BASE}/v1/payments`, {
       method: 'POST',
@@ -80,7 +81,8 @@ router.post('/create-payment', protect, async (req, res) => {
     const paymentData = await response.json()
 
     if (!response.ok) {
-      return res.status(400).json({ error: paymentData?.message || 'Failed to create payment' })
+      console.error('[Moyasar] Payment creation failed:', response.status, JSON.stringify(paymentData))
+      return res.status(400).json({ error: paymentData?.message || 'Failed to create payment', details: paymentData })
     }
 
     res.json({
