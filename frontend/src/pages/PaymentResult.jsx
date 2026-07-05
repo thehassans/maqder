@@ -17,9 +17,38 @@ export default function PaymentResult() {
 
   const paymentId = searchParams.get('id')
   const paymentStatus = searchParams.get('status')
+  const tenantId = searchParams.get('tenantId')
 
   useEffect(() => {
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
     const checkPayment = async () => {
+      if (paymentStatus === 'failed' || paymentStatus === 'canceled') {
+        setStatus('failed')
+        setMessage(paymentStatus === 'failed' ? 'Payment failed. Please try again.' : 'Payment was canceled.')
+        return
+      }
+
+      // Invoice-based flow: no payment ID is returned, only the tenant ID.
+      // Poll tenant-status briefly since the webhook may take a moment to land.
+      if (tenantId) {
+        for (let attempt = 0; attempt < 8; attempt++) {
+          try {
+            const { data } = await api.get(`/payments/tenant-status/${tenantId}`)
+            if (data.demoUpgraded) {
+              await dispatch(getMe())
+              setStatus('success')
+              return
+            }
+          } catch {
+            // ignore and retry
+          }
+          await sleep(1500)
+        }
+        setStatus('pending')
+        return
+      }
+
       if (!paymentId) {
         setStatus('error')
         setMessage('No payment ID provided')
@@ -34,12 +63,6 @@ export default function PaymentResult() {
         } catch {
           setStatus('success')
         }
-        return
-      }
-
-      if (paymentStatus === 'failed' || paymentStatus === 'canceled') {
-        setStatus('failed')
-        setMessage(paymentStatus === 'failed' ? 'Payment failed. Please try again.' : 'Payment was canceled.')
         return
       }
 
@@ -61,7 +84,7 @@ export default function PaymentResult() {
     }
 
     checkPayment()
-  }, [paymentId, paymentStatus, dispatch])
+  }, [paymentId, paymentStatus, tenantId, dispatch])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-100 via-slate-50 to-slate-100 dark:from-dark-900 dark:via-dark-850 dark:to-dark-900 flex items-center justify-center p-4">

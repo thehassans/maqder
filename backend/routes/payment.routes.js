@@ -22,8 +22,51 @@ const getMoyasarConfig = async () => {
 
 const MOYASAR_API_BASE = 'https://api.moyasar.com'
 
+const applyTenantUpgrade = async ({ tenantId, demoEmail, plan, billingCycle, amountHalalas, currency, paymentId }) => {
+  if (!tenantId) return
+
+  const now = new Date()
+  const endDate = new Date(now.getTime() + (billingCycle === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000)
+
+  await Tenant.findByIdAndUpdate(tenantId, {
+    isDemo: false,
+    demoUpgraded: true,
+    'subscription.plan': plan,
+    'subscription.status': 'active',
+    'subscription.startDate': now,
+    'subscription.endDate': endDate,
+    'subscription.billingCycle': billingCycle,
+    'subscription.price': Number(amountHalalas) / 100,
+  })
+
+  if (demoEmail) {
+    await DemoUser.findOneAndUpdate(
+      { email: demoEmail },
+      {
+        isUpgraded: true,
+        upgradedAt: now,
+        paymentId,
+        amount: Number(amountHalalas) / 100,
+        currency,
+        plan,
+        billingCycle,
+      }
+    )
+  }
+
+  const upgradedTenant = await Tenant.findById(tenantId).lean()
+  sendUpgradeWelcomeEmail({
+    email: demoEmail || upgradedTenant?.demoEmail || '',
+    tenant: upgradedTenant,
+    plan,
+    billingCycle,
+    amount: Number(amountHalalas) / 100,
+    currency,
+  }).catch(() => {})
+}
+
 // @route   POST /api/payments/create-payment
-// @desc    Create a Moyasar payment intent for demo user upgrade
+// @desc    Create a Moyasar hosted invoice for demo user upgrade
 // @access  Private (demo users only)
 router.post('/create-payment', protect, async (req, res) => {
   try {
@@ -39,16 +82,13 @@ router.post('/create-payment', protect, async (req, res) => {
     }
 
     const config = await getMoyasarConfig()
-    if (!config.enabled || !config.publishableKey) {
-      return res.status(400).json({ error: 'Payment gateway is not configured (missing publishable key)' })
+    if (!config.enabled || !config.secretKey) {
+      return res.status(400).json({ error: 'Payment gateway is not configured' })
     }
 
     if (paymentMethod === 'stcpay') {
       return res.status(400).json({ error: 'STC Pay integration is coming soon. Please use Credit Card or Apple Pay.' })
     }
-
-    const allowedMethods = ['creditcard', 'applepay']
-    const sourceType = allowedMethods.includes(paymentMethod) ? paymentMethod : 'creditcard'
 
     const finalAmount = Math.round(Number(amount) * 100)
 
@@ -56,17 +96,18 @@ router.post('/create-payment', protect, async (req, res) => {
       return res.status(400).json({ error: `Invalid amount: ${amount} (converted to ${finalAmount} halalas)` })
     }
 
-    const frontendUrls = (process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`).split(',')[0].trim()
-    const callbackUrl = `${frontendUrls.replace(/\/$/, '')}/api/payments/callback`
+    const frontendUrl = (process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`).split(',')[0].trim().replace(/\/$/, '')
+    const callbackUrl = `${frontendUrl}/api/payments/invoice-webhook`
+    const successUrl = `${frontendUrl}/payment-result?status=paid&tenantId=${tenant._id}`
+    const backUrl = `${frontendUrl}/demo-checkout`
 
     const requestBody = {
       amount: finalAmount,
       currency,
       description: `Maqder ERP - ${plan} plan (${billingCycle}) upgrade for ${tenant.demoEmail || tenant.name}`,
       callback_url: callbackUrl,
-      source: {
-        type: sourceType,
-      },
+      success_url: successUrl,
+      back_url: backUrl,
       metadata: {
         tenantId: String(tenant._id),
         demoEmail: tenant.demoEmail || '',
@@ -75,44 +116,63 @@ router.post('/create-payment', protect, async (req, res) => {
       },
     }
 
-    console.log('[Moyasar] Creating payment with publishable key:', config.publishableKey?.slice(0, 10))
-
-    const response = await fetch(`${MOYASAR_API_BASE}/v1/payments`, {
+    const response = await fetch(`${MOYASAR_API_BASE}/v1/invoices`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Basic ${Buffer.from(config.publishableKey.trim() + ':').toString('base64')}`,
+        'Authorization': `Basic ${Buffer.from(config.secretKey.trim() + ':').toString('base64')}`,
       },
       body: JSON.stringify(requestBody),
     })
 
-    const paymentData = await response.json()
+    const invoiceData = await response.json()
 
     if (!response.ok) {
-      console.error('[Moyasar] Payment creation failed:', response.status, JSON.stringify(paymentData))
-      console.error('[Moyasar] Request was:', JSON.stringify(requestBody))
+      console.error('[Moyasar] Invoice creation failed:', response.status, JSON.stringify(invoiceData))
       return res.status(400).json({
-        error: paymentData?.message || 'Failed to create payment',
-        moyasarError: paymentData,
-        requestBody,
+        error: invoiceData?.message || 'Failed to create invoice',
+        moyasarError: invoiceData,
       })
     }
 
     res.json({
-      id: paymentData.id,
-      status: paymentData.status,
-      amount: paymentData.amount,
-      currency: paymentData.currency,
-      source: paymentData.source,
-      callbackUrl,
+      id: invoiceData.id,
+      status: invoiceData.status,
+      url: invoiceData.url,
     })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
 })
 
+// @route   POST /api/payments/invoice-webhook
+// @desc    Moyasar invoice webhook — invoked with the invoice object when paid
+// @access  Public
+router.post('/invoice-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  try {
+    const invoice = JSON.parse(req.body.toString())
+
+    if (invoice?.status === 'paid') {
+      await applyTenantUpgrade({
+        tenantId: invoice?.metadata?.tenantId,
+        demoEmail: invoice?.metadata?.demoEmail,
+        plan: invoice?.metadata?.plan || 'professional',
+        billingCycle: invoice?.metadata?.billingCycle || 'monthly',
+        amountHalalas: invoice.amount,
+        currency: invoice.currency,
+        paymentId: invoice.id,
+      })
+    }
+
+    res.status(200).json({ received: true })
+  } catch (error) {
+    console.error('[Moyasar] Invoice webhook error:', error.message)
+    res.status(500).json({ error: error.message })
+  }
+})
+
 // @route   GET /api/payments/callback
-// @desc    Moyasar payment callback - redirect to frontend
+// @desc    Legacy Moyasar payment callback - redirect to frontend
 // @access  Public
 router.get('/callback', async (req, res) => {
   const { id, status, tenantId } = req.query
@@ -187,6 +247,26 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
     }
 
     res.status(200).json({ received: true })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// @route   GET /api/payments/tenant-status/:tenantId
+// @desc    Check whether a tenant has been upgraded (used by the payment result page
+//          for the invoice-based flow, since the invoice ID isn't returned to the browser)
+// @access  Private
+router.get('/tenant-status/:tenantId', protect, async (req, res) => {
+  try {
+    const tenant = await Tenant.findById(req.params.tenantId).select('isDemo demoUpgraded subscription').lean()
+    if (!tenant) {
+      return res.status(404).json({ error: 'Tenant not found' })
+    }
+    res.json({
+      isDemo: tenant.isDemo,
+      demoUpgraded: tenant.demoUpgraded === true,
+      subscription: tenant.subscription,
+    })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }

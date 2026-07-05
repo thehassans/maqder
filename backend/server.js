@@ -342,14 +342,12 @@ app.use(helmet({
         "https://images.unsplash.com",
         "https://plus.unsplash.com",
         "https://picsum.photos",
-        "https://fastly.picsum.photos",
-        "https://cdn.moyasar.com"
+        "https://fastly.picsum.photos"
       ],
       'style-src': [
         "'self'",
         "'unsafe-inline'",
-        "https://fonts.googleapis.com",
-        "https://cdn.moyasar.com"
+        "https://fonts.googleapis.com"
       ],
       'font-src': [
         "'self'",
@@ -358,20 +356,16 @@ app.use(helmet({
       ],
       'script-src': [
         "'self'",
-        "https://cdn.moyasar.com",
         ...(allowCloudflareInsights ? ['https://static.cloudflareinsights.com'] : []),
       ],
       'script-src-elem': [
         "'self'",
-        "https://cdn.moyasar.com",
         ...(allowCloudflareInsights ? ['https://static.cloudflareinsights.com'] : []),
       ],
       'connect-src': [
         "'self'",
         "https://fonts.googleapis.com",
         "https://fonts.gstatic.com",
-        "https://api.moyasar.com",
-        "https://cdn.moyasar.com",
         ...(allowCloudflareInsights
           ? [
             'https://cloudflareinsights.com',
@@ -379,17 +373,6 @@ app.use(helmet({
             'https://static.cloudflareinsights.com',
           ]
           : []),
-      ],
-      'frame-src': [
-        "'self'",
-        "https://api.moyasar.com",
-        "https://checkout.moyasar.com",
-      ],
-      'style-src-elem': [
-        "'self'",
-        "'unsafe-inline'",
-        "https://fonts.googleapis.com",
-        "https://cdn.moyasar.com",
       ],
     },
   },
