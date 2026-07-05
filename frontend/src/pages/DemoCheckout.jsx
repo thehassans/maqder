@@ -96,7 +96,12 @@ export default function DemoCheckout() {
         setPaymentError(isArabic ? 'تعذر إنشاء عملية الدفع' : 'Could not initiate payment')
       }
     } catch (error) {
-      setPaymentError(error.response?.data?.error || (isArabic ? 'حدث خطأ' : 'An error occurred'))
+      const errData = error.response?.data || {}
+      console.error('[Checkout] Payment error:', errData)
+      const errMsg = errData.error || (isArabic ? 'حدث خطأ' : 'An error occurred')
+      const moyasarErr = errData.moyasarError ? `\n${JSON.stringify(errData.moyasarError)}` : ''
+      const reqBody = errData.requestBody ? `\nRequest: ${JSON.stringify(errData.requestBody)}` : ''
+      setPaymentError(errMsg + moyasarErr + reqBody)
     } finally {
       setPaymentLoading(false)
     }
@@ -354,7 +359,7 @@ export default function DemoCheckout() {
 
           {/* Error */}
           {paymentError && (
-            <div className="mb-4 rounded-xl bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-600 dark:text-red-400">
+            <div className="mb-4 rounded-xl bg-red-50 dark:bg-red-900/20 px-4 py-3 text-xs text-red-600 dark:text-red-400 whitespace-pre-wrap break-all max-h-40 overflow-y-auto">
               {paymentError}
             </div>
           )}

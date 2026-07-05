@@ -52,37 +52,50 @@ router.post('/create-payment', protect, async (req, res) => {
 
     const finalAmount = Math.round(Number(amount) * 100)
 
+    if (!finalAmount || finalAmount < 100) {
+      return res.status(400).json({ error: `Invalid amount: ${amount} (converted to ${finalAmount} halalas)` })
+    }
+
     const frontendUrls = (process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`).split(',')[0].trim()
     const callbackUrl = `${frontendUrls.replace(/\/$/, '')}/api/payments/callback`
+
+    const requestBody = {
+      amount: finalAmount,
+      currency,
+      description: `Maqder ERP - ${plan} plan (${billingCycle}) upgrade for ${tenant.demoEmail || tenant.name}`,
+      callback_url: callbackUrl,
+      source: {
+        type: sourceType,
+      },
+      metadata: {
+        tenantId: String(tenant._id),
+        demoEmail: tenant.demoEmail || '',
+        plan,
+        billingCycle,
+      },
+    }
+
+    console.log('[Moyasar] Creating payment:', JSON.stringify({ url: `${MOYASAR_API_BASE}/v1/payments`, body: requestBody, keyPrefix: config.secretKey?.slice(0, 6) }))
 
     const response = await fetch(`${MOYASAR_API_BASE}/v1/payments`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Basic ${Buffer.from(config.secretKey + ':').toString('base64')}`,
+        'Authorization': `Basic ${Buffer.from(config.secretKey.trim() + ':').toString('base64')}`,
       },
-      body: JSON.stringify({
-        amount: finalAmount,
-        currency,
-        description: `Maqder ERP - ${plan} plan (${billingCycle}) upgrade for ${tenant.demoEmail || tenant.name}`,
-        callback_url: callbackUrl,
-        source: {
-          type: sourceType,
-        },
-        metadata: {
-          tenantId: String(tenant._id),
-          demoEmail: tenant.demoEmail || '',
-          plan,
-          billingCycle,
-        },
-      }),
+      body: JSON.stringify(requestBody),
     })
 
     const paymentData = await response.json()
 
     if (!response.ok) {
       console.error('[Moyasar] Payment creation failed:', response.status, JSON.stringify(paymentData))
-      return res.status(400).json({ error: paymentData?.message || 'Failed to create payment', details: paymentData })
+      console.error('[Moyasar] Request was:', JSON.stringify(requestBody))
+      return res.status(400).json({
+        error: paymentData?.message || 'Failed to create payment',
+        moyasarError: paymentData,
+        requestBody,
+      })
     }
 
     res.json({
