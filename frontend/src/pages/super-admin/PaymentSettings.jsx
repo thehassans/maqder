@@ -12,10 +12,15 @@ export default function PaymentSettings() {
   const [moyasarForm, setMoyasarForm] = useState({ enabled: false, publishableKey: '', secretKey: '', webhookSecret: '', environment: 'test' })
   const [applePayForm, setApplePayForm] = useState({ enabled: false, merchantId: '', merchantCertificatePath: '', merchantCertificateKeyPath: '', environment: 'test' })
   const [stcPayForm, setStcPayForm] = useState({ enabled: false, merchantId: '', apiKey: '', environment: 'test' })
+  const [tabbyForm, setTabbyForm] = useState({ enabled: false, publicKey: '', secretKey: '', merchantCode: '', environment: 'test' })
+  const [tamaraForm, setTamaraForm] = useState({ enabled: false, apiToken: '', notificationToken: '', environment: 'test' })
 
   const [showSecret, setShowSecret] = useState(false)
   const [showWebhook, setShowWebhook] = useState(false)
   const [showStcKey, setShowStcKey] = useState(false)
+  const [showTabbyKey, setShowTabbyKey] = useState(false)
+  const [showTamaraToken, setShowTamaraToken] = useState(false)
+  const [showTamaraNotifToken, setShowTamaraNotifToken] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [testResult, setTestResult] = useState(null)
 
@@ -32,6 +37,10 @@ export default function PaymentSettings() {
       setApplePayForm({ enabled: a.enabled, merchantId: a.merchantId || '', merchantCertificatePath: a.merchantCertificatePath || '', merchantCertificateKeyPath: a.merchantCertificateKeyPath || '', environment: a.environment || 'test' })
       const s = data.payment.stcPay || {}
       setStcPayForm({ enabled: s.enabled, merchantId: s.merchantId || '', apiKey: '', environment: s.environment || 'test' })
+      const tb = data.payment.tabby || {}
+      setTabbyForm({ enabled: tb.enabled, publicKey: tb.publicKey || '', secretKey: '', merchantCode: tb.merchantCode || '', environment: tb.environment || 'test' })
+      const tm = data.payment.tamara || {}
+      setTamaraForm({ enabled: tm.enabled, apiToken: '', notificationToken: '', environment: tm.environment || 'test' })
     }
   }, [data])
 
@@ -49,10 +58,13 @@ export default function PaymentSettings() {
   })
 
   const handleSave = () => {
-    const payload = { moyasar: { ...moyasarForm }, applePay: { ...applePayForm }, stcPay: { ...stcPayForm } }
+    const payload = { moyasar: { ...moyasarForm }, applePay: { ...applePayForm }, stcPay: { ...stcPayForm }, tabby: { ...tabbyForm }, tamara: { ...tamaraForm } }
     if (!payload.moyasar.secretKey) delete payload.moyasar.secretKey
     if (!payload.moyasar.webhookSecret) delete payload.moyasar.webhookSecret
     if (!payload.stcPay.apiKey) delete payload.stcPay.apiKey
+    if (!payload.tabby.secretKey) delete payload.tabby.secretKey
+    if (!payload.tamara.apiToken) delete payload.tamara.apiToken
+    if (!payload.tamara.notificationToken) delete payload.tamara.notificationToken
     saveMutation.mutate({ payment: payload })
   }
 
@@ -75,6 +87,8 @@ export default function PaymentSettings() {
   const moyasar = data?.payment?.moyasar || {}
   const applePay = data?.payment?.applePay || {}
   const stcPay = data?.payment?.stcPay || {}
+  const tabby = data?.payment?.tabby || {}
+  const tamara = data?.payment?.tamara || {}
 
   const TestButton = ({ provider }) => (
     <button
@@ -276,6 +290,126 @@ export default function PaymentSettings() {
         </div>
 
         <TestResult provider="stcPay" />
+      </div>
+
+      {/* ── Tabby ── */}
+      <div className={cardCls}>
+        <div className="flex items-center justify-between border-b border-gray-200 dark:border-dark-700 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white dark:bg-white overflow-hidden ring-1 ring-gray-200">
+              <img src="/tabby.png" alt="Tabby" className="h-8 w-8 object-contain" />
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-900 dark:text-white">Tabby</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Buy now, pay later — split into 4 interest-free payments</p>
+            </div>
+          </div>
+          <TestButton provider="tabby" />
+        </div>
+
+        <div>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" checked={tabbyForm.enabled} onChange={(e) => setTabbyForm({ ...tabbyForm, enabled: e.target.checked })} className="h-5 w-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" />
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Enable Tabby</span>
+          </label>
+        </div>
+
+        <div>
+          <label className={labelCls}>Environment</label>
+          <select value={tabbyForm.environment} onChange={(e) => setTabbyForm({ ...tabbyForm, environment: e.target.value })} className={inputCls}>
+            <option value="test">Test (Sandbox)</option>
+            <option value="live">Live (Production)</option>
+          </select>
+        </div>
+
+        <div>
+          <label className={labelCls}>Merchant Code</label>
+          <input type="text" value={tabbyForm.merchantCode} onChange={(e) => setTabbyForm({ ...tabbyForm, merchantCode: e.target.value })} placeholder="Your Tabby merchant code" className={inputCls} />
+        </div>
+
+        <div>
+          <label className={labelCls}>Public Key</label>
+          <input type="text" value={tabbyForm.publicKey} onChange={(e) => setTabbyForm({ ...tabbyForm, publicKey: e.target.value })} placeholder="pk_test_..." className={inputCls} />
+        </div>
+
+        <div>
+          <label className={labelCls}>
+            Secret Key {tabby.hasSecretKey && <span className="text-xs text-gray-400">(currently set: {tabby.secretKeyMasked})</span>}
+          </label>
+          <div className="relative">
+            <input type={showTabbyKey ? 'text' : 'password'} value={tabbyForm.secretKey} onChange={(e) => setTabbyForm({ ...tabbyForm, secretKey: e.target.value })} placeholder={tabby.hasSecretKey ? '•••••••• (enter new to replace)' : 'sk_test_...'} className={`${inputCls} pr-10`} />
+            <button type="button" onClick={() => setShowTabbyKey(!showTabbyKey)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              {showTabbyKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
+
+        <div className="rounded-lg bg-gray-50 dark:bg-dark-700 p-3">
+          <p className="text-xs text-gray-500 dark:text-gray-400"><span className="font-semibold">Webhook URL:</span> POST /api/payments/tabby-webhook</p>
+        </div>
+
+        <TestResult provider="tabby" />
+      </div>
+
+      {/* ── Tamara ── */}
+      <div className={cardCls}>
+        <div className="flex items-center justify-between border-b border-gray-200 dark:border-dark-700 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white dark:bg-white overflow-hidden ring-1 ring-gray-200">
+              <img src="/tamara.webp" alt="Tamara" className="h-8 w-8 object-contain" />
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-900 dark:text-white">Tamara</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Buy now, pay later — Saudi-focused installment plans</p>
+            </div>
+          </div>
+          <TestButton provider="tamara" />
+        </div>
+
+        <div>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" checked={tamaraForm.enabled} onChange={(e) => setTamaraForm({ ...tamaraForm, enabled: e.target.checked })} className="h-5 w-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500" />
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Enable Tamara</span>
+          </label>
+        </div>
+
+        <div>
+          <label className={labelCls}>Environment</label>
+          <select value={tamaraForm.environment} onChange={(e) => setTamaraForm({ ...tamaraForm, environment: e.target.value })} className={inputCls}>
+            <option value="test">Test (Sandbox)</option>
+            <option value="live">Live (Production)</option>
+          </select>
+        </div>
+
+        <div>
+          <label className={labelCls}>
+            API Token {tamara.hasApiToken && <span className="text-xs text-gray-400">(currently set: {tamara.apiTokenMasked})</span>}
+          </label>
+          <div className="relative">
+            <input type={showTamaraToken ? 'text' : 'password'} value={tamaraForm.apiToken} onChange={(e) => setTamaraForm({ ...tamaraForm, apiToken: e.target.value })} placeholder={tamara.hasApiToken ? '•••••••• (enter new to replace)' : 'Enter Tamara API token'} className={`${inputCls} pr-10`} />
+            <button type="button" onClick={() => setShowTamaraToken(!showTamaraToken)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              {showTamaraToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label className={labelCls}>
+            Notification Token {tamara.hasNotificationToken && <span className="text-xs text-gray-400">(currently set: {tamara.notificationTokenMasked})</span>}
+          </label>
+          <div className="relative">
+            <input type={showTamaraNotifToken ? 'text' : 'password'} value={tamaraForm.notificationToken} onChange={(e) => setTamaraForm({ ...tamaraForm, notificationToken: e.target.value })} placeholder={tamara.hasNotificationToken ? '•••••••• (enter new to replace)' : 'Used to verify webhook notifications'} className={`${inputCls} pr-10`} />
+            <button type="button" onClick={() => setShowTamaraNotifToken(!showTamaraNotifToken)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              {showTamaraNotifToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
+
+        <div className="rounded-lg bg-gray-50 dark:bg-dark-700 p-3">
+          <p className="text-xs text-gray-500 dark:text-gray-400"><span className="font-semibold">Webhook URL:</span> POST /api/payments/tamara-webhook</p>
+        </div>
+
+        <TestResult provider="tamara" />
       </div>
 
       {/* ── Save Button ── */}

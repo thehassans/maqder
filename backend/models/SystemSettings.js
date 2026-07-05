@@ -179,6 +179,19 @@ const systemSettingsSchema = new mongoose.Schema({
       apiKey: { type: String, default: '' },
       environment: { type: String, enum: ['test', 'live'], default: 'test' },
     },
+    tabby: {
+      enabled: { type: Boolean, default: false },
+      publicKey: { type: String, default: '' },
+      secretKey: { type: String, default: '' },
+      merchantCode: { type: String, default: '' },
+      environment: { type: String, enum: ['test', 'live'], default: 'test' },
+    },
+    tamara: {
+      enabled: { type: Boolean, default: false },
+      apiToken: { type: String, default: '' },
+      notificationToken: { type: String, default: '' },
+      environment: { type: String, enum: ['test', 'live'], default: 'test' },
+    },
   },
 }, {
   timestamps: true

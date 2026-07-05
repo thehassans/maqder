@@ -22,6 +22,34 @@ const getMoyasarConfig = async () => {
 
 const MOYASAR_API_BASE = 'https://api.moyasar.com'
 
+const getTabbyConfig = async () => {
+  const settings = await SystemSettings.findOne({ key: 'global' })
+  const payment = settings?.payment?.toObject?.() || settings?.payment || {}
+  const tabby = payment?.tabby || {}
+  return {
+    enabled: tabby.enabled === true,
+    publicKey: tabby.publicKey || '',
+    secretKey: tabby.secretKey || '',
+    merchantCode: tabby.merchantCode || '',
+    environment: tabby.environment || 'test',
+  }
+}
+
+const getTamaraConfig = async () => {
+  const settings = await SystemSettings.findOne({ key: 'global' })
+  const payment = settings?.payment?.toObject?.() || settings?.payment || {}
+  const tamara = payment?.tamara || {}
+  return {
+    enabled: tamara.enabled === true,
+    apiToken: tamara.apiToken || '',
+    notificationToken: tamara.notificationToken || '',
+    environment: tamara.environment || 'test',
+  }
+}
+
+const TABBY_API_BASE = 'https://api.tabby.ai/api/v1'
+const TAMARA_API_BASE = (env) => env === 'live' ? 'https://api.tamara.co/api/v1' : 'https://api-sandbox.tamara.co/api/v1'
+
 const applyTenantUpgrade = async ({ tenantId, demoEmail, plan, billingCycle, amountHalalas, currency, paymentId }) => {
   if (!tenantId) return
 
@@ -96,10 +124,147 @@ router.post('/create-payment', protect, async (req, res) => {
       return res.status(400).json({ error: `Invalid amount: ${amount} (converted to ${finalAmount} halalas)` })
     }
 
-    const frontendUrl = (process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`).split(',')[0].trim().replace(/\/$/, '')
-    const callbackUrl = `${frontendUrl}/api/payments/invoice-webhook`
-    const successUrl = `${frontendUrl}/payment-result?status=paid&tenantId=${tenant._id}`
+    const frontendUrl = (process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`).split(',')[0].trim().replace(/\/$$/, '')
+    const successUrl = `${frontendUrl}/payment-result?status=paid&tenantId=${tenant._id}&method=${paymentMethod}`
     const backUrl = `${frontendUrl}/demo-checkout`
+
+    // --- Tabby checkout ---
+    if (paymentMethod === 'tabby') {
+      const tabbyConfig = await getTabbyConfig()
+      if (!tabbyConfig.enabled || !tabbyConfig.secretKey) {
+        return res.status(400).json({ error: 'Tabby is not configured' })
+      }
+
+      const tabbyBody = {
+        amount: finalAmount / 100,
+        currency,
+        description: `Maqder ERP - ${plan} plan (${billingCycle})`,
+        merchant_code: tabbyConfig.merchantCode,
+        order: {
+          reference_id: String(tenant._id),
+          items: [{
+            title: `Maqder ERP ${plan} plan`,
+            description: `${plan} plan - ${billingCycle} billing`,
+            quantity: 1,
+            unit_price: finalAmount / 100,
+            category: 'software',
+          }],
+          tax_amount: 0,
+          shipping_amount: 0,
+          discount_amount: 0,
+        },
+        buyer: {
+          email: tenant.demoEmail || '',
+          phone: tenant.phone || '',
+          name: tenant.name || '',
+        },
+        success_url: successUrl,
+        cancel_url: backUrl,
+        failure_url: `${frontendUrl}/payment-result?status=failed&tenantId=${tenant._id}&method=tabby`,
+        metadata: {
+          tenantId: String(tenant._id),
+          demoEmail: tenant.demoEmail || '',
+          plan,
+          billingCycle,
+          paymentMethod: 'tabby',
+        },
+      }
+
+      const tabbyRes = await fetch(`${TABBY_API_BASE}/checkouts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tabbyConfig.secretKey.trim()}`,
+        },
+        body: JSON.stringify(tabbyBody),
+      })
+
+      const tabbyData = await tabbyRes.json()
+      if (!tabbyRes.ok) {
+        console.error('[Tabby] Checkout creation failed:', tabbyRes.status, JSON.stringify(tabbyData))
+        return res.status(400).json({ error: tabbyData?.errors?.[0]?.message || tabbyData?.message || 'Failed to create Tabby checkout', tabbyError: tabbyData })
+      }
+
+      res.json({ id: tabbyData.id, status: tabbyData.status, url: tabbyData.configuration?.available_products?.installments?.[0]?.web_url || tabbyData.payment_url || tabbyData.url })
+      return
+    }
+
+    // --- Tamara checkout ---
+    if (paymentMethod === 'tamara') {
+      const tamaraConfig = await getTamaraConfig()
+      if (!tamaraConfig.enabled || !tamaraConfig.apiToken) {
+        return res.status(400).json({ error: 'Tamara is not configured' })
+      }
+
+      const tamaraBody = {
+        order_reference_id: String(tenant._id),
+        total_amount: { amount: finalAmount / 100, currency },
+        description: `Maqder ERP - ${plan} plan (${billingCycle})`,
+        country_code: 'SA',
+        payment_type: 'PAY_BY_INSTALMENTS',
+        items: [{
+          name: `Maqder ERP ${plan} plan`,
+          reference_id: String(tenant._id),
+          type: 'Digital',
+          quantity: 1,
+          unit_price: { amount: finalAmount / 100, currency },
+          total_amount: { amount: finalAmount / 100, currency },
+          tax_amount: { amount: 0, currency },
+          discount_amount: { amount: 0, currency },
+        }],
+        consumer: {
+          email: tenant.demoEmail || '',
+          phone_number: tenant.phone || '',
+          first_name: tenant.name || '',
+          last_name: '',
+        },
+        billing_address: {
+          first_name: tenant.name || '',
+          last_name: '',
+          email: tenant.demoEmail || '',
+          phone_number: tenant.phone || '',
+          country: 'SA',
+        },
+        shipping_address: {
+          first_name: tenant.name || '',
+          last_name: '',
+          email: tenant.demoEmail || '',
+          phone_number: tenant.phone || '',
+          country: 'SA',
+        },
+        success_url: successUrl,
+        failure_url: `${frontendUrl}/payment-result?status=failed&tenantId=${tenant._id}&method=tamara`,
+        notification_url: `${frontendUrl}/api/payments/tamara-webhook`,
+        metadata: {
+          tenantId: String(tenant._id),
+          demoEmail: tenant.demoEmail || '',
+          plan,
+          billingCycle,
+          paymentMethod: 'tamara',
+        },
+      }
+
+      const tamaraRes = await fetch(`${TAMARA_API_BASE(tamaraConfig.environment)}/checkout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tamaraConfig.apiToken.trim()}`,
+        },
+        body: JSON.stringify(tamaraBody),
+      })
+
+      const tamaraData = await tamaraRes.json()
+      if (!tamaraRes.ok) {
+        console.error('[Tamara] Checkout creation failed:', tamaraRes.status, JSON.stringify(tamaraData))
+        return res.status(400).json({ error: tamaraData?.errors?.[0]?.message || tamaraData?.message || 'Failed to create Tamara checkout', tamaraError: tamaraData })
+      }
+
+      res.json({ id: tamaraData.checkout_id || tamaraData.order_id, status: 'created', url: tamaraData.checkout_url || tamaraData.url })
+      return
+    }
+
+    // --- Moyasar invoice (default) ---
+    const callbackUrl = `${frontendUrl}/api/payments/invoice-webhook`
 
     const requestBody = {
       amount: finalAmount,
@@ -167,6 +332,153 @@ router.post('/invoice-webhook', async (req, res) => {
     res.status(200).json({ received: true })
   } catch (error) {
     console.error('[Moyasar] Invoice webhook error:', error.message)
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// @route   POST /api/payments/tabby-webhook
+// @desc    Tabby webhook handler for payment status updates
+// @access  Public
+router.post('/tabby-webhook', async (req, res) => {
+  try {
+    const body = req.body
+
+    // Tabby sends events with type and data
+    const payment = body?.data?.payment || body?.payment || body
+    const meta = payment?.metadata || body?.metadata || {}
+
+    const status = payment?.status || body?.status
+
+    if (status === 'authorized' || status === 'captured' || status === 'closed' || body?.type === 'payment.succeeded') {
+      await applyTenantUpgrade({
+        tenantId: meta.tenantId,
+        demoEmail: meta.demoEmail,
+        plan: meta.plan || 'professional',
+        billingCycle: meta.billingCycle || 'monthly',
+        amountHalalas: Math.round((payment?.amount || body?.amount || 0) * 100),
+        currency: payment?.currency || body?.currency || 'SAR',
+        paymentId: payment?.id || body?.id,
+      })
+    }
+
+    res.status(200).json({ received: true })
+  } catch (error) {
+    console.error('[Tabby] Webhook error:', error.message)
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// @route   POST /api/payments/tamara-webhook
+// @desc    Tamara webhook handler for payment status updates
+// @access  Public
+router.post('/tamara-webhook', async (req, res) => {
+  try {
+    const body = req.body
+
+    const eventType = body?.event_type || body?.type
+    const order = body?.order || body?.data?.order || body
+    const meta = order?.metadata || body?.metadata || {}
+
+    const orderStatus = order?.status || body?.order_status
+
+    // Tamara statuses: 'approved', 'partially_captured', 'fully_captured'
+    if (eventType === 'order_approved' || eventType === 'order_fully_captured' || orderStatus === 'approved' || orderStatus === 'fully_captured') {
+      const totalAmount = order?.total_amount || body?.total_amount || {}
+      await applyTenantUpgrade({
+        tenantId: meta.tenantId,
+        demoEmail: meta.demoEmail,
+        plan: meta.plan || 'professional',
+        billingCycle: meta.billingCycle || 'monthly',
+        amountHalalas: Math.round((totalAmount.amount || totalAmount || 0) * 100),
+        currency: totalAmount.currency || 'SAR',
+        paymentId: order?.order_id || order?.order_reference_id || body?.order_id,
+      })
+    }
+
+    res.status(200).json({ received: true })
+  } catch (error) {
+    console.error('[Tamara] Webhook error:', error.message)
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// @route   GET /api/payments/tabby/:id
+// @desc    Fetch Tabby checkout status and apply upgrade if authorized
+// @access  Private
+router.get('/tabby/:id', protect, async (req, res) => {
+  try {
+    const config = await getTabbyConfig()
+    if (!config.enabled || !config.secretKey) {
+      return res.status(400).json({ error: 'Tabby is not configured' })
+    }
+
+    const response = await fetch(`${TABBY_API_BASE}/checkouts/${req.params.id}`, {
+      headers: { 'Authorization': `Bearer ${config.secretKey.trim()}` },
+    })
+
+    const checkout = await response.json()
+    if (!response.ok) {
+      return res.status(400).json({ error: checkout?.message || 'Failed to fetch Tabby checkout' })
+    }
+
+    const status = checkout?.payment?.status || checkout?.status
+    const meta = checkout?.metadata || checkout?.payment?.metadata || {}
+
+    if (status === 'authorized' || status === 'captured' || status === 'closed') {
+      await applyTenantUpgrade({
+        tenantId: meta.tenantId,
+        demoEmail: meta.demoEmail,
+        plan: meta.plan || 'professional',
+        billingCycle: meta.billingCycle || 'monthly',
+        amountHalalas: Math.round((checkout?.payment?.amount || checkout?.amount || 0) * 100),
+        currency: checkout?.payment?.currency || checkout?.currency || 'SAR',
+        paymentId: checkout?.id,
+      })
+    }
+
+    res.json({ id: checkout.id, status })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// @route   GET /api/payments/tamara/:id
+// @desc    Fetch Tamara order status and apply upgrade if approved
+// @access  Private
+router.get('/tamara/:id', protect, async (req, res) => {
+  try {
+    const config = await getTamaraConfig()
+    if (!config.enabled || !config.apiToken) {
+      return res.status(400).json({ error: 'Tamara is not configured' })
+    }
+
+    const response = await fetch(`${TAMARA_API_BASE(config.environment)}/orders/${req.params.id}`, {
+      headers: { 'Authorization': `Bearer ${config.apiToken.trim()}` },
+    })
+
+    const order = await response.json()
+    if (!response.ok) {
+      return res.status(400).json({ error: order?.message || 'Failed to fetch Tamara order' })
+    }
+
+    const status = order?.status
+    const meta = order?.metadata || {}
+
+    if (status === 'approved' || status === 'fully_captured') {
+      const totalAmount = order?.total_amount || {}
+      await applyTenantUpgrade({
+        tenantId: meta.tenantId,
+        demoEmail: meta.demoEmail,
+        plan: meta.plan || 'professional',
+        billingCycle: meta.billingCycle || 'monthly',
+        amountHalalas: Math.round((totalAmount.amount || 0) * 100),
+        currency: totalAmount.currency || 'SAR',
+        paymentId: order?.order_id,
+      })
+    }
+
+    res.json({ id: order?.order_id, status })
+  } catch (error) {
     res.status(500).json({ error: error.message })
   }
 })

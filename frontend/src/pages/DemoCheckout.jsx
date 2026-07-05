@@ -301,7 +301,7 @@ export default function DemoCheckout() {
             <label className="mb-3 block text-center text-sm font-semibold text-gray-700 dark:text-gray-300">
               {isArabic ? 'اختر طريقة الدفع' : 'Select Payment Method'}
             </label>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
               {/* Credit Card */}
               <button
                 onClick={() => setPaymentMethod('creditcard')}
@@ -332,15 +332,50 @@ export default function DemoCheckout() {
                 <span className="text-xs font-bold text-gray-800 dark:text-white">Apple Pay</span>
               </button>
 
+              {/* Tabby */}
+              <button
+                onClick={() => setPaymentMethod('tabby')}
+                className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 p-3 transition-all ${
+                  paymentMethod === 'tabby'
+                    ? 'border-[#0f3d2e] bg-[#0f3d2e]/[0.03] dark:bg-[#0f3d2e]/10 shadow-md'
+                    : 'border-gray-200 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
+                }`}
+              >
+                <img src="/tabby.png" alt="Tabby" className="h-8 w-auto object-contain" />
+                <span className="text-[10px] font-bold text-gray-800 dark:text-white">Tabby</span>
+              </button>
+
+              {/* Tamara */}
+              <button
+                onClick={() => setPaymentMethod('tamara')}
+                className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 p-3 transition-all ${
+                  paymentMethod === 'tamara'
+                    ? 'border-[#0f3d2e] bg-[#0f3d2e]/[0.03] dark:bg-[#0f3d2e]/10 shadow-md'
+                    : 'border-gray-200 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
+                }`}
+              >
+                <img src="/tamara.webp" alt="Tamara" className="h-8 w-auto object-contain" />
+                <span className="text-[10px] font-bold text-gray-800 dark:text-white">Tamara</span>
+              </button>
+
               {/* STC Pay */}
               <div className="relative flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-gray-200 dark:border-dark-600 p-3 opacity-60 cursor-not-allowed">
                 <span className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full bg-gray-500 px-2 py-0.5 text-[9px] font-bold text-white">
                   {isArabic ? 'قريباً' : 'Soon'}
                 </span>
-                <img src="/stcpay.webp" alt="STC Pay" className="h-10 w-auto object-contain" />
-                <span className="text-xs font-bold text-gray-800 dark:text-white">STC Pay</span>
+                <img src="/stcpay.webp" alt="STC Pay" className="h-8 w-auto object-contain" />
+                <span className="text-[10px] font-bold text-gray-800 dark:text-white">STC Pay</span>
               </div>
             </div>
+
+            {/* Tabby/Tamara info badge */}
+            {(paymentMethod === 'tabby' || paymentMethod === 'tamara') && (
+              <div className="mt-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/10 px-4 py-2.5 text-center text-xs text-emerald-700 dark:text-emerald-400 font-medium">
+                {paymentMethod === 'tabby'
+                  ? (isArabic ? 'قسّمها على 4 دفعات بدون فوائد مع تابي' : 'Split into 4 interest-free payments with Tabby')
+                  : (isArabic ? 'ادفع لاحقاً مع تمارا' : 'Pay later with Tamara')}
+              </div>
+            )}
           </div>
 
           {/* Error */}
@@ -387,7 +422,7 @@ export default function DemoCheckout() {
             </span>
             <span className="flex items-center gap-1.5">
               <Globe className="h-3.5 w-3.5" />
-              Visa, Mada, Apple Pay
+              Visa, Mada, Apple Pay, Tabby, Tamara
             </span>
           </div>
         </motion.div>

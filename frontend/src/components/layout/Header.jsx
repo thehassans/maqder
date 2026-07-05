@@ -1,5 +1,5 @@
 import { useSelector, useDispatch } from 'react-redux'
-import { Menu, Search, Bell, Moon, Sun, Globe, LogOut, X, Mail } from 'lucide-react'
+import { Menu, Search, Bell, Moon, Sun, Globe, LogOut, X, Mail, Crown } from 'lucide-react'
 import { Fragment, useState, useEffect, useRef, useMemo } from 'react'
 import { Transition, Popover } from '@headlessui/react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -150,6 +150,17 @@ export default function Header() {
 
         {/* Right Side */}
         <div className="flex items-center gap-2">
+          {/* Get Full Version CTA — demo/trial users */}
+          {tenant?.isDemo === true && tenant?.demoUpgraded !== true && (
+            <button
+              onClick={() => navigate('/demo-checkout')}
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 px-3 py-2 text-xs font-bold text-white shadow-sm transition hover:shadow-md hover:from-amber-500 hover:to-amber-600"
+            >
+              <Crown className="h-3.5 w-3.5" />
+              {language === 'ar' ? 'النسخة الكاملة' : 'Get Full Version'}
+            </button>
+          )}
+
           {/* Language Toggle */}
           <button
             onClick={() => dispatch(setLanguage(language === 'en' ? 'ar' : 'en'))}

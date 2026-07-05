@@ -2408,6 +2408,8 @@ router.get('/settings/payment', async (req, res) => {
     const moyasar = payment?.moyasar || {};
     const applePay = payment?.applePay || {};
     const stcPay = payment?.stcPay || {};
+    const tabby = payment?.tabby || {};
+    const tamara = payment?.tamara || {};
 
     res.json({
       payment: {
@@ -2432,6 +2434,20 @@ router.get('/settings/payment', async (req, res) => {
           hasApiKey: !!stcPay.apiKey,
           apiKeyMasked: maskSecret(stcPay.apiKey),
         },
+        tabby: {
+          ...serializePaymentProvider(tabby),
+          publicKey: tabby.publicKey || '',
+          merchantCode: tabby.merchantCode || '',
+          hasSecretKey: !!tabby.secretKey,
+          secretKeyMasked: maskSecret(tabby.secretKey),
+        },
+        tamara: {
+          ...serializePaymentProvider(tamara),
+          hasApiToken: !!tamara.apiToken,
+          apiTokenMasked: maskSecret(tamara.apiToken),
+          hasNotificationToken: !!tamara.notificationToken,
+          notificationTokenMasked: maskSecret(tamara.notificationToken),
+        },
       },
     });
   } catch (error) {
@@ -2446,12 +2462,16 @@ router.put('/settings/payment', async (req, res) => {
     const moyasarPayload = payload?.moyasar || {};
     const applePayPayload = payload?.applePay || {};
     const stcPayPayload = payload?.stcPay || {};
+    const tabbyPayload = payload?.tabby || {};
+    const tamaraPayload = payload?.tamara || {};
 
     const settings = await getGlobalSettings();
     const currentPayment = settings?.payment?.toObject?.() || settings?.payment || {};
     const currentMoyasar = currentPayment?.moyasar || {};
     const currentApplePay = currentPayment?.applePay || {};
     const currentStcPay = currentPayment?.stcPay || {};
+    const currentTabby = currentPayment?.tabby || {};
+    const currentTamara = currentPayment?.tamara || {};
 
     // ── Moyasar ──
     const nextMoyasar = {
@@ -2497,7 +2517,42 @@ router.put('/settings/payment', async (req, res) => {
       nextStcPay.apiKey = currentStcPay.apiKey || '';
     }
 
-    settings.payment = { moyasar: nextMoyasar, applePay: nextApplePay, stcPay: nextStcPay };
+    // ── Tabby ──
+    const nextTabby = {
+      enabled: tabbyPayload.enabled !== undefined ? tabbyPayload.enabled === true : currentTabby.enabled,
+      publicKey: String(tabbyPayload.publicKey || currentTabby.publicKey || '').trim(),
+      merchantCode: String(tabbyPayload.merchantCode || currentTabby.merchantCode || '').trim(),
+      environment: tabbyPayload.environment || currentTabby.environment || 'test',
+    };
+
+    if (tabbyPayload.secretKey !== undefined) {
+      const trimmed = String(tabbyPayload.secretKey || '').trim();
+      nextTabby.secretKey = trimmed || currentTabby.secretKey || '';
+    } else {
+      nextTabby.secretKey = currentTabby.secretKey || '';
+    }
+
+    // ── Tamara ──
+    const nextTamara = {
+      enabled: tamaraPayload.enabled !== undefined ? tamaraPayload.enabled === true : currentTamara.enabled,
+      environment: tamaraPayload.environment || currentTamara.environment || 'test',
+    };
+
+    if (tamaraPayload.apiToken !== undefined) {
+      const trimmed = String(tamaraPayload.apiToken || '').trim();
+      nextTamara.apiToken = trimmed || currentTamara.apiToken || '';
+    } else {
+      nextTamara.apiToken = currentTamara.apiToken || '';
+    }
+
+    if (tamaraPayload.notificationToken !== undefined) {
+      const trimmed = String(tamaraPayload.notificationToken || '').trim();
+      nextTamara.notificationToken = trimmed || currentTamara.notificationToken || '';
+    } else {
+      nextTamara.notificationToken = currentTamara.notificationToken || '';
+    }
+
+    settings.payment = { moyasar: nextMoyasar, applePay: nextApplePay, stcPay: nextStcPay, tabby: nextTabby, tamara: nextTamara };
     settings.markModified('payment');
     await settings.save();
 
@@ -2523,6 +2578,20 @@ router.put('/settings/payment', async (req, res) => {
           merchantId: nextStcPay.merchantId,
           hasApiKey: !!nextStcPay.apiKey,
           apiKeyMasked: maskSecret(nextStcPay.apiKey),
+        },
+        tabby: {
+          ...serializePaymentProvider(nextTabby),
+          publicKey: nextTabby.publicKey,
+          merchantCode: nextTabby.merchantCode,
+          hasSecretKey: !!nextTabby.secretKey,
+          secretKeyMasked: maskSecret(nextTabby.secretKey),
+        },
+        tamara: {
+          ...serializePaymentProvider(nextTamara),
+          hasApiToken: !!nextTamara.apiToken,
+          apiTokenMasked: maskSecret(nextTamara.apiToken),
+          hasNotificationToken: !!nextTamara.notificationToken,
+          notificationTokenMasked: maskSecret(nextTamara.notificationToken),
         },
       },
     });
@@ -2593,7 +2662,48 @@ router.post('/settings/payment/test-connection', async (req, res) => {
       }
     }
 
-    return res.status(400).json({ error: 'Unknown provider. Use moyasar, applePay, or stcPay.' });
+    if (provider === 'tabby') {
+      const tabby = payment?.tabby || {};
+      if (!tabby.secretKey) return res.json({ ok: false, message: 'Tabby secret key is not configured.' });
+      try {
+        const response = await fetch('https://api.tabby.ai/api/v2/payments?limit=1', {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${tabby.secretKey}` },
+          signal: AbortSignal.timeout(8000),
+        });
+        if (response.ok || response.status === 404) {
+          return res.json({ ok: true, message: 'Tabby connection successful — API key is valid.' });
+        }
+        const body = await response.json().catch(() => ({}));
+        return res.json({ ok: false, message: `Tabby API returned ${response.status}: ${body?.error || response.statusText}` });
+      } catch (err) {
+        return res.json({ ok: false, message: err.message || 'Could not reach Tabby API.' });
+      }
+    }
+
+    if (provider === 'tamara') {
+      const tamara = payment?.tamara || {};
+      if (!tamara.apiToken) return res.json({ ok: false, message: 'Tamara API token is not configured.' });
+      const baseUrl = tamara.environment === 'live'
+        ? 'https://api.tamara.co'
+        : 'https://api-sandbox.tamara.co';
+      try {
+        const response = await fetch(`${baseUrl}/merchants/payment-types`, {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${tamara.apiToken}` },
+          signal: AbortSignal.timeout(8000),
+        });
+        if (response.ok) {
+          return res.json({ ok: true, message: 'Tamara connection successful — API token is valid.' });
+        }
+        const body = await response.json().catch(() => ({}));
+        return res.json({ ok: false, message: `Tamara API returned ${response.status}: ${body?.message || response.statusText}` });
+      } catch (err) {
+        return res.json({ ok: false, message: err.message || 'Could not reach Tamara API.' });
+      }
+    }
+
+    return res.status(400).json({ error: 'Unknown provider. Use moyasar, applePay, stcPay, tabby, or tamara.' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
