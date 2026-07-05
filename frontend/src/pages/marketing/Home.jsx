@@ -47,22 +47,22 @@ export default function MarketingHome() {
   const heroSubtitle = isArabic ? data?.hero?.subtitleAr : data?.hero?.subtitleEn
 
   const modules = [
-    { icon: FileText, titleEn: 'ZATCA E-Invoicing', titleAr: 'Ø§Ù„ÙÙˆØªØ±Ø© Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠØ©', descEn: 'B2B/B2C invoices, XML signing, QR and real-time ZATCA submission.', descAr: 'ÙÙˆØ§ØªÙŠØ± B2B/B2CØŒ ØªÙˆÙ‚ÙŠØ¹ XMLØŒ QRØŒ Ø§Ù„Ø¥Ø±Ø³Ø§Ù„ ÙˆØªØªØ¨Ø¹ Ø§Ù„Ø­Ø§Ù„Ø©.' },
-    { icon: Users, titleEn: 'HR Management', titleAr: 'Ø§Ù„Ù…ÙˆØ§Ø±Ø¯ Ø§Ù„Ø¨Ø´Ø±ÙŠØ©', descEn: 'Employees, leave, documents and automated Iqama reminders.', descAr: 'Ø§Ù„Ù…ÙˆØ¸ÙÙˆÙ†ØŒ Ø§Ù„Ø¥Ø¬Ø§Ø²Ø§ØªØŒ Ø§Ù„Ù…Ø³ØªÙ†Ø¯Ø§Øª ÙˆØ§Ù„ØªÙ†Ø¨ÙŠÙ‡Ø§Øª Ø§Ù„ØªÙ„Ù‚Ø§Ø¦ÙŠØ©.' },
-    { icon: Calculator, titleEn: 'Payroll & WPS', titleAr: 'Ø§Ù„Ø±ÙˆØ§ØªØ¨ ÙˆÙ…Ù„ÙØ§Øª WPS', descEn: 'Payroll calculations, EOSB tools and WPS generation workflows.', descAr: 'Ø­Ø³Ø§Ø¨ Ø§Ù„Ø±ÙˆØ§ØªØ¨ØŒ Ù†Ù‡Ø§ÙŠØ© Ø§Ù„Ø®Ø¯Ù…Ø©ØŒ ÙˆØªÙˆÙ„ÙŠØ¯ Ù…Ù„ÙØ§Øª WPS.' },
-    { icon: Package, titleEn: 'Products & Catalog', titleAr: 'Ø§Ù„Ù…Ù†ØªØ¬Ø§Øª', descEn: 'SKU, barcode, pricing, categories and product performance.', descAr: 'SKU ÙˆØ§Ù„Ø¨Ø§Ø±ÙƒÙˆØ¯ ÙˆØ§Ù„ØªØ³Ø¹ÙŠØ± ÙˆØ§Ù„ØªØµÙ†ÙŠÙØ§Øª ÙˆØ£Ø¯Ø§Ø¡ Ø§Ù„Ù…Ù†ØªØ¬Ø§Øª.' },
-    { icon: Warehouse, titleEn: 'Warehouses & Stock', titleAr: 'Ø§Ù„Ù…Ø³ØªÙˆØ¯Ø¹Ø§Øª ÙˆØ§Ù„Ù…Ø®Ø²ÙˆÙ†', descEn: 'Multi-warehouse quantities, reserved stock and low stock alerts.', descAr: 'Ù…Ø®Ø²ÙˆÙ† Ù…ØªØ¹Ø¯Ø¯ Ø§Ù„Ù…Ø³ØªÙˆØ¯Ø¹Ø§ØªØŒ ÙƒÙ…ÙŠØ§Øª Ù…Ø­Ø¬ÙˆØ²Ø© ÙˆØªÙ†Ø¨ÙŠÙ‡Ø§Øª Ù†ÙØ§Ø¯.' },
-    { icon: Truck, titleEn: 'Purchases & Shipments', titleAr: 'Ø§Ù„Ù…Ø´ØªØ±ÙŠØ§Øª ÙˆØ§Ù„Ø´Ø­Ù†Ø§Øª', descEn: 'Purchase orders, suppliers, receiving and shipment management.', descAr: 'Ø·Ù„Ø¨Ø§Øª Ø´Ø±Ø§Ø¡ØŒ Ù…ÙˆØ±Ø¯ÙŠÙ†ØŒ Ø§Ø³ØªÙ„Ø§Ù… ÙˆØ¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø´Ø­Ù†Ø§Øª.' },
-    { icon: Receipt, titleEn: 'Expenses & Finance', titleAr: 'Ø§Ù„Ù…ØµØ±ÙˆÙØ§Øª ÙˆØ§Ù„Ù…Ø§Ù„ÙŠØ©', descEn: 'Expense tracking, approvals, categories and analytics.', descAr: 'ØªØªØ¨Ø¹ Ø§Ù„Ù…ØµØ±ÙˆÙØ§ØªØŒ Ù…ÙˆØ§ÙÙ‚Ø§ØªØŒ ØªØµÙ†ÙŠÙØ§Øª ÙˆØªØ­Ù„ÙŠÙ„Ø§Øª.' },
-    { icon: ClipboardList, titleEn: 'Projects & Tasks', titleAr: 'Ø§Ù„Ù…Ø´Ø§Ø±ÙŠØ¹ ÙˆØ§Ù„Ù…Ù‡Ø§Ù…', descEn: 'Project planning, task workflow and operational visibility.', descAr: 'ØªØ®Ø·ÙŠØ· Ø§Ù„Ù…Ø´Ø§Ø±ÙŠØ¹ØŒ Ø³ÙŠØ± Ø¹Ù…Ù„ Ø§Ù„Ù…Ù‡Ø§Ù… ÙˆÙˆØ¶ÙˆØ­ Ø§Ù„Ø¹Ù…Ù„ÙŠØ§Øª.' },
-    { icon: MessageCircle, titleEn: 'WhatsApp & Automation', titleAr: 'ÙˆØ§ØªØ³Ø§Ø¨ ÙˆØ§Ù„Ø£ØªÙ…ØªØ©', descEn: 'Customer communications, notifications and follow-ups.', descAr: 'ØªÙˆØ§ØµÙ„ Ù…Ø¹ Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡ØŒ Ø¥Ø´Ø¹Ø§Ø±Ø§Øª ÙˆÙ…ØªØ§Ø¨Ø¹Ø© Ø³Ù„Ø³Ø©.' },
-    { icon: BarChart3, titleEn: 'Reports & Dashboards', titleAr: 'Ø§Ù„ØªÙ‚Ø§Ø±ÙŠØ± ÙˆÙ„ÙˆØ­Ø§Øª Ø§Ù„ØªØ­ÙƒÙ…', descEn: 'Real-time KPIs for revenue, expenses, HR and inventory.', descAr: 'Ù…Ø¤Ø´Ø±Ø§Øª Ù…Ø¨Ø§Ø´Ø±Ø© Ù„Ù„Ø¥ÙŠØ±Ø§Ø¯Ø§Øª ÙˆØ§Ù„Ù…ØµØ±ÙˆÙØ§Øª ÙˆØ§Ù„Ù…ÙˆØ§Ø±Ø¯ ÙˆØ§Ù„Ù…Ø®Ø²ÙˆÙ†.' },
+    { icon: FileText, titleEn: 'ZATCA E-Invoicing', titleAr: 'الفوترة الإلكترونية', descEn: 'B2B/B2C invoices, XML signing, QR and real-time ZATCA submission.', descAr: 'فواتير B2B/B2C، توقيع XML، QR، الإرسال وتتبع الحالة.' },
+    { icon: Users, titleEn: 'HR Management', titleAr: 'الموارد البشرية', descEn: 'Employees, leave, documents and automated Iqama reminders.', descAr: 'الموظفون، الإجازات، المستندات والتنبيهات التلقائية.' },
+    { icon: Calculator, titleEn: 'Payroll & WPS', titleAr: 'الرواتب وملفات WPS', descEn: 'Payroll calculations, EOSB tools and WPS generation workflows.', descAr: 'حساب الرواتب، نهاية الخدمة، وتوليد ملفات WPS.' },
+    { icon: Package, titleEn: 'Products & Catalog', titleAr: 'المنتجات', descEn: 'SKU, barcode, pricing, categories and product performance.', descAr: 'SKU والباركود والتسعير والتصنيفات وأداء المنتجات.' },
+    { icon: Warehouse, titleEn: 'Warehouses & Stock', titleAr: 'المستودعات والمخزون', descEn: 'Multi-warehouse quantities, reserved stock and low stock alerts.', descAr: 'مخزون متعدد المستودعات، كميات محجوزة وتنبيهات نفاد.' },
+    { icon: Truck, titleEn: 'Purchases & Shipments', titleAr: 'المشتريات والشحنات', descEn: 'Purchase orders, suppliers, receiving and shipment management.', descAr: 'طلبات شراء، موردين، استلام وإدارة الشحنات.' },
+    { icon: Receipt, titleEn: 'Expenses & Finance', titleAr: 'المصروفات والمالية', descEn: 'Expense tracking, approvals, categories and analytics.', descAr: 'تتبع المصروفات، موافقات، تصنيفات وتحليلات.' },
+    { icon: ClipboardList, titleEn: 'Projects & Tasks', titleAr: 'المشاريع والمهام', descEn: 'Project planning, task workflow and operational visibility.', descAr: 'تخطيط المشاريع، سير عمل المهام ووضوح العمليات.' },
+    { icon: MessageCircle, titleEn: 'WhatsApp & Automation', titleAr: 'واتساب والأتمتة', descEn: 'Customer communications, notifications and follow-ups.', descAr: 'تواصل مع العملاء، إشعارات ومتابعة سلسة.' },
+    { icon: BarChart3, titleEn: 'Reports & Dashboards', titleAr: 'التقارير ولوحات التحكم', descEn: 'Real-time KPIs for revenue, expenses, HR and inventory.', descAr: 'مؤشرات مباشرة للإيرادات والمصروفات والموارد والمخزون.' },
   ]
 
   const testimonials = [
-    { name: 'Ahmed Al-Rashid', nameAr: 'Ø£Ø­Ù…Ø¯ Ø§Ù„Ø±Ø§Ø´Ø¯', role: 'CFO, Tech Solutions', roleAr: 'Ø§Ù„Ù…Ø¯ÙŠØ± Ø§Ù„Ù…Ø§Ù„ÙŠ', content: 'ZATCA compliance is now fully automatic. Our team spends zero time on submission â€” Maqder handles everything.', contentAr: 'Ø§Ù…ØªØ«Ø§Ù„ ZATCA Ø£ØµØ¨Ø­ ØªÙ„Ù‚Ø§Ø¦ÙŠØ§Ù‹ ØªÙ…Ø§Ù…Ø§Ù‹. ÙØ±ÙŠÙ‚Ù†Ø§ Ù„Ø§ ÙŠÙ‚Ø¶ÙŠ Ø£ÙŠ ÙˆÙ‚Øª ÙÙŠ Ø§Ù„Ø¥Ø±Ø³Ø§Ù„ â€” Maqder ÙŠØªØ¹Ø§Ù…Ù„ Ù…Ø¹ ÙƒÙ„ Ø´ÙŠØ¡.' },
-    { name: 'Sara Mohammed', nameAr: 'Ø³Ø§Ø±Ø© Ù…Ø­Ù…Ø¯', role: 'HR Director, Retail Group', roleAr: 'Ù…Ø¯ÙŠØ±Ø© Ø§Ù„Ù…ÙˆØ§Ø±Ø¯ Ø§Ù„Ø¨Ø´Ø±ÙŠØ©', content: 'GOSI calculations that used to take hours now run in seconds. Payroll processing is completely seamless.', contentAr: 'Ø­Ø³Ø§Ø¨Ø§Øª Ø§Ù„ØªØ£Ù…ÙŠÙ†Ø§Øª Ø§Ù„ØªÙŠ ÙƒØ§Ù†Øª ØªØ³ØªØºØ±Ù‚ Ø³Ø§Ø¹Ø§Øª ØªØ¹Ù…Ù„ Ø§Ù„Ø¢Ù† ÙÙŠ Ø«ÙˆØ§Ù†Ù. Ù…Ø¹Ø§Ù„Ø¬Ø© Ø§Ù„Ø±ÙˆØ§ØªØ¨ Ø³Ù„Ø³Ø© ØªÙ…Ø§Ù…Ø§Ù‹.' },
-    { name: 'Khalid Hassan', nameAr: 'Ø®Ø§Ù„Ø¯ Ø­Ø³Ù†', role: 'Operations Manager', roleAr: 'Ù…Ø¯ÙŠØ± Ø§Ù„Ø¹Ù…Ù„ÙŠØ§Øª', content: 'Multi-warehouse inventory with real-time tracking changed how we operate. Finally a system that grows with us.', contentAr: 'ØªØªØ¨Ø¹ Ø§Ù„Ù…Ø®Ø²ÙˆÙ† Ù…ØªØ¹Ø¯Ø¯ Ø§Ù„Ù…Ø³ØªÙˆØ¯Ø¹Ø§Øª ØºÙŠÙ‘Ø± Ø·Ø±ÙŠÙ‚Ø© Ø¹Ù…Ù„Ù†Ø§. Ø£Ø®ÙŠØ±Ø§Ù‹ Ù†Ø¸Ø§Ù… ÙŠÙ†Ù…Ùˆ Ù…Ø¹Ù†Ø§.' },
+    { name: 'Ahmed Al-Rashid', nameAr: 'أحمد الراشد', role: 'CFO, Tech Solutions', roleAr: 'المدير المالي', content: 'ZATCA compliance is now fully automatic. Our team spends zero time on submission — Maqder handles everything.', contentAr: 'امتثال ZATCA أصبح تلقائياً تماماً. فريقنا لا يقضي أي وقت في الإرسال — Maqder يتعامل مع كل شيء.' },
+    { name: 'Sara Mohammed', nameAr: 'سارة محمد', role: 'HR Director, Retail Group', roleAr: 'مديرة الموارد البشرية', content: 'GOSI calculations that used to take hours now run in seconds. Payroll processing is completely seamless.', contentAr: 'حسابات التأمينات التي كانت تستغرق ساعات تعمل الآن في ثوانٍ. معالجة الرواتب سلسة تماماً.' },
+    { name: 'Khalid Hassan', nameAr: 'خالد حسن', role: 'Operations Manager', roleAr: 'مدير العمليات', content: 'Multi-warehouse inventory with real-time tracking changed how we operate. Finally a system that grows with us.', contentAr: 'تتبع المخزون متعدد المستودعات غيّر طريقة عملنا. أخيراً نظام ينمو معنا.' },
   ]
 
   return (
@@ -96,21 +96,21 @@ export default function MarketingHome() {
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
                 </span>
-                {isArabic ? 'Ø¬Ø§Ù‡Ø² Ù„Ù€ ZATCA Ø§Ù„Ù…Ø±Ø­Ù„Ø© Ø§Ù„Ø«Ø§Ù†ÙŠØ©' : 'ZATCA Phase 2 Certified'}
+                {isArabic ? 'جاهز لـ ZATCA المرحلة الثانية' : 'ZATCA Phase 2 Certified'}
               </div>
 
               <h1 className="mt-7 text-5xl font-black leading-[1.0] tracking-tight sm:text-6xl lg:text-[3.75rem] xl:text-6xl">
                 <span className="block bg-gradient-to-b from-white to-white/75 bg-clip-text text-transparent">
-                  {isArabic ? 'Ù…Ù†ØµØ© ERP' : 'The Saudi ERP'}
+                  {isArabic ? 'منصة ERP' : 'The Saudi ERP'}
                 </span>
                 <span className="block bg-gradient-to-r from-emerald-300 via-emerald-200 to-teal-300 bg-clip-text text-transparent">
-                  {isArabic ? 'Ù„Ù„Ø£Ø¹Ù…Ø§Ù„ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠØ©' : 'businesses trust'}
+                  {isArabic ? 'للأعمال السعودية' : 'businesses trust'}
                 </span>
               </h1>
 
               <p className="mt-6 max-w-md text-lg leading-relaxed text-white/55">
                 {heroSubtitle || (isArabic
-                  ? 'Ø§Ù„ÙÙˆØªØ±Ø©ØŒ Ø§Ù„Ù…ÙˆØ§Ø±Ø¯ Ø§Ù„Ø¨Ø´Ø±ÙŠØ©ØŒ Ø§Ù„Ù…Ø®Ø²ÙˆÙ† ÙˆØ§Ù„ØªÙ‚Ø§Ø±ÙŠØ± â€” ÙÙŠ Ù…Ù†ØµØ© ÙˆØ§Ø­Ø¯Ø© Ø³Ø±ÙŠØ¹Ø© ÙˆÙ…ØªÙˆØ§ÙÙ‚Ø©.'
+                  ? 'الفوترة، الموارد البشرية، المخزون والتقارير — في منصة واحدة سريعة ومتوافقة.'
                   : 'E-invoicing, HR, payroll, inventory and reporting in one fast, ZATCA-compliant platform.')}
               </p>
 
@@ -119,7 +119,7 @@ export default function MarketingHome() {
                   to="/login"
                   className="group inline-flex items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-[#0f3d2e] to-[#1a5d44] px-7 py-4 font-semibold text-white shadow-[0_0_0_1px_rgba(15,61,46,0.15),0_8px_32px_-8px_rgba(15,61,46,0.45)] transition-all hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_rgba(15,61,46,0.3),0_12px_40px_-8px_rgba(15,61,46,0.6)]"
                 >
-                  {isArabic ? 'Ø§Ø¨Ø¯Ø£ Ø§Ù„Ø¢Ù†' : 'Get started'}
+                  {isArabic ? 'ابدأ الآن' : 'Get started'}
                   <ArrowRight className={`h-5 w-5 transition-transform group-hover:translate-x-0.5 ${isArabic ? 'rotate-180 group-hover:-translate-x-0.5' : ''}`} />
                 </Link>
                 <a
@@ -131,7 +131,7 @@ export default function MarketingHome() {
                   className="inline-flex items-center justify-center gap-2.5 rounded-2xl border border-white/12 bg-white/[0.06] px-7 py-4 font-semibold text-white backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10"
                 >
                   <PlayCircle className="h-5 w-5 text-emerald-300" />
-                  {isArabic ? 'ØªØ¬Ø±Ø¨Ø© Ù…Ø¬Ø§Ù†ÙŠØ©' : 'Free trial'}
+                  {isArabic ? 'تجربة مجانية' : 'Free trial'}
                 </a>
               </div>
 
@@ -149,16 +149,16 @@ export default function MarketingHome() {
                     <div className="flex items-center gap-1">
                       {[...Array(5)].map((_, j) => <Star key={j} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />)}
                     </div>
-                    <p className="text-white/45">{isArabic ? '500+ Ø´Ø±ÙƒØ© ØªØ«Ù‚ Ø¨Ù†Ø§' : 'Trusted by 500+ companies'}</p>
+                    <p className="text-white/45">{isArabic ? '500+ شركة تثق بنا' : 'Trusted by 500+ companies'}</p>
                   </div>
                 </div>
               </div>
 
               <div className="mt-7 flex flex-wrap gap-2">
                 {[
-                  { icon: Sparkles, label: isArabic ? 'ÙˆØ§Ø¬Ù‡Ø© Ø£Ù†ÙŠÙ‚Ø©' : 'Clean UI' },
-                  { icon: Globe, label: isArabic ? 'Ø¹Ø±Ø¨ÙŠ / English' : 'Arabic / English' },
-                  { icon: Landmark, label: isArabic ? 'Ù…ØµÙ…Ù… Ù„Ù„Ø³Ø¹ÙˆØ¯ÙŠØ©' : 'Made for Saudi' },
+                  { icon: Sparkles, label: isArabic ? 'واجهة أنيقة' : 'Clean UI' },
+                  { icon: Globe, label: isArabic ? 'عربي / English' : 'Arabic / English' },
+                  { icon: Landmark, label: isArabic ? 'مصمم للسعودية' : 'Made for Saudi' },
                 ].map((item, i) => (
                   <div key={i} className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-2 text-sm text-white/60">
                     <item.icon className="h-3.5 w-3.5 text-emerald-400" />
@@ -178,17 +178,17 @@ export default function MarketingHome() {
                     <div className="mb-5 flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
                         <div className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-                        <span className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-400">{isArabic ? 'Ù„ÙˆØ­Ø© Ø§Ù„ØªØ­ÙƒÙ…' : 'Dashboard'}</span>
+                        <span className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-400">{isArabic ? 'لوحة التحكم' : 'Dashboard'}</span>
                       </div>
-                      <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/12 px-3 py-1.5 text-xs font-bold text-emerald-300">{isArabic ? 'Ù…Ø¨Ø§Ø´Ø±' : 'Live'}</div>
+                      <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/12 px-3 py-1.5 text-xs font-bold text-emerald-300">{isArabic ? 'مباشر' : 'Live'}</div>
                     </div>
 
                     <div className="mb-4 grid grid-cols-2 gap-3">
                       {[
-                        { label: isArabic ? 'Ø§Ù„ÙÙˆØ§ØªÙŠØ± Ø§Ù„ÙŠÙˆÙ…' : 'Invoices today', value: '284', trend: '+18%', up: true },
-                        { label: isArabic ? 'Ø§Ù„Ø¥ÙŠØ±Ø§Ø¯ Ø§Ù„Ø´Ù‡Ø±ÙŠ' : 'Monthly revenue', value: 'SAR 1.2M', trend: '+24%', up: true },
-                        { label: isArabic ? 'Ø§Ù„Ù…ÙˆØ¸ÙÙˆÙ† Ø§Ù„Ù†Ø´Ø·ÙˆÙ†' : 'Active employees', value: '142', trend: '+3', up: true },
-                        { label: isArabic ? 'Ø£ØµÙ†Ø§Ù Ø§Ù„Ù…Ø®Ø²ÙˆÙ†' : 'Stock items', value: '4,280', trend: 'Low: 12', up: false },
+                        { label: isArabic ? 'الفواتير اليوم' : 'Invoices today', value: '284', trend: '+18%', up: true },
+                        { label: isArabic ? 'الإيراد الشهري' : 'Monthly revenue', value: 'SAR 1.2M', trend: '+24%', up: true },
+                        { label: isArabic ? 'الموظفون النشطون' : 'Active employees', value: '142', trend: '+3', up: true },
+                        { label: isArabic ? 'أصناف المخزون' : 'Stock items', value: '4,280', trend: 'Low: 12', up: false },
                       ].map((metric, i) => (
                         <div key={i} className="rounded-2xl border border-white/[0.05] bg-white/[0.03] p-4">
                           <p className="text-xs text-white/40">{metric.label}</p>
@@ -202,8 +202,8 @@ export default function MarketingHome() {
                       <div className="flex items-center gap-3">
                         <ShieldCheck className="h-5 w-5 text-emerald-400" />
                         <div>
-                          <p className="text-xs font-semibold text-emerald-300">{isArabic ? 'ZATCA Ù…ØªØµÙ„ ÙˆÙ…ÙØ¹Ù‘Ù„' : 'ZATCA Connected & Active'}</p>
-                          <p className="text-[11px] text-white/35">{isArabic ? 'Ø¢Ø®Ø± Ù…Ø²Ø§Ù…Ù†Ø©: Ù„Ù„ØªÙˆ' : 'Last sync: just now'}</p>
+                          <p className="text-xs font-semibold text-emerald-300">{isArabic ? 'ZATCA متصل ومفعّل' : 'ZATCA Connected & Active'}</p>
+                          <p className="text-[11px] text-white/35">{isArabic ? 'آخر مزامنة: للتو' : 'Last sync: just now'}</p>
                         </div>
                       </div>
                       <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-500/15">
@@ -215,13 +215,13 @@ export default function MarketingHome() {
 
                 <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
                   className="absolute -top-5 -right-5 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 shadow-2xl backdrop-blur-xl">
-                  <p className="text-[11px] text-white/50">{isArabic ? 'Ø§Ù„Ø§Ù…ØªØ«Ø§Ù„' : 'Compliance'}</p>
-                  <p className="mt-0.5 text-sm font-bold text-white">âœ“ ZATCA Phase 2</p>
+                  <p className="text-[11px] text-white/50">{isArabic ? 'الامتثال' : 'Compliance'}</p>
+                  <p className="mt-0.5 text-sm font-bold text-white">✓ ZATCA Phase 2</p>
                 </motion.div>
 
                 <motion.div animate={{ y: [0, 10, 0] }} transition={{ duration: 3.8, repeat: Infinity, ease: 'easeInOut', delay: 0.6 }}
                   className="absolute -bottom-5 -left-5 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 shadow-2xl backdrop-blur-xl">
-                  <p className="text-[11px] text-white/50">{isArabic ? 'Ø§Ù„Ø¯Ø¹Ù…' : 'Support'}</p>
+                  <p className="text-[11px] text-white/50">{isArabic ? 'الدعم' : 'Support'}</p>
                   <p className="mt-0.5 text-sm font-bold text-white">24 / 7 Available</p>
                 </motion.div>
               </div>
@@ -236,7 +236,7 @@ export default function MarketingHome() {
       <section className="border-b border-slate-100 bg-white py-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <p className="mb-7 text-center text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">
-            {isArabic ? 'Ù…Ø¹ØªÙ…Ø¯ ÙˆÙ…ØªÙˆØ§ÙÙ‚ Ù…Ø¹' : 'Certified & compliant with'}
+            {isArabic ? 'معتمد ومتوافق مع' : 'Certified & compliant with'}
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
             {[
@@ -260,10 +260,10 @@ export default function MarketingHome() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-6">
             {[
-              { value: '500+', label: isArabic ? 'Ø´Ø±ÙƒØ© ØªØ«Ù‚ Ø¨Ù†Ø§' : 'Companies trust us' },
-              { value: '50K+', label: isArabic ? 'ÙØ§ØªÙˆØ±Ø© ÙŠÙˆÙ…ÙŠØ§Ù‹' : 'Invoices processed daily' },
-              { value: '99.9%', label: isArabic ? 'ÙˆÙ‚Øª ØªØ´ØºÙŠÙ„ Ø§Ù„Ù…Ù†ØµØ©' : 'Platform uptime' },
-              { value: '24/7', label: isArabic ? 'Ø¯Ø¹Ù… ÙÙ†ÙŠ Ù…ØªÙˆØ§ØµÙ„' : 'Customer support' },
+              { value: '500+', label: isArabic ? 'شركة تثق بنا' : 'Companies trust us' },
+              { value: '50K+', label: isArabic ? 'فاتورة يومياً' : 'Invoices processed daily' },
+              { value: '99.9%', label: isArabic ? 'وقت تشغيل المنصة' : 'Platform uptime' },
+              { value: '24/7', label: isArabic ? 'دعم فني متواصل' : 'Customer support' },
             ].map((stat, i) => (
               <motion.div
                 key={i}
@@ -291,15 +291,15 @@ export default function MarketingHome() {
           <div className="mb-16 text-center">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-800">
               <Building2 className="h-4 w-4" />
-              {isArabic ? 'ÙˆØ­Ø¯Ø§Øª ERP Ù…ØªÙƒØ§Ù…Ù„Ø©' : 'Integrated ERP modules'}
+              {isArabic ? 'وحدات ERP متكاملة' : 'Integrated ERP modules'}
             </div>
             <h2 className="text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
-              {isArabic ? 'ÙƒÙ„ Ø£Ø¯ÙˆØ§Øª Ø¹Ù…Ù„Ùƒ ÙÙŠ Ù…ÙƒØ§Ù† ÙˆØ§Ø­Ø¯' : 'Every tool your business needs'}
+              {isArabic ? 'كل أدوات عملك في مكان واحد' : 'Every tool your business needs'}
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-500">
               {isArabic
-                ? 'Ù…Ù† Ø§Ù„ÙÙˆØªØ±Ø© Ø¥Ù„Ù‰ Ø§Ù„Ø±ÙˆØ§ØªØ¨ ÙˆØ§Ù„Ù…Ø®Ø²ÙˆÙ† â€” Ø¨Ù†ÙŠØ© ÙˆØ§Ø­Ø¯Ø© Ù…ØµÙ…Ù…Ø© Ù„Ù„Ø£Ø¹Ù…Ø§Ù„ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠØ© Ø§Ù„Ø­Ø¯ÙŠØ«Ø©.'
-                : 'From invoicing to payroll and inventory â€” one seamless architecture built for modern Saudi businesses.'}
+                ? 'من الفوترة إلى الرواتب والمخزون — بنية واحدة مصممة للأعمال السعودية الحديثة.'
+                : 'From invoicing to payroll and inventory — one seamless architecture built for modern Saudi businesses.'}
             </p>
           </div>
 
@@ -314,7 +314,7 @@ export default function MarketingHome() {
                 <p className="relative font-bold text-slate-950">{isArabic ? m.titleAr : m.titleEn}</p>
                 <p className="relative mt-2 text-sm leading-relaxed text-slate-500">{isArabic ? m.descAr : m.descEn}</p>
                 <div className={`relative mt-4 flex items-center gap-1 text-sm font-semibold text-emerald-600 opacity-0 transition-all duration-300 group-hover:opacity-100 ${isArabic ? 'group-hover:-translate-x-1' : 'group-hover:translate-x-1'}`}>
-                  {isArabic ? 'Ø§Ø¹Ø±Ù Ø§Ù„Ù…Ø²ÙŠØ¯' : 'Learn more'}
+                  {isArabic ? 'اعرف المزيد' : 'Learn more'}
                   <ArrowRight className={`h-3.5 w-3.5 ${isArabic ? 'rotate-180' : ''}`} />
                 </div>
               </motion.div>
@@ -330,24 +330,24 @@ export default function MarketingHome() {
             <div>
               <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-300">
                 <Zap className="h-4 w-4" />
-                {isArabic ? 'Ù…ØµÙ…Ù… Ù„Ù„Ø³Ø¹ÙˆØ¯ÙŠØ©' : 'Built for Saudi Arabia'}
+                {isArabic ? 'مصمم للسعودية' : 'Built for Saudi Arabia'}
               </div>
               <h2 className="text-4xl font-black leading-tight sm:text-5xl">
                 {isArabic
-                  ? 'Ø§Ù…ØªØ«Ø§Ù„ ØªÙ„Ù‚Ø§Ø¦ÙŠ.\nÙ†Ù…Ùˆ ÙˆØ§Ø¶Ø­.'
-                  : <>{isArabic ? 'Ø§Ù…ØªØ«Ø§Ù„ ØªÙ„Ù‚Ø§Ø¦ÙŠ.' : 'Automatic compliance.'}<br /><span className="text-emerald-400">{isArabic ? 'Ù†Ù…Ùˆ ÙˆØ§Ø¶Ø­.' : 'Clear growth.'}</span></>}
+                  ? 'امتثال تلقائي.\nنمو واضح.'
+                  : <>{isArabic ? 'امتثال تلقائي.' : 'Automatic compliance.'}<br /><span className="text-emerald-400">{isArabic ? 'نمو واضح.' : 'Clear growth.'}</span></>}
               </h2>
               <p className="mt-5 max-w-lg text-lg leading-relaxed text-white/55">
                 {isArabic
-                  ? 'Ù…Ù† ÙØ§ØªÙˆØ±Ø© ZATCA Ø§Ù„Ø£ÙˆÙ„Ù‰ Ø¥Ù„Ù‰ Ø§Ù„ØªÙ‚Ø§Ø±ÙŠØ± Ø§Ù„Ø¶Ø±ÙŠØ¨ÙŠØ© Ø§Ù„Ø±Ø¨Ø¹ Ø³Ù†ÙˆÙŠØ© â€” Ø§Ù„Ù†Ø¸Ø§Ù… ÙŠØ¹Ù…Ù„ Ø¨ÙŠÙ†Ù…Ø§ Ø£Ù†Øª ØªØªØ·ÙˆØ±.'
-                  : 'From your first ZATCA invoice to quarterly VAT returns â€” the system works while your business grows.'}
+                  ? 'من فاتورة ZATCA الأولى إلى التقارير الضريبية الربع سنوية — النظام يعمل بينما أنت تتطور.'
+                  : 'From your first ZATCA invoice to quarterly VAT returns — the system works while your business grows.'}
               </p>
               <div className="mt-9 space-y-4">
                 {[
-                  isArabic ? 'Ø§Ù…ØªØ«Ø§Ù„ ZATCA Ø§Ù„Ù…Ø±Ø­Ù„Ø© Ø§Ù„Ø«Ø§Ù†ÙŠØ© ÙÙŠ Ø§Ù„Ù‚Ù„Ø¨' : 'ZATCA Phase 2 compliance at the core',
-                  isArabic ? 'Ø­Ø³Ø§Ø¨Ø§Øª GOSI ÙˆEOSB Ø§Ù„ØªÙ„Ù‚Ø§Ø¦ÙŠØ©' : 'Automatic GOSI & EOSB calculations',
-                  isArabic ? 'Ø¯Ø¹Ù… ÙƒØ§Ù…Ù„ Ù„Ù„Ø¹Ø±Ø¨ÙŠØ© ÙˆØ§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠØ©' : 'Full bilingual Arabic / English support',
-                  isArabic ? 'Ù‚Ø§Ø¨Ù„ Ù„Ù„ØªÙˆØ³Ø¹ Ù…Ù† Ø´Ø±ÙƒØ© Ù†Ø§Ø´Ø¦Ø© Ø¥Ù„Ù‰ Ù…Ø¤Ø³Ø³Ø©' : 'Scales from startup to enterprise',
+                  isArabic ? 'امتثال ZATCA المرحلة الثانية في القلب' : 'ZATCA Phase 2 compliance at the core',
+                  isArabic ? 'حسابات GOSI وEOSB التلقائية' : 'Automatic GOSI & EOSB calculations',
+                  isArabic ? 'دعم كامل للعربية والإنجليزية' : 'Full bilingual Arabic / English support',
+                  isArabic ? 'قابل للتوسع من شركة ناشئة إلى مؤسسة' : 'Scales from startup to enterprise',
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-3">
                     <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 ring-1 ring-emerald-500/25">
@@ -361,9 +361,9 @@ export default function MarketingHome() {
 
             <div className="space-y-4">
               {[
-                { icon: FileText, title: isArabic ? 'Ø§Ù„ÙÙˆØªØ±Ø© Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠØ©' : 'E-Invoicing', desc: isArabic ? 'ØªÙˆÙ„ÙŠØ¯ QR ÙˆØªÙˆÙ‚ÙŠØ¹ XML ÙˆØ¥Ø±Ø³Ø§Ù„ ÙÙˆØ±ÙŠ Ù„Ù€ ZATCA' : 'QR generation, XML signing and instant ZATCA submission', borderColor: 'border-emerald-500/20', bgColor: 'bg-gradient-to-br from-emerald-500/10 to-teal-500/10' },
-                { icon: Users, title: isArabic ? 'Ø§Ù„Ù…ÙˆØ§Ø±Ø¯ Ø§Ù„Ø¨Ø´Ø±ÙŠØ©' : 'HR & Payroll', desc: isArabic ? 'Ø§Ù„Ù…ÙˆØ¸ÙÙˆÙ† ÙˆØ§Ù„Ø±ÙˆØ§ØªØ¨ ÙˆÙ…Ù„ÙØ§Øª WPS ÙˆØ§Ù„ØªØ£Ù…ÙŠÙ†Ø§Øª' : 'Employees, payroll, WPS files and GOSI coverage', borderColor: 'border-blue-500/20', bgColor: 'bg-gradient-to-br from-blue-500/10 to-indigo-500/10' },
-                { icon: Package, title: isArabic ? 'Ø§Ù„Ù…Ø®Ø²ÙˆÙ†' : 'Inventory', desc: isArabic ? 'Ù…Ø³ØªÙˆØ¯Ø¹Ø§Øª Ù…ØªØ¹Ø¯Ø¯Ø© ÙˆØªÙ†Ø¨ÙŠÙ‡Ø§Øª Ù†ÙØ§Ø¯ Ø§Ù„Ù…Ø®Ø²ÙˆÙ†' : 'Multi-warehouse management with low stock alerts', borderColor: 'border-violet-500/20', bgColor: 'bg-gradient-to-br from-violet-500/10 to-purple-500/10' },
+                { icon: FileText, title: isArabic ? 'الفوترة الإلكترونية' : 'E-Invoicing', desc: isArabic ? 'توليد QR وتوقيع XML وإرسال فوري لـ ZATCA' : 'QR generation, XML signing and instant ZATCA submission', borderColor: 'border-emerald-500/20', bgColor: 'bg-gradient-to-br from-emerald-500/10 to-teal-500/10' },
+                { icon: Users, title: isArabic ? 'الموارد البشرية' : 'HR & Payroll', desc: isArabic ? 'الموظفون والرواتب وملفات WPS والتأمينات' : 'Employees, payroll, WPS files and GOSI coverage', borderColor: 'border-blue-500/20', bgColor: 'bg-gradient-to-br from-blue-500/10 to-indigo-500/10' },
+                { icon: Package, title: isArabic ? 'المخزون' : 'Inventory', desc: isArabic ? 'مستودعات متعددة وتنبيهات نفاد المخزون' : 'Multi-warehouse management with low stock alerts', borderColor: 'border-violet-500/20', bgColor: 'bg-gradient-to-br from-violet-500/10 to-purple-500/10' },
               ].map((item, i) => (
                 <motion.div key={i} variants={fade} initial="initial" whileInView="animate" viewport={{ once: true }} transition={{ duration: 0.5, delay: i * 0.12 }}
                   className={`rounded-2xl border ${item.borderColor} ${item.bgColor} p-5`}>
@@ -389,14 +389,14 @@ export default function MarketingHome() {
           <div className="mb-12 text-center">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#0f3d2e]/20 bg-[#0f3d2e]/[0.05] px-4 py-2 text-sm font-semibold text-[#0f3d2e]">
               <Sparkles className="h-4 w-4" />
-              {isArabic ? 'ØªØ¬Ø±Ø¨Ø© Ù…Ø¬Ø§Ù†ÙŠØ©' : 'Free Trial'}
+              {isArabic ? 'تجربة مجانية' : 'Free Trial'}
             </div>
             <h2 className="text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
-              {isArabic ? 'Ø¬Ø±Ù‘Ø¨ Ø§Ù„Ù†Ø¸Ø§Ù… Ø¨Ù†ÙØ³Ùƒ Ù…Ø¬Ø§Ù†Ø§Ù‹' : 'Try It Yourself — Free'}
+              {isArabic ? 'جرّب النظام بنفسك مجاناً' : 'Try It Yourself — Free'}
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-500">
               {isArabic
-                ? 'Ø§Ø®ØªØ± Ù†ÙˆØ¹ Ù†Ø´Ø§Ø·Ùƒ ÙˆØ£Ø¯Ø®Ù„ Ø¨Ø±ÙŠØ¯ Gmail Ù„Ø¥Ù†Ø´Ø§Ø¡ Ø­Ø³Ø§Ø¨ ØªØ¬Ø±ÙŠØ¨ÙŠ ÙƒØ§Ù…Ù„ Ù„Ù…Ø¯Ø© 7 Ø£ÙŠØ§Ù….'
+                ? 'اختر نوع نشاطك وأدخل بريد Gmail لإنشاء حساب تجريبي كامل لمدة 7 أيام.'
                 : 'Select your business type and enter your Gmail to create a full demo account for 7 days.'}
             </p>
           </div>
@@ -409,10 +409,10 @@ export default function MarketingHome() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-14 text-center">
             <h2 className="text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
-              {isArabic ? 'Ù…Ø§Ø°Ø§ ÙŠÙ‚ÙˆÙ„ Ø¹Ù…Ù„Ø§Ø¤Ù†Ø§' : 'Trusted by Saudi businesses'}
+              {isArabic ? 'ماذا يقول عملاؤنا' : 'Trusted by Saudi businesses'}
             </h2>
             <p className="mx-auto mt-4 max-w-xl text-lg text-slate-500">
-              {isArabic ? 'Ø¢Ø±Ø§Ø¡ Ø­Ù‚ÙŠÙ‚ÙŠØ© Ù…Ù† Ø´Ø±ÙƒØ§Øª ØªØ¹Ù…Ù„ Ù…Ø¹ Maqder ÙŠÙˆÙ…ÙŠØ§Ù‹.' : 'Real feedback from companies using Maqder every day.'}
+              {isArabic ? 'آراء حقيقية من شركات تعمل مع Maqder يومياً.' : 'Real feedback from companies using Maqder every day.'}
             </p>
           </div>
           <div className="grid gap-6 md:grid-cols-3">
@@ -448,14 +448,14 @@ export default function MarketingHome() {
             <div className="relative flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
               <div className="max-w-2xl">
                 <p className="text-xs font-semibold uppercase tracking-[0.32em] text-emerald-400">
-                  {isArabic ? 'Ø¬Ø§Ù‡Ø² Ù„Ù„Ø§Ù†Ø·Ù„Ø§Ù‚' : 'Ready to launch'}
+                  {isArabic ? 'جاهز للانطلاق' : 'Ready to launch'}
                 </p>
                 <h2 className="mt-3 text-4xl font-black leading-tight lg:text-5xl">
-                  {isArabic ? 'Ø§Ø¨Ø¯Ø£ Ø±Ø­Ù„ØªÙƒ Ù…Ø¹ Maqder Ø§Ù„ÙŠÙˆÙ…' : <>Start your Saudi ERP<br /><span className="text-emerald-400">journey today</span></>}
+                  {isArabic ? 'ابدأ رحلتك مع Maqder اليوم' : <>Start your Saudi ERP<br /><span className="text-emerald-400">journey today</span></>}
                 </h2>
                 <p className="mt-4 text-lg text-white/55">
                   {isArabic
-                    ? 'Ø³Ø¬Ù‘Ù„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø£Ùˆ Ø¬Ø±Ù‘Ø¨ Ø§Ù„Ù†Ø¸Ø§Ù… Ù…Ø¨Ø§Ø´Ø±Ø©Ù‹ ÙˆØ´Ø§Ù‡Ø¯ ÙƒÙŠÙ ØªØ¨Ø¯Ùˆ Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø£Ø¹Ù…Ø§Ù„ Ø§Ù„Ø­Ø¯ÙŠØ«Ø© ÙÙŠ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠØ©.'
+                    ? 'سجّل الدخول أو جرّب النظام مباشرةً وشاهد كيف تبدو إدارة الأعمال الحديثة في السعودية.'
                     : 'Log in or open the live demo and see what modern Saudi business management feels like.'}
                 </p>
               </div>
@@ -465,7 +465,7 @@ export default function MarketingHome() {
                   to="/login"
                   className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#0f3d2e] to-[#1a5d44] px-8 py-4 font-semibold text-white shadow-[0_0_40px_-8px_rgba(15,61,46,0.35)] transition-all hover:shadow-[0_0_50px_-8px_rgba(15,61,46,0.55)]"
                 >
-                  {isArabic ? 'Ø§Ø¨Ø¯Ø£ Ø§Ù„Ø¢Ù†' : 'Get started'}
+                  {isArabic ? 'ابدأ الآن' : 'Get started'}
                   <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
                 </Link>
                 <a
@@ -477,7 +477,7 @@ export default function MarketingHome() {
                   className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/12 bg-white/[0.05] px-8 py-4 font-semibold text-white transition-all hover:bg-white/10"
                 >
                   <PlayCircle className="h-5 w-5 text-emerald-300" />
-                  {isArabic ? 'ØªØ¬Ø±Ø¨Ø© Ù…Ø¬Ø§Ù†ÙŠØ©' : 'Free trial'}
+                  {isArabic ? 'تجربة مجانية' : 'Free trial'}
                 </a>
               </div>
             </div>
