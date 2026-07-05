@@ -134,6 +134,9 @@ export default function DemoCheckout() {
   const selectedPlanObj = plans.find((p) => p.id === selectedPlan) || plans[1]
   const amount = selectedBilling === 'yearly' ? selectedPlanObj.priceYearly : selectedPlanObj.priceMonthly
   const currency = websiteSettings?.pricing?.currency || 'SAR'
+  const isZatcaPhase2 = tenant?.zatca?.phase === 2
+  const zatcaAddon = isZatcaPhase2 ? 400 : 0
+  const totalAmount = amount + zatcaAddon
 
   const handleUpgrade = async () => {
     if (selectedPlan === 'enterprise') {
@@ -146,7 +149,7 @@ export default function DemoCheckout() {
 
     try {
       const { data } = await api.post('/payments/create-payment', {
-        amount,
+        amount: totalAmount,
         currency: 'SAR',
         plan: selectedPlan,
         billingCycle: selectedBilling,
@@ -376,13 +379,30 @@ export default function DemoCheckout() {
 
             {/* Amount display */}
             {selectedPlan !== 'enterprise' && (
-              <div className="mb-6 flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-50 via-white to-emerald-50 dark:from-emerald-900/10 dark:via-dark-700/30 dark:to-emerald-900/10 border border-emerald-100/60 dark:border-emerald-900/20 py-5">
-                <div className="text-center">
-                  <span className="text-5xl font-black tracking-tight text-gray-900 dark:text-white">{amount}</span>
-                  <span className="ml-1 text-lg font-bold text-gray-500 dark:text-gray-400">{currency}</span>
-                  <span className="ml-1 text-sm text-gray-400 dark:text-gray-500">
-                    {selectedBilling === 'yearly' ? (isArabic ? '/سنة' : '/year') : (isArabic ? '/شهر' : '/month')}
-                  </span>
+              <div className="mb-6 rounded-2xl bg-gradient-to-r from-emerald-50 via-white to-emerald-50 dark:from-emerald-900/10 dark:via-dark-700/30 dark:to-emerald-900/10 border border-emerald-100/60 dark:border-emerald-900/20 p-5">
+                <div className="flex items-center justify-center gap-3">
+                  <div className="text-center">
+                    <span className="text-5xl font-black tracking-tight text-gray-900 dark:text-white">{totalAmount}</span>
+                    <span className="ml-1 text-lg font-bold text-gray-500 dark:text-gray-400">{currency}</span>
+                    <span className="ml-1 text-sm text-gray-400 dark:text-gray-500">
+                      {selectedBilling === 'yearly' ? (isArabic ? '/سنة' : '/year') : (isArabic ? '/شهر' : '/month')}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-3 space-y-2 text-sm">
+                  <div className="flex items-center justify-between text-gray-600 dark:text-gray-300">
+                    <span>{isArabic ? `خطة ${selectedPlanObj.nameAr}` : `${selectedPlanObj.nameEn} plan`}</span>
+                    <span className="font-medium">{amount} {currency}</span>
+                  </div>
+                  {isZatcaPhase2 && (
+                    <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-400">
+                      <span className="flex items-center gap-1.5">
+                        <Shield className="h-4 w-4" />
+                        {isArabic ? 'المرحلة الثانية من الزكاة والضريبة' : 'ZATCA Phase 2 addon'}
+                      </span>
+                      <span className="font-medium">+{zatcaAddon} {currency}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
