@@ -2,7 +2,7 @@ import { useEffect, lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { getMe, setTenantInactive } from './store/slices/authSlice'
-import { setLanguage, setTheme } from './store/slices/uiSlice'
+import { setLanguage, setTheme, setDisplayMode } from './store/slices/uiSlice'
 import { applyTenantBranding } from './lib/branding'
 import { getTenantBusinessTypes } from './lib/businessTypes'
 import { ErrorBoundary } from './lib/errorBoundary'
@@ -341,7 +341,7 @@ function BusinessTypeRoute({ children, allowedTypes }) {
 function App() {
   const dispatch = useDispatch()
   const { token, tenant, user } = useSelector((state) => state.auth)
-  const { language, theme } = useSelector((state) => state.ui)
+  const { language, theme, displayMode } = useSelector((state) => state.ui)
 
   useEffect(() => {
     if (token && !user) {
@@ -358,6 +358,7 @@ function App() {
   useEffect(() => {
     dispatch(setLanguage(language))
     dispatch(setTheme(theme))
+    dispatch(setDisplayMode(displayMode))
   }, [])
 
   useEffect(() => {

@@ -25,6 +25,19 @@ const getInitialHiddenMenuItems = () => {
   }
 }
 
+const getInitialDisplayMode = () => {
+  const saved = localStorage.getItem('displayMode')
+  return saved || 'auto'
+}
+
+const applyDisplayMode = (mode) => {
+  const html = document.documentElement
+  html.classList.remove('display-mode-auto', 'display-mode-tablet', 'display-mode-desktop')
+  if (mode === 'tablet' || mode === 'desktop') {
+    html.classList.add(`display-mode-${mode}`)
+  }
+}
+
 const initialState = {
   language: getInitialLanguage(),
   theme: getInitialTheme(),
@@ -32,6 +45,7 @@ const initialState = {
   sidebarCollapsed: false,
   hideSidebar: getInitialHideSidebar(),
   hiddenMenuItems: getInitialHiddenMenuItems(),
+  displayMode: getInitialDisplayMode(),
   mobileMenuOpen: false,
 }
 
@@ -86,8 +100,14 @@ const uiSlice = createSlice({
       state.hiddenMenuItems = Array.from(current)
       localStorage.setItem('hiddenMenuItems', JSON.stringify(state.hiddenMenuItems))
     },
+    setDisplayMode: (state, action) => {
+      const mode = action.payload || 'auto'
+      state.displayMode = mode
+      localStorage.setItem('displayMode', mode)
+      applyDisplayMode(mode)
+    },
   },
 })
 
-export const { setLanguage, setTheme, toggleSidebar, toggleSidebarCollapse, setMobileMenuOpen, setHideSidebar, toggleHideSidebar, setHiddenMenuItems, toggleHiddenMenuItem } = uiSlice.actions
+export const { setLanguage, setTheme, toggleSidebar, toggleSidebarCollapse, setMobileMenuOpen, setHideSidebar, toggleHideSidebar, setHiddenMenuItems, toggleHiddenMenuItem, setDisplayMode } = uiSlice.actions
 export default uiSlice.reducer

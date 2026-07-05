@@ -3,11 +3,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector, useDispatch } from 'react-redux'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
-import { Building2, Shield, Globe, Palette, Bell, Save, Key, CheckCircle, Image, Database, Download, FileText, CreditCard, Terminal, Car, UtensilsCrossed, Clock, Printer, MapPin, Briefcase, Receipt, MessageCircle, BookOpen, PanelLeft, Eye, EyeOff, Menu } from 'lucide-react'
+import { Building2, Shield, Globe, Palette, Bell, Save, Key, CheckCircle, Image, Database, Download, FileText, CreditCard, Terminal, Car, UtensilsCrossed, Clock, Printer, MapPin, Briefcase, Receipt, MessageCircle, BookOpen, PanelLeft, Eye, EyeOff, Menu, Monitor, Smartphone, Maximize } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
-import { setLanguage, setTheme, setHideSidebar, toggleHiddenMenuItem, setHiddenMenuItems } from '../store/slices/uiSlice'
+import { setLanguage, setTheme, setHideSidebar, toggleHiddenMenuItem, setHiddenMenuItems, setDisplayMode } from '../store/slices/uiSlice'
 import { updateTenant } from '../store/slices/authSlice'
 import { useLiveTranslation } from '../lib/liveTranslation'
 import { getInvoiceBrandingProfile, getInvoiceTemplateId, getInvoiceTypography, INVOICE_FONT_OPTIONS } from '../lib/invoiceBranding'
@@ -198,7 +198,7 @@ function MenuVisibilitySettings() {
 export default function Settings() {
   const dispatch = useDispatch()
   const queryClient = useQueryClient()
-  const { language, theme, hideSidebar, hiddenMenuItems } = useSelector((state) => state.ui)
+  const { language, theme, hideSidebar, hiddenMenuItems, displayMode } = useSelector((state) => state.ui)
   const { user } = useSelector((state) => state.auth)
   const { t } = useTranslation(language)
   const [activeTab, setActiveTab] = useState('company')
@@ -783,6 +783,33 @@ export default function Settings() {
                     >
                       <span className="font-medium">{t('dark')}</span>
                     </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="label flex items-center gap-2"><Monitor className="w-4 h-4" />{language === 'ar' ? 'وضع الشاشة' : 'Screen View'}</label>
+                  <div className="flex gap-3 mt-2">
+                    {[
+                      { key: 'auto', label: language === 'ar' ? 'تلقائي' : 'Auto', icon: Maximize, desc: language === 'ar' ? 'يتكيف مع حجم الشاشة' : 'Adapts to screen size' },
+                      { key: 'desktop', label: language === 'ar' ? 'سطح المكتب' : 'Desktop', icon: Monitor, desc: language === 'ar' ? 'الحجم الافتراضي' : 'Default size' },
+                      { key: 'tablet', label: language === 'ar' ? 'تابلت' : 'Tablet', icon: Smartphone, desc: language === 'ar' ? 'تخطيط سطح مكتب أصغر' : 'Smaller desktop layout' },
+                    ].map(({ key, label, icon: Icon, desc }) => (
+                      <button
+                        key={key}
+                        onClick={() => dispatch(setDisplayMode(key))}
+                        className={`flex-1 p-4 rounded-xl border-2 transition-all text-left ${
+                          displayMode === key
+                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                            : 'border-gray-200 dark:border-dark-600 hover:bg-gray-50 dark:hover:bg-dark-700/50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <Icon className="w-4 h-4 text-primary-500" />
+                          <span className="font-medium">{label}</span>
+                        </div>
+                        <p className="text-xs text-gray-500">{desc}</p>
+                      </button>
+                    ))}
                   </div>
                 </div>
 

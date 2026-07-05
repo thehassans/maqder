@@ -309,3 +309,45 @@
     @apply bg-dark-800/80 border-dark-700/50;
   }
 }
+
+/* Display modes: tablet keeps desktop layout but scales/compact the UI */
+html.display-mode-tablet {
+  font-size: 14px;
+}
+
+html.display-mode-tablet body {
+  @apply scale-[0.95] origin-top-left;
+  width: 105.26%;
+  min-height: 105.26vh;
+}
+
+html.display-mode-tablet .card,
+html.display-mode-tablet .card-glass {
+  @apply p-4;
+}
+
+html.display-mode-tablet .stat-card {
+  @apply p-4;
+}
+
+html.display-mode-tablet .btn {
+  @apply px-3 py-2 text-xs;
+}
+
+html.display-mode-tablet .input,
+html.display-mode-tablet .select {
+  @apply px-3 py-2 text-xs;
+}
+
+html.display-mode-tablet .sidebar-link {
+  @apply px-3 py-2 text-xs;
+}
+
+html.display-mode-tablet .table th,
+html.display-mode-tablet .table td {
+  @apply px-3 py-2;
+}
+
+html.display-mode-desktop {
+  font-size: 16px;
+}
