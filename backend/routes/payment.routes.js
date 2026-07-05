@@ -39,8 +39,8 @@ router.post('/create-payment', protect, async (req, res) => {
     }
 
     const config = await getMoyasarConfig()
-    if (!config.enabled || !config.secretKey) {
-      return res.status(400).json({ error: 'Payment gateway is not configured' })
+    if (!config.enabled || !config.publishableKey) {
+      return res.status(400).json({ error: 'Payment gateway is not configured (missing publishable key)' })
     }
 
     if (paymentMethod === 'stcpay') {
@@ -75,13 +75,13 @@ router.post('/create-payment', protect, async (req, res) => {
       },
     }
 
-    console.log('[Moyasar] Creating payment:', JSON.stringify({ url: `${MOYASAR_API_BASE}/v1/payments`, body: requestBody, keyPrefix: config.secretKey?.slice(0, 6) }))
+    console.log('[Moyasar] Creating payment with publishable key:', config.publishableKey?.slice(0, 10))
 
     const response = await fetch(`${MOYASAR_API_BASE}/v1/payments`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Basic ${Buffer.from(config.secretKey.trim() + ':').toString('base64')}`,
+        'Authorization': `Basic ${Buffer.from(config.publishableKey.trim() + ':').toString('base64')}`,
       },
       body: JSON.stringify(requestBody),
     })
