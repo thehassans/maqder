@@ -84,6 +84,13 @@ const mergeWebsiteDefaults = (website) => {
   const hasPlans = Array.isArray(currentPlans) && currentPlans.length > 0
   const currentPlansByBusinessType = current.pricing?.plansByBusinessType
   const hasPlansByBusinessType = Array.isArray(currentPlansByBusinessType)
+
+  const existingMap = new Map((hasPlansByBusinessType ? currentPlansByBusinessType : []).map((p) => [p.businessType, p]))
+  const mergedPlansByBusinessType = BUSINESS_TYPES.map((type) => {
+    if (existingMap.has(type)) return existingMap.get(type)
+    return { businessType: type, plans: getDefaultPlansByBusinessType(type) }
+  })
+
   return {
     ...defaults,
     ...current,
@@ -94,7 +101,7 @@ const mergeWebsiteDefaults = (website) => {
       ...(defaults.pricing || {}),
       ...(current.pricing || {}),
       plans: hasPlans ? currentPlans : getDefaultPricingPlans(),
-      plansByBusinessType: hasPlansByBusinessType ? currentPlansByBusinessType : []
+      plansByBusinessType: mergedPlansByBusinessType
     },
   }
 }
