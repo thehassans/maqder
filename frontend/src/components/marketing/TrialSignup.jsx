@@ -51,10 +51,10 @@ export default function TrialSignup() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5 }}
-        className="overflow-hidden rounded-3xl border border-emerald-200/60 bg-white shadow-xl shadow-emerald-100/40"
+        className="overflow-hidden rounded-3xl border border-[#0f3d2e]/20 bg-white shadow-xl shadow-[#0f3d2e]/10"
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-500 to-teal-600 px-6 py-5 text-white sm:px-8">
+        <div className="bg-gradient-to-r from-[#0f3d2e] to-[#1a5d44] px-6 py-5 text-white sm:px-8">
           <div className="flex items-center gap-3">
             <Sparkles className="h-6 w-6" />
             <div>
@@ -82,12 +82,12 @@ export default function TrialSignup() {
                   onClick={() => setSelectedType(option.id)}
                   className={`relative flex flex-col items-start gap-1 rounded-xl border-2 p-3 text-left transition-all ${
                     selectedType === option.id
-                      ? 'border-emerald-500 bg-emerald-50 shadow-md shadow-emerald-100'
-                      : 'border-slate-200 bg-white hover:border-emerald-300 hover:bg-emerald-50/30'
+                      ? 'border-[#0f3d2e] bg-[#0f3d2e]/[0.04] shadow-md shadow-[#0f3d2e]/10'
+                      : 'border-slate-200 bg-white hover:border-[#0f3d2e]/40 hover:bg-[#0f3d2e]/[0.02]'
                   }`}
                 >
                   {selectedType === option.id && (
-                    <CheckCircle2 className="absolute top-2 right-2 h-4 w-4 text-emerald-500" />
+                    <CheckCircle2 className="absolute top-2 right-2 h-4 w-4 text-[#0f3d2e]" />
                   )}
                   <span className="text-sm font-bold text-slate-800">{option.label}</span>
                   <span className="text-xs text-slate-500 line-clamp-2">{option.description}</span>
@@ -108,7 +108,7 @@ export default function TrialSignup() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="your.email@gmail.com"
-                className="w-full rounded-xl border border-slate-300 py-3.5 pl-11 pr-4 text-sm outline-none transition-all focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                className="w-full rounded-xl border border-slate-300 py-3.5 pl-11 pr-4 text-sm outline-none transition-all focus:border-[#0f3d2e] focus:ring-2 focus:ring-[#0f3d2e]/20"
                 disabled={isLoading}
               />
             </div>
@@ -133,7 +133,7 @@ export default function TrialSignup() {
           <button
             type="submit"
             disabled={isLoading}
-            className="group inline-flex w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-4 font-semibold text-white shadow-lg shadow-emerald-200 transition-all hover:shadow-xl hover:shadow-emerald-300 disabled:cursor-not-allowed disabled:opacity-60"
+            className="group inline-flex w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-r from-[#0f3d2e] to-[#1a5d44] px-6 py-4 font-semibold text-white shadow-lg shadow-[#0f3d2e]/20 transition-all hover:shadow-xl hover:shadow-[#0f3d2e]/30 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isLoading ? (
               <>
@@ -156,7 +156,7 @@ export default function TrialSignup() {
               isArabic ? 'بدون بطاقة ائتمان' : 'No credit card',
             ].map((feature, i) => (
               <div key={i} className="flex items-center gap-1.5">
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                <CheckCircle2 className="h-3.5 w-3.5 text-[#0f3d2e]" />
                 {feature}
               </div>
             ))}

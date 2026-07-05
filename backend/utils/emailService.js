@@ -457,7 +457,7 @@ export const sendInvoiceEmail = async ({ tenant, invoice, recipient, customerNam
   return { sent: true, to: recipients, language: preferredLanguage };
 };
 
-export const sendDemoWelcomeEmail = async ({ email, tenant, businessType, trialEndDate, preferredLanguage } = {}) => {
+export const sendDemoWelcomeEmail = async ({ email, tenant, businessType, trialEndDate, password, preferredLanguage } = {}) => {
   try {
     const settings = await getGlobalSettings();
     const config = resolveEmailConfig(settings, { allowEnvFallback: false });
@@ -491,8 +491,11 @@ Welcome to ${brandName}! Your 7-day free demo account has been created successfu
 Here are your account details:
 • Login URL: ${loginUrl}
 • Email: ${email}
+• Password: ${password}
 • Business Type: ${businessType}
 • Trial Expires: ${trialEndStr}
+
+Keep this email safe — you'll need these credentials to log back in.
 
 During your trial, you'll have full access to all features. If you have any questions, our sales team is here to help — just reply to this email.
 
@@ -508,8 +511,11 @@ The ${brandName} Sales Team`;
 تفاصيل حسابك:
 • رابط الدخول: ${loginUrl}
 • البريد الإلكتروني: ${email}
+• كلمة المرور: ${password}
 • نوع النشاط: ${businessType}
 • تنتهي التجربة في: ${trialEndStr}
+
+احتفظ بهذا البريد — ستحتاج هذه البيانات لتسجيل الدخول مرة أخرى.
 
 خلال فترة التجربة، سيكون لديك وصول كامل لجميع الميزات. إذا كان لديك أي أسئلة، فريق المبيعات لدينا جاهز لمساعدتك — فقط قم بالرد على هذا البريد.
 

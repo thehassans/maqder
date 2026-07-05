@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
-import { Clock, Crown, X, AlertTriangle } from 'lucide-react'
+import { useSelector } from 'react-redux'
+import { Clock, Crown, X, AlertTriangle, Check, Shield, Zap, Star } from 'lucide-react'
 import api from '../../lib/api'
 
 function formatTimeRemaining(ms) {
@@ -122,7 +122,7 @@ export default function DemoBanner() {
   return (
     <>
       {/* Demo Banner */}
-      <div className={`relative px-4 py-2 text-sm ${expired ? 'bg-red-600' : urgent ? 'bg-amber-500' : 'bg-gradient-to-r from-emerald-600 to-teal-600'} text-white`}>
+      <div className={`relative px-4 py-2 text-sm ${expired ? 'bg-red-600' : urgent ? 'bg-amber-500' : 'bg-gradient-to-r from-[#0f3d2e] to-[#1a5d44]'} text-white`}>
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
             {expired ? (
@@ -150,7 +150,7 @@ export default function DemoBanner() {
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => setShowUpgradeModal(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-white/20 px-3 py-1.5 text-xs font-bold backdrop-blur-sm transition hover:bg-white/30"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-white/15 px-3 py-1.5 text-xs font-bold backdrop-blur-sm transition hover:bg-white/25"
             >
               <Crown className="h-3.5 w-3.5" />
               {isArabic ? 'احصل على النسخة الكاملة' : 'Get Full Version'}
@@ -168,95 +168,111 @@ export default function DemoBanner() {
       {/* Upgrade Modal */}
       {showUpgradeModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !paymentLoading && setShowUpgradeModal(false)} />
-          <div className="relative w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-dark-800">
-            {/* Modal Header */}
-            <div className="bg-gradient-to-r from-emerald-500 to-teal-600 px-6 py-5 text-white">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Crown className="h-6 w-6" />
-                  <div>
-                    <h3 className="text-lg font-bold">
-                      {isArabic ? 'الترقية إلى النسخة الكاملة' : 'Upgrade to Full Version'}
-                    </h3>
-                    <p className="text-sm text-white/80">
-                      {isArabic ? 'اختر الخطة المناسبة لعملك' : 'Choose the plan that fits your business'}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => !paymentLoading && setShowUpgradeModal(false)}
-                  className="rounded-lg p-1.5 transition hover:bg-white/20"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-md" onClick={() => !paymentLoading && setShowUpgradeModal(false)} />
+          <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-dark-800">
+            {/* Premium Header */}
+            <div className="relative bg-gradient-to-br from-[#0f3d2e] via-[#1a5d44] to-[#0f3d2e] px-8 pt-8 pb-10 text-center text-white">
+              <div className="pointer-events-none absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.15), transparent 60%)' }} />
+              <button
+                onClick={() => !paymentLoading && setShowUpgradeModal(false)}
+                className="absolute top-4 right-4 rounded-full p-1.5 transition hover:bg-white/15"
+              >
+                <X className="h-5 w-5" />
+              </button>
+              <div className="relative mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20">
+                <Crown className="h-8 w-8 text-amber-300" />
               </div>
+              <h3 className="text-2xl font-black tracking-tight">
+                {isArabic ? 'الترقية إلى النسخة الكاملة' : 'Upgrade to Full Version'}
+              </h3>
+              <p className="mt-2 text-sm text-white/70">
+                {isArabic ? 'اختر الخطة المناسبة لعملك' : 'Choose the plan that fits your business'}
+              </p>
             </div>
 
             {/* Modal Body */}
-            <div className="p-6">
+            <div className="px-8 py-7">
               {/* Plan Selection */}
-              <div className="mb-4 grid grid-cols-3 gap-2">
-                {plans.map((plan) => (
-                  <button
-                    key={plan.id}
-                    onClick={() => setSelectedPlan(plan.id)}
-                    className={`rounded-xl border-2 p-3 text-center transition-all ${
-                      selectedPlan === plan.id
-                        ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
-                        : 'border-slate-200 dark:border-dark-600 hover:border-emerald-300'
-                    }`}
-                  >
-                    <p className="text-sm font-bold text-slate-800 dark:text-white">
-                      {isArabic ? plan.nameAr : plan.nameEn}
-                    </p>
-                    {plan.priceMonthly > 0 ? (
-                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                        {selectedBilling === 'yearly' ? `${plan.priceYearly} SAR/yr` : `${plan.priceMonthly} SAR/mo`}
-                      </p>
-                    ) : (
-                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                        {isArabic ? 'تواصل معنا' : 'Contact us'}
-                      </p>
-                    )}
-                  </button>
-                ))}
+              <div className="mb-5 space-y-2.5">
+                {plans.map((plan) => {
+                  const isSelected = selectedPlan === plan.id
+                  const price = selectedBilling === 'yearly' ? plan.priceYearly : plan.priceMonthly
+                  return (
+                    <button
+                      key={plan.id}
+                      onClick={() => setSelectedPlan(plan.id)}
+                      className={`flex w-full items-center justify-between rounded-2xl border-2 px-4 py-3.5 text-left transition-all ${
+                        isSelected
+                          ? 'border-[#0f3d2e] bg-[#0f3d2e]/[0.03] dark:bg-[#0f3d2e]/10'
+                          : 'border-slate-200 dark:border-dark-600 hover:border-slate-300 dark:hover:border-dark-500'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 transition ${
+                          isSelected ? 'border-[#0f3d2e] bg-[#0f3d2e]' : 'border-slate-300 dark:border-dark-500'
+                        }`}>
+                          {isSelected && <Check className="h-3 w-3 text-white" />}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-800 dark:text-white">
+                            {isArabic ? plan.nameAr : plan.nameEn}
+                          </p>
+                          {plan.priceMonthly > 0 ? (
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                              {price} SAR {selectedBilling === 'yearly' ? (isArabic ? '/سنة' : '/yr') : (isArabic ? '/شهر' : '/mo')}
+                            </p>
+                          ) : (
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                              {isArabic ? 'تواصل معنا' : 'Contact us'}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      {plan.id === 'professional' && (
+                        <span className="rounded-full bg-amber-100 dark:bg-amber-900/30 px-2.5 py-1 text-[10px] font-bold text-amber-700 dark:text-amber-400">
+                          {isArabic ? 'الأكثر شيوعاً' : 'POPULAR'}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
               </div>
 
               {/* Billing Cycle Toggle */}
               {selectedPlan !== 'enterprise' && (
-                <div className="mb-4 flex items-center gap-2">
+                <div className="mb-5 flex items-center gap-2 rounded-2xl bg-slate-50 dark:bg-dark-700 p-1">
                   <button
                     onClick={() => setSelectedBilling('monthly')}
-                    className={`flex-1 rounded-lg py-2 text-sm font-medium transition ${
+                    className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition ${
                       selectedBilling === 'monthly'
-                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                        : 'bg-slate-100 text-slate-600 dark:bg-dark-700 dark:text-slate-400'
+                        ? 'bg-white dark:bg-dark-800 text-[#0f3d2e] dark:text-white shadow-sm'
+                        : 'text-slate-500 dark:text-slate-400'
                     }`}
                   >
                     {isArabic ? 'شهري' : 'Monthly'}
                   </button>
                   <button
                     onClick={() => setSelectedBilling('yearly')}
-                    className={`flex-1 rounded-lg py-2 text-sm font-medium transition ${
+                    className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition ${
                       selectedBilling === 'yearly'
-                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                        : 'bg-slate-100 text-slate-600 dark:bg-dark-700 dark:text-slate-400'
+                        ? 'bg-white dark:bg-dark-800 text-[#0f3d2e] dark:text-white shadow-sm'
+                        : 'text-slate-500 dark:text-slate-400'
                     }`}
                   >
                     {isArabic ? 'سنوي' : 'Yearly'}
-                    <span className="ml-1 text-xs text-emerald-500">−17%</span>
+                    <span className="ml-1.5 text-xs text-emerald-500">−17%</span>
                   </button>
                 </div>
               )}
 
               {/* Amount Display */}
               {selectedPlan !== 'enterprise' && (
-                <div className="mb-4 rounded-xl bg-slate-50 dark:bg-dark-700 px-4 py-3 text-center">
-                  <span className="text-2xl font-black text-slate-900 dark:text-white">
-                    {amount} <span className="text-sm font-normal">SAR</span>
+                <div className="mb-5 text-center">
+                  <span className="text-3xl font-black text-slate-900 dark:text-white">
+                    {amount}
                   </span>
-                  <span className="text-sm text-slate-500 dark:text-slate-400">
+                  <span className="text-sm font-medium text-slate-500 dark:text-slate-400"> SAR</span>
+                  <span className="text-sm text-slate-400 dark:text-slate-500">
                     {selectedBilling === 'yearly' ? (isArabic ? '/سنة' : '/year') : (isArabic ? '/شهر' : '/month')}
                   </span>
                 </div>
@@ -264,7 +280,7 @@ export default function DemoBanner() {
 
               {/* Error */}
               {paymentError && (
-                <div className="mb-3 rounded-lg bg-red-50 dark:bg-red-900/20 px-4 py-2.5 text-sm text-red-600 dark:text-red-400">
+                <div className="mb-4 rounded-xl bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-600 dark:text-red-400">
                   {paymentError}
                 </div>
               )}
@@ -273,7 +289,7 @@ export default function DemoBanner() {
               <button
                 onClick={handleUpgrade}
                 disabled={paymentLoading}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-6 py-3.5 font-semibold text-white shadow-lg transition hover:shadow-xl disabled:opacity-60"
+                className="flex w-full items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-[#0f3d2e] to-[#1a5d44] px-6 py-4 font-bold text-white shadow-lg shadow-[#0f3d2e]/20 transition hover:shadow-xl hover:shadow-[#0f3d2e]/30 disabled:opacity-60"
               >
                 {paymentLoading ? (
                   <>
@@ -290,9 +306,21 @@ export default function DemoBanner() {
                 )}
               </button>
 
-              <p className="mt-3 text-center text-xs text-slate-400">
-                {isArabic ? 'دفع آمن عبر Moyasar — Visa, Mastercard, Mada, Apple Pay' : 'Secure payment via Moyasar — Visa, Mastercard, Mada, Apple Pay'}
-              </p>
+              {/* Trust badges */}
+              <div className="mt-5 flex items-center justify-center gap-4 text-xs text-slate-400 dark:text-slate-500">
+                <span className="flex items-center gap-1.5">
+                  <Shield className="h-3.5 w-3.5" />
+                  {isArabic ? 'دفع آمن' : 'Secure'}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Zap className="h-3.5 w-3.5" />
+                  {isArabic ? 'تفعيل فوري' : 'Instant access'}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Star className="h-3.5 w-3.5" />
+                  {isArabic ? 'Visa, Mada, Apple Pay' : 'Visa, Mada, Apple Pay'}
+                </span>
+              </div>
             </div>
           </div>
         </div>

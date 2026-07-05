@@ -355,6 +355,7 @@ router.post('/demo-signup', async (req, res) => {
       tenant,
       businessType: primaryBusinessType,
       trialEndDate,
+      password,
       preferredLanguage: 'en',
     })
 

@@ -27,7 +27,6 @@ import {
   Zap,
 } from 'lucide-react'
 import { usePublicWebsiteSettings } from '../../lib/website'
-import { SOLUTIONS } from '../../lib/solutionsContent'
 import TrialSignup from '../../components/marketing/TrialSignup'
 
 const fade = {
@@ -118,21 +117,21 @@ export default function MarketingHome() {
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link
                   to="/login"
-                  className="group inline-flex items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-7 py-4 font-semibold text-white shadow-[0_0_0_1px_rgba(52,211,153,0.15),0_8px_32px_-8px_rgba(52,211,153,0.45)] transition-all hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_rgba(52,211,153,0.3),0_12px_40px_-8px_rgba(52,211,153,0.6)]"
+                  className="group inline-flex items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-[#0f3d2e] to-[#1a5d44] px-7 py-4 font-semibold text-white shadow-[0_0_0_1px_rgba(15,61,46,0.15),0_8px_32px_-8px_rgba(15,61,46,0.45)] transition-all hover:-translate-y-0.5 hover:shadow-[0_0_0_1px_rgba(15,61,46,0.3),0_12px_40px_-8px_rgba(15,61,46,0.6)]"
                 >
                   {isArabic ? 'Ø§Ø¨Ø¯Ø£ Ø§Ù„Ø¢Ù†' : 'Get started'}
                   <ArrowRight className={`h-5 w-5 transition-transform group-hover:translate-x-0.5 ${isArabic ? 'rotate-180 group-hover:-translate-x-0.5' : ''}`} />
                 </Link>
                 <a
-                  href="#demos"
+                  href="#trial"
                   onClick={(e) => {
                     e.preventDefault();
-                    document.getElementById('demos').scrollIntoView({ behavior: 'smooth' });
+                    document.getElementById('trial').scrollIntoView({ behavior: 'smooth' });
                   }}
                   className="inline-flex items-center justify-center gap-2.5 rounded-2xl border border-white/12 bg-white/[0.06] px-7 py-4 font-semibold text-white backdrop-blur-sm transition-all hover:border-white/20 hover:bg-white/10"
                 >
                   <PlayCircle className="h-5 w-5 text-emerald-300" />
-                  {isArabic ? 'Ø§Ù„ØªØ¬Ø§Ø±Ø¨ Ø§Ù„Ø­ÙŠØ©' : 'Live demos'}
+                  {isArabic ? 'ØªØ¬Ø±Ø¨Ø© Ù…Ø¬Ø§Ù†ÙŠØ©' : 'Free trial'}
                 </a>
               </div>
 
@@ -141,7 +140,7 @@ export default function MarketingHome() {
                 <div className="flex items-center gap-2">
                   <div className="flex -space-x-2.5">
                     {['A', 'S', 'K', 'M'].map((c, i) => (
-                      <div key={i} className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#030c06] bg-gradient-to-br from-emerald-400 to-emerald-600 text-[11px] font-bold text-white">
+                      <div key={i} className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#030c06] bg-gradient-to-br from-[#1a5d44] to-[#0f3d2e] text-[11px] font-bold text-white">
                         {c}
                       </div>
                     ))}
@@ -384,86 +383,11 @@ export default function MarketingHome() {
         </div>
       </section>
 
-      {/* â”€â”€ LIVE DEMOS â”€â”€ */}
-      <section id="demos" className="bg-slate-50 py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-14 text-center">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-800">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500"></span>
-              </span>
-              {isArabic ? 'ØªØ¬Ø±Ø¨Ø© Ø­ÙŠØ©' : 'Live Demos'}
-            </div>
-            <h2 className="text-4xl font-black tracking-tight text-slate-950 sm:text-5xl">
-              {isArabic ? 'Ø¬Ø±Ø¨ Ø§Ù„Ù†Ø¸Ø§Ù… Ø¨Ù†ÙØ³Ùƒ' : 'Experience It Yourself'}
-            </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-500">
-              {isArabic
-                ? 'Ø§Ø®ØªØ± Ù†ÙˆØ¹ Ù†Ø´Ø§Ø·Ùƒ Ø§Ù„ØªØ¬Ø§Ø±ÙŠ ÙˆØ¬Ø±Ø¨ ÙˆØ§Ø¬Ù‡Ø© Ø§Ù„Ù†Ø¸Ø§Ù… Ø§Ù„Ù…Ø®ØµØµØ© Ù…Ø¹ Ø¨ÙŠØ§Ù†Ø§Øª ØªØ¬Ø±ÙŠØ¨ÙŠØ©.'
-                : 'Select your business type and explore the customized interface with demo data.'}
-            </p>
-            <div className="mt-6">
-              <Link
-                to="/solutions"
-                className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-2.5 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100"
-              >
-                {isArabic ? 'Ø§Ø³ØªÙƒØ´Ù ÙƒÙ„ Ø§Ù„Ø­Ù„ÙˆÙ„ Ø­Ø³Ø¨ Ù†Ø´Ø§Ø·Ùƒ' : 'Explore all industry solutions'}
-                <ArrowRight className={`h-4 w-4 ${isArabic ? 'rotate-180' : ''}`} />
-              </Link>
-            </div>
-          </div>
-
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {SOLUTIONS.map((demo, idx) => {
-              const Icon = demo.icon === 'Building2' ? Building2 :
-                           demo.icon === 'UtensilsCrossed' ? PieChart :
-                           demo.icon === 'Sparkles' ? Sparkles :
-                           demo.icon === 'Scissors' ? Sparkles :
-                           demo.icon === 'Globe' ? Globe :
-                           demo.icon === 'Truck' ? Truck :
-                           demo.icon === 'Landmark' ? Landmark : Building2;
-
-              return (
-                <motion.div key={idx} variants={fade} initial="initial" whileInView="animate" viewport={{ once: true }} transition={{ duration: 0.5, delay: idx * 0.1 }}
-                  className={`group relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-8 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl`}>
-                  <div className={`absolute -right-8 -top-8 h-32 w-32 rounded-bl-full ${demo.glow} transition-transform group-hover:scale-110`} />
-                  <div className="relative z-10 flex h-full flex-col">
-                    <div className="mb-6 relative h-40 w-full overflow-hidden rounded-2xl border border-slate-100">
-                      <img src={demo.image} alt={isArabic ? demo.nameAr : demo.nameEn} loading="lazy" className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                      <div className={`absolute bottom-3 left-3 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${demo.accent} shadow-md`}>
-                        <Icon className="h-5 w-5 text-white" />
-                      </div>
-                    </div>
-                    <h3 className="mb-3 text-xl font-bold text-slate-900">
-                      {isArabic ? demo.nameAr : demo.nameEn}
-                    </h3>
-                    <p className="mb-8 flex-grow text-slate-600">
-                      {isArabic ? demo.taglineAr : demo.taglineEn}
-                    </p>
-                    
-                    <Link
-                      to="/login"
-                      state={{ email: demo.demoEmail, password: 'password123' }}
-                      className={`inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r ${demo.accent} py-3.5 font-semibold text-white shadow-md transition-all hover:shadow-lg`}
-                    >
-                      {isArabic ? 'Ø¯Ø®ÙˆÙ„ Ù„Ù„Ù†Ø³Ø®Ø© Ø§Ù„ØªØ¬Ø±ÙŠØ¨ÙŠØ©' : 'Launch Demo'}
-                      <ArrowRight className={`h-5 w-5 ${isArabic ? 'rotate-180' : ''}`} />
-                    </Link>
-                  </div>
-                </motion.div>
-              )
-            })}
-          </div>
-        </div>
-      </section>
-
       {/* ── TRIAL SIGNUP ── */}
-      <section className="bg-gradient-to-b from-slate-50 to-white py-24">
+      <section id="trial" className="bg-gradient-to-b from-slate-50 to-white py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-12 text-center">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-800">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#0f3d2e]/20 bg-[#0f3d2e]/[0.05] px-4 py-2 text-sm font-semibold text-[#0f3d2e]">
               <Sparkles className="h-4 w-4" />
               {isArabic ? 'ØªØ¬Ø±Ø¨Ø© Ù…Ø¬Ø§Ù†ÙŠØ©' : 'Free Trial'}
             </div>
@@ -539,21 +463,21 @@ export default function MarketingHome() {
               <div className="flex shrink-0 flex-col gap-3 sm:flex-row">
                 <Link
                   to="/login"
-                  className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-8 py-4 font-semibold text-white shadow-[0_0_40px_-8px_rgba(52,211,153,0.35)] transition-all hover:shadow-[0_0_50px_-8px_rgba(52,211,153,0.55)]"
+                  className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#0f3d2e] to-[#1a5d44] px-8 py-4 font-semibold text-white shadow-[0_0_40px_-8px_rgba(15,61,46,0.35)] transition-all hover:shadow-[0_0_50px_-8px_rgba(15,61,46,0.55)]"
                 >
                   {isArabic ? 'Ø§Ø¨Ø¯Ø£ Ø§Ù„Ø¢Ù†' : 'Get started'}
                   <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
                 </Link>
                 <a
-                  href="#demos"
+                  href="#trial"
                   onClick={(e) => {
                     e.preventDefault();
-                    document.getElementById('demos').scrollIntoView({ behavior: 'smooth' });
+                    document.getElementById('trial').scrollIntoView({ behavior: 'smooth' });
                   }}
                   className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/12 bg-white/[0.05] px-8 py-4 font-semibold text-white transition-all hover:bg-white/10"
                 >
                   <PlayCircle className="h-5 w-5 text-emerald-300" />
-                  {isArabic ? 'Ø§Ù„ØªØ¬Ø§Ø±Ø¨ Ø§Ù„Ø­ÙŠØ©' : 'Live demos'}
+                  {isArabic ? 'ØªØ¬Ø±Ø¨Ø© Ù…Ø¬Ø§Ù†ÙŠØ©' : 'Free trial'}
                 </a>
               </div>
             </div>
