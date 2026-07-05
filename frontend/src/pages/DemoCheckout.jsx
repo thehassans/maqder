@@ -33,6 +33,7 @@ export default function DemoCheckout() {
 
   const [selectedPlan, setSelectedPlan] = useState('professional')
   const [selectedBilling, setSelectedBilling] = useState('monthly')
+  const [paymentMethod, setPaymentMethod] = useState('creditcard')
   const [paymentLoading, setPaymentLoading] = useState(false)
   const [paymentError, setPaymentError] = useState('')
   const [moyasarKey, setMoyasarKey] = useState('')
@@ -83,6 +84,7 @@ export default function DemoCheckout() {
         currency: 'SAR',
         plan: selectedPlan,
         billingCycle: selectedBilling,
+        paymentMethod,
       })
 
       if (data?.id && moyasarKey) {
@@ -302,6 +304,53 @@ export default function DemoCheckout() {
               </span>
             </div>
           )}
+
+          {/* Payment Method Selector */}
+          <div className="mb-5">
+            <label className="mb-3 block text-center text-sm font-semibold text-gray-700 dark:text-gray-300">
+              {isArabic ? 'اختر طريقة الدفع' : 'Select Payment Method'}
+            </label>
+            <div className="grid grid-cols-3 gap-3">
+              {/* Credit Card */}
+              <button
+                onClick={() => setPaymentMethod('creditcard')}
+                className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 p-3 transition-all ${
+                  paymentMethod === 'creditcard'
+                    ? 'border-[#0f3d2e] bg-[#0f3d2e]/[0.03] dark:bg-[#0f3d2e]/10 shadow-md'
+                    : 'border-gray-200 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
+                }`}
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#0f3d2e] to-[#1a5d44] text-white">
+                  <CreditCard className="h-5 w-5" />
+                </div>
+                <span className="text-xs font-bold text-gray-800 dark:text-white">
+                  {isArabic ? 'بطاقة' : 'Card'}
+                </span>
+              </button>
+
+              {/* Apple Pay */}
+              <button
+                onClick={() => setPaymentMethod('applepay')}
+                className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 p-3 transition-all ${
+                  paymentMethod === 'applepay'
+                    ? 'border-[#0f3d2e] bg-[#0f3d2e]/[0.03] dark:bg-[#0f3d2e]/10 shadow-md'
+                    : 'border-gray-200 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
+                }`}
+              >
+                <img src="/applepay.webp" alt="Apple Pay" className="h-10 w-auto object-contain" />
+                <span className="text-xs font-bold text-gray-800 dark:text-white">Apple Pay</span>
+              </button>
+
+              {/* STC Pay */}
+              <div className="relative flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-gray-200 dark:border-dark-600 p-3 opacity-60 cursor-not-allowed">
+                <span className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full bg-gray-500 px-2 py-0.5 text-[9px] font-bold text-white">
+                  {isArabic ? 'قريباً' : 'Soon'}
+                </span>
+                <img src="/stcpay.webp" alt="STC Pay" className="h-10 w-auto object-contain" />
+                <span className="text-xs font-bold text-gray-800 dark:text-white">STC Pay</span>
+              </div>
+            </div>
+          </div>
 
           {/* Error */}
           {paymentError && (

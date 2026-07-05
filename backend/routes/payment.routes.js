@@ -27,7 +27,7 @@ const MOYASAR_API_BASE = 'https://api.moyasar.com'
 // @access  Private (demo users only)
 router.post('/create-payment', protect, async (req, res) => {
   try {
-    const { amount, currency = 'SAR', plan = 'professional', billingCycle = 'monthly' } = req.body
+    const { amount, currency = 'SAR', plan = 'professional', billingCycle = 'monthly', paymentMethod = 'creditcard' } = req.body
 
     const tenant = await Tenant.findById(req.user.tenantId)
     if (!tenant) {
@@ -42,6 +42,13 @@ router.post('/create-payment', protect, async (req, res) => {
     if (!config.enabled || !config.secretKey) {
       return res.status(400).json({ error: 'Payment gateway is not configured' })
     }
+
+    if (paymentMethod === 'stcpay') {
+      return res.status(400).json({ error: 'STC Pay integration is coming soon. Please use Credit Card or Apple Pay.' })
+    }
+
+    const allowedMethods = ['creditcard', 'applepay']
+    const sourceType = allowedMethods.includes(paymentMethod) ? paymentMethod : 'creditcard'
 
     const finalAmount = Math.round(Number(amount) * 100)
 
@@ -59,7 +66,7 @@ router.post('/create-payment', protect, async (req, res) => {
         description: `Maqder ERP - ${plan} plan (${billingCycle}) upgrade for ${tenant.demoEmail || tenant.name}`,
         callback_url: callbackUrl,
         source: {
-          type: 'creditcard',
+          type: sourceType,
         },
         metadata: {
           tenantId: String(tenant._id),
