@@ -3,9 +3,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
-import { Save, Globe, ShieldCheck, DollarSign, Plus, Trash2, Star, GripVertical } from 'lucide-react'
+import { Save, Globe, ShieldCheck, DollarSign, Plus, Trash2, Star, GripVertical, Copy } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
+import { getBusinessTypeOptions } from '../../lib/businessTypes'
 
 const defaultPlan = {
   id: '',
@@ -25,6 +26,8 @@ export default function WebsiteSettings() {
 
   const [plans, setPlans] = useState([])
   const [currency, setCurrency] = useState('SAR')
+  const [pricingContext, setPricingContext] = useState('default')
+  const [plansByBusinessType, setPlansByBusinessType] = useState([])
 
   const { register, handleSubmit, reset, getValues } = useForm({
     defaultValues: {
@@ -72,6 +75,8 @@ export default function WebsiteSettings() {
       })
       setCurrency(website?.pricing?.currency || 'SAR')
       setPlans(website?.pricing?.plans || [])
+      setPlansByBusinessType(website?.pricing?.plansByBusinessType || [])
+      setPricingContext('default')
     }
   }, [data, reset])
 
@@ -84,20 +89,45 @@ export default function WebsiteSettings() {
     onError: (err) => toast.error(err.response?.data?.error || 'Error saving settings'),
   })
 
+  const getContextPlans = () => {
+    if (pricingContext === 'default') return plans
+    const entry = plansByBusinessType.find((p) => p.businessType === pricingContext)
+    return entry?.plans || []
+  }
+
+  const setContextPlans = (nextPlans) => {
+    if (pricingContext === 'default') {
+      setPlans(nextPlans)
+    } else {
+      setPlansByBusinessType((prev) => {
+        const existingIndex = prev.findIndex((p) => p.businessType === pricingContext)
+        if (existingIndex >= 0) {
+          return prev.map((p, i) => i === existingIndex ? { ...p, plans: nextPlans } : p)
+        }
+        return [...prev, { businessType: pricingContext, plans: nextPlans }]
+      })
+    }
+  }
+
   const updatePlan = (index, field, value) => {
-    setPlans(prev => prev.map((p, i) => i === index ? { ...p, [field]: value } : p))
+    const current = getContextPlans()
+    setContextPlans(current.map((p, i) => i === index ? { ...p, [field]: value } : p))
   }
 
   const addPlan = () => {
-    setPlans(prev => [...prev, { ...defaultPlan, id: `plan_${Date.now()}` }])
+    setContextPlans([...getContextPlans(), { ...defaultPlan, id: `plan_${Date.now()}` }])
   }
 
   const removePlan = (index) => {
-    setPlans(prev => prev.filter((_, i) => i !== index))
+    setContextPlans(getContextPlans().filter((_, i) => i !== index))
   }
 
   const togglePopular = (index) => {
-    setPlans(prev => prev.map((p, i) => ({ ...p, popular: i === index })))
+    setContextPlans(getContextPlans().map((p, i) => ({ ...p, popular: i === index })))
+  }
+
+  const copyFromDefault = () => {
+    setContextPlans(plans.map((p) => ({ ...p })))
   }
 
   const onSubmit = (formData) => {
@@ -124,6 +154,7 @@ export default function WebsiteSettings() {
         pricing: {
           currency: currency.trim() || 'SAR',
           plans,
+          plansByBusinessType,
         },
       },
     }
@@ -256,16 +287,50 @@ export default function WebsiteSettings() {
           </section>
 
           <section className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div className="flex items-center gap-2">
                 <DollarSign className="w-5 h-5 text-violet-600" />
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{isArabic ? 'الأسعار' : 'Pricing'}</h2>
               </div>
-              <button type="button" onClick={addPlan} className="btn btn-secondary text-sm">
-                <Plus className="w-4 h-4" />
-                {isArabic ? 'إضافة خطة' : 'Add Plan'}
-              </button>
+              <div className="flex items-center gap-2">
+                <select
+                  value={pricingContext}
+                  onChange={(e) => setPricingContext(e.target.value)}
+                  className="input text-sm"
+                >
+                  <option value="default">
+                    {isArabic ? 'افتراضي (جميع الأنواع)' : 'Default (all types)'}
+                  </option>
+                  {getBusinessTypeOptions(language).map((bt) => (
+                    <option key={bt.id} value={bt.id}>
+                      {bt.label}
+                    </option>
+                  ))}
+                </select>
+                {pricingContext !== 'default' && (
+                  <button
+                    type="button"
+                    onClick={copyFromDefault}
+                    className="btn btn-secondary text-sm"
+                    title={isArabic ? 'نسخ الخطط الافتراضية' : 'Copy default plans'}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                )}
+                <button type="button" onClick={addPlan} className="btn btn-secondary text-sm">
+                  <Plus className="w-4 h-4" />
+                  {isArabic ? 'إضافة خطة' : 'Add Plan'}
+                </button>
+              </div>
             </div>
+
+            {pricingContext !== 'default' && (
+              <div className="p-3 rounded-lg bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-900/30 text-sm text-violet-800 dark:text-violet-200">
+                {isArabic
+                  ? `تعديل أسعار ${getBusinessTypeOptions(language).find((b) => b.id === pricingContext)?.label || pricingContext}. إذا لم تُحفظ خطط لهذا النوع، سيتم استخدام الأسعار الافتراضية.`
+                  : `Editing pricing for ${getBusinessTypeOptions(language).find((b) => b.id === pricingContext)?.label || pricingContext}. If no plans are saved for this type, default pricing will be used.`}
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               <div>
@@ -275,7 +340,7 @@ export default function WebsiteSettings() {
             </div>
 
             <div className="space-y-4">
-              {plans.map((plan, index) => (
+              {getContextPlans().map((plan, index) => (
                 <div key={plan.id || index} className={`p-4 rounded-xl border-2 ${plan.popular ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/20' : 'border-gray-200 dark:border-dark-600 bg-gray-50 dark:bg-dark-700/50'}`}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
@@ -342,7 +407,7 @@ export default function WebsiteSettings() {
                 </div>
               ))}
 
-              {plans.length === 0 && (
+              {getContextPlans().length === 0 && (
                 <div className="text-center py-8 text-gray-500 border-2 border-dashed border-gray-300 dark:border-dark-600 rounded-xl">
                   {isArabic ? 'لا توجد خطط. اضغط "إضافة خطة" لإنشاء خطة جديدة.' : 'No plans yet. Click "Add Plan" to create one.'}
                 </div>

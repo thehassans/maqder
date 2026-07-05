@@ -1,5 +1,52 @@
 import mongoose from 'mongoose';
 
+const defaultPlanFeaturesEn = ['ZATCA E-Invoicing', 'Inventory & Warehouses', 'Basic Reports', 'Up to 5 users'];
+const defaultPlanFeaturesAr = ['الفوترة الإلكترونية', 'المخزون والمستودعات', 'تقارير أساسية', 'حتى 5 مستخدمين'];
+
+const planSchema = new mongoose.Schema({
+  id: { type: String, default: 'starter' },
+  nameEn: { type: String, default: 'Starter' },
+  nameAr: { type: String, default: 'البداية' },
+  priceMonthly: { type: Number, default: 299 },
+  priceYearly: { type: Number, default: 2990 },
+  popular: { type: Boolean, default: false },
+  featuresEn: { type: [String], default: defaultPlanFeaturesEn },
+  featuresAr: { type: [String], default: defaultPlanFeaturesAr }
+}, { _id: false });
+
+const getDefaultPlans = () => [
+  {
+    id: 'starter',
+    nameEn: 'Starter',
+    nameAr: 'البداية',
+    priceMonthly: 299,
+    priceYearly: 2990,
+    popular: false,
+    featuresEn: ['ZATCA E-Invoicing', 'Up to 500 invoices/month', 'Inventory & Warehouses', 'Basic Reports', 'Up to 5 users', 'Email Support'],
+    featuresAr: ['الفوترة الإلكترونية', 'حتى 500 فاتورة/شهر', 'المخزون والمستودعات', 'تقارير أساسية', 'حتى 5 مستخدمين', 'دعم بالبريد']
+  },
+  {
+    id: 'professional',
+    nameEn: 'Professional',
+    nameAr: 'الاحترافية',
+    priceMonthly: 699,
+    priceYearly: 6990,
+    popular: true,
+    featuresEn: ['Everything in Starter', 'Unlimited Invoices', 'HR & Payroll (GOSI/WPS)', 'Expenses & Finance', 'Projects & Tasks', 'Advanced Reports', 'Up to 25 users', 'Priority Support'],
+    featuresAr: ['كل ما في البداية', 'فواتير غير محدودة', 'الموارد البشرية والرواتب', 'المصروفات والمالية', 'المشاريع والمهام', 'تقارير متقدمة', 'حتى 25 مستخدم', 'دعم ذو أولوية']
+  },
+  {
+    id: 'enterprise',
+    nameEn: 'Enterprise',
+    nameAr: 'المؤسسات',
+    priceMonthly: 0,
+    priceYearly: 0,
+    popular: false,
+    featuresEn: ['Everything in Professional', 'Unlimited users', 'Dedicated Account Manager', 'Custom Integrations', 'On-premise Option', '24/7 Phone Support', 'SLA Guarantee'],
+    featuresAr: ['كل ما في الاحترافية', 'مستخدمون غير محدودين', 'مدير حساب مخصص', 'تكاملات مخصصة', 'خيار الخادم الخاص', 'دعم هاتفي 24/7', 'ضمان SLA']
+  }
+];
+
 const systemSettingsSchema = new mongoose.Schema({
   key: { type: String, required: true, unique: true, default: 'global' },
   gemini: {
@@ -62,38 +109,16 @@ const systemSettingsSchema = new mongoose.Schema({
     },
     pricing: {
       currency: { type: String, default: 'SAR' },
-      plans: [
-        {
-          id: { type: String, default: 'starter' },
-          nameEn: { type: String, default: 'Starter' },
-          nameAr: { type: String, default: 'البداية' },
-          priceMonthly: { type: Number, default: 299 },
-          priceYearly: { type: Number, default: 2990 },
-          popular: { type: Boolean, default: false },
-          featuresEn: { type: [String], default: ['ZATCA E-Invoicing', 'Inventory & Warehouses', 'Basic Reports', 'Up to 5 users'] },
-          featuresAr: { type: [String], default: ['الفوترة الإلكترونية', 'المخزون والمستودعات', 'تقارير أساسية', 'حتى 5 مستخدمين'] }
-        },
-        {
-          id: { type: String, default: 'professional' },
-          nameEn: { type: String, default: 'Professional' },
-          nameAr: { type: String, default: 'الاحترافية' },
-          priceMonthly: { type: Number, default: 699 },
-          priceYearly: { type: Number, default: 6990 },
-          popular: { type: Boolean, default: true },
-          featuresEn: { type: [String], default: ['Everything in Starter', 'HR & Payroll (GOSI/WPS)', 'Expenses & Finance', 'Advanced Reports', 'Up to 25 users'] },
-          featuresAr: { type: [String], default: ['كل ما في البداية', 'الموارد البشرية والرواتب', 'المصروفات والمالية', 'تقارير متقدمة', 'حتى 25 مستخدم'] }
-        },
-        {
-          id: { type: String, default: 'enterprise' },
-          nameEn: { type: String, default: 'Enterprise' },
-          nameAr: { type: String, default: 'المؤسسات' },
-          priceMonthly: { type: Number, default: 0 },
-          priceYearly: { type: Number, default: 0 },
-          popular: { type: Boolean, default: false },
-          featuresEn: { type: [String], default: ['Unlimited users', 'Dedicated support', 'Custom integrations', 'On-premise or private cloud'] },
-          featuresAr: { type: [String], default: ['مستخدمون غير محدودين', 'دعم مخصص', 'تكاملات مخصصة', 'خادم خاص أو سحابة خاصة'] }
-        }
-      ]
+      plans: { type: [planSchema], default: getDefaultPlans },
+      plansByBusinessType: {
+        type: [
+          {
+            businessType: { type: String, required: true },
+            plans: { type: [planSchema], default: [] }
+          }
+        ],
+        default: []
+      }
     }
   },
   email: {
@@ -200,4 +225,5 @@ const systemSettingsSchema = new mongoose.Schema({
 systemSettingsSchema.index({ key: 1 }, { unique: true });
 
 const SystemSettings = mongoose.model('SystemSettings', systemSettingsSchema);
+export const getDefaultPricingPlans = getDefaultPlans;
 export default SystemSettings;

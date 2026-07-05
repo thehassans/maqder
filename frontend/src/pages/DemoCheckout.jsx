@@ -22,6 +22,7 @@ import {
   Lock,
 } from 'lucide-react'
 import api from '../lib/api'
+import { getPrimaryBusinessType } from '../lib/businessTypes'
 
 const fallbackPricingPlans = [
   {
@@ -110,10 +111,18 @@ export default function DemoCheckout() {
     return () => { cancelled = true }
   }, [])
 
+  const primaryBusinessType = getPrimaryBusinessType(tenant)
+
   const plans = useMemo(() => {
-    const configured = websiteSettings?.pricing?.plans
-    if (Array.isArray(configured) && configured.length > 0) {
-      return configured.map((p) => {
+    const pricing = websiteSettings?.pricing
+    const defaultConfigured = pricing?.plans
+    const byType = Array.isArray(pricing?.plansByBusinessType)
+      ? pricing.plansByBusinessType.find((p) => p.businessType === primaryBusinessType)?.plans
+      : null
+    const activeConfigured = byType?.length ? byType : defaultConfigured
+
+    if (Array.isArray(activeConfigured) && activeConfigured.length > 0) {
+      return activeConfigured.map((p) => {
         const fallback = fallbackPricingPlans.find((f) => f.id === p.id)
         return {
           ...fallback,
@@ -126,7 +135,7 @@ export default function DemoCheckout() {
       })
     }
     return fallbackPricingPlans
-  }, [websiteSettings])
+  }, [websiteSettings, primaryBusinessType])
 
   const selectedPlanObj = plans.find((p) => p.id === selectedPlan) || plans[1]
   const amount = selectedBilling === 'yearly' ? selectedPlanObj.priceYearly : selectedPlanObj.priceMonthly
