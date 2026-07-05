@@ -28,6 +28,7 @@ export default function WebsiteSettings() {
   const [currency, setCurrency] = useState('SAR')
   const [pricingContext, setPricingContext] = useState('default')
   const [plansByBusinessType, setPlansByBusinessType] = useState([])
+  const [loadingDefaults, setLoadingDefaults] = useState(false)
 
   const { register, handleSubmit, reset, getValues } = useForm({
     defaultValues: {
@@ -126,8 +127,22 @@ export default function WebsiteSettings() {
     setContextPlans(getContextPlans().map((p, i) => ({ ...p, popular: i === index })))
   }
 
-  const copyFromDefault = () => {
-    setContextPlans(plans.map((p) => ({ ...p })))
+  const copyFromDefault = async () => {
+    if (pricingContext === 'default') {
+      setContextPlans(plans.map((p) => ({ ...p })))
+      return
+    }
+    try {
+      setLoadingDefaults(true)
+      const res = await api.get('/super-admin/settings/pricing-defaults', { params: { businessType: pricingContext } })
+      const nextPlans = Array.isArray(res.data?.plans) ? res.data.plans : []
+      setContextPlans(nextPlans)
+      toast.success(isArabic ? 'تم تحميل الأسعار الافتراضية' : 'Default pricing loaded')
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Error loading defaults')
+    } finally {
+      setLoadingDefaults(false)
+    }
   }
 
   const onSubmit = (formData) => {
@@ -311,10 +326,15 @@ export default function WebsiteSettings() {
                   <button
                     type="button"
                     onClick={copyFromDefault}
+                    disabled={loadingDefaults}
                     className="btn btn-secondary text-sm"
-                    title={isArabic ? 'نسخ الخطط الافتراضية' : 'Copy default plans'}
+                    title={isArabic ? 'تحميل الأسعار الافتراضية لهذا النوع' : 'Load default pricing for this type'}
                   >
-                    <Copy className="w-4 h-4" />
+                    {loadingDefaults ? (
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Copy className="w-4 h-4" />
+                    )}
                   </button>
                 )}
                 <button type="button" onClick={addPlan} className="btn btn-secondary text-sm">

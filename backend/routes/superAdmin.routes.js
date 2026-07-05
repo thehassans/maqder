@@ -10,7 +10,7 @@ import TravelBooking from '../models/TravelBooking.js';
 import RestaurantOrder from '../models/RestaurantOrder.js';
 import EmailMessage from '../models/EmailMessage.js';
 import Employee from '../models/Employee.js';
-import SystemSettings, { getDefaultPricingPlans } from '../models/SystemSettings.js';
+import SystemSettings, { getDefaultPricingPlans, getDefaultPlansByBusinessType } from '../models/SystemSettings.js';
 import Expense from '../models/Expense.js';
 import Product from '../models/Product.js';
 import PurchaseOrder from '../models/PurchaseOrder.js';
@@ -430,6 +430,16 @@ router.put('/settings/website', async (req, res) => {
         }
       }
     });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/settings/pricing-defaults', async (req, res) => {
+  try {
+    const businessType = normalizeBusinessTypes(req.query.businessType)[0] || 'trading';
+    const plans = getDefaultPlansByBusinessType(businessType);
+    res.json({ businessType, plans });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

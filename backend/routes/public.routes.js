@@ -2,7 +2,7 @@ import express from 'express'
 import jwt from 'jsonwebtoken'
 import Tenant from '../models/Tenant.js'
 import User from '../models/User.js'
-import SystemSettings, { getDefaultPricingPlans } from '../models/SystemSettings.js'
+import SystemSettings, { getDefaultPricingPlans, getDefaultPlansByBusinessType } from '../models/SystemSettings.js'
 import RestaurantMenuItem from '../models/RestaurantMenuItem.js'
 import SaloonService from '../models/SaloonService.js'
 import DemoUser from '../models/DemoUser.js'
@@ -105,16 +105,29 @@ const generateToken = (id) => {
   })
 }
 
+const resolvePricingForBusinessType = (pricing, businessType) => {
+  if (!businessType) return pricing
+  const custom = pricing?.plansByBusinessType?.find((p) => p.businessType === businessType)
+  const plans = custom?.plans?.length ? custom.plans : getDefaultPlansByBusinessType(businessType)
+  return {
+    ...pricing,
+    plans
+  }
+}
+
 router.get('/website', async (req, res) => {
   try {
     const settings = await getGlobalSettings()
     const website = mergeWebsiteDefaults(settings.website)
+    const businessType = normalizeBusinessTypes(req.query.businessType)[0]
+    const pricing = resolvePricingForBusinessType(website.pricing, businessType)
 
     const payment = settings?.payment?.toObject?.() || settings?.payment || {}
     const moyasar = payment?.moyasar || {}
 
     res.json({
       ...website,
+      pricing,
       demo: {
         enabled: !!website?.demo?.enabled,
         tenantSlug: website?.demo?.tenantSlug || 'demo',

@@ -98,7 +98,7 @@ export default function DemoCheckout() {
   useEffect(() => {
     let cancelled = false
     setSettingsLoading(true)
-    api.get('/public/website')
+    api.get('/public/website', { params: { businessType: primaryBusinessType } })
       .then((res) => {
         if (!cancelled) setWebsiteSettings(res.data)
       })
@@ -109,20 +109,14 @@ export default function DemoCheckout() {
         if (!cancelled) setSettingsLoading(false)
       })
     return () => { cancelled = true }
-  }, [])
+  }, [primaryBusinessType])
 
   const primaryBusinessType = getPrimaryBusinessType(tenant)
 
   const plans = useMemo(() => {
-    const pricing = websiteSettings?.pricing
-    const defaultConfigured = pricing?.plans
-    const byType = Array.isArray(pricing?.plansByBusinessType)
-      ? pricing.plansByBusinessType.find((p) => p.businessType === primaryBusinessType)?.plans
-      : null
-    const activeConfigured = byType?.length ? byType : defaultConfigured
-
-    if (Array.isArray(activeConfigured) && activeConfigured.length > 0) {
-      return activeConfigured.map((p) => {
+    const configured = websiteSettings?.pricing?.plans
+    if (Array.isArray(configured) && configured.length > 0) {
+      return configured.map((p) => {
         const fallback = fallbackPricingPlans.find((f) => f.id === p.id)
         return {
           ...fallback,
@@ -135,7 +129,7 @@ export default function DemoCheckout() {
       })
     }
     return fallbackPricingPlans
-  }, [websiteSettings, primaryBusinessType])
+  }, [websiteSettings])
 
   const selectedPlanObj = plans.find((p) => p.id === selectedPlan) || plans[1]
   const amount = selectedBilling === 'yearly' ? selectedPlanObj.priceYearly : selectedPlanObj.priceMonthly

@@ -47,6 +47,110 @@ const getDefaultPlans = () => [
   }
 ];
 
+const plan = (id, nameEn, nameAr, priceMonthly, priceYearly, popular, featuresEn, featuresAr) => ({
+  id, nameEn, nameAr, priceMonthly, priceYearly, popular, featuresEn, featuresAr
+});
+
+export const getDefaultPlansByBusinessType = (businessType) => {
+  const type = String(businessType || '').trim().toLowerCase();
+
+  const starter = (priceMonthly, priceYearly, featuresEn, featuresAr) =>
+    plan('starter', 'Starter', 'البداية', priceMonthly, priceYearly, false, featuresEn, featuresAr);
+  const professional = (priceMonthly, priceYearly, featuresEn, featuresAr) =>
+    plan('professional', 'Professional', 'الاحترافية', priceMonthly, priceYearly, true, featuresEn, featuresAr);
+  const enterprise = () =>
+    plan('enterprise', 'Enterprise', 'المؤسسات', 0, 0, false, ['Unlimited users', 'Dedicated account manager', 'Custom integrations', 'On-premise or private cloud', '24/7 phone support'], ['مستخدمون غير محدودين', 'مدير حساب مخصص', 'تكاملات مخصصة', 'خادم خاص أو سحابة خاصة', 'دعم هاتفي 24/7']);
+
+  switch (type) {
+    case 'trading':
+      return [
+        starter(199, 1990, ['1 user', '500 invoices/month', 'Purchase orders', 'Inventory management', 'ZATCA E-Invoicing', 'Basic reports'], ['مستخدم واحد', '500 فاتورة/شهر', 'أوامر الشراء', 'إدارة المخزون', 'الفوترة الإلكترونية', 'تقارير أساسية']),
+        professional(499, 4990, ['Up to 3 users', 'Unlimited invoices', 'WhatsApp integration', 'Email notifications', 'HR & Payroll', 'Multi-warehouse', 'Advanced reports'], ['حتى 3 مستخدمين', 'فواتير غير محدودة', 'تكامل واتساب', 'إشعارات البريد', 'الموارد البشرية والرواتب', 'مستودعات متعددة', 'تقارير متقدمة']),
+        enterprise()
+      ];
+    case 'construction':
+      return [
+        starter(249, 2490, ['1 user', '500 invoices/month', 'Projects & job costing', 'Purchase orders', 'Quotations', 'ZATCA E-Invoicing'], ['مستخدم واحد', '500 فاتورة/شهر', 'المشاريع وتكلفة المهام', 'أوامر الشراء', 'عروض الأسعار', 'الفوترة الإلكترونية']),
+        professional(599, 5990, ['Up to 3 users', 'Unlimited invoices', 'WhatsApp integration', 'Email notifications', 'HR & Payroll', 'Progress billing', 'Advanced reports'], ['حتى 3 مستخدمين', 'فواتير غير محدودة', 'تكامل واتساب', 'إشعارات البريد', 'الموارد البشرية والرواتب', 'الفوترة التدريجية', 'تقارير متقدمة']),
+        enterprise()
+      ];
+    case 'travel_agency':
+      return [
+        starter(249, 2490, ['1 user', '500 invoices/month', 'Travel bookings', 'Ticket invoices', 'Package management', 'ZATCA E-Invoicing'], ['مستخدم واحد', '500 فاتورة/شهر', 'حجوزات السفر', 'فواتير التذاكر', 'إدارة الباقات', 'الفوترة الإلكترونية']),
+        professional(599, 5990, ['Up to 3 users', 'Unlimited invoices', 'WhatsApp integration', 'Email notifications', 'HR & Payroll', 'Supplier reconciliation', 'Advanced reports'], ['حتى 3 مستخدمين', 'فواتير غير محدودة', 'تكامل واتساب', 'إشعارات البريد', 'الموارد البشرية والرواتب', 'تسوية الموردين', 'تقارير متقدمة']),
+        enterprise()
+      ];
+    case 'restaurant':
+      return [
+        starter(249, 2490, ['1 user', '500 invoices/month', 'POS & orders', 'Menu management', 'Table management', 'Kitchen display'], ['مستخدم واحد', '500 فاتورة/شهر', 'نقطة البيع والطلبات', 'إدارة القائمة', 'إدارة الطاولات', 'شاشة المطبخ']),
+        professional(599, 5990, ['Up to 3 users', 'Unlimited invoices', 'WhatsApp integration', 'Email notifications', 'HR & Payroll', 'Inventory tracking', 'Online menu & QR'], ['حتى 3 مستخدمين', 'فواتير غير محدودة', 'تكامل واتساب', 'إشعارات البريد', 'الموارد البشرية والرواتب', 'تتبع المخزون', 'قائمة وQR اونلاين']),
+        enterprise()
+      ];
+    case 'car_rental':
+      return [
+        starter(249, 2490, ['1 user', '500 invoices/month', 'Fleet management', 'Rental contracts', 'POS checkout', 'Vehicle tracking'], ['مستخدم واحد', '500 فاتورة/شهر', 'إدارة الأسطول', 'عقود التأجير', 'نقطة البيع', 'تتبع المركبات']),
+        professional(599, 5990, ['Up to 3 users', 'Unlimited invoices', 'WhatsApp integration', 'Email notifications', 'HR & Payroll', 'Maintenance logs', 'Advanced reports'], ['حتى 3 مستخدمين', 'فواتير غير محدودة', 'تكامل واتساب', 'إشعارات البريد', 'الموارد البشرية والرواتب', 'سجلات الصيانة', 'تقارير متقدمة']),
+        enterprise()
+      ];
+    case 'laundry':
+      return [
+        starter(199, 1990, ['1 user', '500 invoices/month', 'Laundry orders', 'POS checkout', 'Inventory management', 'Customer tracking'], ['مستخدم واحد', '500 فاتورة/شهر', 'طلبات المغسلة', 'نقطة البيع', 'إدارة المخزون', 'تتبع العملاء']),
+        professional(499, 4990, ['Up to 3 users', 'Unlimited invoices', 'WhatsApp integration', 'Email notifications', 'HR & Payroll', 'Delivery tracking', 'Advanced reports'], ['حتى 3 مستخدمين', 'فواتير غير محدودة', 'تكامل واتساب', 'إشعارات البريد', 'الموارد البشرية والرواتب', 'تتبع التوصيل', 'تقارير متقدمة']),
+        enterprise()
+      ];
+    case 'saloon':
+      return [
+        starter(199, 1990, ['1 user', '500 invoices/month', 'Services & appointments', 'POS checkout', 'Customer profiles', 'Staff scheduling'], ['مستخدم واحد', '500 فاتورة/شهر', 'الخدمات والمواعيد', 'نقطة البيع', 'ملفات العملاء', 'جدولة الموظفين']),
+        professional(499, 4990, ['Up to 3 users', 'Unlimited invoices', 'WhatsApp integration', 'Email notifications', 'HR & Payroll', 'Online booking', 'Advanced reports'], ['حتى 3 مستخدمين', 'فواتير غير محدودة', 'تكامل واتساب', 'إشعارات البريد', 'الموارد البشرية والرواتب', 'حجز اونلاين', 'تقارير متقدمة']),
+        enterprise()
+      ];
+    case 'khayyat':
+      return [
+        starter(199, 1990, ['1 user', '500 invoices/month', 'Measurements & orders', 'POS checkout', 'Stitching tracking', 'Customer profiles'], ['مستخدم واحد', '500 فاتورة/شهر', 'المقاسات والطلبات', 'نقطة البيع', 'تتبع الخياطة', 'ملفات العملاء']),
+        professional(499, 4990, ['Up to 3 users', 'Unlimited invoices', 'WhatsApp integration', 'Email notifications', 'HR & Payroll', 'Order photos', 'Advanced reports'], ['حتى 3 مستخدمين', 'فواتير غير محدودة', 'تكامل واتساب', 'إشعارات البريد', 'الموارد البشرية والرواتب', 'صور الطلبات', 'تقارير متقدمة']),
+        enterprise()
+      ];
+    case 'boutique':
+      return [
+        starter(199, 1990, ['1 user', '500 invoices/month', 'Dress inventory', 'Rental calendar', 'POS checkout', 'Customer profiles'], ['مستخدم واحد', '500 فاتورة/شهر', 'مخزون الفساتين', 'تقويم الإيجار', 'نقطة البيع', 'ملفات العملاء']),
+        professional(499, 4990, ['Up to 3 users', 'Unlimited invoices', 'WhatsApp integration', 'Email notifications', 'HR & Payroll', 'Online catalog', 'Advanced reports'], ['حتى 3 مستخدمين', 'فواتير غير محدودة', 'تكامل واتساب', 'إشعارات البريد', 'الموارد البشرية والرواتب', 'كتالوج اونلاين', 'تقارير متقدمة']),
+        enterprise()
+      ];
+    case 'manpower':
+      return [
+        starter(249, 2490, ['1 user', '500 invoices/month', 'Labor contracts', 'Assignments', 'Project billing', 'ZATCA E-Invoicing'], ['مستخدم واحد', '500 فاتورة/شهر', 'عقود العمالة', 'التعيينات', 'فوترة المشاريع', 'الفوترة الإلكترونية']),
+        professional(599, 5990, ['Up to 3 users', 'Unlimited invoices', 'WhatsApp integration', 'Email notifications', 'HR & Payroll', 'Timesheets', 'Advanced reports'], ['حتى 3 مستخدمين', 'فواتير غير محدودة', 'تكامل واتساب', 'إشعارات البريد', 'الموارد البشرية والرواتب', 'سجلات الدوام', 'تقارير متقدمة']),
+        enterprise()
+      ];
+    case 'bakala':
+      return [
+        starter(199, 1990, ['1 user', '500 invoices/month', 'Fast POS', 'Barcode scanning', 'Inventory management', 'Customer tracking'], ['مستخدم واحد', '500 فاتورة/شهر', 'نقطة بيع سريعة', 'مسح الباركود', 'إدارة المخزون', 'تتبع العملاء']),
+        professional(499, 4990, ['Up to 3 users', 'Unlimited invoices', 'WhatsApp integration', 'Email notifications', 'HR & Payroll', 'Multi-device POS', 'Advanced reports'], ['حتى 3 مستخدمين', 'فواتير غير محدودة', 'تكامل واتساب', 'إشعارات البريد', 'الموارد البشرية والرواتب', 'نقطة بيع متعددة الأجهزة', 'تقارير متقدمة']),
+        enterprise()
+      ];
+    case 'car_workshop':
+      return [
+        starter(299, 2990, ['1 user', '500 invoices/month', 'Job cards', 'Taqdeer estimates', 'Parts inventory', 'ZATCA E-Invoicing'], ['مستخدم واحد', '500 فاتورة/شهر', 'بطاقات الإصلاح', 'تقديرات تقدير', 'مخزون القطع', 'الفوترة الإلكترونية']),
+        professional(699, 6990, ['Up to 3 users', 'Unlimited invoices', 'WhatsApp integration', 'Email notifications', 'HR & Payroll', 'Absher integration', 'Advanced reports'], ['حتى 3 مستخدمين', 'فواتير غير محدودة', 'تكامل واتساب', 'إشعارات البريد', 'الموارد البشرية والرواتب', 'تكامل أبشر', 'تقارير متقدمة']),
+        enterprise()
+      ];
+    case 'bookstore':
+      return [
+        starter(199, 1990, ['1 user', '500 invoices/month', 'POS checkout', 'ISBN scanning', 'Inventory management', 'Thermal printer support'], ['مستخدم واحد', '500 فاتورة/شهر', 'نقطة البيع', 'مسح ISBN', 'إدارة المخزون', 'دعم الطابعة الحرارية']),
+        professional(499, 4990, ['Up to 3 users', 'Unlimited invoices', 'WhatsApp integration', 'Email notifications', 'HR & Payroll', 'Online catalog', 'Advanced reports'], ['حتى 3 مستخدمين', 'فواتير غير محدودة', 'تكامل واتساب', 'إشعارات البريد', 'الموارد البشرية والرواتب', 'كتالوج اونلاين', 'تقارير متقدمة']),
+        enterprise()
+      ];
+    case 'ecommerce':
+      return [
+        starter(299, 2990, ['1 user', '500 invoices/month', 'Online store', 'Custom domain', 'Payment gateways', 'Order management'], ['مستخدم واحد', '500 فاتورة/شهر', 'متجر اونلاين', 'نطاق مخصص', 'بوابات الدفع', 'إدارة الطلبات']),
+        professional(699, 6990, ['Up to 3 users', 'Unlimited invoices', 'WhatsApp integration', 'Email notifications', 'HR & Payroll', 'Courier integrations', 'Theme editor'], ['حتى 3 مستخدمين', 'فواتير غير محدودة', 'تكامل واتساب', 'إشعارات البريد', 'الموارد البشرية والرواتب', 'تكاملات شركات الشحن', 'محرر القوالب']),
+        enterprise()
+      ];
+    default:
+      return getDefaultPlans();
+  }
+};
+
 const systemSettingsSchema = new mongoose.Schema({
   key: { type: String, required: true, unique: true, default: 'global' },
   gemini: {
