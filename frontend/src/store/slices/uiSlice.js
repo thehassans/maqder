@@ -48,9 +48,27 @@ const setHiddenMenuItemsForTenantStorage = (tenantId, items) => {
   }
 }
 
-const getInitialDisplayMode = () => {
-  const saved = localStorage.getItem('displayMode')
-  return saved || 'auto'
+const getDisplayModeForTenant = (tenantId) => {
+  if (!tenantId) return 'auto'
+  try {
+    const all = localStorage.getItem('displayModeByTenant')
+    const map = all ? JSON.parse(all) : {}
+    return ['auto', 'desktop', 'tablet'].includes(map[tenantId]) ? map[tenantId] : 'auto'
+  } catch {
+    return 'auto'
+  }
+}
+
+const setDisplayModeForTenantStorage = (tenantId, mode) => {
+  if (!tenantId) return
+  try {
+    const all = localStorage.getItem('displayModeByTenant')
+    const map = all ? JSON.parse(all) : {}
+    map[tenantId] = ['auto', 'desktop', 'tablet'].includes(mode) ? mode : 'auto'
+    localStorage.setItem('displayModeByTenant', JSON.stringify(map))
+  } catch {
+    // ignore
+  }
 }
 
 const applyDisplayMode = (mode) => {
@@ -68,7 +86,7 @@ const initialState = {
   sidebarCollapsed: false,
   hideSidebar: getInitialHideSidebar(),
   hiddenMenuItems: getInitialHiddenMenuItems(),
-  displayMode: getInitialDisplayMode(),
+  displayMode: 'auto',
   mobileMenuOpen: false,
 }
 
@@ -144,13 +162,26 @@ const uiSlice = createSlice({
       setHiddenMenuItemsForTenantStorage(tenantId, state.hiddenMenuItems)
     },
     setDisplayMode: (state, action) => {
-      const mode = action.payload || 'auto'
+      let tenantId, mode
+      if (typeof action.payload === 'string') {
+        mode = action.payload
+      } else {
+        tenantId = action.payload?.tenantId
+        mode = action.payload?.mode
+      }
+      mode = ['auto', 'desktop', 'tablet'].includes(mode) ? mode : 'auto'
       state.displayMode = mode
-      localStorage.setItem('displayMode', mode)
+      if (tenantId) setDisplayModeForTenantStorage(tenantId, mode)
+      else localStorage.setItem('displayMode', mode)
       applyDisplayMode(mode)
+    },
+    loadDisplayModeForTenant: (state, action) => {
+      const tenantId = action.payload
+      state.displayMode = getDisplayModeForTenant(tenantId)
+      applyDisplayMode(state.displayMode)
     },
   },
 })
 
-export const { setLanguage, setTheme, toggleSidebar, toggleSidebarCollapse, setMobileMenuOpen, setHideSidebar, toggleHideSidebar, setHiddenMenuItems, toggleHiddenMenuItem, loadHiddenMenuItemsForTenant, setHiddenMenuItemsForTenant, toggleHiddenMenuItemForTenant, setDisplayMode } = uiSlice.actions
+export const { setLanguage, setTheme, toggleSidebar, toggleSidebarCollapse, setMobileMenuOpen, setHideSidebar, toggleHideSidebar, setHiddenMenuItems, toggleHiddenMenuItem, loadHiddenMenuItemsForTenant, setHiddenMenuItemsForTenant, toggleHiddenMenuItemForTenant, setDisplayMode, loadDisplayModeForTenant } = uiSlice.actions
 export default uiSlice.reducer

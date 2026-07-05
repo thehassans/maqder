@@ -2,7 +2,7 @@ import { useEffect, lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { getMe, setTenantInactive } from './store/slices/authSlice'
-import { setLanguage, setTheme, setDisplayMode, loadHiddenMenuItemsForTenant } from './store/slices/uiSlice'
+import { setLanguage, setTheme, setDisplayMode, loadHiddenMenuItemsForTenant, loadDisplayModeForTenant } from './store/slices/uiSlice'
 import { applyTenantBranding } from './lib/branding'
 import { getTenantBusinessTypes } from './lib/businessTypes'
 import { ErrorBoundary } from './lib/errorBoundary'
@@ -361,6 +361,12 @@ function App() {
     dispatch(setTheme(theme))
     dispatch(setDisplayMode(displayMode))
   }, [])
+
+  useEffect(() => {
+    if (tenant?._id) {
+      dispatch(loadDisplayModeForTenant(tenant._id))
+    }
+  }, [dispatch, tenant?._id])
 
   useEffect(() => {
     applyTenantBranding(tenant?.branding)

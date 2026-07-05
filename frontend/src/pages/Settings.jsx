@@ -800,7 +800,7 @@ export default function Settings() {
                     ].map(({ key, label, icon: Icon, desc }) => (
                       <button
                         key={key}
-                        onClick={() => dispatch(setDisplayMode(key))}
+                        onClick={() => dispatch(setDisplayMode({ tenantId: tenant?._id, mode: key }))}
                         className={`flex-1 p-4 rounded-xl border-2 transition-all text-left ${
                           displayMode === key
                             ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
