@@ -18,6 +18,7 @@ export default function PaymentResult() {
   const paymentId = searchParams.get('id')
   const paymentStatus = searchParams.get('status')
   const tenantId = searchParams.get('tenantId')
+  const invoiceId = searchParams.get('invoice_id')
 
   useEffect(() => {
     const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -29,11 +30,15 @@ export default function PaymentResult() {
         return
       }
 
-      // Invoice-based flow: no payment ID is returned, only the tenant ID.
-      // Poll tenant-status briefly since the webhook may take a moment to land.
+      // Invoice-based flow: Moyasar redirects with invoice_id/tenantId (no payment ID).
+      // Directly verify the invoice status (also applies the upgrade server-side as a
+      // fallback in case the webhook hasn't landed yet), then poll tenant-status.
       if (tenantId) {
         for (let attempt = 0; attempt < 8; attempt++) {
           try {
+            if (invoiceId) {
+              await api.get(`/payments/invoice/${invoiceId}`)
+            }
             const { data } = await api.get(`/payments/tenant-status/${tenantId}`)
             if (data.demoUpgraded) {
               await dispatch(getMe())

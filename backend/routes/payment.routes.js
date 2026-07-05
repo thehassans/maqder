@@ -148,9 +148,9 @@ router.post('/create-payment', protect, async (req, res) => {
 // @route   POST /api/payments/invoice-webhook
 // @desc    Moyasar invoice webhook — invoked with the invoice object when paid
 // @access  Public
-router.post('/invoice-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+router.post('/invoice-webhook', async (req, res) => {
   try {
-    const invoice = JSON.parse(req.body.toString())
+    const invoice = req.body
 
     if (invoice?.status === 'paid') {
       await applyTenantUpgrade({
@@ -183,14 +183,14 @@ router.get('/callback', async (req, res) => {
 // @route   POST /api/payments/webhook
 // @desc    Moyasar webhook handler
 // @access  Public (verified by webhook secret)
-router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+router.post('/webhook', async (req, res) => {
   try {
     const config = await getMoyasarConfig()
     if (!config.enabled) {
       return res.status(200).json({ received: true, reason: 'payments_disabled' })
     }
 
-    const body = JSON.parse(req.body.toString())
+    const body = req.body
 
     if (body?.type === 'payment.created' || body?.type === 'payment.updated') {
       const payment = body?.data || body
@@ -247,6 +247,47 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
     }
 
     res.status(200).json({ received: true })
+  } catch (error) {
+    res.status(500).json({ error: error.message })
+  }
+})
+
+// @route   GET /api/payments/invoice/:id
+// @desc    Fetch invoice status directly from Moyasar and apply tenant upgrade if paid
+//          (fallback in case the invoice-webhook can't reach this server)
+// @access  Private
+router.get('/invoice/:id', protect, async (req, res) => {
+  try {
+    const config = await getMoyasarConfig()
+    if (!config.enabled || !config.secretKey) {
+      return res.status(400).json({ error: 'Payment gateway is not configured' })
+    }
+
+    const response = await fetch(`${MOYASAR_API_BASE}/v1/invoices/${req.params.id}`, {
+      headers: {
+        'Authorization': `Basic ${Buffer.from(config.secretKey.trim() + ':').toString('base64')}`,
+      },
+    })
+
+    const invoice = await response.json()
+
+    if (!response.ok) {
+      return res.status(400).json({ error: invoice?.message || 'Failed to fetch invoice' })
+    }
+
+    if (invoice.status === 'paid') {
+      await applyTenantUpgrade({
+        tenantId: invoice?.metadata?.tenantId,
+        demoEmail: invoice?.metadata?.demoEmail,
+        plan: invoice?.metadata?.plan || 'professional',
+        billingCycle: invoice?.metadata?.billingCycle || 'monthly',
+        amountHalalas: invoice.amount,
+        currency: invoice.currency,
+        paymentId: invoice.id,
+      })
+    }
+
+    res.json({ id: invoice.id, status: invoice.status })
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
