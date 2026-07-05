@@ -302,9 +302,14 @@ export default function DemoCheckout() {
                         {isArabic ? 'الأكثر شيوعاً' : 'POPULAR'}
                       </span>
                     )}
-                    <div className="mb-3">
-                      <div className={`inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${meta.color} text-white shadow-lg ${meta.shadow} transition-transform group-hover:scale-105`}>
-                        <Icon className="h-5 w-5" />
+                    <div className="mb-4">
+                      <div className={`relative inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${meta.color} text-white shadow-xl ${meta.shadow} ring-2 ring-white/60 dark:ring-white/10 backdrop-blur-sm transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 ${isSelected ? 'shadow-2xl' : ''}`}>
+                        <Icon className="h-6 w-6 drop-shadow-md" />
+                        {isSelected && (
+                          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-white ring-2 ring-white dark:ring-dark-800 shadow-sm">
+                            <Check className="h-2.5 w-2.5" />
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="mb-1.5 flex items-center gap-2">
@@ -379,34 +384,44 @@ export default function DemoCheckout() {
 
             {/* ZATCA Phase 2 toggle */}
             {selectedPlan !== 'enterprise' && (
-              <div className="mb-6 flex items-center justify-between rounded-2xl bg-white dark:bg-dark-800 border border-gray-100 dark:border-dark-700 p-4 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400">
-                    <Shield className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-gray-900 dark:text-white">
-                      {isArabic ? 'تفعيل فاتورة المرحلة الثانية' : 'Enable ZATCA Phase 2'}
+              <div className="mb-6 relative overflow-hidden rounded-2xl bg-gradient-to-r from-white via-emerald-50/40 to-white dark:from-dark-800 dark:via-emerald-900/10 dark:to-dark-800 border border-emerald-100/70 dark:border-emerald-900/20 p-4 shadow-[0_8px_30px_-10px_rgba(15,61,46,0.12)] dark:shadow-[0_8px_30px_-10px_rgba(0,0,0,0.3)]">
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/[0.03] via-transparent to-emerald-500/[0.03] pointer-events-none" />
+                <div className="relative flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="relative inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-[#0f3d2e] text-white shadow-lg shadow-emerald-500/25 ring-2 ring-white/60 dark:ring-white/10">
+                      <Shield className="h-5 w-5 drop-shadow-sm" />
+                      <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-400 text-white ring-2 ring-white dark:ring-dark-800">
+                        <Sparkles className="h-2 w-2" />
+                      </span>
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      {isArabic ? 'إضافة فاتورة + زكاة متوافقة' : 'Adds e-invoicing + ZATCA compliance'}
+                    <div>
+                      <div className="text-sm font-bold text-gray-900 dark:text-white">
+                        {isArabic ? 'تفعيل فاتورة المرحلة الثانية' : 'Enable ZATCA Phase 2'}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {isArabic ? 'فاتورة إلكترونية + متوافقة مع الزكاة' : 'E-invoicing + ZATCA compliance'}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setZatcaPhase2Enabled((v) => !v)}
-                  className={`relative h-7 w-12 rounded-full transition-colors ${
-                    zatcaPhase2Enabled ? 'bg-[#0f3d2e]' : 'bg-gray-300 dark:bg-dark-600'
-                  }`}
-                  aria-label={isArabic ? 'تفعيل المرحلة الثانية' : 'Toggle ZATCA Phase 2'}
-                >
-                  <span
-                    className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-transform ${
-                      zatcaPhase2Enabled ? 'translate-x-6' : 'translate-x-1'
+                  <button
+                    type="button"
+                    onClick={() => setZatcaPhase2Enabled((v) => !v)}
+                    className={`relative h-8 w-14 rounded-full transition-all duration-300 shadow-inner ${
+                      zatcaPhase2Enabled
+                        ? 'bg-gradient-to-r from-[#0f3d2e] to-[#1a5d44] shadow-emerald-900/30'
+                        : 'bg-gray-300 dark:bg-dark-600'
                     }`}
-                  />
-                </button>
+                    aria-label={isArabic ? 'تفعيل المرحلة الثانية' : 'Toggle ZATCA Phase 2'}
+                  >
+                    <span
+                      className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow-lg transition-all duration-300 flex items-center justify-center ${
+                        zatcaPhase2Enabled ? 'translate-x-7' : 'translate-x-1'
+                      }`}
+                    >
+                      <Shield className={`h-3.5 w-3.5 transition-colors ${zatcaPhase2Enabled ? 'text-[#0f3d2e]' : 'text-gray-400'}`} />
+                    </span>
+                  </button>
+                </div>
               </div>
             )}
 
@@ -455,8 +470,9 @@ export default function DemoCheckout() {
                       : 'border-gray-100 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
                   }`}
                 >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#0f3d2e] to-[#1a5d44] text-white">
-                    <CreditCard className="h-5 w-5" />
+                  <div className={`relative flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0f3d2e] via-[#1a5d44] to-[#0f3d2e] text-white shadow-lg ring-2 ring-white/60 dark:ring-white/10 overflow-hidden ${paymentMethod === 'creditcard' ? 'shadow-emerald-500/30' : ''}`}>
+                    <div className="absolute inset-0 bg-gradient-to-tr from-white/25 to-transparent" />
+                    <CreditCard className="relative h-6 w-6 drop-shadow-md" />
                   </div>
                   <span className="text-xs font-bold text-gray-800 dark:text-white">
                     {isArabic ? 'بطاقة' : 'Card'}
