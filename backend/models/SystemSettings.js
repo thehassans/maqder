@@ -166,6 +166,19 @@ const systemSettingsSchema = new mongoose.Schema({
       webhookSecret: { type: String, default: '' },
       environment: { type: String, enum: ['test', 'live'], default: 'test' },
     },
+    applePay: {
+      enabled: { type: Boolean, default: false },
+      merchantId: { type: String, default: '' },
+      merchantCertificatePath: { type: String, default: '' },
+      merchantCertificateKeyPath: { type: String, default: '' },
+      environment: { type: String, enum: ['test', 'live'], default: 'test' },
+    },
+    stcPay: {
+      enabled: { type: Boolean, default: false },
+      merchantId: { type: String, default: '' },
+      apiKey: { type: String, default: '' },
+      environment: { type: String, enum: ['test', 'live'], default: 'test' },
+    },
   },
 }, {
   timestamps: true

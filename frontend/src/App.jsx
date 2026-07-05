@@ -227,6 +227,7 @@ const WebsiteSettings = lazy(() => import('./pages/super-admin/WebsiteSettings')
 const DemoUsers = lazy(() => import('./pages/super-admin/DemoUsers'))
 const PaymentSettings = lazy(() => import('./pages/super-admin/PaymentSettings'))
 const PaymentResult = lazy(() => import('./pages/PaymentResult'))
+const DemoCheckout = lazy(() => import('./pages/DemoCheckout'))
 const ResellerManagement = lazy(() => import('./pages/super-admin/ResellerManagement'))
 const ResellerDashboard = lazy(() => import('./pages/reseller/ResellerDashboard'))
 const ResellerTenants = lazy(() => import('./pages/reseller/ResellerTenants'))
@@ -399,6 +400,7 @@ function App() {
       <Route path="/public/menu" element={<Suspense fallback={<LoadingScreen />}><PublicMenu /></Suspense>} />
       <Route path="/public/services" element={<Suspense fallback={<LoadingScreen />}><PublicServices /></Suspense>} />
       <Route path="/payment-result" element={<Suspense fallback={<LoadingScreen />}><PaymentResult /></Suspense>} />
+      <Route path="/demo-checkout" element={<Suspense fallback={<LoadingScreen />}><DemoCheckout /></Suspense>} />
 
       {/* Auth Routes */}
       <Route element={<Suspense fallback={<LoadingScreen />}><AuthLayout /></Suspense>}>

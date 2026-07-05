@@ -3,6 +3,7 @@ import SystemSettings from '../models/SystemSettings.js'
 import Tenant from '../models/Tenant.js'
 import DemoUser from '../models/DemoUser.js'
 import { protect } from '../middleware/auth.js'
+import { sendUpgradeWelcomeEmail } from '../utils/emailService.js'
 
 const router = express.Router()
 
@@ -59,11 +60,6 @@ router.post('/create-payment', protect, async (req, res) => {
         callback_url: callbackUrl,
         source: {
           type: 'creditcard',
-          name: req.user.firstName + ' ' + req.user.lastName,
-          number: '',
-          cvc: '',
-          month: '',
-          year: '',
         },
         metadata: {
           tenantId: String(tenant._id),
@@ -153,6 +149,17 @@ router.post('/webhook', express.raw({ type: 'application/json' }), async (req, r
               }
             )
           }
+
+          // Send upgrade welcome email
+          const upgradedTenant = await Tenant.findById(tenantId).lean()
+          sendUpgradeWelcomeEmail({
+            email: demoEmail || upgradedTenant?.demoEmail || '',
+            tenant: upgradedTenant,
+            plan,
+            billingCycle,
+            amount: Number(payment.amount) / 100,
+            currency: payment.currency,
+          }).catch(() => {})
         }
       }
     }
@@ -220,6 +227,17 @@ router.get('/:id', protect, async (req, res) => {
             }
           )
         }
+
+        // Send upgrade welcome email
+        const upgradedTenant = await Tenant.findById(tenantId).lean()
+        sendUpgradeWelcomeEmail({
+          email: demoEmail || upgradedTenant?.demoEmail || '',
+          tenant: upgradedTenant,
+          plan,
+          billingCycle,
+          amount: Number(paymentData.amount) / 100,
+          currency: paymentData.currency,
+        }).catch(() => {})
       }
     }
 

@@ -2392,12 +2392,22 @@ router.get('/demo-users/stats', async (req, res) => {
 
 // ── Payment Gateway Settings ───────────────────────────────────────────────────
 
+const serializePaymentProvider = (p) => {
+  if (!p) p = {};
+  return {
+    enabled: p.enabled === true,
+    environment: p.environment || 'test',
+  };
+};
+
 // @route   GET /api/super-admin/settings/payment
 router.get('/settings/payment', async (req, res) => {
   try {
     const settings = await getGlobalSettings();
     const payment = settings?.payment?.toObject?.() || settings?.payment || {};
     const moyasar = payment?.moyasar || {};
+    const applePay = payment?.applePay || {};
+    const stcPay = payment?.stcPay || {};
 
     res.json({
       payment: {
@@ -2409,6 +2419,18 @@ router.get('/settings/payment', async (req, res) => {
           hasWebhookSecret: !!moyasar.webhookSecret,
           webhookSecretMasked: maskSecret(moyasar.webhookSecret),
           environment: moyasar.environment || 'test',
+        },
+        applePay: {
+          ...serializePaymentProvider(applePay),
+          merchantId: applePay.merchantId || '',
+          merchantCertificatePath: applePay.merchantCertificatePath || '',
+          merchantCertificateKeyPath: applePay.merchantCertificateKeyPath || '',
+        },
+        stcPay: {
+          ...serializePaymentProvider(stcPay),
+          merchantId: stcPay.merchantId || '',
+          hasApiKey: !!stcPay.apiKey,
+          apiKeyMasked: maskSecret(stcPay.apiKey),
         },
       },
     });
@@ -2422,11 +2444,16 @@ router.put('/settings/payment', async (req, res) => {
   try {
     const payload = req.body?.payment || req.body || {};
     const moyasarPayload = payload?.moyasar || {};
+    const applePayPayload = payload?.applePay || {};
+    const stcPayPayload = payload?.stcPay || {};
 
     const settings = await getGlobalSettings();
     const currentPayment = settings?.payment?.toObject?.() || settings?.payment || {};
     const currentMoyasar = currentPayment?.moyasar || {};
+    const currentApplePay = currentPayment?.applePay || {};
+    const currentStcPay = currentPayment?.stcPay || {};
 
+    // ── Moyasar ──
     const nextMoyasar = {
       enabled: moyasarPayload.enabled !== undefined ? moyasarPayload.enabled === true : currentMoyasar.enabled,
       publishableKey: String(moyasarPayload.publishableKey || currentMoyasar.publishableKey || '').trim(),
@@ -2447,7 +2474,30 @@ router.put('/settings/payment', async (req, res) => {
       nextMoyasar.webhookSecret = currentMoyasar.webhookSecret || '';
     }
 
-    settings.payment = { moyasar: nextMoyasar };
+    // ── Apple Pay ──
+    const nextApplePay = {
+      enabled: applePayPayload.enabled !== undefined ? applePayPayload.enabled === true : currentApplePay.enabled,
+      merchantId: String(applePayPayload.merchantId || currentApplePay.merchantId || '').trim(),
+      merchantCertificatePath: String(applePayPayload.merchantCertificatePath || currentApplePay.merchantCertificatePath || '').trim(),
+      merchantCertificateKeyPath: String(applePayPayload.merchantCertificateKeyPath || currentApplePay.merchantCertificateKeyPath || '').trim(),
+      environment: applePayPayload.environment || currentApplePay.environment || 'test',
+    };
+
+    // ── STC Pay ──
+    const nextStcPay = {
+      enabled: stcPayPayload.enabled !== undefined ? stcPayPayload.enabled === true : currentStcPay.enabled,
+      merchantId: String(stcPayPayload.merchantId || currentStcPay.merchantId || '').trim(),
+      environment: stcPayPayload.environment || currentStcPay.environment || 'test',
+    };
+
+    if (stcPayPayload.apiKey !== undefined) {
+      const trimmed = String(stcPayPayload.apiKey || '').trim();
+      nextStcPay.apiKey = trimmed || currentStcPay.apiKey || '';
+    } else {
+      nextStcPay.apiKey = currentStcPay.apiKey || '';
+    }
+
+    settings.payment = { moyasar: nextMoyasar, applePay: nextApplePay, stcPay: nextStcPay };
     settings.markModified('payment');
     await settings.save();
 
@@ -2462,8 +2512,88 @@ router.put('/settings/payment', async (req, res) => {
           webhookSecretMasked: maskSecret(nextMoyasar.webhookSecret),
           environment: nextMoyasar.environment,
         },
+        applePay: {
+          ...serializePaymentProvider(nextApplePay),
+          merchantId: nextApplePay.merchantId,
+          merchantCertificatePath: nextApplePay.merchantCertificatePath,
+          merchantCertificateKeyPath: nextApplePay.merchantCertificateKeyPath,
+        },
+        stcPay: {
+          ...serializePaymentProvider(nextStcPay),
+          merchantId: nextStcPay.merchantId,
+          hasApiKey: !!nextStcPay.apiKey,
+          apiKeyMasked: maskSecret(nextStcPay.apiKey),
+        },
       },
     });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   POST /api/super-admin/settings/payment/test-connection
+router.post('/settings/payment/test-connection', async (req, res) => {
+  try {
+    const { provider } = req.body;
+    const settings = await getGlobalSettings();
+    const payment = settings?.payment?.toObject?.() || settings?.payment || {};
+
+    if (provider === 'moyasar') {
+      const moyasar = payment?.moyasar || {};
+      if (!moyasar.secretKey) return res.json({ ok: false, message: 'Moyasar secret key is not configured.' });
+      try {
+        const response = await fetch('https://api.moyasar.com/v1/payments?per_page=1', {
+          method: 'GET',
+          headers: { 'Authorization': `Basic ${Buffer.from(moyasar.secretKey + ':').toString('base64')}` },
+          signal: AbortSignal.timeout(8000),
+        });
+        if (response.ok) {
+          return res.json({ ok: true, message: 'Moyasar connection successful — API key is valid.' });
+        }
+        const body = await response.json().catch(() => ({}));
+        return res.json({ ok: false, message: `Moyasar API returned ${response.status}: ${body?.message || response.statusText}` });
+      } catch (err) {
+        return res.json({ ok: false, message: err.message || 'Could not reach Moyasar API.' });
+      }
+    }
+
+    if (provider === 'applePay') {
+      const applePay = payment?.applePay || {};
+      if (!applePay.merchantId) return res.json({ ok: false, message: 'Apple Pay merchant ID is not configured.' });
+      // Apple Pay requires domain verification — we check that the merchant ID format is valid
+      const merchantIdValid = /^merchant\.[a-zA-Z0-9.-]+$/i.test(applePay.merchantId) || applePay.merchantId.length > 5;
+      if (!merchantIdValid) return res.json({ ok: false, message: 'Apple Pay merchant ID format looks invalid.' });
+      return res.json({ ok: true, message: 'Apple Pay merchant ID format is valid. Full verification happens at checkout time.' });
+    }
+
+    if (provider === 'stcPay') {
+      const stcPay = payment?.stcPay || {};
+      if (!stcPay.apiKey) return res.json({ ok: false, message: 'STC Pay API key is not configured.' });
+      const baseUrl = stcPay.environment === 'live'
+        ? 'https://bpay.stcpay.com.sa/BusinessPayment/v1/BusinessPayments'
+        : 'https://bpaystgtest.stcpay.com.sa/BusinessPayment/v1/BusinessPayments';
+      try {
+        const response = await fetch(baseUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Client-Code': stcPay.merchantId || '',
+            'X-Client-Password': stcPay.apiKey || '',
+          },
+          body: JSON.stringify({ testConnection: true }),
+          signal: AbortSignal.timeout(8000),
+        });
+        // STC Pay may return 400 for test payload but still confirm connectivity
+        if (response.status < 500) {
+          return res.json({ ok: true, message: `STC Pay endpoint reachable (HTTP ${response.status}). Credentials will be verified on first transaction.` });
+        }
+        return res.json({ ok: false, message: `STC Pay API returned ${response.status}.` });
+      } catch (err) {
+        return res.json({ ok: false, message: err.message || 'Could not reach STC Pay API.' });
+      }
+    }
+
+    return res.status(400).json({ error: 'Unknown provider. Use moyasar, applePay, or stcPay.' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

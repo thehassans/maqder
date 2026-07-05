@@ -556,6 +556,115 @@ The ${brandName} Sales Team`;
   }
 };
 
+export const sendUpgradeWelcomeEmail = async ({ email, tenant, plan, billingCycle, amount, currency = 'SAR', preferredLanguage } = {}) => {
+  try {
+    const settings = await getGlobalSettings();
+    const config = resolveEmailConfig(settings, { allowEnvFallback: false });
+
+    if (!config.enabled) {
+      return { sent: false, reason: 'email_disabled' };
+    }
+
+    ensureEmailConfigured(config);
+
+    const recipients = dedupeRecipients(email);
+    if (recipients.length === 0) {
+      return { sent: false, reason: 'missing_recipient' };
+    }
+
+    const brandName = config.brandName;
+    const salesEmail = String(settings?.email?.salesEmail || config.replyTo || config.fromEmail || '').trim();
+    const loginUrl = 'https://maqder.com/login';
+    const planName = plan ? plan.charAt(0).toUpperCase() + plan.slice(1) : 'Professional';
+    const cycleLabel = billingCycle === 'yearly' ? 'Annual' : 'Monthly';
+    const amountStr = amount ? `${amount} ${currency}` : '';
+    const now = new Date();
+    const startDate = now.toLocaleDateString(preferredLanguage === 'ar' ? 'ar-SA' : 'en-GB');
+    const endDate = new Date(now.getTime() + (billingCycle === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000);
+    const endDateStr = endDate.toLocaleDateString(preferredLanguage === 'ar' ? 'ar-SA' : 'en-GB');
+
+    const subject = preferredLanguage === 'ar'
+      ? `مرحباً بك في ${brandName} — تم تفعيل اشتراكك!`
+      : `Welcome to ${brandName} — Your Subscription is Active!`;
+
+    const bodyEn = `Dear ${tenant?.name || 'Valued Customer'},
+
+Congratulations and welcome to the full version of ${brandName}!
+
+Your subscription has been activated successfully. Here are your subscription details:
+• Plan: ${planName}
+• Billing Cycle: ${cycleLabel}
+• Amount: ${amountStr}
+• Start Date: ${startDate}
+• Next Renewal: ${endDateStr}
+
+You now have full access to all features:
+• ZATCA Phase 2 E-Invoicing
+• HR & Payroll Management
+• Inventory & Warehouse
+• Advanced Reports & Analytics
+• And much more!
+
+Login URL: ${loginUrl}
+
+If you have any questions or need assistance, our support team is here to help — just reply to this email.
+
+Thank you for choosing ${brandName}!
+
+Best regards,
+The ${brandName} Team`;
+
+    const bodyAr = `عميلنا العزيز ${tenant?.name || ''}،
+
+تهانينا ومرحباً بك في النسخة الكاملة من ${brandName}!
+
+تم تفعيل اشتراكك بنجاح. إليك تفاصيل اشتراكك:
+• الباقة: ${planName}
+• دورة الفوترة: ${billingCycle === 'yearly' ? 'سنوية' : 'شهرية'}
+• المبلغ: ${amountStr}
+• تاريخ البدء: ${startDate}
+• تاريخ التجديد القادم: ${endDateStr}
+
+لديك الآن وصول كامل لجميع الميزات:
+• الفوترة الإلكترونية المتوافقة مع هيئة الزكاة والضريبة والجمارك
+• إدارة الموارد البشرية والرواتب
+• المخزون والمستودعات
+• تقارير وتحليلات متقدمة
+• والمزيد!
+
+رابط الدخول: ${loginUrl}
+
+إذا كان لديك أي أسئلة أو تحتاج مساعدة، فريق الدعم لدينا جاهز لمساعدتك — فقط قم بالرد على هذا البريد.
+
+شكراً لاختيارك ${brandName}!
+
+مع تحيات،
+فريق ${brandName}`;
+
+    const html = buildBilingualEmailShell({
+      brandName,
+      title: subject,
+      sections: [
+        { title: `Welcome to ${brandName} — Subscription Active`, body: bodyEn, dir: 'ltr' },
+        { title: `مرحباً بك في ${brandName} — اشتراك مفعّل`, body: bodyAr, dir: 'rtl' },
+      ],
+    });
+
+    await sendEmailWithConfig({
+      config,
+      to: recipients,
+      subject,
+      html,
+      replyTo: salesEmail || config.replyTo,
+    });
+
+    return { sent: true, to: recipients };
+  } catch (error) {
+    logger.error(`Failed to send upgrade welcome email: ${error.message}`);
+    return { sent: false, reason: 'send_failed', error: error.message };
+  }
+};
+
 export const maskEmailSecret = (value) => {
   if (!value) return '';
   const text = String(value);
