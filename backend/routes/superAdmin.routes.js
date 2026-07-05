@@ -917,8 +917,8 @@ router.post('/tenants', async (req, res) => {
       ...(zatca ? { zatca: { phase: zatca.phase || 1 } } : {}),
       subscription: {
         ...subscription,
-        startDate: new Date(),
-        endDate: new Date(Date.now() + (subscription?.billingCycle === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000)
+        startDate: subscription?.startDate ? new Date(subscription.startDate) : new Date(),
+        endDate: subscription?.endDate ? new Date(subscription.endDate) : new Date(Date.now() + (subscription?.billingCycle === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000)
       },
       createdBy: req.user._id
     });

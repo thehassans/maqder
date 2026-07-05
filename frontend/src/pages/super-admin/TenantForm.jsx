@@ -1,24 +1,15 @@
-﻿import { useEffect, useState } from 'react'
+﻿import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { useForm } from 'react-hook-form'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Save, Building2, CreditCard, User, Shield, FileText, Image, MapPin, Briefcase, Receipt, KeyRound, Eye, EyeOff, Users } from 'lucide-react'
+import { ArrowLeft, Save, Building2, CreditCard, User, Shield, MapPin, Briefcase, Receipt, KeyRound, Eye, EyeOff, Users } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import SarIcon from '../../components/ui/SarIcon'
-import EmailAdminSettingsSection from '../../components/email/EmailAdminSettingsSection'
 import { getBusinessTypeOptions, getPrimaryBusinessType, getTenantBusinessTypes, normalizeBusinessTypes } from '../../lib/businessTypes'
-import { getInvoiceBrandingProfile, getInvoiceTemplateId } from '../../lib/invoiceBranding'
-import { invoiceTemplateOptions } from '../../lib/invoiceTemplates'
-
-const invoiceBrandingContexts = [
-  { key: 'trading', labelEn: 'Trading Invoice', labelAr: 'ÙØ§ØªÙˆØ±Ø© ØªØ¬Ø§Ø±Ø©' },
-  { key: 'construction', labelEn: 'Contracting Invoice', labelAr: 'ÙØ§ØªÙˆØ±Ø© Ù…Ù‚Ø§ÙˆÙ„Ø§Øª' },
-  { key: 'travel_agency', labelEn: 'Travel Agency Invoice', labelAr: 'ÙØ§ØªÙˆØ±Ø© ÙˆÙƒØ§Ù„Ø© Ø³ÙØ±' },
-]
 
 export default function TenantForm() {
   const { id } = useParams()
@@ -40,9 +31,6 @@ export default function TenantForm() {
   })
 
   const logoValue = watch('branding.logo')
-  const invoiceLogoValue = watch('settings.invoiceBranding.logo')
-  const vision2030LogoValue = watch('settings.invoiceBranding.vision2030Logo')
-  const showVision2030 = watch('settings.invoiceBranding.showVision2030')
   const businessTypeOptions = getBusinessTypeOptions(language)
   const watchedBusinessTypes = normalizeBusinessTypes(watch('businessTypes'), watch('businessType') || 'trading')
   const watchedPrimaryBusinessType = watch('businessType') || 'trading'
@@ -79,6 +67,42 @@ export default function TenantForm() {
     }
   }, [setValue, watchedBusinessTypes, watchedPrimaryBusinessType])
 
+  const watchedBillingCycle = watch('subscription.billingCycle')
+  const watchedStartDate = watch('subscription.startDate')
+  const watchedEndDate = watch('subscription.endDate')
+  const billingCycleRef = useRef(null)
+
+  // Initialize default subscription dates for new tenants
+  useEffect(() => {
+    if (isEdit) return
+    const start = new Date()
+    start.setHours(0, 0, 0, 0)
+    const end = new Date(start)
+    end.setDate(end.getDate() + 30)
+    setValue('subscription.billingCycle', 'monthly')
+    setValue('subscription.startDate', start.toISOString().split('T')[0], { shouldDirty: false })
+    setValue('subscription.endDate', end.toISOString().split('T')[0], { shouldDirty: false })
+  }, [isEdit, setValue])
+
+  // Recalculate end date when billing cycle changes
+  useEffect(() => {
+    if (!watchedBillingCycle) return
+    if (billingCycleRef.current === null) {
+      billingCycleRef.current = watchedBillingCycle
+      return
+    }
+    if (billingCycleRef.current === watchedBillingCycle) return
+    billingCycleRef.current = watchedBillingCycle
+    const start = watchedStartDate ? new Date(watchedStartDate) : new Date()
+    const days = watchedBillingCycle === 'yearly' ? 365 : 30
+    const end = new Date(start)
+    end.setDate(end.getDate() + days)
+    const formatted = end.toISOString().split('T')[0]
+    if (formatted !== watchedEndDate) {
+      setValue('subscription.endDate', formatted, { shouldDirty: true })
+    }
+  }, [watchedBillingCycle, watchedStartDate, watchedEndDate, setValue])
+
   // Auto-mirror bilingual legal names when one side is empty
   const legalNameEn = watch('business.legalNameEn')
   const legalNameAr = watch('business.legalNameAr')
@@ -103,19 +127,6 @@ export default function TenantForm() {
 
   const onSubmit = (data) => {
     const nextSettings = data?.settings || {}
-    const nextInvoiceBranding = nextSettings?.invoiceBranding || {}
-    const nextContextProfiles = invoiceBrandingContexts.reduce((acc, item) => {
-      const profile = nextInvoiceBranding?.contextProfiles?.[item.key] || {}
-      acc[item.key] = {
-        templateId: Number(profile?.templateId || getInvoiceTemplateId({ settings: nextSettings }, item.key)),
-        logo: profile?.logo || '',
-        headerTextEn: profile?.headerTextEn || '',
-        headerTextAr: profile?.headerTextAr || '',
-        footerTextEn: profile?.footerTextEn || '',
-        footerTextAr: profile?.footerTextAr || '',
-      }
-      return acc
-    }, {})
 
     const nextPayload = {
       ...data,
@@ -127,24 +138,7 @@ export default function TenantForm() {
           country: data?.business?.address?.country || 'SA',
         },
       },
-      settings: isEdit
-        ? {
-            ...nextSettings,
-            invoicePdfTemplate: Number(nextSettings?.invoicePdfTemplate || 1),
-            invoicePdfPageSize: nextSettings?.invoicePdfPageSize || 'a4',
-            invoicePdfOrientation: nextSettings?.invoicePdfOrientation || 'portrait',
-            invoiceCurrencyDisplay: nextSettings?.invoiceCurrencyDisplay === 'icon' ? 'icon' : 'text',
-            invoiceCurrencyPosition: nextSettings?.invoiceCurrencyPosition === 'before' ? 'before' : 'after',
-            invoiceBranding: {
-              ...nextInvoiceBranding,
-              showVision2030: nextInvoiceBranding?.showVision2030 !== false,
-              vision2030Logo: nextInvoiceBranding?.vision2030Logo || '/saudi-vision-2030-logo.webp',
-              contextProfiles: nextContextProfiles,
-            },
-          }
-        : {
-            ...nextSettings,
-          },
+      settings: nextSettings,
       businessTypes: watchedBusinessTypes,
       businessType: watchedBusinessTypes.includes(watchedPrimaryBusinessType) ? watchedPrimaryBusinessType : watchedBusinessTypes[0],
     }
@@ -186,27 +180,6 @@ export default function TenantForm() {
     const reader = new FileReader()
     reader.onload = () => {
       setValue('branding.logo', reader.result)
-    }
-    reader.readAsDataURL(file)
-  }
-
-  const handleImageFieldChange = (fieldPath) => async (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    if (!file.type?.startsWith('image/')) {
-      toast.error(language === 'ar' ? 'Ø§Ù„Ù…Ù„Ù ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙƒÙˆÙ† ØµÙˆØ±Ø©' : 'File must be an image')
-      return
-    }
-
-    if (file.size > 1024 * 1024) {
-      toast.error(language === 'ar' ? 'Ø­Ø¬Ù… Ø§Ù„ØµÙˆØ±Ø© ÙƒØ¨ÙŠØ± Ø¬Ø¯Ø§Ù‹ (Ø§Ù„Ø­Ø¯ 1MB)' : 'Image is too large (max 1MB)')
-      return
-    }
-
-    const reader = new FileReader()
-    reader.onload = () => {
-      setValue(fieldPath, reader.result, { shouldDirty: true })
     }
     reader.readAsDataURL(file)
   }
@@ -526,170 +499,6 @@ export default function TenantForm() {
           </div>
         </motion.div>
 
-        {isEdit ? (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="card p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-slate-100 dark:bg-slate-900/30 rounded-lg"><FileText className="w-5 h-5 text-slate-600" /></div>
-            <h3 className="text-lg font-semibold">{language === 'ar' ? 'Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„ÙÙˆØ§ØªÙŠØ±' : 'Invoice Settings'}</h3>
-          </div>
-
-          <div className="grid grid-cols-1 gap-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="label">{language === 'ar' ? 'Ø§Ù„Ù‚Ø§Ù„Ø¨ Ø§Ù„Ø¹Ø§Ù…' : 'Global Template'}</label>
-                <select {...register('settings.invoicePdfTemplate', { valueAsNumber: true })} className="select">
-                  {invoiceTemplateOptions.map((option) => <option key={option.id} value={option.id}>{language === 'ar' ? option.nameAr : option.nameEn}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="label">{language === 'ar' ? 'Ø­Ø¬Ù… Ø§Ù„ØµÙØ­Ø©' : 'Page Size'}</label>
-                <select {...register('settings.invoicePdfPageSize')} className="select">
-                  <option value="a4">A4</option>
-                  <option value="letter">Letter</option>
-                  <option value="a5">A5</option>
-                </select>
-              </div>
-              <div>
-                <label className="label">{language === 'ar' ? 'Ø§Ù„Ø§ØªØ¬Ø§Ù‡' : 'Orientation'}</label>
-                <select {...register('settings.invoicePdfOrientation')} className="select">
-                  <option value="portrait">{language === 'ar' ? 'Ø·ÙˆÙ„ÙŠ' : 'Portrait'}</option>
-                  <option value="landscape">{language === 'ar' ? 'Ø¹Ø±Ø¶ÙŠ' : 'Landscape'}</option>
-                </select>
-              </div>
-              <div>
-                <label className="label">{language === 'ar' ? 'Ø¹Ø±Ø¶ Ø§Ù„Ø¹Ù…Ù„Ø©' : 'Currency Display'}</label>
-                <select {...register('settings.invoiceCurrencyDisplay')} className="select">
-                  <option value="text">{language === 'ar' ? 'Ù†Øµ (SAR)' : 'Text (SAR)'}</option>
-                  <option value="icon">{language === 'ar' ? 'Ø±Ù…Ø² Ø§Ù„Ø±ÙŠØ§Ù„ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠ (ï·¼)' : 'Saudi Riyal Icon (ï·¼)'}</option>
-                </select>
-              </div>
-              <div>
-                <label className="label">{language === 'ar' ? 'Ù…ÙˆØ¶Ø¹ Ø§Ù„Ø¹Ù…Ù„Ø©' : 'Currency Position'}</label>
-                <select {...register('settings.invoiceCurrencyPosition')} className="select">
-                  <option value="after">{language === 'ar' ? 'Ø¨Ø¹Ø¯ Ø§Ù„Ù…Ø¨Ù„Øº' : 'After amount'}</option>
-                  <option value="before">{language === 'ar' ? 'Ù‚Ø¨Ù„ Ø§Ù„Ù…Ø¨Ù„Øº' : 'Before amount'}</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 xl:grid-cols-[320px_minmax(0,1fr)]">
-              <div className="rounded-2xl border border-gray-200 dark:border-dark-600 p-4 space-y-4">
-                <div>
-                  <label className="label flex items-center gap-2"><Image className="w-4 h-4" />{language === 'ar' ? 'Ø´Ø¹Ø§Ø± Ø§Ù„ÙØ§ØªÙˆØ±Ø©' : 'Invoice Logo'}</label>
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-24 w-28 items-center justify-center overflow-hidden rounded-3xl border border-gray-200 bg-white p-2 dark:border-dark-600 dark:bg-dark-800">
-                      {invoiceLogoValue ? <img src={invoiceLogoValue} alt="" className="h-full w-full object-contain scale-110" /> : <Building2 className="w-8 h-8 text-gray-400" />}
-                    </div>
-                    <div className="flex-1">
-                      <input type="hidden" {...register('settings.invoiceBranding.logo')} />
-                      <input type="file" accept="image/*" onChange={handleImageFieldChange('settings.invoiceBranding.logo')} className="input" />
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="label">{language === 'ar' ? 'Ø±Ø¤ÙŠØ© 2030' : 'Vision 2030'}</label>
-                  <div className="flex items-center justify-between rounded-2xl border border-gray-200 dark:border-dark-600 p-4">
-                    <span className="text-sm text-gray-700 dark:text-gray-300">{language === 'ar' ? 'Ø¥Ø¸Ù‡Ø§Ø± Ø§Ù„Ø´Ø¹Ø§Ø± Ø¹Ù„Ù‰ Ø§Ù„ÙØ§ØªÙˆØ±Ø©' : 'Show mark on invoices'}</span>
-                    <input type="checkbox" {...register('settings.invoiceBranding.showVision2030')} defaultChecked={showVision2030 !== false} className="h-4 w-4" />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="label">{language === 'ar' ? 'Ø´Ø¹Ø§Ø± Ø±Ø¤ÙŠØ© 2030' : 'Vision 2030 Logo'}</label>
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-16 w-20 items-center justify-center overflow-hidden rounded-2xl border border-gray-200 bg-white p-2 dark:border-dark-600 dark:bg-dark-800">
-                      {vision2030LogoValue ? <img src={vision2030LogoValue} alt="" className="h-full w-full object-contain" /> : null}
-                    </div>
-                    <div className="flex-1">
-                      <input type="hidden" {...register('settings.invoiceBranding.vision2030Logo')} />
-                      <input type="file" accept="image/*" onChange={handleImageFieldChange('settings.invoiceBranding.vision2030Logo')} className="input" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="label">{language === 'ar' ? 'Ù†Øµ Ø£Ø¹Ù„Ù‰ Ø§Ù„ÙØ§ØªÙˆØ±Ø© (EN)' : 'Invoice Header Text (EN)'}</label>
-                  <textarea {...register('settings.invoiceBranding.headerTextEn')} rows={4} className="input" />
-                </div>
-                <div>
-                  <label className="label">{language === 'ar' ? 'Ù†Øµ Ø£Ø¹Ù„Ù‰ Ø§Ù„ÙØ§ØªÙˆØ±Ø© (AR)' : 'Invoice Header Text (AR)'}</label>
-                  <textarea {...register('settings.invoiceBranding.headerTextAr')} rows={4} dir="rtl" className="input" />
-                </div>
-                <div>
-                  <label className="label">{language === 'ar' ? 'Ù†Øµ Ø§Ù„ØªØ°ÙŠÙŠÙ„ (EN)' : 'Invoice Footer Text (EN)'}</label>
-                  <textarea {...register('settings.invoiceBranding.footerTextEn')} rows={4} className="input" />
-                </div>
-                <div>
-                  <label className="label">{language === 'ar' ? 'Ù†Øµ Ø§Ù„ØªØ°ÙŠÙŠÙ„ (AR)' : 'Invoice Footer Text (AR)'}</label>
-                  <textarea {...register('settings.invoiceBranding.footerTextAr')} rows={4} dir="rtl" className="input" />
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-              {invoiceBrandingContexts.map((item) => {
-                const profile = getInvoiceBrandingProfile({ settings: watch('settings') }, item.key)
-                const profileLogo = watch(`settings.invoiceBranding.contextProfiles.${item.key}.logo`)
-                return (
-                  <div key={item.key} className="rounded-2xl border border-gray-200 dark:border-dark-600 p-4 space-y-4">
-                    <div>
-                      <p className="font-semibold text-gray-900 dark:text-white">{language === 'ar' ? item.labelAr : item.labelEn}</p>
-                    </div>
-                    <div>
-                      <label className="label">{language === 'ar' ? 'Ø§Ù„Ù‚Ø§Ù„Ø¨' : 'Template'}</label>
-                      <select {...register(`settings.invoiceBranding.contextProfiles.${item.key}.templateId`, { valueAsNumber: true })} defaultValue={profile.templateId || getInvoiceTemplateId({ settings: watch('settings') }, item.key)} className="select">
-                        {invoiceTemplateOptions.map((option) => <option key={option.id} value={option.id}>{language === 'ar' ? option.nameAr : option.nameEn}</option>)}
-                      </select>
-                    </div>
-                    <div className="grid grid-cols-[112px_minmax(0,1fr)] gap-4 items-center">
-                      <div className="flex h-24 w-28 items-center justify-center overflow-hidden rounded-3xl border border-gray-200 bg-white p-2 dark:border-dark-600 dark:bg-dark-800">
-                        {profileLogo ? <img src={profileLogo} alt="" className="h-full w-full object-contain scale-110" /> : <Building2 className="w-8 h-8 text-gray-400" />}
-                      </div>
-                      <div>
-                        <input type="hidden" {...register(`settings.invoiceBranding.contextProfiles.${item.key}.logo`)} />
-                        <input type="file" accept="image/*" onChange={handleImageFieldChange(`settings.invoiceBranding.contextProfiles.${item.key}.logo`)} className="input" />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="label">{language === 'ar' ? 'Ø§Ù„Ù†Øµ Ø§Ù„Ø¹Ù„ÙˆÙŠ (EN)' : 'Header Text (EN)'}</label>
-                      <textarea {...register(`settings.invoiceBranding.contextProfiles.${item.key}.headerTextEn`)} rows={3} className="input" />
-                    </div>
-                    <div>
-                      <label className="label">{language === 'ar' ? 'Ø§Ù„Ù†Øµ Ø§Ù„Ø¹Ù„ÙˆÙŠ (AR)' : 'Header Text (AR)'}</label>
-                      <textarea {...register(`settings.invoiceBranding.contextProfiles.${item.key}.headerTextAr`)} rows={3} dir="rtl" className="input" />
-                    </div>
-                    <div>
-                      <label className="label">{language === 'ar' ? 'Ø§Ù„ØªØ°ÙŠÙŠÙ„ (EN)' : 'Footer Text (EN)'}</label>
-                      <textarea {...register(`settings.invoiceBranding.contextProfiles.${item.key}.footerTextEn`)} rows={3} className="input" />
-                    </div>
-                    <div>
-                      <label className="label">{language === 'ar' ? 'Ø§Ù„ØªØ°ÙŠÙŠÙ„ (AR)' : 'Footer Text (AR)'}</label>
-                      <textarea {...register(`settings.invoiceBranding.contextProfiles.${item.key}.footerTextAr`)} rows={3} dir="rtl" className="input" />
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </motion.div>
-        ) : null}
-
-        {isEdit && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}>
-            <EmailAdminSettingsSection
-              register={register}
-              watch={watch}
-              language={language}
-              tenantName={watch('business.legalNameEn') || watch('business.legalNameAr') || watch('name') || ''}
-              tenantSlug={watch('slug') || ''}
-              contactEmail={watch('business.contactEmail') || ''}
-              initialEmailSettings={tenant?.tenant?.settings?.communication?.email || {}}
-            />
-          </motion.div>
-        )}
 
         {/* Reseller Assignment */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="card p-6">
@@ -744,12 +553,23 @@ export default function TenantForm() {
                 <option value="yearly">{language === 'ar' ? 'Ø³Ù†ÙˆÙŠ' : 'Yearly'}</option>
               </select>
             </div>
+            <div>
+              <label className="label">{language === 'ar' ? 'ØªØ§Ø±ÙŠØ® Ø§Ù„Ø¨Ø¯Ø¡' : 'Start Date'}</label>
+              <input type="date" {...register('subscription.startDate')} className="input" />
+            </div>
+            <div>
+              <label className="label">
+                <span className="inline-flex items-center gap-1">
+                  {language === 'ar' ? 'ØªØ§Ø±ÙŠØ® Ø§Ù„Ø§Ù†ØªÙ‡Ø§Ø¡' : 'End Date'}
+                </span>
+              </label>
+              <input type="date" {...register('subscription.endDate')} className="input" />
+              <p className="text-xs text-gray-500 mt-1">
+                {language === 'ar' ? 'ÙŠØªÙ… ØªØ­Ø¯ÙŠØ« Ø§Ù„ØªØ§Ø±ÙŠØ® ØªÙ„Ù‚Ø§Ø¦ÙŠØ§Ù‹ Ø¹Ù†Ø¯ ØªØºÙŠÙŠØ± Ø¯ÙˆØ±Ø© Ø§Ù„ÙÙˆØªØ±Ø©.' : 'End date is auto-recalculated when billing cycle changes.'}
+              </p>
+            </div>
             {isEdit && (
               <>
-                <div>
-                  <label className="label">{language === 'ar' ? 'ØªØ§Ø±ÙŠØ® Ø§Ù„Ø§Ù†ØªÙ‡Ø§Ø¡' : 'End Date'}</label>
-                  <input type="date" {...register('subscription.endDate')} className="input" />
-                </div>
                 <div>
                   <label className="label">{language === 'ar' ? 'Ø§Ù„Ø­Ø¯ Ø§Ù„Ø£Ù‚ØµÙ‰ Ù„Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ†' : 'Max Users'}</label>
                   <input type="number" {...register('subscription.maxUsers', { valueAsNumber: true })} className="input" />
