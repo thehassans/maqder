@@ -22,11 +22,25 @@ export default defineConfig(({ mode }) => {
         workbox: {
           maximumFileSizeToCacheInBytes: 3000000,
           navigateFallback: '/index.html',
-          globPatterns: ['**/*.{js,css,html,ico,svg,png,woff,woff2}'],
+          globPatterns: ['**/*.{html,css,ico,svg,png,woff,woff2}'],
           runtimeCaching: [
             {
               urlPattern: ({ url }) => url.pathname.startsWith('/api'),
               handler: 'NetworkOnly', // Don't cache API routes using SW, let Redux/IDB handle offline data sync
+            },
+            {
+              urlPattern: /\.js$/i,
+              handler: 'StaleWhileRevalidate',
+              options: {
+                cacheName: 'js-chunks-cache',
+                expiration: {
+                  maxEntries: 200,
+                  maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
+                },
+                cacheableResponse: {
+                  statuses: [0, 200]
+                }
+              }
             },
             {
               urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,

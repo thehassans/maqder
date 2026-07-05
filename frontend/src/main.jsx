@@ -23,7 +23,8 @@ window.addEventListener('vite:preloadError', () => {
 
 const updateSW = registerSW({
   onNeedRefresh() {
-    console.log('New content available, please refresh.')
+    console.log('New content available, activating and reloading...')
+    updateSW(true)
   },
   onOfflineReady() {
     console.log('App is ready for offline usage.')
