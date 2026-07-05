@@ -38,7 +38,7 @@ export default function Sidebar() {
   const businessTypes = getTenantBusinessTypes(tenant)
 
   useEffect(() => {
-    if (businessTypes.includes('ecommerce') || businessTypes.includes('trading')) {
+    if (businessTypes.includes('ecommerce')) {
       api.get('/ecommerce/products/questions/pending').then(res => setPendingQuestions(res.data?.questions?.length || 0)).catch(() => {})
       api.get('/ecommerce/reviews?status=pending&limit=1').then(res => setPendingReviews(res.data?.total || 0)).catch(() => {})
       const interval = setInterval(() => {
