@@ -38,6 +38,7 @@ export default function DemoCheckout() {
   const [paymentLoading, setPaymentLoading] = useState(false)
   const [paymentError, setPaymentError] = useState('')
   const [moyasarKey, setMoyasarKey] = useState('')
+  const [keyLoading, setKeyLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
   const [showPaymentForm, setShowPaymentForm] = useState(false)
   const moyasarFormRef = useRef(null)
@@ -47,17 +48,23 @@ export default function DemoCheckout() {
 
   useEffect(() => {
     setMounted(true)
+
+    api.get('/public/website').then((res) => {
+      const demo = res.data?.demo || {}
+      console.log('[DemoCheckout] Website response demo:', { enabled: demo.moyasarEnabled, hasKey: !!demo.moyasarPublishableKey })
+      if (demo.moyasarEnabled && demo.moyasarPublishableKey) {
+        setMoyasarKey(demo.moyasarPublishableKey)
+      }
+      setKeyLoading(false)
+    }).catch((err) => {
+      console.error('[DemoCheckout] Failed to fetch website settings:', err)
+      setKeyLoading(false)
+    })
+
     if (!isDemo || isUpgraded) {
       navigate('/app/dashboard', { replace: true })
       return
     }
-
-    api.get('/public/website').then((res) => {
-      const demo = res.data?.demo || {}
-      if (demo.moyasarEnabled) {
-        setMoyasarKey(demo.moyasarPublishableKey || '')
-      }
-    }).catch(() => {})
   }, [isDemo, isUpgraded, navigate])
 
   const plans = useMemo(
@@ -115,6 +122,10 @@ export default function DemoCheckout() {
   const handleUpgrade = async () => {
     if (selectedPlan === 'enterprise') {
       window.open('mailto:sales@maqder.com?subject=Enterprise%20Plan%20Inquiry', '_blank')
+      return
+    }
+
+    if (keyLoading) {
       return
     }
 
@@ -396,10 +407,10 @@ export default function DemoCheckout() {
           {/* CTA */}
           <button
             onClick={handleUpgrade}
-            disabled={paymentLoading || (!moyasarKey && selectedPlan !== 'enterprise')}
+            disabled={paymentLoading || keyLoading || (!moyasarKey && selectedPlan !== 'enterprise')}
             className="flex w-full items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-[#0f3d2e] to-[#1a5d44] px-6 py-4 text-base font-bold text-white shadow-lg shadow-[#0f3d2e]/20 transition hover:shadow-xl hover:shadow-[#0f3d2e]/30 disabled:opacity-60"
           >
-            {paymentLoading ? (
+            {paymentLoading || keyLoading ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
                 {isArabic ? 'جاري المعالجة...' : 'Processing...'}
