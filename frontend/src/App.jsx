@@ -2,7 +2,7 @@ import { useEffect, lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { getMe, setTenantInactive } from './store/slices/authSlice'
-import { setLanguage, setTheme, setDisplayMode } from './store/slices/uiSlice'
+import { setLanguage, setTheme, setDisplayMode, loadHiddenMenuItemsForTenant } from './store/slices/uiSlice'
 import { applyTenantBranding } from './lib/branding'
 import { getTenantBusinessTypes } from './lib/businessTypes'
 import { ErrorBoundary } from './lib/errorBoundary'
@@ -77,6 +77,7 @@ const ProductForm = lazy(() => import('./pages/inventory/ProductForm'))
 const Warehouses = lazy(() => import('./pages/inventory/Warehouses'))
 const WarehouseForm = lazy(() => import('./pages/inventory/WarehouseForm'))
 const Settings = lazy(() => import('./pages/Settings'))
+const HiddenNavbars = lazy(() => import('./pages/HiddenNavbars'))
 const Reports = lazy(() => import('./pages/Reports'))
 const VatReturns = lazy(() => import('./pages/VatReturns'))
 const Vouchers = lazy(() => import('./pages/finance/Vouchers'))
@@ -364,6 +365,12 @@ function App() {
   useEffect(() => {
     applyTenantBranding(tenant?.branding)
   }, [tenant])
+
+  useEffect(() => {
+    if (tenant?._id) {
+      dispatch(loadHiddenMenuItemsForTenant(tenant._id))
+    }
+  }, [dispatch, tenant?._id])
 
   return (
     <Routes>
@@ -678,6 +685,7 @@ function App() {
         <Route path="khata" element={<Khata />} />
         <Route path="users" element={<Users />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="hidden-navbars" element={<HiddenNavbars />} />
         <Route path="settings/government-integrations" element={<GovernmentIntegrations />} />
         <Route path="settings/government-integrations/:service" element={<GovernmentIntegrationDetail />} />
         <Route path="tenant-settings/government-integrations" element={<GovernmentIntegrations />} />

@@ -7,7 +7,7 @@ import { Building2, Shield, Globe, Palette, Bell, Save, Key, CheckCircle, Image,
 import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
-import { setLanguage, setTheme, setHideSidebar, toggleHiddenMenuItem, setHiddenMenuItems, setDisplayMode } from '../store/slices/uiSlice'
+import { setLanguage, setTheme, setHideSidebar, setHiddenMenuItems, setHiddenMenuItemsForTenant, toggleHiddenMenuItemForTenant, setDisplayMode } from '../store/slices/uiSlice'
 import { updateTenant } from '../store/slices/authSlice'
 import { useLiveTranslation } from '../lib/liveTranslation'
 import { getInvoiceBrandingProfile, getInvoiceTemplateId, getInvoiceTypography, INVOICE_FONT_OPTIONS } from '../lib/invoiceBranding'
@@ -54,6 +54,7 @@ function MenuVisibilitySettings() {
   const [expandedSections, setExpandedSections] = useState({})
   const [searchQuery, setSearchQuery] = useState('')
   const hiddenSet = new Set(hiddenMenuItems || [])
+  const NON_HIDEABLE_PATHS = new Set(['/app/dashboard/settings', '/app/dashboard/hidden-navbars'])
 
   if (!tenant) return null
 
@@ -96,6 +97,7 @@ function MenuVisibilitySettings() {
       return { ...section, items: [] }
     }
     const items = (Array.isArray(section.items) ? section.items : []).filter((item) => {
+      if (item.path && NON_HIDEABLE_PATHS.has(item.path)) return false
       if (Array.isArray(item?.businessTypes) && !item.businessTypes.some((type) => businessTypes.includes(type))) return false
       if (Array.isArray(item?.excludeBusinessTypes) && item.excludeBusinessTypes.some((type) => businessTypes.includes(type))) return false
       if (item.requireAddon && !tenant?.subscription?.[item.requireAddon]) return false
@@ -110,7 +112,8 @@ function MenuVisibilitySettings() {
   }
 
   const toggleItem = (path) => {
-    dispatch(toggleHiddenMenuItem(path))
+    if (NON_HIDEABLE_PATHS.has(path)) return
+    dispatch(toggleHiddenMenuItemForTenant({ tenantId: tenant._id, path }))
   }
 
   const showAll = () => {
@@ -120,7 +123,8 @@ function MenuVisibilitySettings() {
         if (item.path) visiblePaths.add(item.path)
       })
     })
-    dispatch(setHiddenMenuItems(Array.from(new Set((hiddenMenuItems || []).filter((p) => !visiblePaths.has(p))))))
+    const items = Array.from(new Set((hiddenMenuItems || []).filter((p) => !visiblePaths.has(p))))
+    dispatch(setHiddenMenuItemsForTenant({ tenantId: tenant._id, items }))
   }
 
   const filteredSections = visibleSections.map((section) => {

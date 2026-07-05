@@ -25,6 +25,29 @@ const getInitialHiddenMenuItems = () => {
   }
 }
 
+const getHiddenMenuItemsForTenant = (tenantId) => {
+  if (!tenantId) return []
+  try {
+    const all = localStorage.getItem('hiddenMenuItemsByTenant')
+    const map = all ? JSON.parse(all) : {}
+    return Array.isArray(map[tenantId]) ? map[tenantId] : []
+  } catch {
+    return []
+  }
+}
+
+const setHiddenMenuItemsForTenantStorage = (tenantId, items) => {
+  if (!tenantId) return
+  try {
+    const all = localStorage.getItem('hiddenMenuItemsByTenant')
+    const map = all ? JSON.parse(all) : {}
+    map[tenantId] = Array.isArray(items) ? items : []
+    localStorage.setItem('hiddenMenuItemsByTenant', JSON.stringify(map))
+  } catch {
+    // ignore
+  }
+}
+
 const getInitialDisplayMode = () => {
   const saved = localStorage.getItem('displayMode')
   return saved || 'auto'
@@ -100,6 +123,26 @@ const uiSlice = createSlice({
       state.hiddenMenuItems = Array.from(current)
       localStorage.setItem('hiddenMenuItems', JSON.stringify(state.hiddenMenuItems))
     },
+    loadHiddenMenuItemsForTenant: (state, action) => {
+      const tenantId = action.payload
+      state.hiddenMenuItems = getHiddenMenuItemsForTenant(tenantId)
+    },
+    setHiddenMenuItemsForTenant: (state, action) => {
+      const { tenantId, items } = action.payload || {}
+      state.hiddenMenuItems = Array.isArray(items) ? items : []
+      setHiddenMenuItemsForTenantStorage(tenantId, state.hiddenMenuItems)
+    },
+    toggleHiddenMenuItemForTenant: (state, action) => {
+      const { tenantId, path } = action.payload || {}
+      const current = new Set(state.hiddenMenuItems || [])
+      if (current.has(path)) {
+        current.delete(path)
+      } else {
+        current.add(path)
+      }
+      state.hiddenMenuItems = Array.from(current)
+      setHiddenMenuItemsForTenantStorage(tenantId, state.hiddenMenuItems)
+    },
     setDisplayMode: (state, action) => {
       const mode = action.payload || 'auto'
       state.displayMode = mode
@@ -109,5 +152,5 @@ const uiSlice = createSlice({
   },
 })
 
-export const { setLanguage, setTheme, toggleSidebar, toggleSidebarCollapse, setMobileMenuOpen, setHideSidebar, toggleHideSidebar, setHiddenMenuItems, toggleHiddenMenuItem, setDisplayMode } = uiSlice.actions
+export const { setLanguage, setTheme, toggleSidebar, toggleSidebarCollapse, setMobileMenuOpen, setHideSidebar, toggleHideSidebar, setHiddenMenuItems, toggleHiddenMenuItem, loadHiddenMenuItemsForTenant, setHiddenMenuItemsForTenant, toggleHiddenMenuItemForTenant, setDisplayMode } = uiSlice.actions
 export default uiSlice.reducer

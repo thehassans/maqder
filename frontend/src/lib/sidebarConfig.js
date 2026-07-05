@@ -6,6 +6,7 @@ import {
   Package,
   Warehouse,
   Settings,
+  Menu,
   Key,
   Calculator,
   Truck,
@@ -369,6 +370,7 @@ export function getNavSections({ language, t, tenant, businessTypes, govChildren
         { path: '/app/dashboard/users', icon: Users, label: t('users'), perm: { module: 'settings', action: 'read' } },
         { path: '/app/dashboard/backup', icon: Database, label: language === 'ar' ? 'النسخ الاحتياطي' : 'Backup', perm: { module: 'settings', action: 'read' } },
         { path: '/app/dashboard/settings', icon: Settings, label: t('settings'), perm: { module: 'settings', action: 'read' } },
+        { path: '/app/dashboard/hidden-navbars', icon: Menu, label: language === 'ar' ? 'القوائم المخفية' : 'Hidden Navbars', perm: { module: 'settings', action: 'read' } },
       ]
     },
     {

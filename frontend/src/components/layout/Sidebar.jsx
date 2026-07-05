@@ -33,7 +33,7 @@ export default function Sidebar() {
   if (hasQiwa) govChildren.push({ path: '/app/dashboard/tenant-settings/government-integrations/qiwa', label: language === 'ar' ? 'Ø¨ÙˆØ§Ø¨Ø© Ù‚ÙˆÙ‰' : 'Qiwa Portal' });
   if (hasGosi) govChildren.push({ path: '/app/dashboard/tenant-settings/government-integrations/gosi', label: language === 'ar' ? 'Ø¨ÙˆØ§Ø¨Ø© Ø§Ù„ØªØ£Ù…ÙŠÙ†Ø§Øª / Ù…Ø¯Ø¯' : 'GOSI/Mudad Portal' });
 
-  const hiddenMenuSet = new Set(hiddenMenuItems || [])
+  const hiddenMenuSet = new Set((hiddenMenuItems || []).filter((p) => !['/app/dashboard/settings', '/app/dashboard/hidden-navbars'].includes(p)))
 
   const businessTypes = getTenantBusinessTypes(tenant)
 
