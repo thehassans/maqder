@@ -397,6 +397,11 @@ export default function DemoCheckout() {
             </div>
           </div>
 
+          {/* Debug panel — temporary, shows live payment gateway state */}
+          <div className="mb-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-[11px] font-mono text-amber-800 dark:text-amber-300 whitespace-pre-wrap break-all">
+            DEBUG: keyLoading={String(keyLoading)} | moyasarKey={moyasarKey ? `${moyasarKey.slice(0, 12)}...` : '(empty)'} | window.Moyasar={typeof window !== 'undefined' && !!window.Moyasar ? 'loaded' : 'NOT LOADED'}
+          </div>
+
           {/* Error */}
           {paymentError && (
             <div className="mb-4 rounded-xl bg-red-50 dark:bg-red-900/20 px-4 py-3 text-xs text-red-600 dark:text-red-400 whitespace-pre-wrap break-all max-h-40 overflow-y-auto">
