@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   Crown,
   Check,
@@ -16,6 +16,7 @@ import {
   MessageCircle,
   Phone,
   Globe,
+  X,
 } from 'lucide-react'
 import api from '../lib/api'
 
@@ -38,6 +39,8 @@ export default function DemoCheckout() {
   const [paymentError, setPaymentError] = useState('')
   const [moyasarKey, setMoyasarKey] = useState('')
   const [mounted, setMounted] = useState(false)
+  const [showPaymentForm, setShowPaymentForm] = useState(false)
+  const moyasarFormRef = useRef(null)
 
   const isDemo = tenant?.isDemo === true
   const isUpgraded = tenant?.demoUpgraded === true
@@ -69,43 +72,69 @@ export default function DemoCheckout() {
   const selectedPlanObj = plans.find((p) => p.id === selectedPlan) || plans[1]
   const amount = selectedBilling === 'yearly' ? selectedPlanObj.priceYearly : selectedPlanObj.priceMonthly
 
+  const initMoyasarForm = useCallback(() => {
+    if (!window.Moyasar || !moyasarKey) {
+      setPaymentError(isArabic ? 'بوابة الدفع غير متهيئة' : 'Payment gateway not configured')
+      return
+    }
+
+    const amountInHalalas = Math.round(amount * 100)
+    const callbackUrl = `${window.location.origin}/api/payments/callback`
+
+    const methods = paymentMethod === 'applepay' ? ['applepay'] : ['creditcard']
+
+    try {
+      window.Moyasar.init({
+        element: '#mysr-form',
+        amount: amountInHalalas,
+        currency: 'SAR',
+        description: `Maqder ERP - ${selectedPlan} plan (${selectedBilling}) upgrade for ${tenant?.demoEmail || tenant?.name || ''}`,
+        publishable_api_key: moyasarKey,
+        callback_url: callbackUrl,
+        methods,
+        metadata: {
+          tenantId: String(tenant?._id || ''),
+          demoEmail: tenant?.demoEmail || '',
+          plan: selectedPlan,
+          billingCycle: selectedBilling,
+        },
+        language: isArabic ? 'ar' : 'en',
+        on_failure: async function (error) {
+          console.error('[Moyasar] Payment failed:', error)
+          setPaymentError(String(error))
+          setShowPaymentForm(false)
+        },
+      })
+    } catch (err) {
+      console.error('[Moyasar] Init error:', err)
+      setPaymentError(err.message || 'Failed to initialize payment form')
+      setShowPaymentForm(false)
+    }
+  }, [moyasarKey, amount, paymentMethod, selectedPlan, selectedBilling, tenant, isArabic])
+
   const handleUpgrade = async () => {
     if (selectedPlan === 'enterprise') {
       window.open('mailto:sales@maqder.com?subject=Enterprise%20Plan%20Inquiry', '_blank')
       return
     }
 
-    setPaymentLoading(true)
-    setPaymentError('')
-
-    try {
-      const { data } = await api.post('/payments/create-payment', {
-        amount,
-        currency: 'SAR',
-        plan: selectedPlan,
-        billingCycle: selectedBilling,
-        paymentMethod,
-      })
-
-      if (data?.id && moyasarKey) {
-        const moyasarUrl = `https://checkout.moyasar.com/payment/${data.id}?key=${moyasarKey}`
-        window.location.href = moyasarUrl
-      } else if (data?.callbackUrl) {
-        window.location.href = data.callbackUrl
-      } else {
-        setPaymentError(isArabic ? 'تعذر إنشاء عملية الدفع' : 'Could not initiate payment')
-      }
-    } catch (error) {
-      const errData = error.response?.data || {}
-      console.error('[Checkout] Payment error:', errData)
-      const errMsg = errData.error || (isArabic ? 'حدث خطأ' : 'An error occurred')
-      const moyasarErr = errData.moyasarError ? `\n${JSON.stringify(errData.moyasarError)}` : ''
-      const reqBody = errData.requestBody ? `\nRequest: ${JSON.stringify(errData.requestBody)}` : ''
-      setPaymentError(errMsg + moyasarErr + reqBody)
-    } finally {
-      setPaymentLoading(false)
+    if (!moyasarKey) {
+      setPaymentError(isArabic ? 'بوابة الدفع غير متهيئة. يرجى المحاولة لاحقاً.' : 'Payment gateway not configured. Please try again later.')
+      return
     }
+
+    setPaymentError('')
+    setShowPaymentForm(true)
   }
+
+  useEffect(() => {
+    if (showPaymentForm && moyasarKey) {
+      const timer = setTimeout(() => {
+        initMoyasarForm()
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [showPaymentForm, moyasarKey, initMoyasarForm])
 
   if (!mounted) return null
 
@@ -367,7 +396,7 @@ export default function DemoCheckout() {
           {/* CTA */}
           <button
             onClick={handleUpgrade}
-            disabled={paymentLoading}
+            disabled={paymentLoading || (!moyasarKey && selectedPlan !== 'enterprise')}
             className="flex w-full items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-[#0f3d2e] to-[#1a5d44] px-6 py-4 text-base font-bold text-white shadow-lg shadow-[#0f3d2e]/20 transition hover:shadow-xl hover:shadow-[#0f3d2e]/30 disabled:opacity-60"
           >
             {paymentLoading ? (
@@ -406,6 +435,47 @@ export default function DemoCheckout() {
           </div>
         </motion.div>
       </div>
+
+      {/* Moyasar Payment Form Modal */}
+      <AnimatePresence>
+        {showPaymentForm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            onClick={() => setShowPaymentForm(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative w-full max-w-md rounded-3xl bg-white dark:bg-dark-800 p-6 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                  {isArabic ? 'إتمام الدفع' : 'Complete Payment'}
+                </h3>
+                <button
+                  onClick={() => setShowPaymentForm(false)}
+                  className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-700 transition"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="mb-4 rounded-xl bg-gray-50 dark:bg-dark-700 px-4 py-3 text-center">
+                <span className="text-2xl font-black text-gray-900 dark:text-white">{amount}</span>
+                <span className="text-sm font-bold text-gray-500 dark:text-gray-400 ml-1">SAR</span>
+                <span className="text-xs text-gray-400 dark:text-gray-500 ml-2">
+                  {selectedBilling === 'yearly' ? (isArabic ? '/سنة' : '/year') : (isArabic ? '/شهر' : '/month')}
+                </span>
+              </div>
+              <div id="mysr-form" ref={moyasarFormRef}></div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
