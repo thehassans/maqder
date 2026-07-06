@@ -131,6 +131,10 @@ router.get('/website', async (req, res) => {
 
     const payment = settings?.payment?.toObject?.() || settings?.payment || {}
     const moyasar = payment?.moyasar || {}
+    const applePay = payment?.applePay || {}
+    const stcPay = payment?.stcPay || {}
+    const tabby = payment?.tabby || {}
+    const tamara = payment?.tamara || {}
 
     res.json({
       ...website,
@@ -143,6 +147,13 @@ router.get('/website', async (req, res) => {
         passwordMasked: maskSecret(website?.demo?.password),
         moyasarEnabled: moyasar.enabled === true,
         moyasarPublishableKey: moyasar.publishableKey || '',
+      },
+      paymentMethods: {
+        moyasar: moyasar.enabled === true,
+        applePay: applePay.enabled === true,
+        stcPay: stcPay.enabled === true,
+        tabby: tabby.enabled === true,
+        tamara: tamara.enabled === true,
       },
     })
   } catch (error) {

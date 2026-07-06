@@ -114,6 +114,30 @@ export default function DemoCheckout() {
     return () => { cancelled = true }
   }, [primaryBusinessType])
 
+  const paymentMethods = websiteSettings?.paymentMethods || {}
+  const isPaymentEnabled = (key) => paymentMethods[key] !== false
+
+  useEffect(() => {
+    if (!websiteSettings) return
+    const isEnabled = (key) => paymentMethods[key] !== false
+    const methodMap = {
+      creditcard: 'moyasar',
+      applepay: 'applePay',
+      tabby: 'tabby',
+      tamara: 'tamara',
+      stcpay: 'stcPay',
+    }
+    if (isEnabled(methodMap[paymentMethod])) return
+    const firstAvailable = [
+      { id: 'creditcard', key: 'moyasar' },
+      { id: 'applepay', key: 'applePay' },
+      { id: 'tabby', key: 'tabby' },
+      { id: 'tamara', key: 'tamara' },
+      { id: 'stcpay', key: 'stcPay' },
+    ].find((m) => isEnabled(m.key))
+    if (firstAvailable) setPaymentMethod(firstAvailable.id)
+  }, [websiteSettings, paymentMethod])
+
   const plans = useMemo(() => {
     const configured = websiteSettings?.pricing?.plans
     if (Array.isArray(configured) && configured.length > 0) {
@@ -460,73 +484,90 @@ export default function DemoCheckout() {
               <label className="mb-3 block text-center text-sm font-bold text-gray-700 dark:text-gray-300">
                 {isArabic ? 'اختر طريقة الدفع' : 'Select Payment Method'}
               </label>
-              <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-                {/* Credit Card */}
-                <button
-                  onClick={() => setPaymentMethod('creditcard')}
-                  className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 p-3 transition-all ${
-                    paymentMethod === 'creditcard'
-                      ? 'border-[#0f3d2e] bg-[#0f3d2e]/[0.03] dark:bg-[#0f3d2e]/10 shadow-md'
-                      : 'border-gray-100 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
-                  }`}
-                >
-                  <div className={`relative flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0f3d2e] via-[#1a5d44] to-[#0f3d2e] text-white shadow-lg ring-2 ring-white/60 dark:ring-white/10 overflow-hidden ${paymentMethod === 'creditcard' ? 'shadow-emerald-500/30' : ''}`}>
-                    <div className="absolute inset-0 bg-gradient-to-tr from-white/25 to-transparent" />
-                    <CreditCard className="relative h-6 w-6 drop-shadow-md" />
+              <div className="flex flex-wrap justify-center gap-3">
+                {isPaymentEnabled('moyasar') && (
+                  <button
+                    onClick={() => setPaymentMethod('creditcard')}
+                    className={`flex min-w-[90px] flex-1 flex-col items-center justify-center gap-2 rounded-2xl border-2 p-3 transition-all sm:flex-none ${
+                      paymentMethod === 'creditcard'
+                        ? 'border-[#0f3d2e] bg-[#0f3d2e]/[0.03] dark:bg-[#0f3d2e]/10 shadow-md'
+                        : 'border-gray-100 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
+                    }`}
+                  >
+                    <div className={`relative flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0f3d2e] via-[#1a5d44] to-[#0f3d2e] text-white shadow-lg ring-2 ring-white/60 dark:ring-white/10 overflow-hidden ${paymentMethod === 'creditcard' ? 'shadow-emerald-500/30' : ''}`}>
+                      <div className="absolute inset-0 bg-gradient-to-tr from-white/25 to-transparent" />
+                      <CreditCard className="relative h-6 w-6 drop-shadow-md" />
+                    </div>
+                    <span className="text-xs font-bold text-gray-800 dark:text-white">
+                      {isArabic ? 'بطاقة' : 'Card'}
+                    </span>
+                  </button>
+                )}
+
+                {isPaymentEnabled('applePay') && (
+                  <button
+                    onClick={() => setPaymentMethod('applepay')}
+                    className={`flex min-w-[90px] flex-1 flex-col items-center justify-center gap-2 rounded-2xl border-2 p-3 transition-all sm:flex-none ${
+                      paymentMethod === 'applepay'
+                        ? 'border-[#0f3d2e] bg-[#0f3d2e]/[0.03] dark:bg-[#0f3d2e]/10 shadow-md'
+                        : 'border-gray-100 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
+                    }`}
+                  >
+                    <img src="/applepay.webp" alt="Apple Pay" className="h-10 w-auto object-contain" />
+                    <span className="text-xs font-bold text-gray-800 dark:text-white">Apple Pay</span>
+                  </button>
+                )}
+
+                {isPaymentEnabled('tabby') && (
+                  <button
+                    onClick={() => setPaymentMethod('tabby')}
+                    className={`flex min-w-[90px] flex-1 flex-col items-center justify-center gap-2 rounded-2xl border-2 p-3 transition-all sm:flex-none ${
+                      paymentMethod === 'tabby'
+                        ? 'border-[#0f3d2e] bg-[#0f3d2e]/[0.03] dark:bg-[#0f3d2e]/10 shadow-md'
+                        : 'border-gray-100 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
+                    }`}
+                  >
+                    <img src="/tabby.png" alt="Tabby" className="h-8 w-auto object-contain" />
+                    <span className="text-[10px] font-bold text-gray-800 dark:text-white">Tabby</span>
+                  </button>
+                )}
+
+                {isPaymentEnabled('tamara') && (
+                  <button
+                    onClick={() => setPaymentMethod('tamara')}
+                    className={`flex min-w-[90px] flex-1 flex-col items-center justify-center gap-2 rounded-2xl border-2 p-3 transition-all sm:flex-none ${
+                      paymentMethod === 'tamara'
+                        ? 'border-[#0f3d2e] bg-[#0f3d2e]/[0.03] dark:bg-[#0f3d2e]/10 shadow-md'
+                        : 'border-gray-100 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
+                    }`}
+                  >
+                    <img src="/tamara.webp" alt="Tamara" className="h-8 w-auto object-contain" />
+                    <span className="text-[10px] font-bold text-gray-800 dark:text-white">Tamara</span>
+                  </button>
+                )}
+
+                {isPaymentEnabled('stcPay') && (
+                  <div className="relative flex min-w-[90px] flex-1 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-gray-100 dark:border-dark-600 p-3 opacity-60 cursor-not-allowed sm:flex-none">
+                    <span className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full bg-gray-500 px-2 py-0.5 text-[9px] font-bold text-white">
+                      {isArabic ? 'قريباً' : 'Soon'}
+                    </span>
+                    <img src="/stcpay.webp" alt="STC Pay" className="h-8 w-auto object-contain" />
+                    <span className="text-[10px] font-bold text-gray-800 dark:text-white">STC Pay</span>
                   </div>
-                  <span className="text-xs font-bold text-gray-800 dark:text-white">
-                    {isArabic ? 'بطاقة' : 'Card'}
-                  </span>
-                </button>
-
-                {/* Apple Pay */}
-                <button
-                  onClick={() => setPaymentMethod('applepay')}
-                  className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 p-3 transition-all ${
-                    paymentMethod === 'applepay'
-                      ? 'border-[#0f3d2e] bg-[#0f3d2e]/[0.03] dark:bg-[#0f3d2e]/10 shadow-md'
-                      : 'border-gray-100 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
-                  }`}
-                >
-                  <img src="/applepay.webp" alt="Apple Pay" className="h-10 w-auto object-contain" />
-                  <span className="text-xs font-bold text-gray-800 dark:text-white">Apple Pay</span>
-                </button>
-
-                {/* Tabby */}
-                <button
-                  onClick={() => setPaymentMethod('tabby')}
-                  className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 p-3 transition-all ${
-                    paymentMethod === 'tabby'
-                      ? 'border-[#0f3d2e] bg-[#0f3d2e]/[0.03] dark:bg-[#0f3d2e]/10 shadow-md'
-                      : 'border-gray-100 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
-                  }`}
-                >
-                  <img src="/tabby.png" alt="Tabby" className="h-8 w-auto object-contain" />
-                  <span className="text-[10px] font-bold text-gray-800 dark:text-white">Tabby</span>
-                </button>
-
-                {/* Tamara */}
-                <button
-                  onClick={() => setPaymentMethod('tamara')}
-                  className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 p-3 transition-all ${
-                    paymentMethod === 'tamara'
-                      ? 'border-[#0f3d2e] bg-[#0f3d2e]/[0.03] dark:bg-[#0f3d2e]/10 shadow-md'
-                      : 'border-gray-100 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
-                  }`}
-                >
-                  <img src="/tamara.webp" alt="Tamara" className="h-8 w-auto object-contain" />
-                  <span className="text-[10px] font-bold text-gray-800 dark:text-white">Tamara</span>
-                </button>
-
-                {/* STC Pay */}
-                <div className="relative flex flex-col items-center justify-center gap-2 rounded-2xl border-2 border-gray-100 dark:border-dark-600 p-3 opacity-60 cursor-not-allowed">
-                  <span className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full bg-gray-500 px-2 py-0.5 text-[9px] font-bold text-white">
-                    {isArabic ? 'قريباً' : 'Soon'}
-                  </span>
-                  <img src="/stcpay.webp" alt="STC Pay" className="h-8 w-auto object-contain" />
-                  <span className="text-[10px] font-bold text-gray-800 dark:text-white">STC Pay</span>
-                </div>
+                )}
               </div>
+
+              {[
+                isPaymentEnabled('moyasar'),
+                isPaymentEnabled('applePay'),
+                isPaymentEnabled('tabby'),
+                isPaymentEnabled('tamara'),
+                isPaymentEnabled('stcPay'),
+              ].every(Boolean) === false && (
+                <div className="mt-3 rounded-xl bg-gray-50 dark:bg-dark-700 px-4 py-3 text-center text-xs text-gray-500 dark:text-gray-400">
+                  {isArabic ? 'لا توجد طرق دفع متاحة حالياً. يرجى التواصل مع الدعم.' : 'No payment methods are currently available. Please contact support.'}
+                </div>
+              )}
 
               {/* Tabby/Tamara info badge */}
               {(paymentMethod === 'tabby' || paymentMethod === 'tamara') && (
