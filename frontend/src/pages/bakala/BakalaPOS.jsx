@@ -574,8 +574,8 @@ export default function BakalaPOS() {
     // Get hardware + thermal settings
     const thermal = getThermalPrinterSettings(tenant);
 
-    // Open cash drawer on cash payment (network printer only)
-    if (paymentMethod === 'cash' && hw.openCashDrawerOnCashPayment && hw.receiptPrinterType === 'network') {
+    // Auto open cash drawer on cash payment
+    if (paymentMethod === 'cash' && hw.receiptPrinterType === 'network' && hw.printerIpAddress) {
       try {
         await api.post('/tenants/test-cash-drawer', {
           ipAddress: hw.printerIpAddress,
@@ -587,9 +587,10 @@ export default function BakalaPOS() {
       }
     }
 
-    // Auto-print receipt if enabled
-    if (thermal.autoPrint) {
-      if (hw.receiptPrinterType === 'network') {
+    // Auto-print receipt: always for cash, otherwise only if autoPrint is enabled
+    const shouldAutoPrint = paymentMethod === 'cash' || thermal.autoPrint;
+    if (shouldAutoPrint) {
+      if (hw.receiptPrinterType === 'network' && hw.printerIpAddress) {
         // Send ESC/POS receipt directly to network printer
         printReceiptESCPOS(invoice, paymentMethod, hw, thermal);
       } else {
