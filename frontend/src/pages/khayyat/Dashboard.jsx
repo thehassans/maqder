@@ -750,6 +750,21 @@ const UserDashboard = () => {
                     {language === 'ar' ? '\u0625\u0646\u0634\u0627\u0621 \u0637\u0644\u0628 \u0633\u0631\u064A\u0639' : 'Create Quick Order'}
                   </Button>
                   <Button
+                    onClick={() => {
+                      if (isDemo) {
+                        setDemoBlockedOpen(true);
+                      } else {
+                        navigate(`/app/dashboard/khayyat/quick-invoice?customerId=${customerProfile._id}`);
+                      }
+                      setCustomerProfile(null);
+                    }}
+                    icon={FileText}
+                    variant="outline"
+                    className="flex-1 rounded-xl"
+                  >
+                    {language === 'ar' ? '\u0641\u0627\u062A\u0648\u0631\u0629' : 'Invoice'}
+                  </Button>
+                  <Button
                     onClick={() => setCustomerProfile(null)}
                     variant="outline"
                     className="rounded-xl"

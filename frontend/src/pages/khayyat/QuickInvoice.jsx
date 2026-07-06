@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, Printer, ArrowLeft, Upload, X } from 'lucide-react';
+import { Plus, Trash2, Printer, ArrowLeft, Upload, X, Search, ChevronDown, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../lib/api';
 import { useTranslation } from '../../lib/translations';
 import { useAutoTranslate } from '../../hooks/useAutoTranslate';
 import { formatSaudiRiyal } from './utils/saudi';
+import { canonicalSaudiMobile } from './utils/saudi';
 import SARIcon from './components/ui/SARIcon';
 
 export default function KhayyatQuickInvoice() {
@@ -21,6 +22,14 @@ export default function KhayyatQuickInvoice() {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [notes, setNotes] = useState('');
+  const [allCustomers, setAllCustomers] = useState([]);
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [customerDetailsLoading, setCustomerDetailsLoading] = useState(false);
+  const customerDropdownRef = useRef(null);
+  const [searchParams] = useSearchParams();
+  const langKey = (language || 'en').split('-')[0];
   const [customSubtotal, setCustomSubtotal] = useState('');
   const [discount, setDiscount] = useState('');
   const [paidAmount, setPaidAmount] = useState('');
@@ -37,12 +46,72 @@ export default function KhayyatQuickInvoice() {
   }]);
 
   useEffect(() => {
+    fetchAllCustomers();
     // Cleanup image previews
     return () => {
       items.forEach(item => {
         if (item.imagePreview) URL.revokeObjectURL(item.imagePreview);
       });
     };
+  }, []);
+
+  const fetchAllCustomers = async () => {
+    try {
+      const response = await api.get('/khayyat/customers', { params: { limit: 2000 } });
+      const data = response.data;
+      setAllCustomers(Array.isArray(data) ? data : data.customers || []);
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+    }
+  };
+
+  const filteredCustomers = allCustomers.filter(customer => {
+    if (!customerSearch) return true;
+    const search = customerSearch.toLowerCase();
+    const searchPhone = canonicalSaudiMobile(customerSearch);
+    return (customer.nameI18n?.[langKey] || customer.name || '')?.toLowerCase().includes(search) ||
+           customer.phone?.includes(customerSearch) ||
+           (customer.customerCode || '')?.toLowerCase().includes(search) ||
+           (customer.khayyatReceiptNumbers || '')?.toLowerCase().includes(search) ||
+           (!!searchPhone && canonicalSaudiMobile(customer.phone) === searchPhone);
+  });
+
+  const handleCustomerSelect = async (customer) => {
+    setDropdownOpen(false);
+    setCustomerSearch('');
+    setCustomerDetailsLoading(true);
+    try {
+      const resp = await api.get(`/khayyat/customers/${customer._id}`);
+      const fetched = resp.data?.customer || customer;
+      setSelectedCustomer(fetched);
+      setCustomerName(fetched.nameI18n?.[langKey] || fetched.name || '');
+      setCustomerPhone(fetched.phone || '');
+    } catch {
+      setSelectedCustomer(customer);
+      setCustomerName(customer.nameI18n?.[langKey] || customer.name || '');
+      setCustomerPhone(customer.phone || '');
+    }
+    setCustomerDetailsLoading(false);
+  };
+
+  useEffect(() => {
+    const customerId = searchParams.get('customerId');
+    if (customerId && allCustomers.length > 0) {
+      const found = allCustomers.find(c => c._id === customerId);
+      if (found) {
+        handleCustomerSelect(found);
+      }
+    }
+  }, [searchParams, allCustomers]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (customerDropdownRef.current && !customerDropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const handleImageChange = (index, e) => {
@@ -121,7 +190,9 @@ export default function KhayyatQuickInvoice() {
         
         formData.append('orderNumber', sharedOrderNumber);
         
-        if (currentCustomerId) {
+        if (selectedCustomer?._id) {
+          formData.append('customerId', selectedCustomer._id);
+        } else if (currentCustomerId) {
           formData.append('customerId', currentCustomerId);
         } else {
           formData.append('customerName', customerName.trim());
@@ -241,30 +312,100 @@ export default function KhayyatQuickInvoice() {
 
           <div className="space-y-6">
             <div className="grid grid-cols-2 gap-3 pb-4 border-b border-dashed border-gray-200 dark:border-slate-700">
-              <div>
+              <div className="relative" ref={customerDropdownRef}>
                 <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider ml-1 mb-1 block">
-                  {language === 'ar' ? 'العميل الرئيسي' : 'Main Customer Name'} *
+                  {language === 'ar' ? '\u0627\u0644\u0639\u0645\u064A\u0644' : 'Customer'} *
                 </label>
+                <button
+                  type="button"
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="w-full flex items-center justify-between bg-gray-50 dark:bg-slate-800 border-none rounded-xl text-sm font-medium text-gray-900 dark:text-white focus:ring-2 p-3 focus:ring-gray-200"
+                >
+                  {selectedCustomer ? (
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-7 h-7 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center shrink-0">
+                        <span className="text-primary-700 dark:text-primary-200 font-medium text-xs">{(selectedCustomer.nameI18n?.[langKey] || selectedCustomer.name || '')?.charAt(0)}</span>
+                      </div>
+                      <div className="text-left min-w-0">
+                        <p className="font-medium text-gray-900 dark:text-white truncate">{selectedCustomer.nameI18n?.[langKey] || selectedCustomer.name}</p>
+                        {selectedCustomer.khayyatReceiptNumbers && (
+                          <p className="text-[10px] text-gray-400 truncate">{language === 'ar' ? '\u0625\u064A\u0635\u0627\u0644\u0627\u062A' : 'Receipts'}: {selectedCustomer.khayyatReceiptNumbers}</p>
+                        )}
+                      </div>
+                    </div>
+                  ) : customerDetailsLoading ? (
+                    <span className="text-gray-400">{language === 'ar' ? '\u062C\u0627\u0631\u064A \u0627\u0644\u062A\u062D\u0645\u064A\u0644...' : 'Loading...'}</span>
+                  ) : (
+                    <span className="text-gray-400">{language === 'ar' ? '\u0627\u062E\u062A\u0631 \u0639\u0645\u064A\u0644...' : 'Select customer...'}</span>
+                  )}
+                  <ChevronDown className={`w-4 h-4 text-gray-400 shrink-0 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {dropdownOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-gray-100 dark:border-slate-800 z-50">
+                    <div className="p-2 border-b border-gray-100 dark:border-slate-700">
+                      <input
+                        type="text"
+                        value={customerSearch}
+                        onChange={(e) => setCustomerSearch(e.target.value)}
+                        placeholder={language === 'ar' ? '\u0628\u062D\u062B \u0628\u0627\u0644\u0627\u0633\u0645 \u0623\u0648 \u0627\u0644\u0631\u0642\u0645 \u0623\u0648 \u0627\u0644\u0625\u064A\u0635\u0627\u0644...' : 'Search by name, phone, or receipt...'}
+                        className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg text-sm text-gray-900 dark:text-slate-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="max-h-48 overflow-y-auto">
+                      {filteredCustomers.length > 0 ? (
+                        filteredCustomers.map((customer) => (
+                          <button
+                            key={customer._id}
+                            type="button"
+                            onClick={() => handleCustomerSelect(customer)}
+                            className={`w-full p-2.5 hover:bg-primary-50 dark:hover:bg-primary-900/20 flex items-center gap-2 text-left transition-colors border-b border-gray-100 dark:border-slate-700 last:border-b-0 ${selectedCustomer?._id === customer._id ? 'bg-primary-50 dark:bg-primary-900/20' : ''}`}
+                          >
+                            <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center shrink-0">
+                              <span className="text-primary-700 dark:text-primary-200 font-medium text-xs">{(customer.nameI18n?.[langKey] || customer.name || '')?.charAt(0)}</span>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium text-gray-900 dark:text-slate-100 text-sm truncate">{customer.nameI18n?.[langKey] || customer.name}</p>
+                              <p className="text-xs text-gray-500 dark:text-slate-400">{customer.phone}</p>
+                              {customer.khayyatReceiptNumbers && (
+                                <p className="text-[10px] text-gray-400 truncate">{language === 'ar' ? '\u0625\u064A\u0635\u0627\u0644\u0627\u062A' : 'Receipts'}: {customer.khayyatReceiptNumbers}</p>
+                              )}
+                            </div>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="p-4 text-center text-gray-500 dark:text-slate-400 text-sm">{language === 'ar' ? '\u0644\u0627 \u064A\u0648\u062C\u062F \u0639\u0645\u0644\u0627\u0621' : 'No customers found'}</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <input
                   type="text"
-                  placeholder={language === 'ar' ? 'محمد' : 'Mohammed'}
-                  className="w-full bg-gray-50 dark:bg-slate-800 border-none rounded-xl text-sm font-medium text-gray-900 dark:text-white focus:ring-2 p-3 focus:ring-gray-200"
+                  placeholder={language === 'ar' ? '\u0623\u0648 \u0627\u0643\u062A\u0628 \u0627\u0633\u0645 \u062C\u062F\u064A\u062F' : 'Or type new name'}
+                  className="w-full mt-2 bg-gray-50 dark:bg-slate-800 border-none rounded-xl text-sm font-medium text-gray-900 dark:text-white focus:ring-2 p-3 focus:ring-gray-200"
                   value={customerName}
-                  onChange={e => setCustomerName(e.target.value)}
+                  onChange={e => { setCustomerName(e.target.value); setSelectedCustomer(null); }}
                 />
               </div>
               <div>
                 <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider ml-1 mb-1 block">
-                  {language === 'ar' ? 'رقم الجوال' : 'Phone Number'}
+                  {language === 'ar' ? '\u0631\u0642\u0645 \u0627\u0644\u062C\u0648\u0627\u0644' : 'Phone Number'}
                 </label>
                 <input
                   type="text"
                   placeholder="05XXXXXXXX"
                   className="w-full bg-gray-50 dark:bg-slate-800 border-none rounded-xl text-sm font-medium text-gray-900 dark:text-white focus:ring-2 p-3 focus:ring-gray-200"
                   value={customerPhone}
-                  onChange={e => setCustomerPhone(e.target.value)}
+                  onChange={e => { setCustomerPhone(e.target.value); setSelectedCustomer(null); }}
                   dir="ltr"
                 />
+                {selectedCustomer?.khayyatHijriDate && (
+                  <p className="text-[10px] text-gray-400 mt-1 ml-1">
+                    {language === 'ar' ? '\u062A\u0627\u0631\u064A\u062E' : 'Date'}: {selectedCustomer.khayyatHijriDate}
+                  </p>
+                )}
               </div>
             </div>
 
