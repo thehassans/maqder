@@ -95,7 +95,7 @@ router.get('/', checkPermission('invoicing', 'read'), async (req, res) => {
       .sort({ name: 1 })
       .skip(skip)
       .limit(parseInt(limit, 10))
-      .select('customerCode name nameAr phone mobile email address khayyatMeasurements khayyatRelations');
+      .select('customerCode name nameAr phone mobile email address khayyatMeasurements khayyatRelations khayyatReceiptNumbers khayyatHijriDate');
 
     const total = await Customer.countDocuments(query);
 
@@ -116,7 +116,7 @@ router.get('/', checkPermission('invoicing', 'read'), async (req, res) => {
 router.get('/:id', checkPermission('invoicing', 'read'), async (req, res) => {
   try {
     const customer = await Customer.findOne({ _id: req.params.id, ...req.tenantFilter })
-      .select('customerCode name nameAr email phone mobile vatNumber crNumber address contactPerson khayyatMeasurements khayyatRelations notes currentBalance');
+      .select('customerCode name nameAr email phone mobile vatNumber crNumber address contactPerson khayyatMeasurements khayyatRelations khayyatReceiptNumbers khayyatHijriDate notes currentBalance');
 
     if (!customer) {
       return res.status(404).json({ error: 'Customer not found' });

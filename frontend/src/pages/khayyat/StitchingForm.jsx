@@ -135,6 +135,8 @@ const StitchingForm = () => {
     const searchPhone = canonicalSaudiMobile(customerSearch);
     return (customer.nameI18n?.[langKey] || customer.name || '')?.toLowerCase().includes(search) || 
            customer.phone?.includes(customerSearch) ||
+           (customer.customerCode || '')?.toLowerCase().includes(search) ||
+           (customer.khayyatReceiptNumbers || '')?.toLowerCase().includes(search) ||
            (!!searchPhone && canonicalSaudiMobile(customer.phone) === searchPhone);
   });
 
@@ -198,7 +200,7 @@ const StitchingForm = () => {
 
   const fetchAllCustomers = async () => {
     try {
-      const response = await api.get('/khayyat/customers');
+      const response = await api.get('/khayyat/customers', { params: { limit: 2000 } });
       const data = response.data;
       setAllCustomers(Array.isArray(data) ? data : data.customers || []);
     } catch (error) {
@@ -1568,6 +1570,16 @@ const StitchingForm = () => {
                       <div className="text-left">
                         <p className="font-medium text-gray-900 dark:text-slate-100">{selectedCustomer.nameI18n?.[langKey] || selectedCustomer.name}</p>
                         <p className="text-xs text-gray-500 dark:text-slate-400">{selectedCustomer.phone}</p>
+                        {selectedCustomer.khayyatReceiptNumbers && (
+                          <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">
+                            {language === 'ar' ? '\u0625\u064A\u0635\u0627\u0644\u0627\u062A' : 'Receipts'}: {selectedCustomer.khayyatReceiptNumbers}
+                          </p>
+                        )}
+                        {selectedCustomer.khayyatHijriDate && (
+                          <p className="text-[11px] text-gray-400 dark:text-slate-500">
+                            {language === 'ar' ? '\u062A\u0627\u0631\u064A\u062E' : 'Date'}: {selectedCustomer.khayyatHijriDate}
+                          </p>
+                        )}
                       </div>
                     </div>
                   ) : (
@@ -1584,7 +1596,7 @@ const StitchingForm = () => {
                         type="text"
                         value={customerSearch}
                         onChange={(e) => setCustomerSearch(e.target.value)}
-                        placeholder="Search by name or phone..."
+                        placeholder={language === 'ar' ? '\u0628\u062D\u062B \u0628\u0627\u0644\u0627\u0633\u0645 \u0623\u0648 \u0627\u0644\u0631\u0642\u0645 \u0623\u0648 \u0627\u0644\u0625\u064A\u0635\u0627\u0644...' : 'Search by name, phone, or receipt...'}
                         data-tutorial="stitching-form-customer-search"
                         className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg text-sm text-gray-900 dark:text-slate-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
                         autoFocus
@@ -1604,9 +1616,19 @@ const StitchingForm = () => {
                             <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center">
                               <span className="text-primary-700 dark:text-primary-200 font-medium">{(customer.nameI18n?.[langKey] || customer.name || '')?.charAt(0)}</span>
                             </div>
-                            <div>
+                            <div className="min-w-0 flex-1">
                               <p className="font-medium text-gray-900 dark:text-slate-100">{customer.nameI18n?.[langKey] || customer.name}</p>
                               <p className="text-sm text-gray-500 dark:text-slate-400">{customer.phone}</p>
+                              {customer.khayyatReceiptNumbers && (
+                                <p className="text-[11px] text-gray-400 dark:text-slate-500 truncate">
+                                  {language === 'ar' ? '\u0625\u064A\u0635\u0627\u0644\u0627\u062A' : 'Receipts'}: {customer.khayyatReceiptNumbers}
+                                </p>
+                              )}
+                              {customer.khayyatHijriDate && (
+                                <p className="text-[11px] text-gray-400 dark:text-slate-500">
+                                  {language === 'ar' ? '\u062A\u0627\u0631\u064A\u062E' : 'Date'}: {customer.khayyatHijriDate}
+                                </p>
+                              )}
                             </div>
                           </button>
                         ))

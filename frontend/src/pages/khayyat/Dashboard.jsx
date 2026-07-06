@@ -9,7 +9,7 @@ const t = (key, opts) => opts?.defaultValue || key;
 import { Card, StatCard } from './components/ui/Card';
 import { StatusBadge } from './components/ui/Badge';
 import { Table, Thead, Tbody, Tr, Th, Td } from './components/ui/Table';
-import { Users, UserPlus, Clock, CheckCircle, AlertCircle, Search, Plus, Calendar, Truck, FileText } from 'lucide-react';
+import { Users, UserPlus, Clock, CheckCircle, AlertCircle, Search, Plus, Calendar, Truck, FileText, X, Receipt, Phone, User, Scissors } from 'lucide-react';
 import SARIcon from './components/ui/SARIcon';
 import { Button } from './components/ui/Button';
 import DemoBlockedModal from './components/ui/DemoBlockedModal';
@@ -34,6 +34,8 @@ const UserDashboard = () => {
   const searchWrapRef = useRef(null);
   const debounceRef = useRef(null);
   const searchRequestIdRef = useRef(0);
+  const [customerProfile, setCustomerProfile] = useState(null);
+  const [customerProfileLoading, setCustomerProfileLoading] = useState(false);
 
   const isDemo = !!user?.isDemoSession;
   const [demoBlockedOpen, setDemoBlockedOpen] = useState(false);
@@ -110,6 +112,19 @@ const UserDashboard = () => {
     }
   };
 
+  const openCustomerProfile = async (customer) => {
+    setCustomerProfileLoading(true);
+    setCustomerProfile(null);
+    try {
+      const resp = await api.get(`/khayyat/customers/${customer._id}`);
+      const fetched = resp.data?.customer || customer;
+      setCustomerProfile(fetched);
+    } catch {
+      setCustomerProfile(customer);
+    }
+    setCustomerProfileLoading(false);
+  };
+
   const navigateToResult = (result) => {
     if (!result) return;
     if (result.type === 'order') {
@@ -117,7 +132,7 @@ const UserDashboard = () => {
       return;
     }
     if (result.type === 'customer') {
-      navigate(`/user/customers/${result.item._id}`);
+      openCustomerProfile(result.item);
       return;
     }
     if (result.type === 'worker') {
@@ -627,9 +642,126 @@ const UserDashboard = () => {
       <DemoBlockedModal
         isOpen={demoBlockedOpen}
         onClose={() => setDemoBlockedOpen(false)}
-        title={(language === 'ar' ? 'وضع العرض' : 'Demo Mode')}
+        title={(language === 'ar' ? '\u0648\u0636\u0639 \u0627\u0644\u0639\u0631\u0636' : 'Demo Mode')}
         phone="+966596775485"
       />
+
+      {/* Customer Profile Popup */}
+      {(customerProfile || customerProfileLoading) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => { setCustomerProfile(null); setCustomerProfileLoading(false); }}>
+          <div
+            className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 w-full max-w-md mx-4 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {customerProfileLoading ? (
+              <div className="p-12 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto" />
+                <p className="mt-3 text-sm text-gray-500">{language === 'ar' ? '\u062C\u0627\u0631\u064A \u0627\u0644\u062A\u062D\u0645\u064A\u0644...' : 'Loading...'}</p>
+              </div>
+            ) : customerProfile ? (
+              <>
+                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-slate-700">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center">
+                      <User className="w-5 h-5 text-primary-600 dark:text-primary-300" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-gray-900 dark:text-slate-100">{customerProfile.nameI18n?.[langKey] || customerProfile.name || '-'}</h3>
+                      {customerProfile.customerCode && (
+                        <p className="text-xs text-gray-400 font-mono">#{customerProfile.customerCode}</p>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setCustomerProfile(null)}
+                    className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 hover:text-gray-600 dark:hover:text-slate-200"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="px-5 py-4 space-y-3">
+                  {customerProfile.phone && (
+                    <div className="flex items-center gap-3">
+                      <Phone className="w-4 h-4 text-gray-400 shrink-0" />
+                      <span className="text-sm text-gray-700 dark:text-slate-300" dir="ltr">{customerProfile.phone}</span>
+                    </div>
+                  )}
+
+                  {customerProfile.khayyatReceiptNumbers && (
+                    <div className="flex items-start gap-3">
+                      <Receipt className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
+                      <div className="min-w-0">
+                        <p className="text-xs text-gray-400 mb-0.5">{language === 'ar' ? '\u0623\u0631\u0642\u0627\u0645 \u0627\u0644\u0625\u064A\u0635\u0627\u0644\u0627\u062A' : 'Receipt Numbers'}</p>
+                        <p className="text-sm text-gray-700 dark:text-slate-300 font-mono break-all">{customerProfile.khayyatReceiptNumbers}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {customerProfile.khayyatHijriDate && (
+                    <div className="flex items-center gap-3">
+                      <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
+                      <div>
+                        <p className="text-xs text-gray-400 mb-0.5">{language === 'ar' ? '\u0627\u0644\u062A\u0627\u0631\u064A\u062E \u0627\u0644\u0647\u062C\u0631\u064A' : 'Hijri Date'}</p>
+                        <p className="text-sm text-gray-700 dark:text-slate-300">{customerProfile.khayyatHijriDate}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {customerProfile.notes && (
+                    <div className="flex items-start gap-3">
+                      <FileText className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
+                      <div className="min-w-0">
+                        <p className="text-xs text-gray-400 mb-0.5">{language === 'ar' ? '\u0645\u0644\u0627\u062D\u0638\u0627\u062A' : 'Notes'}</p>
+                        <p className="text-sm text-gray-700 dark:text-slate-300">{customerProfile.notes}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {customerProfile.measurements && Object.keys(customerProfile.measurements).length > 0 && (
+                    <div className="pt-2 border-t border-gray-100 dark:border-slate-700">
+                      <p className="text-xs font-semibold text-gray-500 mb-2">{language === 'ar' ? '\u0627\u0644\u0642\u064A\u0627\u0633\u0627\u062A' : 'Measurements'}</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {Object.entries(customerProfile.measurements).filter(([, v]) => v != null && v !== '').map(([key, val]) => (
+                          <div key={key} className="bg-gray-50 dark:bg-slate-800 rounded-lg px-2 py-1.5 text-center">
+                            <p className="text-[10px] text-gray-400 capitalize">{key}</p>
+                            <p className="text-sm font-medium text-gray-700 dark:text-slate-300">{val}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="px-5 py-4 border-t border-gray-100 dark:border-slate-700 flex gap-2">
+                  <Button
+                    onClick={() => {
+                      if (isDemo) {
+                        setDemoBlockedOpen(true);
+                      } else {
+                        navigate(`/app/dashboard/khayyat/stitchings/new?customerId=${customerProfile._id}`);
+                      }
+                      setCustomerProfile(null);
+                    }}
+                    icon={Scissors}
+                    variant="success"
+                    className="flex-1 rounded-xl"
+                  >
+                    {language === 'ar' ? '\u0625\u0646\u0634\u0627\u0621 \u0637\u0644\u0628 \u0633\u0631\u064A\u0639' : 'Create Quick Order'}
+                  </Button>
+                  <Button
+                    onClick={() => setCustomerProfile(null)}
+                    variant="outline"
+                    className="rounded-xl"
+                  >
+                    {language === 'ar' ? '\u0625\u0644\u063A\u0627\u0621' : 'Close'}
+                  </Button>
+                </div>
+              </>
+            ) : null}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
