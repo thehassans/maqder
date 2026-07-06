@@ -2,6 +2,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import { GoogleGenAI } from '@google/genai';
 import OpenAI from 'openai';
+import multer from 'multer';
 import Tenant from '../models/Tenant.js';
 import User from '../models/User.js';
 import Invoice from '../models/Invoice.js';
@@ -2728,6 +2729,191 @@ router.post('/demo-users/:id/upgrade', async (req, res) => {
     res.json({ success: true, demoUser });
   } catch (error) {
     sendRouteError(res, error);
+  }
+});
+
+// --- Khayyat Customer CSV Import ---
+const csvUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
+
+function parseCSV(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
+  if (lines.length < 2) return [];
+  const headers = parseCSVLine(lines[0]);
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const values = parseCSVLine(lines[i]);
+    const row = {};
+    for (let j = 0; j < headers.length; j++) {
+      row[headers[j]?.trim()] = (values[j] || '').trim();
+    }
+    rows.push(row);
+  }
+  return rows;
+}
+
+function parseCSVLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      result.push(current);
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  result.push(current);
+  return result;
+}
+
+// @route   POST /api/super-admin/tenants/:id/seed-khayyat-customers
+// @desc    Bulk import khayyat customers from CSV file
+router.post('/tenants/:id/seed-khayyat-customers', csvUpload.single('file'), async (req, res) => {
+  try {
+    const tenant = await Tenant.findById(req.params.id);
+    if (!tenant) {
+      return res.status(404).json({ error: 'Tenant not found' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No CSV file uploaded' });
+    }
+
+    const csvText = req.file.buffer.toString('utf-8');
+    const rows = parseCSV(csvText);
+
+    if (rows.length === 0) {
+      return res.status(400).json({ error: 'CSV file is empty or has no data rows' });
+    }
+
+    const tenantId = tenant._id;
+    let imported = 0;
+    let skipped = 0;
+    const errors = [];
+    const batchSize = 500;
+
+    for (let i = 0; i < rows.length; i += batchSize) {
+      const batch = rows.slice(i, i + batchSize);
+      const ops = [];
+
+      for (const row of batch) {
+        const name = (row.CusName || '').trim();
+        const customerCode = (row.CusId || '').trim();
+        if (!name || !customerCode) {
+          skipped++;
+          continue;
+        }
+
+        const phone = (row.TelNo || '').trim();
+        const hijriDate = (row.FaxNo || '').trim();
+        const receiptNumbers = (row.Address || '').trim();
+        const notes = (row.Notes || '').trim();
+
+        ops.push({
+          updateOne: {
+            filter: { tenantId, customerCode },
+            update: {
+              $set: {
+                tenantId,
+                name,
+                customerCode,
+                phone,
+                khayyatHijriDate: hijriDate,
+                khayyatReceiptNumbers: receiptNumbers,
+                notes: notes || undefined,
+                isActive: true,
+                type: 'individual',
+              },
+              $setOnInsert: {
+                createdAt: new Date(),
+              },
+            },
+            upsert: true,
+          },
+        });
+      }
+
+      if (ops.length > 0) {
+        try {
+          const result = await Customer.bulkWrite(ops, { ordered: false });
+          imported += (result.upsertedCount || 0) + (result.modifiedCount || 0);
+        } catch (err) {
+          errors.push(`Batch ${i / batchSize}: ${err.message}`);
+        }
+      }
+    }
+
+    res.json({
+      message: `Import complete: ${imported} customers processed, ${skipped} skipped`,
+      imported,
+      skipped,
+      total: rows.length,
+      errors: errors.length ? errors : undefined,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   GET /api/super-admin/tenants/:id/khayyat-customers
+// @desc    Search khayyat customers by name or receipt number
+router.get('/tenants/:id/khayyat-customers', async (req, res) => {
+  try {
+    const { q = '', page = 1, limit = 50 } = req.query;
+    const tenantId = req.params.id;
+
+    const query = { tenantId, isActive: true };
+
+    if (q && String(q).trim().length >= 1) {
+      const cleanQ = String(q).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      query.$or = [
+        { name: { $regex: cleanQ, $options: 'i' } },
+        { nameAr: { $regex: cleanQ, $options: 'i' } },
+        { customerCode: { $regex: cleanQ, $options: 'i' } },
+        { phone: { $regex: cleanQ, $options: 'i' } },
+        { khayyatReceiptNumbers: { $regex: cleanQ, $options: 'i' } },
+      ];
+    }
+
+    const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
+    const customers = await Customer.find(query)
+      .sort({ name: 1 })
+      .skip(skip)
+      .limit(parseInt(limit, 10))
+      .select('customerCode name phone khayyatReceiptNumbers khayyatHijriDate notes createdAt');
+
+    const total = await Customer.countDocuments(query);
+
+    res.json({
+      customers,
+      total,
+      page: parseInt(page, 10),
+      pages: Math.ceil(total / parseInt(limit, 10)),
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   GET /api/super-admin/tenants/:id/khayyat-customers/stats
+// @desc    Get stats for khayyat customers
+router.get('/tenants/:id/khayyat-customers/stats', async (req, res) => {
+  try {
+    const tenantId = req.params.id;
+    const total = await Customer.countDocuments({ tenantId, isActive: true });
+    const withReceipts = await Customer.countDocuments({ tenantId, isActive: true, khayyatReceiptNumbers: { $ne: '', $exists: true } });
+    res.json({ total, withReceipts });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 

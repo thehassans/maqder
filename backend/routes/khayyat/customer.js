@@ -27,10 +27,11 @@ router.get('/search', checkPermission('invoicing', 'read'), async (req, res) => 
         { nameAr: { $regex: cleanQ, $options: 'i' } },
         { vatNumber: { $regex: cleanQ, $options: 'i' } },
         { phone: { $regex: cleanQ, $options: 'i' } },
-        { mobile: { $regex: cleanQ, $options: 'i' } }
+        { mobile: { $regex: cleanQ, $options: 'i' } },
+        { khayyatReceiptNumbers: { $regex: cleanQ, $options: 'i' } }
       ]
     })
-      .select('customerCode name nameAr email phone mobile vatNumber type address khayyatMeasurements')
+      .select('customerCode name nameAr email phone mobile vatNumber type address khayyatMeasurements khayyatReceiptNumbers khayyatHijriDate')
       .limit(10);
 
     res.json({ customers });

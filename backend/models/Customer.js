@@ -130,6 +130,16 @@ const customerSchema = new mongoose.Schema({
       }
     ],
     default: () => []
+  },
+  khayyatReceiptNumbers: {
+    type: String,
+    default: '',
+    trim: true
+  },
+  khayyatHijriDate: {
+    type: String,
+    default: '',
+    trim: true
   }
 }, {
   timestamps: true
@@ -140,6 +150,7 @@ customerSchema.index({ tenantId: 1, name: 1 });
 customerSchema.index({ tenantId: 1, email: 1 });
 customerSchema.index({ tenantId: 1, vatNumber: 1 });
 customerSchema.index({ tenantId: 1, isActive: 1 });
+customerSchema.index({ tenantId: 1, khayyatReceiptNumbers: 1 });
 
 const Customer = mongoose.model('Customer', customerSchema);
 
