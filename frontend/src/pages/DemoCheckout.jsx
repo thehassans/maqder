@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 import { motion } from 'framer-motion'
 import {
   Crown,
@@ -23,6 +23,8 @@ import {
 } from 'lucide-react'
 import api from '../lib/api'
 import { getPrimaryBusinessType } from '../lib/businessTypes'
+import { setLanguage } from '../store/slices/uiSlice'
+import DailyAyat from '../components/ui/DailyAyat'
 
 const fallbackPricingPlans = [
   {
@@ -71,6 +73,7 @@ const complianceLogos = [
 
 export default function DemoCheckout() {
   const navigate = useNavigate()
+  const dispatch = useDispatch()
   const { tenant } = useSelector((state) => state.auth)
   const { language } = useSelector((state) => state.ui)
   const isArabic = language === 'ar'
@@ -251,6 +254,10 @@ export default function DemoCheckout() {
                 </motion.div>
               ))}
             </div>
+
+            <div className="mt-8">
+              <DailyAyat variant="dark" />
+            </div>
           </div>
 
           <div className="text-white/50 text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-8">
@@ -290,6 +297,17 @@ export default function DemoCheckout() {
           {/* Mobile logo */}
           <div className="md:hidden flex items-center justify-center mb-6">
             <img src="/maqderlogolandingpage.webp" alt="Maqder" className="h-24 w-auto object-contain" />
+          </div>
+
+          {/* Language Toggle */}
+          <div className="flex justify-end mb-4">
+            <button
+              onClick={() => dispatch(setLanguage(isArabic ? 'en' : 'ar'))}
+              className="flex items-center gap-2 rounded-full border border-gray-200 dark:border-dark-600 bg-white dark:bg-dark-800 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 shadow-sm hover:shadow-md transition-all"
+            >
+              <Globe className="w-4 h-4" />
+              {isArabic ? 'English' : 'العربية'}
+            </button>
           </div>
 
           {/* Header */}
@@ -527,7 +545,7 @@ export default function DemoCheckout() {
                         : 'border-gray-100 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
                     }`}
                   >
-                    <img src="/tabby.png" alt="Tabby" className="h-8 w-auto object-contain" />
+                    <img src="/tabby.png" alt="Tabby" className="h-24 w-auto object-contain" />
                     <span className="text-[10px] font-bold text-gray-800 dark:text-white">Tabby</span>
                   </button>
                 )}
