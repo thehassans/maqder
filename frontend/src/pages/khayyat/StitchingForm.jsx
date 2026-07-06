@@ -67,6 +67,10 @@ const StitchingForm = () => {
   const [allCustomers, setAllCustomers] = useState([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [customerSearch, setCustomerSearch] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const searchDebounceRef = useRef(null);
+  const searchRequestIdRef = useRef(0);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [quickCustomerOpen, setQuickCustomerOpen] = useState(false);
   const [quickCustomer, setQuickCustomer] = useState({ name: '', phone: '' });
@@ -129,16 +133,50 @@ const StitchingForm = () => {
     embroideryDesignId: null
   });
 
-  const filteredCustomers = allCustomers.filter(customer => {
-    if (!customerSearch) return true;
-    const search = customerSearch.toLowerCase();
-    const searchPhone = canonicalSaudiMobile(customerSearch);
-    return (customer.nameI18n?.[langKey] || customer.name || '')?.toLowerCase().includes(search) || 
-           customer.phone?.includes(customerSearch) ||
-           (customer.customerCode || '')?.toLowerCase().includes(search) ||
-           (customer.khayyatReceiptNumbers || '')?.toLowerCase().includes(search) ||
-           (!!searchPhone && canonicalSaudiMobile(customer.phone) === searchPhone);
-  });
+  const filteredCustomers = customerSearch.trim().length >= 2 && searchResults.length > 0
+    ? searchResults
+    : allCustomers.filter(customer => {
+        if (!customerSearch) return true;
+        const search = customerSearch.toLowerCase();
+        const searchPhone = canonicalSaudiMobile(customerSearch);
+        return (customer.nameI18n?.[langKey] || customer.name || '')?.toLowerCase().includes(search) || 
+               customer.phone?.includes(customerSearch) ||
+               (customer.customerCode || '')?.toLowerCase().includes(search) ||
+               (customer.khayyatReceiptNumbers || '')?.toLowerCase().includes(search) ||
+               (!!searchPhone && canonicalSaudiMobile(customer.phone) === searchPhone);
+      });
+
+  useEffect(() => {
+    const q = customerSearch.trim();
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+    if (q.length < 2) {
+      setSearchResults([]);
+      setSearchLoading(false);
+      return;
+    }
+    setSearchLoading(true);
+    const requestId = ++searchRequestIdRef.current;
+    searchDebounceRef.current = setTimeout(async () => {
+      try {
+        const resp = await api.get('/khayyat/customers/search', { params: { q } });
+        if (requestId !== searchRequestIdRef.current) return;
+        const list = resp.data?.customers || [];
+        setSearchResults(list);
+      } catch {
+        if (requestId !== searchRequestIdRef.current) return;
+        setSearchResults([]);
+      } finally {
+        if (requestId === searchRequestIdRef.current) {
+          setSearchLoading(false);
+        }
+      }
+    }, 200);
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
+  }, [customerSearch]);
 
   useEffect(() => {
     fetchAllCustomers();
@@ -1591,7 +1629,7 @@ const StitchingForm = () => {
                 {dropdownOpen && (
                   <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-gray-100 dark:border-slate-800 z-50">
                     {/* Search Input */}
-                    <div className="p-3 border-b border-gray-100 dark:border-slate-700">
+                    <div className="p-3 border-b border-gray-100 dark:border-slate-700 relative">
                       <input
                         type="text"
                         value={customerSearch}
@@ -1601,9 +1639,19 @@ const StitchingForm = () => {
                         className="w-full px-3 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg text-sm text-gray-900 dark:text-slate-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500"
                         autoFocus
                       />
+                      {searchLoading && (
+                        <div className="absolute right-5 top-1/2 -translate-y-1/2">
+                          <svg className="animate-spin h-4 w-4 text-gray-400" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                        </div>
+                      )}
                     </div>
                     <div className="max-h-52 overflow-y-auto">
-                      {filteredCustomers.length > 0 ? (
+                      {searchLoading && filteredCustomers.length === 0 ? (
+                        <div className="p-4 text-center text-sm text-gray-400">{language === 'ar' ? '\u062C\u0627\u0631\u064A \u0627\u0644\u0628\u062D\u062B...' : 'Searching...'}</div>
+                      ) : filteredCustomers.length > 0 ? (
                         filteredCustomers.map((customer) => (
                           <button
                             key={customer._id}
