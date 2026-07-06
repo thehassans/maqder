@@ -25,6 +25,7 @@ import api from '../lib/api'
 import { getPrimaryBusinessType } from '../lib/businessTypes'
 import { setLanguage } from '../store/slices/uiSlice'
 import DailyAyat from '../components/ui/DailyAyat'
+import { hasTerminationNotice } from '../components/ui/TerminationBanner'
 
 const fallbackPricingPlans = [
   {
@@ -90,14 +91,15 @@ export default function DemoCheckout() {
 
   const isDemo = tenant?.isDemo === true
   const isUpgraded = tenant?.demoUpgraded === true
+  const hasNotice = hasTerminationNotice(tenant)
 
   useEffect(() => {
     setMounted(true)
 
-    if (!isDemo || isUpgraded) {
+    if ((!isDemo || isUpgraded) && !hasNotice) {
       navigate('/app/dashboard', { replace: true })
     }
-  }, [isDemo, isUpgraded, navigate])
+  }, [isDemo, isUpgraded, hasNotice, navigate])
 
   const primaryBusinessType = getPrimaryBusinessType(tenant)
 
