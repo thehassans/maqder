@@ -192,6 +192,7 @@ export function getNavSections({ language, t, tenant, businessTypes, govChildren
     },
     {
       title: language === 'ar' ? 'الرئيسية' : 'Main',
+      excludeBusinessTypes: ['khayyat'],
       items: [
         { path: '/app/dashboard', icon: LayoutDashboard, label: language === 'ar' ? 'لوحة التحكم' : 'Dashboard', end: true, excludeBusinessTypes: ['khayyat'] },
         { path: '/app/dashboard/invoices', icon: FileText, label: t('invoices'), perm: { module: 'invoicing', action: 'read' }, excludeBusinessTypes: ['khayyat'] },

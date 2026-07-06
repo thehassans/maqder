@@ -297,7 +297,11 @@ const UserDashboard = () => {
                             const secondary =
                               section.type === 'order'
                                 ? `${item.customerId?.nameI18n?.[langKey] || item.customerId?.name || '-'}${item.customerId?.phone ? ` • ${item.customerId.phone}` : ''}${item.oldInvoiceNumber ? ` • Old: ${item.oldInvoiceNumber}` : ''}`
-                                : String(item.phone || '');
+                                : [
+                                    item.phone && item.phone,
+                                    item.khayyatReceiptNumbers && `${language === 'ar' ? '\u0625\u064A\u0635\u0627\u0644\u0627\u062A' : 'Receipts'}: ${item.khayyatReceiptNumbers}`,
+                                    item.khayyatHijriDate && `${language === 'ar' ? '\u062A\u0627\u0631\u064A\u062E' : 'Date'}: ${item.khayyatHijriDate}`,
+                                  ].filter(Boolean).join(' \u2022 ');
 
                             return (
                               <button

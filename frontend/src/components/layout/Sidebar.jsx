@@ -71,6 +71,10 @@ export default function Sidebar() {
         return { ...section, items: [] }
       }
 
+      if (Array.isArray(section.excludeBusinessTypes) && section.excludeBusinessTypes.some((type) => businessTypes.includes(type))) {
+        return { ...section, items: [] }
+      }
+
       const items = (Array.isArray(section.items) ? section.items : []).filter((item) => {
         if (item.path && hiddenMenuSet.has(item.path)) return false
         const childPath = item.children?.[0]?.path

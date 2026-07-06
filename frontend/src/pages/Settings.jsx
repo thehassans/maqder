@@ -96,6 +96,9 @@ function MenuVisibilitySettings() {
     if (Array.isArray(section.businessTypes) && !section.businessTypes.some((type) => businessTypes.includes(type))) {
       return { ...section, items: [] }
     }
+    if (Array.isArray(section.excludeBusinessTypes) && section.excludeBusinessTypes.some((type) => businessTypes.includes(type))) {
+      return { ...section, items: [] }
+    }
     const items = (Array.isArray(section.items) ? section.items : []).filter((item) => {
       if (item.path && NON_HIDEABLE_PATHS.has(item.path)) return false
       if (Array.isArray(item?.businessTypes) && !item.businessTypes.some((type) => businessTypes.includes(type))) return false
