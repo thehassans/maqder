@@ -1,6 +1,7 @@
 ﻿import { useSelector, useDispatch } from 'react-redux'
 import { useState, useEffect } from 'react'
-import { AlertTriangle, LogOut, Phone, Mail, PauseCircle, RefreshCw } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { AlertTriangle, LogOut, Phone, Mail, PauseCircle, RefreshCw, Crown } from 'lucide-react'
 import { useTranslation } from '../../lib/translations'
 import { logout } from '../../store/slices/authSlice'
 
@@ -25,6 +26,7 @@ export function hasTerminationNotice(tenant) {
 }
 
 export default function TerminationBanner() {
+  const navigate = useNavigate()
   const { tenant } = useSelector((state) => state.auth)
   const { language } = useSelector((state) => state.ui)
   const [timeLeft, setTimeLeft] = useState('')
@@ -76,6 +78,13 @@ export default function TerminationBanner() {
         <div className="ms-2 px-2.5 py-0.5 rounded bg-white/20 font-bold tabular-nums tracking-widest text-xs flex items-center gap-1 shadow-sm">
           {timeLeft}
         </div>
+        <button
+          onClick={() => navigate('/demo-checkout')}
+          className="ms-3 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-rose-600 shadow-sm hover:bg-rose-50 transition-colors"
+        >
+          <Crown className="w-3.5 h-3.5" />
+          {language === 'ar' ? 'احصل على النسخة الكاملة' : 'Get Full Version'}
+        </button>
       </div>
       <div className="hidden sm:flex items-center gap-3">
         <a href="tel:+966596775485" title={language === 'ar' ? 'اتصال' : 'Call'} className="hover:text-rose-200 transition-colors">
