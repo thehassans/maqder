@@ -191,8 +191,8 @@ const systemSettingsSchema = new mongoose.Schema({
     domain: { type: String, default: 'maqder.com' },
     contactPhone: { type: String, default: '+966595930045' },
     contactEmail: { type: String, default: 'info@maqder.com' },
-    contactAddressEn: { type: String, default: 'Riyadh, Saudi Arabia' },
-    contactAddressAr: { type: String, default: 'الرياض، المملكة العربية السعودية' },
+    contactAddressEn: { type: String, default: 'DAMMAM, Madinat Al Ummal Dist. 18, Saudi Arabia' },
+    contactAddressAr: { type: String, default: 'الدمام، حي مدينة العمال 18، المملكة العربية السعودية' },
     hero: {
       titleEn: { type: String, default: 'Complete ERP System' },
       titleAr: { type: String, default: 'نظام ERP متكامل' },

@@ -1,8 +1,10 @@
-﻿import { useState } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Header } from '../components/ui/header-3'
 import { HeroSection } from '../components/ui/hero-3'
 import { motion } from 'framer-motion'
+import { usePublicWebsiteSettings } from '../lib/website'
+import { getBusinessTypeOptions } from '../lib/businessTypes'
 import {
   FileText,
   Users,
@@ -203,79 +205,40 @@ const testimonials = [
   },
 ]
 
-const pricingPlans = [
+const fallbackPricingPlans = [
   {
-    name: 'Starter',
+    id: 'starter',
+    nameEn: 'Starter',
     nameAr: 'البداية',
-    price: '299',
-    period: '/month',
-    periodAr: '/شهر',
-    features: [
-      'Up to 500 invoices/month',
-      'ZATCA Phase 2 Compliance',
-      '5 Users',
-      'Basic Reports',
-      'Email Support',
-    ],
-    featuresAr: [
-      'حتى 500 فاتورة/شهر',
-      'امتثال المرحلة الثانية',
-      '5 مستخدمين',
-      'تقارير أساسية',
-      'دعم البريد الإلكتروني',
-    ],
+    priceMonthly: 299,
+    priceYearly: 2990,
     popular: false,
+    featuresEn: ['ZATCA E-Invoicing', 'Up to 500 invoices/month', 'Inventory & Warehouses', 'Basic Reports', 'Up to 5 users', 'Email Support'],
+    featuresAr: ['الفوترة الإلكترونية', 'حتى 500 فاتورة/شهر', 'المخزون والمستودعات', 'تقارير أساسية', 'حتى 5 مستخدمين', 'دعم بالبريد'],
   },
   {
-    name: 'Professional',
+    id: 'professional',
+    nameEn: 'Professional',
     nameAr: 'الاحترافية',
-    price: '699',
-    period: '/month',
-    periodAr: '/شهر',
-    features: [
-      'Unlimited Invoices',
-      'Full ERP Modules',
-      '25 Users',
-      'Advanced Analytics',
-      'Priority Support',
-      'API Access',
-    ],
-    featuresAr: [
-      'فواتير غير محدودة',
-      'جميع وحدات ERP',
-      '25 مستخدم',
-      'تحليلات متقدمة',
-      'دعم ذو أولوية',
-      'وصول API',
-    ],
+    priceMonthly: 699,
+    priceYearly: 6990,
     popular: true,
+    featuresEn: ['Everything in Starter', 'Unlimited Invoices', 'HR & Payroll (GOSI/WPS)', 'Expenses & Finance', 'Projects & Tasks', 'Advanced Reports', 'Up to 25 users', 'Priority Support'],
+    featuresAr: ['كل ما في البداية', 'فواتير غير محدودة', 'الموارد البشرية والرواتب', 'المصروفات والمالية', 'المشاريع والمهام', 'تقارير متقدمة', 'حتى 25 مستخدم', 'دعم ذو أولوية'],
   },
   {
-    name: 'Enterprise',
+    id: 'enterprise',
+    nameEn: 'Enterprise',
     nameAr: 'المؤسسات',
-    price: 'Custom',
-    priceAr: 'مخصص',
-    period: '',
-    periodAr: '',
-    features: [
-      'Everything in Professional',
-      'Unlimited Users',
-      'Dedicated Server',
-      'Custom Integrations',
-      '24/7 Phone Support',
-      'On-site Training',
-    ],
-    featuresAr: [
-      'كل ما في الاحترافية',
-      'مستخدمون غير محدودون',
-      'خادم مخصص',
-      'تكاملات مخصصة',
-      'دعم هاتفي 24/7',
-      'تدريب في الموقع',
-    ],
+    priceMonthly: 0,
+    priceYearly: 0,
     popular: false,
+    featuresEn: ['Everything in Professional', 'Unlimited users', 'Dedicated Account Manager', 'Custom Integrations', 'On-premise Option', '24/7 Phone Support', 'SLA Guarantee'],
+    featuresAr: ['كل ما في الاحترافية', 'مستخدمون غير محدودين', 'مدير حساب مخصص', 'تكاملات مخصصة', 'خيار الخادم الخاص', 'دعم هاتفي 24/7', 'ضمان SLA'],
   },
 ]
+
+const businessTypeTabs = getBusinessTypeOptions('en')
 
 const complianceLogos = [
   { src: '/ZATCA_Logo.svg', alt: 'ZATCA', imageClassName: 'scale-[1.35]' },
@@ -401,7 +364,34 @@ export default function Landing() {
   const [language, setLanguage] = useState('en')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [selectedSolution, setSelectedSolution] = useState(null)
+  const [pricingBusinessType, setPricingBusinessType] = useState('default')
   const isArabic = language === 'ar'
+
+  const { data: websiteData } = usePublicWebsiteSettings()
+  const [websiteSettings, setWebsiteSettings] = useState(null)
+
+  useEffect(() => {
+    if (websiteData) setWebsiteSettings(websiteData)
+  }, [websiteData])
+
+  useEffect(() => {
+    if (pricingBusinessType !== 'default') {
+      import('../lib/api').then(({ default: api }) => {
+        api.get('/public/website', { params: { businessType: pricingBusinessType } }).then((res) => {
+          setWebsiteSettings(res.data)
+        }).catch(() => {})
+      })
+    } else if (websiteData) {
+      setWebsiteSettings(websiteData)
+    }
+  }, [pricingBusinessType])
+
+  const currentPlans = (() => {
+    const plans = Array.isArray(websiteSettings?.pricing?.plans) && websiteSettings.pricing.plans.length > 0
+      ? websiteSettings.pricing.plans
+      : fallbackPricingPlans
+    return plans
+  })()
 
   return (
     <div className={`flex w-full flex-col min-h-screen bg-white ${isArabic ? 'rtl' : 'ltr'}`} dir={isArabic ? 'rtl' : 'ltr'}>
@@ -852,24 +842,52 @@ export default function Landing() {
       {/* Pricing Section */}
       <section id="pricing" className="py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
+          <div className="text-center mb-12">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 rounded-full text-emerald-700 font-medium text-sm mb-4 border border-emerald-200"
+            >
+              <Sparkles className="w-4 h-4" />
+              {isArabic ? '\u0623\u0633\u0639\u0627\u0631 \u0645\u062E\u0635\u0635\u0629 \u0644\u0643\u0644 \u0646\u0634\u0627\u0637' : 'Pricing tailored to your business'}
+            </motion.div>
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              {isArabic ? 'خطط الأسعار' : 'Pricing Plans'}
+              {isArabic ? '\u062E\u0637\u0637 \u0627\u0644\u0623\u0633\u0639\u0627\u0631' : 'Pricing Plans'}
             </h2>
             <p className="text-xl text-gray-600">
-              {isArabic ? 'اختر الخطة المناسبة لحجم أعمالك' : 'Choose the plan that fits your business size'}
+              {isArabic ? '\u0627\u062E\u062A\u0631 \u0646\u0648\u0639 \u0646\u0634\u0627\u0637\u0643 \u0644\u0639\u0631\u0636 \u0627\u0644\u0623\u0633\u0639\u0627\u0631 \u0627\u0644\u0645\u0646\u0627\u0633\u0628\u0629' : 'Select your business type to see tailored pricing'}
             </p>
-          </motion.div>
+          </div>
+
+          {/* Business Type Tabs */}
+          <div className="flex flex-wrap justify-center gap-2 mb-10">
+            <button
+              onClick={() => setPricingBusinessType('default')}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition ${pricingBusinessType === 'default' ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            >
+              {isArabic ? '\u0627\u0644\u0643\u0644' : 'All Types'}
+            </button>
+            {getBusinessTypeOptions(language).map((bt) => (
+              <button
+                key={bt.id}
+                onClick={() => setPricingBusinessType(bt.id)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition ${pricingBusinessType === bt.id ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              >
+                {bt.label}
+              </button>
+            ))}
+          </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {pricingPlans.map((plan, index) => (
+            {currentPlans.map((plan, index) => {
+              const name = isArabic ? (plan.nameAr || plan.nameEn || plan.name) : (plan.nameEn || plan.name || plan.nameAr)
+              const features = isArabic ? (plan.featuresAr || plan.featuresEn || plan.features || []) : (plan.featuresEn || plan.features || plan.featuresAr || [])
+              const monthly = Number(plan.priceMonthly || plan.price || 0)
+              const yearly = Number(plan.priceYearly || 0)
+              return (
               <motion.div
-                key={index}
+                key={plan.id || index}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -882,20 +900,29 @@ export default function Landing() {
               >
                 {plan.popular && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-primary-600 to-primary-700 text-white text-sm font-semibold rounded-full">
-                    {isArabic ? 'الأكثر شيوعاً' : 'Most Popular'}
+                    {isArabic ? '\u0627\u0644\u0623\u0643\u062B\u0631 \u0634\u064A\u0648\u0639\u0627\u064B' : 'Most Popular'}
                   </div>
                 )}
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                  {isArabic ? plan.nameAr : plan.name}
+                  {name}
                 </h3>
                 <div className="mb-6">
-                  <span className="text-4xl font-bold text-gray-900">
-                    {plan.price === 'Custom' ? (isArabic ? plan.priceAr : plan.price) : `SAR ${plan.price}`}
-                  </span>
-                  <span className="text-gray-500">{isArabic ? plan.periodAr : plan.period}</span>
+                  {monthly > 0 ? (
+                    <>
+                      <span className="text-4xl font-bold text-gray-900">SAR {monthly}</span>
+                      <span className="text-gray-500">{isArabic ? '/\u0634\u0647\u0631' : '/month'}</span>
+                      {yearly > 0 && (
+                        <div className="mt-1 text-sm text-gray-400">
+                          {isArabic ? `\u0633\u0646\u0648\u064A\u0627\u064B: SAR ${yearly}` : `Yearly: SAR ${yearly}`}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-4xl font-bold text-gray-900">{isArabic ? '\u0645\u062E\u0635\u0635' : 'Custom'}</span>
+                  )}
                 </div>
                 <ul className="space-y-4 mb-8">
-                  {(isArabic ? plan.featuresAr : plan.features).map((feature, i) => (
+                  {features.map((feature, i) => (
                     <li key={i} className="flex items-center gap-3">
                       <CheckCircle2 className="w-5 h-5 text-primary-600 flex-shrink-0" />
                       <span className="text-gray-600">{feature}</span>
@@ -909,10 +936,11 @@ export default function Landing() {
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  {isArabic ? 'ابدأ الآن' : 'Get Started'}
+                  {isArabic ? '\u0627\u0628\u062F\u0623 \u0627\u0644\u0622\u0646' : 'Get Started'}
                 </button>
               </motion.div>
-            ))}
+              )
+            })}
           </div>
         </div>
       </section>
@@ -962,7 +990,7 @@ export default function Landing() {
                   </div>
                   <div>
                     <p className="text-gray-500 text-sm">{isArabic ? 'الموقع' : 'Location'}</p>
-                    <p className="text-gray-900 font-semibold">{isArabic ? 'الرياض، المملكة العربية السعودية' : 'Riyadh, Saudi Arabia'}</p>
+                    <p className="text-gray-900 font-semibold">{isArabic ? 'الدمام، حي مدينة العمال 18' : 'DAMMAM, Madinat Al Ummal Dist. 18'}</p>
                   </div>
                 </div>
               </div>
