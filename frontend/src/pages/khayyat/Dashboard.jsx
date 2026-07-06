@@ -338,7 +338,7 @@ const UserDashboard = () => {
                                     <div className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">
                                       {primary || '-'}
                                     </div>
-                                    <div className="text-xs text-gray-500 dark:text-slate-400 truncate">{secondary || ''}</div>
+                                    <div className="text-xs text-gray-500 dark:text-slate-400 break-all">{secondary || ''}</div>
                                   </div>
                                   <div className="text-[11px] font-semibold text-gray-400 dark:text-slate-500">
                                     {section.type === 'order'
@@ -693,7 +693,7 @@ const UserDashboard = () => {
                       <Receipt className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
                       <div className="min-w-0">
                         <p className="text-xs text-gray-400 mb-0.5">{language === 'ar' ? '\u0623\u0631\u0642\u0627\u0645 \u0627\u0644\u0625\u064A\u0635\u0627\u0644\u0627\u062A' : 'Receipt Numbers'}</p>
-                        <p className="text-sm text-gray-700 dark:text-slate-300 font-mono break-all">{customerProfile.khayyatReceiptNumbers}</p>
+                        <p className="text-sm text-gray-700 dark:text-slate-300 font-mono break-all whitespace-pre-wrap">{customerProfile.khayyatReceiptNumbers}</p>
                       </div>
                     </div>
                   )}

@@ -672,6 +672,14 @@ const Stitchings = () => {
                   <Td>
                     <div>
                       <p className="font-medium">{stitch.customerId?.nameI18n?.[langKey] || stitch.customerName || stitch.customerId?.name || '-'}</p>
+                      {stitch.customerId?.phone && (
+                        <p className="text-xs text-gray-500 dark:text-slate-400" dir="ltr">{stitch.customerId.phone}</p>
+                      )}
+                      {stitch.customerId?.khayyatReceiptNumbers && (
+                        <p className="text-[11px] text-amber-600 dark:text-amber-400 break-all whitespace-pre-wrap max-w-[200px]">
+                          {language === 'ar' ? '\u0625\u064A\u0635\u0627\u0644\u0627\u062A \u0633\u0627\u0628\u0642\u0629' : 'Old Receipts'}: {stitch.customerId.khayyatReceiptNumbers}
+                        </p>
+                      )}
                       {stitch.orderFor && stitch.orderFor !== (stitch.customerName || stitch.customerId?.name) && (
                         <p className="text-xs text-amber-600 dark:text-amber-400">For: {stitch.orderFor}</p>
                       )}

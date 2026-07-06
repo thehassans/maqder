@@ -30,9 +30,22 @@ router.get('/', async (req, res) => {
     if (status) query.status = status;
     if (workerId) query.workerId = workerId;
     if (search) {
+      const matchingCustomers = await Customer.find({
+        tenantId: req.user.tenantId,
+        $or: [
+          { name: { $regex: search, $options: 'i' } },
+          { phone: { $regex: search, $options: 'i' } },
+          { khayyatReceiptNumbers: { $regex: search, $options: 'i' } }
+        ]
+      }).select('_id').limit(20);
+      const customerIds = matchingCustomers.map(c => c._id);
+
       query.$or = [
         { receiptNumber: { $regex: search, $options: 'i' } },
-        { oldInvoiceNumber: { $regex: search, $options: 'i' } }
+        { oldInvoiceNumber: { $regex: search, $options: 'i' } },
+        { customerName: { $regex: search, $options: 'i' } },
+        { customerPhone: { $regex: search, $options: 'i' } },
+        ...(customerIds.length > 0 ? [{ customerId: { $in: customerIds } }] : [])
       ];
     }
     
@@ -41,7 +54,7 @@ router.get('/', async (req, res) => {
         .sort({ createdAt: -1 })
         .limit(limitNum)
         .skip((pageNum - 1) * limitNum)
-        .populate('customerId', 'name phone')
+        .populate('customerId', 'name nameI18n phone khayyatReceiptNumbers khayyatHijriDate')
         .populate('workerId', 'name phone')
         .populate('fabricId', 'name madeIn pricePerRoll rollsInStock')
         .lean(),
@@ -198,6 +211,28 @@ router.post('/', upload.single('measurementImage'), async (req, res) => {
     }
 
     await stitching.save();
+
+    try {
+      const existingReceipts = (customer.khayyatReceiptNumbers || '').trim();
+      const newReceipt = generatedReceiptNumber;
+      let updatedReceipts;
+      if (existingReceipts) {
+        const receiptList = existingReceipts.split(',').map(r => r.trim()).filter(Boolean);
+        if (!receiptList.includes(newReceipt)) {
+          receiptList.push(newReceipt);
+        }
+        updatedReceipts = receiptList.join(', ');
+      } else {
+        updatedReceipts = newReceipt;
+      }
+      await Customer.updateOne(
+        { _id: customer._id },
+        { $set: { khayyatReceiptNumbers: updatedReceipts } }
+      );
+    } catch (e) {
+      console.error('Failed to append receipt number to customer:', e);
+    }
+
     res.status(201).json({ message: 'Stitching created successfully', stitching });
   } catch (error) {
     res.status(500).json({ error: error.message || 'Server error' });
