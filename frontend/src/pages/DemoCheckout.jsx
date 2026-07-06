@@ -388,8 +388,8 @@ export default function DemoCheckout() {
                 <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/[0.03] via-transparent to-emerald-500/[0.03] pointer-events-none" />
                 <div className="relative flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="relative inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-[#0f3d2e] text-white shadow-lg shadow-emerald-500/25 ring-2 ring-white/60 dark:ring-white/10">
-                      <Shield className="h-5 w-5 drop-shadow-sm" />
+                    <div className="relative inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-lg shadow-emerald-500/25 ring-2 ring-white/60 dark:ring-white/10 overflow-hidden p-1">
+                      <img src="/zatca-sm-profile-05.png" alt="ZATCA" className="h-full w-full object-contain" />
                       <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-400 text-white ring-2 ring-white dark:ring-dark-800">
                         <Sparkles className="h-2 w-2" />
                       </span>
