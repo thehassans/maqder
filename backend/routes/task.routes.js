@@ -2,6 +2,7 @@ import express from 'express';
 import Task from '../models/Task.js';
 import Project from '../models/Project.js';
 import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
+import { checkTrialLimits } from '../middleware/trialLimits.js';
 
 const router = express.Router();
 
@@ -150,7 +151,7 @@ router.get('/:id', checkPermission('project_management', 'read'), async (req, re
   }
 });
 
-router.post('/', checkPermission('project_management', 'create'), async (req, res) => {
+router.post('/', checkTrialLimits('tasks'), checkPermission('project_management', 'create'), async (req, res) => {
   try {
     if (!req.user.tenantId) {
       return res.status(400).json({ error: 'No tenant associated with user' });

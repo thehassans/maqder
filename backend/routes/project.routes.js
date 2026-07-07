@@ -1,6 +1,7 @@
 import express from 'express';
 import Project from '../models/Project.js';
 import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
+import { checkTrialLimits } from '../middleware/trialLimits.js';
 
 const router = express.Router();
 
@@ -214,7 +215,7 @@ router.post('/:id/progress', checkPermission('project_management', 'update'), as
   }
 });
 
-router.post('/', checkPermission('project_management', 'create'), async (req, res) => {
+router.post('/', checkTrialLimits('projects'), checkPermission('project_management', 'create'), async (req, res) => {
   try {
     const code = req.body.code || (await generateProjectCode(req.tenantFilter));
 

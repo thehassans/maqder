@@ -1,6 +1,7 @@
 import express from 'express';
 import RestaurantTable from '../models/RestaurantTable.js';
 import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
+import { checkTrialLimits } from '../middleware/trialLimits.js';
 
 const router = express.Router();
 
@@ -28,7 +29,7 @@ router.get('/', checkPermission('restaurant', 'read'), async (req, res) => {
 });
 
 // Create a new table
-router.post('/', checkPermission('restaurant', 'create'), async (req, res) => {
+router.post('/', checkTrialLimits('restaurantTables'), checkPermission('restaurant', 'create'), async (req, res) => {
   try {
     const table = await RestaurantTable.create({
       ...req.body,

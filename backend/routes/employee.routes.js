@@ -4,6 +4,7 @@ import Employee from '../models/Employee.js';
 import Tenant from '../models/Tenant.js';
 import SystemSettings from '../models/SystemSettings.js';
 import { protect, tenantFilter, checkPermission, checkEmailAddon } from '../middleware/auth.js';
+import { checkTrialLimits } from '../middleware/trialLimits.js';
 import { sendTenantEmail } from '../utils/tenantEmailService.js';
 import { describeSaudiId, normalizeSaudiId } from '../utils/saudiId.js';
 
@@ -527,7 +528,7 @@ router.get('/:id', checkPermission('hr', 'read'), async (req, res) => {
 });
 
 // @route   POST /api/employees
-router.post('/', checkPermission('hr', 'create'), async (req, res) => {
+router.post('/', checkTrialLimits('employees'), checkPermission('hr', 'create'), async (req, res) => {
   try {
     const employeeData = {
       ...req.body,

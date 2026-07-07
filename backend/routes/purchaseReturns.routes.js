@@ -1,5 +1,6 @@
 import express from 'express';
 import { protect } from '../middleware/auth.js';
+import { checkTrialLimits } from '../middleware/trialLimits.js';
 import PurchaseReturn from '../models/PurchaseReturn.js';
 import BakalaProduct from '../models/BakalaProduct.js';
 
@@ -24,7 +25,7 @@ router.get('/', protect, async (req, res) => {
 });
 
 // Create Purchase Return and update stock
-router.post('/', protect, async (req, res) => {
+router.post('/', checkTrialLimits('purchaseReturns'), protect, async (req, res) => {
   try {
     const { supplierId, referenceNumber, lines, notes } = req.body;
 

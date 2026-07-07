@@ -6,6 +6,7 @@ import Tenant from '../models/Tenant.js';
 import Customer from '../models/Customer.js';
 import Product from '../models/Product.js';
 import { protect, tenantFilter, checkPermission } from '../middleware/auth.js';
+import { checkTrialLimits } from '../middleware/trialLimits.js';
 import { getPrimaryBusinessType, getTenantBusinessTypes } from '../utils/businessTypes.js';
 import { enrichInvoiceArabicFields } from '../utils/invoiceArabic.js';
 import { sendTenantEmail } from '../utils/tenantEmailService.js';
@@ -439,7 +440,7 @@ async function resolveQuotationPayload(req, existingQuotation = null) {
   };
 }
 
-router.post('/', checkPermission('invoicing', 'create'), async (req, res) => {
+router.post('/', checkTrialLimits('quotations'), checkPermission('invoicing', 'create'), async (req, res) => {
   try {
     const { payload } = await resolveQuotationPayload(req);
     const lastQuotation = await Quotation.findOne({ tenantId: req.user.tenantId })

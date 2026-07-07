@@ -6,6 +6,7 @@ import User from '../../models/User.js';
 import KhayyatEmbroideryDesign from '../../models/khayyat/KhayyatEmbroideryDesign.js';
 import KhayyatFabric from '../../models/khayyat/KhayyatFabric.js';
 import { protect } from '../../middleware/auth.js';
+import { checkTrialLimits } from '../../middleware/trialLimits.js';
 import multer from 'multer';
 import sharp from 'sharp';
 import path from 'path';
@@ -92,7 +93,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.post('/', upload.single('measurementImage'), async (req, res) => {
+router.post('/', checkTrialLimits('khayyatStitchings'), upload.single('measurementImage'), async (req, res) => {
   try {
     let { 
       customerId, 

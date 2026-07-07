@@ -10,6 +10,7 @@ import RestaurantOrder from '../models/RestaurantOrder.js';
 import TravelBooking from '../models/TravelBooking.js';
 import EmailMessage from '../models/EmailMessage.js';
 import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
+import { checkTrialLimits } from '../middleware/trialLimits.js';
 import { getPrimaryBusinessType, getTenantBusinessTypes } from '../utils/businessTypes.js';
 import { enrichInvoiceArabicFields } from '../utils/invoiceArabic.js';
 import { buildDraftInvoiceQr } from '../utils/zatca/draftInvoiceQr.js';
@@ -620,7 +621,7 @@ router.get('/:id', checkPermission('invoicing', 'read'), async (req, res) => {
 });
 
 // @route   POST /api/invoices
-router.post('/', checkPermission('invoicing', 'create'), async (req, res) => {
+router.post('/', checkTrialLimits('invoices'), checkPermission('invoicing', 'create'), async (req, res) => {
   try {
     const tenant = await Tenant.findById(req.user.tenantId);
 

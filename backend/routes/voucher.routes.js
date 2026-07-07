@@ -1,5 +1,6 @@
 import express from 'express';
 import { checkPermission } from '../middleware/auth.js';
+import { checkTrialLimits } from '../middleware/trialLimits.js';
 import Voucher from '../models/Voucher.js';
 import Customer from '../models/Customer.js';
 import Supplier from '../models/Supplier.js';
@@ -28,7 +29,7 @@ router.get('/', checkPermission('finance', 'read'), async (req, res) => {
 });
 
 // Create voucher
-router.post('/', checkPermission('finance', 'create'), async (req, res) => {
+router.post('/', checkTrialLimits('vouchers'), checkPermission('finance', 'create'), async (req, res) => {
   try {
     // Generate voucher number
     const count = await Voucher.countDocuments({ tenantId: req.user.tenantId });

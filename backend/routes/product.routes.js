@@ -1,6 +1,7 @@
 import express from 'express';
 import Product from '../models/Product.js';
 import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
+import { checkTrialLimits } from '../middleware/trialLimits.js';
 
 const router = express.Router();
 
@@ -151,7 +152,7 @@ router.get('/:id', checkPermission('inventory', 'read'), async (req, res) => {
 });
 
 // @route   POST /api/products
-router.post('/', checkPermission('inventory', 'create'), async (req, res) => {
+router.post('/', checkTrialLimits('products'), checkPermission('inventory', 'create'), async (req, res) => {
   try {
     const productData = {
       ...req.body,

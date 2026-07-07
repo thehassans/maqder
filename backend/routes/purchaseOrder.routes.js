@@ -4,6 +4,7 @@ import Supplier from '../models/Supplier.js';
 import Product from '../models/Product.js';
 import Warehouse from '../models/Warehouse.js';
 import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
+import { checkTrialLimits } from '../middleware/trialLimits.js';
 
 const router = express.Router();
 
@@ -170,7 +171,7 @@ router.get('/:id', checkPermission('supply_chain', 'read'), async (req, res) => 
   }
 });
 
-router.post('/', checkPermission('supply_chain', 'create'), async (req, res) => {
+router.post('/', checkTrialLimits('purchaseOrders'), checkPermission('supply_chain', 'create'), async (req, res) => {
   try {
     if (!req.user.tenantId) {
       return res.status(400).json({ error: 'No tenant associated with user' });

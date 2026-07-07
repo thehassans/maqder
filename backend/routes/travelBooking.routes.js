@@ -4,6 +4,7 @@ import Invoice from '../models/Invoice.js';
 import Customer from '../models/Customer.js';
 import Tenant from '../models/Tenant.js';
 import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
+import { checkTrialLimits } from '../middleware/trialLimits.js';
 import { enrichInvoiceArabicFields } from '../utils/invoiceArabic.js';
 import { buildDraftInvoiceQr } from '../utils/zatca/draftInvoiceQr.js';
 
@@ -372,7 +373,7 @@ router.post('/:id/create-invoice', checkPermission('travel', 'update'), checkPer
   }
 });
 
-router.post('/', checkPermission('travel', 'create'), async (req, res) => {
+router.post('/', checkTrialLimits('travelBookings'), checkPermission('travel', 'create'), async (req, res) => {
   try {
     if (!req.user.tenantId) {
       return res.status(400).json({ error: 'No tenant associated with user' });

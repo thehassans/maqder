@@ -69,6 +69,13 @@ api.interceptors.response.use(
 
     error.userMessage = getApiErrorMessage(error)
 
+    // Trial limit reached — dispatch event for TrialLimitModal
+    if (error.response?.status === 403 && error.response?.data?.error === 'TRIAL_LIMIT_REACHED') {
+      window.dispatchEvent(new CustomEvent('trial-limit-reached', {
+        detail: error.response.data,
+      }))
+    }
+
     const requestUrl = String(error.config?.url || '')
     const isAuthEntryRequest = requestUrl.includes('/auth/login')
       || requestUrl.includes('/public/demo-login')

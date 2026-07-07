@@ -2,6 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import Customer from '../models/Customer.js';
 import { protect, tenantFilter, checkPermission } from '../middleware/auth.js';
+import { checkTrialLimits } from '../middleware/trialLimits.js';
 
 const router = express.Router();
 
@@ -439,7 +440,7 @@ router.get('/:id', checkPermission('invoicing', 'read'), async (req, res) => {
 
 // @route   POST /api/customers
 // @desc    Create new customer
-router.post('/', checkPermission('invoicing', 'create'), async (req, res) => {
+router.post('/', checkTrialLimits('customers'), checkPermission('invoicing', 'create'), async (req, res) => {
   try {
     if (!req.user?.tenantId) {
       return res.status(400).json({ error: 'No tenant associated with user' });

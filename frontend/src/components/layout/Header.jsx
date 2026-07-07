@@ -9,6 +9,7 @@ import { logout } from '../../store/slices/authSlice'
 import { setTheme, setLanguage, setMobileMenuOpen } from '../../store/slices/uiSlice'
 import { useTranslation } from '../../lib/translations'
 import DemoBanner from './DemoBanner'
+import TrialLimitModal from './TrialLimitModal'
 
 export default function Header() {
   const dispatch = useDispatch()
@@ -113,6 +114,7 @@ export default function Header() {
   return (
     <header className={headerClassName}>
       <DemoBanner />
+      <TrialLimitModal />
       <div className="flex items-center justify-between px-4 lg:px-6 h-16">
         {/* Left Side */}
         <div className="flex items-center gap-4">

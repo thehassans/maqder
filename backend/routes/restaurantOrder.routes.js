@@ -5,6 +5,7 @@ import Invoice from '../models/Invoice.js';
 import Tenant from '../models/Tenant.js';
 import Branch from '../models/Branch.js';
 import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
+import { checkTrialLimits } from '../middleware/trialLimits.js';
 import { sendRestaurantWhatsApp, sendRestaurantOpenNotification } from '../services/restaurantWhatsAppService.js';
 
 const router = express.Router();
@@ -444,7 +445,7 @@ router.get('/:id', checkPermission('restaurant', 'read'), async (req, res) => {
   }
 });
 
-router.post('/', checkPermission('restaurant', 'create'), async (req, res) => {
+router.post('/', checkTrialLimits('restaurantOrders'), checkPermission('restaurant', 'create'), async (req, res) => {
   try {
     if (!req.user.tenantId) {
       return res.status(400).json({ error: 'No tenant associated with user' });

@@ -6,6 +6,7 @@ import Supplier from '../models/Supplier.js';
 import Employee from '../models/Employee.js';
 import Customer from '../models/Customer.js';
 import { protect, tenantFilter, checkPermission } from '../middleware/auth.js';
+import { checkTrialLimits } from '../middleware/trialLimits.js';
 
 const router = express.Router();
 
@@ -239,7 +240,7 @@ router.get('/:id', checkPermission('finance', 'read'), async (req, res) => {
   }
 });
 
-router.post('/', checkPermission('finance', 'create'), async (req, res) => {
+router.post('/', checkTrialLimits('expenses'), checkPermission('finance', 'create'), async (req, res) => {
   try {
     if (!req.user?.tenantId) {
       return res.status(400).json({ error: 'No tenant associated with user' });

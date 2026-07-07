@@ -23,6 +23,7 @@ import IoTDevice from '../models/IoTDevice.js';
 import IoTReading from '../models/IoTReading.js';
 import { WhatsAppConfig, WhatsAppContact, WhatsAppMessage, WhatsAppTemplate, QuickReply, Broadcast } from '../models/WhatsApp.js';
 import { getPrimaryBusinessType, normalizeBusinessTypes } from '../utils/businessTypes.js';
+import { TRIAL_LIMITS } from '../middleware/trialLimits.js';
 
 const router = express.Router();
 
@@ -37,6 +38,60 @@ router.get('/current', async (req, res) => {
     
     const tenant = await Tenant.findById(req.user.tenantId);
     res.json(tenant);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   GET /api/tenants/trial-limits
+// @desc    Get current resource usage and limits for trial/demo tenants
+router.get('/trial-limits', async (req, res) => {
+  try {
+    if (!req.user.tenantId) {
+      return res.status(404).json({ error: 'No tenant associated with user' });
+    }
+
+    const tenant = await Tenant.findById(req.user.tenantId).lean();
+
+    // Determine if tenant is on trial
+    const isTrial = (tenant.isDemo === true && !tenant.demoUpgraded) || tenant.subscription?.plan === 'trial';
+
+    if (!isTrial) {
+      return res.json({ isTrial: false, limits: null });
+    }
+
+    // Count existing records for each resource type
+    const MODEL_MAP = {
+      invoices: Invoice,
+      quotations: (await import('../models/Quotation.js')).default,
+      customers: Customer,
+      suppliers: Supplier,
+      purchaseOrders: PurchaseOrder,
+      products: Product,
+      warehouses: Warehouse,
+      users: (await import('../models/User.js')).default,
+      projects: Project,
+      tasks: Task,
+      employees: Employee,
+      expenses: Expense,
+      shipments: Shipment,
+    };
+
+    const usage = {};
+    const tenantFilter = { tenantId: req.user.tenantId };
+
+    for (const [resourceType, Model] of Object.entries(MODEL_MAP)) {
+      if (Model && TRIAL_LIMITS[resourceType]) {
+        const count = await Model.countDocuments(tenantFilter);
+        usage[resourceType] = {
+          current: count,
+          limit: TRIAL_LIMITS[resourceType],
+          remaining: Math.max(0, TRIAL_LIMITS[resourceType] - count),
+        };
+      }
+    }
+
+    res.json({ isTrial: true, limits: TRIAL_LIMITS, usage });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

@@ -3,6 +3,7 @@ import Supplier from '../models/Supplier.js';
 import PurchaseOrder from '../models/PurchaseOrder.js';
 import PurchaseReturn from '../models/PurchaseReturn.js';
 import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
+import { checkTrialLimits } from '../middleware/trialLimits.js';
 
 const router = express.Router();
 
@@ -95,7 +96,7 @@ router.get('/:id', checkPermission('supply_chain', 'read'), async (req, res) => 
 });
 
 // @route   POST /api/suppliers
-router.post('/', checkPermission('supply_chain', 'create'), async (req, res) => {
+router.post('/', checkTrialLimits('suppliers'), checkPermission('supply_chain', 'create'), async (req, res) => {
   try {
     const data = {
       ...req.body,

@@ -2,6 +2,7 @@ import express from 'express';
 import User from '../models/User.js';
 import Tenant from '../models/Tenant.js';
 import { protect, tenantFilter, checkPermission } from '../middleware/auth.js';
+import { checkTrialLimits } from '../middleware/trialLimits.js';
 import { getTenantBusinessTypes } from '../utils/businessTypes.js';
 
 const router = express.Router();
@@ -96,7 +97,7 @@ router.get('/stats', checkPermission('settings', 'read'), async (req, res) => {
   }
 });
 
-router.post('/', checkPermission('settings', 'create'), async (req, res) => {
+router.post('/', checkTrialLimits('users'), checkPermission('settings', 'create'), async (req, res) => {
   try {
     const tenantId = req.user?.tenantId;
     if (!tenantId) return res.status(400).json({ error: 'No tenant associated with user' });

@@ -2,6 +2,7 @@ import express from 'express';
 import Warehouse from '../models/Warehouse.js';
 import Product from '../models/Product.js';
 import { protect, tenantFilter, checkPermission, requireBusinessType } from '../middleware/auth.js';
+import { checkTrialLimits } from '../middleware/trialLimits.js';
 
 const router = express.Router();
 
@@ -80,7 +81,7 @@ router.get('/:id/inventory', checkPermission('inventory', 'read'), async (req, r
 });
 
 // @route   POST /api/warehouses
-router.post('/', checkPermission('inventory', 'create'), async (req, res) => {
+router.post('/', checkTrialLimits('warehouses'), checkPermission('inventory', 'create'), async (req, res) => {
   try {
     const warehouseData = {
       ...req.body,
