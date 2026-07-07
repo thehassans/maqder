@@ -9,7 +9,7 @@ const t = (key, opts) => opts?.defaultValue || key;
 import { Card, StatCard } from './components/ui/Card';
 import { StatusBadge } from './components/ui/Badge';
 import { Table, Thead, Tbody, Tr, Th, Td } from './components/ui/Table';
-import { Users, UserPlus, Clock, CheckCircle, AlertCircle, Search, Plus, Calendar, Truck, FileText, X, Receipt, Phone, User, Scissors } from 'lucide-react';
+import { Users, UserPlus, Clock, CheckCircle, AlertCircle, Search, Plus, Calendar, Truck, FileText, X, Receipt, Phone, User, Scissors, ChevronRight, ShoppingBag } from 'lucide-react';
 import SARIcon from './components/ui/SARIcon';
 import { Button } from './components/ui/Button';
 import DemoBlockedModal from './components/ui/DemoBlockedModal';
@@ -36,6 +36,8 @@ const UserDashboard = () => {
   const searchRequestIdRef = useRef(0);
   const [customerProfile, setCustomerProfile] = useState(null);
   const [customerProfileLoading, setCustomerProfileLoading] = useState(false);
+  const [customerOrders, setCustomerOrders] = useState([]);
+  const [customerOrdersLoading, setCustomerOrdersLoading] = useState(false);
 
   const isDemo = !!user?.isDemoSession;
   const [demoBlockedOpen, setDemoBlockedOpen] = useState(false);
@@ -115,6 +117,8 @@ const UserDashboard = () => {
   const openCustomerProfile = async (customer) => {
     setCustomerProfileLoading(true);
     setCustomerProfile(null);
+    setCustomerOrders([]);
+    setCustomerOrdersLoading(true);
     try {
       const resp = await api.get(`/khayyat/customers/${customer._id}`);
       const fetched = resp.data?.customer || customer;
@@ -123,6 +127,17 @@ const UserDashboard = () => {
       setCustomerProfile(customer);
     }
     setCustomerProfileLoading(false);
+
+    // Fetch customer's stitching orders
+    try {
+      const ordersResp = await api.get(`/khayyat/stitchings/customer/${customer._id}`, {
+        params: { limit: 100 },
+      });
+      setCustomerOrders(ordersResp.data?.stitchings || []);
+    } catch {
+      setCustomerOrders([]);
+    }
+    setCustomerOrdersLoading(false);
   };
 
   const navigateToResult = (result) => {
@@ -646,84 +661,113 @@ const UserDashboard = () => {
         phone="+966596775485"
       />
 
-      {/* Customer Profile Popup */}
+      {/* Customer Profile Page */}
       {(customerProfile || customerProfileLoading) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => { setCustomerProfile(null); setCustomerProfileLoading(false); }}>
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm overflow-y-auto" onClick={() => { setCustomerProfile(null); setCustomerProfileLoading(false); setCustomerOrders([]); }}>
           <div
-            className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 w-full max-w-md mx-4 overflow-hidden"
+            className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 w-full max-w-3xl my-4 mx-4 overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {customerProfileLoading ? (
               <div className="p-12 text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto" />
-                <p className="mt-3 text-sm text-gray-500">{language === 'ar' ? '\u062C\u0627\u0631\u064A \u0627\u0644\u062A\u062D\u0645\u064A\u0644...' : 'Loading...'}</p>
+                <p className="mt-3 text-sm text-gray-500">{language === 'ar' ? 'جاري التحميل...' : 'Loading...'}</p>
               </div>
             ) : customerProfile ? (
               <>
-                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-slate-700">
+                {/* Header */}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-slate-700 bg-gradient-to-r from-primary-50 to-emerald-50 dark:from-slate-800 dark:to-slate-800/50">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center">
-                      <User className="w-5 h-5 text-primary-600 dark:text-primary-300" />
+                    <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center">
+                      <User className="w-6 h-6 text-primary-600 dark:text-primary-300" />
                     </div>
                     <div>
-                      <h3 className="font-bold text-gray-900 dark:text-slate-100">{customerProfile.nameI18n?.[langKey] || customerProfile.name || '-'}</h3>
+                      <h3 className="font-bold text-lg text-gray-900 dark:text-slate-100">{customerProfile.nameI18n?.[langKey] || customerProfile.name || '-'}</h3>
                       {customerProfile.customerCode && (
                         <p className="text-xs text-gray-400 font-mono">#{customerProfile.customerCode}</p>
                       )}
                     </div>
                   </div>
                   <button
-                    onClick={() => setCustomerProfile(null)}
-                    className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 hover:text-gray-600 dark:hover:text-slate-200"
+                    onClick={() => { setCustomerProfile(null); setCustomerOrders([]); }}
+                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 transition-colors"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
 
-                <div className="px-5 py-4 space-y-3">
-                  {customerProfile.phone && (
-                    <div className="flex items-center gap-3">
-                      <Phone className="w-4 h-4 text-gray-400 shrink-0" />
-                      <span className="text-sm text-gray-700 dark:text-slate-300" dir="ltr">{customerProfile.phone}</span>
-                    </div>
-                  )}
-
-                  {customerProfile.khayyatReceiptNumbers && (
-                    <div className="flex items-start gap-3">
-                      <Receipt className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
-                      <div className="min-w-0">
-                        <p className="text-xs text-gray-400 mb-0.5">{language === 'ar' ? '\u0623\u0631\u0642\u0627\u0645 \u0627\u0644\u0625\u064A\u0635\u0627\u0644\u0627\u062A' : 'Receipt Numbers'}</p>
-                        <p className="text-sm text-gray-700 dark:text-slate-300 font-mono break-all whitespace-pre-wrap">{customerProfile.khayyatReceiptNumbers}</p>
+                {/* Body */}
+                <div className="max-h-[calc(100vh-200px)] overflow-y-auto">
+                  {/* Info Cards */}
+                  <div className="px-6 py-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {customerProfile.phone && (
+                      <div className="flex items-center gap-3 rounded-xl bg-gray-50 dark:bg-slate-800/50 px-4 py-3">
+                        <Phone className="w-4 h-4 text-gray-400 shrink-0" />
+                        <div>
+                          <p className="text-[11px] text-gray-400">{language === 'ar' ? 'الهاتف' : 'Phone'}</p>
+                          <p className="text-sm text-gray-700 dark:text-slate-300 font-medium" dir="ltr">{customerProfile.phone}</p>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {customerProfile.khayyatHijriDate && (
-                    <div className="flex items-center gap-3">
-                      <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
-                      <div>
-                        <p className="text-xs text-gray-400 mb-0.5">{language === 'ar' ? '\u0627\u0644\u062A\u0627\u0631\u064A\u062E \u0627\u0644\u0647\u062C\u0631\u064A' : 'Hijri Date'}</p>
-                        <p className="text-sm text-gray-700 dark:text-slate-300">{customerProfile.khayyatHijriDate}</p>
+                    {customerProfile.khayyatReceiptNumbers && (
+                      <div className="flex items-start gap-3 rounded-xl bg-gray-50 dark:bg-slate-800/50 px-4 py-3">
+                        <Receipt className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
+                        <div className="min-w-0">
+                          <p className="text-[11px] text-gray-400">{language === 'ar' ? 'أرقام الإيصالات' : 'Receipt Numbers'}</p>
+                          <p className="text-sm text-gray-700 dark:text-slate-300 font-mono break-all">{customerProfile.khayyatReceiptNumbers}</p>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {customerProfile.notes && (
-                    <div className="flex items-start gap-3">
-                      <FileText className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
-                      <div className="min-w-0">
-                        <p className="text-xs text-gray-400 mb-0.5">{language === 'ar' ? '\u0645\u0644\u0627\u062D\u0638\u0627\u062A' : 'Notes'}</p>
-                        <p className="text-sm text-gray-700 dark:text-slate-300">{customerProfile.notes}</p>
+                    {customerProfile.khayyatHijriDate && (
+                      <div className="flex items-center gap-3 rounded-xl bg-gray-50 dark:bg-slate-800/50 px-4 py-3">
+                        <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
+                        <div>
+                          <p className="text-[11px] text-gray-400">{language === 'ar' ? 'التاريخ الهجري' : 'Hijri Date'}</p>
+                          <p className="text-sm text-gray-700 dark:text-slate-300">{customerProfile.khayyatHijriDate}</p>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
+                    {customerProfile.email && (
+                      <div className="flex items-center gap-3 rounded-xl bg-gray-50 dark:bg-slate-800/50 px-4 py-3">
+                        <FileText className="w-4 h-4 text-gray-400 shrink-0" />
+                        <div>
+                          <p className="text-[11px] text-gray-400">{language === 'ar' ? 'البريد' : 'Email'}</p>
+                          <p className="text-sm text-gray-700 dark:text-slate-300">{customerProfile.email}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {customerProfile.address && (
+                      <div className="flex items-center gap-3 rounded-xl bg-gray-50 dark:bg-slate-800/50 px-4 py-3">
+                        <FileText className="w-4 h-4 text-gray-400 shrink-0" />
+                        <div>
+                          <p className="text-[11px] text-gray-400">{language === 'ar' ? 'العنوان' : 'Address'}</p>
+                          <p className="text-sm text-gray-700 dark:text-slate-300">{customerProfile.address}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {customerProfile.notes && (
+                      <div className="flex items-start gap-3 rounded-xl bg-gray-50 dark:bg-slate-800/50 px-4 py-3">
+                        <FileText className="w-4 h-4 text-gray-400 shrink-0 mt-0.5" />
+                        <div className="min-w-0">
+                          <p className="text-[11px] text-gray-400">{language === 'ar' ? 'ملاحظات' : 'Notes'}</p>
+                          <p className="text-sm text-gray-700 dark:text-slate-300">{customerProfile.notes}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Measurements */}
                   {customerProfile.measurements && Object.keys(customerProfile.measurements).length > 0 && (
-                    <div className="pt-2 border-t border-gray-100 dark:border-slate-700">
-                      <p className="text-xs font-semibold text-gray-500 mb-2">{language === 'ar' ? '\u0627\u0644\u0642\u064A\u0627\u0633\u0627\u062A' : 'Measurements'}</p>
-                      <div className="grid grid-cols-3 gap-2">
+                    <div className="px-6 py-3 border-t border-gray-100 dark:border-slate-700">
+                      <p className="text-xs font-semibold text-gray-500 mb-2">{language === 'ar' ? 'القياسات' : 'Measurements'}</p>
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                         {Object.entries(customerProfile.measurements).filter(([, v]) => v != null && v !== '').map(([key, val]) => (
-                          <div key={key} className="bg-gray-50 dark:bg-slate-800 rounded-lg px-2 py-1.5 text-center">
+                          <div key={key} className="bg-gray-50 dark:bg-slate-800 rounded-lg px-3 py-2 text-center">
                             <p className="text-[10px] text-gray-400 capitalize">{key}</p>
                             <p className="text-sm font-medium text-gray-700 dark:text-slate-300">{val}</p>
                           </div>
@@ -731,9 +775,99 @@ const UserDashboard = () => {
                       </div>
                     </div>
                   )}
+
+                  {/* Order History */}
+                  <div className="px-6 py-4 border-t border-gray-100 dark:border-slate-700">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <ShoppingBag className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                        <h4 className="font-semibold text-gray-900 dark:text-slate-100 text-sm">
+                          {language === 'ar' ? 'سجل الطلبات' : 'Order History'}
+                        </h4>
+                        {!customerOrdersLoading && (
+                          <span className="text-xs text-gray-400">({customerOrders.length})</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {customerOrdersLoading ? (
+                      <div className="py-8 text-center">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600 mx-auto" />
+                        <p className="mt-2 text-xs text-gray-400">{language === 'ar' ? 'جاري تحميل الطلبات...' : 'Loading orders...'}</p>
+                      </div>
+                    ) : customerOrders.length > 0 ? (
+                      <div className="space-y-2">
+                        {customerOrders.map((order) => {
+                          const due = order.dueDate ? new Date(order.dueDate) : null;
+                          const created = order.createdAt ? new Date(order.createdAt) : null;
+                          return (
+                            <button
+                              key={order._id}
+                              type="button"
+                              onClick={() => {
+                                setCustomerProfile(null);
+                                setCustomerOrders([]);
+                                navigate(`/user/stitchings/${order._id}/edit`);
+                              }}
+                              className="w-full text-left rounded-xl border border-gray-100 dark:border-slate-700 hover:border-primary-200 dark:hover:border-primary-800 hover:bg-primary-50/30 dark:hover:bg-primary-900/10 px-4 py-3 transition-colors group"
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-bold text-gray-900 dark:text-slate-100">
+                                      #{order.receiptNumber || '-'}
+                                    </span>
+                                    <StatusBadge status={order.status} />
+                                  </div>
+                                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-500 dark:text-slate-400">
+                                    {order.workerId?.name && (
+                                      <span>{language === 'ar' ? 'العامل' : 'Worker'}: {order.workerId.name}</span>
+                                    )}
+                                    {order.quantity != null && (
+                                      <span>{language === 'ar' ? 'الكمية' : 'Qty'}: {order.quantity}</span>
+                                    )}
+                                    {created && (
+                                      <span>{created.toLocaleDateString(language)}</span>
+                                    )}
+                                    {due && (
+                                      <span className={due < new Date() && order.status !== 'delivered' ? 'text-rose-500 font-medium' : ''}>
+                                        {language === 'ar' ? 'التسليم' : 'Due'}: {due.toLocaleDateString(language)}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {order.description && (
+                                    <p className="mt-1 text-xs text-gray-400 dark:text-slate-500 truncate">{order.description}</p>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <div className="text-right">
+                                    <div className="text-sm font-bold text-gray-900 dark:text-slate-100 flex items-center gap-1">
+                                      {formatSaudiRiyal(order.price || 0)}
+                                      <SARIcon className="w-3 h-3" />
+                                    </div>
+                                    {order.paidAmount != null && order.paidAmount < (order.price || 0) && (
+                                      <div className="text-[10px] text-amber-500 font-medium">
+                                        {language === 'ar' ? 'متبقي' : 'Pending'}: {formatSaudiRiyal((order.price || 0) - (order.paidAmount || 0))}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <ChevronRight className={`w-4 h-4 text-gray-300 group-hover:text-primary-500 transition-colors ${isRTL ? 'rotate-180' : ''}`} />
+                                </div>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="py-8 text-center text-sm text-gray-400 dark:text-slate-500">
+                        {language === 'ar' ? 'لا توجد طلبات سابقة' : 'No previous orders'}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <div className="px-5 py-4 border-t border-gray-100 dark:border-slate-700 flex gap-2">
+                {/* Footer Actions */}
+                <div className="px-6 py-4 border-t border-gray-100 dark:border-slate-700 flex gap-2 bg-gray-50/50 dark:bg-slate-800/30">
                   <Button
                     onClick={() => {
                       if (isDemo) {
@@ -742,12 +876,13 @@ const UserDashboard = () => {
                         navigate(`/app/dashboard/khayyat/stitchings/new?customerId=${customerProfile._id}`);
                       }
                       setCustomerProfile(null);
+                      setCustomerOrders([]);
                     }}
                     icon={Scissors}
                     variant="success"
                     className="flex-1 rounded-xl"
                   >
-                    {language === 'ar' ? '\u0625\u0646\u0634\u0627\u0621 \u0637\u0644\u0628 \u0633\u0631\u064A\u0639' : 'Create Quick Order'}
+                    {language === 'ar' ? 'إنشاء طلب' : 'New Order'}
                   </Button>
                   <Button
                     onClick={() => {
@@ -757,19 +892,20 @@ const UserDashboard = () => {
                         navigate(`/app/dashboard/khayyat/quick-invoice?customerId=${customerProfile._id}`);
                       }
                       setCustomerProfile(null);
+                      setCustomerOrders([]);
                     }}
                     icon={FileText}
                     variant="outline"
                     className="flex-1 rounded-xl"
                   >
-                    {language === 'ar' ? '\u0641\u0627\u062A\u0648\u0631\u0629' : 'Invoice'}
+                    {language === 'ar' ? 'فاتورة' : 'Invoice'}
                   </Button>
                   <Button
-                    onClick={() => setCustomerProfile(null)}
+                    onClick={() => { setCustomerProfile(null); setCustomerOrders([]); }}
                     variant="outline"
                     className="rounded-xl"
                   >
-                    {language === 'ar' ? '\u0625\u0644\u063A\u0627\u0621' : 'Close'}
+                    {language === 'ar' ? 'إغلاق' : 'Close'}
                   </Button>
                 </div>
               </>

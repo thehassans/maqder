@@ -23,13 +23,14 @@ router.use(protect);
 
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, limit = 20, status, search, workerId } = req.query;
+    const { page = 1, limit = 20, status, search, workerId, customerId } = req.query;
     const pageNum = Math.max(1, Number(page) || 1);
     const limitNum = Math.max(1, Math.min(200, Number(limit) || 20));
     const query = { tenantId: req.user.tenantId };
     
     if (status) query.status = status;
     if (workerId) query.workerId = workerId;
+    if (customerId) query.customerId = customerId;
     if (search) {
       const matchingCustomers = await Customer.find({
         tenantId: req.user.tenantId,
@@ -67,6 +68,94 @@ router.get('/', async (req, res) => {
       totalPages: Math.ceil(total / limitNum),
       currentPage: pageNum,
       total
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /api/khayyat/stitchings/search
+router.get('/search', async (req, res) => {
+  try {
+    const { q, phone } = req.query;
+
+    if (!q || String(q).trim().length < 1) {
+      return res.json({ stitchings: [] });
+    }
+
+    const cleanQ = String(q).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const query = { tenantId: req.user.tenantId };
+
+    const customerOrConditions = [
+      { name: { $regex: cleanQ, $options: 'i' } },
+      { phone: { $regex: cleanQ, $options: 'i' } },
+      { khayyatReceiptNumbers: { $regex: cleanQ, $options: 'i' } },
+    ];
+
+    if (phone) {
+      const phoneClean = String(phone).replace(/\D/g, '');
+      if (phoneClean.length >= 3) {
+        customerOrConditions.push({ phone: { $regex: phoneClean, $options: 'i' } });
+      }
+    }
+
+    const matchingCustomers = await Customer.find({
+      tenantId: req.user.tenantId,
+      $or: customerOrConditions,
+    }).select('_id').limit(20);
+    const customerIds = matchingCustomers.map(c => c._id);
+
+    query.$or = [
+      { receiptNumber: { $regex: cleanQ, $options: 'i' } },
+      { oldInvoiceNumber: { $regex: cleanQ, $options: 'i' } },
+      { customerName: { $regex: cleanQ, $options: 'i' } },
+      { customerPhone: { $regex: cleanQ, $options: 'i' } },
+      ...(customerIds.length > 0 ? [{ customerId: { $in: customerIds } }] : []),
+    ];
+
+    const stitchings = await KhayyatStitching.find(query)
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .populate('customerId', 'name nameI18n phone khayyatReceiptNumbers khayyatHijriDate')
+      .populate('workerId', 'name phone')
+      .lean();
+
+    res.json({ stitchings });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// GET /api/khayyat/stitchings/customer/:customerId
+// Returns all stitchings for a specific customer (for customer profile page)
+router.get('/customer/:customerId', async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const { page = 1, limit = 50 } = req.query;
+    const pageNum = Math.max(1, Number(page) || 1);
+    const limitNum = Math.max(1, Math.min(200, Number(limit) || 50));
+
+    const query = {
+      tenantId: req.user.tenantId,
+      customerId,
+    };
+
+    const [stitchings, total] = await Promise.all([
+      KhayyatStitching.find(query)
+        .sort({ createdAt: -1 })
+        .limit(limitNum)
+        .skip((pageNum - 1) * limitNum)
+        .populate('workerId', 'name phone')
+        .populate('fabricId', 'name madeIn pricePerRoll')
+        .lean(),
+      KhayyatStitching.countDocuments(query),
+    ]);
+
+    res.json({
+      stitchings,
+      total,
+      currentPage: pageNum,
+      totalPages: Math.ceil(total / limitNum),
     });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
