@@ -376,9 +376,9 @@ const MeasurementCell = ({ field, value, onChange, disabled, palette, compact = 
   );
 };
 
-const PreviewGarment = ({ thawbType, thawbTypeLabel, selectedCollar, selectedPocket, variant = 'sheet' }) => {
+const PreviewGarment = ({ thawbType, thawbTypeLabel, selectedCollar, selectedPocket, variant = 'sheet', thawbImageSrc }) => {
   const { language } = useSelector(state => state.ui) || { language: 'en' };
-    const imageSrc = thawbImageMap[thawbType] || thawbImageMap.saudi;
+    const imageSrc = thawbImageSrc || thawbImageMap[thawbType] || thawbImageMap.saudi;
   return (
     <div className={`relative mx-auto overflow-hidden rounded-[2rem] border border-black/5 dark:border-white/10 bg-gradient-to-b from-white to-stone-100 dark:from-slate-800 dark:to-slate-900 shadow-inner ${variant === 'board' ? 'w-full max-w-[300px] aspect-[4/5]' : 'w-full max-w-[240px] aspect-[4/5]'}`}>
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.82),_transparent_58%)] dark:bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.1),_transparent_55%)]" />
@@ -729,6 +729,7 @@ const MeasurementAtelierPanel = ({
   const selectedCollar = collarGroup?.options?.find((option) => option.value === styleValues?.collar)?.label || '';
   const selectedPocket = pocketGroup?.options?.find((option) => option.value === styleValues?.pocket)?.label || '';
   const selectedThawbTypeLabel = thawbTypes.find((option) => option.key === thawbType)?.label || formatTypeLabel(thawbType);
+  const selectedThawbImageSrc = thawbTypes.find((option) => option.key === thawbType)?.imageSrc || '';
   const measurementSnapshotItems = (fields || [])
     .filter((field) => values?.[field.key] !== undefined && values?.[field.key] !== null && String(values?.[field.key]).trim() !== '')
     .map((field) => ({ label: field.label, value: formatValue(values?.[field.key]) }));
@@ -800,7 +801,7 @@ const MeasurementAtelierPanel = ({
               </div>
 
               <div className="rounded-[1.8rem] border border-black/5 dark:border-white/10 bg-white/55 dark:bg-slate-900/50 p-4 shadow-sm">
-                <PreviewGarment thawbType={thawbType} thawbTypeLabel={selectedThawbTypeLabel} selectedCollar={selectedCollar} selectedPocket={selectedPocket} variant="board" />
+                <PreviewGarment thawbType={thawbType} thawbTypeLabel={selectedThawbTypeLabel} selectedCollar={selectedCollar} selectedPocket={selectedPocket} variant="board" thawbImageSrc={selectedThawbImageSrc} />
               </div>
 
               <div className="space-y-4">
@@ -950,7 +951,7 @@ const MeasurementAtelierPanel = ({
 
             <div className="space-y-5">
               <div className="rounded-[1.95rem] border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
-                <PreviewGarment thawbType={thawbType} thawbTypeLabel={selectedThawbTypeLabel} selectedCollar={selectedCollar} selectedPocket={selectedPocket} variant="board" />
+                <PreviewGarment thawbType={thawbType} thawbTypeLabel={selectedThawbTypeLabel} selectedCollar={selectedCollar} selectedPocket={selectedPocket} variant="board" thawbImageSrc={selectedThawbImageSrc} />
               </div>
             </div>
 
@@ -1078,7 +1079,7 @@ const MeasurementAtelierPanel = ({
 
             <div className="space-y-4">
               <div className="rounded-[1.9rem] border border-violet-100 dark:border-violet-900/30 bg-white/85 dark:bg-slate-900/60 p-5 shadow-sm">
-                <PreviewGarment thawbType={thawbType} thawbTypeLabel={selectedThawbTypeLabel} selectedCollar={selectedCollar} selectedPocket={selectedPocket} />
+                <PreviewGarment thawbType={thawbType} thawbTypeLabel={selectedThawbTypeLabel} selectedCollar={selectedCollar} selectedPocket={selectedPocket} thawbImageSrc={selectedThawbImageSrc} />
               </div>
               <ThawbTypeSelector
                 options={thawbTypes}
@@ -1194,7 +1195,7 @@ const MeasurementAtelierPanel = ({
 
           <div className="space-y-4">
             <div className="rounded-[1.8rem] border border-black/5 dark:border-white/10 bg-white/60 dark:bg-slate-900/40 p-4 shadow-sm">
-              <PreviewGarment thawbType={thawbType} thawbTypeLabel={selectedThawbTypeLabel} selectedCollar={selectedCollar} selectedPocket={selectedPocket} />
+              <PreviewGarment thawbType={thawbType} thawbTypeLabel={selectedThawbTypeLabel} selectedCollar={selectedCollar} selectedPocket={selectedPocket} thawbImageSrc={selectedThawbImageSrc} />
             </div>
             <SnapshotPanel items={snapshotItems} palette={palette} />
             {measurementImagePanel}

@@ -87,7 +87,7 @@ export default function Dashboard() {
     } else if (isLaundry) {
       navigate('/app/laundry/pos', { replace: true })
     } else if (isKhayyat) {
-      navigate('/app/dashboard/khayyat', { replace: true })
+      navigate('/app/dashboard/khayyat/analytics', { replace: true })
     } else if (isBookstore) {
       navigate('/app/dashboard/bookstore/pos', { replace: true })
     } else if (isEcommerce) {

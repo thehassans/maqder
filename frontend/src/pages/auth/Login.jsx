@@ -87,6 +87,8 @@ export default function Login() {
         redirectPath = '/app/saloon/pos';
       } else if (businessTypes.includes('laundry')) {
         redirectPath = '/app/laundry/pos';
+      } else if (businessTypes.includes('khayyat')) {
+        redirectPath = '/app/dashboard/khayyat/analytics';
       }
 
       navigate(redirectPath, { replace: true })
