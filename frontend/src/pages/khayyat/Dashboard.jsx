@@ -740,7 +740,23 @@ const UserDashboard = () => {
                       </div>
                     )}
 
-                    {customerProfile.address && (
+                    {customerProfile.address && typeof customerProfile.address === 'object' && (
+                      <div className="flex items-center gap-3 rounded-xl bg-gray-50 dark:bg-slate-800/50 px-4 py-3">
+                        <FileText className="w-4 h-4 text-gray-400 shrink-0" />
+                        <div>
+                          <p className="text-[11px] text-gray-400">{language === 'ar' ? 'العنوان' : 'Address'}</p>
+                          <p className="text-sm text-gray-700 dark:text-slate-300">
+                            {[
+                              customerProfile.address.street,
+                              customerProfile.address.district,
+                              customerProfile.address.city,
+                              customerProfile.address.country,
+                            ].filter(Boolean).join(', ') || '-'}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    {typeof customerProfile.address === 'string' && customerProfile.address && (
                       <div className="flex items-center gap-3 rounded-xl bg-gray-50 dark:bg-slate-800/50 px-4 py-3">
                         <FileText className="w-4 h-4 text-gray-400 shrink-0" />
                         <div>
