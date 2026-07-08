@@ -634,13 +634,15 @@ export function buildEscPosReceipt({ businessName, businessNameAr, items, total,
 
 export function buildReceiptHtml({ businessName, businessNameAr, items, total, subtotal, tax, date, paymentMethod, paperWidth = 58, vatNumber, appendKickCode }) {
   const widthMm = paperWidth === 58 ? '58mm' : '80mm';
-  const fontSize = paperWidth === 58 ? '9px' : '11px';
-  const chars = paperWidth === 58 ? 32 : 48;
+  const fontSize = paperWidth === 58 ? '11px' : '13px';
+  const headerSize = paperWidth === 58 ? '14px' : '16px';
+  const smallSize = paperWidth === 58 ? '9px' : '10px';
+  const padding = paperWidth === 58 ? '2mm' : '3mm';
 
   const itemsHtml = (items || []).map(i => {
-    const name = (i.name || '').substring(0, chars - 10);
-    const price = (i.price || '0.00').padStart(10);
-    return `<tr><td style="padding:1px 0;">${name}</td><td style="text-align:right;padding:1px 0;">${price}</td></tr>`;
+    const name = i.name || 'Item';
+    const price = i.price || '0.00';
+    return `<tr><td style="padding:1px 2px 1px 0;word-break:break-word;white-space:normal;font-size:${fontSize};">${name}</td><td style="text-align:right;padding:1px 0;white-space:nowrap;font-size:${fontSize};">${price}</td></tr>`;
   }).join('');
 
   const dashedLine = '<div style="border-top:1px dashed #000;margin:4px 0;"></div>';
@@ -662,24 +664,29 @@ export function buildReceiptHtml({ businessName, businessNameAr, items, total, s
 <style>
   @page { size: ${widthMm} auto; margin: 0; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { width: ${widthMm}; font-family: monospace; font-size: ${fontSize}; color: #000; background: #fff; padding: 4px; }
+  html, body { width: 100%; }
+  body { font-family: 'Courier New', monospace; font-size: ${fontSize}; color: #000; background: #fff; padding: ${padding}; -webkit-print-color-adjust: exact; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  td { vertical-align: top; word-break: break-word; }
+  .price-col { width: 35%; }
+  .name-col { width: 65%; }
 </style>
 </head>
 <body>
-  <div style="text-align:center;font-weight:bold;font-size:${paperWidth === 58 ? '12px' : '14px'};">${businessName || 'Maqder ERP'}</div>
-  ${businessNameAr ? `<div style="text-align:center;">${businessNameAr}</div>` : ''}
-  ${vatNumber ? `<div style="text-align:center;">VAT: ${vatNumber}</div>` : ''}
+  <div style="text-align:center;font-weight:bold;font-size:${headerSize};line-height:1.3;">${businessName || 'Maqder ERP'}</div>
+  ${businessNameAr ? `<div style="text-align:center;font-size:${fontSize};line-height:1.3;">${businessNameAr}</div>` : ''}
+  ${vatNumber ? `<div style="text-align:center;font-size:${smallSize};">VAT: ${vatNumber}</div>` : ''}
   ${dashedLine}
-  <div style="text-align:center;font-weight:bold;">RECEIPT</div>
-  <div>Date: ${date || new Date().toLocaleString()}</div>
-  ${paymentMethod ? `<div>Payment: ${paymentMethod}</div>` : ''}
+  <div style="text-align:center;font-weight:bold;font-size:${fontSize};">RECEIPT</div>
+  <div style="font-size:${smallSize};">Date: ${date || new Date().toLocaleString()}</div>
+  ${paymentMethod ? `<div style="font-size:${smallSize};">Payment: ${paymentMethod}</div>` : ''}
   ${dashedLine}
-  ${itemsHtml ? `<table style="width:100%;border-collapse:collapse;">${itemsHtml}</table>${dashedLine}` : ''}
-  ${subtotal ? `<table style="width:100%;border-collapse:collapse;"><tr><td style="padding:1px 0;">Subtotal</td><td style="text-align:right;padding:1px 0;">${subtotal}</td></tr></table>` : ''}
-  ${tax ? `<table style="width:100%;border-collapse:collapse;"><tr><td style="padding:1px 0;">VAT</td><td style="text-align:right;padding:1px 0;">${tax}</td></tr></table>` : ''}
-  ${total ? `<table style="width:100%;border-collapse:collapse;"><tr style="font-weight:bold;"><td style="padding-top:4px;font-weight:bold;border-top:1px solid #000;">TOTAL</td><td style="text-align:right;padding-top:4px;font-weight:bold;border-top:1px solid #000;">${total}</td></tr></table>` : ''}
+  ${itemsHtml ? `<table><colgroup><col class="name-col"><col class="price-col"></colgroup>${itemsHtml}</table>${dashedLine}` : ''}
+  ${subtotal ? `<table><tr><td style="padding:1px 0;font-size:${fontSize};">Subtotal</td><td style="text-align:right;padding:1px 0;white-space:nowrap;font-size:${fontSize};">${subtotal}</td></tr></table>` : ''}
+  ${tax ? `<table><tr><td style="padding:1px 0;font-size:${fontSize};">VAT</td><td style="text-align:right;padding:1px 0;white-space:nowrap;font-size:${fontSize};">${tax}</td></tr></table>` : ''}
+  ${total ? `<table><tr><td style="padding-top:4px;font-weight:bold;border-top:1px solid #000;font-size:${fontSize + 1}px;">TOTAL</td><td style="text-align:right;padding-top:4px;font-weight:bold;border-top:1px solid #000;white-space:nowrap;font-size:${fontSize + 1}px;">${total}</td></tr></table>` : ''}
   ${dashedLine}
-  <div style="text-align:center;">Thank you!</div>
+  <div style="text-align:center;font-size:${smallSize};">Thank you!</div>
   <div style="height:20px"></div>
   ${kickCodeHtml}
 </body>
