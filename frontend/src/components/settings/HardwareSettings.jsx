@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Printer, Box, Camera, Save, Receipt, Wifi, Loader2, CheckCircle2, XCircle, Send, Usb, Bluetooth, Zap, Smartphone } from 'lucide-react';
 import { useTranslation } from '../../lib/translations';
 import { DEFAULT_THERMAL_SETTINGS, PRINTER_MODELS, applyPrinterModel } from '../../lib/thermalPrinter';
-import { isAndroidPos, isAndroidDevice, detectBridge, getBridgeInfo, testPrint as androidTestPrint, openCashDrawer as androidOpenCashDrawer, openCashDrawerViaRaw, printViaSystemPrint, buildReceiptHtml } from '../../lib/androidPosPrinter';
+import { isAndroidPos, isAndroidDevice, detectBridge, getBridgeInfo, diagnoseBridge, testPrint as androidTestPrint, openCashDrawer as androidOpenCashDrawer, openCashDrawerViaRaw, openCashDrawerViaSystemPrint, printViaSystemPrint, buildReceiptHtml } from '../../lib/androidPosPrinter';
 import api from '../../lib/api';
 
 export default function HardwareSettings({ tenant, language, onSave, isSaving }) {
@@ -328,7 +328,12 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
       try { await openCashDrawerViaRaw(hardware.cashDrawerKickCode); opened = true; } catch (e) { lastError = e; }
     }
 
-    // 3. Try network backend ONLY for network printer type
+    // 3. Try sending kick code via Android system print service (raw text)
+    if (!opened && isAndroidDevice()) {
+      try { await openCashDrawerViaSystemPrint(hardware.cashDrawerKickCode); opened = true; } catch (e) { lastError = e; }
+    }
+
+    // 4. Try network backend ONLY for network printer type
     if (!opened && hardware.receiptPrinterType === 'network' && hardware.printerIpAddress) {
       try {
         await api.post('/tenants/test-cash-drawer', {
@@ -342,10 +347,10 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
 
     if (opened) {
       setDrawerResult({ success: true, message: 'Cash drawer opened successfully' });
-    } else if (!bridge && hardware.receiptPrinterType !== 'network') {
-      setDrawerResult({ success: false, message: 'No Android POS bridge detected. The cash drawer connects via RJ-11 cable to the printer. Make sure you are running inside the POS WebView.' });
+    } else if (!bridge && !isAndroidDevice()) {
+      setDrawerResult({ success: false, message: 'No POS bridge or Android device detected. Cash drawer requires an Android POS terminal.' });
     } else {
-      setDrawerResult({ success: false, message: lastError?.message || 'Could not open cash drawer. Make sure the printer is connected and the kick code is correct.' });
+      setDrawerResult({ success: false, message: lastError?.message || 'Could not open cash drawer. Check the diagnostic info below.' });
     }
 
     setDrawerTesting(false);
@@ -824,8 +829,9 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
             : 'The cash drawer connects to the printer via RJ-11 cable (telephone-like cable). The kick code is sent through the printer to the drawer.'}
         </div>
 
-        {/* Bridge status */}
+        {/* Bridge status & diagnostics */}
         {(() => {
+          const diag = diagnoseBridge();
           const bridge = detectBridge();
           if (bridge) {
             const methods = [];
@@ -839,12 +845,30 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
                 <div>{language === 'ar' ? 'الطرق' : 'Methods'}: {methods.join(', ') || 'none'}</div>
               </div>
             );
-          } else if (isAndroidDevice()) {
+          } else if (diag.platform === 'android') {
             return (
-              <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-xs text-amber-700 dark:text-amber-300">
-                {language === 'ar'
-                  ? 'جهاز Android ولكن لم يتم العثور على جسر طباعة. قد لا يعمل فتح الدرج.'
-                  : 'Android device detected but no printer bridge found. Cash drawer may not work.'}
+              <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-xs text-amber-700 dark:text-amber-300 space-y-2">
+                <div className="font-semibold">{language === 'ar' ? 'جهاز Android - لم يتم العثور على جسر' : 'Android device - no bridge detected'}</div>
+                <div>UA: {diag.userAgent}</div>
+                <div>WebView: {diag.isWebView ? 'Yes' : 'No'}</div>
+                {diag.bridges.length > 0 && (
+                  <div>
+                    <div className="font-semibold mt-1">{language === 'ar' ? 'كائنات مرتبطة بالطباعة' : 'Printer-related objects'}:</div>
+                    {diag.bridges.map(b => (
+                      <div key={b.name} className="ml-2 mt-1">
+                        <span className="font-mono font-bold">{b.name}</span>: {b.methods.length > 0 ? b.methods.join(', ') : '(no methods)'}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {diag.bridges.length === 0 && (
+                  <div>{language === 'ar' ? 'لا توجد كائنات مرتبطة بالطباعة في window' : 'No printer-related objects found on window'}</div>
+                )}
+                <div className="mt-1 text-amber-600 dark:text-amber-400">
+                  {language === 'ar'
+                    ? 'سيتم استخدام طباعة النظام لإرسال كود الفتح كنص خام.'
+                    : 'System print will be used to send the kick code as raw text.'}
+                </div>
               </div>
             );
           }

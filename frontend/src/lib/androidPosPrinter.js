@@ -18,6 +18,9 @@ const BRIDGE_NAMES = [
   'Android',
   'AndroidJS',
   'AndroidPrinter',
+  'AndroidBridge',
+  'AndroidInterface',
+  'AndroidJsInterface',
   'ReceiptChannel',
   'PrintInterface',
   'pos',
@@ -28,6 +31,7 @@ const BRIDGE_NAMES = [
   'printer',
   'JsBridge',
   'WebViewJavascriptBridge',
+  'webkit',
   'DM',
   'Dm',
   'sunmi',
@@ -41,6 +45,25 @@ const BRIDGE_NAMES = [
   'thermalPrinter',
   'WoyouService',
   'woyouService',
+  'EscPosPrinter',
+  'escPosPrinter',
+  'UsbPrinter',
+  'usbPrinter',
+  'PrintService',
+  'printService',
+  'AndroidPrintService',
+  'CashDrawer',
+  'cashDrawer',
+  'Hardware',
+  'hardware',
+  'Device',
+  'device',
+  'NativeAPI',
+  'nativeAPI',
+  'JsInterface',
+  'jsInterface',
+  'Bridge',
+  'bridge',
 ];
 
 let _cachedBridge = undefined;
@@ -145,6 +168,57 @@ export function getBridgeInfo() {
       .filter(([, v]) => v !== null)
       .map(([k]) => k),
   };
+}
+
+export function diagnoseBridge() {
+  if (typeof window === 'undefined') return { platform: 'server', bridges: [] };
+  const ua = (window.navigator?.userAgent || '').toLowerCase();
+  const isAndroid = ua.includes('android');
+  const isWebView = ua.includes('wv') || ua.includes('webview') || ua.includes('crosswalk');
+
+  const found = [];
+  const printerKeywords = ['print', 'drawer', 'cash', 'pos', 'esc', 'usb', 'thermal', 'receipt', 'hardware', 'device', 'native', 'bridge', 'android', 'jsinterface'];
+
+  for (const key of Object.getOwnPropertyNames(window)) {
+    try {
+      if (key === 'window' || key === 'self' || key === 'top' || key === 'parent' || key === 'frames' || key === 'document' || key === 'location' || key === 'navigator') continue;
+      const obj = window[key];
+      if (!obj || (typeof obj !== 'object' && typeof obj !== 'function')) continue;
+      const lowerKey = key.toLowerCase();
+      const isPrinterRelated = printerKeywords.some(kw => lowerKey.includes(kw));
+      if (!isPrinterRelated) continue;
+
+      const methodNames = [];
+      try {
+        for (const prop of Object.getOwnPropertyNames(Object.getPrototypeOf(obj) || obj)) {
+          if (typeof obj[prop] === 'function') methodNames.push(prop);
+        }
+      } catch (_) {}
+      try {
+        for (const prop of Object.getOwnPropertyNames(obj)) {
+          if (typeof obj[prop] === 'function' && !methodNames.includes(prop)) methodNames.push(prop);
+        }
+      } catch (_) {}
+
+      found.push({ name: key, methods: methodNames.slice(0, 20) });
+    } catch (_) {}
+  }
+
+  return {
+    platform: isAndroid ? 'android' : 'other',
+    isWebView,
+    userAgent: ua.substring(0, 200),
+    bridges: found,
+  };
+}
+
+export async function openCashDrawerViaSystemPrint(kickCodeStr) {
+  const parts = (kickCodeStr || '27,112,0,50,250').split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+  let rawText = '';
+  for (const b of parts) rawText += String.fromCharCode(b);
+
+  const html = `<div style="font-family:monospace;font-size:1px;color:#fff;background:#fff;white-space:pre;">${rawText}</div>`;
+  return printViaSystemPrint(html);
 }
 
 function bytesToBase64(bytes) {

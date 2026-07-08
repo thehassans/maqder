@@ -12,7 +12,7 @@ import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import { generateZatcaQrValue } from '../../lib/zatcaQr';
 import { getThermalPrinterSettings, getBodyWidthCss, getPageCss } from '../../lib/thermalPrinter';
-import { isAndroidPos, isAndroidDevice, detectBridge, printText as androidPrintText, openCashDrawer as androidOpenCashDrawer, openCashDrawerViaRaw, printViaSystemPrint, buildReceiptHtml } from '../../lib/androidPosPrinter';
+import { isAndroidPos, isAndroidDevice, detectBridge, printText as androidPrintText, openCashDrawer as androidOpenCashDrawer, openCashDrawerViaRaw, openCashDrawerViaSystemPrint, printViaSystemPrint, buildReceiptHtml } from '../../lib/androidPosPrinter';
 
 export default function BakalaPOS() {
   const navigate = useNavigate();
@@ -352,7 +352,12 @@ export default function BakalaPOS() {
       try { await openCashDrawerViaRaw(hw.cashDrawerKickCode); opened = true; } catch (e) { console.error('Bridge raw kick code failed:', e); }
     }
 
-    // 3. Try network backend ONLY for network printer type
+    // 3. Try system print kick code (raw text via Android print service)
+    if (!opened && isAndroidDevice()) {
+      try { await openCashDrawerViaSystemPrint(hw.cashDrawerKickCode); opened = true; } catch (e) { console.error('System print kick code failed:', e); }
+    }
+
+    // 4. Try network backend ONLY for network printer type
     if (!opened && hw.receiptPrinterType === 'network' && hw.printerIpAddress) {
       try {
         await api.post('/tenants/test-cash-drawer', {
@@ -371,10 +376,10 @@ export default function BakalaPOS() {
       toast.success('Cash drawer opened');
     } else {
       updateDeviceStatus('cashDrawer', 'not_configured');
-      if (!bridge && hw.receiptPrinterType !== 'network') {
-        toast('No POS bridge detected. Cash drawer connects via RJ-11 to the printer — must be inside POS WebView.', { icon: '⚙️' });
+      if (!bridge && !isAndroidDevice()) {
+        toast('Cash drawer requires an Android POS terminal.', { icon: '⚙️' });
       } else {
-        toast('Cash drawer could not be opened. Check printer connection and kick code.', { icon: '⚙️' });
+        toast('Cash drawer could not be opened. Check Settings > Hardware for diagnostics.', { icon: '⚙️' });
       }
     }
   };
@@ -637,7 +642,12 @@ export default function BakalaPOS() {
         try { await openCashDrawerViaRaw(hw.cashDrawerKickCode); drawerOpened = true; } catch (e) { console.error('Bridge raw kick code failed:', e); }
       }
 
-      // 3. Try network backend ONLY for network printer type
+      // 3. Try sending kick code via Android system print service (raw text)
+      if (!drawerOpened && isAndroidDevice()) {
+        try { await openCashDrawerViaSystemPrint(hw.cashDrawerKickCode); drawerOpened = true; } catch (e) { console.error('System print kick code failed:', e); }
+      }
+
+      // 4. Try network backend ONLY for network printer type
       if (!drawerOpened && hw.receiptPrinterType === 'network' && hw.printerIpAddress) {
         try {
           await api.post('/tenants/test-cash-drawer', {
