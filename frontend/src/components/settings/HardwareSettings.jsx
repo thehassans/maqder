@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Printer, Box, Camera, Save, Receipt, Wifi, Loader2, CheckCircle2, XCircle, Send } from 'lucide-react';
+import { Printer, Box, Camera, Save, Receipt, Wifi, Loader2, CheckCircle2, XCircle, Send, Usb, Bluetooth, Zap } from 'lucide-react';
 import { useTranslation } from '../../lib/translations';
 import { DEFAULT_THERMAL_SETTINGS, PRINTER_MODELS, applyPrinterModel } from '../../lib/thermalPrinter';
 import api from '../../lib/api';
@@ -52,6 +52,12 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
   const [drawerResult, setDrawerResult] = useState(null);
   const [printTesting, setPrintTesting] = useState(false);
   const [printResult, setPrintResult] = useState(null);
+  const [usbTesting, setUsbTesting] = useState(false);
+  const [usbResult, setUsbResult] = useState(null);
+  const [btTesting, setBtTesting] = useState(false);
+  const [btResult, setBtResult] = useState(null);
+  const usbDeviceRef = useRef(null);
+  const btCharacteristicRef = useRef(null);
 
   const handleTestConnection = async () => {
     setTesting(true);
@@ -66,6 +72,92 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
       setTestResult({ success: false, message: err.response?.data?.error || err.message || 'Connection failed' });
     } finally {
       setTesting(false);
+    }
+  };
+
+  const handleTestUsbPrinter = async () => {
+    setUsbTesting(true);
+    setUsbResult(null);
+    try {
+      if (!('usb' in navigator)) {
+        throw new Error('WebUSB not supported in this browser. Use Chrome or Edge.');
+      }
+      const device = await navigator.usb.requestDevice({
+        filters: [{ classCode: 7 }],
+      });
+      await device.open();
+      if (device.configuration === null) await device.selectConfiguration(1);
+      await device.claimInterface(0);
+
+      const esc = '\x1B';
+      const init = new Uint8Array([0x1B, 0x40]);
+      const testData = new TextEncoder().encode('*** USB TEST ***\nMaqder ERP\n' + new Date().toLocaleString() + '\nPrinter works!\n\n\n');
+      const cut = new Uint8Array([0x1B, 0x69]);
+      const payload = new Uint8Array([...init, ...testData, ...cut]);
+
+      await device.transferOut(1, payload);
+      usbDeviceRef.current = device;
+      setUsbResult({ success: true, message: `Connected to ${device.productName || 'USB Printer'} and test receipt sent` });
+    } catch (err) {
+      setUsbResult({ success: false, message: err.message || 'Failed to connect to USB printer' });
+    } finally {
+      setUsbTesting(false);
+    }
+  };
+
+  const handleTestBluetoothPrinter = async () => {
+    setBtTesting(true);
+    setBtResult(null);
+    try {
+      if (!('bluetooth' in navigator)) {
+        throw new Error('Web Bluetooth not supported in this browser. Use Chrome or Edge.');
+      }
+      const device = await navigator.bluetooth.requestDevice({
+        acceptAllDevices: true,
+        optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb', '00001101-0000-1000-8000-00805f9b34fb', '49535343-fe7d-4ae5-8fa9-9fafd205e455'],
+      });
+      const server = await device.gatt.connect();
+
+      let characteristic = null;
+      const serviceUuids = ['000018f0-0000-1000-8000-00805f9b34fb', '00001101-0000-1000-8000-00805f9b34fb', '49535343-fe7d-4ae5-8fa9-9fafd205e455'];
+      for (const sUuid of serviceUuids) {
+        try {
+          const service = await server.getPrimaryService(sUuid);
+          const characteristics = await service.getCharacteristics();
+          characteristic = characteristics.find(c => c.properties.write || c.properties.writeWithoutResponse);
+          if (characteristic) break;
+        } catch (e) { /* try next */ }
+      }
+
+      if (!characteristic) {
+        throw new Error('No writable characteristic found on this Bluetooth device');
+      }
+
+      const init = new Uint8Array([0x1B, 0x40]);
+      const testData = new TextEncoder().encode('*** BT TEST ***\nMaqder ERP\n' + new Date().toLocaleString() + '\nPrinter works!\n\n\n');
+      const cut = new Uint8Array([0x1B, 0x69]);
+      const payload = new Uint8Array([...init, ...testData, ...cut]);
+
+      if (characteristic.properties.writeWithoutResponse) {
+        await characteristic.writeValueWithoutResponse(payload);
+      } else {
+        await characteristic.writeValue(payload);
+      }
+
+      btCharacteristicRef.current = characteristic;
+      setBtResult({ success: true, message: `Connected to ${device.name || 'Bluetooth Printer'} and test receipt sent` });
+    } catch (err) {
+      setBtResult({ success: false, message: err.message || 'Failed to connect to Bluetooth printer' });
+    } finally {
+      setBtTesting(false);
+    }
+  };
+
+  const handleTestAll = async () => {
+    await handleSave();
+    if (hardware.receiptPrinterType === 'network') {
+      await handleTestConnection();
+      await handleTestThermalPrint();
     }
   };
 
@@ -95,6 +187,8 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
         port: hardware.printerPort,
         paperWidth: thermal.paperWidth,
         encoding: thermal.encoding,
+        businessName: tenant?.business?.legalNameEn || tenant?.name || '',
+        businessNameAr: tenant?.business?.legalNameAr || '',
       });
       setPrintResult({ success: true, message: res.data?.message || 'Test receipt printed successfully' });
     } catch (err) {
@@ -221,21 +315,66 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
                   )}
                 </button>
                 {testResult && (
-                  <div className={`mt-2 text-sm font-semibold ${testResult.success ? 'text-green-600' : 'text-red-600'}`}>
-                    {testResult.success ? '✓ ' : '✗ '}{testResult.message}
+                  <div className={`mt-2 flex items-center gap-2 text-sm font-semibold ${testResult.success ? 'text-green-600' : 'text-red-600'}`}>
+                    {testResult.success ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                    {testResult.message}
                   </div>
                 )}
               </div>
             </>
           )}
 
+          {hardware.receiptPrinterType === 'usb' && (
+            <div className="md:col-span-2">
+              <p className="text-xs text-gray-500 mb-3">
+                {language === 'ar' ? 'اضغط على زر الاختبار لاختيار طابعة USB متصلة وإرسال إيصال اختبار. يتطلب Chrome أو Edge.' : 'Click the test button to select a connected USB printer and send a test receipt. Requires Chrome or Edge.'}
+              </p>
+              <button
+                type="button"
+                onClick={handleTestUsbPrinter}
+                disabled={usbTesting}
+                className="btn btn-outline text-sm gap-2"
+              >
+                {usbTesting ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> {language === 'ar' ? 'جاري الاتصال...' : 'Connecting...'}</>
+                ) : (
+                  <><Usb className="w-4 h-4" /> {language === 'ar' ? 'اختبار طابعة USB' : 'Test USB Printer'}</>
+                )}
+              </button>
+              {usbResult && (
+                <div className={`mt-2 flex items-center gap-2 text-sm font-semibold ${usbResult.success ? 'text-green-600' : 'text-red-600'}`}>
+                  {usbResult.success ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                  {usbResult.message}
+                </div>
+              )}
+            </div>
+          )}
+
           {hardware.receiptPrinterType === 'bluetooth' && (
             <div className="md:col-span-2">
               <label className="label">{language === 'ar' ? 'اسم جهاز البلوتوث' : 'Bluetooth Device Name'}</label>
               <input type="text" name="bluetoothDeviceName" value={hardware.bluetoothDeviceName || ''} onChange={handleChange} className="input" placeholder="" />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 mt-1 mb-3">
                 {language === 'ar' ? 'تأكد من اقتران الطابعة مع الجهاز أولاً' : 'Make sure the printer is paired with the device first'}
               </p>
+              <button
+                type="button"
+                onClick={handleTestBluetoothPrinter}
+                disabled={btTesting}
+                className="btn btn-outline text-sm gap-2"
+              >
+                {btTesting ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> {language === 'ar' ? 'جاري الاتصال...' : 'Connecting...'}</>
+                ) : (
+                  <><Bluetooth className="w-4 h-4" /> {language === 'ar' ? 'اختبار طابعة البلوتوث' : 'Test Bluetooth Printer'}</>
+                )}
+              </button>
+              {btResult && (
+                <div className={`mt-2 flex items-center gap-2 text-sm font-semibold ${btResult.success ? 'text-green-600' : 'text-red-600'}`}>
+                  {btResult.success ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                  {btResult.message}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -512,7 +651,13 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
         )}
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-3">
+        {hardware.receiptPrinterType === 'network' && (
+          <button onClick={handleTestAll} disabled={testing || printTesting || isSaving} className="btn btn-outline text-sm gap-2">
+            {(testing || printTesting) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+            {language === 'ar' ? 'اختبار الكل وحفظ' : 'Test All & Save'}
+          </button>
+        )}
         <button onClick={handleSave} disabled={isSaving} className="btn btn-primary">
           {isSaving ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Save className="w-4 h-4" />{t('save')}</>}
         </button>

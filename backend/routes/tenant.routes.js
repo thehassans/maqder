@@ -578,23 +578,60 @@ router.post('/test-cash-drawer', authorize('admin'), async (req, res) => {
 // @desc    Send a test receipt to thermal printer
 router.post('/test-thermal-print', authorize('admin'), async (req, res) => {
   const net = await import('net');
-  const { ipAddress, port, paperWidth, encoding } = req.body;
+  const { ipAddress, port, paperWidth, encoding, businessName, businessNameAr } = req.body;
 
   if (!ipAddress || !port) {
     return res.status(400).json({ error: 'Printer IP address and port are required' });
   }
 
+  const enc = encoding || 'utf8';
   const esc = '\x1B';
+  const gs = '\x1D';
   const init = Buffer.from(esc + '@', 'ascii');
-  const title = Buffer.from('*** TEST RECEIPT ***\n', encoding || 'utf8');
-  const line = Buffer.from('Maqder ERP Printer Test\n', encoding || 'utf8');
-  const date = Buffer.from(`Date: ${new Date().toLocaleString()}\n`, encoding || 'utf8');
-  const paper = paperWidth === 58 ? 32 : 48;
-  const separator = Buffer.from('-'.repeat(paper) + '\n', 'ascii');
-  const footer = Buffer.from('If you can read this,\nyour printer is working!\n\n\n', encoding || 'utf8');
-  const cut = Buffer.from(esc + 'i', 'ascii');
+  const alignCenter = Buffer.from(esc + 'a' + '\x01', 'ascii');
+  const alignLeft = Buffer.from(esc + 'a' + '\x00', 'ascii');
+  const boldOn = Buffer.from(esc + 'E' + '\x01', 'ascii');
+  const boldOff = Buffer.from(esc + 'E' + '\x00', 'ascii');
+  const doubleOn = Buffer.from(gs + '!' + '\x11', 'ascii');
+  const doubleOff = Buffer.from(gs + '!' + '\x00', 'ascii');
+  const chars = paperWidth === 58 ? 32 : 48;
+  const separator = Buffer.from('-'.repeat(chars) + '\n', 'ascii');
 
-  const payload = Buffer.concat([init, title, separator, line, date, separator, footer, cut]);
+  const parts = [
+    init,
+    alignCenter,
+    boldOn,
+    doubleOn,
+    Buffer.from((businessName || 'Maqder ERP').substring(0, 16) + '\n', enc),
+    doubleOff,
+    boldOff,
+  ];
+
+  if (businessNameAr) {
+    parts.push(Buffer.from(businessNameAr + '\n', enc));
+  }
+
+  parts.push(
+    separator,
+    Buffer.from('*** TEST RECEIPT ***\n', enc),
+    Buffer.from(`Date: ${new Date().toLocaleString()}\n`, enc),
+    Buffer.from(`Paper: ${paperWidth || 80}mm | Cols: ${chars}\n`, enc),
+    Buffer.from(`Encoding: ${enc}\n`, enc),
+    separator,
+    alignLeft,
+    Buffer.from('Item 1                    SAR 10.00\n', enc),
+    Buffer.from('Item 2                    SAR 15.00\n', enc),
+    separator,
+    alignCenter,
+    boldOn,
+    Buffer.from('Total:                   SAR 25.00\n', enc),
+    boldOff,
+    separator,
+    Buffer.from('If you can read this,\nyour printer is working!\n\n\n', enc),
+    Buffer.from(esc + 'i', 'ascii'),
+  );
+
+  const payload = Buffer.concat(parts);
 
   const socket = new net.Socket();
   const timeout = 5000;
