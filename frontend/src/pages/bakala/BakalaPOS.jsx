@@ -12,7 +12,7 @@ import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import { generateZatcaQrValue } from '../../lib/zatcaQr';
 import { getThermalPrinterSettings, getBodyWidthCss, getPageCss } from '../../lib/thermalPrinter';
-import { isAndroidPos, isAndroidDevice, printText as androidPrintText, openCashDrawer as androidOpenCashDrawer, printViaSystemPrint, buildReceiptHtml } from '../../lib/androidPosPrinter';
+import { isAndroidPos, isAndroidDevice, detectBridge, printText as androidPrintText, openCashDrawer as androidOpenCashDrawer, printViaSystemPrint, buildReceiptHtml } from '../../lib/androidPosPrinter';
 
 export default function BakalaPOS() {
   const navigate = useNavigate();
@@ -294,6 +294,20 @@ export default function BakalaPOS() {
   };
 
   const testPrinterConnection = async () => {
+    if (hw.receiptPrinterType === 'android') {
+      if (isAndroidPos()) return { ok: true };
+      return { ok: false, reason: 'not_configured' };
+    }
+    if (hw.receiptPrinterType === 'android_system_print') {
+      if (isAndroidDevice()) return { ok: true };
+      return { ok: false, reason: 'not_configured' };
+    }
+    if (hw.receiptPrinterType === 'usb') {
+      return { ok: false, reason: 'not_configured' };
+    }
+    if (hw.receiptPrinterType === 'bluetooth') {
+      return { ok: false, reason: 'not_configured' };
+    }
     if (hw.receiptPrinterType !== 'network' || !hw.printerIpAddress) {
       return { ok: false, reason: 'not_configured' };
     }
@@ -324,6 +338,35 @@ export default function BakalaPOS() {
   };
 
   const connectCashDrawer = async () => {
+    if (hw.receiptPrinterType === 'android' && isAndroidPos()) {
+      updateDeviceStatus('cashDrawer', 'checking');
+      try {
+        await androidOpenCashDrawer();
+        updateDeviceStatus('cashDrawer', 'connected');
+        toast.success('Cash drawer opened via Android bridge');
+      } catch (e) {
+        updateDeviceStatus('cashDrawer', 'disconnected');
+        toast.error('Cash drawer not supported by bridge');
+      }
+      return;
+    }
+    if (hw.receiptPrinterType === 'android_system_print') {
+      const bridge = detectBridge();
+      if (bridge) {
+        updateDeviceStatus('cashDrawer', 'checking');
+        try {
+          await androidOpenCashDrawer();
+          updateDeviceStatus('cashDrawer', 'connected');
+          toast.success('Cash drawer opened via bridge');
+          return;
+        } catch (e) {
+          // fall through to not_configured
+        }
+      }
+      updateDeviceStatus('cashDrawer', 'not_configured');
+      toast('Cash drawer requires Android POS bridge or network printer', { icon: '⚙️' });
+      return;
+    }
     if (hw.receiptPrinterType !== 'network' || !hw.printerIpAddress) {
       updateDeviceStatus('cashDrawer', 'not_configured');
       toast('Cash drawer requires a configured network printer', { icon: '⚙️' });
@@ -349,7 +392,6 @@ export default function BakalaPOS() {
     try {
       const payload = {
         ...hw,
-        receiptPrinterType: 'network',
         printerIpAddress: printerConfig.printerIpAddress,
         printerPort: Number(printerConfig.printerPort) || 9100,
         cashDrawerKickCode: printerConfig.cashDrawerKickCode,
@@ -386,12 +428,13 @@ export default function BakalaPOS() {
           // ignore
         }
       }
-      // Printer & Cash Drawer: ping saved network settings
+      // Printer: test connection based on printer type
       const printerResult = await testPrinterConnection();
       if (!cancelled) {
         updateDeviceStatus('printer', printerResult.ok ? 'connected' : printerResult.reason === 'not_configured' ? 'not_configured' : 'disconnected');
       }
-      if (!cancelled && printerResult.ok) {
+      // Cash Drawer: only for network type (Android types need user gesture or bridge)
+      if (!cancelled && printerResult.ok && hw.receiptPrinterType === 'network') {
         try {
           await api.post('/tenants/test-cash-drawer', {
             ipAddress: hw.printerIpAddress,
@@ -402,6 +445,16 @@ export default function BakalaPOS() {
         } catch (e) {
           updateDeviceStatus('cashDrawer', 'disconnected');
         }
+      } else if (!cancelled && printerResult.ok && (hw.receiptPrinterType === 'android' || hw.receiptPrinterType === 'android_system_print')) {
+        // For Android types, mark cash drawer as connected if bridge supports it, otherwise not_configured
+        const bridge = detectBridge();
+        if (bridge && bridge.methods.openCashDrawer) {
+          updateDeviceStatus('cashDrawer', 'connected');
+        } else {
+          updateDeviceStatus('cashDrawer', 'not_configured');
+        }
+      } else if (!cancelled) {
+        updateDeviceStatus('cashDrawer', 'not_configured');
       }
     };
     autoConnect();
@@ -581,6 +634,11 @@ export default function BakalaPOS() {
     if (shouldOpenDrawer) {
       if (hw.receiptPrinterType === 'android' && isAndroidPos()) {
         try { await androidOpenCashDrawer(); } catch (e) { console.error('Android cash drawer failed:', e); }
+      } else if (hw.receiptPrinterType === 'android_system_print') {
+        const bridge = detectBridge();
+        if (bridge && bridge.methods.openCashDrawer) {
+          try { await androidOpenCashDrawer(); } catch (e) { console.error('Bridge cash drawer failed:', e); }
+        }
       } else if (hw.receiptPrinterType === 'network' && hw.printerIpAddress) {
         try {
           await api.post('/tenants/test-cash-drawer', {
@@ -673,18 +731,25 @@ export default function BakalaPOS() {
     const businessNameEn = tenant?.business?.legalNameEn || tenant?.name || 'Maqder POS';
     const businessNameAr = tenant?.business?.legalNameAr || tenant?.name || 'مقدر نقاط البيع';
     const vatNumber = tenant?.business?.vatNumber || '';
+    const address = tenant?.business?.address;
+    const addressParts = address ? [address.buildingNumber, address.street, address.district, address.city].filter(Boolean) : [];
     const dateStr = new Date().toLocaleString('en-US');
     const items = order.lineItems || [];
     const chars = thermal.paperWidth === 58 ? 32 : 48;
     const pmLabel = paymentMethod === 'cash' ? 'Cash' : paymentMethod === 'card' ? 'Card' : paymentMethod === 'split' ? 'Split' : paymentMethod === 'khata' ? 'Khata' : String(paymentMethod);
     const sep = '-'.repeat(chars);
+    const invId = order.offlineId ? order.offlineId.substring(0, 8).toUpperCase() : 'N/A';
+    const cashier = user?.name || user?.email || '';
 
     let text = '';
     text += businessNameEn + '\n';
     text += businessNameAr + '\n';
+    if (addressParts.length) text += addressParts.join(', ') + '\n';
     if (vatNumber) text += 'VAT: ' + vatNumber + '\n';
     text += sep + '\n';
+    text += 'Invoice: ' + invId + '\n';
     text += 'Date: ' + dateStr + '\n';
+    if (cashier) text += 'Cashier: ' + cashier + '\n';
     text += 'Payment: ' + pmLabel + '\n';
     text += sep + '\n';
 
@@ -701,7 +766,10 @@ export default function BakalaPOS() {
     text += 'VAT:         SAR ' + (order.totalTax || 0).toFixed(2) + '\n';
     text += 'TOTAL:       SAR ' + (order.grandTotal || 0).toFixed(2) + '\n';
     text += sep + '\n';
-    text += 'Thank you for your visit!\n';
+    if (thermal.showFooter) {
+      text += (thermal.footerTextEn || 'Thank you!') + '\n';
+      text += (thermal.footerTextAr || 'شكراً') + '\n';
+    }
     text += '\n\n\n';
 
     return text;
@@ -711,16 +779,13 @@ export default function BakalaPOS() {
     const businessNameEn = tenant?.business?.legalNameEn || tenant?.name || 'Maqder POS';
     const businessNameAr = tenant?.business?.legalNameAr || tenant?.name || 'مقدر نقاط البيع';
     const vatNumber = tenant?.business?.vatNumber || '';
+    const address = tenant?.business?.address;
+    const addressParts = address ? [address.buildingNumber, address.street, address.district, address.city].filter(Boolean) : [];
     const dateStr = new Date().toLocaleString('en-US');
     const items = order.lineItems || [];
     const pmLabel = paymentMethod === 'cash' ? 'Cash' : paymentMethod === 'card' ? 'Card' : paymentMethod === 'split' ? 'Split' : paymentMethod === 'khata' ? 'Khata' : String(paymentMethod);
-
-    const itemRows = items.map(i => {
-      const name = (i.productName || i.productNameAr || 'Item');
-      const price = (i.lineTotalWithTax || 0).toFixed(2);
-      const qty = i.quantity || 1;
-      return `<tr><td>${name}<br><small>x${qty} @ ${(i.unitPrice || 0).toFixed(2)}</small></td><td style="text-align:right">SAR ${price}</td></tr>`;
-    }).join('');
+    const invId = order.offlineId ? order.offlineId.substring(0, 8).toUpperCase() : 'N/A';
+    const cashier = user?.name || user?.email || '';
 
     return buildReceiptHtml({
       businessName: businessNameEn,
@@ -976,7 +1041,9 @@ export default function BakalaPOS() {
               {[
                 { key: 'scanner', label: 'Scanner', icon: Smartphone, onClick: () => connectScanner(false) },
                 { key: 'printer', label: 'Printer', icon: Printer, onClick: () => {
-                  if (deviceStatus.printer === 'connected') {
+                  if (hw.receiptPrinterType === 'android' || hw.receiptPrinterType === 'android_system_print') {
+                    connectPrinter();
+                  } else if (deviceStatus.printer === 'connected') {
                     connectPrinter();
                   } else {
                     setShowPrinterConfig(true);
@@ -1024,7 +1091,11 @@ export default function BakalaPOS() {
           {showPrinterConfig && (
             <div className="mb-3 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-gray-700">Configure Network Printer</h3>
+                <h3 className="text-sm font-bold text-gray-700">
+                  {(hw.receiptPrinterType === 'android' || hw.receiptPrinterType === 'android_system_print')
+                    ? 'Printer Status'
+                    : 'Configure Network Printer'}
+                </h3>
                 <button
                   type="button"
                   onClick={() => setShowPrinterConfig(false)}
@@ -1033,6 +1104,49 @@ export default function BakalaPOS() {
                   ×
                 </button>
               </div>
+
+              {(hw.receiptPrinterType === 'android' || hw.receiptPrinterType === 'android_system_print') ? (
+                <div className="space-y-3">
+                  <div className={`p-3 rounded-xl ${(hw.receiptPrinterType === 'android' && isAndroidPos()) || (hw.receiptPrinterType === 'android_system_print' && isAndroidDevice()) ? 'bg-emerald-50 border border-emerald-200' : 'bg-amber-50 border border-amber-200'}`}>
+                    <div className="flex items-center gap-2">
+                      {(hw.receiptPrinterType === 'android' && isAndroidPos()) || (hw.receiptPrinterType === 'android_system_print' && isAndroidDevice()) ? (
+                        <><CheckCircle2 className="w-4 h-4 text-emerald-600" /><span className="text-sm font-semibold text-emerald-700">Printer ready</span></>
+                      ) : (
+                        <><Smartphone className="w-4 h-4 text-amber-600" /><span className="text-sm font-semibold text-amber-700">Not detected on this device</span></>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {hw.receiptPrinterType === 'android'
+                        ? 'Uses built-in JS bridge for direct ESC/POS printing.'
+                        : 'Uses Android system print service. A print dialog will appear on checkout.'}
+                    </p>
+                    {(() => {
+                      const bridge = detectBridge();
+                      if (bridge) return <p className="text-xs text-gray-400 mt-1">Bridge: <code>{bridge.name}</code></p>;
+                      return null;
+                    })()}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const thermal = getThermalPrinterSettings(tenant);
+                      const html = buildReceiptHtml({
+                        businessName: tenant?.business?.legalNameEn || tenant?.name || 'Maqder POS',
+                        businessNameAr: tenant?.business?.legalNameAr || '',
+                        paperWidth: thermal.paperWidth,
+                        date: new Date().toLocaleString(),
+                        items: [{ name: 'Test Item', price: 'SAR 1.00' }],
+                        total: 'SAR 1.00',
+                      });
+                      try { await printViaSystemPrint(html); toast.success('Test print sent'); } catch (e) { toast.error('Print failed: ' + e.message); }
+                    }}
+                    className="px-4 py-2 bg-indigo-500 text-white text-sm font-bold rounded-lg hover:bg-indigo-600 flex items-center gap-2"
+                  >
+                    <Printer className="w-4 h-4" /> Test Print
+                  </button>
+                </div>
+              ) : (
+                <>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium text-gray-500">Printer IP Address</label>
@@ -1083,6 +1197,8 @@ export default function BakalaPOS() {
                   Save & Connect
                 </button>
               </div>
+                </>
+              )}
             </div>
           )}
 
