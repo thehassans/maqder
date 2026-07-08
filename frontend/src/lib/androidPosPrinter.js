@@ -100,6 +100,11 @@ export function detectBridge() {
   if (typeof obj.openCashDrawer === 'function') methods.openCashDrawer = 'openCashDrawer';
   else if (typeof obj.openCashBox === 'function') methods.openCashDrawer = 'openCashBox';
   else if (typeof obj.kickCashDrawer === 'function') methods.openCashDrawer = 'kickCashDrawer';
+  else if (typeof obj.openDrawer === 'function') methods.openCashDrawer = 'openDrawer';
+  else if (typeof obj.drawerOpen === 'function') methods.openCashDrawer = 'drawerOpen';
+  else if (typeof obj.cashDrawerOpen === 'function') methods.openCashDrawer = 'cashDrawerOpen';
+  else if (typeof obj.popCashDrawer === 'function') methods.openCashDrawer = 'popCashDrawer';
+  else if (typeof obj.sendCommand === 'function') methods.openCashDrawer = 'sendCommand';
 
   if (typeof obj.getStatus === 'function') methods.getStatus = 'getStatus';
   else if (typeof obj.printerStatus === 'function') methods.getStatus = 'printerStatus';
@@ -112,7 +117,7 @@ export function detectBridge() {
     methods.printText = 'postMessage';
   }
 
-  if (!methods.printText) {
+  if (!methods.printText && !methods.printRaw && !methods.openCashDrawer) {
     _cachedBridge = null;
     return null;
   }
@@ -331,6 +336,13 @@ export async function openCashDrawer() {
   if (methods.openCashDrawer) {
     try {
       const fn = obj[methods.openCashDrawer];
+      // If it's sendCommand, pass the ESC/POS kick code
+      if (methods.openCashDrawer === 'sendCommand') {
+        const kickStr = '\x1B\x70\x00\x32\xFA';
+        const result = fn.call(obj, kickStr);
+        if (result instanceof Promise) return await result;
+        return { status: 'success', message: 'Cash drawer command sent via sendCommand' };
+      }
       const result = fn.call(obj);
       if (result instanceof Promise) {
         return await result;

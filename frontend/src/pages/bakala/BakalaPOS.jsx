@@ -352,8 +352,8 @@ export default function BakalaPOS() {
       try { await openCashDrawerViaRaw(hw.cashDrawerKickCode); opened = true; } catch (e) { console.error('Bridge raw kick code failed:', e); }
     }
 
-    // 3. Try network backend
-    if (!opened && hw.printerIpAddress) {
+    // 3. Try network backend ONLY for network printer type
+    if (!opened && hw.receiptPrinterType === 'network' && hw.printerIpAddress) {
       try {
         await api.post('/tenants/test-cash-drawer', {
           ipAddress: hw.printerIpAddress,
@@ -371,7 +371,11 @@ export default function BakalaPOS() {
       toast.success('Cash drawer opened');
     } else {
       updateDeviceStatus('cashDrawer', 'not_configured');
-      toast('Cash drawer could not be opened. Configure network printer IP or use Android POS bridge.', { icon: '⚙️' });
+      if (!bridge && hw.receiptPrinterType !== 'network') {
+        toast('No POS bridge detected. Cash drawer connects via RJ-11 to the printer — must be inside POS WebView.', { icon: '⚙️' });
+      } else {
+        toast('Cash drawer could not be opened. Check printer connection and kick code.', { icon: '⚙️' });
+      }
     }
   };
 
@@ -434,9 +438,9 @@ export default function BakalaPOS() {
           updateDeviceStatus('cashDrawer', 'disconnected');
         }
       } else if (!cancelled && printerResult.ok && (hw.receiptPrinterType === 'android' || hw.receiptPrinterType === 'android_system_print')) {
-        // For Android types, mark cash drawer as connected if bridge supports it, otherwise not_configured
+        // For Android types, mark cash drawer as connected if bridge supports it (dedicated method or raw/text print)
         const bridge = detectBridge();
-        if (bridge && bridge.methods.openCashDrawer) {
+        if (bridge && (bridge.methods.openCashDrawer || bridge.methods.printRaw || bridge.methods.printText)) {
           updateDeviceStatus('cashDrawer', 'connected');
         } else {
           updateDeviceStatus('cashDrawer', 'not_configured');
@@ -633,8 +637,8 @@ export default function BakalaPOS() {
         try { await openCashDrawerViaRaw(hw.cashDrawerKickCode); drawerOpened = true; } catch (e) { console.error('Bridge raw kick code failed:', e); }
       }
 
-      // 3. Try network backend if IP is configured (works for USB/ESC-POS print services that expose network port)
-      if (!drawerOpened && hw.printerIpAddress) {
+      // 3. Try network backend ONLY for network printer type
+      if (!drawerOpened && hw.receiptPrinterType === 'network' && hw.printerIpAddress) {
         try {
           await api.post('/tenants/test-cash-drawer', {
             ipAddress: hw.printerIpAddress,

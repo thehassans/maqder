@@ -328,8 +328,8 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
       try { await openCashDrawerViaRaw(hardware.cashDrawerKickCode); opened = true; } catch (e) { lastError = e; }
     }
 
-    // 3. Try network backend if IP is configured
-    if (!opened && hardware.printerIpAddress) {
+    // 3. Try network backend ONLY for network printer type
+    if (!opened && hardware.receiptPrinterType === 'network' && hardware.printerIpAddress) {
       try {
         await api.post('/tenants/test-cash-drawer', {
           ipAddress: hardware.printerIpAddress,
@@ -342,6 +342,8 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
 
     if (opened) {
       setDrawerResult({ success: true, message: 'Cash drawer opened successfully' });
+    } else if (!bridge && hardware.receiptPrinterType !== 'network') {
+      setDrawerResult({ success: false, message: 'No Android POS bridge detected. The cash drawer connects via RJ-11 cable to the printer. Make sure you are running inside the POS WebView.' });
     } else {
       setDrawerResult({ success: false, message: lastError?.message || 'Could not open cash drawer. Make sure the printer is connected and the kick code is correct.' });
     }
