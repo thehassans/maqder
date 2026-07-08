@@ -456,90 +456,76 @@ export function buildReceiptHtml({ businessName, businessNameAr, items, total, s
     return `<tr><td style="font-size:${fontSize}">${name}</td><td style="font-size:${fontSize};text-align:right">${price}</td></tr>`;
   }).join('');
 
-  return `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Receipt</title>
-<style>
-  @page { size: ${widthMm} auto; margin: 2mm; }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { width: ${widthMm}; font-family: 'Courier New', monospace; font-size: ${fontSize}; color: #000; }
-  .center { text-align: center; }
-  .bold { font-weight: bold; }
-  .divider { border-top: 1px dashed #000; margin: 4px 0; }
-  table { width: 100%; border-collapse: collapse; }
-  td { vertical-align: top; white-space: nowrap; }
-  .total-row td { font-weight: bold; border-top: 1px solid #000; padding-top: 2px; }
-  @media print { body { width: ${widthMm}; } }
-</style>
-</head>
-<body>
-  <div class="center bold" style="font-size:${paperWidth === 58 ? '12px' : '14px'}">${businessName || 'Maqder ERP'}</div>
-  ${businessNameAr ? `<div class="center">${businessNameAr}</div>` : ''}
-  ${vatNumber ? `<div class="center">VAT: ${vatNumber}</div>` : ''}
-  <div class="divider"></div>
-  <div class="center">TEST RECEIPT</div>
+  return `<div style="width:${widthMm};margin:0 auto;font-family:'Courier New',monospace;font-size:${fontSize};color:#000;background:#fff;padding:4px;">
+  <style>
+    #pos-print-area { background: #fff !important; }
+  </style>
+  <div class="center bold" style="text-align:center;font-weight:bold;font-size:${paperWidth === 58 ? '12px' : '14px'}">${businessName || 'Maqder ERP'}</div>
+  ${businessNameAr ? `<div style="text-align:center">${businessNameAr}</div>` : ''}
+  ${vatNumber ? `<div style="text-align:center">VAT: ${vatNumber}</div>` : ''}
+  <div style="border-top:1px dashed #000;margin:4px 0;"></div>
+  <div style="text-align:center;font-weight:bold;">RECEIPT</div>
   <div>Date: ${date || new Date().toLocaleString()}</div>
   ${paymentMethod ? `<div>Payment: ${paymentMethod}</div>` : ''}
-  <div class="divider"></div>
-  ${itemsHtml ? `<table>${itemsHtml}</table><div class="divider"></div>` : ''}
-  ${subtotal ? `<table><tr><td>Subtotal</td><td style="text-align:right">${subtotal}</td></tr></table>` : ''}
-  ${tax ? `<table><tr><td>VAT</td><td style="text-align:right">${tax}</td></tr></table>` : ''}
-  ${total ? `<table><tr class="total-row"><td>TOTAL</td><td style="text-align:right">${total}</td></tr></table>` : ''}
-  <div class="divider"></div>
-  <div class="center">If you can read this,<br>your printer works!</div>
+  <div style="border-top:1px dashed #000;margin:4px 0;"></div>
+  ${itemsHtml ? `<table style="width:100%;border-collapse:collapse;">${itemsHtml}</table><div style="border-top:1px dashed #000;margin:4px 0;"></div>` : ''}
+  ${subtotal ? `<table style="width:100%;border-collapse:collapse;"><tr><td>Subtotal</td><td style="text-align:right">${subtotal}</td></tr></table>` : ''}
+  ${tax ? `<table style="width:100%;border-collapse:collapse;"><tr><td>VAT</td><td style="text-align:right">${tax}</td></tr></table>` : ''}
+  ${total ? `<table style="width:100%;border-collapse:collapse;"><tr style="font-weight:bold;border-top:1px solid #000;"><td style="padding-top:2px;font-weight:bold;">TOTAL</td><td style="text-align:right;padding-top:2px;font-weight:bold;">${total}</td></tr></table>` : ''}
+  <div style="border-top:1px dashed #000;margin:4px 0;"></div>
+  <div style="text-align:center;">If you can read this,<br>your printer works!</div>
   <div style="height:20px"></div>
-</body>
-</html>`;
+</div>`;
 }
 
 export function printViaSystemPrint(html) {
   return new Promise((resolve, reject) => {
     try {
-      const iframe = document.createElement('iframe');
-      iframe.style.position = 'fixed';
-      iframe.style.right = '0';
-      iframe.style.bottom = '0';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
-      iframe.style.border = '0';
-      iframe.style.overflow = 'hidden';
-      document.body.appendChild(iframe);
+      let printArea = document.getElementById('pos-print-area');
+      if (!printArea) {
+        printArea = document.createElement('div');
+        printArea.id = 'pos-print-area';
+        printArea.style.cssText = 'position:fixed;left:0;top:0;width:100%;z-index:99999;background:#fff;';
+        document.body.appendChild(printArea);
 
-      const doc = iframe.contentWindow.document;
-      doc.open();
-      doc.write(html);
-      doc.close();
-
-      iframe.onload = () => {
-        try {
-          iframe.contentWindow.focus();
-          iframe.contentWindow.print();
-          setTimeout(() => {
-            document.body.removeChild(iframe);
-            resolve({ status: 'success', message: 'Print dialog triggered via Android system print service' });
-          }, 1000);
-        } catch (e) {
-          document.body.removeChild(iframe);
-          reject(e);
+        if (!document.getElementById('pos-print-style')) {
+          const style = document.createElement('style');
+          style.id = 'pos-print-style';
+          style.textContent = `
+            @media print {
+              body * { visibility: hidden !important; }
+              #pos-print-area, #pos-print-area * { visibility: visible !important; }
+              #pos-print-area { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; }
+              @page { margin: 0; }
+            }
+          `;
+          document.head.appendChild(style);
         }
+      }
+
+      printArea.innerHTML = html;
+
+      const cleanup = () => {
+        printArea.innerHTML = '';
+        printArea.style.display = 'none';
       };
 
+      const onAfterPrint = () => {
+        window.removeEventListener('afterprint', onAfterPrint);
+        cleanup();
+        resolve({ status: 'success', message: 'Print dialog triggered via Android system print service' });
+      };
+      window.addEventListener('afterprint', onAfterPrint);
+
+      printArea.style.display = 'block';
+      window.focus();
+      window.print();
+
       setTimeout(() => {
-        try {
-          iframe.contentWindow.focus();
-          iframe.contentWindow.print();
-          setTimeout(() => {
-            try { document.body.removeChild(iframe); } catch (_) {}
-            resolve({ status: 'success', message: 'Print dialog triggered via Android system print service' });
-          }, 1000);
-        } catch (e) {
-          try { document.body.removeChild(iframe); } catch (_) {}
-          reject(e);
-        }
-      }, 300);
+        cleanup();
+        window.removeEventListener('afterprint', onAfterPrint);
+        resolve({ status: 'success', message: 'Print dialog triggered via Android system print service' });
+      }, 5000);
     } catch (err) {
       reject(err);
     }

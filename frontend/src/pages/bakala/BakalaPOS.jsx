@@ -657,13 +657,19 @@ export default function BakalaPOS() {
     if (shouldAutoPrint) {
       if (hw.receiptPrinterType === 'android' && isAndroidPos()) {
         const receiptText = buildAndroidReceiptText(invoice, paymentMethod, tenant, thermal);
-        try { await androidPrintText(receiptText); } catch (e) { console.error('Android print failed:', e); printReceipt(invoice, paymentMethod); }
+        try { await androidPrintText(receiptText); } catch (e) { console.error('Android print failed:', e); 
+          try { const html = buildAndroidReceiptHtml(invoice, paymentMethod, tenant, thermal); await printViaSystemPrint(html); } catch (e2) { console.error('System print fallback failed:', e2); printReceipt(invoice, paymentMethod); }
+        }
       } else if (hw.receiptPrinterType === 'android_system_print') {
         const html = buildAndroidReceiptHtml(invoice, paymentMethod, tenant, thermal);
         try { await printViaSystemPrint(html); } catch (e) { console.error('System print failed:', e); printReceipt(invoice, paymentMethod); }
       } else if (hw.receiptPrinterType === 'network' && hw.printerIpAddress) {
         // Send ESC/POS receipt directly to network printer
         printReceiptESCPOS(invoice, paymentMethod, hw, thermal);
+      } else if (isAndroidDevice()) {
+        // Android device without specific type — use system print
+        const html = buildAndroidReceiptHtml(invoice, paymentMethod, tenant, thermal);
+        try { await printViaSystemPrint(html); } catch (e) { console.error('System print failed:', e); printReceipt(invoice, paymentMethod); }
       } else {
         // Browser-based print (opens new window)
         printReceipt(invoice, paymentMethod);
