@@ -12,6 +12,7 @@ import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import { generateZatcaQrValue } from '../../lib/zatcaQr';
 import { getThermalPrinterSettings, getBodyWidthCss, getPageCss } from '../../lib/thermalPrinter';
+import { isAndroidPos, printText as androidPrintText, openCashDrawer as androidOpenCashDrawer } from '../../lib/androidPosPrinter';
 
 export default function BakalaPOS() {
   const navigate = useNavigate();
@@ -576,23 +577,30 @@ export default function BakalaPOS() {
 
     // Auto open cash drawer on cash payment
     const hasCashComponent = paymentMethod === 'cash' || (paymentMethod === 'split' && Array.isArray(payments) && payments.some(p => p.method === 'cash' && Number(p.amount) > 0));
-    const shouldOpenDrawer = hasCashComponent && hw.openCashDrawerOnCashPayment !== false && hw.receiptPrinterType === 'network' && hw.printerIpAddress;
+    const shouldOpenDrawer = hasCashComponent && hw.openCashDrawerOnCashPayment !== false;
     if (shouldOpenDrawer) {
-      try {
-        await api.post('/tenants/test-cash-drawer', {
-          ipAddress: hw.printerIpAddress,
-          port: hw.printerPort,
-          kickCode: hw.cashDrawerKickCode,
-        });
-      } catch (err) {
-        console.error('Cash drawer open failed:', err);
+      if (hw.receiptPrinterType === 'android' && isAndroidPos()) {
+        try { await androidOpenCashDrawer(); } catch (e) { console.error('Android cash drawer failed:', e); }
+      } else if (hw.receiptPrinterType === 'network' && hw.printerIpAddress) {
+        try {
+          await api.post('/tenants/test-cash-drawer', {
+            ipAddress: hw.printerIpAddress,
+            port: hw.printerPort,
+            kickCode: hw.cashDrawerKickCode,
+          });
+        } catch (err) {
+          console.error('Cash drawer open failed:', err);
+        }
       }
     }
 
     // Auto-print receipt: always for cash, otherwise only if autoPrint is enabled
     const shouldAutoPrint = paymentMethod === 'cash' || thermal.autoPrint;
     if (shouldAutoPrint) {
-      if (hw.receiptPrinterType === 'network' && hw.printerIpAddress) {
+      if (hw.receiptPrinterType === 'android' && isAndroidPos()) {
+        const receiptText = buildAndroidReceiptText(invoice, paymentMethod, tenant, thermal);
+        try { await androidPrintText(receiptText); } catch (e) { console.error('Android print failed:', e); printReceipt(invoice, paymentMethod); }
+      } else if (hw.receiptPrinterType === 'network' && hw.printerIpAddress) {
         // Send ESC/POS receipt directly to network printer
         printReceiptESCPOS(invoice, paymentMethod, hw, thermal);
       } else {
@@ -656,6 +664,44 @@ export default function BakalaPOS() {
       // Fallback to browser print
       printReceipt(order, paymentMethod);
     }
+  };
+
+  const buildAndroidReceiptText = (order, paymentMethod, tenant, thermal) => {
+    const businessNameEn = tenant?.business?.legalNameEn || tenant?.name || 'Maqder POS';
+    const businessNameAr = tenant?.business?.legalNameAr || tenant?.name || 'مقدر نقاط البيع';
+    const vatNumber = tenant?.business?.vatNumber || '';
+    const dateStr = new Date().toLocaleString('en-US');
+    const items = order.lineItems || [];
+    const chars = thermal.paperWidth === 58 ? 32 : 48;
+    const pmLabel = paymentMethod === 'cash' ? 'Cash' : paymentMethod === 'card' ? 'Card' : paymentMethod === 'split' ? 'Split' : paymentMethod === 'khata' ? 'Khata' : String(paymentMethod);
+    const sep = '-'.repeat(chars);
+
+    let text = '';
+    text += businessNameEn + '\n';
+    text += businessNameAr + '\n';
+    if (vatNumber) text += 'VAT: ' + vatNumber + '\n';
+    text += sep + '\n';
+    text += 'Date: ' + dateStr + '\n';
+    text += 'Payment: ' + pmLabel + '\n';
+    text += sep + '\n';
+
+    for (const item of items) {
+      const name = (item.productName || item.productNameAr || 'Item').substring(0, chars - 12);
+      const price = (item.lineTotalWithTax || 0).toFixed(2);
+      const qty = 'x' + (item.quantity || 1);
+      text += name + '\n';
+      text += '  ' + qty + ' @ ' + (item.unitPrice || 0).toFixed(2) + ' = SAR ' + price + '\n';
+    }
+
+    text += sep + '\n';
+    text += 'Subtotal:    SAR ' + (order.subtotal || 0).toFixed(2) + '\n';
+    text += 'VAT:         SAR ' + (order.totalTax || 0).toFixed(2) + '\n';
+    text += 'TOTAL:       SAR ' + (order.grandTotal || 0).toFixed(2) + '\n';
+    text += sep + '\n';
+    text += 'Thank you for your visit!\n';
+    text += '\n\n\n';
+
+    return text;
   };
 
   const printReceipt = (order, paymentMethod = 'cash') => {
