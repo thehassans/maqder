@@ -231,6 +231,94 @@ export async function openCashDrawerViaSystemPrint(kickCodeStr) {
   return printViaSystemPrint(html);
 }
 
+export function isWebUsbSupported() {
+  return typeof navigator !== 'undefined' && !!navigator.usb;
+}
+
+export function isWebSerialSupported() {
+  return typeof navigator !== 'undefined' && !!navigator.serial;
+}
+
+let _usbDevice = null;
+
+export async function openCashDrawerViaWebUSB(kickCodeStr) {
+  if (!isWebUsbSupported()) throw new Error('WebUSB not supported on this device');
+
+  const parts = (kickCodeStr || '27,112,0,50,250').split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+  const kickBytes = new Uint8Array(parts.length ? parts : [0x1B, 0x70, 0x00, 0x32, 0xFA]);
+
+  let device = _usbDevice;
+  try {
+    if (!device) {
+      device = await navigator.usb.requestDevice({
+        filters: [
+          { classCode: 7 },
+          { vendorId: 0x04b8 },
+          { vendorId: 0x0519 },
+          { vendorId: 0x154f },
+          { vendorId: 0x0fe6 },
+          { vendorId: 0x0416 },
+          { vendorId: 0x1659 },
+          { vendorId: 0x28e9 },
+          { vendorId: 0x0416 },
+        ],
+      });
+      _usbDevice = device;
+    }
+
+    await device.open();
+    if (device.configuration === null) {
+      await device.selectConfiguration(1);
+    }
+
+    for (const iface of device.configuration.interfaces) {
+      try {
+        await device.claimInterface(iface.interfaceNumber);
+        for (const alt of iface.alternates) {
+          if (alt.interfaceClass === 7) {
+            await device.selectAlternateInterface(iface.interfaceNumber, alt.alternateSetting);
+            const endpointOut = alt.endpoints.find(ep => ep.direction === 'out');
+            if (endpointOut) {
+              await device.transferOut(endpointOut.endpointNumber, kickBytes);
+              try { await device.releaseInterface(iface.interfaceNumber); } catch (_) {}
+              return { status: 'success', message: 'Cash drawer opened via WebUSB' };
+            }
+          }
+        }
+        const endpointOut = iface.alternates[0]?.endpoints?.find(ep => ep.direction === 'out');
+        if (endpointOut) {
+          await device.transferOut(endpointOut.endpointNumber, kickBytes);
+          try { await device.releaseInterface(iface.interfaceNumber); } catch (_) {}
+          return { status: 'success', message: 'Cash drawer opened via WebUSB' };
+        }
+        try { await device.releaseInterface(iface.interfaceNumber); } catch (_) {}
+      } catch (_) {}
+    }
+
+    throw new Error('No suitable USB printer interface found');
+  } catch (err) {
+    _usbDevice = null;
+    throw err;
+  }
+}
+
+export async function openCashDrawerViaSerial(kickCodeStr) {
+  if (!isWebSerialSupported()) throw new Error('Web Serial API not supported on this device');
+
+  const parts = (kickCodeStr || '27,112,0,50,250').split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+  const kickBytes = new Uint8Array(parts.length ? parts : [0x1B, 0x70, 0x00, 0x32, 0xFA]);
+
+  const port = await navigator.serial.requestPort();
+  await port.open({ baudRate: 9600 });
+
+  const writer = port.writable.getWriter();
+  await writer.write(kickBytes);
+  writer.releaseLock();
+  await port.close();
+
+  return { status: 'success', message: 'Cash drawer opened via Web Serial' };
+}
+
 function bytesToBase64(bytes) {
   let binary = '';
   for (let i = 0; i < bytes.length; i++) {

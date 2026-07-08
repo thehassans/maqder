@@ -12,7 +12,7 @@ import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import { generateZatcaQrValue } from '../../lib/zatcaQr';
 import { getThermalPrinterSettings, getBodyWidthCss, getPageCss } from '../../lib/thermalPrinter';
-import { isAndroidPos, isAndroidDevice, detectBridge, printText as androidPrintText, openCashDrawer as androidOpenCashDrawer, openCashDrawerViaRaw, openCashDrawerViaSystemPrint, printViaSystemPrint, buildReceiptHtml } from '../../lib/androidPosPrinter';
+import { isAndroidPos, isAndroidDevice, detectBridge, isWebUsbSupported, isWebSerialSupported, printText as androidPrintText, openCashDrawer as androidOpenCashDrawer, openCashDrawerViaRaw, openCashDrawerViaWebUSB, openCashDrawerViaSerial, printViaSystemPrint, buildReceiptHtml } from '../../lib/androidPosPrinter';
 
 export default function BakalaPOS() {
   const navigate = useNavigate();
@@ -352,7 +352,17 @@ export default function BakalaPOS() {
       try { await openCashDrawerViaRaw(hw.cashDrawerKickCode); opened = true; } catch (e) { console.error('Bridge raw kick code failed:', e); }
     }
 
-    // 3. Try network backend ONLY for network printer type
+    // 3. Try WebUSB — direct USB connection to printer
+    if (!opened && isWebUsbSupported()) {
+      try { await openCashDrawerViaWebUSB(hw.cashDrawerKickCode); opened = true; } catch (e) { console.error('WebUSB cash drawer failed:', e); }
+    }
+
+    // 4. Try Web Serial API
+    if (!opened && isWebSerialSupported()) {
+      try { await openCashDrawerViaSerial(hw.cashDrawerKickCode); opened = true; } catch (e) { console.error('Web Serial cash drawer failed:', e); }
+    }
+
+    // 5. Try network backend ONLY for network printer type
     if (!opened && hw.receiptPrinterType === 'network' && hw.printerIpAddress) {
       try {
         await api.post('/tenants/test-cash-drawer', {
@@ -368,11 +378,11 @@ export default function BakalaPOS() {
 
     if (opened) {
       updateDeviceStatus('cashDrawer', 'connected');
-      toast.success('Cash drawer opened');
+      toast.success('Cash drawer connected');
     } else {
       updateDeviceStatus('cashDrawer', 'not_configured');
-      if (isAndroidDevice() && !bridge) {
-        toast('No JS bridge detected. Kick code will be appended to receipt prints to open the drawer.', { icon: '⚙️' });
+      if (isAndroidDevice() && !isWebUsbSupported() && !isWebSerialSupported() && !bridge) {
+        toast('Kick code will be appended to receipt prints to open the drawer.', { icon: '⚙️' });
       } else {
         toast('Cash drawer could not be opened directly. Kick code will be appended to receipt prints.', { icon: '⚙️' });
       }
@@ -637,7 +647,17 @@ export default function BakalaPOS() {
         try { await openCashDrawerViaRaw(hw.cashDrawerKickCode); drawerOpened = true; } catch (e) { console.error('Bridge raw kick code failed:', e); }
       }
 
-      // 3. Try network backend ONLY for network printer type
+      // 3. Try WebUSB — direct USB connection to printer
+      if (!drawerOpened && isWebUsbSupported()) {
+        try { await openCashDrawerViaWebUSB(hw.cashDrawerKickCode); drawerOpened = true; } catch (e) { console.error('WebUSB cash drawer failed:', e); }
+      }
+
+      // 4. Try Web Serial API
+      if (!drawerOpened && isWebSerialSupported()) {
+        try { await openCashDrawerViaSerial(hw.cashDrawerKickCode); drawerOpened = true; } catch (e) { console.error('Web Serial cash drawer failed:', e); }
+      }
+
+      // 5. Try network backend ONLY for network printer type
       if (!drawerOpened && hw.receiptPrinterType === 'network' && hw.printerIpAddress) {
         try {
           await api.post('/tenants/test-cash-drawer', {
@@ -652,7 +672,7 @@ export default function BakalaPOS() {
       }
 
       if (!drawerOpened) {
-        console.warn('Cash drawer could not be opened via bridge or network — kick code will be appended to receipt print');
+        console.warn('Cash drawer could not be opened via bridge, WebUSB, Serial, or network — kick code will be appended to receipt print');
       }
     }
 

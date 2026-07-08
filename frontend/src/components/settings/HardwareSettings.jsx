@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Printer, Box, Camera, Save, Receipt, Wifi, Loader2, CheckCircle2, XCircle, Send, Usb, Bluetooth, Zap, Smartphone } from 'lucide-react';
 import { useTranslation } from '../../lib/translations';
 import { DEFAULT_THERMAL_SETTINGS, PRINTER_MODELS, applyPrinterModel } from '../../lib/thermalPrinter';
-import { isAndroidPos, isAndroidDevice, detectBridge, getBridgeInfo, diagnoseBridge, testPrint as androidTestPrint, openCashDrawer as androidOpenCashDrawer, openCashDrawerViaRaw, openCashDrawerViaSystemPrint, printViaSystemPrint, buildReceiptHtml } from '../../lib/androidPosPrinter';
+import { isAndroidPos, isAndroidDevice, detectBridge, getBridgeInfo, diagnoseBridge, isWebUsbSupported, isWebSerialSupported, testPrint as androidTestPrint, openCashDrawer as androidOpenCashDrawer, openCashDrawerViaRaw, openCashDrawerViaWebUSB, openCashDrawerViaSerial, printViaSystemPrint, buildReceiptHtml } from '../../lib/androidPosPrinter';
 import api from '../../lib/api';
 
 export default function HardwareSettings({ tenant, language, onSave, isSaving }) {
@@ -328,7 +328,17 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
       try { await openCashDrawerViaRaw(hardware.cashDrawerKickCode); opened = true; } catch (e) { lastError = e; }
     }
 
-    // 3. Try network backend ONLY for network printer type
+    // 3. Try WebUSB — connect directly to USB printer and send raw kick code bytes
+    if (!opened && isWebUsbSupported()) {
+      try { await openCashDrawerViaWebUSB(hardware.cashDrawerKickCode); opened = true; } catch (e) { lastError = e; }
+    }
+
+    // 4. Try Web Serial API
+    if (!opened && isWebSerialSupported()) {
+      try { await openCashDrawerViaSerial(hardware.cashDrawerKickCode); opened = true; } catch (e) { lastError = e; }
+    }
+
+    // 5. Try network backend ONLY for network printer type
     if (!opened && hardware.receiptPrinterType === 'network' && hardware.printerIpAddress) {
       try {
         await api.post('/tenants/test-cash-drawer', {
@@ -342,12 +352,12 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
 
     if (opened) {
       setDrawerResult({ success: true, message: 'Cash drawer opened successfully' });
-    } else if (isAndroidDevice() && !bridge) {
-      setDrawerResult({ success: false, message: 'No JS bridge detected on this device. The cash drawer kick code will be appended to receipt prints instead — when you print a receipt, the kick code is sent to the printer which opens the drawer via the RJ-11 cable.' });
-    } else if (!bridge && !isAndroidDevice()) {
-      setDrawerResult({ success: false, message: 'No POS bridge or Android device detected. Cash drawer requires an Android POS terminal or network printer.' });
+    } else if (isAndroidDevice() && !isWebUsbSupported() && !isWebSerialSupported() && !bridge) {
+      setDrawerResult({ success: false, message: 'No bridge, WebUSB, or Serial API available. The kick code will be appended to receipt prints — when a receipt is printed, the kick code is sent to the printer which opens the drawer via RJ-11.' });
+    } else if (lastError?.message?.includes('No device selected') || lastError?.message?.includes('cancelled')) {
+      setDrawerResult({ success: false, message: 'Device selection was cancelled. Click Test again and select your USB printer.' });
     } else {
-      setDrawerResult({ success: false, message: lastError?.message || 'Could not open cash drawer. The kick code will be appended to receipt prints instead.' });
+      setDrawerResult({ success: false, message: lastError?.message || 'Could not open cash drawer.' });
     }
 
     setDrawerTesting(false);
@@ -830,6 +840,8 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
         {(() => {
           const diag = diagnoseBridge();
           const bridge = detectBridge();
+          const webusb = isWebUsbSupported();
+          const webserial = isWebSerialSupported();
           if (bridge) {
             const methods = [];
             if (bridge.methods.openCashDrawer) methods.push('openCashDrawer');
@@ -840,32 +852,35 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
                 <div className="font-semibold">{language === 'ar' ? 'الجسر متصل' : 'Bridge detected'}</div>
                 <div>{language === 'ar' ? 'الاسم' : 'Name'}: {bridge.name}</div>
                 <div>{language === 'ar' ? 'الطرق' : 'Methods'}: {methods.join(', ') || 'none'}</div>
+                <div>WebUSB: {webusb ? '✅' : '❌'} | Serial: {webserial ? '✅' : '❌'}</div>
               </div>
             );
-          } else if (diag.platform === 'android') {
+          } else if (diag.platform === 'android' || webusb || webserial) {
             return (
               <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-xs text-amber-700 dark:text-amber-300 space-y-2">
-                <div className="font-semibold">{language === 'ar' ? 'جهاز Android - لم يتم العثور على جسر' : 'Android device - no bridge detected'}</div>
-                <div>UA: {diag.userAgent}</div>
-                <div>WebView: {diag.isWebView ? 'Yes' : 'No'}</div>
-                {diag.bridges.length > 0 && (
-                  <div>
-                    <div className="font-semibold mt-1">{language === 'ar' ? 'كائنات مرتبطة بالطباعة' : 'Printer-related objects'}:</div>
-                    {diag.bridges.map(b => (
-                      <div key={b.name} className="ml-2 mt-1">
-                        <span className="font-mono font-bold">{b.name}</span>: {b.methods.length > 0 ? b.methods.join(', ') : '(no methods)'}
-                      </div>
-                    ))}
+                <div className="font-semibold">{language === 'ar' ? 'لا يوجد جسر JS' : 'No JS bridge detected'}</div>
+                <div>WebUSB: {webusb ? '✅ Available — will prompt to select USB printer' : '❌ Not available'}</div>
+                <div>Web Serial: {webserial ? '✅ Available' : '❌ Not available'}</div>
+                {diag.platform === 'android' && (
+                  <>
+                    <div>UA: {diag.userAgent}</div>
+                    <div>WebView: {diag.isWebView ? 'Yes' : 'No'}</div>
+                  </>
+                )}
+                {webusb && (
+                  <div className="mt-1 text-green-600 dark:text-green-400 font-semibold">
+                    {language === 'ar'
+                      ? 'WebUSB متاح! سيتم فتح الدرج عن طريق الاتصال المباشر بالطابعة USB.'
+                      : 'WebUSB available! Cash drawer will open by connecting directly to the USB printer.'}
                   </div>
                 )}
-                {diag.bridges.length === 0 && (
-                  <div>{language === 'ar' ? 'لا توجد كائنات مرتبطة بالطباعة في window' : 'No printer-related objects found on window'}</div>
+                {!webusb && !webserial && diag.platform === 'android' && (
+                  <div className="mt-1 text-amber-600 dark:text-amber-400">
+                    {language === 'ar'
+                      ? 'سيتم إضافة كود الفتح إلى إيصال الطباعة.'
+                      : 'Kick code will be appended to receipt prints.'}
+                  </div>
                 )}
-                <div className="mt-1 text-amber-600 dark:text-amber-400">
-                  {language === 'ar'
-                    ? 'سيتم استخدام طباعة النظام لإرسال كود الفتح كنص خام.'
-                    : 'System print will be used to send the kick code as raw text.'}
-                </div>
               </div>
             );
           }
