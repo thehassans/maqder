@@ -633,19 +633,21 @@ export function buildEscPosReceipt({ businessName, businessNameAr, items, total,
 }
 
 export function buildReceiptHtml({ businessName, businessNameAr, items, total, subtotal, tax, date, paymentMethod, paperWidth = 58, vatNumber, appendKickCode }) {
-  const widthMm = paperWidth === 58 ? '58mm' : '80mm';
-  const fontSize = paperWidth === 58 ? '11px' : '13px';
-  const headerSize = paperWidth === 58 ? '14px' : '16px';
-  const smallSize = paperWidth === 58 ? '9px' : '10px';
-  const padding = paperWidth === 58 ? '2mm' : '3mm';
+  const is58 = paperWidth === 58;
+  const widthMm = is58 ? '58mm' : '80mm';
+  const margin = is58 ? '2mm' : '3mm';
+  const bodyFont = is58 ? '8pt' : '10pt';
+  const headerFont = is58 ? '11pt' : '14pt';
+  const smallFont = is58 ? '7pt' : '8pt';
+  const totalFont = is58 ? '9pt' : '11pt';
 
   const itemsHtml = (items || []).map(i => {
     const name = i.name || 'Item';
     const price = i.price || '0.00';
-    return `<tr><td style="padding:1px 2px 1px 0;word-break:break-word;white-space:normal;font-size:${fontSize};">${name}</td><td style="text-align:right;padding:1px 0;white-space:nowrap;font-size:${fontSize};">${price}</td></tr>`;
+    return `<tr><td style="padding:1pt 1mm 1pt 0;font-size:${bodyFont};line-height:1.2;word-break:break-word;white-space:normal;">${name}</td><td style="text-align:right;padding:1pt 0;font-size:${bodyFont};line-height:1.2;white-space:nowrap;vertical-align:top;">${price}</td></tr>`;
   }).join('');
 
-  const dashedLine = '<div style="border-top:1px dashed #000;margin:4px 0;"></div>';
+  const sep = '<div style="border-top:1px solid #000;margin:3pt 0;"></div>';
 
   let kickCodeHtml = '';
   if (appendKickCode) {
@@ -662,32 +664,35 @@ export function buildReceiptHtml({ businessName, businessNameAr, items, total, s
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Receipt</title>
 <style>
-  @page { size: ${widthMm} auto; margin: 0; }
+  @page { size: ${widthMm} auto; margin: ${margin}; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { width: 100%; }
-  body { font-family: 'Courier New', monospace; font-size: ${fontSize}; color: #000; background: #fff; padding: ${padding}; -webkit-print-color-adjust: exact; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: ${bodyFont}; color: #000; background: #fff; line-height: 1.25; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-  td { vertical-align: top; word-break: break-word; }
-  .price-col { width: 35%; }
-  .name-col { width: 65%; }
+  td { vertical-align: top; }
+  .name-col { width: 62%; }
+  .price-col { width: 38%; }
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
 </style>
 </head>
 <body>
-  <div style="text-align:center;font-weight:bold;font-size:${headerSize};line-height:1.3;">${businessName || 'Maqder ERP'}</div>
-  ${businessNameAr ? `<div style="text-align:center;font-size:${fontSize};line-height:1.3;">${businessNameAr}</div>` : ''}
-  ${vatNumber ? `<div style="text-align:center;font-size:${smallSize};">VAT: ${vatNumber}</div>` : ''}
-  ${dashedLine}
-  <div style="text-align:center;font-weight:bold;font-size:${fontSize};">RECEIPT</div>
-  <div style="font-size:${smallSize};">Date: ${date || new Date().toLocaleString()}</div>
-  ${paymentMethod ? `<div style="font-size:${smallSize};">Payment: ${paymentMethod}</div>` : ''}
-  ${dashedLine}
-  ${itemsHtml ? `<table><colgroup><col class="name-col"><col class="price-col"></colgroup>${itemsHtml}</table>${dashedLine}` : ''}
-  ${subtotal ? `<table><tr><td style="padding:1px 0;font-size:${fontSize};">Subtotal</td><td style="text-align:right;padding:1px 0;white-space:nowrap;font-size:${fontSize};">${subtotal}</td></tr></table>` : ''}
-  ${tax ? `<table><tr><td style="padding:1px 0;font-size:${fontSize};">VAT</td><td style="text-align:right;padding:1px 0;white-space:nowrap;font-size:${fontSize};">${tax}</td></tr></table>` : ''}
-  ${total ? `<table><tr><td style="padding-top:4px;font-weight:bold;border-top:1px solid #000;font-size:${fontSize + 1}px;">TOTAL</td><td style="text-align:right;padding-top:4px;font-weight:bold;border-top:1px solid #000;white-space:nowrap;font-size:${fontSize + 1}px;">${total}</td></tr></table>` : ''}
-  ${dashedLine}
-  <div style="text-align:center;font-size:${smallSize};">Thank you!</div>
-  <div style="height:20px"></div>
+  <div style="text-align:center;font-weight:bold;font-size:${headerFont};line-height:1.2;">${businessName || 'Maqder ERP'}</div>
+  ${businessNameAr ? `<div style="text-align:center;font-size:${bodyFont};line-height:1.2;">${businessNameAr}</div>` : ''}
+  ${vatNumber ? `<div style="text-align:center;font-size:${smallFont};">VAT: ${vatNumber}</div>` : ''}
+  ${sep}
+  <div style="text-align:center;font-weight:bold;font-size:${bodyFont};">RECEIPT</div>
+  <div style="font-size:${smallFont};">Date: ${date || new Date().toLocaleString()}</div>
+  ${paymentMethod ? `<div style="font-size:${smallFont};">Payment: ${paymentMethod}</div>` : ''}
+  ${sep}
+  ${itemsHtml ? `<table><colgroup><col class="name-col"><col class="price-col"></colgroup>${itemsHtml}</table>${sep}` : ''}
+  ${subtotal ? `<table><tr><td style="padding:1pt 0;font-size:${bodyFont};">Subtotal</td><td style="text-align:right;padding:1pt 0;font-size:${bodyFont};white-space:nowrap;">${subtotal}</td></tr></table>` : ''}
+  ${tax ? `<table><tr><td style="padding:1pt 0;font-size:${bodyFont};">VAT</td><td style="text-align:right;padding:1pt 0;font-size:${bodyFont};white-space:nowrap;">${tax}</td></tr></table>` : ''}
+  ${total ? `<table><tr><td style="padding-top:3pt;font-weight:bold;border-top:1px solid #000;font-size:${totalFont};">TOTAL</td><td style="text-align:right;padding-top:3pt;font-weight:bold;border-top:1px solid #000;font-size:${totalFont};white-space:nowrap;">${total}</td></tr></table>` : ''}
+  ${sep}
+  <div style="text-align:center;font-size:${smallFont};">Thank you!</div>
+  <div style="height:15pt"></div>
   ${kickCodeHtml}
 </body>
 </html>`;
