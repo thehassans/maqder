@@ -231,30 +231,7 @@ export async function openCashDrawerViaSystemPrint(kickCodeStr) {
 </head>
 <body>${rawText}</body>
 </html>`;
-
-  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const w = window.open(url, '_blank', 'width=400,height=600');
-  if (!w) {
-    URL.revokeObjectURL(url);
-    throw new Error('Pop-up blocked. Allow pop-ups to open cash drawer.');
-  }
-
-  return new Promise((resolve) => {
-    let resolved = false;
-    const done = (r) => {
-      if (resolved) return;
-      resolved = true;
-      URL.revokeObjectURL(url);
-      try { w.close(); } catch (_) {}
-      resolve(r);
-    };
-
-    w.onload = () => {
-      try { w.focus(); w.print(); } catch (e) { console.error('Cash drawer print failed:', e); }
-    };
-    setTimeout(() => done({ status: 'success', message: 'Cash drawer print dialog triggered' }), 8000);
-  });
+  return printViaSystemPrint(html);
 }
 
 export function isWebUsbSupported() {
@@ -712,47 +689,81 @@ export function buildReceiptHtml({ businessName, businessNameAr, items, total, s
 export function printViaSystemPrint(html) {
   return new Promise((resolve, reject) => {
     try {
-      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
+      // Approach 1: Open a new window with just the receipt — most reliable for printing
+      const w = window.open('', '_blank', 'width=320,height=600');
+      if (w) {
+        w.document.open();
+        w.document.write(html);
+        w.document.close();
 
-      const w = window.open(url, '_blank', 'width=400,height=600,scrollbars=yes');
-      if (!w) {
-        URL.revokeObjectURL(url);
-        reject(new Error('Pop-up blocked. Allow pop-ups for this site to print receipts.'));
+        const triggerPrint = () => {
+          try {
+            w.focus();
+            w.print();
+          } catch (_) {}
+          // Close window after print dialog
+          setTimeout(() => {
+            try { w.close(); } catch (_) {}
+            resolve({ status: 'success', message: 'Print dialog triggered' });
+          }, 8000);
+        };
+
+        // Wait for the new window to render, then print
+        if (w.document.readyState === 'complete') {
+          setTimeout(triggerPrint, 300);
+        } else {
+          w.onload = () => setTimeout(triggerPrint, 300);
+          setTimeout(triggerPrint, 1000); // fallback
+        }
         return;
       }
 
-      let resolved = false;
+      // Approach 2: Body swap with forced reflow + delay (fallback if window.open blocked)
+      let bodyContent = html;
+      let headContent = '';
+      const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+      if (bodyMatch) bodyContent = bodyMatch[1];
+      const headMatch = html.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
+      if (headMatch) headContent = headMatch[1];
 
-      const cleanup = () => {
-        if (resolved) return;
-        resolved = true;
-        URL.revokeObjectURL(url);
-        try { w.close(); } catch (_) {}
+      const originalHead = document.head.innerHTML;
+      const originalBody = document.body.innerHTML;
+      const originalBodyClass = document.body.className;
+      const originalBodyStyle = document.body.getAttribute('style') || '';
+
+      document.head.innerHTML = headContent;
+      document.body.innerHTML = bodyContent;
+      document.body.className = '';
+      document.body.setAttribute('style', 'margin:0;padding:0;background:#fff;');
+
+      // Force reflow so browser commits DOM changes before printing
+      void document.body.offsetHeight;
+
+      const restore = () => {
+        document.head.innerHTML = originalHead;
+        document.body.innerHTML = originalBody;
+        document.body.className = originalBodyClass;
+        document.body.setAttribute('style', originalBodyStyle);
+        void document.body.offsetHeight;
       };
 
       const onAfterPrint = () => {
-        if (resolved) return;
         window.removeEventListener('afterprint', onAfterPrint);
-        cleanup();
+        restore();
         resolve({ status: 'success', message: 'Print dialog triggered' });
       };
       window.addEventListener('afterprint', onAfterPrint);
 
-      w.onload = () => {
-        try {
-          w.focus();
-          w.print();
-        } catch (e) {
-          console.error('Print from new window failed:', e);
-        }
-      };
-
+      // Delay to ensure browser has rendered the new content before printing
       setTimeout(() => {
-        cleanup();
-        window.removeEventListener('afterprint', onAfterPrint);
-        resolve({ status: 'success', message: 'Print dialog triggered' });
-      }, 8000);
+        window.focus();
+        window.print();
+        setTimeout(() => {
+          window.removeEventListener('afterprint', onAfterPrint);
+          restore();
+          resolve({ status: 'success', message: 'Print dialog triggered' });
+        }, 8000);
+      }, 400);
     } catch (err) {
       reject(err);
     }
