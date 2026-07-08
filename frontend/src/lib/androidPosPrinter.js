@@ -541,7 +541,7 @@ export function buildEscPosReceipt({ businessName, businessNameAr, items, total,
   return new Uint8Array(allBytes);
 }
 
-export function buildReceiptHtml({ businessName, businessNameAr, items, total, subtotal, tax, date, paymentMethod, paperWidth = 58, vatNumber }) {
+export function buildReceiptHtml({ businessName, businessNameAr, items, total, subtotal, tax, date, paymentMethod, paperWidth = 58, vatNumber, appendKickCode }) {
   const widthMm = paperWidth === 58 ? '58mm' : '80mm';
   const fontSize = paperWidth === 58 ? '9px' : '11px';
   const chars = paperWidth === 58 ? 32 : 48;
@@ -553,6 +553,14 @@ export function buildReceiptHtml({ businessName, businessNameAr, items, total, s
   }).join('');
 
   const dashedLine = '<div style="border-top:1px dashed #000;margin:4px 0;"></div>';
+
+  let kickCodeHtml = '';
+  if (appendKickCode) {
+    const parts = appendKickCode.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+    let rawText = '';
+    for (const b of parts) rawText += String.fromCharCode(b);
+    kickCodeHtml = `<pre style="font-size:1px;line-height:1px;margin:0;padding:0;color:#000;overflow:hidden;">${rawText}</pre>`;
+  }
 
   return `<!DOCTYPE html>
 <html>
@@ -582,6 +590,7 @@ export function buildReceiptHtml({ businessName, businessNameAr, items, total, s
   ${dashedLine}
   <div style="text-align:center;">Thank you!</div>
   <div style="height:20px"></div>
+  ${kickCodeHtml}
 </body>
 </html>`;
 }

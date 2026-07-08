@@ -328,12 +328,7 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
       try { await openCashDrawerViaRaw(hardware.cashDrawerKickCode); opened = true; } catch (e) { lastError = e; }
     }
 
-    // 3. Try sending kick code via Android system print service (raw text)
-    if (!opened && isAndroidDevice()) {
-      try { await openCashDrawerViaSystemPrint(hardware.cashDrawerKickCode); opened = true; } catch (e) { lastError = e; }
-    }
-
-    // 4. Try network backend ONLY for network printer type
+    // 3. Try network backend ONLY for network printer type
     if (!opened && hardware.receiptPrinterType === 'network' && hardware.printerIpAddress) {
       try {
         await api.post('/tenants/test-cash-drawer', {
@@ -347,10 +342,12 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
 
     if (opened) {
       setDrawerResult({ success: true, message: 'Cash drawer opened successfully' });
+    } else if (isAndroidDevice() && !bridge) {
+      setDrawerResult({ success: false, message: 'No JS bridge detected on this device. The cash drawer kick code will be appended to receipt prints instead — when you print a receipt, the kick code is sent to the printer which opens the drawer via the RJ-11 cable.' });
     } else if (!bridge && !isAndroidDevice()) {
-      setDrawerResult({ success: false, message: 'No POS bridge or Android device detected. Cash drawer requires an Android POS terminal.' });
+      setDrawerResult({ success: false, message: 'No POS bridge or Android device detected. Cash drawer requires an Android POS terminal or network printer.' });
     } else {
-      setDrawerResult({ success: false, message: lastError?.message || 'Could not open cash drawer. Check the diagnostic info below.' });
+      setDrawerResult({ success: false, message: lastError?.message || 'Could not open cash drawer. The kick code will be appended to receipt prints instead.' });
     }
 
     setDrawerTesting(false);

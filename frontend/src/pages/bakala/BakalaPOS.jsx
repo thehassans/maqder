@@ -352,12 +352,7 @@ export default function BakalaPOS() {
       try { await openCashDrawerViaRaw(hw.cashDrawerKickCode); opened = true; } catch (e) { console.error('Bridge raw kick code failed:', e); }
     }
 
-    // 3. Try system print kick code (raw text via Android print service)
-    if (!opened && isAndroidDevice()) {
-      try { await openCashDrawerViaSystemPrint(hw.cashDrawerKickCode); opened = true; } catch (e) { console.error('System print kick code failed:', e); }
-    }
-
-    // 4. Try network backend ONLY for network printer type
+    // 3. Try network backend ONLY for network printer type
     if (!opened && hw.receiptPrinterType === 'network' && hw.printerIpAddress) {
       try {
         await api.post('/tenants/test-cash-drawer', {
@@ -376,10 +371,10 @@ export default function BakalaPOS() {
       toast.success('Cash drawer opened');
     } else {
       updateDeviceStatus('cashDrawer', 'not_configured');
-      if (!bridge && !isAndroidDevice()) {
-        toast('Cash drawer requires an Android POS terminal.', { icon: '⚙️' });
+      if (isAndroidDevice() && !bridge) {
+        toast('No JS bridge detected. Kick code will be appended to receipt prints to open the drawer.', { icon: '⚙️' });
       } else {
-        toast('Cash drawer could not be opened. Check Settings > Hardware for diagnostics.', { icon: '⚙️' });
+        toast('Cash drawer could not be opened directly. Kick code will be appended to receipt prints.', { icon: '⚙️' });
       }
     }
   };
@@ -628,9 +623,9 @@ export default function BakalaPOS() {
     // Auto open cash drawer on cash payment
     const hasCashComponent = paymentMethod === 'cash' || (paymentMethod === 'split' && Array.isArray(payments) && payments.some(p => p.method === 'cash' && Number(p.amount) > 0));
     const shouldOpenDrawer = hasCashComponent && hw.openCashDrawerOnCashPayment !== false;
+    let drawerOpened = false;
     if (shouldOpenDrawer) {
       const bridge = detectBridge();
-      let drawerOpened = false;
 
       // 1. Try Android bridge dedicated openCashDrawer method
       if (bridge && bridge.methods.openCashDrawer) {
@@ -642,12 +637,7 @@ export default function BakalaPOS() {
         try { await openCashDrawerViaRaw(hw.cashDrawerKickCode); drawerOpened = true; } catch (e) { console.error('Bridge raw kick code failed:', e); }
       }
 
-      // 3. Try sending kick code via Android system print service (raw text)
-      if (!drawerOpened && isAndroidDevice()) {
-        try { await openCashDrawerViaSystemPrint(hw.cashDrawerKickCode); drawerOpened = true; } catch (e) { console.error('System print kick code failed:', e); }
-      }
-
-      // 4. Try network backend ONLY for network printer type
+      // 3. Try network backend ONLY for network printer type
       if (!drawerOpened && hw.receiptPrinterType === 'network' && hw.printerIpAddress) {
         try {
           await api.post('/tenants/test-cash-drawer', {
@@ -662,12 +652,14 @@ export default function BakalaPOS() {
       }
 
       if (!drawerOpened) {
-        console.warn('Cash drawer could not be opened — no working method found');
+        console.warn('Cash drawer could not be opened via bridge or network — kick code will be appended to receipt print');
       }
     }
 
     // Auto-print receipt: always for cash, otherwise only if autoPrint is enabled
     const shouldAutoPrint = paymentMethod === 'cash' || thermal.autoPrint;
+    // If drawer didn't open and should have, append kick code to receipt print
+    const kickCodeForReceipt = (shouldOpenDrawer && !drawerOpened) ? hw.cashDrawerKickCode : null;
     if (shouldAutoPrint) {
       let printed = false;
       if (hw.receiptPrinterType === 'android' && isAndroidPos()) {
@@ -675,7 +667,7 @@ export default function BakalaPOS() {
         try { await androidPrintText(receiptText); printed = true; } catch (e) { console.error('Android bridge print failed:', e); }
       }
       if (!printed && (hw.receiptPrinterType === 'android_system_print' || isAndroidDevice())) {
-        const html = buildAndroidReceiptHtml(invoice, paymentMethod, tenant, thermal);
+        const html = buildAndroidReceiptHtml(invoice, paymentMethod, tenant, thermal, kickCodeForReceipt);
         try { await printViaSystemPrint(html); printed = true; } catch (e) { console.error('System print failed:', e); }
       }
       if (!printed && hw.receiptPrinterType === 'network' && hw.printerIpAddress) {
@@ -792,7 +784,7 @@ export default function BakalaPOS() {
     return text;
   };
 
-  const buildAndroidReceiptHtml = (order, paymentMethod, tenant, thermal) => {
+  const buildAndroidReceiptHtml = (order, paymentMethod, tenant, thermal, appendKickCode) => {
     const businessNameEn = tenant?.business?.legalNameEn || tenant?.name || 'Maqder POS';
     const businessNameAr = tenant?.business?.legalNameAr || tenant?.name || 'مقدر نقاط البيع';
     const vatNumber = tenant?.business?.vatNumber || '';
@@ -818,6 +810,7 @@ export default function BakalaPOS() {
       subtotal: 'SAR ' + (order.subtotal || 0).toFixed(2),
       tax: 'SAR ' + (order.totalTax || 0).toFixed(2),
       total: 'SAR ' + (order.grandTotal || 0).toFixed(2),
+      appendKickCode,
     });
   };
 
