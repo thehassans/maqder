@@ -231,7 +231,30 @@ export async function openCashDrawerViaSystemPrint(kickCodeStr) {
 </head>
 <body>${rawText}</body>
 </html>`;
-  return printViaSystemPrint(html);
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const w = window.open(url, '_blank', 'width=400,height=600');
+  if (!w) {
+    URL.revokeObjectURL(url);
+    throw new Error('Pop-up blocked. Allow pop-ups to open cash drawer.');
+  }
+
+  return new Promise((resolve) => {
+    let resolved = false;
+    const done = (r) => {
+      if (resolved) return;
+      resolved = true;
+      URL.revokeObjectURL(url);
+      try { w.close(); } catch (_) {}
+      resolve(r);
+    };
+
+    w.onload = () => {
+      try { w.focus(); w.print(); } catch (e) { console.error('Cash drawer print failed:', e); }
+    };
+    setTimeout(() => done({ status: 'success', message: 'Cash drawer print dialog triggered' }), 8000);
+  });
 }
 
 export function isWebUsbSupported() {
@@ -689,48 +712,47 @@ export function buildReceiptHtml({ businessName, businessNameAr, items, total, s
 export function printViaSystemPrint(html) {
   return new Promise((resolve, reject) => {
     try {
-      // Extract body content from the full HTML document
-      let bodyContent = html;
-      let headContent = '';
-      const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-      if (bodyMatch) bodyContent = bodyMatch[1];
-      const headMatch = html.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
-      if (headMatch) headContent = headMatch[1];
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
 
-      // Save original page content
-      const originalHead = document.head.innerHTML;
-      const originalBody = document.body.innerHTML;
-      const originalBodyClass = document.body.className;
-      const originalBodyStyle = document.body.getAttribute('style') || '';
+      const w = window.open(url, '_blank', 'width=400,height=600,scrollbars=yes');
+      if (!w) {
+        URL.revokeObjectURL(url);
+        reject(new Error('Pop-up blocked. Allow pop-ups for this site to print receipts.'));
+        return;
+      }
 
-      // Replace entire page with just the receipt
-      document.head.innerHTML = headContent;
-      document.body.innerHTML = bodyContent;
-      document.body.className = '';
-      document.body.setAttribute('style', 'margin:0;padding:0;background:#fff;');
+      let resolved = false;
 
-      const restore = () => {
-        document.head.innerHTML = originalHead;
-        document.body.innerHTML = originalBody;
-        document.body.className = originalBodyClass;
-        document.body.setAttribute('style', originalBodyStyle);
+      const cleanup = () => {
+        if (resolved) return;
+        resolved = true;
+        URL.revokeObjectURL(url);
+        try { w.close(); } catch (_) {}
       };
 
       const onAfterPrint = () => {
+        if (resolved) return;
         window.removeEventListener('afterprint', onAfterPrint);
-        restore();
+        cleanup();
         resolve({ status: 'success', message: 'Print dialog triggered' });
       };
       window.addEventListener('afterprint', onAfterPrint);
 
-      window.focus();
-      window.print();
+      w.onload = () => {
+        try {
+          w.focus();
+          w.print();
+        } catch (e) {
+          console.error('Print from new window failed:', e);
+        }
+      };
 
       setTimeout(() => {
+        cleanup();
         window.removeEventListener('afterprint', onAfterPrint);
-        restore();
         resolve({ status: 'success', message: 'Print dialog triggered' });
-      }, 5000);
+      }, 8000);
     } catch (err) {
       reject(err);
     }
