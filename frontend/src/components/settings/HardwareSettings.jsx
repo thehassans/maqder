@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Printer, Box, Camera, Save, Receipt, Wifi, Loader2, CheckCircle2, XCircle, Send, Usb, Bluetooth, Zap, Smartphone } from 'lucide-react';
 import { useTranslation } from '../../lib/translations';
 import { DEFAULT_THERMAL_SETTINGS, PRINTER_MODELS, applyPrinterModel } from '../../lib/thermalPrinter';
-import { isAndroidPos, detectBridge, getBridgeInfo, testPrint as androidTestPrint, openCashDrawer as androidOpenCashDrawer } from '../../lib/androidPosPrinter';
+import { isAndroidPos, isAndroidDevice, detectBridge, getBridgeInfo, testPrint as androidTestPrint, openCashDrawer as androidOpenCashDrawer, printViaSystemPrint, buildReceiptHtml } from '../../lib/androidPosPrinter';
 import api from '../../lib/api';
 
 export default function HardwareSettings({ tenant, language, onSave, isSaving }) {
@@ -259,6 +259,32 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
     }
   };
 
+  const handleTestSystemPrint = async () => {
+    setAndroidTesting(true);
+    setAndroidResult(null);
+    try {
+      const html = buildReceiptHtml({
+        businessName: tenant?.business?.legalNameEn || tenant?.name || 'Maqder ERP',
+        businessNameAr: tenant?.business?.legalNameAr || '',
+        paperWidth: thermal.paperWidth,
+        date: new Date().toLocaleString(),
+        items: [
+          { name: 'Item 1', price: 'SAR 10.00' },
+          { name: 'Item 2', price: 'SAR 15.00' },
+        ],
+        subtotal: 'SAR 25.00',
+        tax: 'SAR 0.00',
+        total: 'SAR 25.00',
+      });
+      await printViaSystemPrint(html);
+      setAndroidResult({ success: true, message: 'Print dialog triggered — select your built-in printer' });
+    } catch (err) {
+      setAndroidResult({ success: false, message: err.message || 'Failed to trigger system print' });
+    } finally {
+      setAndroidTesting(false);
+    }
+  };
+
   const handleTestAndroidCashDrawer = async () => {
     setAndroidDrawerTesting(true);
     setAndroidDrawerResult(null);
@@ -279,6 +305,8 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
       await handleTestThermalPrint();
     } else if (hardware.receiptPrinterType === 'android') {
       await handleTestAndroidPrint();
+    } else if (hardware.receiptPrinterType === 'android_system_print') {
+      await handleTestSystemPrint();
     }
   };
 
@@ -354,6 +382,7 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
               <option value="usb">{language === 'ar' ? 'طابعة USB' : 'USB Printer'}</option>
               <option value="bluetooth">{language === 'ar' ? 'طابعة بلوتوث' : 'Bluetooth Printer'}</option>
               <option value="android">{language === 'ar' ? 'جهاز POS أندرويد (مدمج)' : 'Android POS (Built-in)'}</option>
+              <option value="android_system_print">{language === 'ar' ? 'طباعة نظام أندرويد' : 'Android System Print'}</option>
             </select>
           </div>
 
@@ -570,6 +599,49 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
                 <div className={`flex items-center gap-2 text-sm font-semibold ${androidDrawerResult.success ? 'text-green-600' : 'text-red-600'}`}>
                   {androidDrawerResult.success ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
                   {androidDrawerResult.message}
+                </div>
+              )}
+            </div>
+          )}
+
+          {hardware.receiptPrinterType === 'android_system_print' && (
+            <div className="md:col-span-2 space-y-4">
+              <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center gap-2 mb-1">
+                  <Smartphone className="w-5 h-5 text-blue-600" />
+                  <span className="font-semibold text-sm">
+                    {language === 'ar' ? 'طباعة نظام أندرويد' : 'Android System Print'}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  {language === 'ar'
+                    ? 'يستخدم خدمة الطباعة الافتراضية في أندرويد. سيظهر مربع حوار الطباعة — اختر الطابعة المدمجة لجهاز POS.'
+                    : 'Uses the Android default print service. A print dialog will appear — select your POS built-in printer.'}
+                </p>
+                {isAndroidDevice() && (
+                  <p className="text-xs text-green-600 mt-1">
+                    {language === 'ar' ? 'تم اكتشاف جهاز أندرويد' : 'Android device detected'}
+                  </p>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={handleTestSystemPrint}
+                disabled={androidTesting}
+                className="btn btn-outline text-sm gap-2"
+              >
+                {androidTesting ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> {language === 'ar' ? 'جاري الإرسال...' : 'Sending...'}</>
+                ) : (
+                  <><Smartphone className="w-4 h-4" /> {language === 'ar' ? 'اختبار الطباعة' : 'Test Print'}</>
+                )}
+              </button>
+
+              {androidResult && (
+                <div className={`flex items-center gap-2 text-sm font-semibold ${androidResult.success ? 'text-green-600' : 'text-red-600'}`}>
+                  {androidResult.success ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                  {androidResult.message}
                 </div>
               )}
             </div>
@@ -847,7 +919,7 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
       </div>
 
       <div className="flex justify-end gap-3">
-        {(hardware.receiptPrinterType === 'network' || hardware.receiptPrinterType === 'android') && (
+        {(hardware.receiptPrinterType === 'network' || hardware.receiptPrinterType === 'android' || hardware.receiptPrinterType === 'android_system_print') && (
           <button onClick={handleTestAll} disabled={testing || printTesting || androidTesting || isSaving} className="btn btn-outline text-sm gap-2">
             {(testing || printTesting || androidTesting) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
             {language === 'ar' ? 'اختبار الكل وحفظ' : 'Test All & Save'}

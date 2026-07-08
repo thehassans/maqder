@@ -12,7 +12,7 @@ import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import { generateZatcaQrValue } from '../../lib/zatcaQr';
 import { getThermalPrinterSettings, getBodyWidthCss, getPageCss } from '../../lib/thermalPrinter';
-import { isAndroidPos, printText as androidPrintText, openCashDrawer as androidOpenCashDrawer } from '../../lib/androidPosPrinter';
+import { isAndroidPos, isAndroidDevice, printText as androidPrintText, openCashDrawer as androidOpenCashDrawer, printViaSystemPrint, buildReceiptHtml } from '../../lib/androidPosPrinter';
 
 export default function BakalaPOS() {
   const navigate = useNavigate();
@@ -600,6 +600,9 @@ export default function BakalaPOS() {
       if (hw.receiptPrinterType === 'android' && isAndroidPos()) {
         const receiptText = buildAndroidReceiptText(invoice, paymentMethod, tenant, thermal);
         try { await androidPrintText(receiptText); } catch (e) { console.error('Android print failed:', e); printReceipt(invoice, paymentMethod); }
+      } else if (hw.receiptPrinterType === 'android_system_print') {
+        const html = buildAndroidReceiptHtml(invoice, paymentMethod, tenant, thermal);
+        try { await printViaSystemPrint(html); } catch (e) { console.error('System print failed:', e); printReceipt(invoice, paymentMethod); }
       } else if (hw.receiptPrinterType === 'network' && hw.printerIpAddress) {
         // Send ESC/POS receipt directly to network printer
         printReceiptESCPOS(invoice, paymentMethod, hw, thermal);
@@ -702,6 +705,38 @@ export default function BakalaPOS() {
     text += '\n\n\n';
 
     return text;
+  };
+
+  const buildAndroidReceiptHtml = (order, paymentMethod, tenant, thermal) => {
+    const businessNameEn = tenant?.business?.legalNameEn || tenant?.name || 'Maqder POS';
+    const businessNameAr = tenant?.business?.legalNameAr || tenant?.name || 'مقدر نقاط البيع';
+    const vatNumber = tenant?.business?.vatNumber || '';
+    const dateStr = new Date().toLocaleString('en-US');
+    const items = order.lineItems || [];
+    const pmLabel = paymentMethod === 'cash' ? 'Cash' : paymentMethod === 'card' ? 'Card' : paymentMethod === 'split' ? 'Split' : paymentMethod === 'khata' ? 'Khata' : String(paymentMethod);
+
+    const itemRows = items.map(i => {
+      const name = (i.productName || i.productNameAr || 'Item');
+      const price = (i.lineTotalWithTax || 0).toFixed(2);
+      const qty = i.quantity || 1;
+      return `<tr><td>${name}<br><small>x${qty} @ ${(i.unitPrice || 0).toFixed(2)}</small></td><td style="text-align:right">SAR ${price}</td></tr>`;
+    }).join('');
+
+    return buildReceiptHtml({
+      businessName: businessNameEn,
+      businessNameAr,
+      vatNumber,
+      date: dateStr,
+      paymentMethod: pmLabel,
+      paperWidth: thermal.paperWidth,
+      items: items.map(i => ({
+        name: `${i.productName || i.productNameAr || 'Item'} x${i.quantity || 1}`,
+        price: 'SAR ' + (i.lineTotalWithTax || 0).toFixed(2),
+      })),
+      subtotal: 'SAR ' + (order.subtotal || 0).toFixed(2),
+      tax: 'SAR ' + (order.totalTax || 0).toFixed(2),
+      total: 'SAR ' + (order.grandTotal || 0).toFixed(2),
+    });
   };
 
   const printReceipt = (order, paymentMethod = 'cash') => {

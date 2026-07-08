@@ -17,6 +17,7 @@
 const BRIDGE_NAMES = [
   'Android',
   'AndroidJS',
+  'AndroidPrinter',
   'ReceiptChannel',
   'PrintInterface',
   'pos',
@@ -27,6 +28,19 @@ const BRIDGE_NAMES = [
   'printer',
   'JsBridge',
   'WebViewJavascriptBridge',
+  'DM',
+  'Dm',
+  'sunmi',
+  'SunmiPrinter',
+  'sunmiPrinter',
+  'JsPrint',
+  'jsPrint',
+  'NativePrinter',
+  'nativePrinter',
+  'ThermalPrinter',
+  'thermalPrinter',
+  'WoyouService',
+  'woyouService',
 ];
 
 let _cachedBridge = undefined;
@@ -109,6 +123,12 @@ export function detectBridge() {
 
 export function isAndroidPos() {
   return isAndroidWebView() && !!detectBridge();
+}
+
+export function isAndroidDevice() {
+  if (typeof window === 'undefined') return false;
+  const ua = (window.navigator?.userAgent || '').toLowerCase();
+  return ua.includes('android');
 }
 
 export function getBridgeInfo() {
@@ -395,38 +415,168 @@ export function buildEscPosReceipt({ businessName, businessNameAr, items, total,
   return new Uint8Array(allBytes);
 }
 
+export function buildReceiptHtml({ businessName, businessNameAr, items, total, subtotal, tax, date, paymentMethod, paperWidth = 58, vatNumber }) {
+  const widthMm = paperWidth === 58 ? '58mm' : '80mm';
+  const fontSize = paperWidth === 58 ? '9px' : '11px';
+  const chars = paperWidth === 58 ? 32 : 48;
+
+  const itemsHtml = (items || []).map(i => {
+    const name = (i.name || '').substring(0, chars - 10);
+    const price = (i.price || '0.00').padStart(10);
+    return `<tr><td style="font-size:${fontSize}">${name}</td><td style="font-size:${fontSize};text-align:right">${price}</td></tr>`;
+  }).join('');
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Receipt</title>
+<style>
+  @page { size: ${widthMm} auto; margin: 2mm; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: ${widthMm}; font-family: 'Courier New', monospace; font-size: ${fontSize}; color: #000; }
+  .center { text-align: center; }
+  .bold { font-weight: bold; }
+  .divider { border-top: 1px dashed #000; margin: 4px 0; }
+  table { width: 100%; border-collapse: collapse; }
+  td { vertical-align: top; white-space: nowrap; }
+  .total-row td { font-weight: bold; border-top: 1px solid #000; padding-top: 2px; }
+  @media print { body { width: ${widthMm}; } }
+</style>
+</head>
+<body>
+  <div class="center bold" style="font-size:${paperWidth === 58 ? '12px' : '14px'}">${businessName || 'Maqder ERP'}</div>
+  ${businessNameAr ? `<div class="center">${businessNameAr}</div>` : ''}
+  ${vatNumber ? `<div class="center">VAT: ${vatNumber}</div>` : ''}
+  <div class="divider"></div>
+  <div class="center">TEST RECEIPT</div>
+  <div>Date: ${date || new Date().toLocaleString()}</div>
+  ${paymentMethod ? `<div>Payment: ${paymentMethod}</div>` : ''}
+  <div class="divider"></div>
+  ${itemsHtml ? `<table>${itemsHtml}</table><div class="divider"></div>` : ''}
+  ${subtotal ? `<table><tr><td>Subtotal</td><td style="text-align:right">${subtotal}</td></tr></table>` : ''}
+  ${tax ? `<table><tr><td>VAT</td><td style="text-align:right">${tax}</td></tr></table>` : ''}
+  ${total ? `<table><tr class="total-row"><td>TOTAL</td><td style="text-align:right">${total}</td></tr></table>` : ''}
+  <div class="divider"></div>
+  <div class="center">If you can read this,<br>your printer works!</div>
+  <div style="height:20px"></div>
+</body>
+</html>`;
+}
+
+export function printViaSystemPrint(html) {
+  return new Promise((resolve, reject) => {
+    try {
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+      iframe.style.overflow = 'hidden';
+      document.body.appendChild(iframe);
+
+      const doc = iframe.contentWindow.document;
+      doc.open();
+      doc.write(html);
+      doc.close();
+
+      iframe.onload = () => {
+        try {
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+          setTimeout(() => {
+            document.body.removeChild(iframe);
+            resolve({ status: 'success', message: 'Print dialog triggered via Android system print service' });
+          }, 1000);
+        } catch (e) {
+          document.body.removeChild(iframe);
+          reject(e);
+        }
+      };
+
+      setTimeout(() => {
+        try {
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+          setTimeout(() => {
+            try { document.body.removeChild(iframe); } catch (_) {}
+            resolve({ status: 'success', message: 'Print dialog triggered via Android system print service' });
+          }, 1000);
+        } catch (e) {
+          try { document.body.removeChild(iframe); } catch (_) {}
+          reject(e);
+        }
+      }, 300);
+    } catch (err) {
+      reject(err);
+    }
+  });
+}
+
 export async function testPrint(options = {}) {
   const bridge = detectBridge();
-  if (!bridge) {
-    return {
-      success: false,
-      message: 'No Android POS printer bridge detected. Make sure you are running inside the POS device WebView.',
-    };
-  }
 
-  try {
-    const bytes = buildEscPosReceipt({
-      businessName: options.businessName || 'Maqder ERP',
-      businessNameAr: options.businessNameAr || '',
-      paperWidth: options.paperWidth || 58,
-      date: new Date().toLocaleString(),
-    });
+  if (bridge) {
+    try {
+      const bytes = buildEscPosReceipt({
+        businessName: options.businessName || 'Maqder ERP',
+        businessNameAr: options.businessNameAr || '',
+        paperWidth: options.paperWidth || 58,
+        date: new Date().toLocaleString(),
+      });
 
-    if (bridge.methods.printRaw) {
-      await printRaw(bytes);
-    } else {
-      const text = new TextDecoder('utf-8').decode(bytes);
-      await printText(text);
+      if (bridge.methods.printRaw) {
+        await printRaw(bytes);
+      } else {
+        const text = new TextDecoder('utf-8').decode(bytes);
+        await printText(text);
+      }
+
+      return {
+        success: true,
+        message: `Test receipt printed via ${bridge.name} bridge`,
+      };
+    } catch (err) {
+      return {
+        success: false,
+        message: err.message || 'Failed to print test receipt',
+      };
     }
-
-    return {
-      success: true,
-      message: `Test receipt printed via ${bridge.name} bridge`,
-    };
-  } catch (err) {
-    return {
-      success: false,
-      message: err.message || 'Failed to print test receipt',
-    };
   }
+
+  if (isAndroidDevice() || typeof window !== 'undefined') {
+    try {
+      const html = buildReceiptHtml({
+        businessName: options.businessName || 'Maqder ERP',
+        businessNameAr: options.businessNameAr || '',
+        paperWidth: options.paperWidth || 58,
+        date: new Date().toLocaleString(),
+        items: [
+          { name: 'Item 1', price: 'SAR 10.00' },
+          { name: 'Item 2', price: 'SAR 15.00' },
+        ],
+        subtotal: 'SAR 25.00',
+        tax: 'SAR 0.00',
+        total: 'SAR 25.00',
+      });
+      await printViaSystemPrint(html);
+      return {
+        success: true,
+        message: 'Test receipt sent to Android system print service',
+      };
+    } catch (err) {
+      return {
+        success: false,
+        message: err.message || 'Failed to print via system print service',
+      };
+    }
+  }
+
+  return {
+    success: false,
+    message: 'No printer bridge or system print service available',
+  };
 }
