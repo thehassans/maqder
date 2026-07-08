@@ -435,7 +435,7 @@ const tenantSchema = new mongoose.Schema({
       lastTestStatus: { type: String, default: '' }
     },
     hardwareSettings: {
-      receiptPrinterType: { type: String, enum: ['usb', 'network', 'bluetooth', 'none'], default: 'none' },
+      receiptPrinterType: { type: String, enum: ['usb', 'network', 'bluetooth', 'none', 'android', 'android_system_print'], default: 'none' },
       printerIpAddress: { type: String, default: '192.168.1.100' },
       printerPort: { type: Number, default: 9100 },
       cashDrawerKickCode: { type: String, default: '27,112,0,50,250' }, // ESC p 0 50 250

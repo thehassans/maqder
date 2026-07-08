@@ -12,7 +12,7 @@ import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import { generateZatcaQrValue } from '../../lib/zatcaQr';
 import { getThermalPrinterSettings, getBodyWidthCss, getPageCss } from '../../lib/thermalPrinter';
-import { isAndroidPos, isAndroidDevice, detectBridge, printText as androidPrintText, openCashDrawer as androidOpenCashDrawer, printViaSystemPrint, buildReceiptHtml } from '../../lib/androidPosPrinter';
+import { isAndroidPos, isAndroidDevice, detectBridge, printText as androidPrintText, openCashDrawer as androidOpenCashDrawer, openCashDrawerViaRaw, printViaSystemPrint, buildReceiptHtml } from '../../lib/androidPosPrinter';
 
 export default function BakalaPOS() {
   const navigate = useNavigate();
@@ -338,52 +338,40 @@ export default function BakalaPOS() {
   };
 
   const connectCashDrawer = async () => {
-    if (hw.receiptPrinterType === 'android' && isAndroidPos()) {
-      updateDeviceStatus('cashDrawer', 'checking');
-      try {
-        await androidOpenCashDrawer();
-        updateDeviceStatus('cashDrawer', 'connected');
-        toast.success('Cash drawer opened via Android bridge');
-      } catch (e) {
-        updateDeviceStatus('cashDrawer', 'disconnected');
-        toast.error('Cash drawer not supported by bridge');
-      }
-      return;
-    }
-    if (hw.receiptPrinterType === 'android_system_print') {
-      const bridge = detectBridge();
-      if (bridge) {
-        updateDeviceStatus('cashDrawer', 'checking');
-        try {
-          await androidOpenCashDrawer();
-          updateDeviceStatus('cashDrawer', 'connected');
-          toast.success('Cash drawer opened via bridge');
-          return;
-        } catch (e) {
-          // fall through to not_configured
-        }
-      }
-      updateDeviceStatus('cashDrawer', 'not_configured');
-      toast('Cash drawer requires Android POS bridge or network printer', { icon: '⚙️' });
-      return;
-    }
-    if (hw.receiptPrinterType !== 'network' || !hw.printerIpAddress) {
-      updateDeviceStatus('cashDrawer', 'not_configured');
-      toast('Cash drawer requires a configured network printer', { icon: '⚙️' });
-      return;
-    }
     updateDeviceStatus('cashDrawer', 'checking');
-    try {
-      await api.post('/tenants/test-cash-drawer', {
-        ipAddress: hw.printerIpAddress,
-        port: Number(hw.printerPort) || 9100,
-        kickCode: hw.cashDrawerKickCode,
-      });
+    const bridge = detectBridge();
+    let opened = false;
+
+    // 1. Try bridge dedicated openCashDrawer
+    if (bridge && bridge.methods.openCashDrawer) {
+      try { await androidOpenCashDrawer(); opened = true; } catch (e) { console.error('Bridge cash drawer failed:', e); }
+    }
+
+    // 2. Try bridge raw kick code
+    if (!opened && bridge && (bridge.methods.printRaw || bridge.methods.printText)) {
+      try { await openCashDrawerViaRaw(hw.cashDrawerKickCode); opened = true; } catch (e) { console.error('Bridge raw kick code failed:', e); }
+    }
+
+    // 3. Try network backend
+    if (!opened && hw.printerIpAddress) {
+      try {
+        await api.post('/tenants/test-cash-drawer', {
+          ipAddress: hw.printerIpAddress,
+          port: Number(hw.printerPort) || 9100,
+          kickCode: hw.cashDrawerKickCode,
+        });
+        opened = true;
+      } catch (err) {
+        console.error('Network cash drawer failed:', err);
+      }
+    }
+
+    if (opened) {
       updateDeviceStatus('cashDrawer', 'connected');
-      toast.success('Cash drawer connected');
-    } catch (err) {
-      updateDeviceStatus('cashDrawer', 'disconnected');
-      toast.error('Cash drawer unreachable');
+      toast.success('Cash drawer opened');
+    } else {
+      updateDeviceStatus('cashDrawer', 'not_configured');
+      toast('Cash drawer could not be opened. Configure network printer IP or use Android POS bridge.', { icon: '⚙️' });
     }
   };
 
@@ -632,23 +620,35 @@ export default function BakalaPOS() {
     const hasCashComponent = paymentMethod === 'cash' || (paymentMethod === 'split' && Array.isArray(payments) && payments.some(p => p.method === 'cash' && Number(p.amount) > 0));
     const shouldOpenDrawer = hasCashComponent && hw.openCashDrawerOnCashPayment !== false;
     if (shouldOpenDrawer) {
-      if (hw.receiptPrinterType === 'android' && isAndroidPos()) {
-        try { await androidOpenCashDrawer(); } catch (e) { console.error('Android cash drawer failed:', e); }
-      } else if (hw.receiptPrinterType === 'android_system_print') {
-        const bridge = detectBridge();
-        if (bridge && bridge.methods.openCashDrawer) {
-          try { await androidOpenCashDrawer(); } catch (e) { console.error('Bridge cash drawer failed:', e); }
-        }
-      } else if (hw.receiptPrinterType === 'network' && hw.printerIpAddress) {
+      const bridge = detectBridge();
+      let drawerOpened = false;
+
+      // 1. Try Android bridge dedicated openCashDrawer method
+      if (bridge && bridge.methods.openCashDrawer) {
+        try { await androidOpenCashDrawer(); drawerOpened = true; } catch (e) { console.error('Bridge cash drawer failed:', e); }
+      }
+
+      // 2. Try sending ESC/POS kick code via bridge raw/text print
+      if (!drawerOpened && bridge && (bridge.methods.printRaw || bridge.methods.printText)) {
+        try { await openCashDrawerViaRaw(hw.cashDrawerKickCode); drawerOpened = true; } catch (e) { console.error('Bridge raw kick code failed:', e); }
+      }
+
+      // 3. Try network backend if IP is configured (works for USB/ESC-POS print services that expose network port)
+      if (!drawerOpened && hw.printerIpAddress) {
         try {
           await api.post('/tenants/test-cash-drawer', {
             ipAddress: hw.printerIpAddress,
             port: hw.printerPort,
             kickCode: hw.cashDrawerKickCode,
           });
+          drawerOpened = true;
         } catch (err) {
-          console.error('Cash drawer open failed:', err);
+          console.error('Network cash drawer failed:', err);
         }
+      }
+
+      if (!drawerOpened) {
+        console.warn('Cash drawer could not be opened — no working method found');
       }
     }
 

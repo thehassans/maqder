@@ -328,20 +328,50 @@ export async function openCashDrawer() {
 
   const { obj, methods } = bridge;
 
-  if (!methods.openCashDrawer) {
-    throw new Error('Cash drawer control not supported by this bridge');
+  if (methods.openCashDrawer) {
+    try {
+      const fn = obj[methods.openCashDrawer];
+      const result = fn.call(obj);
+      if (result instanceof Promise) {
+        return await result;
+      }
+      return { status: 'success', message: 'Cash drawer command sent' };
+    } catch (err) {
+      throw err;
+    }
   }
 
-  try {
-    const fn = obj[methods.openCashDrawer];
-    const result = fn.call(obj);
-    if (result instanceof Promise) {
-      return await result;
-    }
-    return { status: 'success', message: 'Cash drawer command sent' };
-  } catch (err) {
-    throw err;
+  if (methods.printRaw) {
+    const kickCode = [0x1B, 0x70, 0x00, 0x32, 0xFA];
+    return printRaw(new Uint8Array(kickCode));
   }
+
+  if (methods.printText) {
+    const kickStr = '\x1B\x70\x00\x32\xFA';
+    return printText(kickStr);
+  }
+
+  throw new Error('Cash drawer control not supported by this bridge');
+}
+
+export async function openCashDrawerViaRaw(kickCodeStr) {
+  const bridge = detectBridge();
+  if (!bridge) throw new Error('No Android POS printer bridge detected');
+
+  const parts = (kickCodeStr || '27,112,0,50,250').split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+  const bytes = new Uint8Array(parts);
+
+  if (bridge.methods.printRaw) {
+    return printRaw(bytes);
+  }
+
+  if (bridge.methods.printText) {
+    let text = '';
+    for (const b of parts) text += String.fromCharCode(b);
+    return printText(text);
+  }
+
+  throw new Error('No raw print method available on bridge');
 }
 
 export async function getPrinterStatus() {
