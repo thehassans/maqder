@@ -575,7 +575,9 @@ export default function BakalaPOS() {
     const thermal = getThermalPrinterSettings(tenant);
 
     // Auto open cash drawer on cash payment
-    if (paymentMethod === 'cash' && hw.receiptPrinterType === 'network' && hw.printerIpAddress) {
+    const hasCashComponent = paymentMethod === 'cash' || (paymentMethod === 'split' && Array.isArray(payments) && payments.some(p => p.method === 'cash' && Number(p.amount) > 0));
+    const shouldOpenDrawer = hasCashComponent && hw.openCashDrawerOnCashPayment !== false && hw.receiptPrinterType === 'network' && hw.printerIpAddress;
+    if (shouldOpenDrawer) {
       try {
         await api.post('/tenants/test-cash-drawer', {
           ipAddress: hw.printerIpAddress,
