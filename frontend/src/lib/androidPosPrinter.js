@@ -217,7 +217,17 @@ export async function openCashDrawerViaSystemPrint(kickCodeStr) {
   let rawText = '';
   for (const b of parts) rawText += String.fromCharCode(b);
 
-  const html = `<div style="font-family:monospace;font-size:1px;color:#fff;background:#fff;white-space:pre;">${rawText}</div>`;
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: 58mm auto; margin: 0; }
+  body { font-family: monospace; font-size: 1px; color: #000; margin: 0; padding: 0; white-space: pre; }
+</style>
+</head>
+<body>${rawText}</body>
+</html>`;
   return printViaSystemPrint(html);
 }
 
@@ -539,12 +549,24 @@ export function buildReceiptHtml({ businessName, businessNameAr, items, total, s
   const itemsHtml = (items || []).map(i => {
     const name = (i.name || '').substring(0, chars - 10);
     const price = (i.price || '0.00').padStart(10);
-    return `<tr><td style="font-size:${fontSize};padding:1px 0;">${name}</td><td style="font-size:${fontSize};text-align:right;padding:1px 0;">${price}</td></tr>`;
+    return `<tr><td style="padding:1px 0;">${name}</td><td style="text-align:right;padding:1px 0;">${price}</td></tr>`;
   }).join('');
 
   const dashedLine = '<div style="border-top:1px dashed #000;margin:4px 0;"></div>';
 
-  return `<div style="width:100%;max-width:${widthMm};margin:0 auto;padding:8px 4px;font-family:monospace;font-size:${fontSize};color:#000;background:#fff;">
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Receipt</title>
+<style>
+  @page { size: ${widthMm} auto; margin: 0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: ${widthMm}; font-family: monospace; font-size: ${fontSize}; color: #000; background: #fff; padding: 4px; }
+</style>
+</head>
+<body>
   <div style="text-align:center;font-weight:bold;font-size:${paperWidth === 58 ? '12px' : '14px'};">${businessName || 'Maqder ERP'}</div>
   ${businessNameAr ? `<div style="text-align:center;">${businessNameAr}</div>` : ''}
   ${vatNumber ? `<div style="text-align:center;">VAT: ${vatNumber}</div>` : ''}
@@ -560,38 +582,24 @@ export function buildReceiptHtml({ businessName, businessNameAr, items, total, s
   ${dashedLine}
   <div style="text-align:center;">Thank you!</div>
   <div style="height:20px"></div>
-</div>`;
+</body>
+</html>`;
 }
 
 export function printViaSystemPrint(html) {
   return new Promise((resolve, reject) => {
     try {
-      let printArea = document.getElementById('pos-print-area');
-      if (!printArea) {
-        printArea = document.createElement('div');
-        printArea.id = 'pos-print-area';
-        document.body.appendChild(printArea);
+      const iframe = document.createElement('iframe');
+      iframe.style.cssText = 'position:fixed;left:0;top:0;width:100%;height:100vh;border:0;z-index:99999;background:#fff;';
+      document.body.appendChild(iframe);
 
-        if (!document.getElementById('pos-print-style')) {
-          const style = document.createElement('style');
-          style.id = 'pos-print-style';
-          style.textContent = `
-            @media print {
-              body > *:not(#pos-print-area) { display: none !important; }
-              #pos-print-area { display: block !important; position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; }
-              @page { margin: 0; }
-            }
-          `;
-          document.head.appendChild(style);
-        }
-      }
-
-      printArea.innerHTML = html;
-      printArea.style.cssText = 'display:block;';
+      const doc = iframe.contentWindow.document;
+      doc.open();
+      doc.write(html);
+      doc.close();
 
       const cleanup = () => {
-        printArea.innerHTML = '';
-        printArea.style.display = 'none';
+        try { document.body.removeChild(iframe); } catch (_) {}
       };
 
       const onAfterPrint = () => {
@@ -601,14 +609,26 @@ export function printViaSystemPrint(html) {
       };
       window.addEventListener('afterprint', onAfterPrint);
 
-      window.focus();
-      window.print();
+      const doPrint = () => {
+        try {
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+        } catch (e) {
+          try { window.focus(); window.print(); } catch (e2) {
+            cleanup();
+            reject(e2);
+            return;
+          }
+        }
+        setTimeout(() => {
+          cleanup();
+          window.removeEventListener('afterprint', onAfterPrint);
+          resolve({ status: 'success', message: 'Print dialog triggered' });
+        }, 5000);
+      };
 
-      setTimeout(() => {
-        cleanup();
-        window.removeEventListener('afterprint', onAfterPrint);
-        resolve({ status: 'success', message: 'Print dialog triggered' });
-      }, 5000);
+      iframe.onload = doPrint;
+      setTimeout(doPrint, 500);
     } catch (err) {
       reject(err);
     }
