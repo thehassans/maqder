@@ -338,6 +338,11 @@ export default function BakalaPOS() {
   };
 
   const connectCashDrawer = async () => {
+    if (hw.openCashDrawerOnCashPayment === false) {
+      updateDeviceStatus('cashDrawer', 'not_configured');
+      toast('Cash drawer auto-open is disabled in settings.', { icon: '⚙️' });
+      return;
+    }
     updateDeviceStatus('cashDrawer', 'checking');
     const bridge = detectBridge();
     let opened = false;
