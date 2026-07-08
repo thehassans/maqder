@@ -78,29 +78,113 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
   const handleTestUsbPrinter = async () => {
     setUsbTesting(true);
     setUsbResult(null);
+    let device = null;
+    let claimedInterface = null;
     try {
       if (!('usb' in navigator)) {
         throw new Error('WebUSB not supported in this browser. Use Chrome or Edge.');
       }
-      const device = await navigator.usb.requestDevice({
-        filters: [{ classCode: 7 }],
+      device = await navigator.usb.requestDevice({
+        filters: [
+          { classCode: 7 },
+          { classCode: 0xFF },
+        ],
       });
       await device.open();
-      if (device.configuration === null) await device.selectConfiguration(1);
-      await device.claimInterface(0);
 
-      const esc = '\x1B';
+      let config = device.configuration;
+      if (!config) {
+        const configs = device.configurations;
+        if (!configs || configs.length === 0) {
+          throw new Error('No USB configurations available on this device');
+        }
+        config = configs[0];
+        await device.selectConfiguration(config.configurationValue);
+      }
+
+      let targetInterface = null;
+      let targetEndpointNumber = null;
+
+      for (const iface of config.interfaces) {
+        const alt = iface.alternate;
+        if (!alt) continue;
+
+        const isPrinterClass = alt.interfaceClass === 7;
+        const hasBulkOut = (alt.endpoints || []).some(
+          ep => ep.direction === 'out' && (ep.type === 'bulk' || ep.type === 'interrupt')
+        );
+
+        if (isPrinterClass || hasBulkOut) {
+          try {
+            if (iface.alternates && iface.alternates.length > 1) {
+              await device.selectAlternateInterface(iface.interfaceNumber, alt.alternateSetting);
+            }
+            await device.claimInterface(iface.interfaceNumber);
+            claimedInterface = iface.interfaceNumber;
+
+            const outEp = (alt.endpoints || []).find(
+              ep => ep.direction === 'out' && (ep.type === 'bulk' || ep.type === 'interrupt')
+            );
+            if (outEp) {
+              targetInterface = iface.interfaceNumber;
+              targetEndpointNumber = outEp.endpointNumber;
+              break;
+            }
+          } catch (claimErr) {
+            try { await device.releaseInterface(iface.interfaceNumber); } catch (_) { /* ignore */ }
+            claimedInterface = null;
+            continue;
+          }
+        }
+      }
+
+      if (targetInterface === null) {
+        for (const iface of config.interfaces) {
+          try {
+            await device.claimInterface(iface.interfaceNumber);
+            claimedInterface = iface.interfaceNumber;
+            const alt = iface.alternate;
+            const outEp = (alt?.endpoints || []).find(ep => ep.direction === 'out');
+            if (outEp) {
+              targetInterface = iface.interfaceNumber;
+              targetEndpointNumber = outEp.endpointNumber;
+              break;
+            }
+            await device.releaseInterface(iface.interfaceNumber);
+            claimedInterface = null;
+          } catch (_) {
+            continue;
+          }
+        }
+      }
+
+      if (targetInterface === null || targetEndpointNumber === null) {
+        throw new Error('No writable USB endpoint found on this device. The printer may be using a driver that blocks WebUSB access.');
+      }
+
       const init = new Uint8Array([0x1B, 0x40]);
-      const testData = new TextEncoder().encode('*** USB TEST ***\nMaqder ERP\n' + new Date().toLocaleString() + '\nPrinter works!\n\n\n');
+      const testData = new TextEncoder().encode(
+        '*** USB TEST ***\nMaqder ERP\n' +
+        new Date().toLocaleString() + '\n' +
+        'Interface: ' + targetInterface + '\n' +
+        'Endpoint: ' + targetEndpointNumber + '\n' +
+        'Printer works!\n\n\n'
+      );
       const cut = new Uint8Array([0x1B, 0x69]);
       const payload = new Uint8Array([...init, ...testData, ...cut]);
 
-      await device.transferOut(1, payload);
+      await device.transferOut(targetEndpointNumber, payload);
       usbDeviceRef.current = device;
-      setUsbResult({ success: true, message: `Connected to ${device.productName || 'USB Printer'} and test receipt sent` });
+      setUsbResult({
+        success: true,
+        message: `Connected to ${device.productName || 'USB Printer'} (iface ${targetInterface}, ep ${targetEndpointNumber}) and test receipt sent`,
+      });
     } catch (err) {
       setUsbResult({ success: false, message: err.message || 'Failed to connect to USB printer' });
     } finally {
+      if (claimedInterface !== null && device && device.opened) {
+        try { await device.releaseInterface(claimedInterface); } catch (_) { /* ignore */ }
+      }
       setUsbTesting(false);
     }
   };
