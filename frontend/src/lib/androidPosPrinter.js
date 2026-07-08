@@ -221,9 +221,12 @@ export async function openCashDrawerViaSystemPrint(kickCodeStr) {
 <html>
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cash Drawer</title>
 <style>
   @page { size: 58mm auto; margin: 0; }
-  body { font-family: monospace; font-size: 1px; color: #000; margin: 0; padding: 0; white-space: pre; }
+  * { margin: 0; padding: 0; }
+  body { font-family: monospace; font-size: 1px; color: #000; white-space: pre; }
 </style>
 </head>
 <body>${rawText}</body>

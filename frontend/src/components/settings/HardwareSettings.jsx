@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Printer, Box, Camera, Save, Receipt, Wifi, Loader2, CheckCircle2, XCircle, Send, Usb, Bluetooth, Zap, Smartphone } from 'lucide-react';
 import { useTranslation } from '../../lib/translations';
 import { DEFAULT_THERMAL_SETTINGS, PRINTER_MODELS, applyPrinterModel } from '../../lib/thermalPrinter';
-import { isAndroidPos, isAndroidDevice, detectBridge, getBridgeInfo, diagnoseBridge, isWebUsbSupported, isWebSerialSupported, testPrint as androidTestPrint, openCashDrawer as androidOpenCashDrawer, openCashDrawerViaRaw, openCashDrawerViaWebUSB, openCashDrawerViaSerial, printViaSystemPrint, buildReceiptHtml } from '../../lib/androidPosPrinter';
+import { isAndroidPos, isAndroidDevice, detectBridge, getBridgeInfo, diagnoseBridge, isWebUsbSupported, isWebSerialSupported, testPrint as androidTestPrint, openCashDrawer as androidOpenCashDrawer, openCashDrawerViaRaw, openCashDrawerViaWebUSB, openCashDrawerViaSerial, openCashDrawerViaSystemPrint, printViaSystemPrint, buildReceiptHtml } from '../../lib/androidPosPrinter';
 import api from '../../lib/api';
 
 export default function HardwareSettings({ tenant, language, onSave, isSaving }) {
@@ -328,17 +328,25 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
       try { await openCashDrawerViaRaw(hardware.cashDrawerKickCode); opened = true; } catch (e) { lastError = e; }
     }
 
-    // 3. Try WebUSB — connect directly to USB printer and send raw kick code bytes
+    // 3. Try Android system print service — sends kick code as raw text through print dialog
+    if (!opened && isAndroidDevice()) {
+      try {
+        await openCashDrawerViaSystemPrint(hardware.cashDrawerKickCode);
+        opened = true;
+      } catch (e) { lastError = e; }
+    }
+
+    // 4. Try WebUSB — direct USB connection to printer
     if (!opened && isWebUsbSupported()) {
       try { await openCashDrawerViaWebUSB(hardware.cashDrawerKickCode); opened = true; } catch (e) { lastError = e; }
     }
 
-    // 4. Try Web Serial API
+    // 5. Try Web Serial API
     if (!opened && isWebSerialSupported()) {
       try { await openCashDrawerViaSerial(hardware.cashDrawerKickCode); opened = true; } catch (e) { lastError = e; }
     }
 
-    // 5. Try network backend ONLY for network printer type
+    // 6. Try network backend ONLY for network printer type
     if (!opened && hardware.receiptPrinterType === 'network' && hardware.printerIpAddress) {
       try {
         await api.post('/tenants/test-cash-drawer', {
@@ -351,13 +359,9 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
     }
 
     if (opened) {
-      setDrawerResult({ success: true, message: 'Cash drawer opened successfully' });
-    } else if (isAndroidDevice() && !isWebUsbSupported() && !isWebSerialSupported() && !bridge) {
-      setDrawerResult({ success: false, message: 'No bridge, WebUSB, or Serial API available. The kick code will be appended to receipt prints — when a receipt is printed, the kick code is sent to the printer which opens the drawer via RJ-11.' });
-    } else if (lastError?.message?.includes('No device selected') || lastError?.message?.includes('cancelled')) {
-      setDrawerResult({ success: false, message: 'Device selection was cancelled. Click Test again and select your USB printer.' });
+      setDrawerResult({ success: true, message: 'Cash drawer command sent. Select your ESC/POS USB print service in the print dialog if prompted.' });
     } else {
-      setDrawerResult({ success: false, message: lastError?.message || 'Could not open cash drawer.' });
+      setDrawerResult({ success: false, message: lastError?.message || 'Could not open cash drawer. Make sure the printer is connected and turned on.' });
     }
 
     setDrawerTesting(false);
@@ -852,35 +856,16 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
                 <div className="font-semibold">{language === 'ar' ? 'الجسر متصل' : 'Bridge detected'}</div>
                 <div>{language === 'ar' ? 'الاسم' : 'Name'}: {bridge.name}</div>
                 <div>{language === 'ar' ? 'الطرق' : 'Methods'}: {methods.join(', ') || 'none'}</div>
-                <div>WebUSB: {webusb ? '✅' : '❌'} | Serial: {webserial ? '✅' : '❌'}</div>
               </div>
             );
-          } else if (diag.platform === 'android' || webusb || webserial) {
+          } else if (diag.platform === 'android') {
             return (
-              <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-xs text-amber-700 dark:text-amber-300 space-y-2">
-                <div className="font-semibold">{language === 'ar' ? 'لا يوجد جسر JS' : 'No JS bridge detected'}</div>
-                <div>WebUSB: {webusb ? '✅ Available — will prompt to select USB printer' : '❌ Not available'}</div>
-                <div>Web Serial: {webserial ? '✅ Available' : '❌ Not available'}</div>
-                {diag.platform === 'android' && (
-                  <>
-                    <div>UA: {diag.userAgent}</div>
-                    <div>WebView: {diag.isWebView ? 'Yes' : 'No'}</div>
-                  </>
-                )}
-                {webusb && (
-                  <div className="mt-1 text-green-600 dark:text-green-400 font-semibold">
-                    {language === 'ar'
-                      ? 'WebUSB متاح! سيتم فتح الدرج عن طريق الاتصال المباشر بالطابعة USB.'
-                      : 'WebUSB available! Cash drawer will open by connecting directly to the USB printer.'}
-                  </div>
-                )}
-                {!webusb && !webserial && diag.platform === 'android' && (
-                  <div className="mt-1 text-amber-600 dark:text-amber-400">
-                    {language === 'ar'
-                      ? 'سيتم إضافة كود الفتح إلى إيصال الطباعة.'
-                      : 'Kick code will be appended to receipt prints.'}
-                  </div>
-                )}
+              <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-xs text-blue-700 dark:text-blue-300 space-y-2">
+                <div className="font-semibold">{language === 'ar' ? 'طباعة النظام Android' : 'Android System Print'}</div>
+                <div>{language === 'ar'
+                  ? 'سيتم استخدام خدمة طباعة Android لإرسال كود فتح الدرج. اضغط "اختبار فتح الدرج" واختر خدمة طباعة ESC/POS USB.'
+                  : 'Cash drawer will use the Android system print service to send the kick code. Click "Test Open Drawer" and select your ESC/POS USB print service.'}</div>
+                <div>WebUSB: {webusb ? '✅' : '❌'} | Serial: {webserial ? '✅' : '❌'}</div>
               </div>
             );
           }
