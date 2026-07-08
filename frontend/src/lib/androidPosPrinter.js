@@ -465,27 +465,26 @@ export function buildReceiptHtml({ businessName, businessNameAr, items, total, s
   const itemsHtml = (items || []).map(i => {
     const name = (i.name || '').substring(0, chars - 10);
     const price = (i.price || '0.00').padStart(10);
-    return `<tr><td style="font-size:${fontSize}">${name}</td><td style="font-size:${fontSize};text-align:right">${price}</td></tr>`;
+    return `<tr><td style="font-size:${fontSize};padding:1px 0;">${name}</td><td style="font-size:${fontSize};text-align:right;padding:1px 0;">${price}</td></tr>`;
   }).join('');
 
-  return `<div style="width:${widthMm};margin:0 auto;font-family:'Courier New',monospace;font-size:${fontSize};color:#000;background:#fff;padding:4px;">
-  <style>
-    #pos-print-area { background: #fff !important; }
-  </style>
-  <div class="center bold" style="text-align:center;font-weight:bold;font-size:${paperWidth === 58 ? '12px' : '14px'}">${businessName || 'Maqder ERP'}</div>
-  ${businessNameAr ? `<div style="text-align:center">${businessNameAr}</div>` : ''}
-  ${vatNumber ? `<div style="text-align:center">VAT: ${vatNumber}</div>` : ''}
-  <div style="border-top:1px dashed #000;margin:4px 0;"></div>
+  const dashedLine = '<div style="border-top:1px dashed #000;margin:4px 0;"></div>';
+
+  return `<div style="width:100%;max-width:${widthMm};margin:0 auto;padding:8px 4px;font-family:monospace;font-size:${fontSize};color:#000;background:#fff;">
+  <div style="text-align:center;font-weight:bold;font-size:${paperWidth === 58 ? '12px' : '14px'};">${businessName || 'Maqder ERP'}</div>
+  ${businessNameAr ? `<div style="text-align:center;">${businessNameAr}</div>` : ''}
+  ${vatNumber ? `<div style="text-align:center;">VAT: ${vatNumber}</div>` : ''}
+  ${dashedLine}
   <div style="text-align:center;font-weight:bold;">RECEIPT</div>
   <div>Date: ${date || new Date().toLocaleString()}</div>
   ${paymentMethod ? `<div>Payment: ${paymentMethod}</div>` : ''}
-  <div style="border-top:1px dashed #000;margin:4px 0;"></div>
-  ${itemsHtml ? `<table style="width:100%;border-collapse:collapse;">${itemsHtml}</table><div style="border-top:1px dashed #000;margin:4px 0;"></div>` : ''}
-  ${subtotal ? `<table style="width:100%;border-collapse:collapse;"><tr><td>Subtotal</td><td style="text-align:right">${subtotal}</td></tr></table>` : ''}
-  ${tax ? `<table style="width:100%;border-collapse:collapse;"><tr><td>VAT</td><td style="text-align:right">${tax}</td></tr></table>` : ''}
-  ${total ? `<table style="width:100%;border-collapse:collapse;"><tr style="font-weight:bold;border-top:1px solid #000;"><td style="padding-top:2px;font-weight:bold;">TOTAL</td><td style="text-align:right;padding-top:2px;font-weight:bold;">${total}</td></tr></table>` : ''}
-  <div style="border-top:1px dashed #000;margin:4px 0;"></div>
-  <div style="text-align:center;">If you can read this,<br>your printer works!</div>
+  ${dashedLine}
+  ${itemsHtml ? `<table style="width:100%;border-collapse:collapse;">${itemsHtml}</table>${dashedLine}` : ''}
+  ${subtotal ? `<table style="width:100%;border-collapse:collapse;"><tr><td style="padding:1px 0;">Subtotal</td><td style="text-align:right;padding:1px 0;">${subtotal}</td></tr></table>` : ''}
+  ${tax ? `<table style="width:100%;border-collapse:collapse;"><tr><td style="padding:1px 0;">VAT</td><td style="text-align:right;padding:1px 0;">${tax}</td></tr></table>` : ''}
+  ${total ? `<table style="width:100%;border-collapse:collapse;"><tr style="font-weight:bold;"><td style="padding-top:4px;font-weight:bold;border-top:1px solid #000;">TOTAL</td><td style="text-align:right;padding-top:4px;font-weight:bold;border-top:1px solid #000;">${total}</td></tr></table>` : ''}
+  ${dashedLine}
+  <div style="text-align:center;">Thank you!</div>
   <div style="height:20px"></div>
 </div>`;
 }
@@ -497,7 +496,6 @@ export function printViaSystemPrint(html) {
       if (!printArea) {
         printArea = document.createElement('div');
         printArea.id = 'pos-print-area';
-        printArea.style.cssText = 'position:fixed;left:0;top:0;width:100%;z-index:99999;background:#fff;';
         document.body.appendChild(printArea);
 
         if (!document.getElementById('pos-print-style')) {
@@ -505,9 +503,8 @@ export function printViaSystemPrint(html) {
           style.id = 'pos-print-style';
           style.textContent = `
             @media print {
-              body * { visibility: hidden !important; }
-              #pos-print-area, #pos-print-area * { visibility: visible !important; }
-              #pos-print-area { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; }
+              body > *:not(#pos-print-area) { display: none !important; }
+              #pos-print-area { display: block !important; position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; }
               @page { margin: 0; }
             }
           `;
@@ -516,6 +513,7 @@ export function printViaSystemPrint(html) {
       }
 
       printArea.innerHTML = html;
+      printArea.style.cssText = 'display:block;';
 
       const cleanup = () => {
         printArea.innerHTML = '';
@@ -525,18 +523,17 @@ export function printViaSystemPrint(html) {
       const onAfterPrint = () => {
         window.removeEventListener('afterprint', onAfterPrint);
         cleanup();
-        resolve({ status: 'success', message: 'Print dialog triggered via Android system print service' });
+        resolve({ status: 'success', message: 'Print dialog triggered' });
       };
       window.addEventListener('afterprint', onAfterPrint);
 
-      printArea.style.display = 'block';
       window.focus();
       window.print();
 
       setTimeout(() => {
         cleanup();
         window.removeEventListener('afterprint', onAfterPrint);
-        resolve({ status: 'success', message: 'Print dialog triggered via Android system print service' });
+        resolve({ status: 'success', message: 'Print dialog triggered' });
       }, 5000);
     } catch (err) {
       reject(err);

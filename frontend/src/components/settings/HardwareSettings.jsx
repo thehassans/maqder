@@ -816,6 +816,41 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
           <Box className="w-5 h-5 text-emerald-500" />
           {language === 'ar' ? 'درج النقود' : 'Cash Drawer'}
         </h3>
+
+        {/* Connection info */}
+        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-xs text-blue-700 dark:text-blue-300">
+          {language === 'ar'
+            ? 'الدرج متصل بالطابعة عبر كابل RJ-11 (مثل كابل الهاتف). يتم إرسال كود الفتح عبر الطابعة إلى الدرج.'
+            : 'The cash drawer connects to the printer via RJ-11 cable (telephone-like cable). The kick code is sent through the printer to the drawer.'}
+        </div>
+
+        {/* Bridge status */}
+        {(() => {
+          const bridge = detectBridge();
+          if (bridge) {
+            const methods = [];
+            if (bridge.methods.openCashDrawer) methods.push('openCashDrawer');
+            if (bridge.methods.printRaw) methods.push('printRaw');
+            if (bridge.methods.printText) methods.push('printText');
+            return (
+              <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg text-xs text-green-700 dark:text-green-300">
+                <div className="font-semibold">{language === 'ar' ? 'الجسر متصل' : 'Bridge detected'}</div>
+                <div>{language === 'ar' ? 'الاسم' : 'Name'}: {bridge.name}</div>
+                <div>{language === 'ar' ? 'الطرق' : 'Methods'}: {methods.join(', ') || 'none'}</div>
+              </div>
+            );
+          } else if (isAndroidDevice()) {
+            return (
+              <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-xs text-amber-700 dark:text-amber-300">
+                {language === 'ar'
+                  ? 'جهاز Android ولكن لم يتم العثور على جسر طباعة. قد لا يعمل فتح الدرج.'
+                  : 'Android device detected but no printer bridge found. Cash drawer may not work.'}
+              </div>
+            );
+          }
+          return null;
+        })()}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="label">{language === 'ar' ? 'كود فتح الدرج' : 'Kick Code (Decimal)'}</label>
@@ -864,13 +899,6 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
             {drawerResult.success ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
             {drawerResult.message}
           </div>
-        )}
-        {hardware.receiptPrinterType !== 'network' && !detectBridge() && !hardware.printerIpAddress && (
-          <p className="mt-3 text-xs text-amber-600 dark:text-amber-400">
-            {language === 'ar'
-              ? 'الدرج متصل بالطابعة عبر كابل RJ-11. سيتم إرسال كود الفتح عبر الطابعة. للطابعات الشبكية، أدخل عنوان IP.'
-              : 'Cash drawer connects to the printer via RJ-11 cable. The kick code is sent through the printer. For network printers, enter the IP address.'}
-          </p>
         )}
       </div>
 
