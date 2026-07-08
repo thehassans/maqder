@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Printer, Box, Camera, Save, Receipt, Wifi, Loader2, CheckCircle2, XCircle, Send, Usb, Bluetooth, Zap, Smartphone } from 'lucide-react';
 import { useTranslation } from '../../lib/translations';
 import { DEFAULT_THERMAL_SETTINGS, PRINTER_MODELS, applyPrinterModel } from '../../lib/thermalPrinter';
-import { isAndroidPos, isAndroidDevice, detectBridge, getBridgeInfo, testPrint as androidTestPrint, openCashDrawer as androidOpenCashDrawer, printViaSystemPrint, buildReceiptHtml } from '../../lib/androidPosPrinter';
+import { isAndroidPos, isAndroidDevice, detectBridge, getBridgeInfo, testPrint as androidTestPrint, openCashDrawer as androidOpenCashDrawer, openCashDrawerViaRaw, printViaSystemPrint, buildReceiptHtml } from '../../lib/androidPosPrinter';
 import api from '../../lib/api';
 
 export default function HardwareSettings({ tenant, language, onSave, isSaving }) {
@@ -313,18 +313,40 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
   const handleTestCashDrawer = async () => {
     setDrawerTesting(true);
     setDrawerResult(null);
-    try {
-      const res = await api.post('/tenants/test-cash-drawer', {
-        ipAddress: hardware.printerIpAddress,
-        port: hardware.printerPort,
-        kickCode: hardware.cashDrawerKickCode,
-      });
-      setDrawerResult({ success: true, message: res.data?.message || 'Cash drawer opened successfully' });
-    } catch (err) {
-      setDrawerResult({ success: false, message: err.response?.data?.error || err.message || 'Failed to open cash drawer' });
-    } finally {
-      setDrawerTesting(false);
+
+    const bridge = detectBridge();
+    let opened = false;
+    let lastError = null;
+
+    // 1. Try Android bridge dedicated openCashDrawer
+    if (bridge && bridge.methods.openCashDrawer) {
+      try { await androidOpenCashDrawer(); opened = true; } catch (e) { lastError = e; }
     }
+
+    // 2. Try sending ESC/POS kick code via bridge raw/text print
+    if (!opened && bridge && (bridge.methods.printRaw || bridge.methods.printText)) {
+      try { await openCashDrawerViaRaw(hardware.cashDrawerKickCode); opened = true; } catch (e) { lastError = e; }
+    }
+
+    // 3. Try network backend if IP is configured
+    if (!opened && hardware.printerIpAddress) {
+      try {
+        await api.post('/tenants/test-cash-drawer', {
+          ipAddress: hardware.printerIpAddress,
+          port: hardware.printerPort,
+          kickCode: hardware.cashDrawerKickCode,
+        });
+        opened = true;
+      } catch (err) { lastError = err; }
+    }
+
+    if (opened) {
+      setDrawerResult({ success: true, message: 'Cash drawer opened successfully' });
+    } else {
+      setDrawerResult({ success: false, message: lastError?.message || 'Could not open cash drawer. Make sure the printer is connected and the kick code is correct.' });
+    }
+
+    setDrawerTesting(false);
   };
 
   const handleTestThermalPrint = async () => {
@@ -804,7 +826,7 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
             <button
               type="button"
               onClick={handleTestCashDrawer}
-              disabled={drawerTesting || hardware.receiptPrinterType !== 'network'}
+              disabled={drawerTesting}
               className="btn btn-outline text-sm gap-2"
             >
               {drawerTesting ? (
@@ -841,11 +863,11 @@ export default function HardwareSettings({ tenant, language, onSave, isSaving })
             {drawerResult.message}
           </div>
         )}
-        {hardware.receiptPrinterType !== 'network' && (
+        {hardware.receiptPrinterType !== 'network' && !detectBridge() && !hardware.printerIpAddress && (
           <p className="mt-3 text-xs text-amber-600 dark:text-amber-400">
             {language === 'ar'
-              ? 'اختبار فتح الدرج يتطلب طابعة شبكة متصلة (ESC/POS). تأكد من اختيار "طابعة شبكة" في إعدادات الطابعة.'
-              : 'Cash drawer test requires a connected network printer (ESC/POS). Make sure "Network Printer" is selected in Printer Settings.'}
+              ? 'الدرج متصل بالطابعة عبر كابل RJ-11. سيتم إرسال كود الفتح عبر الطابعة. للطابعات الشبكية، أدخل عنوان IP.'
+              : 'Cash drawer connects to the printer via RJ-11 cable. The kick code is sent through the printer. For network printers, enter the IP address.'}
           </p>
         )}
       </div>
