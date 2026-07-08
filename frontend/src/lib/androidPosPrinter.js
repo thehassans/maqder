@@ -689,46 +689,48 @@ export function buildReceiptHtml({ businessName, businessNameAr, items, total, s
 export function printViaSystemPrint(html) {
   return new Promise((resolve, reject) => {
     try {
-      const iframe = document.createElement('iframe');
-      iframe.style.cssText = 'position:fixed;left:0;top:0;width:100%;height:100vh;border:0;z-index:99999;background:#fff;';
-      document.body.appendChild(iframe);
+      // Extract body content from the full HTML document
+      let bodyContent = html;
+      let headContent = '';
+      const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+      if (bodyMatch) bodyContent = bodyMatch[1];
+      const headMatch = html.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
+      if (headMatch) headContent = headMatch[1];
 
-      const doc = iframe.contentWindow.document;
-      doc.open();
-      doc.write(html);
-      doc.close();
+      // Save original page content
+      const originalHead = document.head.innerHTML;
+      const originalBody = document.body.innerHTML;
+      const originalBodyClass = document.body.className;
+      const originalBodyStyle = document.body.getAttribute('style') || '';
 
-      const cleanup = () => {
-        try { document.body.removeChild(iframe); } catch (_) {}
+      // Replace entire page with just the receipt
+      document.head.innerHTML = headContent;
+      document.body.innerHTML = bodyContent;
+      document.body.className = '';
+      document.body.setAttribute('style', 'margin:0;padding:0;background:#fff;');
+
+      const restore = () => {
+        document.head.innerHTML = originalHead;
+        document.body.innerHTML = originalBody;
+        document.body.className = originalBodyClass;
+        document.body.setAttribute('style', originalBodyStyle);
       };
 
       const onAfterPrint = () => {
         window.removeEventListener('afterprint', onAfterPrint);
-        cleanup();
+        restore();
         resolve({ status: 'success', message: 'Print dialog triggered' });
       };
       window.addEventListener('afterprint', onAfterPrint);
 
-      const doPrint = () => {
-        try {
-          iframe.contentWindow.focus();
-          iframe.contentWindow.print();
-        } catch (e) {
-          try { window.focus(); window.print(); } catch (e2) {
-            cleanup();
-            reject(e2);
-            return;
-          }
-        }
-        setTimeout(() => {
-          cleanup();
-          window.removeEventListener('afterprint', onAfterPrint);
-          resolve({ status: 'success', message: 'Print dialog triggered' });
-        }, 5000);
-      };
+      window.focus();
+      window.print();
 
-      iframe.onload = doPrint;
-      setTimeout(doPrint, 500);
+      setTimeout(() => {
+        window.removeEventListener('afterprint', onAfterPrint);
+        restore();
+        resolve({ status: 'success', message: 'Print dialog triggered' });
+      }, 5000);
     } catch (err) {
       reject(err);
     }
