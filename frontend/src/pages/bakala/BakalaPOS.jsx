@@ -659,23 +659,20 @@ export default function BakalaPOS() {
     // Auto-print receipt: always for cash, otherwise only if autoPrint is enabled
     const shouldAutoPrint = paymentMethod === 'cash' || thermal.autoPrint;
     if (shouldAutoPrint) {
+      let printed = false;
       if (hw.receiptPrinterType === 'android' && isAndroidPos()) {
         const receiptText = buildAndroidReceiptText(invoice, paymentMethod, tenant, thermal);
-        try { await androidPrintText(receiptText); } catch (e) { console.error('Android print failed:', e); 
-          try { const html = buildAndroidReceiptHtml(invoice, paymentMethod, tenant, thermal); await printViaSystemPrint(html); } catch (e2) { console.error('System print fallback failed:', e2); printReceipt(invoice, paymentMethod); }
-        }
-      } else if (hw.receiptPrinterType === 'android_system_print') {
+        try { await androidPrintText(receiptText); printed = true; } catch (e) { console.error('Android bridge print failed:', e); }
+      }
+      if (!printed && (hw.receiptPrinterType === 'android_system_print' || isAndroidDevice())) {
         const html = buildAndroidReceiptHtml(invoice, paymentMethod, tenant, thermal);
-        try { await printViaSystemPrint(html); } catch (e) { console.error('System print failed:', e); printReceipt(invoice, paymentMethod); }
-      } else if (hw.receiptPrinterType === 'network' && hw.printerIpAddress) {
-        // Send ESC/POS receipt directly to network printer
-        printReceiptESCPOS(invoice, paymentMethod, hw, thermal);
-      } else if (isAndroidDevice()) {
-        // Android device without specific type — use system print
-        const html = buildAndroidReceiptHtml(invoice, paymentMethod, tenant, thermal);
-        try { await printViaSystemPrint(html); } catch (e) { console.error('System print failed:', e); printReceipt(invoice, paymentMethod); }
-      } else {
-        // Browser-based print (opens new window)
+        try { await printViaSystemPrint(html); printed = true; } catch (e) { console.error('System print failed:', e); }
+      }
+      if (!printed && hw.receiptPrinterType === 'network' && hw.printerIpAddress) {
+        try { await printReceiptESCPOS(invoice, paymentMethod, hw, thermal); printed = true; } catch (e) { console.error('Network print failed:', e); }
+      }
+      if (!printed) {
+        // Last resort: browser print (opens new window)
         printReceipt(invoice, paymentMethod);
       }
     }
