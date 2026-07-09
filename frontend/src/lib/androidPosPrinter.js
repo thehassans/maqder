@@ -632,22 +632,33 @@ export function buildEscPosReceipt({ businessName, businessNameAr, items, total,
   return new Uint8Array(allBytes);
 }
 
-export function buildReceiptHtml({ businessName, businessNameAr, items, total, subtotal, tax, date, paymentMethod, paperWidth = 58, vatNumber, appendKickCode }) {
+export function buildReceiptHtml({ businessName, businessNameAr, items, total, subtotal, tax, date, paymentMethod, paperWidth = 58, vatNumber, appendKickCode, invoiceId, cashier, address }) {
   const is58 = paperWidth === 58;
   const widthMm = is58 ? '58mm' : '80mm';
   const margin = is58 ? '2mm' : '3mm';
-  const bodyFont = is58 ? '8pt' : '10pt';
-  const headerFont = is58 ? '11pt' : '14pt';
-  const smallFont = is58 ? '7pt' : '8pt';
-  const totalFont = is58 ? '9pt' : '11pt';
+  const bodyFont = is58 ? '9pt' : '11pt';
+  const headerFont = is58 ? '13pt' : '16pt';
+  const subHeaderFont = is58 ? '8pt' : '10pt';
+  const smallFont = is58 ? '7.5pt' : '9pt';
+  const totalFont = is58 ? '11pt' : '13pt';
+  const itemFont = is58 ? '8.5pt' : '10.5pt';
 
   const itemsHtml = (items || []).map(i => {
-    const name = i.name || 'Item';
+    const nameEn = i.nameEn || i.name || 'Item';
+    const nameAr = i.nameAr || '';
     const price = i.price || '0.00';
-    return `<tr><td style="padding:1pt 1mm 1pt 0;font-size:${bodyFont};line-height:1.2;word-break:break-word;white-space:normal;">${name}</td><td style="text-align:right;padding:1pt 0;font-size:${bodyFont};line-height:1.2;white-space:nowrap;vertical-align:top;">${price}</td></tr>`;
+    const qty = i.qty || '';
+    const unitPrice = i.unitPrice || '';
+    let row = `<tr><td style="padding:1.5pt 1mm 1pt 0;vertical-align:top;">`;
+    row += `<div style="font-size:${itemFont};font-weight:bold;line-height:1.15;">${nameEn}</div>`;
+    if (nameAr) row += `<div style="font-size:${itemFont};line-height:1.15;" dir="rtl">${nameAr}</div>`;
+    if (unitPrice) row += `<div style="font-size:${smallFont};color:#333;">${unitPrice}${qty ? ' × ' + qty : ''}</div>`;
+    row += `</td><td style="text-align:right;padding:1.5pt 0;vertical-align:top;white-space:nowrap;font-size:${itemFont};font-weight:bold;">${price}</td></tr>`;
+    return row;
   }).join('');
 
   const sep = '<div style="border-top:1px solid #000;margin:3pt 0;"></div>';
+  const thickSep = '<div style="border-top:2px solid #000;margin:3pt 0;"></div>';
 
   let kickCodeHtml = '';
   if (appendKickCode) {
@@ -656,6 +667,14 @@ export function buildReceiptHtml({ businessName, businessNameAr, items, total, s
     for (const b of parts) rawText += String.fromCharCode(b);
     kickCodeHtml = `<pre style="font-size:1px;line-height:1px;margin:0;padding:0;color:#000;overflow:hidden;">${rawText}</pre>`;
   }
+
+  const pmBilingual = paymentMethod
+    ? (paymentMethod === 'Cash' ? 'Cash | نقدي'
+       : paymentMethod === 'Card' ? 'Card | بطاقة'
+       : paymentMethod === 'Split' ? 'Split | مقسم'
+       : paymentMethod === 'Khata' ? 'Khata | خطة'
+       : paymentMethod)
+    : '';
 
   return `<!DOCTYPE html>
 <html>
@@ -667,32 +686,38 @@ export function buildReceiptHtml({ businessName, businessNameAr, items, total, s
   @page { size: ${widthMm} auto; margin: ${margin}; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html { -webkit-text-size-adjust: 100%; }
-  body { font-family: Arial, Helvetica, sans-serif; font-size: ${bodyFont}; color: #000; background: #fff; line-height: 1.25; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: ${bodyFont}; color: #000; background: #fff; line-height: 1.3; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   table { width: 100%; border-collapse: collapse; table-layout: fixed; }
   td { vertical-align: top; }
-  .name-col { width: 62%; }
-  .price-col { width: 38%; }
+  .name-col { width: 60%; }
+  .price-col { width: 40%; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; }
   @media print {
     body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
 </style>
 </head>
 <body>
-  <div style="text-align:center;font-weight:bold;font-size:${headerFont};line-height:1.2;">${businessName || 'Maqder ERP'}</div>
-  ${businessNameAr ? `<div style="text-align:center;font-size:${bodyFont};line-height:1.2;">${businessNameAr}</div>` : ''}
-  ${vatNumber ? `<div style="text-align:center;font-size:${smallFont};">VAT: ${vatNumber}</div>` : ''}
+  <div style="text-align:center;font-weight:bold;font-size:${headerFont};line-height:1.15;">${businessName || 'Maqder POS'}</div>
+  ${businessNameAr ? `<div style="text-align:center;font-weight:bold;font-size:${headerFont};line-height:1.15;" dir="rtl">${businessNameAr}</div>` : ''}
+  ${address ? `<div style="text-align:center;font-size:${smallFont};line-height:1.2;">${address}</div>` : ''}
+  ${vatNumber ? `<div style="text-align:center;font-size:${smallFont};">VAT: ${vatNumber} | الرقم الضريبي: ${vatNumber}</div>` : ''}
   ${sep}
-  <div style="text-align:center;font-weight:bold;font-size:${bodyFont};">RECEIPT</div>
-  <div style="font-size:${smallFont};">Date: ${date || new Date().toLocaleString()}</div>
-  ${paymentMethod ? `<div style="font-size:${smallFont};">Payment: ${paymentMethod}</div>` : ''}
+  <div style="text-align:center;font-weight:bold;font-size:${subHeaderFont};">SIMPLIFIED TAX INVOICE</div>
+  <div style="text-align:center;font-weight:bold;font-size:${subHeaderFont};" dir="rtl">فاتورة ضريبية مبسطة</div>
+  ${sep}
+  ${invoiceId ? `<div class="row"><span style="font-size:${smallFont};">Invoice: ${invoiceId}</span><span style="font-size:${smallFont};" dir="rtl">فاتورة: ${invoiceId}</span></div>` : ''}
+  <div class="row"><span style="font-size:${smallFont};">Date: ${date || new Date().toLocaleString()}</span></div>
+  ${pmBilingual ? `<div class="row"><span style="font-size:${smallFont};">Payment: ${pmBilingual}</span></div>` : ''}
+  ${cashier ? `<div class="row"><span style="font-size:${smallFont};">Cashier: ${cashier}</span><span style="font-size:${smallFont};" dir="rtl">الكاشير: ${cashier}</span></div>` : ''}
   ${sep}
   ${itemsHtml ? `<table><colgroup><col class="name-col"><col class="price-col"></colgroup>${itemsHtml}</table>${sep}` : ''}
-  ${subtotal ? `<table><tr><td style="padding:1pt 0;font-size:${bodyFont};">Subtotal</td><td style="text-align:right;padding:1pt 0;font-size:${bodyFont};white-space:nowrap;">${subtotal}</td></tr></table>` : ''}
-  ${tax ? `<table><tr><td style="padding:1pt 0;font-size:${bodyFont};">VAT</td><td style="text-align:right;padding:1pt 0;font-size:${bodyFont};white-space:nowrap;">${tax}</td></tr></table>` : ''}
-  ${total ? `<table><tr><td style="padding-top:3pt;font-weight:bold;border-top:1px solid #000;font-size:${totalFont};">TOTAL</td><td style="text-align:right;padding-top:3pt;font-weight:bold;border-top:1px solid #000;font-size:${totalFont};white-space:nowrap;">${total}</td></tr></table>` : ''}
-  ${sep}
-  <div style="text-align:center;font-size:${smallFont};">Thank you!</div>
-  <div style="height:15pt"></div>
+  ${subtotal ? `<div class="row"><span style="font-size:${bodyFont};">Subtotal | المجموع الفرعي</span><span style="font-size:${bodyFont};white-space:nowrap;">${subtotal}</span></div>` : ''}
+  ${tax ? `<div class="row"><span style="font-size:${bodyFont};">VAT (15%) | ضريبة القيمة المضافة</span><span style="font-size:${bodyFont};white-space:nowrap;">${tax}</span></div>` : ''}
+  ${total ? `${thickSep}<div class="row"><span style="font-size:${totalFont};font-weight:bold;">TOTAL | الإجمالي</span><span style="font-size:${totalFont};font-weight:bold;white-space:nowrap;">${total}</span></div>${thickSep}` : ''}
+  <div style="text-align:center;font-size:${smallFont};margin-top:2pt;">Thank you! | شكراً لزيارتكم!</div>
+  <div style="text-align:center;font-size:${smallFont};color:#666;">Maqder POS</div>
+  <div style="height:12pt"></div>
   ${kickCodeHtml}
 </body>
 </html>`;

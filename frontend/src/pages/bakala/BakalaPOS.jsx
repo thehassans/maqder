@@ -821,26 +821,33 @@ export default function BakalaPOS() {
     const vatNumber = tenant?.business?.vatNumber || '';
     const address = tenant?.business?.address;
     const addressParts = address ? [address.buildingNumber, address.street, address.district, address.city].filter(Boolean) : [];
+    const addressText = addressParts.join(', ');
     const dateStr = new Date().toLocaleString('en-US');
     const items = order.lineItems || [];
     const pmLabel = paymentMethod === 'cash' ? 'Cash' : paymentMethod === 'card' ? 'Card' : paymentMethod === 'split' ? 'Split' : paymentMethod === 'khata' ? 'Khata' : String(paymentMethod);
-    const invId = order.offlineId ? order.offlineId.substring(0, 8).toUpperCase() : 'N/A';
+    const invId = order.offlineId ? order.offlineId.substring(0, 8).toUpperCase() : (order.invoiceNumber || 'N/A');
     const cashier = user?.name || user?.email || '';
 
     return buildReceiptHtml({
       businessName: businessNameEn,
       businessNameAr,
       vatNumber,
+      address: addressText,
       date: dateStr,
       paymentMethod: pmLabel,
       paperWidth: thermal.paperWidth,
+      invoiceId: invId,
+      cashier,
       items: items.map(i => ({
-        name: `${i.productName || i.productNameAr || 'Item'} x${i.quantity || 1}`,
-        price: 'SAR ' + (i.lineTotalWithTax || 0).toFixed(2),
+        nameEn: i.productName || 'Item',
+        nameAr: i.productNameAr || '',
+        qty: String(i.quantity || 1),
+        unitPrice: 'SAR ' + Number(i.unitPrice || 0).toFixed(2),
+        price: 'SAR ' + Number(i.lineTotalWithTax || 0).toFixed(2),
       })),
-      subtotal: 'SAR ' + (order.subtotal || 0).toFixed(2),
-      tax: 'SAR ' + (order.totalTax || 0).toFixed(2),
-      total: 'SAR ' + (order.grandTotal || 0).toFixed(2),
+      subtotal: 'SAR ' + Number(order.subtotal || 0).toFixed(2),
+      tax: 'SAR ' + Number(order.totalTax || 0).toFixed(2),
+      total: 'SAR ' + Number(order.grandTotal || 0).toFixed(2),
       appendKickCode,
     });
   };
