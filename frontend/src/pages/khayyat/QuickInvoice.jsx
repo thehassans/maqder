@@ -39,11 +39,16 @@ export default function KhayyatQuickInvoice() {
   const [items, setItems] = useState([{ 
     id: Date.now(), 
     name: '', // Family member name
+    phone: '', // Family member phone
+    customerId: null, // Selected existing customer ID
     quantity: 1, 
     price: '',
     imageFile: null,
-    imagePreview: null
+    imagePreview: null,
+    dropdownOpen: false,
+    search: ''
   }]);
+  const itemDropdownRefs = useRef({});
 
   useEffect(() => {
     fetchAllCustomers();
@@ -109,6 +114,17 @@ export default function KhayyatQuickInvoice() {
       if (customerDropdownRef.current && !customerDropdownRef.current.contains(e.target)) {
         setDropdownOpen(false);
       }
+      // Close item dropdowns when clicking outside
+      Object.values(itemDropdownRefs.current).forEach(ref => {
+        if (ref && !ref.contains(e.target)) {
+          const itemId = ref.dataset.itemId;
+          if (itemId) {
+            setItems(prev => prev.map(it => 
+              String(it.id) === itemId ? { ...it, dropdownOpen: false } : it
+            ));
+          }
+        }
+      });
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -232,6 +248,7 @@ export default function KhayyatQuickInvoice() {
         }
         formData.append('orderForAr', orderForAr);
         
+        if (item.phone) formData.append('orderForPhone', item.phone.trim());
         if (notes) formData.append('notes', notes);
         if (item.imageFile) formData.append('measurementImage', item.imageFile);
 
@@ -436,23 +453,124 @@ export default function KhayyatQuickInvoice() {
                       </button>
                     )}
 
-                    <div className="pr-8">
-                      <input
-                        type="text"
-                        placeholder={language === 'ar' ? 'أحمد' : 'Ahmed'}
-                        className="w-full bg-white dark:bg-slate-900 border-none rounded-xl text-sm font-medium p-3 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-200 dark:focus:ring-slate-700"
-                        value={item.name}
-                        onChange={e => {
-                          const val = e.target.value;
-                          const newItems = [...items];
-                          newItems[index].name = val;
-                          setItems(newItems);
-                          
-                          if (index === 0 && !customerName) {
-                            setCustomerName(val);
-                          }
-                        }}
-                      />
+                    <div className="pr-8 space-y-2">
+                      {/* Customer dropdown for this member */}
+                      <div className="relative" ref={el => { if (el) itemDropdownRefs.current[item.id] = el; el?.setAttribute('data-item-id', item.id); }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setItems(prev => prev.map(it => 
+                              it.id === item.id ? { ...it, dropdownOpen: !it.dropdownOpen } : it
+                            ));
+                          }}
+                          className="w-full flex items-center justify-between bg-white dark:bg-slate-900 border-none rounded-xl text-xs font-medium text-gray-600 dark:text-slate-300 focus:ring-2 focus:ring-gray-200 p-2.5 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+                        >
+                          <span className="flex items-center gap-1.5 text-gray-400">
+                            <Search className="w-3.5 h-3.5" />
+                            {item.customerId ? (
+                              <span className="text-gray-700 dark:text-slate-200 truncate">
+                                {allCustomers.find(c => c._id === item.customerId)?.nameI18n?.[langKey] || allCustomers.find(c => c._id === item.customerId)?.name || 'Selected'}
+                              </span>
+                            ) : (
+                              <span>{language === 'ar' ? 'اختر عميل موجود' : 'Pick existing customer'}</span>
+                            )}
+                          </span>
+                          <ChevronDown className={`w-3.5 h-3.5 text-gray-400 shrink-0 transition-transform ${item.dropdownOpen ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {item.dropdownOpen && (
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-gray-100 dark:border-slate-800 z-50">
+                            <div className="p-2 border-b border-gray-100 dark:border-slate-700">
+                              <input
+                                type="text"
+                                value={item.search || ''}
+                                onChange={e => {
+                                  const val = e.target.value;
+                                  setItems(prev => prev.map(it => 
+                                    it.id === item.id ? { ...it, search: val } : it
+                                  ));
+                                }}
+                                placeholder={language === 'ar' ? 'بحث بالاسم أو الرقم' : 'Search name or phone'}
+                                className="w-full px-2.5 py-1.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg text-xs text-gray-900 dark:text-slate-100 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                autoFocus
+                              />
+                            </div>
+                            <div className="max-h-40 overflow-y-auto">
+                              {(() => {
+                                const q = (item.search || '').toLowerCase();
+                                const results = allCustomers.filter(c => {
+                                  if (String(c._id) === String(selectedCustomer?._id)) return false;
+                                  if (!q) return true;
+                                  return (c.nameI18n?.[langKey] || c.name || '')?.toLowerCase().includes(q) ||
+                                         c.phone?.includes(item.search || '');
+                                }).slice(0, 20);
+                                if (results.length === 0) return <div className="p-3 text-center text-gray-400 text-xs">No customers</div>;
+                                return results.map(c => (
+                                  <button
+                                    key={c._id}
+                                    type="button"
+                                    onClick={() => {
+                                      setItems(prev => prev.map(it => 
+                                        it.id === item.id ? { 
+                                          ...it, 
+                                          customerId: c._id, 
+                                          name: c.nameI18n?.[langKey] || c.name || '',
+                                          phone: c.phone || '',
+                                          dropdownOpen: false,
+                                          search: ''
+                                        } : it
+                                      ));
+                                    }}
+                                    className="w-full p-2 hover:bg-primary-50 dark:hover:bg-primary-900/20 flex items-center gap-2 text-left transition-colors border-b border-gray-100 dark:border-slate-700 last:border-b-0"
+                                  >
+                                    <div className="w-6 h-6 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center shrink-0">
+                                      <span className="text-primary-700 dark:text-primary-200 font-medium text-[10px]">{(c.nameI18n?.[langKey] || c.name || '')?.charAt(0)}</span>
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-xs font-medium text-gray-900 dark:text-slate-100 truncate">{c.nameI18n?.[langKey] || c.name}</p>
+                                      <p className="text-[10px] text-gray-400">{c.phone}</p>
+                                    </div>
+                                  </button>
+                                ));
+                              })()}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Name + Phone row */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          placeholder={language === 'ar' ? 'أحمد' : 'Ahmed'}
+                          className="w-full bg-white dark:bg-slate-900 border-none rounded-xl text-sm font-medium p-3 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-200 dark:focus:ring-slate-700"
+                          value={item.name}
+                          onChange={e => {
+                            const val = e.target.value;
+                            const newItems = [...items];
+                            newItems[index].name = val;
+                            newItems[index].customerId = null;
+                            setItems(newItems);
+                            
+                            if (index === 0 && !customerName) {
+                              setCustomerName(val);
+                            }
+                          }}
+                        />
+                        <input
+                          type="text"
+                          placeholder={language === 'ar' ? '05XXXXXXXX' : '05XXXXXXXX'}
+                          className="w-full bg-white dark:bg-slate-900 border-none rounded-xl text-sm font-medium p-3 text-gray-900 dark:text-white focus:ring-2 focus:ring-gray-200 dark:focus:ring-slate-700"
+                          value={item.phone || ''}
+                          onChange={e => {
+                            const val = e.target.value;
+                            const newItems = [...items];
+                            newItems[index].phone = val;
+                            setItems(newItems);
+                          }}
+                          dir="ltr"
+                        />
+                      </div>
                     </div>
 
                     <div className="flex gap-2">
@@ -510,7 +628,7 @@ export default function KhayyatQuickInvoice() {
               </AnimatePresence>
 
               <button
-                onClick={() => setItems([...items, { id: Date.now(), name: '', quantity: 1, price: '', imageFile: null, imagePreview: null }])}
+                onClick={() => setItems([...items, { id: Date.now(), name: '', phone: '', customerId: null, quantity: 1, price: '', imageFile: null, imagePreview: null, dropdownOpen: false, search: '' }])}
                 className="w-full py-3 flex items-center justify-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-slate-800 rounded-xl transition-colors border border-dashed border-gray-200 dark:border-slate-700"
               >
                 <Plus className="w-4 h-4" />

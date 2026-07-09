@@ -203,7 +203,8 @@ router.post('/', checkTrialLimits('khayyatStitchings'), upload.single('measureme
       measurements,
       styleOptions,
       orderFor,
-      orderForAr
+      orderForAr,
+      orderForPhone
     } = req.body;
 
     if (typeof measurements === 'string') {
@@ -281,6 +282,7 @@ router.post('/', checkTrialLimits('khayyatStitchings'), upload.single('measureme
       description: description || '',
       orderFor: orderFor || null,
       orderForAr: orderForAr || null,
+      orderForPhone: orderForPhone || null,
       dueDate: dueDate || null
     });
 
@@ -340,7 +342,7 @@ router.put('/:id', upload.single('measurementImage'), async (req, res) => {
       return res.status(404).json({ error: 'Stitching not found' });
     }
 
-    let { status, workerId, measurements, styleOptions, removeMeasurementImage, customerName, customerPhone } = req.body;
+    let { status, workerId, measurements, styleOptions, removeMeasurementImage, customerName, customerPhone, orderFor, orderForAr, orderForPhone } = req.body;
 
     if (typeof measurements === 'string') {
       try { measurements = JSON.parse(measurements); } catch (e) {}
@@ -355,6 +357,9 @@ router.put('/:id', upload.single('measurementImage'), async (req, res) => {
     if (styleOptions) stitching.styleOptions = styleOptions;
     if (customerName) stitching.customerName = customerName;
     if (customerPhone) stitching.customerPhone = customerPhone;
+    if (orderFor !== undefined) stitching.orderFor = orderFor || null;
+    if (orderForAr !== undefined) stitching.orderForAr = orderForAr || null;
+    if (orderForPhone !== undefined) stitching.orderForPhone = orderForPhone || null;
 
     if (removeMeasurementImage === 'true') {
       stitching.measurementImage = '';
