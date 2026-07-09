@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Edit2, Trash2, Search, Loader, Download, QrCode, PackagePlus, Boxes, WifiOff } from 'lucide-react';
 import Barcode from 'react-barcode';
 import api from '../../../lib/api';
 import toast from 'react-hot-toast';
 import { getAllProducts } from '../../../lib/bakalaDb';
+import { useAutoTranslate } from '../../../hooks/useAutoTranslate';
 
 export default function ProductList() {
   const navigate = useNavigate();
@@ -26,6 +27,31 @@ export default function ProductList() {
   const [categories, setCategories] = useState([]);
   const [brands, setBrands] = useState([]);
   const [units, setUnits] = useState([]);
+  const [translatingName, setTranslatingName] = useState(false);
+  const translateTimerRef = useRef(null);
+  const { translate } = useAutoTranslate();
+
+  const handleNameChange = (lang, value) => {
+    const patch = lang === 'en' ? { name: value } : { nameAr: value };
+    setFormData(prev => ({ ...prev, ...patch }));
+
+    if (translateTimerRef.current) clearTimeout(translateTimerRef.current);
+    if (!value.trim()) return;
+
+    const otherKey = lang === 'en' ? 'nameAr' : 'name';
+    if (formData[otherKey] && formData[otherKey] !== formData[lang === 'en' ? 'name' : 'nameAr']) return;
+
+    translateTimerRef.current = setTimeout(async () => {
+      setTranslatingName(true);
+      const fromLang = lang === 'en' ? 'en' : 'ar';
+      const toLang = lang === 'en' ? 'ar' : 'en';
+      const translated = await translate(value, fromLang, toLang);
+      if (translated) {
+        setFormData(prev => ({ ...prev, [otherKey]: translated }));
+      }
+      setTranslatingName(false);
+    }, 800);
+  };
 
   const fetchItems = async () => {
     try {
@@ -279,11 +305,14 @@ export default function ProductList() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Name (English) *</label>
-                  <input type="text" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 outline-none" />
+                  <input type="text" required value={formData.name} onChange={e => handleNameChange('en', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 outline-none" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Name (Arabic)</label>
-                  <input type="text" value={formData.nameAr} onChange={e => setFormData({...formData, nameAr: e.target.value})} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 outline-none text-right" dir="rtl" />
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1">
+                    Name (Arabic)
+                    {translatingName && <span className="text-xs text-emerald-600 flex items-center gap-1"><Loader className="w-3 h-3 animate-spin" /> Translating...</span>}
+                  </label>
+                  <input type="text" value={formData.nameAr} onChange={e => handleNameChange('ar', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 outline-none text-right" dir="rtl" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Barcode *</label>
