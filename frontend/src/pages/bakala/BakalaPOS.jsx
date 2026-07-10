@@ -19,6 +19,9 @@ export default function BakalaPOS() {
   const dispatch = useDispatch();
   const { tenant, user } = useSelector(state => state.auth);
   const hw = tenant?.settings?.hardwareSettings || {};
+  const bakalaSettings = tenant?.settings?.bakala || {};
+  const taxEnabled = bakalaSettings.taxEnabled !== false;
+  const autoInvoicePrint = bakalaSettings.autoInvoicePrint !== false;
   const scalePrefix = (hw.scaleBarcodePrefix || '21').substring(0, 2).padEnd(2, '0');
   
   const { cartItems, addItem, addWeightedItem, updateQuantity, removeItem, clearCart, totals, holdBill, autoHoldBill, recallBill, getHeldBills } = useCartEngine();
@@ -615,14 +618,14 @@ export default function BakalaPOS() {
         productNameAr: item.productNameAr,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
-        taxRate: item.taxRate,
-        taxAmount: (item.lineTotal * item.taxRate) / (100 + item.taxRate),
-        lineTotal: item.lineTotal - ((item.lineTotal * item.taxRate) / (100 + item.taxRate)),
+        taxRate: taxEnabled ? item.taxRate : 0,
+        taxAmount: taxEnabled ? (item.lineTotal * item.taxRate) / (100 + item.taxRate) : 0,
+        lineTotal: taxEnabled ? item.lineTotal - ((item.lineTotal * item.taxRate) / (100 + item.taxRate)) : item.lineTotal,
         lineTotalWithTax: item.lineTotal,
-        taxCategory: 'S'
+        taxCategory: taxEnabled ? 'S' : 'O'
       })),
-      subtotal: totals.subtotal,
-      totalTax: totals.taxAmount,
+      subtotal: taxEnabled ? totals.subtotal : totals.grandTotal,
+      totalTax: taxEnabled ? totals.taxAmount : 0,
       grandTotal: totals.grandTotal,
       paymentMethod,
       payments,
@@ -688,7 +691,8 @@ export default function BakalaPOS() {
     }
 
     // Auto-print receipt: always for cash, otherwise only if autoPrint is enabled
-    const shouldAutoPrint = paymentMethod === 'cash' || thermal.autoPrint;
+    // Also respects bakala autoInvoicePrint setting — if disabled, never auto-print
+    const shouldAutoPrint = autoInvoicePrint && (paymentMethod === 'cash' || thermal.autoPrint);
     // If drawer didn't open and should have, append kick code to receipt print
     const kickCodeForReceipt = (shouldOpenDrawer && !drawerOpened) ? hw.cashDrawerKickCode : null;
     if (shouldAutoPrint) {
@@ -740,7 +744,9 @@ export default function BakalaPOS() {
 
     lines.push({ text: '--------------------------------' });
     lines.push({ text: `Subtotal:       SAR ${Number(order.subtotal || 0).toFixed(2)}` });
-    lines.push({ text: `VAT (15%):      SAR ${Number(order.totalTax || 0).toFixed(2)}` });
+    if (taxEnabled && Number(order.totalTax || 0) > 0) {
+      lines.push({ text: `VAT (15%):      SAR ${Number(order.totalTax || 0).toFixed(2)}` });
+    }
     lines.push({ bold: true, size: 'double', text: `TOTAL:          SAR ${Number(order.grandTotal || 0).toFixed(2)}` });
 
     if (thermal.showFooter) {
@@ -803,7 +809,9 @@ export default function BakalaPOS() {
 
     text += sep + '\n';
     text += 'Subtotal:    SAR ' + (order.subtotal || 0).toFixed(2) + '\n';
-    text += 'VAT:         SAR ' + (order.totalTax || 0).toFixed(2) + '\n';
+    if (taxEnabled) {
+      text += 'VAT:         SAR ' + (order.totalTax || 0).toFixed(2) + '\n';
+    }
     text += 'TOTAL:       SAR ' + (order.grandTotal || 0).toFixed(2) + '\n';
     text += sep + '\n';
     if (thermal.showFooter) {
@@ -846,7 +854,7 @@ export default function BakalaPOS() {
         price: 'SAR ' + Number(i.lineTotalWithTax || 0).toFixed(2),
       })),
       subtotal: 'SAR ' + Number(order.subtotal || 0).toFixed(2),
-      tax: 'SAR ' + Number(order.totalTax || 0).toFixed(2),
+      tax: taxEnabled ? 'SAR ' + Number(order.totalTax || 0).toFixed(2) : '',
       total: 'SAR ' + Number(order.grandTotal || 0).toFixed(2),
       appendKickCode,
     });
@@ -928,7 +936,7 @@ export default function BakalaPOS() {
   </table>
   <div class="divider"></div>
   <div style="display:flex;justify-content:space-between;font-size:10px;"><span>Subtotal / المجموع الفرعي:</span><span>SAR ${Number(order.subtotal || 0).toFixed(2)}</span></div>
-  <div style="display:flex;justify-content:space-between;font-size:10px;"><span>VAT (15%) / ضريبة القيمة المضافة:</span><span>SAR ${Number(order.totalTax || 0).toFixed(2)}</span></div>
+  ${taxEnabled ? `<div style="display:flex;justify-content:space-between;font-size:10px;"><span>VAT (15%) / ضريبة القيمة المضافة:</span><span>SAR ${Number(order.totalTax || 0).toFixed(2)}</span></div>` : ''}
   <div class="total" style="display:flex;justify-content:space-between;"><span>Total / الإجمالي:</span><span>SAR ${Number(order.grandTotal || 0).toFixed(2)}</span></div>
   ${zatcaQrPayload ? `
   <div class="qr">
@@ -1295,12 +1303,14 @@ export default function BakalaPOS() {
           <div className="space-y-3 mb-6">
             <div className="flex justify-between text-gray-500 font-medium">
               <span>Subtotal</span>
-              <span className="text-gray-700">SAR {(totals.subtotal || 0).toFixed(2)}</span>
+              <span className="text-gray-700">SAR {(taxEnabled ? (totals.subtotal || 0) : (totals.grandTotal || 0)).toFixed(2)}</span>
             </div>
+            {taxEnabled && (
             <div className="flex justify-between text-gray-500 font-medium">
               <span>VAT (15%)</span>
               <span className="text-gray-700">SAR {(totals.taxAmount || 0).toFixed(2)}</span>
             </div>
+            )}
             <div className="flex justify-between items-end mt-4 pt-4 border-t border-gray-100">
               <span className="text-gray-400 font-bold uppercase tracking-widest text-sm">Total</span>
               <div className="flex items-baseline gap-1">

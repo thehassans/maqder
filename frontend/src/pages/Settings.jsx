@@ -258,6 +258,8 @@ export default function Settings() {
   const [waNotifyPhones, setWaNotifyPhones] = useState('')
   // Bakala settings
   const [bakalaRequireShift, setBakalaRequireShift] = useState(true)
+  const [bakalaTaxEnabled, setBakalaTaxEnabled] = useState(true)
+  const [bakalaAutoInvoicePrint, setBakalaAutoInvoicePrint] = useState(true)
   // Bookstore settings
   const [bookstoreRequireShift, setBookstoreRequireShift] = useState(true)
 
@@ -320,6 +322,8 @@ export default function Settings() {
     setWaNotifyPhones(Array.isArray(wa.notifyPhoneList) ? wa.notifyPhoneList.join(', ') : '')
     // Bakala settings init
     setBakalaRequireShift(tenant.settings?.bakala?.requireShift !== false)
+    setBakalaTaxEnabled(tenant.settings?.bakala?.taxEnabled !== false)
+    setBakalaAutoInvoicePrint(tenant.settings?.bakala?.autoInvoicePrint !== false)
     // Bookstore settings init
     setBookstoreRequireShift(tenant.settings?.bookstore?.requireShift !== false)
   }, [tenant])
@@ -1351,6 +1355,46 @@ export default function Settings() {
                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600" />
                   </label>
                 </div>
+
+                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-dark-700/50 rounded-xl">
+                  <div>
+                    <p className="font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'ضريبة القيمة المضافة (15%)' : 'VAT Tax (15%)'}</p>
+                    <p className="text-sm text-gray-500">
+                      {language === 'ar'
+                        ? 'عند التفعيل، تظهر الضريبة على الفواتير والإيصالات'
+                        : 'When enabled, tax is shown on invoices and receipts'}
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={bakalaTaxEnabled}
+                      onChange={(e) => setBakalaTaxEnabled(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600" />
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-dark-700/50 rounded-xl">
+                  <div>
+                    <p className="font-semibold text-gray-900 dark:text-white">{language === 'ar' ? 'الطباعة التلقائية للفواتير' : 'Auto Invoice Print'}</p>
+                    <p className="text-sm text-gray-500">
+                      {language === 'ar'
+                        ? 'عند التفعيل، تتم طباعة الإيصال تلقائياً بعد كل عملية بيع'
+                        : 'When enabled, receipt prints automatically after each checkout'}
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={bakalaAutoInvoicePrint}
+                      onChange={(e) => setBakalaAutoInvoicePrint(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600" />
+                  </label>
+                </div>
               </div>
 
               <div className="pt-4 border-t border-gray-100 dark:border-dark-700">
@@ -1360,6 +1404,8 @@ export default function Settings() {
                       settings: {
                         bakala: {
                           requireShift: bakalaRequireShift,
+                          taxEnabled: bakalaTaxEnabled,
+                          autoInvoicePrint: bakalaAutoInvoicePrint,
                         },
                       },
                     })
