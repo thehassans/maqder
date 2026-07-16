@@ -31,6 +31,19 @@ export default function FurnitureProducts() {
 
   const isArabic = language === 'ar'
   const label = (en, ar) => (isArabic ? ar : en)
+  const dir = isArabic ? 'rtl' : 'ltr'
+
+  const translateCategory = (cat) => {
+    if (!cat) return label('General', 'عام')
+    const map = {
+      'Sofa': label('Sofa', 'كنب'),
+      'Bed': label('Bed', 'سرير'),
+      'Carpet': label('Carpet', 'سجاد'),
+      'Majlis': label('Majlis', 'مجالس'),
+      'Dining': label('Dining', 'طعام')
+    }
+    return map[cat] || cat
+  }
 
   const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
@@ -283,7 +296,7 @@ export default function FurnitureProducts() {
                     <p className="text-xs text-gray-400 mt-0.5">{p.sku}</p>
                   </div>
                   <span className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded-lg text-xs font-semibold whitespace-nowrap">
-                    {p.category || 'General'}
+                    {translateCategory(p.category)}
                   </span>
                 </div>
                 

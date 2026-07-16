@@ -121,15 +121,18 @@ router.post('/upload-image', checkPermission('furniture_shop', 'write'), upload.
 // Seed demo data with categories and images
 router.post('/seed-demo', checkPermission('furniture_shop', 'write'), async (req, res) => {
   try {
-    const existing = await FurnitureProduct.findOne({ ...req.tenantFilter, sku: 'DEMO-SOFA-001' });
-    if (existing) return res.status(409).json({ error: 'Demo data already exists' });
+    // Clean up old demo items
+    await FurnitureProduct.deleteMany({
+      ...req.tenantFilter,
+      sku: { $regex: /^DEMO-/i }
+    });
 
     const demoItems = [
       {
         tenantId: req.user.tenantId,
         name: 'Luxury Modern Sofa',
         nameAr: 'كنبة مودرن فاخرة',
-        sku: 'DEMO-SOFA-001',
+        sku: 'DEMO-SOFA-002',
         category: 'Sofa',
         size: '3 Seater',
         color: 'Grey',
@@ -142,7 +145,7 @@ router.post('/seed-demo', checkPermission('furniture_shop', 'write'), async (req
         tenantId: req.user.tenantId,
         name: 'King Size Oak Bed',
         nameAr: 'سرير خشب بلوط مقاس كينج',
-        sku: 'DEMO-BED-001',
+        sku: 'DEMO-BED-002',
         category: 'Bed',
         size: 'King',
         color: 'Oak',
@@ -155,7 +158,7 @@ router.post('/seed-demo', checkPermission('furniture_shop', 'write'), async (req
         tenantId: req.user.tenantId,
         name: 'Persian Style Carpet',
         nameAr: 'سجادة بتصميم فارسي',
-        sku: 'DEMO-CARPET-001',
+        sku: 'DEMO-CARPET-002',
         category: 'Carpet',
         size: '2x3m',
         color: 'Red/Gold',
@@ -168,7 +171,7 @@ router.post('/seed-demo', checkPermission('furniture_shop', 'write'), async (req
         tenantId: req.user.tenantId,
         name: 'Traditional Majlis Set',
         nameAr: 'طقم مجلس تقليدي',
-        sku: 'DEMO-MAJLIS-001',
+        sku: 'DEMO-MAJLIS-002',
         category: 'Majlis',
         size: '5 pieces',
         color: 'Beige',

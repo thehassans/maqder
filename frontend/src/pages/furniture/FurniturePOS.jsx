@@ -81,8 +81,22 @@ export default function FurniturePOS() {
 
   const products = productsData || []
 
-  // ─── Categories ───
-  const categories = [...new Set(products.map((p) => p.category).filter(Boolean))]
+  // ─── Helpers ───
+  const isArabic = language === 'ar'
+  const dir = isArabic ? 'rtl' : 'ltr'
+  const label = (en, ar) => (isArabic ? ar : en)
+
+  const translateCategory = (cat) => {
+    if (!cat) return label('General', 'عام')
+    const map = {
+      'Sofa': label('Sofa', 'كنب'),
+      'Bed': label('Bed', 'سرير'),
+      'Carpet': label('Carpet', 'سجاد'),
+      'Majlis': label('Majlis', 'مجالس'),
+      'Dining': label('Dining', 'طعام')
+    }
+    return map[cat] || cat
+  }
 
   // ─── Cart Logic ───
   const handleProductClick = (product) => {
@@ -284,7 +298,7 @@ export default function FurniturePOS() {
                   selectedCategory === cat ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
-                {cat}
+                {translateCategory(cat)}
               </button>
             ))}
           </div>
@@ -353,7 +367,7 @@ export default function FurniturePOS() {
                       <div className="flex items-center justify-between mt-1">
                         <p className="text-[11px] font-medium text-slate-400">{product.sku}</p>
                         <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
-                          {product.category || 'General'}
+                          {translateCategory(product.category)}
                         </span>
                       </div>
                     </div>
@@ -524,6 +538,40 @@ export default function FurniturePOS() {
                         className={`w-full ${isArabic ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 rounded-xl border border-slate-200 text-sm font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all`}
                         placeholder="05xxxxxxxx"
                       />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3 mt-2">
+                      <div className="col-span-2 sm:col-span-1">
+                        <label className="text-[10px] font-bold text-slate-500 mb-0.5 block">{label('ID / Iqama / VAT', 'الهوية / الضريبة')}</label>
+                        <div className="flex gap-2">
+                          <select
+                            value={customerIdType}
+                            onChange={(e) => setCustomerIdType(e.target.value)}
+                            className="px-2 py-3 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-indigo-500/20 outline-none bg-white font-medium"
+                          >
+                            <option value="iqama">{label('Iqama', 'إقامة')}</option>
+                            <option value="id">{label('ID', 'هوية')}</option>
+                            <option value="vat">{label('VAT Number', 'رقم الضريبة')}</option>
+                          </select>
+                          <input
+                            value={customerId}
+                            onChange={(e) => setCustomerId(e.target.value)}
+                            className="flex-1 px-3 py-3 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                            placeholder="1xxxxxxxx"
+                          />
+                        </div>
+                      </div>
+                      <div className="col-span-2 sm:col-span-1 flex items-end pb-1">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={vatApplicable}
+                            onChange={(e) => setVatApplicable(e.target.checked)}
+                            className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <span className="text-xs font-bold text-slate-600">{label('Apply 15% VAT', 'تطبيق ضريبة 15%')}</span>
+                        </label>
+                      </div>
                     </div>
                     
                     {/* Payment Method Toggle */}
