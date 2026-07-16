@@ -6,7 +6,7 @@ import {
   Search,
   Plus,
   X,
-  Shirt,
+  Package,
   Sparkles,
   Trash2,
   Edit3,
@@ -16,12 +16,11 @@ import {
 } from 'lucide-react'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
-import Money from '../../components/ui/Money'
 
 /**
- * Furniture Products (Furniture) Management Page
- * Grid view of all furniture furniture with add/edit form and image upload.
- * Includes a "Load Demo Suit" button for quick testing.
+ * Furniture Products Management Page
+ * Grid view of all furniture products with add/edit form and image upload.
+ * Simplified for pure sales logic with open pricing support.
  */
 
 export default function FurnitureProducts() {
@@ -47,13 +46,7 @@ export default function FurnitureProducts() {
     category: '',
     size: '',
     color: '',
-    mode: 'BOTH',
-    dailyRate: '',
-    salePrice: '',
-    rentalRates: '',
-    securityDeposit: '',
-    turnaroundHours: '24',
-    rentalQuantity: '1',
+    salePrice: '0', // 0 triggers open price in POS
     primaryImage: '',
     description: '',
     isActive: true,
@@ -77,13 +70,7 @@ export default function FurnitureProducts() {
       category: '',
       size: '',
       color: '',
-      mode: 'BOTH',
-      dailyRate: '',
-      salePrice: '',
-      rentalRates: '',
-      securityDeposit: '',
-      turnaroundHours: '24',
-      rentalQuantity: '1',
+      salePrice: '0',
       primaryImage: '',
       description: '',
       isActive: true,
@@ -105,13 +92,7 @@ export default function FurnitureProducts() {
       category: product.category || '',
       size: product.size || '',
       color: product.color || '',
-      mode: product.mode || 'BOTH',
-      dailyRate: product.dailyRate || '',
-      salePrice: product.salePrice || '',
-      rentalRates: product.rentalRates?.map((r) => `${r.days}:${r.rate}`).join(',') || '',
-      securityDeposit: product.securityDeposit || '',
-      turnaroundHours: String(product.turnaroundHours || 24),
-      rentalQuantity: String(product.rentalQuantity || 1),
+      salePrice: product.salePrice || '0',
       primaryImage: product.primaryImage || '',
       description: product.description || '',
       isActive: product.isActive !== false,
@@ -136,24 +117,9 @@ export default function FurnitureProducts() {
   })
 
   const handleSave = () => {
-    const rentalRates = form.rentalRates
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .map((s) => {
-        const [days, rate] = s.split(':')
-        return { days: Number(days), rate: Number(rate) }
-      })
-      .filter((r) => r.days > 0 && r.rate > 0)
-
     const payload = {
       ...form,
-      dailyRate: Number(form.dailyRate) || 0,
       salePrice: Number(form.salePrice) || 0,
-      securityDeposit: Number(form.securityDeposit) || 0,
-      turnaroundHours: Number(form.turnaroundHours) || 24,
-      rentalQuantity: Number(form.rentalQuantity) || 1,
-      rentalRates,
     }
     saveMutation.mutate(payload)
   }
@@ -235,11 +201,11 @@ export default function FurnitureProducts() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Shirt className="w-6 h-6 text-rose-500" />
-            {label('Furniture', 'الفساتين')}
+            <Package className="w-6 h-6 text-indigo-500" />
+            {label('Furniture Catalog', 'دليل الأثاث')}
           </h1>
           <p className="text-gray-500 mt-1">
-            {label('Manage furniture inventory and rental items', 'إدارة مخزون البوتيك وفساتين الإيجار')}
+            {label('Manage your premium furniture inventory', 'إدارة مخزون الأثاث الخاص بك')}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -249,8 +215,8 @@ export default function FurnitureProducts() {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder={label('Search furniture...', 'ابحثي عن أثاث...')}
-              className="pl-9 pr-4 py-2 rounded-xl border border-gray-200 text-sm w-56 focus:ring-2 focus:ring-rose-200 outline-none"
+              placeholder={label('Search...', 'بحث...')}
+              className="pl-9 pr-4 py-2 rounded-xl border border-gray-200 text-sm w-56 focus:ring-2 focus:ring-indigo-200 outline-none"
             />
           </div>
           <button
@@ -263,10 +229,10 @@ export default function FurnitureProducts() {
           </button>
           <button
             onClick={openNew}
-            className="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors"
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors"
           >
             <Plus className="w-4 h-4" />
-            {label('Add Furniture', 'إضافة أثاث')}
+            {label('Add Product', 'إضافة منتج')}
           </button>
         </div>
       </div>
@@ -277,75 +243,56 @@ export default function FurnitureProducts() {
       ) : products.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-gray-400">
           <Sparkles className="w-12 h-12 mb-3 opacity-30" />
-          <p>{label('No furniture found. Add your first furniture!', 'لا يوجد فساتين. أضيفي أول أثاث!')}</p>
+          <p>{label('No products found. Add your first item!', 'لا توجد منتجات. أضف منتجك الأول!')}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {products.map((p) => (
             <motion.div
               key={p._id}
               layout
-              className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-md transition-shadow"
+              className="bg-white rounded-3xl border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
             >
-              <div className="aspect-[4/5] bg-gray-50 relative overflow-hidden">
+              <div className="aspect-[4/3] bg-gray-50 relative overflow-hidden group">
                 {p.primaryImage ? (
-                  <img src={p.primaryImage} alt={p.name} className="w-full h-full object-cover" />
+                  <img src={p.primaryImage} alt={p.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-300">
-                    <Shirt className="w-10 h-10" />
+                    <Package className="w-10 h-10" />
                   </div>
                 )}
-                <div className="absolute top-2 right-2 flex gap-1">
+                <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={() => openEdit(p)}
-                    className="bg-white/90 backdrop-blur p-1.5 rounded-lg shadow-sm hover:bg-white text-gray-600"
+                    className="bg-white/90 backdrop-blur p-2 rounded-xl shadow-sm hover:bg-white text-gray-600"
                   >
-                    <Edit3 className="w-3.5 h-3.5" />
+                    <Edit3 className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => deleteMutation.mutate(p._id)}
-                    className="bg-white/90 backdrop-blur p-1.5 rounded-lg shadow-sm hover:bg-red-50 text-red-500"
+                    className="bg-white/90 backdrop-blur p-2 rounded-xl shadow-sm hover:bg-red-50 text-red-500"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
-                {p.mode === 'FOR_RENT' && (
-                  <span className="absolute top-2 left-2 bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-lg">
-                    {label('RENTAL', 'إيجار')}
-                  </span>
-                )}
               </div>
-              <div className="p-4">
-                <h3 className="font-bold text-gray-900 text-sm truncate">{p.name}</h3>
-                <p className="text-xs text-gray-400 mt-0.5">{p.sku}</p>
-                <div className="flex items-center justify-between mt-2 text-xs">
-                  <span className="text-gray-500">{p.category}</span>
-                  <span className="bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{p.size}</span>
-                </div>
-                <div className="flex items-center justify-between mt-2">
-                  <span className="text-xs text-rose-600 font-bold">
-                    {p.dailyRate > 0 ? `SAR ${p.dailyRate}/day` : label('Tiered pricing', 'أسعار متدرجة')}
-                  </span>
-                  <span className="text-[10px] text-gray-400">
-                    {label('Deposit', 'تأمين')}: <Money value={p.securityDeposit || 0} />
-                  </span>
-                </div>
-                {p.salePrice > 0 && (
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="text-[10px] text-emerald-600 font-bold">
-                      {label('Sale', 'للبيع')}: SAR {p.salePrice}
-                    </span>
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded ${
-                      p.mode === 'FOR_SALE' ? 'bg-emerald-50 text-emerald-700' :
-                      p.mode === 'FOR_RENT' ? 'bg-rose-50 text-rose-700' :
-                      'bg-purple-50 text-purple-700'
-                    }`}>
-                      {p.mode === 'FOR_SALE' ? label('Sale', 'للبيع') :
-                       p.mode === 'FOR_RENT' ? label('Rent', 'للإيجار') :
-                       label('Both', 'الإيجار والبيع')}
-                    </span>
+              <div className="p-5">
+                <div className="flex justify-between items-start gap-2">
+                  <div>
+                    <h3 className="font-bold text-gray-900 text-base truncate">{p.name}</h3>
+                    <p className="text-xs text-gray-400 mt-0.5">{p.sku}</p>
                   </div>
-                )}
+                  <span className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded-lg text-xs font-semibold whitespace-nowrap">
+                    {p.category || 'General'}
+                  </span>
+                </div>
+                
+                <div className="mt-4 pt-4 border-t border-gray-50 flex items-center justify-between">
+                  <span className="text-gray-500 text-sm">{label('Price', 'السعر')}</span>
+                  <span className="text-lg font-bold text-gray-900">
+                    {p.salePrice > 0 ? `SAR ${p.salePrice}` : label('Open Price', 'سعر مفتوح')}
+                  </span>
+                </div>
               </div>
             </motion.div>
           ))}
@@ -359,37 +306,39 @@ export default function FurnitureProducts() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
           >
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden max-h-[90vh] flex flex-col"
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-white rounded-[2rem] shadow-2xl w-full max-w-xl overflow-hidden max-h-[90vh] flex flex-col"
             >
-              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-none">
-                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-rose-500" />
-                  {editingId ? label('Edit Furniture', 'تعديل أثاث') : label('Add New Furniture', 'إضافة أثاث جديد')}
+              <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between flex-none bg-gray-50/50">
+                <h3 className="text-xl font-bold text-gray-900 flex items-center gap-3">
+                  <div className="bg-indigo-100 p-2 rounded-xl">
+                    <Package className="w-5 h-5 text-indigo-600" />
+                  </div>
+                  {editingId ? label('Edit Product', 'تعديل منتج') : label('Add New Product', 'إضافة منتج جديد')}
                 </h3>
-                <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-600">
+                <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-900 bg-white p-2 rounded-full shadow-sm">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="p-6 overflow-y-auto flex-1 space-y-4">
+              <div className="p-8 overflow-y-auto flex-1 space-y-6">
                 {/* Image Upload */}
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">{label('Furniture Image', 'صورة الأثاث')}</label>
-                  <div className="flex items-center gap-3">
+                  <label className="text-sm font-semibold text-gray-700 mb-2 block">{label('Product Image', 'صورة المنتج')}</label>
+                  <div className="flex items-center gap-4">
                     <div
-                      className="w-20 h-20 rounded-xl border border-dashed border-gray-300 flex items-center justify-center bg-gray-50 overflow-hidden cursor-pointer hover:border-rose-300 transition-colors"
+                      className="w-24 h-24 rounded-2xl border-2 border-dashed border-gray-200 flex items-center justify-center bg-gray-50 overflow-hidden cursor-pointer hover:border-indigo-400 transition-colors group"
                       onClick={() => fileInputRef.current?.click()}
                     >
                       {previewUrl ? (
-                        <img src={previewUrl} alt="" className="w-full h-full object-cover" />
+                        <img src={previewUrl} alt="" className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" />
                       ) : (
-                        <ImageIcon className="w-6 h-6 text-gray-300" />
+                        <ImageIcon className="w-8 h-8 text-gray-300 group-hover:text-indigo-400 transition-colors" />
                       )}
                     </div>
                     <div className="flex-1">
@@ -403,171 +352,119 @@ export default function FurnitureProducts() {
                       <button
                         onClick={() => fileInputRef.current?.click()}
                         disabled={uploading}
-                        className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-xs font-bold transition-colors"
+                        className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2.5 rounded-xl text-sm font-bold transition-colors"
                       >
-                        <Upload className="w-3.5 h-3.5" />
+                        <Upload className="w-4 h-4" />
                         {uploading ? label('Uploading...', 'جاري الرفع...') : label('Upload Image', 'رفع صورة')}
                       </button>
-                      <p className="text-[10px] text-gray-400 mt-1">{label('JPG, PNG, WebP up to 5MB', 'JPG أو PNG أو WebP حتى 5 ميجا')}</p>
+                      <p className="text-xs text-gray-400 mt-2">{label('High quality JPG, PNG, WebP', 'صيغ عالية الجودة')}</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-5">
                   <div className="col-span-2">
-                    <label className="text-xs text-gray-500 mb-1 block">{label('Name (EN)', 'الاسم (إنجليزي)')} *</label>
+                    <label className="text-sm font-semibold text-gray-700 mb-1.5 block">{label('Name (EN)', 'الاسم (إنجليزي)')} *</label>
                     <input
                       value={form.name}
                       onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
                     />
                   </div>
                   <div className="col-span-2">
-                    <label className="text-xs text-gray-500 mb-1 block">{label('Name (AR)', 'الاسم (عربي)')}</label>
+                    <label className="text-sm font-semibold text-gray-700 mb-1.5 block">{label('Name (AR)', 'الاسم (عربي)')}</label>
                     <input
                       value={form.nameAr}
                       onChange={(e) => setForm((f) => ({ ...f, nameAr: e.target.value }))}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none text-right"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-200 outline-none text-right transition-all"
                       dir="rtl"
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">{label('SKU', 'الرمز')} *</label>
+                    <label className="text-sm font-semibold text-gray-700 mb-1.5 block">{label('SKU', 'الرمز')} *</label>
                     <input
                       value={form.sku}
                       onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
-                      placeholder="DRES-001"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-200 outline-none uppercase transition-all"
+                      placeholder="SOFA-001"
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">{label('Category', 'الفئة')}</label>
+                    <label className="text-sm font-semibold text-gray-700 mb-1.5 block">{label('Category', 'الفئة')}</label>
                     <input
                       value={form.category}
                       onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
-                      placeholder={label('Evening', 'سهرة')}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
+                      placeholder={label('Sofa, Carpet...', 'كنب، سجاد...')}
+                      list="categories"
                     />
+                    <datalist id="categories">
+                      <option value="Sofa" />
+                      <option value="Bed" />
+                      <option value="Carpet" />
+                      <option value="Majlis" />
+                      <option value="Dining" />
+                    </datalist>
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">{label('Size', 'المقاس')}</label>
+                    <label className="text-sm font-semibold text-gray-700 mb-1.5 block">{label('Size / Dimensions', 'المقاس / الأبعاد')}</label>
                     <input
                       value={form.size}
                       onChange={(e) => setForm((f) => ({ ...f, size: e.target.value }))}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
-                      placeholder="M / 38"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
+                      placeholder="2x3m / 3 Seater"
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-gray-500 mb-1 block">{label('Color', 'اللون')}</label>
+                    <label className="text-sm font-semibold text-gray-700 mb-1.5 block">{label('Color', 'اللون')}</label>
                     <input
                       value={form.color}
                       onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
-                      placeholder={label('Red', 'أحمر')}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
                     />
                   </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">{label('Daily Rate (SAR)', 'السعر اليومي')}</label>
-                    <input
-                      type="number"
-                      value={form.dailyRate}
-                      onChange={(e) => setForm((f) => ({ ...f, dailyRate: e.target.value }))}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
-                      placeholder="150"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">{label('Sale Price (SAR)', 'سعر البيع')}</label>
+                  <div className="col-span-2">
+                    <label className="text-sm font-semibold text-gray-700 mb-1.5 block">
+                      {label('Default Price (SAR)', 'السعر الافتراضي')} 
+                      <span className="text-xs text-gray-400 font-normal ml-2">({label('Leave 0 to set price at POS', 'اتركه 0 لتحديد السعر في نقطة البيع')})</span>
+                    </label>
                     <input
                       type="number"
                       value={form.salePrice}
                       onChange={(e) => setForm((f) => ({ ...f, salePrice: e.target.value }))}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
-                      placeholder="2000"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">{label('Security Deposit', 'التأمين')}</label>
-                    <input
-                      type="number"
-                      value={form.securityDeposit}
-                      onChange={(e) => setForm((f) => ({ ...f, securityDeposit: e.target.value }))}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
-                      placeholder="500"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-200 outline-none text-lg font-bold text-indigo-700 transition-all"
                     />
                   </div>
                   <div className="col-span-2">
-                    <label className="text-xs text-gray-500 mb-1 block">{label('Mode', 'الوضع')}</label>
-                    <select
-                      value={form.mode}
-                      onChange={(e) => setForm((f) => ({ ...f, mode: e.target.value }))}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
-                    >
-                      <option value="FOR_RENT">{label('For Rent', 'للإيجار')}</option>
-                      <option value="FOR_SALE">{label('For Sale', 'للبيع')}</option>
-                      <option value="BOTH">{label('Both', 'الإيجار والبيع')}</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">{label('Turnaround (hrs)', 'فترة التجهيز')}</label>
-                    <input
-                      type="number"
-                      value={form.turnaroundHours}
-                      onChange={(e) => setForm((f) => ({ ...f, turnaroundHours: e.target.value }))}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">{label('Quantity', 'الكمية')}</label>
-                    <input
-                      type="number"
-                      value={form.rentalQuantity}
-                      onChange={(e) => setForm((f) => ({ ...f, rentalQuantity: e.target.value }))}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <label className="text-xs text-gray-500 mb-1 block">
-                      {label('Rental Rates (days:rate, days:rate)', 'أسعار الإيجار (أيام:سعر، أيام:سعر)')}
-                    </label>
-                    <input
-                      value={form.rentalRates}
-                      onChange={(e) => setForm((f) => ({ ...f, rentalRates: e.target.value }))}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none"
-                      placeholder="3:400, 7:800"
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <label className="text-xs text-gray-500 mb-1 block">{label('Description', 'الوصف')}</label>
+                    <label className="text-sm font-semibold text-gray-700 mb-1.5 block">{label('Description', 'الوصف')}</label>
                     <textarea
                       value={form.description}
                       onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                      rows={2}
-                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-rose-200 outline-none resize-none"
+                      rows={3}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-200 outline-none resize-none transition-all"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="p-4 border-t border-gray-100 flex gap-3 flex-none">
+              <div className="p-6 border-t border-gray-100 flex gap-4 flex-none bg-gray-50/50">
                 <button
                   onClick={() => setShowForm(false)}
-                  className="flex-1 py-3 rounded-xl border border-gray-200 font-bold text-gray-600 hover:bg-gray-50 transition-colors"
+                  className="flex-1 py-3.5 rounded-xl bg-white border border-gray-200 font-bold text-gray-600 hover:bg-gray-50 transition-colors shadow-sm"
                 >
                   {label('Cancel', 'إلغاء')}
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={saveMutation.isPending || !form.name || !form.sku}
-                  className="flex-1 py-3 rounded-xl bg-rose-600 text-white font-bold hover:bg-rose-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 py-3.5 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-md shadow-indigo-200 flex items-center justify-center gap-2"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-5 h-5" />
                   {saveMutation.isPending
                     ? label('Saving...', 'جاري الحفظ...')
                     : editingId
-                    ? label('Update', 'تحديث')
-                    : label('Save Furniture', 'حفظ الأثاث')}
+                    ? label('Update Product', 'تحديث المنتج')
+                    : label('Save Product', 'حفظ المنتج')}
                 </button>
               </div>
             </motion.div>

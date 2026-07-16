@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useSelector } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -6,20 +6,19 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search,
   ShoppingBag,
-  Calendar,
   User,
   Phone,
-  Printer,
-  ChevronRight,
   Sparkles,
   Plus,
   Minus,
   Trash2,
-  Clock,
-  CheckCircle2,
+  ChevronRight,
   ArrowRight,
-  Receipt,
   AlertCircle,
+  X,
+  CreditCard,
+  Banknote,
+  Package
 } from 'lucide-react'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
@@ -28,9 +27,9 @@ import InvoiceLivePreview from '../../components/invoices/InvoiceLivePreview'
 import { printInvoiceSnapshot, downloadInvoicePdf } from '../../lib/invoicePdf'
 
 /**
- * Furniture POS — Ladies Furniture & Furniture Rental
+ * Furniture POS 
  * Ultra-premium, minimalist POS counter interface for selecting furniture,
- * picking calendar dates, and processing checkout with thermal receipt print.
+ * processing checkout with thermal receipt print and handling open-priced items.
  */
 
 export default function FurniturePOS() {
@@ -48,9 +47,12 @@ export default function FurniturePOS() {
   const [showReceipt, setShowReceipt] = useState(false)
   const [receiptData, setReceiptData] = useState(null)
   const [checkoutError, setCheckoutError] = useState(null)
-  const [transactionMode, setTransactionMode] = useState('rental') // 'rental' | 'sale'
+  
+  // Custom price modal state
+  const [priceModalData, setPriceModalData] = useState(null) // { product }
+  const [customPrice, setCustomPrice] = useState('')
 
-  // ─── Customer & Dates ───
+  // ─── Customer & Checkout ───
   const [customerName, setCustomerName] = useState('')
   const [customerNameAr, setCustomerNameAr] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
@@ -58,24 +60,18 @@ export default function FurniturePOS() {
   const [customerIdType, setCustomerIdType] = useState('iqama')
   const [paymentMethod, setPaymentMethod] = useState('cash')
   const [amountPaid, setAmountPaid] = useState(0)
-  const [securityDepositAmount, setSecurityDepositAmount] = useState(0)
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
   const [discountAmount, setDiscountAmount] = useState(0)
   const [vatApplicable, setVatApplicable] = useState(true)
-  const [unavailableProductIds, setUnavailableProductIds] = useState(new Set())
-  const [availabilityError, setAvailabilityError] = useState(null)
 
   // ─── Product Fetch ───
   const { data: productsData, isLoading } = useQuery({
-    queryKey: ['furniture-products', searchQuery, selectedCategory, transactionMode],
+    queryKey: ['furniture-products', searchQuery, selectedCategory],
     queryFn: () =>
       api
         .get('/furniture/products', {
           params: {
             search: searchQuery || undefined,
             category: selectedCategory || undefined,
-            mode: transactionMode,
             isActive: true,
             limit: 100,
           },
@@ -88,49 +84,22 @@ export default function FurniturePOS() {
   // ─── Categories ───
   const categories = [...new Set(products.map((p) => p.category).filter(Boolean))]
 
-  // ─── Availability Check ───
-  const checkProductAvailability = async (productId, start, end) => {
-    if (!start || !end || transactionMode === 'sale') return true
-    try {
-      const res = await api.post(`/furniture/availability/${productId}`, { startDate: start, endDate: end })
-      return res.data?.available === true
-    } catch (err) {
-      console.warn('Availability check failed', err)
-      return true
-    }
-  }
-
-  const checkCartAvailability = async () => {
-    if (transactionMode === 'sale' || !startDate || !endDate || cart.length === 0) return
-    const unavailable = new Set()
-    for (const item of cart) {
-      const available = await checkProductAvailability(item.productId, startDate, endDate)
-      if (!available) unavailable.add(item.productId)
-    }
-    setUnavailableProductIds(unavailable)
-  }
-
   // ─── Cart Logic ───
-  const addToCart = async (product) => {
-    const existing = cart.find((item) => item.productId === product._id)
-    if (existing) return
-
-    // Check availability for rental items before adding
-    if (transactionMode === 'rental' && startDate && endDate) {
-      const available = await checkProductAvailability(product._id, startDate, endDate)
-      if (!available) {
-        setAvailabilityError(`${isArabic ? product.nameAr || product.name : product.name} ${label('is not available for the selected dates', 'غير متاحة للتواريخ المحددة')}`)
-        setUnavailableProductIds((prev) => new Set([...prev, product._id]))
-        setTimeout(() => setAvailabilityError(null), 3000)
-        return
-      }
+  const handleProductClick = (product) => {
+    if (product.salePrice === 0 || !product.salePrice) {
+      setPriceModalData(product)
+      setCustomPrice('')
+    } else {
+      addToCart(product, product.salePrice)
     }
+  }
 
-    setAvailabilityError(null)
-    // Calculate rental days from dates if set
-    const calculatedDays = (transactionMode === 'rental' && startDate && endDate)
-      ? Math.max(1, Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)))
-      : 1
+  const addToCart = (product, price) => {
+    const existing = cart.find((item) => item.productId === product._id)
+    if (existing) {
+      updateCartItem(product._id, 'quantity', existing.quantity + 1)
+      return
+    }
 
     setCart((prev) => [
       ...prev,
@@ -142,33 +111,19 @@ export default function FurniturePOS() {
         size: product.size,
         color: product.color,
         image: product.primaryImage || product.images?.[0],
-        dailyRate: transactionMode === 'sale' ? product.salePrice : product.dailyRate,
-        salePrice: product.salePrice,
-        rentalRates: product.rentalRates,
-        securityDeposit: transactionMode === 'sale' ? 0 : product.securityDeposit,
+        unitPrice: Number(price),
         quantity: 1,
-        rentalDays: calculatedDays,
-        mode: transactionMode,
       },
     ])
   }
 
-  // Re-check availability when dates change
-  useEffect(() => {
-    if (transactionMode === 'rental' && startDate && endDate && cart.length > 0) {
-      checkCartAvailability()
+  const submitCustomPrice = () => {
+    if (!customPrice || Number(customPrice) <= 0) return
+    if (priceModalData) {
+      addToCart(priceModalData, Number(customPrice))
+      setPriceModalData(null)
     }
-  }, [startDate, endDate])
-
-  // Auto-update cart rental days when dates change
-  useEffect(() => {
-    if (transactionMode === 'rental' && startDate && endDate) {
-      const days = Math.max(1, Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)))
-      setCart((prev) => prev.map((item) =>
-        item.mode === 'rental' ? { ...item, rentalDays: days } : item
-      ))
-    }
-  }, [startDate, endDate])
+  }
 
   const removeFromCart = (productId) => {
     setCart((prev) => prev.filter((item) => item.productId !== productId))
@@ -183,40 +138,17 @@ export default function FurniturePOS() {
   }
 
   // ─── Pricing Logic ───
-  const computeItemPrice = (item) => {
-    const days = Math.max(1, Number(item.rentalDays) || 1)
-    const tiers = (item.rentalRates || []).slice().sort((a, b) => a.days - b.days)
-    const exact = tiers.find((t) => t.days === days)
-    if (exact) return exact.rate
-    const largest = tiers.length > 0 ? tiers[tiers.length - 1] : null
-    if (largest && days > largest.days) {
-      const daily = item.dailyRate || largest.rate / largest.days
-      return largest.rate + (days - largest.days) * daily
-    }
-    for (let i = tiers.length - 1; i >= 0; i--) {
-      if (days >= tiers[i].days) {
-        const daily = item.dailyRate || tiers[i].rate / tiers[i].days
-        return tiers[i].rate + (days - tiers[i].days) * daily
-      }
-    }
-    return days * (item.dailyRate || 0)
-  }
-
   const cartTotals = (() => {
     const lines = cart.map((item) => {
-      const isSaleItem = item.mode === 'sale'
-      const rentalSubtotal = isSaleItem ? (item.salePrice || 0) : computeItemPrice(item)
-      const deposit = isSaleItem ? 0 : (item.securityDeposit || 0)
-      return { ...item, rentalSubtotal, deposit }
+      const lineTotal = (item.unitPrice || 0) * (item.quantity || 1)
+      return { ...item, lineTotal }
     })
-    const rentalSubtotal = lines.reduce((s, l) => s + l.rentalSubtotal, 0)
-    const itemTotalDeposit = lines.reduce((s, l) => s + l.deposit, 0)
-    const totalDeposit = securityDepositAmount > 0 ? securityDepositAmount : itemTotalDeposit
-    const taxableBase = Math.max(0, rentalSubtotal - discountAmount)
+    const subtotal = lines.reduce((s, l) => s + l.lineTotal, 0)
+    const taxableBase = Math.max(0, subtotal - discountAmount)
     const totalTax = vatApplicable ? Math.round(taxableBase * 0.15 * 100) / 100 : 0
-    const grandTotal = Math.round((taxableBase + totalTax + totalDeposit) * 100) / 100
+    const grandTotal = Math.round((taxableBase + totalTax) * 100) / 100
     const pendingAmount = Math.max(0, Math.round((grandTotal - (amountPaid || 0)) * 100) / 100)
-    return { lines, rentalSubtotal, itemTotalDeposit, totalDeposit, totalTax, grandTotal, pendingAmount, discountAmount }
+    return { lines, subtotal, totalTax, grandTotal, pendingAmount, discountAmount }
   })()
 
   // Auto-set defaults when totals change
@@ -225,12 +157,6 @@ export default function FurniturePOS() {
       setAmountPaid(cartTotals.grandTotal)
     }
   }, [cartTotals.grandTotal])
-
-  useEffect(() => {
-    if (securityDepositAmount === 0 && cartTotals.itemTotalDeposit > 0 && transactionMode !== 'sale') {
-      setSecurityDepositAmount(cartTotals.itemTotalDeposit)
-    }
-  }, [cartTotals.itemTotalDeposit, transactionMode])
 
   // ─── Auto-translate customer name between EN/AR ───
   const autoTranslateName = async (text, fromLang) => {
@@ -250,7 +176,7 @@ export default function FurniturePOS() {
     }
   }
 
-  // ─── A4 PDF Print Helper (same template as trading invoices) ───
+  // ─── A4 PDF Print Helper ───
   const printA4Invoice = async (invoice) => {
     try {
       await printInvoiceSnapshot({ invoice, language: 'en', tenant, documentType: 'invoice' })
@@ -259,21 +185,11 @@ export default function FurniturePOS() {
     }
   }
 
-  // ─── A4 PDF Download Helper (same template as trading invoices) ───
-  const downloadA4Invoice = async (invoice) => {
-    try {
-      await downloadInvoicePdf({ invoice, language: 'en', tenant, documentType: 'invoice' })
-    } catch (err) {
-      console.error('Failed to download A4 invoice', err)
-      alert(label('Failed to download PDF. Please try again.', 'فشل تحميل ملف PDF. حاول مرة أخرى.'))
-    }
-  }
-
   // ─── Checkout Mutation ───
   const checkoutMutation = useMutation({
-    mutationFn: (payload) => api.post('/furniture/rentals', payload).then((res) => res.data),
+    mutationFn: (payload) => api.post('/furniture/orders', payload).then((res) => res.data),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['furniture-rentals'] })
+      queryClient.invalidateQueries({ queryKey: ['furniture-orders'] })
       setReceiptData(data)
       setShowCheckout(false)
       setShowReceipt(true)
@@ -291,14 +207,8 @@ export default function FurniturePOS() {
   })
 
   const handleCheckout = () => {
-    console.log('Confirm & Print clicked')
-    const isSale = transactionMode === 'sale'
     if (!customerName || !customerPhone || cart.length === 0) {
-      console.warn('Checkout validation failed', { customerName, customerPhone, cartLength: cart.length })
-      return
-    }
-    if (!isSale && (!startDate || !endDate)) {
-      console.warn('Rental date validation failed', { startDate, endDate })
+      setCheckoutError(label('Please fill in required customer details', 'يرجى تعبئة بيانات العميل المطلوبة'))
       return
     }
     const payload = {
@@ -309,25 +219,18 @@ export default function FurniturePOS() {
       customerIdType,
       paymentMethod,
       amountPaid,
-      securityDeposit: securityDepositAmount,
-      transactionType: transactionMode,
       discount: discountAmount || 0,
       vatApplicable,
-      ...(isSale ? {} : { startDate, endDate }),
       lineItems: cart.map((item) => ({
         productId: item.productId,
+        productName: item.name,
+        productNameAr: item.nameAr,
+        sku: item.sku,
         quantity: item.quantity,
-        rentalDays: isSale ? 1 : item.rentalDays,
+        unitPrice: item.unitPrice,
       })),
     }
     checkoutMutation.mutate(payload)
-  }
-
-  // ─── Print ───
-  const handlePrint = () => {
-    if (receiptData?.invoice) {
-      printA4Invoice(receiptData.invoice)
-    }
   }
 
   // ─── Helpers ───
@@ -336,84 +239,49 @@ export default function FurniturePOS() {
   const label = (en, ar) => (isArabic ? ar : en)
 
   return (
-    <div className="h-full flex flex-col" dir={dir}>
+    <div className="h-full flex flex-col bg-[#F8F9FC] font-sans" dir={dir}>
       {/* ─── Header ─── */}
-      <div className="flex-none px-6 py-4 border-b border-gray-100 bg-white">
+      <div className="flex-none px-8 py-5 border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-10 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              <Sparkles className={`w-5 h-5 ${transactionMode === 'sale' ? 'text-emerald-500' : 'text-rose-500'}`} />
-              {label('Furniture POS', 'نقاط البيع — بوتيك')}
+            <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+              <div className="bg-indigo-100 text-indigo-600 p-2 rounded-xl">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              {label('Furniture POS', 'نقطة بيع الأثاث')}
             </h1>
           </div>
-          <div className="flex items-center gap-3">
-            {/* Mode Toggle — Ultra Premium Segmented Control */}
-            <div className="flex items-center gap-1.5 rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100/80 p-1.5 border border-gray-200/80 shadow-sm backdrop-blur-sm">
-              <button
-                onClick={() => { setTransactionMode('rental'); setCart([]) }}
-                className={`relative flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
-                  transactionMode === 'rental'
-                    ? 'bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-lg shadow-rose-500/25'
-                    : 'text-gray-500 hover:text-rose-600 hover:bg-rose-50/60'
-                }`}
-              >
-                <Clock className="w-4 h-4" />
-                {label('Rent', 'إيجار')}
-              </button>
-              <button
-                onClick={() => { setTransactionMode('sale'); setCart([]) }}
-                className={`relative flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 ${
-                  transactionMode === 'sale'
-                    ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/25'
-                    : 'text-gray-500 hover:text-emerald-600 hover:bg-emerald-50/60'
-                }`}
-              >
-                <ShoppingBag className="w-4 h-4" />
-                {label('Sell', 'بيع')}
-              </button>
-            </div>
-
-            <div className="h-6 w-px bg-gray-200" />
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <div className="flex items-center gap-4">
+            <div className="relative group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={label('Search furniture...', 'ابحثي عن أثاث...')}
-                className="pl-9 pr-4 py-2 rounded-xl border border-gray-200 text-sm w-64 focus:ring-2 focus:ring-rose-200 focus:border-rose-300 outline-none transition-all"
+                placeholder={label('Search products...', 'ابحث عن المنتجات...')}
+                className="pl-10 pr-4 py-3 rounded-2xl border-none bg-slate-100 text-sm w-72 focus:ring-2 focus:ring-indigo-500/30 focus:bg-white outline-none transition-all shadow-inner"
               />
             </div>
-            {cart.length > 0 && (
-              <button
-                onClick={() => setShowCheckout(true)}
-                className="flex items-center gap-2 bg-rose-600 hover:bg-rose-700 text-white px-5 py-2 rounded-xl text-sm font-semibold transition-colors shadow-sm"
-              >
-                <ShoppingBag className="w-4 h-4" />
-                {label('Checkout', 'الدفع')}
-                <span className="bg-white/20 px-2 py-0.5 rounded-lg text-xs">{cart.length}</span>
-              </button>
-            )}
           </div>
         </div>
 
         {/* Category Chips */}
         {categories.length > 0 && (
-          <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
+          <div className="flex gap-2 mt-4 overflow-x-auto pb-1 scrollbar-hide">
             <button
               onClick={() => setSelectedCategory('')}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                !selectedCategory ? 'bg-rose-100 text-rose-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              className={`px-5 py-2 rounded-full text-xs font-bold transition-all ${
+                !selectedCategory ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              {label('All', 'الكل')}
+              {label('All Collections', 'كل المجموعات')}
             </button>
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${
-                  selectedCategory === cat ? 'bg-rose-100 text-rose-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                className={`px-5 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap ${
+                  selectedCategory === cat ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
                 {cat}
@@ -424,184 +292,158 @@ export default function FurniturePOS() {
       </div>
 
       {/* ─── Main Content ─── */}
-      <div className="flex-1 overflow-hidden flex">
+      <div className="flex-1 overflow-hidden flex relative">
         {/* Product Grid */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-8 scrollbar-hide">
           {isLoading ? (
-            <div className="flex items-center justify-center h-full text-gray-400">
-              {label('Loading furniture...', 'جاري تحميل الفساتين...')}
+            <div className="flex items-center justify-center h-full">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
             </div>
           ) : products.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-400">
-              <Sparkles className="w-12 h-12 mb-3 opacity-30" />
-              <p>{label('No furniture found', 'لم يتم العثور على فساتين')}</p>
+            <div className="flex flex-col items-center justify-center h-full text-slate-400">
+              <Package className="w-16 h-16 mb-4 opacity-20" />
+              <p className="text-lg font-medium">{label('No furniture found', 'لم يتم العثور على أثاث')}</p>
             </div>
           ) : (
-            <>
-              {/* Availability Error Toast */}
-              {availabilityError && (
-                <div className="mb-4 bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700 flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  {availabilityError}
-                </div>
-              )}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-6">
               {products.map((product) => {
-                const isUnavailable = unavailableProductIds.has(product._id)
                 const isInCart = cart.some((item) => item.productId === product._id)
                 return (
-                <motion.div
-                  key={product._id}
-                  layoutId={product._id}
-                  onClick={() => addToCart(product)}
-                  className={`group cursor-pointer bg-white rounded-2xl border transition-all duration-300 overflow-hidden ${
-                    isUnavailable || isInCart
-                      ? 'border-gray-200 opacity-60 cursor-not-allowed'
-                      : 'border-gray-100 hover:border-rose-200 hover:shadow-lg'
-                  }`}
-                >
-                  <div className="aspect-[3/4] bg-gray-50 relative overflow-hidden">
-                    {product.primaryImage ? (
-                      <img
-                        src={product.primaryImage}
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-300">
-                        <ShoppingBag className="w-8 h-8" />
+                  <motion.div
+                    key={product._id}
+                    layoutId={product._id}
+                    onClick={() => handleProductClick(product)}
+                    whileHover={{ y: -4, scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={`group cursor-pointer bg-white rounded-3xl border transition-all duration-300 overflow-hidden shadow-sm hover:shadow-xl ${
+                      isInCart
+                        ? 'border-indigo-300 ring-2 ring-indigo-500/20'
+                        : 'border-slate-100'
+                    }`}
+                  >
+                    <div className="aspect-[4/3] bg-slate-50 relative overflow-hidden">
+                      {product.primaryImage ? (
+                        <img
+                          src={product.primaryImage}
+                          alt={product.name}
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-300">
+                          <ShoppingBag className="w-10 h-10" />
+                        </div>
+                      )}
+                      
+                      {/* Price Tag Overlay */}
+                      <div className="absolute top-3 left-3">
+                        <div className="bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-xl text-xs font-black text-slate-800 shadow-sm border border-slate-100/50">
+                          {product.salePrice > 0 ? `SAR ${product.salePrice}` : label('Open Price', 'سعر مفتوح')}
+                        </div>
                       </div>
-                    )}
-                    <div className="absolute top-2 right-2">
-                      <span className="bg-white/90 backdrop-blur text-[10px] font-bold px-2 py-1 rounded-lg text-gray-700 shadow-sm">
-                        {product.size}
-                      </span>
+                      
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <div className="absolute bottom-4 left-4 right-4 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300">
+                        <button className="w-full bg-white/20 backdrop-blur-md text-white border border-white/30 text-xs font-bold py-2.5 rounded-xl hover:bg-white/30 transition-colors">
+                          {label('Add to Cart', 'أضف للسلة')}
+                        </button>
+                      </div>
                     </div>
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                    <div className="absolute bottom-3 left-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className={`w-full text-white text-xs font-bold py-2 rounded-xl shadow-lg ${
-                        transactionMode === 'sale' ? 'bg-emerald-600' : 'bg-rose-600'
-                      }`}>
-                        {transactionMode === 'sale'
-                          ? label('+ Add to Cart', '+ أضيفي للسلة')
-                          : label('+ Add to Rental', '+ أضيفي للإيجار')}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="p-3">
-                    <h3 className="text-sm font-semibold text-gray-900 truncate">{isArabic ? product.nameAr || product.name : product.name}</h3>
-                    <p className="text-xs text-gray-400 mt-0.5">{product.sku}</p>
-                    <div className="mt-2 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className={`text-xs font-medium ${transactionMode === 'sale' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                          {transactionMode === 'sale'
-                            ? `SAR ${product.salePrice || 0}`
-                            : product.dailyRate > 0
-                            ? `SAR ${product.dailyRate}/${label('day', 'يوم')}`
-                            : label('Tiered pricing', 'تسعيرة متدرجة')}
-                        </span>
-                        <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
-                          {product.color}
+                    <div className="p-4 bg-white">
+                      <h3 className="text-sm font-black text-slate-800 truncate">{isArabic ? product.nameAr || product.name : product.name}</h3>
+                      <div className="flex items-center justify-between mt-1">
+                        <p className="text-[11px] font-medium text-slate-400">{product.sku}</p>
+                        <span className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
+                          {product.category || 'General'}
                         </span>
                       </div>
-                      <div className="text-[10px] text-gray-500">
-                        {transactionMode === 'sale'
-                          ? `${label('After VAT', 'بعد الضريبة')}: SAR ${Math.round((product.salePrice || 0) * 1.15 * 100) / 100}`
-                          : product.dailyRate > 0
-                          ? `${label('After VAT', 'بعد الضريبة')}: SAR ${Math.round((product.dailyRate || 0) * 1.15 * 100) / 100}/${label('day', 'يوم')}`
-                          : ''}
-                      </div>
                     </div>
-                  </div>
-                </motion.div>
+                  </motion.div>
                 )
               })}
             </div>
-          </>
           )}
         </div>
 
-        {/* Cart Sidebar */}
-        <div className="w-80 border-l border-gray-100 bg-gray-50/50 flex flex-col">
-          <div className="p-4 border-b border-gray-100 bg-white">
-            <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-              <ShoppingBag className={`w-4 h-4 ${transactionMode === 'sale' ? 'text-emerald-500' : 'text-rose-500'}`} />
-              {transactionMode === 'sale' ? label('Shopping Cart', 'سلة التسوق') : label('Rental Cart', 'عربة الإيجار')}
+        {/* ─── Ultra Premium Cart Sidebar ─── */}
+        <motion.div 
+          className="w-[420px] bg-white/80 backdrop-blur-2xl border-l border-slate-100 flex flex-col shadow-[-10px_0_30px_-15px_rgba(0,0,0,0.05)] z-20"
+          initial={false}
+        >
+          <div className="p-6 border-b border-slate-100/50">
+            <h2 className="text-xl font-black text-slate-800 flex items-center gap-3">
+              <div className="bg-emerald-100 text-emerald-600 p-2 rounded-xl">
+                <ShoppingBag className="w-5 h-5" />
+              </div>
+              {label('Current Order', 'الطلب الحالي')}
+              <span className="ml-auto bg-slate-100 text-slate-600 text-xs font-bold px-3 py-1 rounded-full">
+                {cart.length} {label('items', 'عناصر')}
+              </span>
             </h2>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-hide">
             <AnimatePresence>
               {cart.length === 0 ? (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="flex flex-col items-center justify-center h-40 text-gray-400 text-sm"
+                  className="flex flex-col items-center justify-center h-64 text-slate-400"
                 >
-                  <ShoppingBag className="w-8 h-8 mb-2 opacity-30" />
-                  {label('Cart is empty', 'العربة فارغة')}
+                  <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                    <ShoppingBag className="w-10 h-10 opacity-20" />
+                  </div>
+                  <p className="font-medium text-slate-500">{label('Your cart is empty', 'سلة المشتريات فارغة')}</p>
+                  <p className="text-xs text-slate-400 mt-1">{label('Select items from the catalog', 'اختر المنتجات من المعرض')}</p>
                 </motion.div>
               ) : (
                 cart.map((item) => (
                   <motion.div
                     key={item.productId}
                     layout
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, x: 50 }}
-                    className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95, height: 0, marginBottom: 0 }}
+                    className="bg-white rounded-2xl p-3 border border-slate-100 shadow-sm flex gap-4 group"
                   >
-                    <div className="flex gap-3">
-                      <div className="w-12 h-14 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                        {item.image ? (
-                          <img src={item.image} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-300">
-                            <ShoppingBag className="w-4 h-4" />
-                          </div>
-                        )}
+                    <div className="w-20 h-20 bg-slate-50 rounded-xl overflow-hidden flex-shrink-0 border border-slate-100/50">
+                      {item.image ? (
+                        <img src={item.image} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-300">
+                          <Package className="w-6 h-6" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 py-1 flex flex-col justify-between min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <h4 className="text-sm font-bold text-slate-800 truncate">{isArabic ? item.nameAr || item.name : item.name}</h4>
+                        <button
+                          onClick={() => removeFromCart(item.productId)}
+                          className="text-slate-300 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between">
-                          <h4 className="text-xs font-semibold text-gray-900 truncate">{isArabic ? item.nameAr || item.name : item.name}</h4>
+                      
+                      <div className="flex items-center justify-between mt-auto">
+                        <div className="flex items-center bg-slate-50 rounded-lg p-1 border border-slate-100">
                           <button
-                            onClick={() => removeFromCart(item.productId)}
-                            className="text-gray-300 hover:text-red-500 transition-colors"
+                            onClick={() => updateCartItem(item.productId, 'quantity', Math.max(1, item.quantity - 1))}
+                            className="w-6 h-6 rounded-md bg-white hover:bg-slate-100 flex items-center justify-center text-slate-600 shadow-sm"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Minus className="w-3 h-3" />
+                          </button>
+                          <span className="text-xs font-black w-8 text-center text-slate-800">{item.quantity}</span>
+                          <button
+                            onClick={() => updateCartItem(item.productId, 'quantity', item.quantity + 1)}
+                            className="w-6 h-6 rounded-md bg-white hover:bg-slate-100 flex items-center justify-center text-slate-600 shadow-sm"
+                          >
+                            <Plus className="w-3 h-3" />
                           </button>
                         </div>
-                        <p className="text-[10px] text-gray-400">{item.sku} · {item.size}</p>
-
-                        {item.mode !== 'sale' && (
-                          <div className="flex items-center gap-2 mt-2">
-                            <span className="text-[10px] text-gray-500">{label('Days', 'أيام')}:</span>
-                            <button
-                              onClick={() => updateCartItem(item.productId, 'rentalDays', Math.max(1, item.rentalDays - 1))}
-                              className="w-5 h-5 rounded bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600"
-                            >
-                              <Minus className="w-3 h-3" />
-                            </button>
-                            <span className="text-xs font-bold w-4 text-center">{item.rentalDays}</span>
-                            <button
-                              onClick={() => updateCartItem(item.productId, 'rentalDays', item.rentalDays + 1)}
-                              className="w-5 h-5 rounded bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600"
-                            >
-                              <Plus className="w-3 h-3" />
-                            </button>
-                          </div>
-                        )}
-
-                        <div className="flex justify-between mt-2 pt-2 border-t border-gray-50">
-                          {item.mode !== 'sale' && (
-                            <span className="text-[10px] text-gray-400">
-                              {label('Deposit', 'التأمين')}: <Money value={item.securityDeposit || 0} />
-                            </span>
-                          )}
-                          <span className={`text-xs font-bold ${item.mode === 'sale' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                            SAR {item.mode === 'sale' ? (item.salePrice || 0).toFixed(2) : computeItemPrice(item).toFixed(2)}
-                          </span>
-                        </div>
+                        <span className="text-sm font-black text-emerald-600">
+                          SAR {(item.unitPrice * item.quantity).toFixed(2)}
+                        </span>
                       </div>
                     </div>
                   </motion.div>
@@ -610,399 +452,249 @@ export default function FurniturePOS() {
             </AnimatePresence>
           </div>
 
-          {/* Cart Footer / Inline Checkout */}
+          {/* Cart Footer Summary */}
           {cart.length > 0 && (
-            <div className="p-4 bg-white border-t border-gray-100">
+            <div className="bg-white border-t border-slate-100 p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.03)]">
               {!showCheckout ? (
-                /* ── Cart Summary + Proceed ── */
-                <div>
-                  <div className="space-y-1 text-xs">
-                    <div className="flex justify-between text-gray-500">
-                      <span>{transactionMode === 'sale' ? label('Subtotal', 'المجموع الفرعي') : label('Rental Subtotal', 'إجمالي الإيجار')}</span>
-                      <Money value={cartTotals.rentalSubtotal} />
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                  <div className="space-y-2.5">
+                    <div className="flex justify-between text-sm font-medium text-slate-500">
+                      <span>{label('Subtotal', 'المجموع الفرعي')}</span>
+                      <Money value={cartTotals.subtotal} />
                     </div>
-                    {transactionMode !== 'sale' && (
-                      <div className="flex justify-between text-gray-500">
-                        <span>{label('Security Deposit', 'تأمين')}</span>
-                        <Money value={cartTotals.totalDeposit} />
-                      </div>
-                    )}
                     {vatApplicable && (
-                      <div className="flex justify-between text-gray-500">
-                        <span>{label('VAT (15%)', 'الضريبة 15%')}</span>
+                      <div className="flex justify-between text-sm font-medium text-slate-500">
+                        <span>{label('VAT (15%)', 'الضريبة (15%)')}</span>
                         <Money value={cartTotals.totalTax} />
                       </div>
                     )}
-                    <div className="flex justify-between text-sm font-bold text-gray-900 pt-2 border-t border-gray-100">
+                    <div className="flex justify-between text-xl font-black text-slate-900 pt-3 border-t border-slate-100">
                       <span>{label('Total', 'الإجمالي')}</span>
                       <Money value={cartTotals.grandTotal} />
                     </div>
                   </div>
                   <button
                     onClick={() => setShowCheckout(true)}
-                    className={`w-full mt-3 text-white py-3 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 ${
-                      transactionMode === 'sale' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-600 hover:bg-rose-700'
-                    }`}
+                    className="w-full bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-2xl text-sm font-black transition-all flex items-center justify-center gap-2 shadow-xl shadow-slate-900/20 hover:shadow-slate-900/30 hover:-translate-y-0.5"
                   >
                     {label('Proceed to Checkout', 'متابعة الدفع')}
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight className={`w-4 h-4 ${isArabic ? 'rotate-180' : ''}`} />
                   </button>
-                </div>
+                </motion.div>
               ) : (
                 /* ── Inline Checkout Form ── */
-                <div className="space-y-4 max-h-[60vh] overflow-y-auto">
-                  {/* Back to Cart */}
-                  <button
-                    onClick={() => setShowCheckout(false)}
-                    className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors"
-                  >
-                    <ChevronRight className={`w-3 h-3 ${isArabic ? 'rotate-180' : ''}`} />
-                    {label('Back to Cart', 'العودة للسلة')}
-                  </button>
+                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-5 max-h-[60vh] overflow-y-auto scrollbar-hide pr-2">
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={() => setShowCheckout(false)}
+                      className="flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors bg-slate-100 px-3 py-1.5 rounded-full"
+                    >
+                      <ChevronRight className={`w-3.5 h-3.5 ${isArabic ? 'rotate-180' : ''}`} />
+                      {label('Back', 'رجوع')}
+                    </button>
+                    <span className="text-sm font-black text-slate-800">SAR {cartTotals.grandTotal.toFixed(2)}</span>
+                  </div>
 
-                  {/* Customer Info */}
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                      {label('Customer Details', 'بيانات العميل')}
-                    </h4>
-                    <div className="space-y-2">
-                      <div>
-                        <label className="text-[10px] text-gray-500 mb-0.5 block">{label('Full Name (EN)', 'الاسم الكامل (إنجليزي)')} *</label>
-                        <div className="relative">
-                          <User className={`absolute ${isArabic ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400`} />
-                          <input
-                            value={customerName}
-                            onChange={(e) => setCustomerName(e.target.value)}
-                            onBlur={(e) => {
-                              const hasArabic = /[\u0600-\u06FF]/.test(e.target.value)
-                              if (!customerNameAr) autoTranslateName(e.target.value, hasArabic ? 'ar' : 'en')
-                            }}
-                            className={`w-full ${isArabic ? 'pr-8 pl-2' : 'pl-8 pr-2'} py-2 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-rose-200 outline-none`}
-                            placeholder={label('Customer name', 'اسم العميل')}
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-[10px] text-gray-500 mb-0.5 block">{label('Full Name (AR)', 'الاسم الكامل (عربي)')}</label>
-                        <input
-                          value={customerNameAr}
-                          onChange={(e) => setCustomerNameAr(e.target.value)}
-                          onBlur={(e) => {
-                            const hasArabic = /[\u0600-\u06FF]/.test(e.target.value)
-                            if (!customerName) autoTranslateName(e.target.value, hasArabic ? 'ar' : 'en')
-                          }}
-                          className="w-full px-2 py-2 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-rose-200 outline-none text-right"
-                          dir="rtl"
-                          placeholder={label('اسم العميل', 'اسم العميل')}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] text-gray-500 mb-0.5 block">{label('Phone', 'الجوال')} *</label>
-                        <div className="relative">
-                          <Phone className={`absolute ${isArabic ? 'right-3' : 'left-3'} top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400`} />
-                          <input
-                            value={customerPhone}
-                            onChange={(e) => setCustomerPhone(e.target.value)}
-                            className={`w-full ${isArabic ? 'pr-8 pl-2' : 'pl-8 pr-2'} py-2 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-rose-200 outline-none`}
-                            placeholder="05xxxxxxxx"
-                          />
-                        </div>
-                      </div>
-                      {transactionMode !== 'sale' && (
-                        <div>
-                          <label className="text-[10px] text-gray-500 mb-0.5 block">{label('ID / Iqama / VAT', 'الهوية / الضريبة')}</label>
-                          <div className="flex gap-2">
-                            <select
-                              value={customerIdType}
-                              onChange={(e) => setCustomerIdType(e.target.value)}
-                              className="px-2 py-2 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-rose-200 outline-none bg-white"
-                            >
-                              <option value="iqama">{label('Iqama', 'إقامة')}</option>
-                              <option value="id">{label('ID', 'هوية')}</option>
-                              <option value="vat">{label('VAT', 'ضريبة')}</option>
-                            </select>
-                            <input
-                              value={customerId}
-                              onChange={(e) => setCustomerId(e.target.value)}
-                              className="flex-1 px-2 py-2 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-rose-200 outline-none"
-                              placeholder="1xxxxxxxx"
-                            />
-                          </div>
-                        </div>
-                      )}
-                      <div>
-                        <label className="text-[10px] text-gray-500 mb-0.5 block">{label('Payment Method', 'طريقة الدفع')}</label>
-                        <select
-                          value={paymentMethod}
-                          onChange={(e) => setPaymentMethod(e.target.value)}
-                          className="w-full px-2 py-2 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-rose-200 outline-none bg-white"
-                        >
-                          <option value="cash">{label('Cash', 'نقدي')}</option>
-                          <option value="card">{label('Card', 'بطاقة')}</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-[10px] text-gray-500 mb-0.5 block">{label('Amount Paid', 'المبلغ المدفوع')}</label>
+                  {checkoutError && (
+                    <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-xs font-bold flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4" />
+                      {checkoutError}
+                    </div>
+                  )}
+
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <User className={`absolute ${isArabic ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400`} />
+                      <input
+                        value={customerName}
+                        onChange={(e) => setCustomerName(e.target.value)}
+                        onBlur={(e) => {
+                          const hasArabic = /[\u0600-\u06FF]/.test(e.target.value)
+                          if (!customerNameAr) autoTranslateName(e.target.value, hasArabic ? 'ar' : 'en')
+                        }}
+                        className={`w-full ${isArabic ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 rounded-xl border border-slate-200 text-sm font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all`}
+                        placeholder={label('Customer name', 'اسم العميل')}
+                      />
+                    </div>
+                    <div className="relative">
+                      <Phone className={`absolute ${isArabic ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400`} />
+                      <input
+                        value={customerPhone}
+                        onChange={(e) => setCustomerPhone(e.target.value)}
+                        className={`w-full ${isArabic ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 rounded-xl border border-slate-200 text-sm font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all`}
+                        placeholder="05xxxxxxxx"
+                      />
+                    </div>
+                    
+                    {/* Payment Method Toggle */}
+                    <div className="grid grid-cols-2 gap-3 mt-4">
+                      <button
+                        onClick={() => setPaymentMethod('cash')}
+                        className={`py-3 rounded-xl text-sm font-bold flex justify-center items-center gap-2 border-2 transition-all ${
+                          paymentMethod === 'cash' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-100 bg-white text-slate-500 hover:border-slate-200'
+                        }`}
+                      >
+                        <Banknote className="w-4 h-4" />
+                        {label('Cash', 'نقدي')}
+                      </button>
+                      <button
+                        onClick={() => setPaymentMethod('card')}
+                        className={`py-3 rounded-xl text-sm font-bold flex justify-center items-center gap-2 border-2 transition-all ${
+                          paymentMethod === 'card' ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-slate-100 bg-white text-slate-500 hover:border-slate-200'
+                        }`}
+                      >
+                        <CreditCard className="w-4 h-4" />
+                        {label('Card', 'بطاقة')}
+                      </button>
+                    </div>
+
+                    <div className="pt-2">
+                      <label className="text-xs font-bold text-slate-500 mb-1.5 block">{label('Amount Received', 'المبلغ المستلم')}</label>
+                      <div className="relative">
+                        <span className={`absolute ${isArabic ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400`}>SAR</span>
                         <input
                           type="number"
-                          min={0}
                           value={amountPaid || ''}
                           onChange={(e) => setAmountPaid(Math.max(0, Number(e.target.value)))}
-                          className="w-full px-2 py-2 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-rose-200 outline-none"
+                          className="w-full px-4 py-3.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
                         />
                       </div>
-                      <div className="flex justify-between items-center text-[10px] text-gray-500">
-                        <span>{label('Pending Amount', 'المبلغ المتبقي')}</span>
-                        <span className="font-semibold text-rose-600">
-                          <Money value={cartTotals.pendingAmount} />
-                        </span>
-                      </div>
                     </div>
-                  </div>
-
-                  {/* Rental Dates */}
-                  {transactionMode === 'rental' && (
-                    <div className="space-y-2">
-                      <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                        {label('Rental Dates', 'تواريخ الإيجار')}
-                      </h4>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="text-[10px] text-gray-500 mb-0.5 block">{label('Pickup Date', 'تاريخ الاستلام')} *</label>
-                          <input
-                            type="date"
-                            value={startDate}
-                            onChange={(e) => setStartDate(e.target.value)}
-                            className="w-full px-2 py-2 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-rose-200 outline-none"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] text-gray-500 mb-0.5 block">{label('Return Date', 'تاريخ الإرجاع')} *</label>
-                          <input
-                            type="date"
-                            value={endDate}
-                            onChange={(e) => setEndDate(e.target.value)}
-                            className="w-full px-2 py-2 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-rose-200 outline-none"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Discount */}
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                      {label('Discount', 'الخصم')}
-                    </h4>
-                    <div className="relative">
-                      <span className={`absolute ${isArabic ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-[10px] text-gray-400`}>SAR</span>
-                      <input
-                        type="number"
-                        min={0}
-                        max={cartTotals.rentalSubtotal}
-                        value={discountAmount || ''}
-                        onChange={(e) => setDiscountAmount(Math.max(0, Number(e.target.value)))}
-                        className={`w-full ${isArabic ? 'pl-10 pr-2' : 'pr-10 pl-2'} py-2 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-rose-200 outline-none`}
-                        placeholder="0.00"
-                      />
-                    </div>
-                  </div>
-
-                  {/* VAT Toggle */}
-                  <div className="flex items-center justify-between rounded-lg border border-gray-200 p-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-gray-700">
-                        {label('Apply VAT (15%)', 'تطبيق الضريبة 15%')}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setVatApplicable((v) => !v)}
-                      className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                        vatApplicable ? 'bg-rose-600' : 'bg-gray-300'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                          vatApplicable ? (isArabic ? '-translate-x-1' : 'translate-x-5') : (isArabic ? '-translate-x-5' : 'translate-x-1')
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  {/* Security Deposit Input */}
-                  {transactionMode !== 'sale' && (
-                    <div>
-                      <label className="text-[10px] text-gray-500 mb-0.5 block">{label('Security Deposit', 'تأمين')}</label>
-                      <input
-                        type="number"
-                        min={0}
-                        value={securityDepositAmount || ''}
-                        onChange={(e) => setSecurityDepositAmount(Math.max(0, Number(e.target.value)))}
-                        className="w-full px-2 py-2 rounded-lg border border-gray-200 text-xs focus:ring-2 focus:ring-rose-200 outline-none"
-                      />
-                    </div>
-                  )}
-
-                  {/* Summary */}
-                  <div className="bg-gray-50 rounded-xl p-3 space-y-1.5 text-xs">
-                    <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                      {label('Order Summary', 'ملخص الطلب')}
-                    </h4>
-                    <div className="flex justify-between text-gray-500">
-                      <span>{transactionMode === 'sale' ? label('Subtotal', 'المجموع الفرعي') : label('Rental Subtotal', 'إجمالي الإيجار')}</span>
-                      <Money value={cartTotals.rentalSubtotal} />
-                    </div>
-                    {cartTotals.discountAmount > 0 && (
-                      <div className="flex justify-between text-emerald-600">
-                        <span>{label('Discount', 'خصم')}</span>
-                        <span>-<Money value={cartTotals.discountAmount} /></span>
-                      </div>
-                    )}
-                    {transactionMode !== 'sale' && (
-                      <div className="flex justify-between text-gray-500">
-                        <span>{label('Security Deposit', 'تأمين')}</span>
-                        <Money value={cartTotals.totalDeposit} />
-                      </div>
-                    )}
-                    {vatApplicable && (
-                      <div className="flex justify-between text-gray-500">
-                        <span>{label('VAT (15%)', 'الضريبة 15%')}</span>
-                        <Money value={cartTotals.totalTax} />
-                      </div>
-                    )}
-                    <div className="flex justify-between text-sm font-bold text-gray-900 pt-1.5 border-t border-gray-200">
-                      <span>{label('Grand Total', 'الإجمالي')}</span>
-                      <Money value={cartTotals.grandTotal} />
-                    </div>
-                    <div className="flex justify-between text-gray-500 pt-1 border-t border-gray-200">
-                      <span>{label('Amount Paid', 'المبلغ المدفوع')}</span>
-                      <Money value={amountPaid || 0} />
-                    </div>
-                    {cartTotals.pendingAmount > 0 && (
-                      <div className="flex justify-between text-rose-600">
-                        <span>{label('Pending Amount', 'المبلغ المتبقي')}</span>
-                        <Money value={cartTotals.pendingAmount} />
-                      </div>
-                    )}
                   </div>
 
                   <button
-                    type="button"
                     onClick={handleCheckout}
-                    disabled={checkoutMutation.isPending || !customerName || !customerPhone || (transactionMode === 'rental' && (!startDate || !endDate))}
-                    className={`w-full py-3 rounded-xl text-white text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 ${
-                      transactionMode === 'sale' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-600 hover:bg-rose-700'
-                    }`}
+                    disabled={checkoutMutation.isPending}
+                    className="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-2xl text-sm font-black transition-all flex items-center justify-center gap-2 shadow-xl shadow-indigo-600/30 hover:shadow-indigo-600/40 hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none"
                   >
                     {checkoutMutation.isPending ? (
-                      <Clock className="w-4 h-4 animate-spin" />
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
                       <>
-                        {label('Confirm & Print', 'تأكيد وطباعة')}
-                        <Printer className="w-4 h-4" />
+                        <Sparkles className="w-5 h-5" />
+                        {label('Confirm Order', 'تأكيد الطلب')}
                       </>
                     )}
                   </button>
-                </div>
+                </motion.div>
               )}
             </div>
           )}
-        </div>
+        </motion.div>
       </div>
 
-      {/* ─── Checkout Error Modal ─── */}
+      {/* ─── Custom Price Modal ─── */}
       <AnimatePresence>
-        {checkoutError && (
+        {priceModalData && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+            className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4"
           >
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-3xl shadow-2xl p-8 w-[440px] max-w-[90vw] text-center border border-rose-100"
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-white rounded-[2rem] shadow-2xl w-full max-w-sm overflow-hidden"
             >
-              <div className="w-16 h-16 rounded-full bg-rose-50 flex items-center justify-center mx-auto mb-5">
-                <AlertCircle className="w-8 h-8 text-rose-500" />
+              <div className="p-6 text-center">
+                <div className="w-20 h-20 bg-indigo-50 rounded-2xl mx-auto flex items-center justify-center mb-4">
+                  {priceModalData.primaryImage ? (
+                    <img src={priceModalData.primaryImage} alt="" className="w-full h-full object-cover rounded-2xl" />
+                  ) : (
+                    <Package className="w-10 h-10 text-indigo-300" />
+                  )}
+                </div>
+                <h3 className="text-xl font-black text-slate-800">{isArabic ? priceModalData.nameAr || priceModalData.name : priceModalData.name}</h3>
+                <p className="text-sm font-medium text-slate-500 mt-1">{label('Enter the agreed price for this item', 'أدخل السعر المتفق عليه لهذا العنصر')}</p>
+                
+                <div className="mt-6 relative">
+                  <span className={`absolute ${isArabic ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400`}>SAR</span>
+                  <input
+                    type="number"
+                    autoFocus
+                    value={customPrice}
+                    onChange={(e) => setCustomPrice(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && submitCustomPrice()}
+                    className="w-full px-4 py-4 rounded-xl border-2 border-slate-200 text-2xl font-black text-center text-indigo-600 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all"
+                    placeholder="0.00"
+                  />
+                </div>
               </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">
-                {label('Unable to Complete', 'تعذر إتمام العملية')}
-              </h3>
-              <p className="text-sm text-gray-600 mb-1" dir="ltr">
-                {checkoutError}
-              </p>
-              <p className="text-sm text-gray-500 mb-6" dir="rtl">
-                {label(
-                  'Please check the selected dates or choose another furniture.',
-                  'يرجى التحقق من التواريخ المختارة أو اختيار أثاث آخر.'
-                )}
-              </p>
-              <button
-                onClick={() => setCheckoutError(null)}
-                className="w-full py-3 rounded-xl bg-gray-900 text-white font-bold hover:bg-gray-800 transition-colors"
-              >
-                {label('Got it', 'حسناً')}
-              </button>
+              <div className="p-4 bg-slate-50 flex gap-3">
+                <button
+                  onClick={() => setPriceModalData(null)}
+                  className="flex-1 py-3.5 rounded-xl bg-white border border-slate-200 font-bold text-slate-600 hover:bg-slate-50 transition-colors"
+                >
+                  {label('Cancel', 'إلغاء')}
+                </button>
+                <button
+                  onClick={submitCustomPrice}
+                  disabled={!customPrice || Number(customPrice) <= 0}
+                  className="flex-1 py-3.5 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                >
+                  {label('Add to Cart', 'أضف للسلة')}
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* ─── Receipt Print Modal ─── */}
+      {/* ─── Receipt Modal ─── */}
       <AnimatePresence>
-        {showReceipt && receiptData && (
+        {showReceipt && receiptData?.invoice && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 print:bg-white print:static print:inset-auto"
+            className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
           >
-            <div className="bg-white rounded-2xl shadow-xl p-6 w-[900px] max-w-[95vw] max-h-[90vh] overflow-y-auto print:shadow-none print:p-0 print:w-auto print:max-h-none print:overflow-visible">
-              <div className="flex justify-between items-center mb-4 print:hidden">
-                <h3 className="text-lg font-bold flex items-center gap-2">
-                  <Receipt className={`w-5 h-5 ${receiptData?.transactionType === 'sale' ? 'text-emerald-500' : 'text-rose-500'}`} />
-                  {label('Invoice', 'فاتورة')}
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+            >
+              <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                  <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+                  {label('Order Completed', 'اكتمل الطلب')}
                 </h3>
-                <button
-                  onClick={() => setShowReceipt(false)}
-                  className="text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-full w-8 h-8 flex items-center justify-center"
-                >
-                  ×
+                <button onClick={() => setShowReceipt(false)} className="text-slate-400 hover:text-slate-600 bg-white p-2 rounded-full shadow-sm">
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="border border-gray-200 rounded-lg p-2 print:border-none print:p-0 flex justify-center">
-                {receiptData?.invoice && (
+              <div className="flex-1 overflow-y-auto p-6 bg-slate-100 flex justify-center">
+                <div className="w-full max-w-[800px] shadow-lg">
                   <InvoiceLivePreview
                     invoice={receiptData.invoice}
+                    qrDataUrl={receiptData.qrDataUrl}
+                    language={language}
                     tenant={tenant}
-                    language="en"
-                    bilingual
-                    currencyRenderMode="icon"
+                    documentType="invoice"
                   />
-                )}
+                </div>
               </div>
 
-              <div className="mt-6 flex gap-2 print:hidden">
+              <div className="p-4 border-t border-slate-100 bg-white flex justify-end gap-3">
                 <button
                   onClick={() => setShowReceipt(false)}
-                  className="flex-1 py-3 rounded-xl border border-gray-200 font-bold hover:bg-gray-50 text-gray-700"
+                  className="px-6 py-2.5 rounded-xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50 transition-colors"
                 >
                   {label('Close', 'إغلاق')}
                 </button>
                 <button
-                  onClick={handlePrint}
-                  className="flex-1 py-3 rounded-xl bg-rose-600 text-white font-bold hover:bg-rose-700 flex items-center justify-center gap-2"
+                  onClick={() => printA4Invoice(receiptData.invoice)}
+                  className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold transition-colors shadow-lg shadow-indigo-600/30"
                 >
                   <Printer className="w-4 h-4" />
-                  {label('Print Invoice', 'طباعة الفاتورة')}
+                  {label('Print Receipt', 'طباعة الفاتورة')}
                 </button>
               </div>
-            </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
