@@ -81,6 +81,9 @@ export default function FurniturePOS() {
 
   const products = productsData || []
 
+  // ─── Categories ───
+  const categories = [...new Set(products.map((p) => p.category).filter(Boolean))]
+
   // ─── Helpers ───
   const isArabic = language === 'ar'
   const dir = isArabic ? 'rtl' : 'ltr'
