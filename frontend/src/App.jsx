@@ -110,6 +110,8 @@ const CashierPanel = lazy(() => import('./pages/restaurant/CashierPanel'))
 const QRMenu = lazy(() => import('./pages/restaurant/QRMenu'))
 const BoutiquePOS = lazy(() => import('./pages/boutique/BoutiquePOS'))
 const BoutiqueProducts = lazy(() => import('./pages/boutique/BoutiqueProducts'))
+const FurniturePOS = lazy(() => import('./pages/furniture/FurniturePOS'))
+const FurnitureProducts = lazy(() => import('./pages/furniture/FurnitureProducts'))
 const BoutiquePendingReturns = lazy(() => import('./pages/boutique/BoutiquePendingReturns'))
 const Projects = lazy(() => import('./pages/Projects'))
 const ProjectForm = lazy(() => import('./pages/ProjectForm'))
@@ -559,6 +561,8 @@ function App() {
         <Route path="restaurant/kitchen" element={<BusinessTypeRoute allowedTypes={['restaurant']}><RestaurantKitchen /></BusinessTypeRoute>} />
         <Route path="boutique/pos" element={<BusinessTypeRoute allowedTypes={['boutique']}><BoutiquePOS /></BusinessTypeRoute>} />
         <Route path="boutique/dresses" element={<BusinessTypeRoute allowedTypes={['boutique']}><BoutiqueProducts /></BusinessTypeRoute>} />
+        <Route path="furniture/pos" element={<BusinessTypeRoute allowedTypes={['furniture_shop']}><FurniturePOS /></BusinessTypeRoute>} />
+        <Route path="furniture/products" element={<BusinessTypeRoute allowedTypes={['furniture_shop']}><FurnitureProducts /></BusinessTypeRoute>} />
         <Route path="boutique/pending-returns" element={<BusinessTypeRoute allowedTypes={['boutique']}><BoutiquePendingReturns /></BusinessTypeRoute>} />
         <Route path="laundry/pos" element={<BusinessTypeRoute allowedTypes={['laundry']}><LaundryPOS /></BusinessTypeRoute>} />
         <Route path="laundry/services" element={<BusinessTypeRoute allowedTypes={['laundry']}><LaundryServices /></BusinessTypeRoute>} />

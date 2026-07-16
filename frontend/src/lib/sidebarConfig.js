@@ -191,6 +191,14 @@ export function getNavSections({ language, t, tenant, businessTypes, govChildren
       ]
     },
     {
+      title: language === 'ar' ? 'معرض الأثاث' : 'Furniture Shop',
+      businessTypes: ['furniture_shop'],
+      items: [
+        { path: '/app/dashboard/furniture/pos', icon: Sparkles, label: language === 'ar' ? 'نقطة البيع' : 'POS', perm: { module: 'boutique', action: 'create' } },
+        { path: '/app/dashboard/furniture/products', icon: Package, label: language === 'ar' ? 'المنتجات' : 'Products', perm: { module: 'boutique', action: 'read' } },
+      ]
+    },
+    {
       title: language === 'ar' ? 'الرئيسية' : 'Main',
       excludeBusinessTypes: ['khayyat'],
       items: [
@@ -199,7 +207,7 @@ export function getNavSections({ language, t, tenant, businessTypes, govChildren
         { path: '/app/dashboard/customers', icon: Users, label: language === 'ar' ? 'العملاء' : 'Customers', perm: { module: 'sales', action: 'read' } },
         { path: '/app/dashboard/customers/statement', icon: FileText, label: language === 'ar' ? 'كشف حساب' : 'Customer Statement', perm: { module: 'sales', action: 'read' } },
         { path: '/app/dashboard/quotations', icon: FileSignature, label: language === 'ar' ? 'عروض الأسعار' : 'Quotations', perm: { module: 'sales', action: 'read' }, excludeBusinessTypes: ['bakala'] },
-        { path: '/app/dashboard/delivery-notes', icon: FileText, label: language === 'ar' ? 'سندات التسليم' : 'Delivery Notes', perm: { module: 'supply_chain', action: 'read' }, businessTypes: ['trading'] },
+        { path: '/app/dashboard/delivery-notes', icon: FileText, label: language === 'ar' ? 'سندات التسليم' : 'Delivery Notes', perm: { module: 'supply_chain', action: 'read' }, businessTypes: ['trading', 'furniture_shop'] },
         { path: '/app/dashboard/contacts', icon: Users, label: language === 'ar' ? 'جهات الاتصال' : 'Contacts', perm: { module: 'invoicing', action: 'read' }, excludeBusinessTypes: ['bakala'] },
         { path: '/app/dashboard/letterhead', icon: FileText, label: language === 'ar' ? 'منشئ الخطابات' : 'Letterhead', perm: { module: 'invoicing', action: 'read' } },
         { path: '/app/dashboard/purchase-orders', icon: ShoppingCart, label: language === 'ar' ? 'طلبات الشراء' : 'Purchase Orders', perm: { module: 'supply_chain', action: 'read' } },
@@ -236,7 +244,7 @@ export function getNavSections({ language, t, tenant, businessTypes, govChildren
     },
     {
       title: language === 'ar' ? 'سلسلة التوريد' : 'Supply Chain',
-      businessTypes: ['trading', 'bakala'],
+      businessTypes: ['trading', 'bakala', 'furniture_shop'],
       items: [
         { path: '/app/dashboard/suppliers', icon: Building, label: language === 'ar' ? 'الموردين' : 'Suppliers', perm: { module: 'supply_chain', action: 'read' } },
         { path: '/app/dashboard/supplier-performance', icon: TrendingUp, label: language === 'ar' ? 'أداء الموردين' : 'Supplier Performance', perm: { module: 'supply_chain', action: 'read' } },
@@ -282,7 +290,7 @@ export function getNavSections({ language, t, tenant, businessTypes, govChildren
     },
     {
       title: language === 'ar' ? 'المخزون' : 'Inventory',
-      businessTypes: ['trading'],
+      businessTypes: ['trading', 'furniture_shop'],
       items: [
         { path: '/app/dashboard/products', icon: Package, label: t('products'), perm: { module: 'inventory', action: 'read' } },
         { path: '/app/dashboard/warehouses', icon: Warehouse, label: t('warehouses'), perm: { module: 'inventory', action: 'read' } },
@@ -352,14 +360,14 @@ export function getNavSections({ language, t, tenant, businessTypes, govChildren
     },
     {
       title: language === 'ar' ? 'إنترنت الأشياء' : 'Internet of Things',
-      businessTypes: ['trading'],
+      businessTypes: ['trading', 'furniture_shop'],
       items: [
         { path: '/app/dashboard/iot', icon: Cpu, label: language === 'ar' ? 'إنترنت الأشياء' : 'IoT', perm: { module: 'iot', action: 'read' } },
       ]
     },
     {
       title: language === 'ar' ? 'التكلفة والتخطيط' : 'Costing & Planning',
-      businessTypes: ['trading'],
+      businessTypes: ['trading', 'furniture_shop'],
       items: [
         { path: '/app/dashboard/job-costing', icon: Briefcase, label: language === 'ar' ? 'تكلفة الأعمال' : 'Job Costing', perm: { module: 'job_costing', action: 'read' } },
         { path: '/app/dashboard/mrp', icon: Factory, label: 'MRP', perm: { module: 'mrp', action: 'read' } },
@@ -376,7 +384,7 @@ export function getNavSections({ language, t, tenant, businessTypes, govChildren
     },
     {
       title: language === 'ar' ? 'الأسطول والمعدات' : 'Fleet & Machinery',
-      businessTypes: ['construction', 'trading'],
+      businessTypes: ['construction', 'trading', 'furniture_shop'],
       items: [
         { path: '/app/dashboard/fleet', icon: Truck, label: language === 'ar' ? 'الأصول' : 'Assets', perm: { module: 'fleet', action: 'read' } },
         { path: '/app/dashboard/fleet/maintenance-alerts', icon: AlertCircle, label: language === 'ar' ? 'تنبيهات الصيانة' : 'Maintenance Alerts', perm: { module: 'fleet', action: 'read' } },
@@ -384,7 +392,7 @@ export function getNavSections({ language, t, tenant, businessTypes, govChildren
     },
     {
       title: language === 'ar' ? 'التكاليف المرسية' : 'Landed Costs',
-      businessTypes: ['trading'],
+      businessTypes: ['trading', 'furniture_shop'],
       items: [
         { path: '/app/dashboard/landed-costs', icon: Anchor, label: language === 'ar' ? 'التكاليف المرسية' : 'Landed Costs', perm: { module: 'landed_costs', action: 'read' } },
       ]

@@ -127,6 +127,7 @@ import khayyatPaymentRoutes from './routes/khayyat/payment.js';
 import khayyatUserRoutes from './routes/khayyat/user.js';
 import khayyatCustomerRoutes from './routes/khayyat/customer.js';
 import boutiqueRoutes from './routes/boutique.routes.js';
+import furnitureRoutes from './routes/furniture.routes.js';
 import branchRoutes from './routes/branch.routes.js';
 
 import { checkIqamaExpiry } from './jobs/iqamaChecker.js';
@@ -565,6 +566,7 @@ app.use('/api/khayyat/user', ensureDatabaseReady, khayyatUserRoutes);
 app.use('/api/khayyat/customers', ensureDatabaseReady, khayyatCustomerRoutes);
 
 app.use('/api/boutique', ensureDatabaseReady, boutiqueRoutes);
+app.use('/api/furniture', ensureDatabaseReady, furnitureRoutes);
 app.use('/api/branches', ensureDatabaseReady, branchRoutes);
 
 // Serve static frontend files in production

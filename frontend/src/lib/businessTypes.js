@@ -1,4 +1,4 @@
-export const BUSINESS_TYPES = ['trading', 'construction', 'travel_agency', 'restaurant', 'car_rental', 'laundry', 'saloon', 'khayyat', 'boutique', 'manpower', 'bakala', 'car_workshop', 'bookstore', 'ecommerce']
+export const BUSINESS_TYPES = ['trading', 'construction', 'travel_agency', 'restaurant', 'car_rental', 'laundry', 'saloon', 'khayyat', 'boutique', 'manpower', 'bakala', 'car_workshop', 'bookstore', 'ecommerce', 'furniture_shop']
 
 export const getBusinessTypeOptions = (language = 'en') => [
   {
@@ -70,6 +70,11 @@ export const getBusinessTypeOptions = (language = 'en') => [
     id: 'ecommerce',
     label: language === 'ar' ? 'متجر إلكتروني' : 'E-Commerce',
     description: language === 'ar' ? 'متجر إلكتروني متعدد المستأجرين مع نطاق مخصص وقوالب وبوابات دفع' : 'Online store with custom domain, themes, payments, and couriers',
+  },
+  {
+    id: 'furniture_shop',
+    label: language === 'ar' ? 'معرض أثاث' : 'Furniture Shop',
+    description: language === 'ar' ? 'نقطة بيع وإدارة مخزون لمعارض الأثاث والمفروشات' : 'POS and inventory management for furniture and carpet shops',
   },
 ]
 
