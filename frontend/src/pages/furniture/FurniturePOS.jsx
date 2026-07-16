@@ -248,10 +248,6 @@ export default function FurniturePOS() {
   }
 
   // ─── Helpers ───
-  const isArabic = language === 'ar'
-  const dir = isArabic ? 'rtl' : 'ltr'
-  const label = (en, ar) => (isArabic ? ar : en)
-
   return (
     <div className="h-full flex flex-col bg-[#F8F9FC] font-sans" dir={dir}>
       {/* ─── Header ─── */}
