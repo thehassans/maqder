@@ -412,32 +412,38 @@ export default function FurniturePOS() {
                         </button>
                       </div>
                       
-                      <div className="flex items-center justify-between mt-auto">
-                        <div className="flex items-center bg-slate-50 rounded-lg p-1 border border-slate-100">
-                          <button
-                            onClick={() => updateCartItem(item.productId, 'quantity', Math.max(1, item.quantity - 1))}
-                            className="w-6 h-6 rounded-md bg-white hover:bg-slate-100 flex items-center justify-center text-slate-600 shadow-sm"
-                          >
-                            <Minus className="w-3 h-3" />
-                          </button>
-                          <span className="text-xs font-black w-8 text-center text-slate-800">{item.quantity}</span>
-                          <button
-                            onClick={() => updateCartItem(item.productId, 'quantity', item.quantity + 1)}
-                            className="w-6 h-6 rounded-md bg-white hover:bg-slate-100 flex items-center justify-center text-slate-600 shadow-sm"
-                          >
-                            <Plus className="w-3 h-3" />
-                          </button>
+                      <div className="flex flex-col gap-2 mt-auto">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-500">{label('Quantity', 'الكمية')}</span>
+                          <div className="flex items-center bg-slate-50 rounded-lg p-1 border border-slate-100">
+                            <button
+                              onClick={() => updateCartItem(item.productId, 'quantity', Math.max(1, item.quantity - 1))}
+                              className="w-6 h-6 rounded-md bg-white hover:bg-slate-100 flex items-center justify-center text-slate-600 shadow-sm"
+                            >
+                              <Minus className="w-3 h-3" />
+                            </button>
+                            <span className="text-xs font-black w-8 text-center text-slate-800">{item.quantity}</span>
+                            <button
+                              onClick={() => updateCartItem(item.productId, 'quantity', item.quantity + 1)}
+                              className="w-6 h-6 rounded-md bg-white hover:bg-slate-100 flex items-center justify-center text-slate-600 shadow-sm"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2 py-1 w-24 focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all">
-                          <span className="text-[10px] font-bold text-slate-400">SAR</span>
-                          <input
-                            type="number"
-                            min="0"
-                            value={item.unitPrice === 0 && item.quantity === 1 ? '' : item.unitPrice}
-                            placeholder="0.00"
-                            onChange={(e) => updateCartItem(item.productId, 'unitPrice', Number(e.target.value))}
-                            className="w-full text-sm font-black text-emerald-600 bg-transparent outline-none text-right"
-                          />
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="text-xs font-bold text-slate-500">{label('Price', 'السعر')}</span>
+                          <div className="flex items-center gap-2 bg-white border-2 border-slate-200 rounded-xl px-3 py-1.5 flex-1 ml-4 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-500/20 transition-all">
+                            <span className="text-[10px] font-bold text-slate-400">SAR</span>
+                            <input
+                              type="number"
+                              min="0"
+                              value={item.unitPrice === 0 && item.quantity === 1 ? '' : item.unitPrice}
+                              placeholder="0.00"
+                              onChange={(e) => updateCartItem(item.productId, 'unitPrice', Number(e.target.value))}
+                              className="w-full text-sm font-black text-indigo-600 bg-transparent outline-none text-right"
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -457,6 +463,12 @@ export default function FurniturePOS() {
                       <span>{label('Subtotal', 'المجموع الفرعي')}</span>
                       <Money value={cartTotals.subtotal} />
                     </div>
+                    {cartTotals.discountAmount > 0 && (
+                      <div className="flex justify-between text-sm font-medium text-rose-500">
+                        <span>{label('Discount', 'الخصم')}</span>
+                        <span className="flex items-center">-<Money value={cartTotals.discountAmount} /></span>
+                      </div>
+                    )}
                     {vatApplicable && (
                       <div className="flex justify-between text-sm font-medium text-slate-500">
                         <span>{label('VAT (15%)', 'الضريبة (15%)')}</span>
@@ -538,6 +550,21 @@ export default function FurniturePOS() {
                           onChange={(e) => setCustomerId(e.target.value)}
                           className="flex-1 px-4 py-3.5 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 outline-none"
                           placeholder="1xxxxxxxx"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 mb-0.5 block">{label('Discount Amount', 'قيمة الخصم')}</label>
+                      <div className="relative">
+                        <span className={`absolute ${isArabic ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400`}>SAR</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={discountAmount || ''}
+                          onChange={(e) => setDiscountAmount(Math.max(0, Number(e.target.value)))}
+                          className="w-full px-4 py-3.5 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                          placeholder="0.00"
                         />
                       </div>
                     </div>
