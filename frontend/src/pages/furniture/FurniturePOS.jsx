@@ -47,10 +47,6 @@ export default function FurniturePOS() {
   const [showReceipt, setShowReceipt] = useState(false)
   const [receiptData, setReceiptData] = useState(null)
   const [checkoutError, setCheckoutError] = useState(null)
-  
-  // Custom price modal state
-  const [priceModalData, setPriceModalData] = useState(null) // { product }
-  const [customPrice, setCustomPrice] = useState('')
 
   // ─── Customer & Checkout ───
   const [customerName, setCustomerName] = useState('')
@@ -59,7 +55,6 @@ export default function FurniturePOS() {
   const [customerId, setCustomerId] = useState('')
   const [customerIdType, setCustomerIdType] = useState('iqama')
   const [paymentMethod, setPaymentMethod] = useState('cash')
-  const [amountPaid, setAmountPaid] = useState(0)
   const [discountAmount, setDiscountAmount] = useState(0)
   const [vatApplicable, setVatApplicable] = useState(true)
 
@@ -103,12 +98,7 @@ export default function FurniturePOS() {
 
   // ─── Cart Logic ───
   const handleProductClick = (product) => {
-    if (product.salePrice === 0 || !product.salePrice) {
-      setPriceModalData(product)
-      setCustomPrice('')
-    } else {
-      addToCart(product, product.salePrice)
-    }
+    addToCart(product, product.salePrice || 0)
   }
 
   const addToCart = (product, price) => {
@@ -134,14 +124,6 @@ export default function FurniturePOS() {
     ])
   }
 
-  const submitCustomPrice = () => {
-    if (!customPrice || Number(customPrice) <= 0) return
-    if (priceModalData) {
-      addToCart(priceModalData, Number(customPrice))
-      setPriceModalData(null)
-    }
-  }
-
   const removeFromCart = (productId) => {
     setCart((prev) => prev.filter((item) => item.productId !== productId))
   }
@@ -164,16 +146,8 @@ export default function FurniturePOS() {
     const taxableBase = Math.max(0, subtotal - discountAmount)
     const totalTax = vatApplicable ? Math.round(taxableBase * 0.15 * 100) / 100 : 0
     const grandTotal = Math.round((taxableBase + totalTax) * 100) / 100
-    const pendingAmount = Math.max(0, Math.round((grandTotal - (amountPaid || 0)) * 100) / 100)
-    return { lines, subtotal, totalTax, grandTotal, pendingAmount, discountAmount }
+    return { lines, subtotal, totalTax, grandTotal, discountAmount }
   })()
-
-  // Auto-set defaults when totals change
-  useEffect(() => {
-    if (amountPaid === 0 && cartTotals.grandTotal > 0) {
-      setAmountPaid(cartTotals.grandTotal)
-    }
-  }, [cartTotals.grandTotal])
 
   // ─── Auto-translate customer name between EN/AR ───
   const autoTranslateName = async (text, fromLang) => {
@@ -235,7 +209,7 @@ export default function FurniturePOS() {
       customerIdNumber: customerId,
       customerIdType,
       paymentMethod,
-      amountPaid,
+      amountPaid: cartTotals.grandTotal,
       discount: discountAmount || 0,
       vatApplicable,
       lineItems: cart.map((item) => ({
@@ -454,9 +428,17 @@ export default function FurniturePOS() {
                             <Plus className="w-3 h-3" />
                           </button>
                         </div>
-                        <span className="text-sm font-black text-emerald-600">
-                          SAR {(item.unitPrice * item.quantity).toFixed(2)}
-                        </span>
+                        <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2 py-1 w-24 focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all">
+                          <span className="text-[10px] font-bold text-slate-400">SAR</span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={item.unitPrice === 0 && item.quantity === 1 ? '' : item.unitPrice}
+                            placeholder="0.00"
+                            onChange={(e) => updateCartItem(item.productId, 'unitPrice', Number(e.target.value))}
+                            className="w-full text-sm font-black text-emerald-600 bg-transparent outline-none text-right"
+                          />
+                        </div>
                       </div>
                     </div>
                   </motion.div>
@@ -539,37 +521,45 @@ export default function FurniturePOS() {
                       />
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-3 mt-2">
-                      <div className="col-span-2 sm:col-span-1">
-                        <label className="text-[10px] font-bold text-slate-500 mb-0.5 block">{label('ID / Iqama / VAT', 'الهوية / الضريبة')}</label>
-                        <div className="flex gap-2">
-                          <select
-                            value={customerIdType}
-                            onChange={(e) => setCustomerIdType(e.target.value)}
-                            className="px-2 py-3 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-indigo-500/20 outline-none bg-white font-medium"
-                          >
-                            <option value="iqama">{label('Iqama', 'إقامة')}</option>
-                            <option value="id">{label('ID', 'هوية')}</option>
-                            <option value="vat">{label('VAT Number', 'رقم الضريبة')}</option>
-                          </select>
-                          <input
-                            value={customerId}
-                            onChange={(e) => setCustomerId(e.target.value)}
-                            className="flex-1 px-3 py-3 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-indigo-500/20 outline-none"
-                            placeholder="1xxxxxxxx"
-                          />
-                        </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 mb-0.5 block">{label('ID / Iqama / VAT Number', 'الهوية / الإقامة / الرقم الضريبي')}</label>
+                      <div className="flex gap-2">
+                        <select
+                          value={customerIdType}
+                          onChange={(e) => setCustomerIdType(e.target.value)}
+                          className="px-3 py-3.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none bg-white font-medium"
+                        >
+                          <option value="iqama">{label('Iqama', 'إقامة')}</option>
+                          <option value="id">{label('ID', 'هوية')}</option>
+                          <option value="vat">{label('VAT Number', 'رقم الضريبة')}</option>
+                        </select>
+                        <input
+                          value={customerId}
+                          onChange={(e) => setCustomerId(e.target.value)}
+                          className="flex-1 px-4 py-3.5 rounded-xl border border-slate-200 text-sm font-medium focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                          placeholder="1xxxxxxxx"
+                        />
                       </div>
-                      <div className="col-span-2 sm:col-span-1 flex items-end pb-1">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={vatApplicable}
-                            onChange={(e) => setVatApplicable(e.target.checked)}
-                            className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
-                          />
-                          <span className="text-xs font-bold text-slate-600">{label('Apply 15% VAT', 'تطبيق ضريبة 15%')}</span>
-                        </label>
+                    </div>
+
+                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center justify-between mt-4">
+                      <div className="flex flex-col">
+                        <span className="text-sm font-black text-slate-800">{label('Value Added Tax (VAT)', 'ضريبة القيمة المضافة')}</span>
+                        <span className="text-xs font-medium text-slate-500">{label('Standard 15% rate', 'النسبة الأساسية 15%')}</span>
+                      </div>
+                      <div className="flex bg-slate-200/60 p-1 rounded-xl">
+                        <button
+                          onClick={() => setVatApplicable(true)}
+                          className={`px-4 py-2 rounded-lg text-xs font-black transition-all ${vatApplicable ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                          15%
+                        </button>
+                        <button
+                          onClick={() => setVatApplicable(false)}
+                          className={`px-4 py-2 rounded-lg text-xs font-black transition-all ${!vatApplicable ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                          0%
+                        </button>
                       </div>
                     </div>
                     
@@ -594,19 +584,6 @@ export default function FurniturePOS() {
                         {label('Card', 'بطاقة')}
                       </button>
                     </div>
-
-                    <div className="pt-2">
-                      <label className="text-xs font-bold text-slate-500 mb-1.5 block">{label('Amount Received', 'المبلغ المستلم')}</label>
-                      <div className="relative">
-                        <span className={`absolute ${isArabic ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400`}>SAR</span>
-                        <input
-                          type="number"
-                          value={amountPaid || ''}
-                          onChange={(e) => setAmountPaid(Math.max(0, Number(e.target.value)))}
-                          className="w-full px-4 py-3.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
-                        />
-                      </div>
-                    </div>
                   </div>
 
                   <button
@@ -630,64 +607,7 @@ export default function FurniturePOS() {
         </motion.div>
       </div>
 
-      {/* ─── Custom Price Modal ─── */}
-      <AnimatePresence>
-        {priceModalData && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4"
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="bg-white rounded-[2rem] shadow-2xl w-full max-w-sm overflow-hidden"
-            >
-              <div className="p-6 text-center">
-                <div className="w-20 h-20 bg-indigo-50 rounded-2xl mx-auto flex items-center justify-center mb-4">
-                  {priceModalData.primaryImage ? (
-                    <img src={priceModalData.primaryImage} alt="" className="w-full h-full object-cover rounded-2xl" />
-                  ) : (
-                    <Package className="w-10 h-10 text-indigo-300" />
-                  )}
-                </div>
-                <h3 className="text-xl font-black text-slate-800">{isArabic ? priceModalData.nameAr || priceModalData.name : priceModalData.name}</h3>
-                <p className="text-sm font-medium text-slate-500 mt-1">{label('Enter the agreed price for this item', 'أدخل السعر المتفق عليه لهذا العنصر')}</p>
-                
-                <div className="mt-6 relative">
-                  <span className={`absolute ${isArabic ? 'left-4' : 'right-4'} top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400`}>SAR</span>
-                  <input
-                    type="number"
-                    autoFocus
-                    value={customPrice}
-                    onChange={(e) => setCustomPrice(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && submitCustomPrice()}
-                    className="w-full px-4 py-4 rounded-xl border-2 border-slate-200 text-2xl font-black text-center text-indigo-600 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all"
-                    placeholder="0.00"
-                  />
-                </div>
-              </div>
-              <div className="p-4 bg-slate-50 flex gap-3">
-                <button
-                  onClick={() => setPriceModalData(null)}
-                  className="flex-1 py-3.5 rounded-xl bg-white border border-slate-200 font-bold text-slate-600 hover:bg-slate-50 transition-colors"
-                >
-                  {label('Cancel', 'إلغاء')}
-                </button>
-                <button
-                  onClick={submitCustomPrice}
-                  disabled={!customPrice || Number(customPrice) <= 0}
-                  className="flex-1 py-3.5 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-                >
-                  {label('Add to Cart', 'أضف للسلة')}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </div>
 
       {/* ─── Receipt Modal ─── */}
       <AnimatePresence>
