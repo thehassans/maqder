@@ -212,6 +212,10 @@ router.get('/orders', checkPermission('furniture_shop', 'read'), async (req, res
 
 router.post('/orders', checkPermission('furniture_shop', 'write'), async (req, res) => {
   try {
+    try {
+      await mongoose.connection.collection('furnitureorders').dropIndex('tenantId_1_rentalNumber_1');
+    } catch (e) {}
+
     const {
       customerName, customerNameAr, customerPhone, customerEmail, customerIdType,
       customerIdNumber, lineItems, staffNotes, discount = 0, vatApplicable = true,
