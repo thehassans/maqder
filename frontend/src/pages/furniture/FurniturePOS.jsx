@@ -510,18 +510,39 @@ export default function FurniturePOS() {
                   )}
 
                   <div className="space-y-3">
-                    <div className="relative">
-                      <User className={`absolute ${isArabic ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400`} />
-                      <input
-                        value={customerName}
-                        onChange={(e) => setCustomerName(e.target.value)}
-                        onBlur={(e) => {
-                          const hasArabic = /[\u0600-\u06FF]/.test(e.target.value)
-                          if (!customerNameAr) autoTranslateName(e.target.value, hasArabic ? 'ar' : 'en')
-                        }}
-                        className={`w-full ${isArabic ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 rounded-xl border border-slate-200 text-sm font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all`}
-                        placeholder={label('Customer name', 'اسم العميل')}
-                      />
+                    <div className="flex gap-3">
+                      <div className="relative flex-1">
+                        <User className={`absolute ${isArabic ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400`} />
+                        <input
+                          value={customerName}
+                          onChange={(e) => setCustomerName(e.target.value)}
+                          onBlur={(e) => {
+                            const hasArabic = /[\u0600-\u06FF]/.test(e.target.value)
+                            if (!customerNameAr && !hasArabic) autoTranslateName(e.target.value, 'en')
+                            if (!customerNameAr && hasArabic) {
+                              // If they typed Arabic in the English field, swap it and translate to English
+                              setCustomerNameAr(e.target.value)
+                              setCustomerName('')
+                              autoTranslateName(e.target.value, 'ar')
+                            }
+                          }}
+                          className={`w-full ${isArabic ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 rounded-xl border border-slate-200 text-sm font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all`}
+                          placeholder={label('Name (English)', 'الاسم (إنجليزي)')}
+                        />
+                      </div>
+                      <div className="relative flex-1">
+                        <User className={`absolute ${isArabic ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400`} />
+                        <input
+                          dir="rtl"
+                          value={customerNameAr}
+                          onChange={(e) => setCustomerNameAr(e.target.value)}
+                          onBlur={(e) => {
+                            if (!customerName) autoTranslateName(e.target.value, 'ar')
+                          }}
+                          className={`w-full ${isArabic ? 'pr-12 pl-4' : 'pl-12 pr-4'} py-3.5 rounded-xl border border-slate-200 text-sm font-medium focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all`}
+                          placeholder={label('Name (Arabic)', 'الاسم (عربي)')}
+                        />
+                      </div>
                     </div>
                     <div className="relative">
                       <Phone className={`absolute ${isArabic ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400`} />
