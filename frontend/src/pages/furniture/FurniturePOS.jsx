@@ -607,8 +607,6 @@ export default function FurniturePOS() {
         </motion.div>
       </div>
 
-      </div>
-
       {/* ─── Receipt Modal ─── */}
       <AnimatePresence>
         {showReceipt && receiptData?.invoice && (
