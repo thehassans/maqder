@@ -68,28 +68,35 @@ export async function generateBoutiqueThermalInvoice(rental, tenant, previousHas
   // Build simplified tax invoice line items
   const vatRate = rental.vatApplicable === false ? 0 : 15;
   const lineItems = rental.lineItems.map((line, index) => {
-    const taxAmount = Math.round((line.rentalSubtotal * (vatRate / 100)) * 100) / 100;
+    const lineSubtotal = line.rentalSubtotal ?? line.lineTotal ?? 0;
+    const lineUnitPrice = line.dailyRate ?? line.unitPrice ?? 0;
+    const lineQuantity = line.rentalDays ?? line.quantity ?? 1;
+
+    const taxAmount = Math.round((lineSubtotal * (vatRate / 100)) * 100) / 100;
     return {
       lineNumber: index + 1,
       productName: line.productName,
       productNameAr: line.productNameAr,
-      quantity: line.quantity,
-      rentalDays: line.rentalDays || 1,
+      quantity: line.quantity || 1,
+      rentalDays: lineQuantity,
       unitCode: 'PCE',
-      unitPrice: line.dailyRate,
+      unitPrice: lineUnitPrice,
       discount: 0,
       discountType: 'fixed',
       taxCategory: vatRate === 0 ? 'O' : 'S',
       taxRate: vatRate,
       taxAmount,
-      lineTotal: line.rentalSubtotal,
-      lineTotalWithTax: Math.round((line.rentalSubtotal + taxAmount) * 100) / 100,
+      lineTotal: lineSubtotal,
+      lineTotalWithTax: Math.round((lineSubtotal + taxAmount) * 100) / 100,
     };
   });
 
+  const subTotalVal = rental.rentalSubtotal ?? rental.subtotal ?? 0;
+  const taxableAmountVal = subTotalVal + (rental.totalLateFee || 0) + (rental.totalDamageFee || 0) + (rental.totalCleaningFee || 0) - (rental.discount || 0);
+
   const invoiceData = {
     tenantId: rental.tenantId,
-    businessContext: 'boutique',
+    businessContext: rental.businessContext || 'boutique',
     invoiceType: '388',
     invoiceTypeCode: '0200000',
     transactionType: 'B2C',
@@ -117,11 +124,11 @@ export async function generateBoutiqueThermalInvoice(rental, tenant, previousHas
     lineItems,
 
     // Totals
-    subTotal: rental.rentalSubtotal,
-    taxableAmount: rental.rentalSubtotal + rental.totalLateFee + rental.totalDamageFee + rental.totalCleaningFee,
-    totalDiscount: 0,
-    totalTax: rental.totalTax,
-    grandTotal: rental.grandTotal,
+    subTotal: subTotalVal,
+    taxableAmount: taxableAmountVal,
+    totalDiscount: rental.discount || 0,
+    totalTax: rental.totalTax || 0,
+    grandTotal: rental.grandTotal || 0,
 
     // ZATCA metadata
     status: 'approved',
