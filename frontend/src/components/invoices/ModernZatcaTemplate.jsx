@@ -85,7 +85,7 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
       <div className={`border-b bg-white px-6 pb-6 ${invoice?.businessContext === 'boutique' && invoice?.boutiqueDetails?.transactionType === 'rental' ? 'pt-2' : 'pt-6'}`}>
         <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
           <div className="flex-1">
-            <div className="mb-2 flex items-center gap-4">
+            <div className="mb-4">
               {logoSrc ? (
                 <img
                   src={logoSrc}
@@ -95,17 +95,9 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
               ) : (
                 <Building2 className={`text-primary-600 ${invoice?.businessContext === 'boutique' && invoice?.boutiqueDetails?.transactionType === 'rental' ? 'h-12 w-12' : 'h-8 w-8'}`} />
               )}
-              <h2 className="text-3xl font-light tracking-tight text-slate-800 uppercase">
-                {sellerName}
-              </h2>
             </div>
-            {bilingual && sellerNameAr && (
-              <p className="text-xl font-medium text-slate-500" dir="rtl">
-                {sellerNameAr}
-              </p>
-            )}
             
-            <div className="mt-4 space-y-1 text-sm">
+            <div className="mt-2 space-y-1 text-sm">
               {(invoice?.seller?.address?.street || invoice?.seller?.address?.city) && (
                 <div className="flex flex-col gap-1">
                   <p className="flex items-start gap-2">
@@ -135,9 +127,20 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
             </div>
           </div>
 
+          <div className="flex-1 flex flex-col items-center justify-center text-center mt-2">
+            <h2 className="text-2xl font-bold tracking-normal text-slate-900 uppercase">
+              {sellerName}
+            </h2>
+            {bilingual && sellerNameAr && (
+              <p className="text-2xl font-bold text-slate-900 mt-2" dir="rtl">
+                {sellerNameAr}
+              </p>
+            )}
+          </div>
+
           <div className="flex flex-col gap-4 md:items-end">
             <div className={`inline-flex items-center rounded-full border px-3 py-1 text-sm font-medium w-fit ${
-              invoice?.businessContext === 'furniture'
+              invoice?.businessContext === 'furniture' || window.location.pathname.includes('/furniture')
                 ? 'bg-blue-50 text-blue-700 border-blue-200'
                 : invoice?.businessContext === 'boutique'
                 ? invoice?.boutiqueDetails?.transactionType === 'sale'
@@ -146,7 +149,7 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
                 : 'bg-primary-50 text-primary-700'
             }`}>
               <FileText className="mr-2 h-4 w-4" />
-              {invoice?.businessContext === 'furniture'
+              {invoice?.businessContext === 'furniture' || window.location.pathname.includes('/furniture')
                 ? 'Furniture Sale Invoice / فاتورة بيع مفروشات'
                 : invoice?.businessContext === 'boutique'
                 ? invoice?.boutiqueDetails?.transactionType === 'sale'
