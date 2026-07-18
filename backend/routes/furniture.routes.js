@@ -332,6 +332,7 @@ router.post('/orders', checkPermission('furniture_shop', 'write'), async (req, r
       }
 
       try {
+        order.businessContext = 'furniture';
         const result = await generateBoutiqueThermalInvoice(order, tenant);
         invoice = result.invoice;
         await queueZatcaReporting(invoice._id);

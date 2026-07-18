@@ -95,12 +95,12 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
               ) : (
                 <Building2 className={`text-primary-600 ${invoice?.businessContext === 'boutique' && invoice?.boutiqueDetails?.transactionType === 'rental' ? 'h-12 w-12' : 'h-8 w-8'}`} />
               )}
-              <h2 className="text-2xl font-bold text-gray-900">
+              <h2 className="text-3xl font-light tracking-tight text-slate-800 uppercase">
                 {sellerName}
               </h2>
             </div>
             {bilingual && sellerNameAr && (
-              <p className="text-lg font-semibold text-gray-500" dir="rtl">
+              <p className="text-xl font-medium text-slate-500" dir="rtl">
                 {sellerNameAr}
               </p>
             )}
@@ -137,14 +137,18 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
 
           <div className="flex flex-col gap-4 md:items-end">
             <div className={`inline-flex items-center rounded-full border px-3 py-1 text-sm font-medium w-fit ${
-              invoice?.businessContext === 'boutique'
+              invoice?.businessContext === 'furniture'
+                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                : invoice?.businessContext === 'boutique'
                 ? invoice?.boutiqueDetails?.transactionType === 'sale'
                   ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                   : 'bg-rose-50 text-rose-700 border-rose-200'
                 : 'bg-primary-50 text-primary-700'
             }`}>
               <FileText className="mr-2 h-4 w-4" />
-              {invoice?.businessContext === 'boutique'
+              {invoice?.businessContext === 'furniture'
+                ? 'Furniture Sale Invoice / فاتورة بيع مفروشات'
+                : invoice?.businessContext === 'boutique'
                 ? invoice?.boutiqueDetails?.transactionType === 'sale'
                   ? 'Boutique Sale Invoice / فاتورة بيع بوتيك'
                   : 'Boutique Rental Invoice / فاتورة إيجار بوتيك'
@@ -154,6 +158,12 @@ export default function ModernZatcaTemplate({ invoice, tenant, language = 'en', 
             </div>
             
             <div className="mt-2 space-y-1 text-sm text-gray-600 md:text-right">
+              {(invoice?.seller?.contactPhone || tenant?.business?.contactPhone || tenant?.phone) && (
+                <div className="flex items-center gap-2 md:justify-end mb-2">
+                  <span className="font-semibold text-gray-900">Phone:</span>
+                  <span className="font-mono">{invoice?.seller?.contactPhone || tenant?.business?.contactPhone || tenant?.phone}</span>
+                </div>
+              )}
               {(invoice?.seller?.vatNumber || tenant?.business?.vatNumber) && (
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center justify-end gap-2">
