@@ -18,7 +18,8 @@ import {
   X,
   CreditCard,
   Banknote,
-  Package
+  Package,
+  CheckCircle2
 } from 'lucide-react'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
