@@ -77,11 +77,18 @@ api.interceptors.response.use(
     }
 
     const requestUrl = String(error.config?.url || '')
-    const isAuthEntryRequest = requestUrl.includes('/auth/login')
+    // Requests that handle their own 401 logic — don't intercept these.
+    // /auth/me    → getMe.rejected in authSlice clears state + token already.
+    //               Firing auth-expired here too causes a double-cleanup race
+    //               that leaves the login page stuck on the loading spinner.
+    // /auth/login, /public/demo-login, /auth/register → entry-point calls
+    //               where 401 is the expected "bad credentials" response.
+    const isAuthManagedRequest = requestUrl.includes('/auth/login')
+      || requestUrl.includes('/auth/me')
       || requestUrl.includes('/public/demo-login')
       || requestUrl.includes('/auth/register')
 
-    if (error.response?.status === 401 && !isAuthEntryRequest) {
+    if (error.response?.status === 401 && !isAuthManagedRequest) {
       const errMsg = error.response?.data?.error || ''
       if (errMsg === 'Tenant account is inactive') {
         window.dispatchEvent(new CustomEvent('tenant-inactive'))
