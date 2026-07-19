@@ -124,12 +124,48 @@ export default function PurchaseOrderForm() {
   })
 
   const submitInlineSupplier = () => {
-    if (!supplierForm.nameEn?.trim()) {
+    if (!supplierForm.nameEn?.trim() && !supplierForm.nameAr?.trim()) {
       toast.error(language === 'ar' ? 'اسم المورد مطلوب' : 'Supplier name is required')
       return
     }
-    addSupplierMutation.mutate(supplierForm)
+    const payload = {
+      ...supplierForm,
+      nameEn: supplierForm.nameEn || supplierForm.nameAr,
+      code: supplierForm.code || `SUP-${Math.floor(Date.now() / 1000).toString().slice(-5)}`
+    }
+    addSupplierMutation.mutate(payload)
   }
+
+  // Auto-translate logic for Quick Add Supplier
+  useEffect(() => {
+    const s = supplierForm.nameEn?.trim()
+    if (!s || s.length < 3 || !showSupplierModal) return
+    const timer = setTimeout(async () => {
+      if (supplierForm.nameAr?.trim()) return // Don't overwrite if user typed AR
+      try {
+        const { data } = await api.post('/ai/translate', { text: s, sourceLang: 'English', targetLang: 'Arabic' })
+        if (data?.translatedText) {
+          setSupplierForm((p) => ({ ...p, nameAr: data.translatedText.trim() }))
+        }
+      } catch (e) {}
+    }, 900)
+    return () => clearTimeout(timer)
+  }, [supplierForm.nameEn, showSupplierModal])
+
+  useEffect(() => {
+    const s = supplierForm.nameAr?.trim()
+    if (!s || s.length < 3 || !showSupplierModal) return
+    const timer = setTimeout(async () => {
+      if (supplierForm.nameEn?.trim()) return // Don't overwrite if user typed EN
+      try {
+        const { data } = await api.post('/ai/translate', { text: s, sourceLang: 'Arabic', targetLang: 'English' })
+        if (data?.translatedText) {
+          setSupplierForm((p) => ({ ...p, nameEn: data.translatedText.trim() }))
+        }
+      } catch (e) {}
+    }, 900)
+    return () => clearTimeout(timer)
+  }, [supplierForm.nameAr, showSupplierModal])
 
   const { data: order, isLoading } = useQuery({
     queryKey: ['purchase-order', id],
@@ -770,7 +806,7 @@ export default function PurchaseOrderForm() {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="card p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto"
+            className="card p-6 w-full max-w-sm max-h-[90vh] overflow-y-auto"
           >
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
@@ -784,28 +820,8 @@ export default function PurchaseOrderForm() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <div>
-                <label className="label">{language === 'ar' ? 'الرمز' : 'Code'}</label>
-                <input
-                  className="input"
-                  placeholder="SUP-001"
-                  value={supplierForm.code}
-                  onChange={(e) => setSupplierForm((p) => ({ ...p, code: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className="label">{language === 'ar' ? 'النوع' : 'Type'}</label>
-                <select
-                  className="select"
-                  value={supplierForm.type}
-                  onChange={(e) => setSupplierForm((p) => ({ ...p, type: e.target.value }))}
-                >
-                  <option value="company">{language === 'ar' ? 'شركة' : 'Company'}</option>
-                  <option value="individual">{language === 'ar' ? 'فرد' : 'Individual'}</option>
-                </select>
-              </div>
-              <div className="md:col-span-2">
                 <label className="label">{language === 'ar' ? 'الاسم (EN)' : 'Name (EN)'} *</label>
                 <input
                   className="input"
@@ -823,30 +839,12 @@ export default function PurchaseOrderForm() {
                 />
               </div>
               <div>
-                <label className="label">{language === 'ar' ? 'الشخص المسؤول' : 'Contact Person'}</label>
-                <input
-                  className="input"
-                  value={supplierForm.contactPerson}
-                  onChange={(e) => setSupplierForm((p) => ({ ...p, contactPerson: e.target.value }))}
-                />
-              </div>
-              <div>
                 <label className="label">{language === 'ar' ? 'الهاتف' : 'Phone'}</label>
                 <input
                   className="input"
                   placeholder="+9665xxxxxxxx"
                   value={supplierForm.phone}
                   onChange={(e) => setSupplierForm((p) => ({ ...p, phone: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className="label">{language === 'ar' ? 'البريد الإلكتروني' : 'Email'}</label>
-                <input
-                  type="email"
-                  className="input"
-                  placeholder="supplier@email.com"
-                  value={supplierForm.email}
-                  onChange={(e) => setSupplierForm((p) => ({ ...p, email: e.target.value }))}
                 />
               </div>
             </div>
