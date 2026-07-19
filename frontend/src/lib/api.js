@@ -87,12 +87,11 @@ api.interceptors.response.use(
         window.dispatchEvent(new CustomEvent('tenant-inactive'))
       } else {
         localStorage.removeItem('token')
-        // Avoid hard-reloading when already on the login page (prevents
-        // wiping the form when a stale token triggers a background getMe).
-        const alreadyOnLogin = window.location.pathname.includes('/login')
-        if (!alreadyOnLogin) {
-          window.location.href = '/login'
-        }
+        localStorage.removeItem('auth_user')
+        localStorage.removeItem('auth_tenant')
+        // Use a CustomEvent so the React app can handle the redirect via
+        // React Router instead of a hard page reload (which causes white screen).
+        window.dispatchEvent(new CustomEvent('auth-expired'))
       }
     }
 

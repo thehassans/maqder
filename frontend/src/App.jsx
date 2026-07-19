@@ -1,7 +1,7 @@
 import { useEffect, lazy, Suspense } from 'react'
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { getMe, setTenantInactive } from './store/slices/authSlice'
+import { getMe, setTenantInactive, logout } from './store/slices/authSlice'
 import { setLanguage, setTheme, setDisplayMode, loadHiddenMenuItemsForTenant, loadDisplayModeForTenant } from './store/slices/uiSlice'
 import { applyTenantBranding } from './lib/branding'
 import { getTenantBusinessTypes } from './lib/businessTypes'
@@ -350,6 +350,8 @@ function App() {
   const { token, tenant, user } = useSelector((state) => state.auth)
   const { language, theme, displayMode } = useSelector((state) => state.ui)
 
+  const navigate = useNavigate()
+
   useEffect(() => {
     if (token && !user) {
       dispatch(getMe())
@@ -361,6 +363,18 @@ function App() {
     window.addEventListener('tenant-inactive', handler)
     return () => window.removeEventListener('tenant-inactive', handler)
   }, [dispatch])
+
+  // Handle session expiry (401 from any API call) gracefully with a soft
+  // React Router redirect instead of a hard page reload (which caused
+  // white screen + redirect-back-to-login).
+  useEffect(() => {
+    const handler = () => {
+      dispatch(logout())
+      navigate('/login', { replace: true })
+    }
+    window.addEventListener('auth-expired', handler)
+    return () => window.removeEventListener('auth-expired', handler)
+  }, [dispatch, navigate])
 
   useEffect(() => {
     dispatch(setLanguage(language))
