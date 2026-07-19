@@ -22,6 +22,9 @@ const resolveDocumentNumber = (invoice, documentType = 'invoice') => {
   if (documentType === 'quotation') {
     return invoice?.quotationNumber || invoice?.invoiceNumber || 'quotation'
   }
+  if (documentType === 'purchase_order') {
+    return invoice?.poNumber || 'purchase_order'
+  }
   return invoice?.invoiceNumber || invoice?.quotationNumber || 'invoice'
 }
 
@@ -1568,4 +1571,37 @@ export const downloadQuotationPdf = async ({ quotation, language = 'en', tenant,
 
 export const printQuotationSnapshot = async ({ quotation, language = 'en', tenant, sourceElement = null }) => {
   return await printInvoiceSnapshot({ invoice: quotation, language, tenant, sourceElement, documentType: 'quotation' })
+}
+
+export const downloadPurchaseOrderPdf = async ({ purchaseOrder, language = 'en', tenant }) => {
+  const mapped = {
+    ...purchaseOrder,
+    invoiceNumber: purchaseOrder.poNumber,
+    issueDate: purchaseOrder.orderDate,
+    dueDate: purchaseOrder.expectedDate,
+    buyer: tenant?.business || {},
+    seller: purchaseOrder.supplierId || {},
+    transactionType: 'Purchase Order',
+    flow: 'purchase',
+  }
+  return await generateInvoicePdf({ invoice: mapped, language, tenant, output: 'save', documentType: 'purchase_order' })
+}
+
+export const printPurchaseOrderPdf = async ({ purchaseOrder, language = 'en', tenant }) => {
+  const mapped = {
+    ...purchaseOrder,
+    invoiceNumber: purchaseOrder.poNumber,
+    issueDate: purchaseOrder.orderDate,
+    dueDate: purchaseOrder.expectedDate,
+    buyer: tenant?.business || {},
+    seller: purchaseOrder.supplierId || {},
+    transactionType: 'Purchase Order',
+    flow: 'purchase',
+  }
+  const blob = await generateInvoicePdf({ invoice: mapped, language, tenant, output: 'blob', documentType: 'purchase_order' })
+  if (blob) {
+    const title = resolveDocumentNumber(mapped, 'purchase_order')
+    return await printPdfBlob(blob, title)
+  }
+  return false
 }

@@ -3,14 +3,16 @@ import { useQuery } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Search, ShoppingCart, FileText, Building, Calendar, Edit } from 'lucide-react'
+import { Plus, Search, ShoppingCart, FileText, Building, Calendar, Edit, Printer, Download } from 'lucide-react'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
 import Money from '../components/ui/Money'
 import ExportMenu from '../components/ui/ExportMenu'
+import { downloadPurchaseOrderPdf, printPurchaseOrderPdf } from '../lib/invoicePdf'
+import toast from 'react-hot-toast'
 
 export default function PurchaseOrders() {
-  const { language } = useSelector((state) => state.ui)
+  const { language, tenant } = useSelector((state) => state.ui)
   const { t } = useTranslation(language)
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -116,6 +118,23 @@ export default function PurchaseOrders() {
       return status
     }
     return status
+  }
+
+  const handleDownloadPdf = async (po) => {
+    try {
+      await downloadPurchaseOrderPdf({ purchaseOrder: po, language, tenant })
+      toast.success(language === 'ar' ? 'تم تنزيل ملف PDF' : 'PDF downloaded')
+    } catch (error) {
+      toast.error(language === 'ar' ? 'فشل التنزيل' : 'Download failed')
+    }
+  }
+
+  const handlePrintPdf = async (po) => {
+    try {
+      await printPurchaseOrderPdf({ purchaseOrder: po, language, tenant })
+    } catch (error) {
+      toast.error(language === 'ar' ? 'فشل الطباعة' : 'Print failed')
+    }
   }
 
   return (
@@ -277,7 +296,21 @@ export default function PurchaseOrders() {
                     <td className="font-semibold"><Money value={po.grandTotal} /></td>
                     <td>
                       <div className="flex items-center gap-2">
-                        <Link to={`/purchase-orders/${po._id}`} className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg">
+                        <button
+                          onClick={() => handlePrintPdf(po)}
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                          title={language === 'ar' ? 'طباعة' : 'Print'}
+                        >
+                          <Printer className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDownloadPdf(po)}
+                          className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                          title={language === 'ar' ? 'تنزيل PDF' : 'Download PDF'}
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
+                        <Link to={`/purchase-orders/${po._id}`} className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg" title={language === 'ar' ? 'تعديل' : 'Edit'}>
                           <Edit className="w-4 h-4 text-gray-600" />
                         </Link>
                       </div>

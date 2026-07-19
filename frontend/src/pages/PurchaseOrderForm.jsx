@@ -18,11 +18,14 @@ import {
   Warehouse as WarehouseIcon,
   UserPlus,
   X,
+  Printer,
+  Download,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../lib/api'
 import { useTranslation } from '../lib/translations'
 import Money from '../components/ui/Money'
+import { downloadPurchaseOrderPdf, printPurchaseOrderPdf } from '../lib/invoicePdf'
 
 export default function PurchaseOrderForm() {
   const { id } = useParams()
@@ -364,6 +367,35 @@ export default function PurchaseOrderForm() {
 
         {isEdit && (
           <div className="flex items-center gap-2 flex-wrap justify-end">
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  await printPurchaseOrderPdf({ purchaseOrder: order, language, tenant })
+                } catch (e) {
+                  toast.error(language === 'ar' ? 'فشل الطباعة' : 'Print failed')
+                }
+              }}
+              className="btn btn-secondary"
+            >
+              <Printer className="w-4 h-4" />
+              {language === 'ar' ? 'طباعة' : 'Print'}
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  await downloadPurchaseOrderPdf({ purchaseOrder: order, language, tenant })
+                  toast.success(language === 'ar' ? 'تم التنزيل' : 'Downloaded')
+                } catch (e) {
+                  toast.error(language === 'ar' ? 'فشل التنزيل' : 'Download failed')
+                }
+              }}
+              className="btn btn-secondary"
+            >
+              <Download className="w-4 h-4" />
+              {language === 'ar' ? 'تنزيل PDF' : 'Download PDF'}
+            </button>
             <button
               type="button"
               onClick={() => navigate(`/app/dashboard/invoices/new/purchase?poId=${id}`)}
