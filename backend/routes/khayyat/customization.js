@@ -23,9 +23,75 @@ router.get('/', async (req, res) => {
       filter.category = req.query.category;
     }
     
-    const customizations = await KhayyatCustomization.find(filter)
+    let customizations = await KhayyatCustomization.find(filter)
       .sort({ sortOrder: 1, createdAt: -1 });
       
+    // Seed defaults if empty
+    if (customizations.length === 0 && !req.query.category) {
+      const defaultGroups = [
+        { category: 'collar', options: [
+          { key: 'classic', en: 'Classic', ar: 'كلاسيك', image: '/thawbs/styles/collar_classic.webp' },
+          { key: 'round', en: 'Round', ar: 'دائري', image: '/thawbs/styles/collar_round.webp' },
+          { key: 'mandarin', en: 'Mandarin', ar: 'يوسفي', image: '/thawbs/styles/collar_mandarin.webp' },
+          { key: 'open', en: 'Open', ar: 'مفتوح', image: '/thawbs/styles/collar_open.webp' },
+          { key: 'v_neck', en: 'V-Neck', ar: 'رقبة V', image: '/thawbs/styles/collar_v_neck.webp' },
+          { key: 'chinese', en: 'Chinese', ar: 'صيني', image: '/thawbs/styles/collar_chinese.webp' }
+        ]},
+        { category: 'bain', options: [
+          { key: 'hidden', en: 'Hidden', ar: 'مخفي', image: '/thawbs/styles/bain_hidden.webp' },
+          { key: 'visible', en: 'Visible', ar: 'ظاهر', image: '/thawbs/styles/bain_visible.webp' },
+          { key: 'zip', en: 'Zip', ar: 'سحاب', image: '/thawbs/styles/bain_zip.webp' },
+          { key: 'half', en: 'Half', ar: 'نصف', image: '/thawbs/styles/bain_half.webp' },
+          { key: 'full', en: 'Full', ar: 'كامل', image: '/thawbs/styles/bain_full.webp' }
+        ]},
+        { category: 'cuff', options: [
+          { key: 'single', en: 'Single', ar: 'سادة', image: '/thawbs/styles/cuff_single.webp' },
+          { key: 'double', en: 'Double', ar: 'مزدوج (كبك)', image: '/thawbs/styles/cuff_double.webp' },
+          { key: 'round', en: 'Round', ar: 'دائري', image: '/thawbs/styles/cuff_round.webp' },
+          { key: 'angled', en: 'Angled', ar: 'مشطوف', image: '/thawbs/styles/cuff_angled.webp' },
+          { key: 'wide', en: 'Wide', ar: 'عريض', image: '/thawbs/styles/cuff_wide.webp' }
+        ]},
+        { category: 'pocket', options: [
+          { key: 'none', en: 'None', ar: 'بدون', image: '/thawbs/styles/pocket_none.webp' },
+          { key: 'chest', en: 'Chest', ar: 'صدر', image: '/thawbs/styles/pocket_chest.webp' },
+          { key: 'side', en: 'Side', ar: 'جانبي', image: '/thawbs/styles/pocket_side.webp' },
+          { key: 'both', en: 'Both', ar: 'صدر وجانبي', image: '/thawbs/styles/pocket_both.webp' }
+        ]},
+        { category: 'buttons', options: [
+          { key: 'classic', en: 'Classic', ar: 'كلاسيك', image: '/thawbs/styles/buttons_classic.webp' },
+          { key: 'hidden', en: 'Hidden', ar: 'مخفي', image: '/thawbs/styles/buttons_hidden.webp' },
+          { key: 'snap', en: 'Snap (Tek-tak)', ar: 'طقطق', image: '/thawbs/styles/buttons_snap.webp' },
+          { key: 'premium', en: 'Premium', ar: 'ممتاز', image: '/thawbs/styles/buttons_premium.webp' },
+          { key: 'golden', en: 'Golden', ar: 'ذهبي', image: '/thawbs/styles/buttons_golden.webp' }
+        ]},
+        { category: 'embroidery', options: [
+          { key: 'none', en: 'None', ar: 'بدون', image: '/thawbs/styles/embroidery_none.webp' },
+          { key: 'name', en: 'Name Initials', ar: 'حروف الاسم', image: '/thawbs/styles/embroidery_name.webp' },
+          { key: 'logo', en: 'Logo', ar: 'شعار', image: null },
+          { key: 'premium', en: 'Premium Design', ar: 'تصميم مميز', image: null },
+          { key: 'arabic', en: 'Arabic Calligraphy', ar: 'خط عربي', image: null }
+        ]}
+      ];
+
+      const seedData = [];
+      defaultGroups.forEach(group => {
+        group.options.forEach((opt, idx) => {
+          seedData.push({
+            tenantId: req.user.tenantId,
+            category: group.category,
+            nameEn: opt.en,
+            nameAr: opt.ar,
+            image: opt.image,
+            extraPrice: 0,
+            isActive: true,
+            sortOrder: idx
+          });
+        });
+      });
+
+      customizations = await KhayyatCustomization.insertMany(seedData);
+    }
+
     res.json({ success: true, customizations });
   } catch (error) {
     console.error('Fetch customizations error:', error);
