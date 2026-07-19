@@ -53,7 +53,10 @@ export const generateZatcaQrValue = ({ sellerName, vatNumber, timestamp, totalWi
   try {
     const validation = validateZatcaQrFields({ sellerName, vatNumber, totalWithVat, vatTotal })
     if (!validation.valid) {
-      throw new Error(`ZATCA QR validation failed: ${validation.errors.join(', ')}`)
+      // Return null instead of throwing so callers can hide the QR gracefully
+      // (e.g. when the VAT number hasn't been configured yet).
+      console.warn('[ZATCA QR] Cannot generate QR:', validation.errors.join(', '))
+      return null
     }
 
     const ts = timestamp || new Date().toISOString()
@@ -70,7 +73,7 @@ export const generateZatcaQrValue = ({ sellerName, vatNumber, timestamp, totalWi
     return bytesToBase64(fields.flat())
   } catch (error) {
     console.error('[ZATCA QR] Generation failed:', error.message)
-    throw error
+    return null
   }
 }
 

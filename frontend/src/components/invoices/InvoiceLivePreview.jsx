@@ -322,13 +322,20 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
     ? (invoice?.flow === 'purchase' ? toBilingualText('Buyer', 'المشتري') : toBilingualText('Customer', 'العميل'))
     : (invoice?.flow === 'purchase' ? (language === 'ar' ? 'المشتري' : 'Buyer') : (language === 'ar' ? 'العميل' : 'Customer'))
   const logoSrc = invoiceBranding.logoSrc
-  const qrValue = invoice?.zatca?.qrCodeData || generateZatcaQrValue({
-    sellerName: sellerNameEn || sellerNameAr,
-    vatNumber: invoice?.seller?.vatNumber || tenant?.business?.vatNumber,
-    timestamp: invoice?.issueDate || new Date().toISOString(),
-    totalWithVat: toNumber(invoice?.grandTotal),
-    vatTotal: toNumber(invoice?.totalTax),
-  })
+  const vatNumber = invoice?.seller?.vatNumber || tenant?.business?.vatNumber
+  const qrValue = (() => {
+    try {
+      return invoice?.zatca?.qrCodeData || generateZatcaQrValue({
+        sellerName: sellerNameEn || sellerNameAr,
+        vatNumber,
+        timestamp: invoice?.issueDate || new Date().toISOString(),
+        totalWithVat: toNumber(invoice?.grandTotal),
+        vatTotal: toNumber(invoice?.totalTax),
+      })
+    } catch {
+      return null
+    }
+  })()
   const totals = calculateInvoiceSummary(invoice)
   const travelDetails = normalizeTravelDetails(invoice?.travelDetails || {}, buyerNameEn || buyerNameAr, language)
   const travelDetailsEn = normalizeTravelDetails(invoice?.travelDetails || {}, buyerNameEn || buyerNameAr, 'en')
@@ -533,7 +540,22 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
             <div className="flex min-w-[148px] flex-col items-center gap-3 self-start text-center">
               {!isTravelInvoice && !isQuotation && (
                 <div className="rounded-[1.5rem] border border-slate-200 bg-white p-2 shadow-sm">
-                  <QRCodeSVG value={qrValue} size={88} bgColor="transparent" fgColor="#0F172A" />
+                  {qrValue ? (
+                    <QRCodeSVG value={qrValue} size={88} bgColor="transparent" fgColor="#0F172A" />
+                  ) : (
+                    /* VAT number not set or invalid — show placeholder instead of crashing */
+                    <div
+                      title={language === 'ar' ? 'أضف الرقم الضريبي في الإعدادات لإظهار رمز QR' : 'Add VAT number in Settings to show QR code'}
+                      style={{ width: 88, height: 88, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '1.5px dashed #CBD5E1', borderRadius: 8, background: '#F8FAFC', gap: 4 }}
+                    >
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                      </svg>
+                      <span style={{ fontSize: 8, color: '#94A3B8', textAlign: 'center', lineHeight: '1.2', padding: '0 4px' }}>
+                        {language === 'ar' ? 'الرقم الضريبي مطلوب' : 'VAT required'}
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
               <div className="w-full max-w-[132px] space-y-1 text-[11px] leading-4 text-slate-600 text-center">
