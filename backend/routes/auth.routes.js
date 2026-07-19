@@ -142,9 +142,13 @@ router.post('/login', async (req, res) => {
     } else {
       const matchingUsers = await withQueryTimeout(User.find({ email: normalizedEmail }).select('+password'));
 
-      if (matchingUsers.length === 1) {
+      if (matchingUsers.length === 0) {
+        // No users found at all — fall through to the account_not_found check below
+      } else if (matchingUsers.length === 1) {
         user = matchingUsers[0];
-      } else if (matchingUsers.length > 1) {
+      } else {
+        // Multiple users share this email across tenants.
+        // Try to find one whose password matches.
         const passwordMatches = (
           await Promise.all(
             matchingUsers.map(async (candidate) => ({
@@ -160,20 +164,20 @@ router.post('/login', async (req, res) => {
           user = passwordMatches[0];
           passwordAlreadyVerified = true;
         } else if (passwordMatches.length > 1) {
-          const preferredMatch = passwordMatches.find((candidate) => candidate.role === 'super_admin')
-            || passwordMatches.find((candidate) => !candidate.tenantId);
+          // Multiple matches — prefer super_admin or non-tenant user
+          const preferredMatch = passwordMatches.find((c) => c.role === 'super_admin')
+            || passwordMatches.find((c) => !c.tenantId);
 
           if (!preferredMatch) {
-            return res.status(401).json({ error: 'Unable to determine the correct account for this email' });
+            return res.status(401).json({ error: 'Invalid credentials' });
           }
 
           user = preferredMatch;
           passwordAlreadyVerified = true;
         } else {
-          const superAdmin = matchingUsers.find((candidate) => candidate.role === 'super_admin');
-          const globalUser = matchingUsers.find((candidate) => !candidate.tenantId);
-
-          user = superAdmin || globalUser || null;
+          // No password match among multiple users — return invalid credentials immediately.
+          // Do NOT fall back to guessing by role; that would allow wrong-tenant login attempts.
+          return res.status(401).json({ error: 'Invalid credentials' });
         }
       }
     }
