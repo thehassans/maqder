@@ -692,7 +692,10 @@ const getPartyDetailLines = (party = {}, language = 'en', role = 'party') => {
   return lines.length > 0 ? lines : [{ label: '', value: '—' }]
 }
 
-const getInvoiceEyebrow = (invoice, language = 'en') => {
+const getInvoiceEyebrow = (invoice, language = 'en', documentType = 'invoice') => {
+  if (documentType === 'purchase_order') {
+    return language === 'ar' ? 'طلب شراء' : 'Purchase Order'
+  }
   if (invoice?.quotationNumber) {
     if (invoice?.businessContext === 'construction') {
       return language === 'ar' ? 'عرض سعر للمقاولات' : 'Construction Quotation'
@@ -728,7 +731,10 @@ const getInvoiceEyebrow = (invoice, language = 'en') => {
   return language === 'ar' ? 'فاتورة تجارة' : 'Trading Invoice'
 }
 
-const getInvoiceTitle = (invoice, language = 'en') => {
+const getInvoiceTitle = (invoice, language = 'en', documentType = 'invoice') => {
+  if (documentType === 'purchase_order') {
+    return language === 'ar' ? 'طلب شراء' : 'Purchase Order'
+  }
   if (invoice?.quotationNumber) {
     if (invoice?.businessContext === 'construction') {
       return language === 'ar' ? 'عرض سعر للمقاولات' : 'Construction Quotation'
@@ -970,8 +976,9 @@ const generateInvoicePdf = async ({ invoice, language = 'en', tenant, sourceElem
   const totals = calculateInvoiceSummary(invoice)
   const travelDetailsEn = normalizeTravelDetails(invoice.travelDetails || {}, buyerNameEn || buyerNameAr, 'en')
   const travelDetailsAr = normalizeTravelDetails(invoice.travelDetails || {}, buyerNameAr || buyerNameEn, 'ar')
-  const isQuotationPdf = Boolean(invoice?.quotationNumber)
-  const isTravelInvoicePdf = !isQuotationPdf && (invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency')
+  const isQuotationPdf = Boolean(invoice?.quotationNumber) || documentType === 'quotation'
+  const isPurchaseOrderPdf = documentType === 'purchase_order'
+  const isTravelInvoicePdf = !isQuotationPdf && !isPurchaseOrderPdf && (invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency')
   const qrValue = invoice?.zatca?.qrCodeData || generateZatcaQrValue({
     sellerName,
     vatNumber: seller?.vatNumber || tenant?.business?.vatNumber,
@@ -980,19 +987,21 @@ const generateInvoicePdf = async ({ invoice, language = 'en', tenant, sourceElem
     vatTotal: totals.totalTax,
   })
   // Travel agency invoices omit the ZATCA QR from the printed document.
-  const fallbackQrImage = isTravelInvoicePdf || isQuotationPdf || invoice?.zatca?.qrCodeImage ? null : await renderQrToDataUrl(qrValue, 120)
-  const qr = isTravelInvoicePdf || isQuotationPdf ? null : await resolveImageSource(invoice?.zatca?.qrCodeImage || fallbackQrImage || null)
+  const fallbackQrImage = isTravelInvoicePdf || isQuotationPdf || isPurchaseOrderPdf || invoice?.zatca?.qrCodeImage ? null : await renderQrToDataUrl(qrValue, 120)
+  const qr = isTravelInvoicePdf || isQuotationPdf || isPurchaseOrderPdf ? null : await resolveImageSource(invoice?.zatca?.qrCodeImage || fallbackQrImage || null)
   const qrFormat = detectImageFormat(qr)
   const companyName = invoiceBranding.companyName || sellerNameEn || sellerNameAr || ''
   const headerLines = splitBrandingText(invoiceBranding.headerText)
   const footerLines = splitBrandingText(invoiceBranding.footerText)
-  const invoiceEyebrow = getInvoiceEyebrow(invoice, language)
+  const invoiceEyebrow = getInvoiceEyebrow(invoice, language, documentType)
 
   const title = isQuotationPdf
-    ? getInvoiceTitle(invoice, language)
+    ? getInvoiceTitle(invoice, language, documentType)
+    : isPurchaseOrderPdf
+    ? getInvoiceTitle(invoice, language, documentType)
     : invoice?.invoiceSubtype === 'travel_ticket' || invoice?.businessContext === 'travel_agency'
     ? ''
-    : getInvoiceTitle(invoice, language)
+    : getInvoiceTitle(invoice, language, documentType)
   const customerLabel = invoice.flow === 'purchase'
     ? toBilingualBlock('Buyer', 'المشتري')
     : toBilingualBlock('Customer', 'العميل')
