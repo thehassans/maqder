@@ -40,7 +40,14 @@ export default function KhayyatCustomizations() {
   const [editItem, setEditItem] = useState(null);
 
   const fileInputRef = useRef(null);
-  const [formData, setFormData] = useState({ nameEn: '', nameAr: '', extraPrice: 0, sortOrder: 0, isActive: true });
+  const [formData, setFormData] = useState({
+    nameEn: '',
+    nameAr: '',
+    extraPrice: 0,
+    sortOrder: 0,
+    isActive: true,
+    hexColor: '#ffffff',
+  });
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [removeImage, setRemoveImage] = useState(false);
@@ -101,10 +108,11 @@ export default function KhayyatCustomizations() {
         extraPrice: item.extraPrice || 0,
         sortOrder: item.sortOrder || 0,
         isActive: item.isActive,
+        hexColor: item.category === 'fabricColor' ? (item.image || '#ffffff') : '#ffffff',
       });
-      setImagePreview(resolveImageUrl(item.image));
+      setImagePreview(item.category !== 'fabricColor' ? resolveImageUrl(item.image) : null);
     } else {
-      setFormData({ nameEn: '', nameAr: '', extraPrice: 0, sortOrder: 0, isActive: true });
+      setFormData({ nameEn: '', nameAr: '', extraPrice: 0, sortOrder: 0, isActive: true, hexColor: '#ffffff' });
       setImagePreview(null);
     }
     setImageFile(null);
@@ -144,7 +152,9 @@ export default function KhayyatCustomizations() {
     form.append('sortOrder', formData.sortOrder || 0);
     form.append('isActive', formData.isActive);
 
-    if (imageFile) {
+    if (activeCategory === 'fabricColor') {
+      form.append('image', formData.hexColor);
+    } else if (imageFile) {
       form.append('image', imageFile);
     }
 
@@ -267,7 +277,15 @@ export default function KhayyatCustomizations() {
 
                     <div className="p-4 flex flex-col items-center text-center h-full">
                       <div className="w-24 h-24 mb-4 rounded-2xl bg-gray-50 dark:bg-dark-900 flex items-center justify-center overflow-hidden">
-                        {item.image ? (
+                        {item.category === 'fabricColor' ? (
+                          <div className="w-16 h-16 rounded-full border-4 border-white dark:border-dark-800 shadow-md" style={{ backgroundColor: item.image || '#ffffff' }} />
+                        ) : item.category === 'thawbType' ? (
+                          item.image ? (
+                            <img src={resolveImageUrl(item.image)} alt={item.nameEn} className="w-full h-full object-cover" />
+                          ) : (
+                            <ImageIcon className="w-8 h-8 text-gray-300" />
+                          )
+                        ) : item.image ? (
                           <img src={resolveImageUrl(item.image)} alt={item.nameEn} className="w-full h-full object-contain p-2" />
                         ) : (
                           <ImageIcon className="w-8 h-8 text-gray-300" />
@@ -294,32 +312,45 @@ export default function KhayyatCustomizations() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex justify-center mb-6">
             <div className="relative">
-              <div className="w-32 h-32 rounded-3xl bg-gray-50 dark:bg-dark-800 border-2 border-dashed border-gray-300 dark:border-dark-600 flex flex-col items-center justify-center overflow-hidden">
-                {imagePreview ? (
-                  <img src={imagePreview} alt="Preview" className="w-full h-full object-contain p-2" />
-                ) : (
-                  <div className="text-center">
-                    <ImageIcon className="w-8 h-8 text-gray-300 mx-auto" />
-                    <span className="text-xs text-gray-400 mt-1 block">SVG / PNG</span>
+              {activeCategory === 'fabricColor' ? (
+                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white dark:border-dark-800 shadow-lg cursor-pointer">
+                  <input 
+                    type="color" 
+                    className="w-[150%] h-[150%] -translate-x-1/4 -translate-y-1/4 cursor-pointer"
+                    value={formData.hexColor}
+                    onChange={(e) => setFormData({ ...formData, hexColor: e.target.value })}
+                  />
+                </div>
+              ) : (
+                <>
+                  <div className={`rounded-3xl bg-gray-50 dark:bg-dark-800 border-2 border-dashed border-gray-300 dark:border-dark-600 flex flex-col items-center justify-center overflow-hidden ${activeCategory === 'thawbType' ? 'w-32 h-48' : 'w-32 h-32'}`}>
+                    {imagePreview ? (
+                      <img src={imagePreview} alt="Preview" className="w-full h-full object-contain p-2" />
+                    ) : (
+                      <div className="text-center">
+                        <ImageIcon className="w-8 h-8 text-gray-300 mx-auto" />
+                        <span className="text-xs text-gray-400 mt-1 block">SVG / PNG</span>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-              <input type="file" ref={fileInputRef} onChange={handleImageChange} accept="image/*" className="hidden" />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="absolute -bottom-3 -right-3 w-10 h-10 bg-primary-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-primary-700 transition-colors"
-              >
-                <Upload className="w-4 h-4" />
-              </button>
-              {imagePreview && (
-                <button
-                  type="button"
-                  onClick={() => { setImageFile(null); setImagePreview(null); setRemoveImage(true); }}
-                  className="absolute -top-3 -left-3 w-8 h-8 bg-red-100 text-red-600 rounded-full flex items-center justify-center shadow-sm hover:bg-red-200"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+                  <input type="file" ref={fileInputRef} onChange={handleImageChange} accept="image/*" className="hidden" />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="absolute -bottom-3 -right-3 w-10 h-10 bg-primary-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-primary-700 transition-colors"
+                  >
+                    <Upload className="w-4 h-4" />
+                  </button>
+                  {imagePreview && (
+                    <button
+                      type="button"
+                      onClick={() => { setImageFile(null); setImagePreview(null); setRemoveImage(true); }}
+                      className="absolute -top-3 -left-3 w-8 h-8 bg-red-100 text-red-600 rounded-full flex items-center justify-center shadow-sm hover:bg-red-200"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </>
               )}
             </div>
           </div>

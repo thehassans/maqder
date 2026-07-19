@@ -145,7 +145,8 @@ const StitchingForm = () => {
     fetchStyleCatalog();
     fetchMeasurementsCatalog();
     fetchStyleCatalog();
-    fetchFabrics(); fetchStitching();
+    fetchFabrics();
+    if (isEdit) fetchStitching();
   }, [id]);
 
   const resolveUploadsUrl = useCallback((src) => {
@@ -370,7 +371,7 @@ const StitchingForm = () => {
       items.forEach(item => {
         if (item.category === 'fabricColor') {
           if (item.isActive) {
-            colorsCat.push({ key: item._id, name: item.nameEn, nameI18n: { en: item.nameEn, ar: item.nameAr }, hex: item.nameEn, sortOrder: item.sortOrder || 0 });
+            colorsCat.push({ key: item._id, name: item.nameEn, nameI18n: { en: item.nameEn, ar: item.nameAr }, hex: item.image || '#e5e7eb', sortOrder: item.sortOrder || 0 });
           }
         } else if (item.category === 'thawbType') {
           if (item.isActive) {

@@ -127,13 +127,13 @@ router.get('/', async (req, res) => {
 // POST /api/khayyat/customizations
 router.post('/', upload.single('image'), async (req, res) => {
   try {
-    const { category, nameEn, nameAr, extraPrice, isActive, sortOrder } = req.body;
+    const { category, nameEn, nameAr, extraPrice, isActive, sortOrder, image: bodyImage } = req.body;
     
     if (!category || !nameEn || !nameAr) {
       return res.status(400).json({ success: false, error: 'Category, English Name, and Arabic Name are required' });
     }
 
-    let imageUrl = null;
+    let imageUrl = bodyImage || null;
 
     if (req.file) {
       const tenantIdStr = req.user.tenantId.toString();
@@ -181,7 +181,8 @@ router.put('/:id', upload.single('image'), async (req, res) => {
       return res.status(404).json({ success: false, error: 'Customization not found' });
     }
 
-    const { category, nameEn, nameAr, extraPrice, isActive, sortOrder } = req.body;
+    const { category, nameEn, nameAr, extraPrice, isActive, sortOrder, image: bodyImage } = req.body;
+    let imageUrl = bodyImage || null;
 
     if (category) customization.category = category;
     if (nameEn) customization.nameEn = nameEn;
@@ -206,9 +207,13 @@ router.put('/:id', upload.single('image'), async (req, res) => {
         .webp({ quality: 85 })
         .toFile(filepath);
 
-      customization.image = `/uploads/khayyat/customizations/${tenantIdStr}/${filename}`;
+      imageUrl = `/uploads/khayyat/customizations/${tenantIdStr}/${filename}`;
+    }
+    
+    if (imageUrl) {
+      customization.image = imageUrl;
     } else if (req.body.removeImage === 'true') {
-        customization.image = null;
+      customization.image = null;
     }
 
     await customization.save();
