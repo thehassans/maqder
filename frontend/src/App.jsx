@@ -1,7 +1,7 @@
 import { useEffect, lazy, Suspense } from 'react'
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { getMe, setTenantInactive, logout } from './store/slices/authSlice'
+import { getMe, setTenantInactive, forceLogout } from './store/slices/authSlice'
 import { setLanguage, setTheme, setDisplayMode, loadHiddenMenuItemsForTenant, loadDisplayModeForTenant } from './store/slices/uiSlice'
 import { applyTenantBranding } from './lib/branding'
 import { getTenantBusinessTypes } from './lib/businessTypes'
@@ -367,9 +367,12 @@ function App() {
   // Handle session expiry (401 from any API call) gracefully with a soft
   // React Router redirect instead of a hard page reload (which caused
   // white screen + redirect-back-to-login).
+  // IMPORTANT: use forceLogout (synchronous) NOT logout (async thunk).
+  // The async thunk completes too late — isAuthenticated stays true when
+  // AuthLayout renders, making it redirect BACK to /app/dashboard in a loop.
   useEffect(() => {
     const handler = () => {
-      dispatch(logout())
+      dispatch(forceLogout())   // clears Redux state synchronously right now
       navigate('/login', { replace: true })
     }
     window.addEventListener('auth-expired', handler)

@@ -138,9 +138,20 @@ const authSlice = createSlice({
     setTenantInactive: (state) => {
       if (state.tenant) {
         state.tenant = { ...state.tenant, isActive: false }
-        // Update localStorage so it persists across refreshes
         try { localStorage.setItem('auth_tenant', JSON.stringify(state.tenant)) } catch {}
       }
+    },
+    // Synchronous logout — used by the auth-expired event handler so that
+    // Redux state is cleared BEFORE React Router navigates to /login.
+    // The async logout() thunk is too slow: isAuthenticated stays true
+    // long enough for AuthLayout to redirect back to /app/dashboard.
+    forceLogout: (state) => {
+      state.isAuthenticated = false
+      state.isLoading = false
+      state.user = null
+      state.tenant = null
+      state.token = null
+      state.error = null
     },
   },
   extraReducers: (builder) => {
@@ -220,5 +231,5 @@ const authSlice = createSlice({
   },
 })
 
-export const { clearError, updateUser, updateTenant, setTenantInactive } = authSlice.actions
+export const { clearError, updateUser, updateTenant, setTenantInactive, forceLogout } = authSlice.actions
 export default authSlice.reducer
