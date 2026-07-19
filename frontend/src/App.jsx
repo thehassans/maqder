@@ -366,6 +366,9 @@ function App() {
     dispatch(setLanguage(language))
     dispatch(setTheme(theme))
     dispatch(setDisplayMode(displayMode))
+    
+    // Clear chunk loading retry flag on successful app load
+    sessionStorage.removeItem('chunk-load-retry')
   }, [])
 
   useEffect(() => {

@@ -7,6 +7,17 @@ export class ErrorBoundary extends Component {
   }
 
   static getDerivedStateFromError(error) {
+    // Handle Vite/Webpack dynamic import failures (usually due to a new deployment removing old chunks)
+    if (
+      error?.message?.includes('Failed to fetch dynamically imported module') ||
+      error?.message?.includes('Importing a module script failed')
+    ) {
+      if (!sessionStorage.getItem('chunk-load-retry')) {
+        sessionStorage.setItem('chunk-load-retry', '1');
+        window.location.reload();
+        return { hasError: false, error: null };
+      }
+    }
     return { hasError: true, error }
   }
 
