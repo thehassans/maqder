@@ -131,7 +131,24 @@ export default function KhayyatCustomizations() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    saveMutation.mutate(formData);
+    if (!formData.nameEn || !formData.nameAr) {
+      toast.error(isRtl ? 'الاسم الانجليزي والعربي مطلوب' : 'English and Arabic names are required');
+      return;
+    }
+
+    const form = new FormData();
+    form.append('category', activeCategory);
+    form.append('nameEn', formData.nameEn);
+    form.append('nameAr', formData.nameAr);
+    form.append('extraPrice', formData.extraPrice || 0);
+    form.append('sortOrder', formData.sortOrder || 0);
+    form.append('isActive', formData.isActive);
+
+    if (imageFile) {
+      form.append('image', imageFile);
+    }
+
+    saveMutation.mutate({ id: editItem ? editItem._id : null, data: form });
   };
 
   return (
