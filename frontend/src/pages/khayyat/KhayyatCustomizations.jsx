@@ -51,6 +51,23 @@ export default function KhayyatCustomizations() {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [removeImage, setRemoveImage] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
+
+  const handleTranslateName = async (source) => {
+    if (source === 'en' && formData.nameEn && !formData.nameAr) {
+      try {
+        setIsTranslating(true);
+        const res = await api.post('/ai/translate', { text: formData.nameEn, sourceLang: 'en', targetLang: 'ar' });
+        if (res.data?.translatedText) setFormData(prev => ({ ...prev, nameAr: res.data.translatedText }));
+      } catch (err) { console.error('Translation failed:', err); } finally { setIsTranslating(false); }
+    } else if (source === 'ar' && formData.nameAr && !formData.nameEn) {
+      try {
+        setIsTranslating(true);
+        const res = await api.post('/ai/translate', { text: formData.nameAr, sourceLang: 'ar', targetLang: 'en' });
+        if (res.data?.translatedText) setFormData(prev => ({ ...prev, nameEn: res.data.translatedText }));
+      } catch (err) { console.error('Translation failed:', err); } finally { setIsTranslating(false); }
+    }
+  };
 
   const { data: customizations, isLoading } = useQuery({
     queryKey: ['khayyat-customizations'],
@@ -66,7 +83,13 @@ export default function KhayyatCustomizations() {
       form.append('extraPrice', data.extraPrice);
       form.append('sortOrder', data.sortOrder);
       form.append('isActive', data.isActive);
-      if (imageFile) form.append('image', imageFile);
+      
+      if (activeCategory === 'fabricColor') {
+        form.append('image', data.hexColor);
+      } else if (imageFile) {
+        form.append('image', imageFile);
+      }
+      
       if (removeImage) form.append('removeImage', 'true');
 
       if (editItem) {
@@ -144,21 +167,7 @@ export default function KhayyatCustomizations() {
       return;
     }
 
-    const form = new FormData();
-    form.append('category', activeCategory);
-    form.append('nameEn', formData.nameEn);
-    form.append('nameAr', formData.nameAr);
-    form.append('extraPrice', formData.extraPrice || 0);
-    form.append('sortOrder', formData.sortOrder || 0);
-    form.append('isActive', formData.isActive);
-
-    if (activeCategory === 'fabricColor') {
-      form.append('image', formData.hexColor);
-    } else if (imageFile) {
-      form.append('image', imageFile);
-    }
-
-    saveMutation.mutate({ id: editItem ? editItem._id : null, data: form });
+    saveMutation.mutate(formData);
   };
 
   return (
@@ -363,12 +372,17 @@ export default function KhayyatCustomizations() {
                 required
                 value={formData.nameEn}
                 onChange={(e) => setFormData({ ...formData, nameEn: e.target.value })}
+                onBlur={() => handleTranslateName('en')}
+                disabled={isTranslating}
                 className="input"
                 placeholder="e.g. Classic Collar"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1 text-right">الاسم بالعربي *</label>
+              <label className="block text-sm font-medium mb-1 text-right">
+                {isRtl ? 'الاسم بالعربي *' : 'Arabic Name *'}
+                {isTranslating && <span className="mx-2 text-xs text-gray-400">...</span>}
+              </label>
               <input
                 type="text"
                 required
