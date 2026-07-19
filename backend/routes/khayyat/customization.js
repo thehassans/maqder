@@ -70,6 +70,25 @@ router.get('/', async (req, res) => {
           { key: 'logo', en: 'Logo', ar: 'شعار', image: null },
           { key: 'premium', en: 'Premium Design', ar: 'تصميم مميز', image: null },
           { key: 'arabic', en: 'Arabic Calligraphy', ar: 'خط عربي', image: null }
+        ]},
+        { category: 'fabricColor', options: [
+          { key: 'white', en: 'White', ar: 'أبيض', image: null },
+          { key: 'cream', en: 'Cream', ar: 'كريمي', image: null },
+          { key: 'offwhite', en: 'Off White', ar: 'أوف وايت', image: null },
+          { key: 'beige', en: 'Beige', ar: 'بيج', image: null },
+          { key: 'grey', en: 'Grey', ar: 'رمادي', image: null },
+          { key: 'black', en: 'Black', ar: 'أسود', image: null },
+          { key: 'navy', en: 'Navy', ar: 'كحلي', image: null },
+          { key: 'brown', en: 'Brown', ar: 'بني', image: null }
+        ]},
+        { category: 'thawbType', options: [
+          { key: 'saudi', en: 'Saudi', ar: 'سعودي', image: '/thawbs/saudi.webp' },
+          { key: 'qatari', en: 'Qatari', ar: 'قطري', image: '/thawbs/qatari.webp' },
+          { key: 'emirati', en: 'Emirati', ar: 'إماراتي', image: '/thawbs/emirati.webp' },
+          { key: 'kuwaiti', en: 'Kuwaiti', ar: 'كويتي', image: '/thawbs/kuwati.webp' },
+          { key: 'omani', en: 'Omani', ar: 'عماني', image: '/thawbs/omani.webp' },
+          { key: 'bahraini', en: 'Bahraini', ar: 'بحريني', image: '/thawbs/Bahrini.webp' },
+          { key: 'noum', en: 'Noum', ar: 'نوم', image: '/thawbs/noum.webp' }
         ]}
       ];
 

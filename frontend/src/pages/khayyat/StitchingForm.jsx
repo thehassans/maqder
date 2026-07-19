@@ -144,10 +144,8 @@ const StitchingForm = () => {
     fetchAllCustomers();
     fetchStyleCatalog();
     fetchMeasurementsCatalog();
-    fetchThawbTypesCatalog();
-    fetchFabricColorsCatalog();
-    fetchFabrics();
-    if (isEdit) fetchStitching();
+    fetchStyleCatalog();
+    fetchFabrics(); fetchStitching();
   }, [id]);
 
   const resolveUploadsUrl = useCallback((src) => {
@@ -365,34 +363,67 @@ const StitchingForm = () => {
       const items = response.data?.customizations || [];
       
       const groupsMap = {};
+      const colorsCat = [];
+      const thawbCat = [];
+      const fabricMatCat = [];
+
       items.forEach(item => {
-        if (!groupsMap[item.category]) {
-          groupsMap[item.category] = {
-            key: item.category,
-            name: item.category,
-            enabled: true,
-            sortOrder: CATEGORIES_SORT[item.category] || 0,
-            options: []
-          };
-        }
-        if (item.isActive) {
-          groupsMap[item.category].options.push({
-            key: item._id, // Using the _id as the key for dynamic items
-            name: item.nameEn,
-            nameI18n: { en: item.nameEn, ar: item.nameAr },
-            image: item.image,
-            sortOrder: item.sortOrder || 0,
-            extraPrice: item.extraPrice || 0
-          });
+        if (item.category === 'fabricColor') {
+          if (item.isActive) {
+            colorsCat.push({ key: item._id, name: item.nameEn, nameI18n: { en: item.nameEn, ar: item.nameAr }, hex: item.nameEn, sortOrder: item.sortOrder || 0 });
+          }
+        } else if (item.category === 'thawbType') {
+          if (item.isActive) {
+            thawbCat.push({ key: item._id, name: item.nameEn, nameI18n: { en: item.nameEn, ar: item.nameAr }, image: item.image, sortOrder: item.sortOrder || 0 });
+          }
+        } else if (item.category === 'fabricMaterial') {
+          if (item.isActive) {
+            fabricMatCat.push({ key: item._id, name: item.nameEn, nameI18n: { en: item.nameEn, ar: item.nameAr }, image: item.image, sortOrder: item.sortOrder || 0 });
+          }
+        } else {
+          if (!groupsMap[item.category]) {
+            groupsMap[item.category] = {
+              key: item.category,
+              name: item.category,
+              enabled: true,
+              sortOrder: CATEGORIES_SORT[item.category] || 0,
+              options: []
+            };
+          }
+          if (item.isActive) {
+            groupsMap[item.category].options.push({
+              key: item._id,
+              name: item.nameEn,
+              nameI18n: { en: item.nameEn, ar: item.nameAr },
+              image: item.image,
+              sortOrder: item.sortOrder || 0,
+              extraPrice: item.extraPrice || 0
+            });
+          }
         }
       });
       
-      // If we have custom items from the DB, build the catalog
       if (Object.keys(groupsMap).length > 0) {
         setStyleCatalog({ groups: Object.values(groupsMap) });
       } else {
-        setStyleCatalog(null); // Fallback to hardcoded if empty
+        setStyleCatalog(null);
       }
+
+      if (colorsCat.length > 0) {
+        setFabricColorsCatalog({ colors: colorsCat });
+      } else {
+        setFabricColorsCatalog(null);
+      }
+
+      if (thawbCat.length > 0) {
+        setThawbTypesCatalog({ types: thawbCat });
+      } else {
+        setThawbTypesCatalog(null);
+      }
+      
+      // If we ever want to use fabricMaterial from customizations instead of fabrics
+      // we can set it here if needed. But for now we just load it.
+
     } catch (error) {
       setStyleCatalog(null);
     }
@@ -408,28 +439,6 @@ const StitchingForm = () => {
       setMeasurementsCatalog(null);
     }
     setMeasurementsCatalogLoading(false);
-  };
-
-  const fetchThawbTypesCatalog = async () => {
-    try {
-      setThawbTypesCatalogLoading(true);
-      const response = await api.get('/khayyat/settings/thawb-types-catalog');
-      setThawbTypesCatalog(response.data?.catalog || null);
-    } catch (error) {
-      setThawbTypesCatalog(null);
-    }
-    setThawbTypesCatalogLoading(false);
-  };
-
-  const fetchFabricColorsCatalog = async () => {
-    try {
-      setFabricColorsCatalogLoading(true);
-      const response = await api.get('/khayyat/settings/fabric-colors-catalog');
-      setFabricColorsCatalog(response.data?.catalog || null);
-    } catch (error) {
-      setFabricColorsCatalog(null);
-    }
-    setFabricColorsCatalogLoading(false);
   };
 
   const fetchFabrics = async () => {

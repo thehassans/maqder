@@ -2,7 +2,7 @@ import React, { useState, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit3, Trash2, Image as ImageIcon, X, Upload } from 'lucide-react';
+import { Plus, Edit3, Trash2, Image as ImageIcon, X, Upload, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../lib/api';
 import { Card } from './components/ui/Card';
@@ -220,6 +220,20 @@ export default function KhayyatCustomizations() {
                         className="p-1.5 bg-white dark:bg-dark-700 rounded-lg shadow-sm text-gray-600 hover:text-primary-600"
                       >
                         <Edit3 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          const fd = new FormData();
+                          fd.append('category', item.category);
+                          fd.append('nameEn', item.nameEn);
+                          fd.append('nameAr', item.nameAr);
+                          fd.append('isActive', !item.isActive);
+                          saveMutation.mutate({ id: item._id, data: fd });
+                        }}
+                        className="p-1.5 bg-white dark:bg-dark-700 rounded-lg shadow-sm text-gray-600 hover:text-orange-600"
+                      >
+                        {item.isActive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                       <button
                         onClick={(e) => {
