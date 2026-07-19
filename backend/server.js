@@ -380,10 +380,33 @@ app.use(helmet({
 }));
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || configuredOrigins.length === 0 || configuredOrigins.includes(origin)) {
-      return callback(null, true);
-    }
+    // Allow requests with no origin (mobile apps, curl, server-to-server)
+    if (!origin) return callback(null, true);
 
+    // If no origins configured, allow all
+    if (configuredOrigins.length === 0) return callback(null, true);
+
+    // Wildcard: allow everything
+    if (configuredOrigins.includes('*')) return callback(null, true);
+
+    // Exact match first
+    if (configuredOrigins.includes(origin)) return callback(null, true);
+
+    // Flexible match: allow any origin that contains one of the configured
+    // base domains. This handles www., http vs https, subdomains, etc.
+    const isAllowed = configuredOrigins.some((configured) => {
+      try {
+        const configuredHost = new URL(configured).hostname.replace(/^www\./, '');
+        const originHost = new URL(origin).hostname.replace(/^www\./, '');
+        return originHost === configuredHost || originHost.endsWith('.' + configuredHost);
+      } catch {
+        return false;
+      }
+    });
+
+    if (isAllowed) return callback(null, true);
+
+    console.warn(`[CORS] Blocked origin: ${origin} | Allowed: ${configuredOrigins.join(', ')}`);
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true
