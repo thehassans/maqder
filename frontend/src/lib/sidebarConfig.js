@@ -222,6 +222,7 @@ export function getNavSections({ language, t, tenant, businessTypes, govChildren
         { path: '/app/dashboard/khayyat/stitchings', icon: FileSignature, label: t('orders') },
         { path: '/app/dashboard/khayyat/workers', icon: Users, label: t('workers') },
         { path: '/app/dashboard/khayyat/worker-amounts', icon: Wallet, label: language === 'ar' ? 'أرباح العمال' : 'Worker Amounts' },
+        { path: '/app/dashboard/khayyat/customizations', icon: Package, label: language === 'ar' ? 'تخصيص الخيارات' : 'Customizations' },
         { path: '/app/dashboard/khayyat/embroidery-designs', icon: Package, label: language === 'ar' ? 'التطريز' : 'Embroidery Designs' },
         { path: '/app/dashboard/khayyat/fabrics', icon: Package, label: language === 'ar' ? 'الأقمشة' : 'Fabrics' },
         { path: '/app/dashboard/khayyat/laundry', icon: ShoppingBag, label: language === 'ar' ? 'المغسلة' : 'Laundry' },

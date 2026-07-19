@@ -126,6 +126,7 @@ import khayyatStitchingRoutes from './routes/khayyat/stitching.js';
 import khayyatPaymentRoutes from './routes/khayyat/payment.js';
 import khayyatUserRoutes from './routes/khayyat/user.js';
 import khayyatCustomerRoutes from './routes/khayyat/customer.js';
+import khayyatCustomizationRoutes from './routes/khayyat/customization.js';
 import boutiqueRoutes from './routes/boutique.routes.js';
 import furnitureRoutes from './routes/furniture.routes.js';
 import branchRoutes from './routes/branch.routes.js';
@@ -587,6 +588,7 @@ app.use('/api/khayyat/stitchings', ensureDatabaseReady, khayyatStitchingRoutes);
 app.use('/api/khayyat/payments', ensureDatabaseReady, khayyatPaymentRoutes);
 app.use('/api/khayyat/user', ensureDatabaseReady, khayyatUserRoutes);
 app.use('/api/khayyat/customers', ensureDatabaseReady, khayyatCustomerRoutes);
+app.use('/api/khayyat/customizations', ensureDatabaseReady, khayyatCustomizationRoutes);
 
 app.use('/api/boutique', ensureDatabaseReady, boutiqueRoutes);
 app.use('/api/furniture', ensureDatabaseReady, furnitureRoutes);

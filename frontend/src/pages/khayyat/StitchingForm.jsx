@@ -345,11 +345,54 @@ const StitchingForm = () => {
     preselectEmbroideryDesign();
   }, [api, formData.embroideryDesignId, isEdit, searchParams]);
 
+  const CATEGORIES_SORT = {
+    collar: 0,
+    bain: 1,
+    cuff: 2,
+    pocket: 3,
+    buttons: 4,
+    embroidery: 5,
+    fabricMaterial: 6,
+    fabricColor: 7,
+    thawbType: 8,
+    measurements: 9
+  };
+
   const fetchStyleCatalog = async () => {
     try {
       setStyleCatalogLoading(true);
-      const response = await api.get('/khayyat/settings/style-options');
-      setStyleCatalog(response.data?.catalog || null);
+      const response = await api.get('/khayyat/customizations');
+      const items = response.data?.customizations || [];
+      
+      const groupsMap = {};
+      items.forEach(item => {
+        if (!groupsMap[item.category]) {
+          groupsMap[item.category] = {
+            key: item.category,
+            name: item.category,
+            enabled: true,
+            sortOrder: CATEGORIES_SORT[item.category] || 0,
+            options: []
+          };
+        }
+        if (item.isActive) {
+          groupsMap[item.category].options.push({
+            key: item._id, // Using the _id as the key for dynamic items
+            name: item.nameEn,
+            nameI18n: { en: item.nameEn, ar: item.nameAr },
+            image: item.image,
+            sortOrder: item.sortOrder || 0,
+            extraPrice: item.extraPrice || 0
+          });
+        }
+      });
+      
+      // If we have custom items from the DB, build the catalog
+      if (Object.keys(groupsMap).length > 0) {
+        setStyleCatalog({ groups: Object.values(groupsMap) });
+      } else {
+        setStyleCatalog(null); // Fallback to hardcoded if empty
+      }
     } catch (error) {
       setStyleCatalog(null);
     }

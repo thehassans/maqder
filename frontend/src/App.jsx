@@ -50,6 +50,7 @@ const KhayyatLoyalty = lazy(() => import('./pages/khayyat/Loyalty'))
 const KhayyatQuickInvoice = lazy(() => import('./pages/khayyat/QuickInvoice'))
 const KhayyatCompleteOrder = lazy(() => import('./pages/khayyat/CompleteOrder'))
 const KhayyatMeasurements = lazy(() => import('./pages/khayyat/KhayyatMeasurements'))
+const KhayyatCustomizations = lazy(() => import('./pages/khayyat/KhayyatCustomizations'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Invoices = lazy(() => import('./pages/invoices/Invoices'))
 const InvoiceCreate = lazy(() => import('./pages/invoices/InvoiceCreate'))
@@ -523,6 +524,7 @@ function App() {
           <Route path="khayyat/stitchings" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatStitchings /></BusinessTypeRoute>} />
           <Route path="khayyat/stitchings/new" element={<Navigate to="/app/dashboard/khayyat" replace />} />
           <Route path="khayyat/stitchings/:id" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatStitchingForm /></BusinessTypeRoute>} />
+          <Route path="khayyat/customizations" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatCustomizations /></BusinessTypeRoute>} />
           <Route path="khayyat/embroidery-designs" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatEmbroideryDesigns /></BusinessTypeRoute>} />
           <Route path="khayyat/fabrics" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatFabrics /></BusinessTypeRoute>} />
           <Route path="khayyat/laundry" element={<BusinessTypeRoute allowedTypes={['khayyat']}><KhayyatLaundry /></BusinessTypeRoute>} />
