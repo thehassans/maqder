@@ -26,8 +26,8 @@ router.get('/', async (req, res) => {
     let customizations = await KhayyatCustomization.find(filter)
       .sort({ sortOrder: 1, createdAt: -1 });
       
-    // Seed defaults if empty
-    if (customizations.length === 0 && !req.query.category) {
+    // Seed defaults for any missing categories
+    if (!req.query.category) {
       const defaultGroups = [
         { category: 'collar', options: [
           { key: 'classic', en: 'Classic', ar: 'كلاسيك', image: '/thawbs/styles/collar_classic.webp' },
@@ -92,25 +92,31 @@ router.get('/', async (req, res) => {
         ]}
       ];
 
+      const existingCategories = new Set(customizations.map(c => c.category));
       const seedData = [];
+
       defaultGroups.forEach(group => {
-        group.options.forEach((opt, idx) => {
-          seedData.push({
-            tenantId: req.user.tenantId,
-            category: group.category,
-            nameEn: opt.en,
-            nameAr: opt.ar,
-            image: opt.image,
-            extraPrice: 0,
-            isActive: true,
-            sortOrder: idx
+        if (!existingCategories.has(group.category)) {
+          group.options.forEach((opt, idx) => {
+            seedData.push({
+              tenantId: req.user.tenantId,
+              category: group.category,
+              nameEn: opt.en,
+              nameAr: opt.ar,
+              image: opt.image,
+              extraPrice: 0,
+              isActive: true,
+              sortOrder: idx
+            });
           });
-        });
+        }
       });
-
-      customizations = await KhayyatCustomization.insertMany(seedData);
+      if (seedData.length > 0) {
+        await KhayyatCustomization.insertMany(seedData);
+        customizations = await KhayyatCustomization.find(filter)
+          .sort({ sortOrder: 1, createdAt: -1 });
+      }
     }
-
     res.json({ success: true, customizations });
   } catch (error) {
     console.error('Fetch customizations error:', error);
