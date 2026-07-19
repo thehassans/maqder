@@ -290,7 +290,7 @@ export default function KhayyatCustomizations() {
         </div>
       </div>
 
-      <Modal open={modalOpen} onClose={handleCloseModal} title={editItem ? (isRtl ? 'تعديل خيار' : 'Edit Option') : (isRtl ? 'إضافة خيار جديد' : 'Add New Option')}>
+      <Modal isOpen={modalOpen} onClose={handleCloseModal} title={editItem ? (isRtl ? 'تعديل خيار' : 'Edit Option') : (isRtl ? 'إضافة خيار جديد' : 'Add New Option')}>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex justify-center mb-6">
             <div className="relative">
