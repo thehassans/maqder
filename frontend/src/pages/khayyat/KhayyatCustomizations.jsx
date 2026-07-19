@@ -5,8 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Edit3, Trash2, Image as ImageIcon, X, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../lib/api';
-import { Card } from '../../components/ui/Card';
-import { Modal } from '../../components/ui/Modal';
+import { Card } from './components/ui/Card';
+import { Modal } from './components/ui/Modal';
 
 const CATEGORIES = [
   { id: 'collar', en: 'Collar', ar: 'الياقة (القلاب)' },
