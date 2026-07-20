@@ -1099,6 +1099,39 @@ router.put('/tenants/:id/toggle-status', async (req, res) => {
   }
 });
 
+// @route   POST /api/super-admin/tenants/:id/resume
+router.post('/tenants/:id/resume', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { days } = req.body;
+
+    const tenant = await Tenant.findById(id);
+    if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+
+    tenant.terminationNotice = undefined;
+    tenant.isActive = true;
+    if (tenant.subscription && tenant.subscription.status === 'terminated') {
+      tenant.subscription.status = 'active';
+    }
+
+    if (days && !isNaN(days)) {
+      const now = new Date();
+      let currentEndDate = tenant.subscription.endDate ? new Date(tenant.subscription.endDate) : now;
+      if (currentEndDate < now) {
+        currentEndDate = now;
+      }
+      
+      currentEndDate.setDate(currentEndDate.getDate() + Number(days));
+      tenant.subscription.endDate = currentEndDate;
+    }
+
+    await tenant.save();
+    res.json(tenant);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // @route   PUT /api/super-admin/tenants/:id/termination
 router.put('/tenants/:id/termination', async (req, res) => {
   try {

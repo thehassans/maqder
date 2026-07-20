@@ -145,6 +145,16 @@ export default function TenantManagement() {
     onError: (err) => toast.error(err.response?.data?.error || 'Failed to toggle status')
   })
 
+  const resumeMutation = useMutation({
+    mutationFn: ({ tenantId, days }) => api.post(`/super-admin/tenants/${tenantId}/resume`, { days }).then(res => res.data),
+    onSuccess: () => {
+      toast.success(language === 'ar' ? 'تم استئناف المستأجر بنجاح' : 'Tenant resumed successfully')
+      setTerminationTenant(null)
+      queryClient.invalidateQueries({ queryKey: ['tenants'] })
+    },
+    onError: (err) => toast.error(err.response?.data?.error || 'Failed to resume tenant')
+  })
+
   const openTerminationModal = (tenant) => {
     setTerminationForm({
       date: tenant.terminationNotice?.date ? new Date(tenant.terminationNotice.date).toISOString().split('T')[0] : '',
@@ -685,6 +695,30 @@ export default function TenantManagement() {
                   />
                 </div>
               </div>
+
+              {terminationTenant.terminationNotice && (
+                <div className="px-6 pb-4">
+                  <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-900/30">
+                    <h4 className="text-sm font-medium text-emerald-900 dark:text-emerald-100 mb-3 flex items-center gap-2">
+                      <Play className="w-4 h-4" />
+                      {language === 'ar' ? 'استئناف المستأجر (إلغاء الإنهاء وتمديد)' : 'Resume Tenant (Clear Notice & Extend)'}
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {[3, 7, 14].map(days => (
+                        <button
+                          key={days}
+                          type="button"
+                          onClick={() => resumeMutation.mutate({ tenantId: terminationTenant._id, days })}
+                          disabled={resumeMutation.isPending}
+                          className="btn btn-secondary text-sm bg-white dark:bg-dark-800 border-emerald-200 dark:border-emerald-800 hover:border-emerald-400 text-emerald-700 dark:text-emerald-400 flex-1"
+                        >
+                          {language === 'ar' ? `+ ${days} أيام` : `+ ${days} Days`}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-dark-700">
                 {terminationTenant.terminationNotice && (
