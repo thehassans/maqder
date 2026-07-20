@@ -784,71 +784,121 @@ export default function TenantManagement() {
       <AnimatePresence>
         {monitoringTenant && (
           <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMonitoringTenant(null)} className="fixed inset-0 bg-black/50 z-40" />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="fixed inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-md bg-white dark:bg-dark-800 rounded-2xl shadow-xl z-50 overflow-hidden"
-            >
-              <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-dark-700">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center">
-                    <Activity className="w-5 h-5 text-white" />
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              onClick={() => setMonitoringTenant(null)} 
+              className="fixed inset-0 bg-gray-900/40 dark:bg-black/60 backdrop-blur-md z-40" 
+            />
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 pointer-events-none">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                className="w-full max-w-lg bg-white/80 dark:bg-dark-900/80 backdrop-blur-2xl rounded-[2rem] shadow-[0_8px_40px_-12px_rgba(0,0,0,0.3)] border border-white/40 dark:border-white/10 pointer-events-auto overflow-hidden"
+              >
+                <div className="relative p-6 sm:p-8">
+                  {/* Premium Header */}
+                  <div className="flex items-start justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-600 p-[1px] shadow-lg shadow-indigo-500/20">
+                        <div className="w-full h-full bg-white dark:bg-dark-800 rounded-[15px] flex items-center justify-center">
+                          <Activity className="w-6 h-6 text-indigo-500 dark:text-indigo-400" />
+                        </div>
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+                          {language === 'ar' ? 'مراقبة الموارد' : 'Resource Monitor'}
+                        </h3>
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mt-1">{monitoringTenant.name}</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setMonitoringTenant(null)} 
+                      className="p-2 -mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-dark-800"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                      {language === 'ar' ? 'مراقبة المستأجر' : 'Tenant Monitoring'}
-                    </h3>
-                    <p className="text-sm text-gray-500">{monitoringTenant.name}</p>
+
+                  <div className="space-y-6">
+                    {isLoadingMonitoring ? (
+                      <div className="flex flex-col items-center justify-center py-12">
+                        <div className="relative w-12 h-12">
+                          <div className="absolute inset-0 border-4 border-indigo-100 dark:border-indigo-900/30 rounded-full" />
+                          <div className="absolute inset-0 border-4 border-indigo-500 rounded-full border-t-transparent animate-spin" />
+                        </div>
+                        <p className="mt-4 text-sm text-gray-500 font-medium animate-pulse">
+                          {language === 'ar' ? 'جاري الفحص...' : 'Scanning resources...'}
+                        </p>
+                      </div>
+                    ) : !monitoringData ? (
+                      <div className="text-center py-12 text-gray-500 bg-gray-50/50 dark:bg-dark-800/50 rounded-2xl border border-dashed border-gray-200 dark:border-dark-700">
+                        {language === 'ar' ? 'تعذر جلب البيانات' : 'Failed to fetch data'}
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-3 bg-blue-50/50 dark:bg-blue-900/10 text-blue-700 dark:text-blue-300 p-4 rounded-2xl text-sm border border-blue-100/50 dark:border-blue-800/30 font-medium">
+                          <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                          {monitoringData.status === 'mocked' ? 'Using Internal Metrics (Integration Disabled)' : 'Live Data from External Integration'}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                          {[
+                            {
+                              label: language === 'ar' ? 'الجلسات النشطة (24س)' : 'Active Sessions',
+                              value: monitoringData.activeSessions || 0,
+                              icon: Users,
+                              color: 'from-indigo-500 to-purple-500',
+                              bg: 'bg-indigo-50 dark:bg-indigo-900/10'
+                            },
+                            {
+                              label: language === 'ar' ? 'مساحة التخزين' : 'Storage Used',
+                              value: monitoringData.resources?.disk || '0 MB',
+                              icon: Database,
+                              color: 'from-emerald-400 to-teal-500',
+                              bg: 'bg-emerald-50 dark:bg-emerald-900/10'
+                            },
+                            {
+                              label: language === 'ar' ? 'الذاكرة (RAM)' : 'Memory Used',
+                              value: monitoringData.resources?.memory || '0 MB',
+                              icon: Server,
+                              color: 'from-amber-400 to-orange-500',
+                              bg: 'bg-amber-50 dark:bg-amber-900/10'
+                            },
+                            {
+                              label: language === 'ar' ? 'المعالج' : 'CPU Load',
+                              value: monitoringData.resources?.cpu || '0%',
+                              icon: Cpu,
+                              color: 'from-rose-400 to-red-500',
+                              bg: 'bg-rose-50 dark:bg-rose-900/10'
+                            }
+                          ].map((stat, idx) => (
+                            <div 
+                              key={idx} 
+                              className="relative group p-5 bg-white/60 dark:bg-dark-800/60 hover:bg-white dark:hover:bg-dark-800 transition-all duration-300 rounded-2xl border border-gray-100 dark:border-dark-700/50 shadow-sm hover:shadow-md overflow-hidden"
+                            >
+                              <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${stat.color} opacity-[0.03] dark:opacity-[0.05] rounded-bl-full transition-transform group-hover:scale-110`} />
+                              <div className={`inline-flex p-2.5 rounded-xl ${stat.bg} mb-4`}>
+                                <stat.icon className={`w-5 h-5 bg-gradient-to-br ${stat.color} text-transparent bg-clip-text drop-shadow-sm`} />
+                              </div>
+                              <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-1 tracking-tight">
+                                {stat.value}
+                              </p>
+                              <p className="text-[11px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                {stat.label}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
-                <button onClick={() => setMonitoringTenant(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="p-6 space-y-6">
-                {isLoadingMonitoring ? (
-                  <div className="flex justify-center py-8">
-                    <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin" />
-                  </div>
-                ) : !monitoringData ? (
-                  <div className="text-center py-8 text-gray-500">
-                    {language === 'ar' ? 'تعذر جلب البيانات' : 'Failed to fetch data'}
-                  </div>
-                ) : (
-                  <>
-                    <div className="bg-blue-50 dark:bg-blue-900/10 text-blue-800 dark:text-blue-200 p-4 rounded-xl text-sm border border-blue-100 dark:border-blue-900/30">
-                      <strong>Status:</strong> {monitoringData.status === 'mocked' ? 'Using Internal Metrics (Integration Disabled)' : 'Data from External API Integration'}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 bg-gray-50 dark:bg-dark-700 rounded-xl border border-gray-100 dark:border-dark-600 text-center">
-                        <Users className="w-6 h-6 text-indigo-500 mx-auto mb-2" />
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{monitoringData.activeSessions || 0}</p>
-                        <p className="text-xs text-gray-500 uppercase font-semibold">{language === 'ar' ? 'الجلسات النشطة (24س)' : 'Active Sessions (24h)'}</p>
-                      </div>
-                      <div className="p-4 bg-gray-50 dark:bg-dark-700 rounded-xl border border-gray-100 dark:border-dark-600 text-center">
-                        <Database className="w-6 h-6 text-emerald-500 mx-auto mb-2" />
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{monitoringData.resources?.disk || '0 MB'}</p>
-                        <p className="text-xs text-gray-500 uppercase font-semibold">{language === 'ar' ? 'مساحة التخزين' : 'Storage Used'}</p>
-                      </div>
-                      <div className="p-4 bg-gray-50 dark:bg-dark-700 rounded-xl border border-gray-100 dark:border-dark-600 text-center">
-                        <Server className="w-6 h-6 text-amber-500 mx-auto mb-2" />
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{monitoringData.resources?.memory || '0 MB'}</p>
-                        <p className="text-xs text-gray-500 uppercase font-semibold">{language === 'ar' ? 'الذاكرة (RAM)' : 'Memory Used'}</p>
-                      </div>
-                      <div className="p-4 bg-gray-50 dark:bg-dark-700 rounded-xl border border-gray-100 dark:border-dark-600 text-center">
-                        <Cpu className="w-6 h-6 text-rose-500 mx-auto mb-2" />
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{monitoringData.resources?.cpu || '0%'}</p>
-                        <p className="text-xs text-gray-500 uppercase font-semibold">{language === 'ar' ? 'المعالج' : 'CPU Load'}</p>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            </motion.div>
+              </motion.div>
+            </div>
           </>
         )}
       </AnimatePresence>
