@@ -1133,6 +1133,24 @@ router.post('/tenants/:id/resume', async (req, res) => {
   }
 });
 
+// @route   POST /api/super-admin/settings/monitoring/test-connection
+router.post('/settings/monitoring/test-connection', async (req, res) => {
+  try {
+    const { endpointURL, apiKey } = req.body;
+    if (!endpointURL) return res.status(400).json({ error: 'Endpoint URL is required for testing' });
+    
+    const response = await axios.get(endpointURL, {
+      params: { tenantSlug: 'test-connection' },
+      headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {},
+      timeout: 5000
+    });
+    
+    res.json({ message: 'Connection successful', data: response.data });
+  } catch (error) {
+    res.status(400).json({ error: error.message || 'Connection failed' });
+  }
+});
+
 // @route   GET /api/super-admin/tenants/:id/monitoring
 router.get('/tenants/:id/monitoring', async (req, res) => {
   try {

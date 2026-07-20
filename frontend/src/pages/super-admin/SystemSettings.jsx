@@ -146,6 +146,31 @@ function TenantMonitoringTab({ settings, onChange, onSave, saving }) {
             <option value="cpanel">cPanel UAPI</option>
           </select>
         </FieldRow>
+
+        <FieldRow label="Test Connection">
+          <button
+            type="button"
+            onClick={async () => {
+              if (!settings.tenantMonitoring?.endpointURL) {
+                return toast.error('Please enter an Endpoint URL first');
+              }
+              const testPromise = api.post('/super-admin/settings/monitoring/test-connection', {
+                endpointURL: settings.tenantMonitoring.endpointURL,
+                apiKey: settings.tenantMonitoring.apiKey,
+                provider: settings.tenantMonitoring.provider
+              });
+              toast.promise(testPromise, {
+                loading: 'Testing connection...',
+                success: 'Connection successful! (Valid response received)',
+                error: (err) => err.response?.data?.error || 'Connection failed'
+              });
+            }}
+            className="btn btn-secondary gap-2"
+          >
+            <Zap className="w-4 h-4" />
+            Test API Connection
+          </button>
+        </FieldRow>
       </div>
 
       <SaveButton onClick={onSave} loading={saving} />
