@@ -811,7 +811,7 @@ router.get('/tenants', async (req, res) => {
     
     const tenants = await withQueryTimeout(
       Tenant.find(query)
-        .select('name slug businessType businessTypes business subscription isActive createdAt resellerId settings.communication.email')
+        .select('name slug businessType businessTypes business subscription isActive createdAt resellerId settings.communication.email terminationNotice')
         .sort({ createdAt: -1 })
         .skip((safePage - 1) * safeLimit)
         .limit(safeLimit)
