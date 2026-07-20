@@ -1153,7 +1153,10 @@ router.put('/:id', checkPermission('invoicing', 'update'), async (req, res) => {
       return res.status(404).json({ error: 'Invoice not found' });
     }
     
-    if (!['draft', 'pending'].includes(invoice.status) || invoice.zatca?.signedXml) {
+    const tenant = await Tenant.findById(req.user.tenantId);
+    const isPhase1 = tenant?.zatca?.phase === 1;
+    
+    if (!isPhase1 && (!['draft', 'pending'].includes(invoice.status) || invoice.zatca?.signedXml)) {
       return res.status(400).json({ error: 'Only unsigned draft or pending invoices can be modified' });
     }
     

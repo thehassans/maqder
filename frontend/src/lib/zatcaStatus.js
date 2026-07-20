@@ -81,6 +81,7 @@ export const hasGeneratedEInvoice = (invoice, phase = 2) => {
 }
 
 export const isEditableInvoice = (invoice, phase = 2) => {
+  if (Number(phase) === 1) return true;
   const invoiceStatus = String(invoice?.status || '').trim().toLowerCase()
   return ['draft', 'pending'].includes(invoiceStatus) && !hasGeneratedEInvoice(invoice, phase)
 }

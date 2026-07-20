@@ -248,7 +248,7 @@ export default function InvoiceCreateSell() {
       invoiceTypeCode: invoiceType === 'B2C' ? '0200000' : '0100000',
       invoiceSubtype: isProforma ? 'proforma' : 'standard',
       sourcePurchaseOrderId: poId || undefined,
-      issueDate: new Date(),
+      issueDate: data.issueDate ? new Date(data.issueDate) : new Date(),
       lineItems: data.lineItems.map((line, i) => ({
         ...line,
         lineNumber: i + 1,
@@ -407,6 +407,11 @@ export default function InvoiceCreateSell() {
                 {language === 'ar' ? 'للشركات - اعتماد فوري من هيئة الزكاة' : 'For businesses - Immediate clearance from ZATCA'}
               </p>
             </button>
+          </div>
+
+          <div className="mt-6">
+            <label className="label">{language === 'ar' ? 'تاريخ الفاتورة (اختياري لتاريخ قديم)' : 'Invoice Date (Optional for old date)'}</label>
+            <input type="datetime-local" {...register('issueDate')} className="input" />
           </div>
 
           {isTrading && (
