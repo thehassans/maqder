@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tansta
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Search, Building2, Edit, Users, LogIn, AlertCircle, RefreshCw, Trash2, RotateCcw, Send, X, FileSpreadsheet, FileText, Eraser, Sliders, Ban, Play } from 'lucide-react'
+import { Plus, Search, Building2, Edit, Users, LogIn, AlertCircle, RefreshCw, Trash2, RotateCcw, Send, X, FileSpreadsheet, FileText, Eraser, Sliders, Ban, Play, Activity, Server, Database, Cpu } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
@@ -20,6 +20,13 @@ export default function TenantManagement() {
   const [backupErrorCode, setBackupErrorCode] = useState(null)
   const [terminationTenant, setTerminationTenant] = useState(null)
   const [terminationForm, setTerminationForm] = useState({ date: '', reason: '' })
+  const [monitoringTenant, setMonitoringTenant] = useState(null)
+
+  const { data: monitoringData, isLoading: isLoadingMonitoring } = useQuery({
+    queryKey: ['tenantMonitoring', monitoringTenant?._id],
+    queryFn: () => api.get(`/super-admin/tenants/${monitoringTenant._id}/monitoring`).then(res => res.data),
+    enabled: !!monitoringTenant,
+  })
 
   const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ['tenants', page, search, filters],
@@ -428,6 +435,29 @@ export default function TenantManagement() {
                           >
                             <AlertCircle className="w-4 h-4" />
                           </button>
+                          {(!tenant.isActive || tenant.subscription?.status === 'terminated') && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (window.confirm(language === 'ar' ? 'هل أنت متأكد أنك تريد استئناف هذا المستأجر؟' : 'Are you sure you want to resume this tenant?')) {
+                                  resumeMutation.mutate({ tenantId: tenant._id, days: 0 });
+                                }
+                              }}
+                              disabled={resumeMutation.isPending}
+                              className="p-2 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg text-emerald-600 font-bold disabled:opacity-50"
+                              title={language === 'ar' ? 'استئناف الحساب فوراً' : 'Resume Account Instantly'}
+                            >
+                              <Play className="w-4 h-4 fill-current" />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setMonitoringTenant(tenant)}
+                            className="p-2 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg text-indigo-600 disabled:opacity-50"
+                            title={language === 'ar' ? 'مراقبة الموارد' : 'Resource Monitoring'}
+                          >
+                            <Activity className="w-4 h-4" />
+                          </button>
                           <button
                             type="button"
                             onClick={() => handleResetPanel(tenant)}
@@ -744,6 +774,79 @@ export default function TenantManagement() {
                     language === 'ar' ? 'حفظ' : 'Save'
                   )}
                 </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* ── Monitoring Modal ── */}
+      <AnimatePresence>
+        {monitoringTenant && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMonitoringTenant(null)} className="fixed inset-0 bg-black/50 z-40" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-md bg-white dark:bg-dark-800 rounded-2xl shadow-xl z-50 overflow-hidden"
+            >
+              <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-dark-700">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                    <Activity className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                      {language === 'ar' ? 'مراقبة المستأجر' : 'Tenant Monitoring'}
+                    </h3>
+                    <p className="text-sm text-gray-500">{monitoringTenant.name}</p>
+                  </div>
+                </div>
+                <button onClick={() => setMonitoringTenant(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-dark-700 rounded-lg">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-6">
+                {isLoadingMonitoring ? (
+                  <div className="flex justify-center py-8">
+                    <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin" />
+                  </div>
+                ) : !monitoringData ? (
+                  <div className="text-center py-8 text-gray-500">
+                    {language === 'ar' ? 'تعذر جلب البيانات' : 'Failed to fetch data'}
+                  </div>
+                ) : (
+                  <>
+                    <div className="bg-blue-50 dark:bg-blue-900/10 text-blue-800 dark:text-blue-200 p-4 rounded-xl text-sm border border-blue-100 dark:border-blue-900/30">
+                      <strong>Status:</strong> {monitoringData.status === 'mocked' ? 'Using Internal Metrics (Integration Disabled)' : 'Data from External API Integration'}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-4 bg-gray-50 dark:bg-dark-700 rounded-xl border border-gray-100 dark:border-dark-600 text-center">
+                        <Users className="w-6 h-6 text-indigo-500 mx-auto mb-2" />
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{monitoringData.activeSessions || 0}</p>
+                        <p className="text-xs text-gray-500 uppercase font-semibold">{language === 'ar' ? 'الجلسات النشطة (24س)' : 'Active Sessions (24h)'}</p>
+                      </div>
+                      <div className="p-4 bg-gray-50 dark:bg-dark-700 rounded-xl border border-gray-100 dark:border-dark-600 text-center">
+                        <Database className="w-6 h-6 text-emerald-500 mx-auto mb-2" />
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{monitoringData.resources?.disk || '0 MB'}</p>
+                        <p className="text-xs text-gray-500 uppercase font-semibold">{language === 'ar' ? 'مساحة التخزين' : 'Storage Used'}</p>
+                      </div>
+                      <div className="p-4 bg-gray-50 dark:bg-dark-700 rounded-xl border border-gray-100 dark:border-dark-600 text-center">
+                        <Server className="w-6 h-6 text-amber-500 mx-auto mb-2" />
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{monitoringData.resources?.memory || '0 MB'}</p>
+                        <p className="text-xs text-gray-500 uppercase font-semibold">{language === 'ar' ? 'الذاكرة (RAM)' : 'Memory Used'}</p>
+                      </div>
+                      <div className="p-4 bg-gray-50 dark:bg-dark-700 rounded-xl border border-gray-100 dark:border-dark-600 text-center">
+                        <Cpu className="w-6 h-6 text-rose-500 mx-auto mb-2" />
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{monitoringData.resources?.cpu || '0%'}</p>
+                        <p className="text-xs text-gray-500 uppercase font-semibold">{language === 'ar' ? 'المعالج' : 'CPU Load'}</p>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </motion.div>
           </>

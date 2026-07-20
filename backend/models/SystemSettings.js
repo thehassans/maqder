@@ -322,6 +322,12 @@ const systemSettingsSchema = new mongoose.Schema({
       environment: { type: String, enum: ['test', 'live'], default: 'test' },
     },
   },
+  tenantMonitoring: {
+    enabled: { type: Boolean, default: false },
+    endpointURL: { type: String, default: '' },
+    apiKey: { type: String, default: '' },
+    provider: { type: String, enum: ['custom', 'plesk', 'cpanel'], default: 'custom' },
+  },
 }, {
   timestamps: true
 });

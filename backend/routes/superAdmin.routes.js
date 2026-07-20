@@ -1,5 +1,6 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import axios from 'axios';
 import { GoogleGenAI } from '@google/genai';
 import OpenAI from 'openai';
 import multer from 'multer';
@@ -1127,6 +1128,57 @@ router.post('/tenants/:id/resume', async (req, res) => {
 
     await tenant.save();
     res.json(tenant);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   GET /api/super-admin/tenants/:id/monitoring
+router.get('/tenants/:id/monitoring', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const tenant = await Tenant.findById(id);
+    if (!tenant) return res.status(404).json({ error: 'Tenant not found' });
+
+    const settings = await SystemSettings.findOne({ key: 'global' });
+    const monitoring = settings?.tenantMonitoring || { enabled: false };
+
+    // Default basic stats using DB (active sessions tracked via User login attempts or counts)
+    let activeSessions = 0;
+    const usersCount = await User.countDocuments({ tenantId: id });
+    activeSessions = await User.countDocuments({ tenantId: id, lastLogin: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } }); // Logged in past 24h
+
+    let result = {
+      tenantSlug: tenant.slug,
+      status: monitoring.enabled ? 'fetched' : 'mocked',
+      activeSessions: activeSessions,
+      resources: {
+        disk: '1.2 GB',
+        memory: '256 MB',
+        cpu: '2%'
+      }
+    };
+
+    if (monitoring.enabled && monitoring.endpointURL) {
+      try {
+        const response = await axios.get(monitoring.endpointURL, {
+          params: { tenantSlug: tenant.slug },
+          headers: monitoring.apiKey ? { Authorization: `Bearer ${monitoring.apiKey}` } : {},
+          timeout: 5000
+        });
+        
+        if (response.data) {
+          if (response.data.activeSessions !== undefined) result.activeSessions = response.data.activeSessions;
+          if (response.data.resources) result.resources = response.data.resources;
+        }
+      } catch (err) {
+        console.error('Tenant Monitoring API Error:', err.message);
+        result.status = 'error';
+        result.error = err.message;
+      }
+    }
+
+    res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

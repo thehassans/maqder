@@ -16,6 +16,7 @@ const TABS = [
   { id: 'analytics', label: 'Analytics', icon: BarChart2, color: 'from-violet-500 to-purple-600' },
   { id: 'sessions', label: 'State & Sessions', icon: Clock, color: 'from-amber-500 to-orange-500' },
   { id: 'security', label: 'Performance & Security', icon: Shield, color: 'from-emerald-500 to-teal-600' },
+  { id: 'monitoring', label: 'Tenant Monitoring API', icon: Activity, color: 'from-indigo-500 to-blue-600' },
 ]
 
 // ── UI helpers ────────────────────────────────────────────────────────────────
@@ -92,6 +93,65 @@ function SaveButton({ onClick, loading }) {
 }
 
 // ── Tab content components ────────────────────────────────────────────────────
+
+function TenantMonitoringTab({ settings, onChange, onSave, saving }) {
+  return (
+    <div className="space-y-6">
+      <InfoBox icon={Activity} title="Tenant Monitoring Integration">
+        Configure an external API endpoint to fetch real-time server resources (CPU, RAM, Disk) and active sessions. Maqder ERP will pass the `tenantSlug` as a query parameter when calling this endpoint.
+      </InfoBox>
+
+      <div className="card rounded-2xl p-6 space-y-2">
+        <FieldRow label="Enable Monitoring">
+          <div className="flex items-center gap-3">
+            <Toggle
+              checked={settings.tenantMonitoring?.enabled || false}
+              onChange={(v) => onChange('tenantMonitoring.enabled', v)}
+            />
+            <span className="text-sm text-gray-500">
+              {settings.tenantMonitoring?.enabled ? 'Active — querying external API' : 'Inactive — using basic internal DB stats'}
+            </span>
+          </div>
+        </FieldRow>
+
+        <FieldRow label="API Endpoint URL">
+          <input
+            type="text"
+            className="input"
+            placeholder="https://your-monitoring-api.com/stats"
+            value={settings.tenantMonitoring?.endpointURL || ''}
+            onChange={(e) => onChange('tenantMonitoring.endpointURL', e.target.value)}
+          />
+          <p className="text-xs text-gray-400 mt-1">Must accept ?tenantSlug=... query parameter</p>
+        </FieldRow>
+
+        <FieldRow label="API Key / Bearer Token">
+          <input
+            type="password"
+            className="input"
+            placeholder="Enter API key or Bearer token"
+            value={settings.tenantMonitoring?.apiKey || ''}
+            onChange={(e) => onChange('tenantMonitoring.apiKey', e.target.value)}
+          />
+        </FieldRow>
+        
+        <FieldRow label="Provider Type">
+          <select
+            className="select"
+            value={settings.tenantMonitoring?.provider || 'custom'}
+            onChange={(e) => onChange('tenantMonitoring.provider', e.target.value)}
+          >
+            <option value="custom">Custom Webhook</option>
+            <option value="plesk">Plesk API</option>
+            <option value="cpanel">cPanel UAPI</option>
+          </select>
+        </FieldRow>
+      </div>
+
+      <SaveButton onClick={onSave} loading={saving} />
+    </div>
+  )
+}
 
 function ErrorTrackingTab({ settings, onChange, onSave, saving }) {
   const [showDsn, setShowDsn] = useState(false)
@@ -633,6 +693,7 @@ export default function SystemSettings() {
           {activeTab === 'analytics' && <AnalyticsTab {...tabProps} />}
           {activeTab === 'sessions' && <SessionsTab {...tabProps} />}
           {activeTab === 'security' && <SecurityTab {...tabProps} />}
+          {activeTab === 'monitoring' && <TenantMonitoringTab {...tabProps} />}
         </motion.div>
       </AnimatePresence>
     </div>
