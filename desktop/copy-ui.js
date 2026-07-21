@@ -9,7 +9,7 @@ try {
   execSync('npx vite build --base ./', { 
     cwd: frontendPath, 
     stdio: 'inherit',
-    env: { ...process.env, VITE_IS_DESKTOP: 'true' }
+    env: { ...process.env, VITE_IS_DESKTOP: 'true', VITE_API_BASE_URL: 'https://maqder.com/api' }
   });
 } catch (err) {
   console.error('Failed to build frontend:', err);

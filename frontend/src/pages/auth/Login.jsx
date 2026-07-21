@@ -11,9 +11,9 @@ import { usePublicWebsiteSettings } from '../../lib/website'
 import DailyAyat from '../../components/ui/DailyAyat'
 
 const complianceLogos = [
-  { src: '/ZATCA_Logo.svg', alt: 'ZATCA', cardClassName: 'w-48', imageClassName: 'scale-[1.35]' },
-  { src: '/saudi-vision-2030-logo.webp', alt: 'Saudi Vision 2030', cardClassName: 'w-36', imageClassName: 'scale-100' },
-  { src: '/saudi_tech_mob_en.svg', alt: 'Saudi Tech MOB', cardClassName: 'w-36', imageClassName: 'scale-100' },
+  { src: 'ZATCA_Logo.svg', alt: 'ZATCA', cardClassName: 'w-48', imageClassName: 'scale-[1.35]' },
+  { src: 'saudi-vision-2030-logo.webp', alt: 'Saudi Vision 2030', cardClassName: 'w-36', imageClassName: 'scale-100' },
+  { src: 'saudi_tech_mob_en.svg', alt: 'Saudi Tech MOB', cardClassName: 'w-36', imageClassName: 'scale-100' },
 ]
 
 export default function Login() {
@@ -151,7 +151,7 @@ export default function Login() {
           {/* Logo */}
           <div className="flex items-center gap-3 -ml-4 -mt-4 mb-4">
             <div className="w-full h-40 flex items-center justify-start">
-              <img src="/maqdernewlogo.webp" alt="Maqder" className="h-full w-auto object-contain object-left scale-110 origin-left" />
+              <img src="maqdernewlogo.webp" alt="Maqder" className="h-full w-auto object-contain object-left scale-110 origin-left" />
             </div>
           </div>
 
@@ -237,7 +237,7 @@ export default function Login() {
 
           {/* Mobile Logo */}
           <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
-            <img src="/maqderlogolandingpage.webp" alt="Maqder" className="h-24 w-auto object-contain object-center" />
+            <img src="maqderlogolandingpage.webp" alt="Maqder" className="h-24 w-auto object-contain object-center" />
           </div>
 
           {/* Header */}
