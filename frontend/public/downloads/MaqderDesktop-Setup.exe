@@ -1,0 +1,10 @@
+This is a placeholder file for the Maqder Desktop Installer.
+
+The automatic compilation failed on the current Windows machine because creating symbolic links requires Administrator privileges or Developer Mode to be enabled.
+
+To compile the real installer:
+1. Open PowerShell or Command Prompt as Administrator.
+2. Navigate to the `desktop` folder.
+3. Run `npm run build:win`.
+
+The compiled installer will be available in `desktop/dist/`. Upload that file to your server to replace this placeholder.
