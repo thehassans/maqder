@@ -9,8 +9,10 @@ import TerminationBanner, { TerminationBlocker, InactiveBlocker, isTenantTermina
 import { getTenantBusinessTypes } from '../lib/businessTypes'
 import { setHideSidebar } from '../store/slices/uiSlice'
 import { PanelLeft } from 'lucide-react'
+import { useOfflineSync } from '../hooks/useOfflineSync'
 
 export default function MainLayout() {
+  useOfflineSync()
   const { sidebarCollapsed, hideSidebar } = useSelector((state) => state.ui)
   const dispatch = useDispatch()
   const { tenant } = useSelector((state) => state.auth)

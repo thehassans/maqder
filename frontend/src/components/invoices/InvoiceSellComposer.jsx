@@ -634,8 +634,8 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
             <div className="card p-6">
               <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                 <div className="flex-1">
-                  <label className="label">{language === 'ar' ? 'المستودع' : 'Warehouse'} *</label>
-                  <select {...register('warehouseId', { required: isTradingContext })} className="select">
+                  <label className="label">{language === 'ar' ? 'المستودع' : 'Warehouse'}</label>
+                  <select {...register('warehouseId')} className="select">
                     <option value="">{language === 'ar' ? 'بدون تحديد حالياً' : 'No warehouse selected yet'}</option>
                     {(warehouses || []).map((item) => <option key={item._id} value={item._id}>{language === 'ar' ? (item.nameAr || item.nameEn) : item.nameEn}</option>)}
                   </select>

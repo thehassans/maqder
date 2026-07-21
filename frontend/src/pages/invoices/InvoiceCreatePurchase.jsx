@@ -184,8 +184,8 @@ export default function InvoiceCreatePurchase() {
             </div>
 
             <div>
-              <label className="label">{language === 'ar' ? 'المستودع' : 'Warehouse'} *</label>
-              <select {...register('warehouseId', { required: true })} className="select">
+              <label className="label">{language === 'ar' ? 'المستودع' : 'Warehouse'}</label>
+              <select {...register('warehouseId')} className="select">
                 <option value="">{language === 'ar' ? 'اختر' : 'Select'}</option>
                 {(warehouses || []).map((w) => (
                   <option key={w._id} value={w._id}>

@@ -46,14 +46,29 @@ export function useOfflineSync() {
         // Process sequentially to maintain chronological ICV/PIH integrity
         for (const item of pendingItems) {
           try {
-            // Forward to the backend sync ingestion endpoint
-            const response = await api.post('/sync/ingest', {
-              type: item.type,
-              payload: item.payload,
-              offlineId: item.id
-            });
+            let response;
+            // Replay the exact original HTTP request if available
+            if (item.payload && item.payload.url && item.payload.method) {
+              console.log(`[Offline-Sync] Replaying request: ${item.payload.method.toUpperCase()} ${item.payload.url}`);
+              response = await api({
+                url: item.payload.url,
+                method: item.payload.method,
+                data: item.payload.data,
+                headers: {
+                  ...item.payload.headers,
+                  'X-Offline-Synced': 'true'
+                }
+              });
+            } else {
+              // Legacy fallback to the sync ingestion endpoint
+              response = await api.post('/sync/ingest', {
+                type: item.type,
+                payload: item.payload,
+                offlineId: item.id
+              });
+            }
 
-            if (response.status === 200 || response.status === 201) {
+            if (response.status === 200 || response.status === 201 || response.status === 202 || response.status === 204) {
               await removeSyncItem(item.id);
             } else {
               throw new Error('Sync failed with status ' + response.status);

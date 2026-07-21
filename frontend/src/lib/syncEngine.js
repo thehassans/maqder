@@ -21,6 +21,11 @@ export async function initDb() {
       if (!db.objectStoreNames.contains('zatca_state')) {
         db.createObjectStore('zatca_state');
       }
+      
+      // Create store for cached GET requests
+      if (!db.objectStoreNames.contains('api_cache')) {
+        db.createObjectStore('api_cache', { keyPath: 'url' });
+      }
 
       // We can also add products/customers stores here for full offline POS capability
       if (!db.objectStoreNames.contains('products')) {

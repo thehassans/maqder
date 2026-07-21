@@ -305,7 +305,7 @@ async function autoEmailInvoiceIfEnabled({ tenant, invoice, customer = null, fal
 async function postInventoryForInvoice(invoice, tenantFilterValue) {
   const warehouseId = invoice.warehouseId || invoice?.inventory?.warehouseId;
   if (!warehouseId) {
-    throw new Error('warehouseId is required to post inventory');
+    return invoice;
   }
 
   const warehouse = await Warehouse.findOne({ _id: warehouseId, ...tenantFilterValue, isActive: true });
@@ -763,13 +763,11 @@ router.post('/sell', checkPermission('invoicing', 'create'), async (req, res) =>
     }
 
     if (businessContext === 'trading') {
-      if (!req.body.warehouseId) {
-        return res.status(400).json({ error: 'warehouseId is required' });
-      }
-
-      const warehouse = await Warehouse.findOne({ _id: req.body.warehouseId, ...req.tenantFilter, isActive: true });
-      if (!warehouse) {
-        return res.status(400).json({ error: 'Warehouse not found' });
+      if (req.body.warehouseId) {
+        const warehouse = await Warehouse.findOne({ _id: req.body.warehouseId, ...req.tenantFilter, isActive: true });
+        if (!warehouse) {
+          return res.status(400).json({ error: 'Warehouse not found' });
+        }
       }
     }
 
@@ -996,13 +994,11 @@ router.post('/purchase', checkPermission('invoicing', 'create'), async (req, res
       : (tenantBusinessTypes.includes(primaryBusinessType) ? primaryBusinessType : 'trading');
 
     if (businessContext === 'trading') {
-      if (!req.body.warehouseId) {
-        return res.status(400).json({ error: 'warehouseId is required' });
-      }
-
-      const warehouse = await Warehouse.findOne({ _id: req.body.warehouseId, ...req.tenantFilter, isActive: true });
-      if (!warehouse) {
-        return res.status(400).json({ error: 'Warehouse not found' });
+      if (req.body.warehouseId) {
+        const warehouse = await Warehouse.findOne({ _id: req.body.warehouseId, ...req.tenantFilter, isActive: true });
+        if (!warehouse) {
+          return res.status(400).json({ error: 'Warehouse not found' });
+        }
       }
     }
 

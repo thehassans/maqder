@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { enqueueSyncItem } from './syncEngine'
+import { enqueueSyncItem, initDb } from './syncEngine'
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api'
 
@@ -42,27 +42,78 @@ api.interceptors.request.use((config) => {
 })
 
 api.interceptors.response.use(
-  (response) => response,
+  async (response) => {
+    const { config } = response;
+    // Cache successful GET responses in IndexedDB
+    if (config && config.method === 'get' && !config.url.includes('/auth/')) {
+      try {
+        const db = await initDb();
+        const cacheKey = config.url + (config.params ? JSON.stringify(config.params) : '');
+        await db.put('api_cache', {
+          url: cacheKey,
+          data: response.data,
+          timestamp: Date.now()
+        });
+      } catch (err) {
+        console.error('Failed to cache successful GET response:', err);
+      }
+    }
+    return response;
+  },
   async (error) => {
-    // Offline-First Interceptor Logic
-    const isNetworkError = !error.response || !navigator.onLine
+    const config = error.config;
+    const isNetworkError = !error.response || !navigator.onLine;
     
-    if (isNetworkError) {
-      const queueType = error.config?.headers?.['X-Queue-Offline']
-      if (queueType && error.config.data) {
+    if (isNetworkError && config) {
+      // 1. If it's a GET request, attempt to retrieve the cached response
+      if (config.method === 'get') {
         try {
-          const payload = typeof error.config.data === 'string' ? JSON.parse(error.config.data) : error.config.data
-          const id = await enqueueSyncItem(queueType, payload)
-          
-          // Return a mock successful response to the caller
+          const db = await initDb();
+          const cacheKey = config.url + (config.params ? JSON.stringify(config.params) : '');
+          const cached = await db.get('api_cache', cacheKey);
+          if (cached) {
+            console.log(`[Offline-Cache] Serving cached data for ${cacheKey}`);
+            return Promise.resolve({
+              data: cached.data,
+              status: 200,
+              statusText: 'OK (Cached)',
+              headers: {},
+              config
+            });
+          }
+        } catch (e) {
+          console.error('Failed to read GET request cache:', e);
+        }
+      }
+
+      // 2. If it's a mutation request, queue it for background syncing
+      const isMutation = ['post', 'put', 'delete'].includes(config.method);
+      const requestUrl = String(config.url || '');
+      const isAuthRequest = requestUrl.includes('/auth/login') ||
+                            requestUrl.includes('/auth/me') ||
+                            requestUrl.includes('/public/demo-login') ||
+                            requestUrl.includes('/auth/register');
+
+      if (isMutation && !isAuthRequest) {
+        try {
+          const payload = typeof config.data === 'string' ? JSON.parse(config.data) : config.data;
+          const syncId = await enqueueSyncItem(`${config.method.toUpperCase()}:${config.url}`, {
+            url: config.url,
+            method: config.method,
+            data: payload,
+            headers: config.headers
+          });
+
+          console.log(`[Offline-Queue] Queued mutation: ${config.method.toUpperCase()} ${config.url}`);
           return Promise.resolve({
-            data: { success: true, offline: true, id, message: 'Saved offline and queued for sync.' },
+            data: { success: true, offline: true, id: syncId, message: 'Saved offline and queued for sync.' },
             status: 202,
             statusText: 'Accepted Offline',
-            headers: {}
-          })
+            headers: {},
+            config
+          });
         } catch (e) {
-          console.error('Failed to queue offline item', e)
+          console.error('Failed to queue offline mutation:', e);
         }
       }
     }
