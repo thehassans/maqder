@@ -1133,21 +1133,28 @@ router.post('/tenants/:id/resume', async (req, res) => {
   }
 });
 
+const getMonitoringHeaders = (apiKey, provider) => {
+  if (!apiKey) return {};
+  if (provider === 'plesk') return { 'X-API-Key': apiKey, 'Accept': 'application/json' };
+  if (provider === 'cpanel') return { 'Authorization': `cpanel ${apiKey}` };
+  return { 'Authorization': `Bearer ${apiKey}` };
+};
+
 // @route   POST /api/super-admin/settings/monitoring/test-connection
 router.post('/settings/monitoring/test-connection', async (req, res) => {
   try {
-    const { endpointURL, apiKey } = req.body;
+    const { endpointURL, apiKey, provider } = req.body;
     if (!endpointURL) return res.status(400).json({ error: 'Endpoint URL is required for testing' });
     
     const response = await axios.get(endpointURL, {
       params: { tenantSlug: 'test-connection' },
-      headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : {},
+      headers: getMonitoringHeaders(apiKey, provider),
       timeout: 5000
     });
     
     res.json({ message: 'Connection successful', data: response.data });
   } catch (error) {
-    res.status(400).json({ error: error.message || 'Connection failed' });
+    res.status(400).json({ error: error.response?.data?.message || error.message || 'Connection failed' });
   }
 });
 
@@ -1181,7 +1188,7 @@ router.get('/tenants/:id/monitoring', async (req, res) => {
       try {
         const response = await axios.get(monitoring.endpointURL, {
           params: { tenantSlug: tenant.slug },
-          headers: monitoring.apiKey ? { Authorization: `Bearer ${monitoring.apiKey}` } : {},
+          headers: getMonitoringHeaders(monitoring.apiKey, monitoring.provider),
           timeout: 5000
         });
         
