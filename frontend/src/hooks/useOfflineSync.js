@@ -74,7 +74,7 @@ export function useOfflineSync() {
               throw new Error('Sync failed with status ' + response.status);
             }
           } catch (error) {
-            console.error(\`Failed to sync item \${item.id}:\`, error);
+            console.error(`Failed to sync item ${item.id}:`, error);
             await updateSyncItemStatus(item.id, {
               retryCount: item.retryCount + 1,
               error: error.message || 'Unknown error',
