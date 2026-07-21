@@ -90,6 +90,7 @@ export default function PublicMenu() {
     <div dir={isRtl ? 'rtl' : 'ltr'} className="min-h-screen bg-[#FDFDFD] font-sans selection:bg-amber-100 selection:text-amber-900 pb-24">
       
       {/* Hero Section */}
+      {menuMode !== 'image_only' && (
       <div className="relative h-[40vh] min-h-[300px] max-h-[500px] w-full bg-gray-900 overflow-hidden">
         {heroImage ? (
           <img src={heroImage} alt="Hero" className="absolute inset-0 w-full h-full object-cover" />
@@ -135,10 +136,11 @@ export default function PublicMenu() {
           </motion.div>
         </div>
       </div>
+      )}
 
-      <div className="max-w-3xl mx-auto">
+      <div className={menuMode === 'image_only' ? "w-full mx-auto" : "max-w-3xl mx-auto"}>
         {menuMode === 'image_only' ? (
-          <div className="flex flex-col shadow-xl overflow-hidden md:rounded-3xl mx-0 md:mx-4 -mt-10 relative z-20 border border-gray-100 bg-white">
+          <div className="flex flex-col w-full bg-white">
             {menuImages.length > 0 ? (
               menuImages.map((imgUrl, idx) => (
                 <img key={idx} src={getImageUrl(imgUrl)} alt={`Menu page ${idx + 1}`} className="w-full h-auto object-contain block" />
