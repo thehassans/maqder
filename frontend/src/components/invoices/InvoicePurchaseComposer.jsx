@@ -156,7 +156,11 @@ export default function InvoicePurchaseComposer({ invoiceId = '', initialInvoice
       if (isEdit) {
         queryClient.invalidateQueries(['invoice', invoiceId])
       }
-      navigate(`/app/dashboard/invoices/${res.data?._id || invoiceId}`)
+      if (res.data?.offline) {
+        navigate('/app/dashboard/invoices')
+      } else {
+        navigate(`/app/dashboard/invoices/${res.data?._id || invoiceId}`)
+      }
     },
     onError: (error) => toast.error(error.response?.data?.error || (isEdit ? 'Failed to update purchase invoice' : 'Failed to create purchase invoice')),
   })

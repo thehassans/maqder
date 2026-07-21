@@ -233,7 +233,11 @@ export default function PurchaseOrderForm() {
       if (isEdit) {
         queryClient.invalidateQueries(['purchase-order', id])
       } else {
-        navigate(`/purchase-orders/${res.data?._id}`)
+        if (res.data?.offline) {
+          navigate('/app/dashboard/purchase-orders')
+        } else {
+          navigate(`/purchase-orders/${res.data?._id}`)
+        }
       }
     },
     onError: (err) => toast.error(err.response?.data?.error || 'Error'),

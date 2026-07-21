@@ -351,7 +351,11 @@ export default function InvoiceSellComposer({ invoiceId = '', initialInvoice = n
       queryClient.invalidateQueries(['manpower-assignments-lookup'])
       queryClient.invalidateQueries(['customers'])
       queryClient.invalidateQueries(['customers-lookup'])
-      navigate(`/app/dashboard/invoices/${res.data?._id || invoiceId}`)
+      if (res.data?.offline) {
+        navigate('/app/dashboard/invoices')
+      } else {
+        navigate(`/app/dashboard/invoices/${res.data?._id || invoiceId}`)
+      }
     },
     onError: (error) => toast.error(error?.response?.data?.error || error?.userMessage || error?.message || (isEdit ? 'Failed to update invoice' : 'Failed to create invoice')),
   })

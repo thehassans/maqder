@@ -168,7 +168,11 @@ export default function QuotationComposer({ quotationId = '', initialQuotation =
       if (isEdit) {
         queryClient.invalidateQueries({ queryKey: ['quotation', quotationId] })
       }
-      navigate(`/app/dashboard/quotations/${res.data?._id || quotationId}`)
+      if (res.data?.offline) {
+        navigate('/app/dashboard/quotations')
+      } else {
+        navigate(`/app/dashboard/quotations/${res.data?._id || quotationId}`)
+      }
     },
     onError: (error) => {
       toast.error(error?.response?.data?.error || error?.message || (language === 'ar' ? 'تعذر حفظ عرض السعر' : 'Failed to save quotation'))

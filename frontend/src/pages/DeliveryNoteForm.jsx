@@ -51,7 +51,11 @@ export default function DeliveryNoteForm() {
       toast.success(language === 'ar' ? 'تم إنشاء إذن التسليم' : 'Delivery Note created successfully')
       queryClient.invalidateQueries(['delivery-notes'])
       queryClient.invalidateQueries(['purchase-orders'])
-      navigate(`/app/dashboard/delivery-notes/${res.data?._id}`)
+      if (res.data?.offline) {
+        navigate('/app/dashboard/delivery-notes')
+      } else {
+        navigate(`/app/dashboard/delivery-notes/${res.data?._id}`)
+      }
     },
     onError: (err) => toast.error(err.response?.data?.error || 'Error creating delivery note'),
   })
