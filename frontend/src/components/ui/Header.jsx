@@ -65,7 +65,7 @@ export function Header({ isArabic, setLanguage }) {
               <Globe className="w-5 h-5" />
             </button>
 
-            <a href="https://maqder.com/downloads/MaqderDesktop-Setup.exe" download="MaqderDesktop-Setup.exe" target="_blank" rel="noopener noreferrer" className="hidden sm:flex items-center justify-center p-2 text-gray-500 hover:text-emerald-600 hover:bg-gray-50 rounded-full transition-colors" title="Download for Windows">
+            <a href="https://maqder.com/downloads/MaqderDesktop-Setup-1.0.0.exe" download="MaqderDesktop-Setup-1.0.0.exe" target="_blank" rel="noopener noreferrer" className="hidden sm:flex items-center justify-center p-2 text-gray-500 hover:text-emerald-600 hover:bg-gray-50 rounded-full transition-colors" title="Download for Windows">
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.951-1.801"/>
               </svg>

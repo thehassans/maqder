@@ -134,8 +134,8 @@ export default function MarketingHome() {
                   {isArabic ? 'تجربة مجانية' : 'Free trial'}
                 </a>
                 <a
-                  href="https://maqder.com/downloads/MaqderDesktop-Setup.exe"
-                  download="MaqderDesktop-Setup.exe"
+                  href="https://maqder.com/downloads/MaqderDesktop-Setup-1.0.0.exe"
+                  download="MaqderDesktop-Setup-1.0.0.exe"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-2.5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-7 py-4 font-semibold text-white backdrop-blur-sm transition-all hover:border-emerald-500/50 hover:bg-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.15)]"
