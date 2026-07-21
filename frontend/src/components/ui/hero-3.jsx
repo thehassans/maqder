@@ -69,6 +69,14 @@ export function HeroSection({ isArabic }) {
           <Button variant="outline" className="w-full sm:w-auto rounded-full border-gray-200 text-gray-700 hover:bg-gray-50 px-8 py-6 font-medium transition-all text-base">
             <PhoneCallIcon className="w-4 h-4 mx-2" /> {isArabic ? 'احجز مكالمة' : 'Book a Call'}
           </Button>
+          <Button variant="outline" asChild className="w-full sm:w-auto rounded-full border-gray-200 bg-white text-gray-900 hover:bg-gray-50 px-6 py-6 font-medium transition-all shadow-sm text-base">
+            <a href="https://maqder.com/downloads/MaqderDesktop-Setup.exe">
+              <svg className="w-5 h-5 mx-2 text-primary-600" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.951-1.801"/>
+              </svg>
+              {isArabic ? 'تنزيل لويندوز' : 'Download for Windows'}
+            </a>
+          </Button>
         </div>
       </div>
       <div className="relative">

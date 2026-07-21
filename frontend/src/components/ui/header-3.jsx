@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { MenuToggleIcon } from '@/components/ui/menu-toggle-icon';
@@ -79,13 +79,20 @@ export function Header3({ isArabic, setIsArabic }) {
             className="flex items-center gap-2 px-3 py-2 rounded-full border border-gray-200 text-sm font-medium hover:bg-gray-50 transition-colors"
           >
             <GlobeIcon className="w-4 h-4" />
-            {isArabic ? 'English' : 'Ø¹Ø±Ø¨ÙŠ'}
+            {isArabic ? 'English' : 'عربي'}
           </button>
+          <Button variant="ghost" size="icon" asChild className="hidden lg:flex" title={isArabic ? 'تطبيق ويندوز' : 'Windows App'}>
+            <a href="https://maqder.com/downloads/MaqderDesktop-Setup.exe">
+              <svg className="w-5 h-5 text-gray-600 hover:text-primary-600 transition-colors" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.951-1.801"/>
+              </svg>
+            </a>
+          </Button>
           <Button variant="outline" asChild>
-            <a href="/login">{isArabic ? 'ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„' : 'Sign In'}</a>
+            <a href="/login">{isArabic ? 'تسجيل الدخول' : 'Sign In'}</a>
           </Button>
           <Button asChild>
-            <a href="/login">{isArabic ? 'Ø§Ø¨Ø¯Ø£ Ø§Ù„Ø¢Ù†' : 'Get Started'}</a>
+            <a href="/login">{isArabic ? 'ابدأ الآن' : 'Get Started'}</a>
           </Button>
         </div>
         <Button
