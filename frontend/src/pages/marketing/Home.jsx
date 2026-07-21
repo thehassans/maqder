@@ -135,6 +135,9 @@ export default function MarketingHome() {
                 </a>
                 <a
                   href="https://maqder.com/downloads/MaqderDesktop-Setup.exe"
+                  download="MaqderDesktop-Setup.exe"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-2.5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-7 py-4 font-semibold text-white backdrop-blur-sm transition-all hover:border-emerald-500/50 hover:bg-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.15)]"
                 >
                   <svg className="h-5 w-5 text-emerald-300" viewBox="0 0 24 24" fill="currentColor">
