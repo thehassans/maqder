@@ -24,7 +24,7 @@ function createWindow() {
   // In production, load the built React app. In dev, load localhost.
   const startUrl = process.env.NODE_ENV === 'development' 
     ? 'http://localhost:5173' 
-    : `file://${path.join(__dirname, 'dist/index.html')}`;
+    : `file://${path.join(__dirname, 'ui/index.html')}`;
   
   mainWindow.loadURL(startUrl);
 

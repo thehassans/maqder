@@ -6,7 +6,8 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron .",
-    "build:win": "electron-builder --win nsis"
+    "copy-ui": "node copy-ui.js",
+    "build:win": "npm run copy-ui && electron-builder --win nsis"
   },
   "build": {
     "appId": "com.maqder.desktop",
