@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Minus, Trash2, ShoppingBag, CreditCard, Search, Coffee, Truck, UtensilsCrossed } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
-import api from '../../lib/api'
+import api, { getImageUrl } from '../../lib/api'
 import { toast } from 'react-hot-toast'
 import ThermalReceipt from '../../components/ui/ThermalReceipt'
 import KitchenTicket from '../../components/restaurant/KitchenTicket'
@@ -420,7 +420,7 @@ export default function RestaurantPOS() {
                 >
                   <div className="h-32 w-full bg-gray-100 dark:bg-dark-700 relative overflow-hidden">
                     {item.imageUrl ? (
-                      <img src={item.imageUrl} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      <img src={getImageUrl(item.imageUrl)} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-gray-400">
                         <UtensilsCrossed className="w-8 h-8 opacity-20" />

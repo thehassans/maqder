@@ -4,7 +4,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import { useTranslation } from '../../lib/translations'
 import { Printer, Download, UtensilsCrossed, Settings as SettingsIcon, Image as ImageIcon, Save, CheckCircle2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import api from '../../lib/api'
+import api, { getImageUrl } from '../../lib/api'
 import { getMe } from '../../store/slices/authSlice'
 import toast from 'react-hot-toast'
 
@@ -162,7 +162,7 @@ export default function QRMenu() {
                 <div className="bg-white rounded-3xl shadow-lg p-10 max-w-sm w-full border border-gray-100 flex flex-col items-center print:shadow-none print:border-none print:p-0">
                   <div className="text-center mb-8">
                     {tenant?.branding?.logo ? (
-                       <img src={tenant.branding.logo} alt="Logo" className="h-16 mx-auto mb-4 object-contain" />
+                      <img src={getImageUrl(tenant.branding.logo)} alt="Logo" className="h-16 mx-auto mb-4 object-contain" />
                     ) : (
                       <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4">
                         <UtensilsCrossed className="w-8 h-8" />
@@ -236,7 +236,7 @@ export default function QRMenu() {
                   <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-2xl bg-gray-50 dark:bg-gray-800/50">
                     {qrSettings.heroImage ? (
                       <div className="relative w-full aspect-video rounded-xl overflow-hidden group">
-                        <img src={qrSettings.heroImage} alt="Hero" className="w-full h-full object-cover" />
+                        <img src={getImageUrl(qrSettings.heroImage)} alt="Hero" className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                           <button 
                             type="button"

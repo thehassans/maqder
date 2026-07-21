@@ -1,0 +1,9 @@
+RewriteEngine On
+RewriteRule ^api/(.*)$ http://localhost:5000/api/$1 [P,L]
+RewriteRule ^assets/ - [L]
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+RewriteCond %{REQUEST_URI} \.[^./]+$
+RewriteRule ^ - [R=404,L]
+RewriteRule . /index.html [L]

@@ -3,6 +3,26 @@ import { enqueueSyncItem, initDb } from './syncEngine'
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api'
 
+export const getImageUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('http')) return url;
+  if (url.startsWith('/uploads')) {
+    // Determine the base API URL dynamically based on the current window location or env var
+    // If apiBaseUrl is absolute (e.g. https://maqder.com/api or desktop app), use it
+    if (apiBaseUrl.startsWith('http')) {
+       try {
+         const urlObj = new URL(apiBaseUrl);
+         return `${urlObj.origin}/api${url}`; // e.g. https://maqder.com/api/uploads/...
+       } catch (e) {
+         return url;
+       }
+    }
+    // For local web or relative paths, return /api/uploads/... so Nginx/Vite proxies it to the backend
+    return `/api${url}`;
+  }
+  return url;
+}
+
 const getApiErrorMessage = (error) => {
   const responseMessage = error.response?.data?.error
 
@@ -71,10 +91,50 @@ api.interceptors.response.use(
           const db = await initDb();
           const cacheKey = config.url + (config.params ? JSON.stringify(config.params) : '');
           const cached = await db.get('api_cache', cacheKey);
-          if (cached) {
-            console.log(`[Offline-Cache] Serving cached data for ${cacheKey}`);
+          
+          let responseData = cached ? cached.data : null;
+          
+          // --- OFFLINE MERGE FOR LISTS ---
+          const pendingItems = await db.getAll('sync_queue');
+          
+          const mergeQueue = (entityName, typeMatches) => {
+            const newItems = pendingItems
+              .filter(item => item.status === 'PENDING' && typeMatches.some(t => item.type.includes(t)))
+              .map(item => ({ ...item.payload, _id: item.id, offline: true, createdAt: item.createdAt }));
+              
+            if (responseData && Array.isArray(responseData[entityName])) {
+              responseData = { ...responseData, [entityName]: [...newItems, ...responseData[entityName]] };
+            } else if (Array.isArray(responseData)) {
+              responseData = [...newItems, ...responseData];
+            } else if (!responseData && entityName) {
+              responseData = { [entityName]: newItems, totalPages: 1, currentPage: 1 };
+            } else if (!responseData) {
+              responseData = newItems;
+            }
+          };
+
+          if (config.url.includes('/invoices') && !config.url.includes('/invoices/')) {
+            mergeQueue('invoices', ['/invoices/sell', '/invoices/purchase', 'POST:/invoices']);
+          } else if (config.url.includes('/customers') && !config.url.includes('/customers/')) {
+            mergeQueue('customers', ['POST:/customers']);
+          } else if (config.url.includes('/quotations') && !config.url.includes('/quotations/')) {
+            mergeQueue('quotations', ['POST:/quotations']);
+          } else if (config.url.includes('/delivery-notes') && !config.url.includes('/delivery-notes/')) {
+            mergeQueue('deliveryNotes', ['POST:/delivery-notes']);
+          } else if (config.url.includes('/purchase-orders') && !config.url.includes('/purchase-orders/')) {
+            mergeQueue('purchaseOrders', ['POST:/purchase-orders']);
+          } else if (config.url.includes('/contacts') && !config.url.includes('/contacts/')) {
+            mergeQueue('contacts', ['POST:/contacts']);
+          } else if (config.url.includes('/projects') && !config.url.includes('/projects/')) {
+            mergeQueue('projects', ['POST:/projects']);
+          } else if (config.url.includes('/expenses') && !config.url.includes('/expenses/')) {
+            mergeQueue('expenses', ['POST:/expenses']);
+          }
+
+          if (responseData) {
+            console.log(`[Offline-Cache] Serving cached/merged data for ${cacheKey}`);
             return Promise.resolve({
-              data: cached.data,
+              data: responseData,
               status: 200,
               statusText: 'OK (Cached)',
               headers: {},

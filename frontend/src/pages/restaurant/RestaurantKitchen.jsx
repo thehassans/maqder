@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux'
 import { motion } from 'framer-motion'
 import { ClipboardList, RefreshCw, Receipt, CheckCircle, Clock, Printer } from 'lucide-react'
 import toast from 'react-hot-toast'
-import api from '../../lib/api'
+import api, { getImageUrl } from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import Money from '../../components/ui/Money'
 import { getThermalPrinterSettings, getPaperWidth } from '../../lib/thermalPrinter'
@@ -166,7 +166,7 @@ export default function RestaurantKitchen() {
       delivery: isAr ? 'توصيل' : 'Delivery'
     }[order?.orderType] || order?.orderType
 
-    const logoSrc = tenant?.branding?.logoUrl || ''
+    const logoSrc = getImageUrl(tenant?.branding?.logoUrl || '')
     const _thermal = getThermalPrinterSettings(tenant)
     const _pw = getPaperWidth(_thermal)
     

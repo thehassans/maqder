@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux'
 import { Link, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Plus, Search, UtensilsCrossed, Edit, Trash2 } from 'lucide-react'
-import api from '../../lib/api'
+import api, { getImageUrl } from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import Money from '../../components/ui/Money'
 import toast from 'react-hot-toast'
@@ -63,6 +63,17 @@ export default function RestaurantMenuItems() {
     },
     onError: (err) => {
       toast.error(err.response?.data?.error || 'Failed to delete item')
+    }
+  })
+
+  const toggleMutation = useMutation({
+    mutationFn: ({ id, isActive }) => api.put(`/restaurant/menu-items/${id}`, { isActive }),
+    onSuccess: () => {
+      toast.success(language === 'ar' ? 'تم تحديث حالة الصنف' : 'Item status updated')
+      queryClient.invalidateQueries(['restaurant-menu-items'])
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.error || 'Failed to update status')
     }
   })
 
@@ -150,8 +161,14 @@ export default function RestaurantMenuItems() {
                   <tr key={it._id}>
                     <td className="font-mono text-sm">{it.sku || '-'}</td>
                     <td>
-                      <div className="flex items-center gap-2">
-                        <UtensilsCrossed className="w-4 h-4 text-gray-400" />
+                      <div className="flex items-center gap-3">
+                        {it.imageUrl ? (
+                           <img src={getImageUrl(it.imageUrl)} alt={it.nameEn} className="w-10 h-10 rounded-lg object-cover bg-gray-100" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-dark-700 flex items-center justify-center">
+                            <UtensilsCrossed className="w-5 h-5 text-gray-400" />
+                          </div>
+                        )}
                         <div>
                           <div className="font-medium text-gray-900 dark:text-white">
                             {language === 'ar' ? it.nameAr || it.nameEn : it.nameEn || it.nameAr}
@@ -164,9 +181,13 @@ export default function RestaurantMenuItems() {
                       <Money value={it.sellingPrice || 0} />
                     </td>
                     <td>
-                      <span className={`badge ${it.isActive ? 'badge-success' : 'badge-neutral'}`}>
+                      <button
+                        onClick={() => toggleMutation.mutate({ id: it._id, isActive: !it.isActive })}
+                        disabled={toggleMutation.isPending}
+                        className={`badge cursor-pointer transition-colors hover:opacity-80 disabled:opacity-50 ${it.isActive ? 'badge-success' : 'badge-neutral'}`}
+                      >
                         {it.isActive ? (language === 'ar' ? 'نشط' : 'Active') : language === 'ar' ? 'غير نشط' : 'Inactive'}
-                      </span>
+                      </button>
                     </td>
                     <td>
                       <div className="flex items-center gap-2">
