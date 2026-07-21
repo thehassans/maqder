@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
@@ -132,6 +132,15 @@ export default function MarketingHome() {
                 >
                   <PlayCircle className="h-5 w-5 text-emerald-300" />
                   {isArabic ? 'تجربة مجانية' : 'Free trial'}
+                </a>
+                <a
+                  href="https://maqder.com/downloads/MaqderDesktop-Setup.exe"
+                  className="inline-flex items-center justify-center gap-2.5 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-7 py-4 font-semibold text-white backdrop-blur-sm transition-all hover:border-emerald-500/50 hover:bg-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.15)]"
+                >
+                  <svg className="h-5 w-5 text-emerald-300" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.951-1.801"/>
+                  </svg>
+                  {isArabic ? 'تنزيل لويندوز' : 'Download App'}
                 </a>
               </div>
 
