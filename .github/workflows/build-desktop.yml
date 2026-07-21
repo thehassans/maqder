@@ -1,0 +1,47 @@
+name: Build Desktop App
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'desktop/**'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        working-directory: ./desktop
+        run: npm install
+
+      - name: Build Electron App
+        working-directory: ./desktop
+        run: npm run build:win
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MaqderDesktop-Setup
+          path: desktop/dist/*.exe
+
+      - name: Commit Installer to Repository
+        run: |
+          Copy-Item "desktop\dist\Maqder Desktop Setup 1.0.0.exe" -Destination "frontend\public\downloads\MaqderDesktop-Setup.exe" -Force
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add frontend/public/downloads/MaqderDesktop-Setup.exe
+          git commit -m "Auto-compile Maqder Desktop App installer" || exit 0
+          git push
