@@ -1,6 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
+import { BrowserRouter, HashRouter } from 'react-router-dom'
 import { Provider } from 'react-redux'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'react-hot-toast'
@@ -44,11 +44,14 @@ const queryClient = new QueryClient({
   },
 })
 
+const isDesktop = import.meta.env.VITE_IS_DESKTOP === 'true';
+const Router = isDesktop ? HashRouter : BrowserRouter;
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <ErrorBoundary fallbackMessage="Something went wrong while loading the app. Please reload the page.">
             <App />
           </ErrorBoundary>
@@ -70,7 +73,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
               },
             }}
           />
-        </BrowserRouter>
+        </Router>
       </QueryClientProvider>
     </Provider>
   </React.StrictMode>,

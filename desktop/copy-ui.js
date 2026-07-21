@@ -6,7 +6,11 @@ console.log('Building frontend React app...');
 const frontendPath = path.join(__dirname, '../frontend');
 try {
   execSync('npm install', { cwd: frontendPath, stdio: 'inherit' });
-  execSync('npm run build', { cwd: frontendPath, stdio: 'inherit' });
+  execSync('npx vite build --base ./', { 
+    cwd: frontendPath, 
+    stdio: 'inherit',
+    env: { ...process.env, VITE_IS_DESKTOP: 'true' }
+  });
 } catch (err) {
   console.error('Failed to build frontend:', err);
   process.exit(1);
