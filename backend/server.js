@@ -105,6 +105,7 @@ import inventoryAdjustmentsRoutes from './routes/inventoryAdjustments.routes.js'
 import voucherRoutes from './routes/voucher.routes.js';
 import backupRoutes from './routes/backup.routes.js';
 import syncRoutes from './routes/syncRoutes.js';
+import desktopSyncRoutes from './routes/desktopSync.routes.js';
 import deliveryNoteRoutes from './routes/deliveryNote.routes.js';
 
 import laundryServiceRoutes from './routes/laundryService.routes.js';
@@ -500,6 +501,7 @@ app.use('/api/reports', ensureDatabaseReady, reportsRoutes);
 app.use('/api/whatsapp', ensureDatabaseReady, whatsappRoutes);
 app.use('/api/zatca', ensureDatabaseReady, zatcaRoutes);
 app.use('/api/sync', ensureDatabaseReady, syncRoutes);
+app.use('/api/desktop/sync', ensureDatabaseReady, desktopSyncRoutes);
 app.use('/api/customers', ensureDatabaseReady, customerRoutes);
 app.use('/api/communicate', ensureDatabaseReady, communicateRoutes);
 app.use('/api/contacts', ensureDatabaseReady, contactsRoutes);

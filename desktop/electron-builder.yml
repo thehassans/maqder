@@ -1,0 +1,26 @@
+appId: com.maqder.desktop
+productName: Maqder Desktop
+copyright: Copyright © 2026 Maqder
+directories:
+  output: dist_electron
+  buildResources: resources
+files:
+  - main.js
+  - preload.js
+  - db/**/*
+  - sync/**/*
+  - zatca/**/*
+  - renderer/dist/**/*
+win:
+  target: nsis
+  icon: resources/icon.ico
+nsis:
+  oneClick: true
+  perMachine: false
+  allowToChangeInstallationDirectory: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Maqder Desktop
+publish:
+  provider: generic
+  url: https://maqder.com/downloads/

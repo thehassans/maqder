@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Header } from '../components/ui/header-3'
 import { HeroSection } from '../components/ui/hero-3'
@@ -1054,6 +1054,91 @@ export default function Landing() {
                 </form>
               </div>
             </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Desktop App Download Section */}
+      <section className="py-24 bg-gray-50 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary-100/50 via-transparent to-transparent" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="bg-white rounded-[2rem] p-8 md:p-12 shadow-xl shadow-primary-900/5 border border-primary-100 flex flex-col md:flex-row items-center gap-12 overflow-hidden relative">
+            {/* Decorative background element */}
+            <div className="absolute -right-24 -top-24 w-64 h-64 bg-primary-100 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob" />
+            <div className="absolute -left-24 -bottom-24 w-64 h-64 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-50 animate-blob animation-delay-2000" />
+            
+            <div className="flex-1 space-y-6 relative z-10">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-50 text-primary-700 text-sm font-medium border border-primary-100">
+                <Sparkles className="w-4 h-4" />
+                {isArabic ? 'جديد!' : 'New!'}
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 leading-tight">
+                {isArabic ? 'حمل تطبيق سطح المكتب من مقدر' : 'Download Maqder Desktop App'}
+              </h2>
+              <p className="text-lg text-gray-600 leading-relaxed">
+                {isArabic 
+                  ? 'يعمل التطبيق بالكامل بدون إنترنت لإصدار فواتير متوافقة مع متطلبات الزكاة والضريبة (المرحلة الأولى)، مع مزامنة تلقائية عند الاتصال بالإنترنت.' 
+                  : 'Works completely offline for ZATCA Phase 1 compliant invoicing, with automatic background sync when you reconnect to the internet.'}
+              </p>
+              
+              <ul className="space-y-3">
+                {[
+                  isArabic ? 'فواتير غير متصلة بالإنترنت بالكامل (المرحلة الأولى)' : 'Fully offline invoicing (Phase 1)',
+                  isArabic ? 'مزامنة تلقائية مع السحابة' : 'Automatic cloud sync',
+                  isArabic ? 'إنشاء رموز QR سريعة جداً' : 'Lightning fast QR generation',
+                  isArabic ? 'طباعة مباشرة للفواتير الحرارية' : 'Direct thermal printing support'
+                ].map((feature, idx) => (
+                  <li key={idx} className="flex items-center gap-3 text-gray-700">
+                    <CheckCircle2 className="w-5 h-5 text-primary-500 shrink-0" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="pt-4 flex items-center gap-4">
+                <a 
+                  href="https://maqder.com/downloads/MaqderDesktop-Setup.exe" 
+                  className="inline-flex items-center justify-center gap-3 px-8 py-4 bg-gray-900 text-white rounded-2xl font-semibold text-lg hover:bg-gray-800 transition-all hover:-translate-y-0.5 shadow-lg shadow-gray-900/20"
+                >
+                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.951-1.801"/>
+                  </svg>
+                  {isArabic ? 'تحميل لنظام ويندوز' : 'Download for Windows'}
+                </a>
+                <div className="text-sm text-gray-500">
+                  <p>v1.0.0 • Windows 10/11</p>
+                  <p>{isArabic ? 'يتطلب 4 جيجابايت رام' : 'Requires 4GB RAM'}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 relative z-10 w-full">
+              <div className="bg-gray-900 rounded-2xl shadow-2xl overflow-hidden border border-gray-800 transform rotate-1 hover:rotate-0 transition-transform duration-500">
+                <div className="flex items-center gap-2 px-4 py-3 bg-gray-800 border-b border-gray-700">
+                  <div className="flex gap-1.5">
+                    <div className="w-3 h-3 rounded-full bg-rose-500" />
+                    <div className="w-3 h-3 rounded-full bg-amber-500" />
+                    <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                  </div>
+                  <div className="text-xs text-gray-400 font-mono ml-2">Maqder Desktop</div>
+                </div>
+                <div className="p-1 bg-gray-900">
+                  <img 
+                    src="/images/pos-screenshot.webp" 
+                    alt="Maqder Desktop Interface" 
+                    className="rounded opacity-90 hover:opacity-100 transition-opacity"
+                    onError={(e) => {
+                      // Fallback if image doesn't exist
+                      e.target.style.display = 'none';
+                      e.target.nextElementSibling.style.display = 'flex';
+                    }}
+                  />
+                  <div className="hidden h-64 items-center justify-center bg-gray-800 text-gray-400 text-sm">
+                    {isArabic ? 'واجهة التطبيق' : 'App Interface'}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
