@@ -50,12 +50,19 @@ const KitchenTicket = forwardRef(({ order, isUpdated = false }, ref) => {
 
       {/* Order Info */}
       <div style={{ marginBottom: '6px', fontSize: '11px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span><b>Order / الطلب:</b> #{orderNumber}</span>
-          <span>{typeLabel[orderType]}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', borderBottom: '1px solid #eee', paddingBottom: '4px' }}>
+          <div>
+            <div style={{ fontSize: '10px', color: '#444' }}>Order / الطلب:</div>
+            <div style={{ fontSize: '24px', fontWeight: '900' }}>#{orderNumber}</div>
+          </div>
+          <div style={{ fontSize: '14px', fontWeight: 'bold' }}>{typeLabel[orderType]}</div>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span><b>Table / الطاولة:</b> {tableNumber}</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2px' }}>
+          {orderType === 'dine_in' ? (
+            <span><b>Table / الطاولة:</b> {tableNumber}</span>
+          ) : (
+            <span></span>
+          )}
           <span>{dateStr}</span>
         </div>
         {order.customerName && (

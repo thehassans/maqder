@@ -17,12 +17,13 @@ export default function QRMenu() {
   
   const qrRef = useRef(null)
   const fileInputRef = useRef(null)
+  const menuImageInputRef = useRef(null)
 
   const [activeTab, setActiveTab] = useState('qr_code')
   
   // Settings State
-  const initialSettings = tenant?.settings?.restaurant?.qrMenu || { defaultLanguage: 'ar', heroImage: '' }
-  const [qrSettings, setQrSettings] = useState(initialSettings)
+  const initialSettings = tenant?.settings?.restaurant?.qrMenu || { defaultLanguage: 'ar', heroImage: '', mode: 'digital', menuImages: [] }
+  const [qrSettings, setQrSettings] = useState({ mode: 'digital', menuImages: [], ...initialSettings })
   const [isUploading, setIsUploading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
@@ -88,6 +89,35 @@ export default function QRMenu() {
     } finally {
       setIsUploading(false)
     }
+  }
+
+  const handleMenuImageUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const formData = new FormData()
+    formData.append('image', file)
+
+    setIsUploading(true)
+    try {
+      const res = await api.post('/tenants/upload-qr-hero', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      setQrSettings(prev => ({ ...prev, menuImages: [...(prev.menuImages || []), res.data.imageUrl] }))
+      toast.success(isRtl ? 'تم رفع صورة القائمة بنجاح' : 'Menu image uploaded successfully')
+    } catch (error) {
+      toast.error(isRtl ? 'فشل رفع الصورة' : 'Failed to upload image')
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const handleRemoveMenuImage = (index) => {
+    setQrSettings(prev => {
+      const updated = [...(prev.menuImages || [])]
+      updated.splice(index, 1)
+      return { ...prev, menuImages: updated }
+    })
   }
 
   const handleSaveSettings = async () => {
@@ -222,7 +252,55 @@ export default function QRMenu() {
                 transition={{ duration: 0.2 }}
                 className="max-w-2xl mx-auto space-y-8"
               >
+                {/* Menu Mode */}
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                      {isRtl ? 'وضع القائمة' : 'Menu Mode'}
+                    </h3>
+                  </div>
+                  <div className="flex gap-4">
+                    <label className={`flex-1 flex items-center p-4 border rounded-xl cursor-pointer transition-all ${
+                      qrSettings.mode === 'digital' 
+                        ? 'border-amber-500 bg-amber-50 dark:bg-amber-500/10 dark:border-amber-500' 
+                        : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
+                    }`}>
+                      <input 
+                        type="radio" 
+                        name="mode" 
+                        value="digital"
+                        checked={qrSettings.mode === 'digital'}
+                        onChange={(e) => setQrSettings({ ...qrSettings, mode: e.target.value })}
+                        className="w-4 h-4 text-amber-600 border-gray-300 focus:ring-amber-500"
+                      />
+                      <div className="ml-3 rtl:mr-3">
+                        <span className="block text-sm font-bold text-gray-900 dark:text-white">{isRtl ? 'قائمة رقمية' : 'Digital Menu'}</span>
+                        <span className="block text-xs text-gray-500">{isRtl ? 'عرض المنتجات والأقسام' : 'Show products and categories'}</span>
+                      </div>
+                    </label>
+                    <label className={`flex-1 flex items-center p-4 border rounded-xl cursor-pointer transition-all ${
+                      qrSettings.mode === 'image_only' 
+                        ? 'border-amber-500 bg-amber-50 dark:bg-amber-500/10 dark:border-amber-500' 
+                        : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
+                    }`}>
+                      <input 
+                        type="radio" 
+                        name="mode" 
+                        value="image_only"
+                        checked={qrSettings.mode === 'image_only'}
+                        onChange={(e) => setQrSettings({ ...qrSettings, mode: e.target.value })}
+                        className="w-4 h-4 text-amber-600 border-gray-300 focus:ring-amber-500"
+                      />
+                      <div className="ml-3 rtl:mr-3">
+                        <span className="block text-sm font-bold text-gray-900 dark:text-white">{isRtl ? 'صور فقط' : 'Images Only'}</span>
+                        <span className="block text-xs text-gray-500">{isRtl ? 'عرض صور المنيو' : 'Show uploaded menu images'}</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
                 {/* Hero Image */}
+                {qrSettings.mode === 'digital' && (
                 <div className="space-y-4">
                   <div>
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white">
@@ -271,6 +349,50 @@ export default function QRMenu() {
                     />
                   </div>
                 </div>
+                )}
+
+                {/* Menu Images for Image Only Mode */}
+                {qrSettings.mode === 'image_only' && (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                      {isRtl ? 'صور القائمة' : 'Menu Images'}
+                    </h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      {isRtl ? 'قم برفع صور القائمة الخاصة بك. ستظهر هذه الصور للعملاء عند مسح رمز الاستجابة السريعة (QR Code).' : 'Upload images of your menu. These will be shown to customers when they scan the QR code.'}
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {(qrSettings.menuImages || []).map((imgUrl, idx) => (
+                      <div key={idx} className="relative group rounded-xl overflow-hidden border border-gray-200 aspect-[3/4]">
+                        <img src={getImageUrl(imgUrl)} alt={`Menu page ${idx + 1}`} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          <button 
+                            type="button"
+                            onClick={() => handleRemoveMenuImage(idx)}
+                            className="btn btn-sm btn-secondary text-red-500 hover:text-red-700"
+                          >
+                            {isRtl ? 'إزالة' : 'Remove'}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-800/50 aspect-[3/4] hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer transition-colors" onClick={() => menuImageInputRef.current?.click()}>
+                      <ImageIcon className="w-10 h-10 text-gray-400 mb-2" />
+                      <span className="text-sm font-medium text-gray-500">{isUploading ? (isRtl ? 'جاري الرفع...' : 'Uploading...') : (isRtl ? 'إضافة صفحة' : 'Add Page')}</span>
+                    </div>
+                  </div>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden" 
+                    ref={menuImageInputRef} 
+                    onChange={handleMenuImageUpload} 
+                  />
+                </div>
+                )}
 
                 {/* Default Language */}
                 <div className="space-y-4">

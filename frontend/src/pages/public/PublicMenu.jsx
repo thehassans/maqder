@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from '../../lib/translations'
-import api from '../../lib/api'
+import api, { getImageUrl } from '../../lib/api'
 import LoadingScreen from '../../components/ui/LoadingScreen'
 import { motion, AnimatePresence } from 'framer-motion'
 import { UtensilsCrossed, Globe, Search, ChevronRight, Info } from 'lucide-react'
@@ -82,6 +82,9 @@ export default function PublicMenu() {
   const businessName = isRtl ? (tenant.business?.legalNameAr || tenant.name) : (tenant.business?.legalNameEn || tenant.name)
   const heroImage = tenant.settings?.restaurant?.qrMenu?.heroImage
   const primaryColor = tenant.branding?.primaryColor || '#D97706' // amber-600 default
+  const qrMenuSettings = tenant.settings?.restaurant?.qrMenu || {}
+  const menuMode = qrMenuSettings.mode || 'digital'
+  const menuImages = qrMenuSettings.menuImages || []
 
   return (
     <div dir={isRtl ? 'rtl' : 'ltr'} className="min-h-screen bg-[#FDFDFD] font-sans selection:bg-amber-100 selection:text-amber-900 pb-24">
@@ -134,6 +137,24 @@ export default function PublicMenu() {
       </div>
 
       <div className="max-w-3xl mx-auto">
+        {menuMode === 'image_only' ? (
+          <div className="flex flex-col shadow-xl overflow-hidden md:rounded-3xl mx-0 md:mx-4 -mt-10 relative z-20 border border-gray-100 bg-white">
+            {menuImages.length > 0 ? (
+              menuImages.map((imgUrl, idx) => (
+                <img key={idx} src={getImageUrl(imgUrl)} alt={`Menu page ${idx + 1}`} className="w-full h-auto object-contain block" />
+              ))
+            ) : (
+              <div className="py-20 text-center">
+                <div className="w-16 h-16 bg-gray-100 text-gray-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Info className="w-8 h-8" />
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-1">{isRtl ? 'لا توجد صور' : 'No Images'}</h3>
+                <p className="text-gray-500">{isRtl ? 'لم يتم رفع صور القائمة بعد' : 'No menu images have been uploaded yet'}</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
         {/* Search & Categories Bar (Sticky) */}
         <div className="sticky top-0 z-20 bg-[#FDFDFD]/80 backdrop-blur-xl border-b border-gray-100 shadow-sm">
           <div className="px-4 pt-4 pb-2">
@@ -239,6 +260,8 @@ export default function PublicMenu() {
             )}
           </div>
         </div>
+        </>
+        )}
       </div>
       
       {/* Footer Powered By */}

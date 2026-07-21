@@ -468,7 +468,9 @@ const tenantSchema = new mongoose.Schema({
     restaurant: {
       qrMenu: {
         heroImage: { type: String },
-        defaultLanguage: { type: String, enum: ['en', 'ar'], default: 'ar' }
+        defaultLanguage: { type: String, enum: ['en', 'ar'], default: 'ar' },
+        mode: { type: String, enum: ['digital', 'image_only'], default: 'digital' },
+        menuImages: [{ type: String }]
       },
       autoStatusUpdate: { type: Boolean, default: false },
       openingTime: { type: String, default: '08:00' },
