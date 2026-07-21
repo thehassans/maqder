@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -101,7 +101,7 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="flex items-center justify-center px-4 h-16 bg-[#1a3d28] relative overflow-hidden">
         <div className="w-full h-12 flex items-center justify-center flex-shrink-0">
-          <img src="/maqdernewlogo.webp" alt="Maqder" className="h-full w-auto object-contain scale-[2] origin-center" />
+          <img src={`${import.meta.env.BASE_URL}maqdernewlogo.webp`} alt="Maqder" className="h-full w-auto object-contain scale-[2] origin-center" />
         </div>
         
         {/* Mobile close button */}

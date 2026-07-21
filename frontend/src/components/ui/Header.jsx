@@ -33,7 +33,7 @@ export function Header({ isArabic, setLanguage }) {
         <div className="flex items-center justify-between h-14">
           <div className="flex items-center gap-12">
             <Link to="/" className="flex items-center">
-              <img src="/maqder-logo.webp" alt="Maqder" className="h-12 w-auto object-contain" />
+              <img src={`${import.meta.env.BASE_URL}maqder-logo.webp`} alt="Maqder" className="h-12 w-auto object-contain" />
             </Link>
 
             {/* Desktop Navigation */}
