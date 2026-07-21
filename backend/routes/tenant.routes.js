@@ -252,6 +252,38 @@ router.post('/upload-qr-hero', authorize('admin'), upload.single('image'), async
   }
 });
 
+// @route   POST /api/tenants/upload-qr-menu-image
+router.post('/upload-qr-menu-image', authorize('admin'), upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image uploaded' });
+    }
+
+    const tenantIdStr = req.user.tenantId.toString();
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'restaurant', tenantIdStr);
+    
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    const filename = `qrmenu-${Date.now()}-${Math.round(Math.random() * 1E9)}.webp`;
+    const filepath = path.join(uploadsDir, filename);
+
+    // Preserve high quality and resolution for menu texts
+    await sharp(req.file.buffer)
+      .resize({ width: 2400, withoutEnlargement: true })
+      .webp({ quality: 95 })
+      .toFile(filepath);
+
+    const imageUrl = `/uploads/restaurant/${tenantIdStr}/${filename}`;
+    
+    res.json({ imageUrl });
+  } catch (error) {
+    console.error('Image processing error:', error);
+    res.status(500).json({ error: 'Failed to process image' });
+  }
+});
+
 // @route   POST /api/tenants/zatca/generate-keys
 router.post('/zatca/generate-keys', authorize('admin'), async (req, res) => {
   try {

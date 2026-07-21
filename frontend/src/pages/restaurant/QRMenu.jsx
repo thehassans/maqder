@@ -100,7 +100,7 @@ export default function QRMenu() {
 
     setIsUploading(true)
     try {
-      const res = await api.post('/tenants/upload-qr-hero', formData, {
+      const res = await api.post('/tenants/upload-qr-menu-image', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
       setQrSettings(prev => ({ ...prev, menuImages: [...(prev.menuImages || []), res.data.imageUrl] }))
