@@ -418,12 +418,12 @@ export default function RestaurantPOS() {
                   onClick={() => handleItemClick(item)}
                   className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-transparent hover:border-amber-500 text-left flex flex-col relative overflow-hidden group"
                 >
-                  <div className="h-32 w-full bg-gray-100 dark:bg-dark-700 relative overflow-hidden">
+                  <div className="h-36 w-full bg-gradient-to-b from-gray-50 to-gray-100/50 dark:from-dark-700 dark:to-dark-800 relative overflow-hidden p-3 flex items-center justify-center">
                     {item.imageUrl ? (
-                      <img src={getImageUrl(item.imageUrl)} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      <img src={getImageUrl(item.imageUrl)} alt="" className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500 drop-shadow-md" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400">
-                        <UtensilsCrossed className="w-8 h-8 opacity-20" />
+                      <div className="w-full h-full flex items-center justify-center text-gray-300">
+                        <UtensilsCrossed className="w-10 h-10 opacity-30" />
                       </div>
                     )}
                     {item.hasHalfPlate && (
