@@ -455,9 +455,35 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
         },
       ].filter(Boolean)
     : []
+  const tableHeadStyle = {}
   const accentBarStyle = {
     background: invoiceBranding.primaryColor,
+    opacity: Number(templateId) === 8 ? 1 : 0.9,
   }
+
+  let rowClassName = ''
+
+  if (Number(templateId) === 2) {
+    accentBarStyle.height = '16px'
+  } else if (Number(templateId) === 3) {
+    accentBarStyle.height = '8px'
+  } else if (Number(templateId) === 4) {
+    accentBarStyle.height = '8px'
+    tableHeadStyle.backgroundColor = invoiceBranding.primaryColor
+    tableHeadStyle.color = '#ffffff'
+  } else if (Number(templateId) === 5) {
+    accentBarStyle.display = 'none'
+    tableHeadStyle.backgroundColor = invoiceBranding.primaryColor
+    tableHeadStyle.color = '#ffffff'
+    rowClassName = 'even:bg-slate-50'
+  } else if (Number(templateId) === 6) {
+    accentBarStyle.height = '12px'
+    tableHeadStyle.backgroundColor = invoiceBranding.primaryColor
+    tableHeadStyle.color = '#ffffff'
+  } else if (Number(templateId) !== 8) {
+    accentBarStyle.display = 'none'
+  }
+
   const metaCardStyle = {
     borderColor: '#CBD5E1',
     backgroundColor: '#F8FAFC',
@@ -679,7 +705,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
       <div className="px-6 py-6">
         <div className="overflow-hidden rounded-2xl border border-slate-200">
           <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className={styles.tableHead}>
+            <thead className={styles.tableHead} style={tableHeadStyle}>
               <tr>
                 <th className="px-4 py-3 text-start font-medium">#</th>
                 <th className="px-4 py-3 text-start font-medium whitespace-pre-line">{bilingual ? toBilingualText('Description', 'الوصف') : (language === 'ar' ? 'الوصف' : 'Description')}</th>
@@ -703,7 +729,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
                 const descriptionEn = line?.raw?.description || line?.description || line?.raw?.descriptionAr || line?.descriptionAr || ''
                 const descriptionAr = line?.raw?.descriptionAr || line?.descriptionAr || (hasArabicText(descriptionEn) ? descriptionEn : '')
                 return (
-                  <tr key={`${line?.raw?.productName || line?.productName || 'line'}-${index}`}>
+                  <tr key={`${line?.raw?.productName || line?.productName || 'line'}-${index}`} className={rowClassName}>
                     <td className="px-4 py-3">{index + 1}</td>
                     <td className="px-4 py-3">
                       <div className="font-medium whitespace-pre-line">{bilingual ? toBilingualText(productNameEn, productNameAr) : (language === 'ar' ? (line?.raw?.productNameAr || line?.raw?.productName || line?.productNameAr || line?.productName || '—') : (line?.raw?.productName || line?.raw?.productNameAr || line?.productName || line?.productNameAr || '—'))}</div>
