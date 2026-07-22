@@ -810,6 +810,7 @@ export default function Settings() {
                                 }
                               }
                             }}
+                            templateId={invoicePdfTemplate}
                             language={language}
                             bilingual={true}
                           />
