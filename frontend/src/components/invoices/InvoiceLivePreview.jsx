@@ -10,6 +10,11 @@ import SarIcon from '../ui/SarIcon'
 import ModernZatcaTemplate from './ModernZatcaTemplate'
 import ClassicElegantTemplate from './ClassicElegantTemplate'
 import ModernSplitTemplate from './ModernSplitTemplate'
+import ModernTemplate from './ModernTemplate'
+import MonoTemplate from './MonoTemplate'
+import AirTemplate from './AirTemplate'
+import LedgerTemplate from './LedgerTemplate'
+import SignatureTemplate from './SignatureTemplate'
 
 const joinClasses = (...classes) => classes.filter(Boolean).join(' ')
 
@@ -558,8 +563,21 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
     return <ModernSplitTemplate invoice={invoice} tenant={tenant} language={language} bilingual={bilingual} documentType={documentType} />
   }
 
-  if (Number(templateId) === 1 && !isTravelInvoice) {
-    return <ModernZatcaTemplate invoice={invoice} tenant={tenant} language={language} bilingual={bilingual} documentType={documentType} />
+  if (!isTravelInvoice) {
+    switch (Number(templateId)) {
+      case 1:
+        return <ModernZatcaTemplate invoice={invoice} tenant={tenant} language={language} bilingual={bilingual} documentType={documentType} />
+      case 2:
+        return <ModernTemplate invoice={invoice} tenant={tenant} language={language} bilingual={bilingual} documentType={documentType} />
+      case 3:
+        return <MonoTemplate invoice={invoice} tenant={tenant} language={language} bilingual={bilingual} documentType={documentType} />
+      case 4:
+        return <AirTemplate invoice={invoice} tenant={tenant} language={language} bilingual={bilingual} documentType={documentType} />
+      case 5:
+        return <LedgerTemplate invoice={invoice} tenant={tenant} language={language} bilingual={bilingual} documentType={documentType} />
+      case 6:
+        return <SignatureTemplate invoice={invoice} tenant={tenant} language={language} bilingual={bilingual} documentType={documentType} />
+    }
   }
 
   return (
