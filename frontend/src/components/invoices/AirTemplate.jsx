@@ -67,88 +67,94 @@ export default function AirTemplate({ invoice, tenant, language = 'en', bilingua
   const invoiceTitleAr = isQuotation ? 'عرض سعر' : 'فاتورة'
 
   return (
-    <div dir="ltr" className="mx-auto max-w-5xl bg-white overflow-hidden font-sans rounded-3xl shadow-[0_40px_100px_-20px_rgba(0,0,0,0.05)] border border-slate-50">
+    <div dir="ltr" className="mx-auto max-w-5xl bg-white overflow-hidden font-sans rounded-3xl shadow-[0_40px_100px_-20px_rgba(0,0,0,0.05)] relative">
       
+      {/* Super thin accent line on top */}
+      <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ backgroundColor: primaryColor }}></div>
+
       <div className="p-16">
         {/* Header Section */}
-        <div className="flex justify-between items-start mb-20">
+        <div className="flex justify-between items-start mb-24">
           <div className="flex-1">
             {logoSrc ? (
-              <img src={logoSrc} alt="Logo" className="h-12 object-contain mb-8" />
+              <img src={logoSrc} alt="Logo" className="h-16 object-contain mb-8 mix-blend-multiply" />
             ) : (
-              <div className="h-12 w-12 bg-slate-100 rounded-full mb-8"></div>
+              <div className="h-16 w-16 bg-slate-50 border border-slate-100 rounded-2xl mb-8 flex items-center justify-center">
+                <span className="text-xs text-slate-300 font-light tracking-widest uppercase">Logo</span>
+              </div>
             )}
-            <h2 className="text-3xl font-light text-slate-800 tracking-tight">{sellerNameEn}</h2>
-            {bilingual && sellerNameAr && <h2 className="text-xl font-light text-slate-600 mt-2" dir="rtl">{sellerNameAr}</h2>}
+            <h2 className="text-4xl font-extralight text-slate-900 tracking-tighter">{sellerNameEn}</h2>
+            {bilingual && sellerNameAr && <h2 className="text-2xl font-light text-slate-500 mt-2 tracking-wide" dir="rtl">{sellerNameAr}</h2>}
             
-            <div className="mt-6 text-sm text-slate-400 space-y-2 font-light">
-              {invoice?.seller?.vatNumber && <p>VAT Registration &middot; {invoice.seller.vatNumber}</p>}
-              {invoice?.seller?.crNumber && <p>Commercial Reg &middot; {invoice.seller.crNumber}</p>}
+            <div className="mt-8 text-sm text-slate-400 space-y-2 font-light">
+              {invoice?.seller?.vatNumber && <p className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-slate-200"></span>VAT {invoice.seller.vatNumber}</p>}
+              {invoice?.seller?.crNumber && <p className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-slate-200"></span>CR {invoice.seller.crNumber}</p>}
             </div>
           </div>
 
           <div className="flex-1 flex flex-col items-end text-right">
-            <h1 className="text-4xl font-extralight tracking-wide text-slate-300 uppercase">
+            <h1 className="text-5xl font-extralight tracking-widest text-slate-200 uppercase">
               {invoiceTitleEn}
             </h1>
-            {bilingual && <h1 className="text-2xl font-light text-slate-300 mt-2" dir="rtl">{invoiceTitleAr}</h1>}
+            {bilingual && <h1 className="text-3xl font-extralight text-slate-200 mt-3" dir="rtl">{invoiceTitleAr}</h1>}
             
-            <div className="mt-12 text-right">
-              <p className="text-xs text-slate-400 uppercase tracking-widest font-medium mb-1">Invoice Number</p>
-              <p className="text-xl font-light text-slate-800" style={{ color: primaryColor }}>{documentNumber}</p>
-            </div>
-            <div className="mt-6 text-right">
-              <p className="text-xs text-slate-400 uppercase tracking-widest font-medium mb-1">Date of Issue</p>
-              <p className="text-lg font-light text-slate-800">{formatDate(invoice?.issueDate || new Date())}</p>
+            <div className="mt-16 flex gap-12 text-right">
+              <div>
+                <p className="text-[10px] text-slate-400 uppercase tracking-widest font-medium mb-2">Invoice No.</p>
+                <p className="text-xl font-light text-slate-800">{documentNumber}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-slate-400 uppercase tracking-widest font-medium mb-2">Issue Date</p>
+                <p className="text-xl font-light text-slate-800">{formatDate(invoice?.issueDate || new Date())}</p>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Bill To & QR */}
-        <div className="flex justify-between items-end mb-20 relative">
-          <div className="absolute left-0 top-0 bottom-0 w-[1px] bg-slate-100"></div>
-          <div className="pl-8">
-            <p className="text-xs text-slate-400 uppercase tracking-widest font-medium mb-4">Billed To</p>
-            <h3 className="text-2xl font-light text-slate-800">{buyerNameEn}</h3>
-            {bilingual && buyerNameAr && <h3 className="text-xl font-light text-slate-600 mt-2" dir="rtl">{buyerNameAr}</h3>}
-            {invoice?.buyer?.vatNumber && <p className="text-sm text-slate-400 mt-4 font-light">VAT: {invoice.buyer.vatNumber}</p>}
+        <div className="flex justify-between items-end mb-24 bg-slate-50/50 rounded-3xl p-10 relative">
+          <div className="pl-4">
+            <p className="text-[10px] text-slate-400 uppercase tracking-widest font-medium mb-6">Billed To</p>
+            <h3 className="text-3xl font-light text-slate-900 mb-2">{buyerNameEn}</h3>
+            {bilingual && buyerNameAr && <h3 className="text-xl font-light text-slate-500 mb-4" dir="rtl">{buyerNameAr}</h3>}
+            {invoice?.buyer?.vatNumber && <p className="text-sm text-slate-500 mt-2 font-light tracking-wide">VAT: {invoice.buyer.vatNumber}</p>}
           </div>
 
           <div>
              {qrValue && (
-                <div className="p-4 bg-slate-50/50 rounded-3xl">
-                  <QRCodeSVG value={qrValue} size={80} bgColor="transparent" fgColor={primaryColor} />
+                <div className="p-3 bg-white rounded-2xl shadow-sm border border-slate-100">
+                  <QRCodeSVG value={qrValue} size={90} bgColor="transparent" fgColor={primaryColor} />
                 </div>
               )}
           </div>
         </div>
 
         {/* Table */}
-        <div className="mb-20">
+        <div className="mb-24">
           <table className="min-w-full">
             <thead>
               <tr>
-                <th className="py-4 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-widest border-b border-slate-100 w-12">No.</th>
-                <th className="py-4 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-widest border-b border-slate-100">Item Description</th>
-                <th className="py-4 text-center text-[10px] font-semibold text-slate-400 uppercase tracking-widest border-b border-slate-100 w-24">Qty</th>
-                <th className="py-4 text-right text-[10px] font-semibold text-slate-400 uppercase tracking-widest border-b border-slate-100 w-32">Rate</th>
-                <th className="py-4 text-right text-[10px] font-semibold text-slate-400 uppercase tracking-widest border-b border-slate-100 w-32">Amount</th>
+                <th className="py-5 text-left text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 w-12">0.</th>
+                <th className="py-5 text-left text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100">Description</th>
+                <th className="py-5 text-center text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 w-24">Qty</th>
+                <th className="py-5 text-right text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 w-32">Rate</th>
+                <th className="py-5 text-right text-[10px] font-medium text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 w-32">Amount</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+            <tbody className="divide-y divide-slate-50/50">
               {lineItems.map((line, idx) => {
                 const productNameEn = line?.raw?.productName || line?.productName || '—'
                 const productNameAr = line?.raw?.productNameAr || line?.productNameAr || ''
                 return (
-                  <tr key={idx} className="group">
-                    <td className="py-6 whitespace-nowrap text-xs font-light text-slate-400">{String(idx + 1).padStart(2, '0')}</td>
-                    <td className="py-6 pr-8">
-                      <p className="text-base font-light text-slate-800 group-hover:text-slate-900 transition-colors">{productNameEn}</p>
-                      {bilingual && productNameAr && <p className="text-sm font-light text-slate-500 mt-1" dir="rtl">{productNameAr}</p>}
+                  <tr key={idx} className="group hover:bg-slate-50/30 transition-colors">
+                    <td className="py-8 whitespace-nowrap text-xs font-light text-slate-300">{String(idx + 1).padStart(2, '0')}</td>
+                    <td className="py-8 pr-8">
+                      <p className="text-lg font-light text-slate-800">{productNameEn}</p>
+                      {bilingual && productNameAr && <p className="text-sm font-light text-slate-400 mt-2" dir="rtl">{productNameAr}</p>}
                     </td>
-                    <td className="py-6 whitespace-nowrap text-sm font-light text-center text-slate-600">{toNumber(line?.quantity) || '—'}</td>
-                    <td className="py-6 whitespace-nowrap text-right text-slate-600">{renderMoney(line?.unitPrice)}</td>
-                    <td className="py-6 whitespace-nowrap text-right text-slate-800">{renderMoney(line?.lineTotalWithTax)}</td>
+                    <td className="py-8 whitespace-nowrap text-base font-light text-center text-slate-500">{toNumber(line?.quantity) || '—'}</td>
+                    <td className="py-8 whitespace-nowrap text-right text-slate-500">{renderMoney(line?.unitPrice)}</td>
+                    <td className="py-8 whitespace-nowrap text-right text-slate-800">{renderMoney(line?.lineTotalWithTax)}</td>
                   </tr>
                 )
               })}
@@ -157,27 +163,31 @@ export default function AirTemplate({ invoice, tenant, language = 'en', bilingua
         </div>
 
         {/* Totals */}
-        <div className="flex justify-end mb-20">
-          <div className="w-1/2">
-            <div className="flex justify-between py-4 border-b border-slate-100">
-              <span className="text-sm font-light text-slate-500">Subtotal</span>
-              <span className="text-slate-600">{renderMoney(totals.subtotal)}</span>
+        <div className="flex justify-end mb-24">
+          <div className="w-[60%] pl-12">
+            <div className="flex justify-between py-5 border-b border-slate-50">
+              <span className="text-sm font-light text-slate-400 uppercase tracking-widest">Subtotal</span>
+              <span className="text-slate-600 text-lg font-light">{renderMoney(totals.subtotal)}</span>
             </div>
-            <div className="flex justify-between py-4 border-b border-slate-100">
-              <span className="text-sm font-light text-slate-500">Tax (15%)</span>
-              <span className="text-slate-600">{renderMoney(totals.totalTax)}</span>
+            <div className="flex justify-between py-5 border-b border-slate-50">
+              <span className="text-sm font-light text-slate-400 uppercase tracking-widest">Tax (15%)</span>
+              <span className="text-slate-600 text-lg font-light">{renderMoney(totals.totalTax)}</span>
             </div>
-            <div className="flex justify-between py-8">
-              <span className="text-lg font-light text-slate-800">Total Due</span>
-              <span className="text-3xl font-light" style={{ color: primaryColor }}>{renderMoney(totals.grandTotal)}</span>
+            <div className="flex justify-between items-end py-10 mt-4">
+              <span className="text-sm font-medium text-slate-800 uppercase tracking-[0.2em]">Total Due</span>
+              <span className="text-5xl font-extralight tracking-tight" style={{ color: primaryColor }}>{renderMoney(totals.grandTotal)}</span>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] text-slate-400 uppercase tracking-widest mb-2">Amount in Words</p>
+              <p className="text-sm font-light text-slate-500 capitalize">{getAmountInWords(totals.grandTotal, currency)}</p>
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="pt-8 flex justify-center">
-          <p className="text-xs font-light text-slate-400 tracking-wider">
-            {invoiceBranding.footerText || 'Thank you for your business.'}
+        <div className="pt-10 flex justify-center border-t border-slate-100">
+          <p className="text-xs font-light text-slate-400 tracking-[0.2em] uppercase">
+            {invoiceBranding.footerText || 'Thank you for your business'}
           </p>
         </div>
       </div>

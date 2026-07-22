@@ -782,7 +782,7 @@ export default function Settings() {
                   <div className="border border-gray-200 dark:border-dark-600 rounded-2xl p-6 bg-gray-50/50 dark:bg-dark-800/50">
                     <label className="label mb-4">{language === 'ar' ? 'معاينة مباشرة للقالب الافتراضي' : 'Live Preview of Default Template'}</label>
                     <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-dark-600 bg-gray-100 dark:bg-dark-900 p-8 flex justify-center">
-                      <div className="origin-top scale-[0.4] sm:scale-[0.5] md:scale-[0.6] lg:scale-[0.7] transition-all" style={{ width: '1000px', height: '1414px', marginBottom: '-50%' }}>
+                      <div className="origin-top scale-[0.4] sm:scale-[0.5] md:scale-[0.6] lg:scale-[0.7] transition-all" style={{ width: '1000px', marginBottom: '-25%' }}>
                         <div className="pointer-events-none shadow-2xl">
                           <InvoiceLivePreview
                             invoice={{
