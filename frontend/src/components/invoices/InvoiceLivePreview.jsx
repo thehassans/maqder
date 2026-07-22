@@ -532,7 +532,7 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
     return <ModernSplitTemplate invoice={invoice} tenant={tenant} language={language} bilingual={bilingual} documentType={documentType} />
   }
 
-  if (!isTravelInvoice) {
+  if (Number(templateId) === 1 && !isTravelInvoice) {
     return <ModernZatcaTemplate invoice={invoice} tenant={tenant} language={language} bilingual={bilingual} documentType={documentType} />
   }
 
