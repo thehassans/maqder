@@ -1,4 +1,4 @@
-﻿export const DEFAULT_VISION_2030_LOGO = '/saudi-vision-2030-logo.webp'
+export const DEFAULT_VISION_2030_LOGO = '/saudi-vision-2030-logo.webp'
 export const INVOICE_BRANDING_CONTEXTS = ['trading', 'construction', 'travel_agency']
 export const INVOICE_FONT_OPTIONS = [
   { value: 'helvetica', labelEn: 'Helvetica', labelAr: 'Ù‡ÙŠÙ„ÙÙŠØªÙŠÙƒØ§' },
@@ -86,9 +86,9 @@ export const getInvoiceTypography = (tenant) => {
 }
 
 export const getInvoiceCssFontFamily = (fontFamily = 'helvetica') => {
-  if (fontFamily === 'times') return '"Times New Roman", Times, serif'
-  if (fontFamily === 'courier') return '"Courier New", Courier, monospace'
-  return 'Arial, Helvetica, sans-serif'
+  if (fontFamily === 'times') return '"Times New Roman", Times, "Almarai", serif'
+  if (fontFamily === 'courier') return '"Courier New", Courier, "Almarai", monospace'
+  return 'Arial, Helvetica, "Almarai", sans-serif'
 }
 
 export const getInvoiceBrandingProfile = (tenant, businessContext = 'trading') => {

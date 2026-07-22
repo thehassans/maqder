@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector, useDispatch } from 'react-redux'
 import { useForm } from 'react-hook-form'
@@ -454,6 +454,7 @@ export default function Settings() {
 
   const tabs = [
     { id: 'company', label: t('companySettings'), icon: Building2 },
+    { id: 'templates', label: language === 'ar' ? 'قوالب الفواتير' : 'Invoice Templates', icon: FileText },
     { id: 'govIntegrations', label: language === 'ar' ? 'التكاملات الحكومية' : 'Government Integrations', icon: Shield },
     { id: 'preferences', label: language === 'ar' ? 'التفضيلات' : 'Preferences', icon: Palette },
     { id: 'setupMachine', label: language === 'ar' ? 'إعداد الدفع الإلكتروني' : 'Payment Terminal', icon: CreditCard },
@@ -748,6 +749,109 @@ export default function Settings() {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          )}
+
+          {activeTab === 'templates' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card p-6">
+              <h3 className="text-lg font-semibold mb-6 flex items-center gap-2"><FileText className="w-5 h-5 text-primary-500" />{language === 'ar' ? 'قوالب الفواتير' : 'Invoice Templates'}</h3>
+              
+              <div className="space-y-8">
+                {/* Default Invoice Template */}
+                <div>
+                  <label className="label flex items-center gap-2 mb-4">{language === 'ar' ? 'القالب الافتراضي للفواتير' : 'Default Invoice Template'}</label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {invoiceTemplateOptions.map((tpl) => (
+                      <div 
+                        key={tpl.id}
+                        onClick={() => setInvoicePdfTemplate(tpl.id)}
+                        className={`cursor-pointer rounded-2xl border-2 transition-all p-4 ${invoicePdfTemplate === tpl.id ? 'border-primary-500 bg-primary-50/50 dark:bg-primary-900/10' : 'border-gray-200 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'}`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-bold text-sm text-gray-900 dark:text-white">{language === 'ar' ? tpl.nameAr : tpl.nameEn}</span>
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${invoicePdfTemplate === tpl.id ? 'border-primary-500' : 'border-gray-300'}`}>
+                            {invoicePdfTemplate === tpl.id && <div className="w-2.5 h-2.5 bg-primary-500 rounded-full" />}
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">{language === 'ar' ? tpl.descriptionAr : tpl.descriptionEn}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Context-specific Templates */}
+                <div className="pt-8 border-t border-gray-100 dark:border-dark-700">
+                  <label className="label flex items-center gap-2 mb-4">{language === 'ar' ? 'قوالب مخصصة للأقسام' : 'Context-Specific Templates'}</label>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{language === 'ar' ? 'يمكنك تحديد قالب مختلف لكل قسم عمل' : 'You can define a different template for each business division.'}</p>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {invoiceBrandingContexts.map((context) => {
+                      const profile = invoiceBrandingProfiles?.[context.key] || {}
+                      return (
+                        <div key={context.key} className="p-5 rounded-2xl bg-gray-50 dark:bg-dark-700/50 border border-gray-100 dark:border-dark-600">
+                          <div className="font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-dark-600">{language === 'ar' ? context.labelAr : context.labelEn}</div>
+                          
+                          <div className="space-y-4">
+                            <div>
+                              <label className="text-xs text-gray-500 block mb-1.5">{language === 'ar' ? 'القالب' : 'Template'}</label>
+                              <select 
+                                value={profile.templateId || invoicePdfTemplate}
+                                onChange={(e) => setInvoiceBrandingProfiles((curr) => updateInvoiceBrandingProfileState(curr, context.key, { templateId: Number(e.target.value) }))}
+                                className="select w-full text-sm"
+                              >
+                                {invoiceTemplateOptions.map((tpl) => (
+                                  <option key={tpl.id} value={tpl.id}>{language === 'ar' ? tpl.nameAr : tpl.nameEn}</option>
+                                ))}
+                              </select>
+                            </div>
+                            
+                            <div>
+                              <label className="text-xs text-gray-500 block mb-1.5">{language === 'ar' ? 'شعار القسم' : 'Division Logo'}</label>
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-lg bg-white dark:bg-dark-800 border border-gray-200 flex items-center justify-center overflow-hidden">
+                                  {profile.logo ? <img src={profile.logo} alt="" className="w-full h-full object-contain" /> : <Image className="w-4 h-4 text-gray-400" />}
+                                </div>
+                                <input type="file" accept="image/*" onChange={handleInvoiceContextLogoFile(context.key)} className="text-xs file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 w-full" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-4 border-t border-gray-100 dark:border-dark-700">
+                  <button
+                    type="button"
+                    disabled={updateMutation.isPending}
+                    onClick={() => updateMutation.mutate({
+                      settings: {
+                        ...(tenant?.settings || {}),
+                        invoicePdfTemplate,
+                        invoiceBranding: {
+                          ...(tenant?.settings?.invoiceBranding || {}),
+                          contextProfiles: invoiceBrandingContexts.reduce((acc, item) => {
+                            const profile = invoiceBrandingProfiles?.[item.key] || {}
+                            acc[item.key] = {
+                              templateId: Number(profile.templateId || getInvoiceTemplateId(tenant, item.key)),
+                              logo: profile.logo || '',
+                              headerTextEn: profile.headerTextEn || '',
+                              headerTextAr: profile.headerTextAr || '',
+                              footerTextEn: profile.footerTextEn || '',
+                              footerTextAr: profile.footerTextAr || '',
+                            }
+                            return acc
+                          }, {})
+                        }
+                      }
+                    })}
+                    className="btn btn-primary"
+                  >
+                    {updateMutation.isPending ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><Save className="w-4 h-4" />{t('save')}</>}
+                  </button>
+                </div>
+              </div>
             </motion.div>
           )}
 

@@ -8,6 +8,8 @@ import { formatCurrency, formatCurrencyAmount, isSarCurrency } from '../../lib/c
 import { getTravelInvoiceLabelMeta, isTravelAgencyInvoice } from '../../lib/travelInvoiceStatus'
 import SarIcon from '../ui/SarIcon'
 import ModernZatcaTemplate from './ModernZatcaTemplate'
+import ClassicElegantTemplate from './ClassicElegantTemplate'
+import ModernSplitTemplate from './ModernSplitTemplate'
 
 const joinClasses = (...classes) => classes.filter(Boolean).join(' ')
 
@@ -219,6 +221,20 @@ const getTemplateClasses = (templateId) => {
         badge: 'bg-slate-100 text-slate-800 border-slate-300',
         block: 'border-2 border-slate-300 bg-white',
         tableHead: 'bg-slate-900 text-white',
+      }
+    case 7:
+      return {
+        shell: 'bg-white border-double border-[6px] border-amber-900 shadow-2xl rounded-sm',
+        badge: 'bg-amber-50 text-amber-900 border-amber-200',
+        block: 'border border-amber-900/20 bg-amber-50/30',
+        tableHead: 'bg-amber-900 text-amber-50',
+      }
+    case 8:
+      return {
+        shell: 'bg-white shadow-[0_30px_80px_-20px_rgba(0,0,0,0.15)] rounded-none border-t-[16px] border-slate-900',
+        badge: 'bg-slate-100 text-slate-800 border-transparent',
+        block: 'bg-slate-50 border-transparent',
+        tableHead: 'bg-slate-100 text-slate-900 border-b-2 border-slate-900',
       }
     default:
       return {
@@ -506,6 +522,14 @@ export default function InvoiceLivePreview({ invoice, tenant, language = 'en', t
       className: options.className || '',
       position: effectiveCurrencyPosition,
     })
+  }
+
+  if (Number(templateId) === 7) {
+    return <ClassicElegantTemplate invoice={invoice} tenant={tenant} language={language} bilingual={bilingual} documentType={documentType} />
+  }
+
+  if (Number(templateId) === 8) {
+    return <ModernSplitTemplate invoice={invoice} tenant={tenant} language={language} bilingual={bilingual} documentType={documentType} />
   }
 
   if (!isTravelInvoice) {

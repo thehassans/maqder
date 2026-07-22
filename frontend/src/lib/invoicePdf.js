@@ -386,7 +386,7 @@ export const printInvoiceSnapshot = async ({ invoice, language = 'en', tenant, s
   <style>
     @page { size: A4 portrait; margin: 8mm; }
     html, body { margin: 0; padding: 0; background: #ffffff; }
-    body { font-family: Arial, sans-serif; }
+    body { font-family: 'InvoiceAlmarai', Arial, sans-serif; }
     .page {
       min-height: 100vh;
       display: flex;
@@ -439,8 +439,8 @@ const waitForElementImages = async (element) => {
 
   if (document?.fonts?.load) {
     await Promise.allSettled([
-      document.fonts.load('400 16px "InvoiceTajawal"'),
-      document.fonts.load('700 16px "InvoiceTajawal"'),
+      document.fonts.load('400 16px "InvoiceAlmarai"'),
+      document.fonts.load('700 16px "InvoiceAlmarai"'),
     ])
   }
 }
@@ -480,15 +480,15 @@ const buildSnapshotElement = async ({ invoice, tenant, language, documentType = 
   host.innerHTML = `
     <style>
       @font-face {
-        font-family: "InvoiceTajawal";
-        src: url("/fonts/Tajawal-Regular.ttf") format("truetype");
+        font-family: "InvoiceAlmarai";
+        src: url("/fonts/Almarai/Almarai-Regular.ttf") format("truetype");
         font-weight: 400;
         font-style: normal;
       }
 
       @font-face {
-        font-family: "InvoiceTajawal";
-        src: url("/fonts/Tajawal-Bold.ttf") format("truetype");
+        font-family: "InvoiceAlmarai";
+        src: url("/fonts/Almarai/Almarai-Bold.ttf") format("truetype");
         font-weight: 700;
         font-style: normal;
       }
@@ -502,20 +502,16 @@ const buildSnapshotElement = async ({ invoice, tenant, language, documentType = 
   return host
 }
 
-let tajawalRegularBase64
-let tajawalBoldBase64
-let tajawalLoadPromise
+let almaraiRegularBase64
+let almaraiBoldBase64
+let almaraiLoadPromise
 const customArabicFontEnabled = true
-const tajawalFontCandidates = {
+const almaraiFontCandidates = {
   regular: [
-    '/fonts/Tajawal-Regular.ttf',
-    'https://raw.githubusercontent.com/google/fonts/main/ofl/tajawal/Tajawal-Regular.ttf',
-    'https://raw.githubusercontent.com/googlefonts/tajawal/main/fonts/ttf/Tajawal-Regular.ttf',
+    '/fonts/Almarai/Almarai-Regular.ttf',
   ],
   bold: [
-    '/fonts/Tajawal-Bold.ttf',
-    'https://raw.githubusercontent.com/google/fonts/main/ofl/tajawal/Tajawal-Bold.ttf',
-    'https://raw.githubusercontent.com/googlefonts/tajawal/main/fonts/ttf/Tajawal-Bold.ttf',
+    '/fonts/Almarai/Almarai-Bold.ttf',
   ],
 }
 
@@ -566,37 +562,37 @@ const tryFetchFirstFontBase64 = async (urls = []) => {
   return null
 }
 
-const ensureTajawalFont = async (doc) => {
+const ensureAlmaraiFont = async (doc) => {
   if (!customArabicFontEnabled) return false
   if (!doc || typeof doc.addFileToVFS !== 'function' || typeof doc.addFont !== 'function') return false
 
-  if (!tajawalLoadPromise) {
-    tajawalLoadPromise = (async () => {
-      tajawalRegularBase64 = await tryFetchFirstFontBase64(tajawalFontCandidates.regular)
-      tajawalBoldBase64 = await tryFetchFirstFontBase64(tajawalFontCandidates.bold)
+  if (!almaraiLoadPromise) {
+    almaraiLoadPromise = (async () => {
+      almaraiRegularBase64 = await tryFetchFirstFontBase64(almaraiFontCandidates.regular)
+      almaraiBoldBase64 = await tryFetchFirstFontBase64(almaraiFontCandidates.bold)
     })()
   }
 
   try {
-    await tajawalLoadPromise
+    await almaraiLoadPromise
   } catch {
-    tajawalLoadPromise = null
+    almaraiLoadPromise = null
     return false
   }
 
-  if (!tajawalRegularBase64) {
-    tajawalLoadPromise = null
+  if (!almaraiRegularBase64) {
+    almaraiLoadPromise = null
     return false
   }
 
   try {
-    doc.addFileToVFS('Tajawal-Regular.ttf', tajawalRegularBase64)
-    doc.addFont('Tajawal-Regular.ttf', 'Tajawal', 'normal')
-    if (tajawalBoldBase64) {
-      doc.addFileToVFS('Tajawal-Bold.ttf', tajawalBoldBase64)
-      doc.addFont('Tajawal-Bold.ttf', 'Tajawal', 'bold')
+    doc.addFileToVFS('Almarai-Regular.ttf', almaraiRegularBase64)
+    doc.addFont('Almarai-Regular.ttf', 'Almarai', 'normal')
+    if (almaraiBoldBase64) {
+      doc.addFileToVFS('Almarai-Bold.ttf', almaraiBoldBase64)
+      doc.addFont('Almarai-Bold.ttf', 'Almarai', 'bold')
     }
-    doc.setFont('Tajawal', 'normal')
+    doc.setFont('Almarai', 'normal')
     doc.getTextWidth('اختبار')
     return true
   } catch {
@@ -824,7 +820,7 @@ const generateInvoicePdf = async ({ invoice, language = 'en', tenant, sourceElem
   const oppositeAlign = isRtl ? 'left' : 'right'
   const invoiceBranding = getInvoiceBranding(tenant, language, invoice?.businessContext)
 
-  const arabicFontReady = await ensureTajawalFont(doc)
+  const arabicFontReady = await ensureAlmaraiFont(doc)
 
   if (isRtl && typeof doc.setR2L === 'function') {
     try {
@@ -1007,8 +1003,8 @@ const generateInvoicePdf = async ({ invoice, language = 'en', tenant, sourceElem
     : toBilingualBlock('Customer', 'العميل')
   const amountInWords = getAmountInWords(totals.grandTotal, currency, language)
   const typography = invoiceBranding.typography || {}
-  const bodyFontName = arabicFontReady ? 'Tajawal' : (typography.bodyFontFamily || 'helvetica')
-  const headingFontName = arabicFontReady ? 'Tajawal' : (typography.headingFontFamily || 'helvetica')
+  const bodyFontName = arabicFontReady ? 'Almarai' : (typography.bodyFontFamily || 'helvetica')
+  const headingFontName = arabicFontReady ? 'Almarai' : (typography.headingFontFamily || 'helvetica')
   const bodyFontSize = Number(typography.bodyFontSize || 12)
   const headingFontSize = Number(typography.headingFontSize || 18)
 
@@ -1016,7 +1012,7 @@ const generateInvoicePdf = async ({ invoice, language = 'en', tenant, sourceElem
     try {
       doc.setFont(bodyFontName, style)
     } catch {
-      doc.setFont(arabicFontReady ? 'Tajawal' : 'helvetica', style)
+      doc.setFont(arabicFontReady ? 'Almarai' : 'helvetica', style)
     }
     doc.setFontSize(size)
   }
@@ -1025,7 +1021,7 @@ const generateInvoicePdf = async ({ invoice, language = 'en', tenant, sourceElem
     try {
       doc.setFont(headingFontName, style)
     } catch {
-      doc.setFont(arabicFontReady ? 'Tajawal' : 'helvetica', style)
+      doc.setFont(arabicFontReady ? 'Almarai' : 'helvetica', style)
     }
     doc.setFontSize(size)
   }

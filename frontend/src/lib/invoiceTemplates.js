@@ -41,6 +41,20 @@ export const invoiceTemplateOptions = [
     descriptionEn: 'Premium minimalist layout for formal invoices',
     descriptionAr: 'تصميم بسيط فاخر للفواتير الرسمية',
   },
+  {
+    id: 7,
+    nameEn: 'Classic Elegant',
+    nameAr: 'كلاسيكي أنيق',
+    descriptionEn: 'Premium bordered design with clear hierarchy',
+    descriptionAr: 'تصميم فاخر بإطار وهيكل واضح',
+  },
+  {
+    id: 8,
+    nameEn: 'Modern Split',
+    nameAr: 'حديث منقسم',
+    descriptionEn: 'Two-column modern structure with distinctive colors',
+    descriptionAr: 'هيكل حديث بعمودين مع ألوان مميزة',
+  },
 ]
 
 export const getInvoiceTemplateLabel = (templateId, language = 'en') => {
