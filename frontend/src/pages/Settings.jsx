@@ -18,6 +18,7 @@ import PosTerminalSettings from '../components/settings/PosTerminalSettings'
 import HardwareSettings from '../components/settings/HardwareSettings'
 import CarRentalApiSettings from '../components/settings/CarRentalApiSettings'
 import GovernmentIntegrations from './tenant-settings/GovernmentIntegrations'
+import InvoiceLivePreview from '../components/invoices/InvoiceLivePreview'
 
 const invoiceBrandingContexts = [
   { key: 'trading', labelEn: 'Trading Invoice', labelAr: 'فاتورة تجارة' },
@@ -760,7 +761,7 @@ export default function Settings() {
                 {/* Default Invoice Template */}
                 <div>
                   <label className="label flex items-center gap-2 mb-4">{language === 'ar' ? 'القالب الافتراضي للفواتير' : 'Default Invoice Template'}</label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                     {invoiceTemplateOptions.map((tpl) => (
                       <div 
                         key={tpl.id}
@@ -777,6 +778,45 @@ export default function Settings() {
                       </div>
                     ))}
                   </div>
+
+                  <div className="border border-gray-200 dark:border-dark-600 rounded-2xl p-6 bg-gray-50/50 dark:bg-dark-800/50">
+                    <label className="label mb-4">{language === 'ar' ? 'معاينة مباشرة للقالب الافتراضي' : 'Live Preview of Default Template'}</label>
+                    <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-dark-600 bg-gray-100 dark:bg-dark-900 p-8 flex justify-center">
+                      <div className="origin-top scale-[0.4] sm:scale-[0.5] md:scale-[0.6] lg:scale-[0.7] transition-all" style={{ width: '1000px', height: '1414px', marginBottom: '-50%' }}>
+                        <div className="pointer-events-none shadow-2xl">
+                          <InvoiceLivePreview
+                            invoice={{
+                              invoiceNumber: 'INV-2026-001',
+                              issueDate: new Date(),
+                              grandTotal: 1150,
+                              totalTax: 150,
+                              subtotal: 1000,
+                              totalDiscount: 0,
+                              currency: tenant?.settings?.currency || 'SAR',
+                              buyer: { name: 'Acme Corp', nameAr: 'شركة أكامي', vatNumber: '310000000000003' },
+                              seller: { name: tenant?.business?.legalNameEn || 'My Company', nameAr: tenant?.business?.legalNameAr || 'شركتي', vatNumber: tenant?.business?.vatNumber || '300000000000003' },
+                              lines: [
+                                { raw: { productName: 'Professional Services', productNameAr: 'خدمات احترافية' }, quantity: 1, unitPrice: 1000, lineTotalWithTax: 1150, taxAmount: 150 }
+                              ]
+                            }}
+                            tenant={{
+                              ...tenant,
+                              branding: { ...tenant?.branding, logo: logoDataUrl || tenant?.branding?.logo },
+                              settings: {
+                                ...tenant?.settings,
+                                invoicePdfTemplate,
+                                invoiceBranding: {
+                                  logo: invoiceLogoDataUrl || tenant?.settings?.invoiceBranding?.logo || logoDataUrl || tenant?.branding?.logo,
+                                }
+                              }
+                            }}
+                            language={language}
+                            bilingual={true}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Context-specific Templates */}
@@ -785,7 +825,7 @@ export default function Settings() {
                   <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">{language === 'ar' ? 'يمكنك تحديد قالب مختلف لكل قسم عمل' : 'You can define a different template for each business division.'}</p>
                   
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {invoiceBrandingContexts.map((context) => {
+                    {invoiceBrandingContexts.filter(c => tenantBusinessTypes.includes(c.key)).map((context) => {
                       const profile = invoiceBrandingProfiles?.[context.key] || {}
                       return (
                         <div key={context.key} className="p-5 rounded-2xl bg-gray-50 dark:bg-dark-700/50 border border-gray-100 dark:border-dark-600">
