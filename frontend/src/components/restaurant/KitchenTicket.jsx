@@ -48,15 +48,15 @@ const KitchenTicket = forwardRef(({ order, isUpdated = false }, ref) => {
         <div style={{ fontSize: '10px', marginTop: '2px' }}>{businessName}</div>
       </div>
 
-      {/* Order Info */}
+      {/* Order Number Box */}
+      <div style={{ margin: '8px 0', border: '2px solid #000', padding: '6px', textAlign: 'center' }}>
+        <div style={{ fontSize: '12px', marginBottom: '2px', color: '#333' }}>Order / الطلب</div>
+        <div style={{ fontSize: '28px', fontWeight: '900', letterSpacing: '1px' }}>#{orderNumber}</div>
+        <div style={{ fontSize: '14px', fontWeight: 'bold', marginTop: '2px' }}>{typeLabel[orderType]}</div>
+      </div>
+
+      {/* Order Details */}
       <div style={{ marginBottom: '6px', fontSize: '11px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', borderBottom: '1px solid #eee', paddingBottom: '4px' }}>
-          <div>
-            <div style={{ fontSize: '10px', color: '#444' }}>Order / الطلب:</div>
-            <div style={{ fontSize: '24px', fontWeight: '900' }}>#{orderNumber}</div>
-          </div>
-          <div style={{ fontSize: '14px', fontWeight: 'bold' }}>{typeLabel[orderType]}</div>
-        </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2px' }}>
           {orderType === 'dine_in' ? (
             <span><b>Table / الطاولة:</b> {tableNumber}</span>

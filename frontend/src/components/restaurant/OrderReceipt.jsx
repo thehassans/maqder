@@ -70,12 +70,14 @@ const OrderReceipt = forwardRef(({ order, invoice, isUpdated = false }, ref) => 
       {/* Divider */}
       <div style={{ borderTop: '1px dashed #999', margin: '6px 0' }} />
 
+      {/* Order Number Box */}
+      <div style={{ margin: '8px 0', border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
+        <div style={{ fontSize: '10px', marginBottom: '2px' }}>Order / الطلب</div>
+        <div style={{ fontSize: '20px', fontWeight: '900', letterSpacing: '0.5px' }}>#{orderNumber}</div>
+      </div>
+
       {/* Order Info */}
       <div style={{ marginBottom: '8px', fontSize: '9px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span>Order / الطلب:</span>
-          <b>#{orderNumber}</b>
-        </div>
         {invoice?.invoiceNumber && (
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span>Invoice / الفاتورة:</span>
