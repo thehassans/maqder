@@ -164,13 +164,11 @@ router.post('/login', async (req, res) => {
           user = passwordMatches[0];
           passwordAlreadyVerified = true;
         } else if (passwordMatches.length > 1) {
-          // Multiple matches — prefer super_admin or non-tenant user
+          // Multiple matches — prefer super_admin or non-tenant user, otherwise fallback to the first active account
           const preferredMatch = passwordMatches.find((c) => c.role === 'super_admin')
-            || passwordMatches.find((c) => !c.tenantId);
-
-          if (!preferredMatch) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-          }
+            || passwordMatches.find((c) => !c.tenantId)
+            || passwordMatches.find((c) => c.isActive)
+            || passwordMatches[0];
 
           user = preferredMatch;
           passwordAlreadyVerified = true;

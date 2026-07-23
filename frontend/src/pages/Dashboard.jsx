@@ -86,6 +86,8 @@ export default function Dashboard() {
       navigate('/app/saloon/pos', { replace: true })
     } else if (isLaundry) {
       navigate('/app/laundry/pos', { replace: true })
+    } else if (isRestaurant) {
+      navigate('/app/restaurant/pos', { replace: true })
     } else if (isKhayyat) {
       navigate('/app/dashboard/khayyat/analytics', { replace: true })
     } else if (isBookstore) {
@@ -93,7 +95,7 @@ export default function Dashboard() {
     } else if (isEcommerce) {
       navigate('/app/dashboard/ecommerce', { replace: true })
     }
-  }, [isBoutique, isBakala, isSaloon, isLaundry, isKhayyat, isBookstore, isEcommerce, navigate])
+  }, [isBoutique, isBakala, isSaloon, isLaundry, isRestaurant, isKhayyat, isBookstore, isEcommerce, navigate])
 
   const { data: dashboard, isLoading } = useQuery({
     queryKey: ['dashboard'],

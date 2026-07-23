@@ -205,14 +205,8 @@ export default function DemoCheckout() {
     <div className="min-h-screen flex flex-col md:flex-row bg-white dark:bg-dark-800">
       {/* Left Panel — Branding & Features */}
       <div className="hidden md:flex md:w-1/2 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0f3d2e] via-[#1a5d44] to-[#0a2a1f]" />
-        <div
-          className="pointer-events-none absolute inset-0 opacity-20"
-          style={{
-            backgroundImage:
-              'radial-gradient(circle at 30% 20%, rgba(255,255,255,0.15), transparent 50%), radial-gradient(circle at 80% 80%, rgba(255,255,255,0.08), transparent 50%)',
-          }}
-        />
+        {/* Solid Background to match Login */}
+        <div className="absolute inset-0 bg-[#1a3d28]" />
 
         <div className="relative z-10 flex flex-col justify-between p-12 text-white w-full">
           <div className="flex items-center gap-3 -ml-4 -mt-4 mb-4">
@@ -337,7 +331,7 @@ export default function DemoCheckout() {
                     onClick={() => setSelectedPlan(plan.id)}
                     className={`group relative flex flex-col rounded-2xl border-2 p-4 text-left transition-all duration-200 ${
                       isSelected
-                        ? 'border-[#0f3d2e] bg-gradient-to-br from-[#0f3d2e]/[0.06] to-[#1a5d44]/[0.04] dark:from-[#0f3d2e]/20 dark:to-[#1a5d44]/10 shadow-lg shadow-[#0f3d2e]/10'
+                        ? 'border-[#244D33] bg-gradient-to-br from-[#244D33]/[0.06] to-[#1e3f2a]/[0.04] dark:from-[#244D33]/20 dark:to-[#1e3f2a]/10 shadow-lg shadow-[#244D33]/10'
                         : 'border-gray-100 dark:border-dark-600 bg-white dark:bg-dark-700 hover:border-gray-300 dark:hover:border-dark-500 hover:shadow-md'
                     }`}
                   >
@@ -357,7 +351,7 @@ export default function DemoCheckout() {
                       </div>
                     </div>
                     <div className="mb-1.5 flex items-center gap-2">
-                      <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 transition ${isSelected ? 'border-[#0f3d2e] bg-[#0f3d2e]' : 'border-gray-300 dark:border-dark-500'}`}>
+                      <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 transition ${isSelected ? 'border-[#244D33] bg-[#244D33]' : 'border-gray-300 dark:border-dark-500'}`}>
                         {isSelected && <Check className="h-3 w-3 text-white" />}
                       </div>
                       <p className="text-sm font-bold text-gray-900 dark:text-white">{isArabic ? plan.nameAr : plan.nameEn}</p>
@@ -406,7 +400,7 @@ export default function DemoCheckout() {
                   onClick={() => setSelectedBilling('monthly')}
                   className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition ${
                     selectedBilling === 'monthly'
-                      ? 'bg-white dark:bg-dark-800 text-[#0f3d2e] dark:text-white shadow-sm'
+                      ? 'bg-white dark:bg-dark-800 text-[#244D33] dark:text-white shadow-sm'
                       : 'text-gray-500 dark:text-gray-400'
                   }`}
                 >
@@ -416,7 +410,7 @@ export default function DemoCheckout() {
                   onClick={() => setSelectedBilling('yearly')}
                   className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition ${
                     selectedBilling === 'yearly'
-                      ? 'bg-white dark:bg-dark-800 text-[#0f3d2e] dark:text-white shadow-sm'
+                      ? 'bg-white dark:bg-dark-800 text-[#244D33] dark:text-white shadow-sm'
                       : 'text-gray-500 dark:text-gray-400'
                   }`}
                 >
@@ -452,7 +446,7 @@ export default function DemoCheckout() {
                     onClick={() => setZatcaPhase2Enabled((v) => !v)}
                     className={`relative h-8 w-14 rounded-full transition-all duration-300 shadow-inner ${
                       zatcaPhase2Enabled
-                        ? 'bg-gradient-to-r from-[#0f3d2e] to-[#1a5d44] shadow-emerald-900/30'
+                        ? 'bg-gradient-to-r from-[#244D33] to-[#1e3f2a] shadow-emerald-900/30'
                         : 'bg-gray-300 dark:bg-dark-600'
                     }`}
                     aria-label={isArabic ? 'تفعيل المرحلة الثانية' : 'Toggle ZATCA Phase 2'}
@@ -462,7 +456,7 @@ export default function DemoCheckout() {
                         zatcaPhase2Enabled ? 'translate-x-7' : 'translate-x-1'
                       }`}
                     >
-                      <Shield className={`h-3.5 w-3.5 transition-colors ${zatcaPhase2Enabled ? 'text-[#0f3d2e]' : 'text-gray-400'}`} />
+                      <Shield className={`h-3.5 w-3.5 transition-colors ${zatcaPhase2Enabled ? 'text-[#244D33]' : 'text-gray-400'}`} />
                     </span>
                   </button>
                 </div>
@@ -510,11 +504,11 @@ export default function DemoCheckout() {
                     onClick={() => setPaymentMethod('creditcard')}
                     className={`flex min-w-[90px] flex-1 flex-col items-center justify-center gap-2 rounded-2xl border-2 p-3 transition-all sm:flex-none ${
                       paymentMethod === 'creditcard'
-                        ? 'border-[#0f3d2e] bg-[#0f3d2e]/[0.03] dark:bg-[#0f3d2e]/10 shadow-md'
+                        ? 'border-[#244D33] bg-[#244D33]/[0.03] dark:bg-[#244D33]/10 shadow-md'
                         : 'border-gray-100 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
                     }`}
                   >
-                    <div className={`relative flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0f3d2e] via-[#1a5d44] to-[#0f3d2e] text-white shadow-lg ring-2 ring-white/60 dark:ring-white/10 overflow-hidden ${paymentMethod === 'creditcard' ? 'shadow-emerald-500/30' : ''}`}>
+                    <div className={`relative flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#244D33] via-[#1e3f2a] to-[#244D33] text-white shadow-lg ring-2 ring-white/60 dark:ring-white/10 overflow-hidden ${paymentMethod === 'creditcard' ? 'shadow-emerald-500/30' : ''}`}>
                       <div className="absolute inset-0 bg-gradient-to-tr from-white/25 to-transparent" />
                       <CreditCard className="relative h-6 w-6 drop-shadow-md" />
                     </div>
@@ -529,7 +523,7 @@ export default function DemoCheckout() {
                     onClick={() => setPaymentMethod('applepay')}
                     className={`flex min-w-[90px] flex-1 flex-col items-center justify-center gap-2 rounded-2xl border-2 p-3 transition-all sm:flex-none ${
                       paymentMethod === 'applepay'
-                        ? 'border-[#0f3d2e] bg-[#0f3d2e]/[0.03] dark:bg-[#0f3d2e]/10 shadow-md'
+                        ? 'border-[#244D33] bg-[#244D33]/[0.03] dark:bg-[#244D33]/10 shadow-md'
                         : 'border-gray-100 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
                     }`}
                   >
@@ -543,7 +537,7 @@ export default function DemoCheckout() {
                     onClick={() => setPaymentMethod('tabby')}
                     className={`flex min-w-[90px] flex-1 flex-col items-center justify-center gap-2 rounded-2xl border-2 p-3 transition-all sm:flex-none ${
                       paymentMethod === 'tabby'
-                        ? 'border-[#0f3d2e] bg-[#0f3d2e]/[0.03] dark:bg-[#0f3d2e]/10 shadow-md'
+                        ? 'border-[#244D33] bg-[#244D33]/[0.03] dark:bg-[#244D33]/10 shadow-md'
                         : 'border-gray-100 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
                     }`}
                   >
@@ -557,7 +551,7 @@ export default function DemoCheckout() {
                     onClick={() => setPaymentMethod('tamara')}
                     className={`flex min-w-[90px] flex-1 flex-col items-center justify-center gap-2 rounded-2xl border-2 p-3 transition-all sm:flex-none ${
                       paymentMethod === 'tamara'
-                        ? 'border-[#0f3d2e] bg-[#0f3d2e]/[0.03] dark:bg-[#0f3d2e]/10 shadow-md'
+                        ? 'border-[#244D33] bg-[#244D33]/[0.03] dark:bg-[#244D33]/10 shadow-md'
                         : 'border-gray-100 dark:border-dark-600 hover:border-gray-300 dark:hover:border-dark-500'
                     }`}
                   >
@@ -610,7 +604,7 @@ export default function DemoCheckout() {
             <button
               onClick={handleUpgrade}
               disabled={paymentLoading || settingsLoading}
-              className="flex w-full items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-[#0f3d2e] to-[#1a5d44] px-6 py-4 text-base font-bold text-white shadow-xl shadow-[#0f3d2e]/25 transition hover:shadow-2xl hover:shadow-[#0f3d2e]/35 hover:-translate-y-0.5 disabled:opacity-60 disabled:hover:translate-y-0"
+              className="flex w-full items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-[#244D33] to-[#1e3f2a] px-6 py-4 text-base font-bold text-white shadow-xl shadow-[#244D33]/25 transition hover:shadow-2xl hover:shadow-[#244D33]/35 hover:-translate-y-0.5 disabled:opacity-60 disabled:hover:translate-y-0"
             >
               {paymentLoading ? (
                 <>

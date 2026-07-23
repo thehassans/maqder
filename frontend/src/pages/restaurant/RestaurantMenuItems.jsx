@@ -181,13 +181,19 @@ export default function RestaurantMenuItems() {
                       <Money value={it.sellingPrice || 0} />
                     </td>
                     <td>
-                      <button
-                        onClick={() => toggleMutation.mutate({ id: it._id, isActive: !it.isActive })}
+                      <select
+                        value={it.isActive ? 'active' : 'inactive'}
+                        onChange={(e) => toggleMutation.mutate({ id: it._id, isActive: e.target.value === 'active' })}
                         disabled={toggleMutation.isPending}
-                        className={`badge cursor-pointer transition-colors hover:opacity-80 disabled:opacity-50 ${it.isActive ? 'badge-success' : 'badge-neutral'}`}
+                        className={`text-xs font-semibold rounded-lg border border-transparent py-1.5 px-3 outline-none focus:ring-2 focus:ring-primary-500/20 cursor-pointer appearance-none ${
+                          it.isActive 
+                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' 
+                            : 'bg-gray-100 text-gray-700 dark:bg-dark-700 dark:text-gray-400'
+                        }`}
                       >
-                        {it.isActive ? (language === 'ar' ? 'نشط' : 'Active') : language === 'ar' ? 'غير نشط' : 'Inactive'}
-                      </button>
+                        <option value="active" className="bg-white dark:bg-dark-800 text-gray-900 dark:text-white">{language === 'ar' ? 'نشط' : 'Active'}</option>
+                        <option value="inactive" className="bg-white dark:bg-dark-800 text-gray-900 dark:text-white">{language === 'ar' ? 'غير نشط' : 'Inactive'}</option>
+                      </select>
                     </td>
                     <td>
                       <div className="flex items-center gap-2">
