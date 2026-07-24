@@ -200,16 +200,33 @@ export default function RestaurantBranches() {
       {isLoading ? (
         <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 text-primary-500 animate-spin" /></div>
       ) : branches.length === 0 ? (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-gray-50 to-gray-100 dark:from-dark-800 dark:to-dark-900 border border-gray-200 dark:border-dark-700 p-16 text-center">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary-500/5 rounded-full blur-3xl" />
-          <div className="relative">
-            <div className="w-20 h-20 mx-auto mb-6 bg-white dark:bg-dark-800 rounded-2xl shadow-lg flex items-center justify-center border border-gray-100 dark:border-dark-700">
-              <Building2 className="w-10 h-10 text-gray-300 dark:text-gray-600" />
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} 
+          className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-b from-gray-50 to-white dark:from-dark-900 dark:to-dark-800 border border-gray-100 dark:border-dark-700 p-12 sm:p-20 text-center min-h-[50vh] flex flex-col items-center justify-center shadow-sm">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none" />
+          
+          <div className="relative z-10 w-28 h-28 mx-auto mb-8 bg-white dark:bg-dark-800 rounded-[2rem] shadow-2xl shadow-primary-500/10 flex items-center justify-center border border-gray-100 dark:border-dark-600 group hover:scale-105 transition-transform duration-500">
+            <div className="absolute inset-0 rounded-[2rem] border-2 border-primary-500 border-dashed animate-[spin_10s_linear_infinite] opacity-20" />
+            <div className="absolute inset-2 rounded-2xl bg-gradient-to-br from-primary-50 to-emerald-50 dark:from-primary-900/20 dark:to-emerald-900/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <Building2 className="w-12 h-12 text-primary-500 relative z-10" />
+            <div className="absolute -top-2 -right-2 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full p-2 shadow-lg">
+               <Sparkles className="w-4 h-4 text-white" />
             </div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{t('noBranchesYet')}</h3>
-            <p className="text-gray-400 text-sm max-w-sm mx-auto mb-6">{isRtl ? 'قم بإضافة فرعك الأول لبدء إدارة الفروع المتعددة.' : 'Add your first branch to start managing multiple locations.'}</p>
-            {isAdmin && <button onClick={openNew} className="btn btn-primary inline-flex items-center gap-2"><Plus className="w-4 h-4" />{t('addBranch')}</button>}
           </div>
+          
+          <h3 className="text-3xl font-black text-gray-900 dark:text-white mb-4 tracking-tight relative z-10">{t('noBranchesYet')}</h3>
+          <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-10 leading-relaxed text-lg relative z-10">
+             {isRtl ? 'قم بإضافة فرعك الأول لبدء إدارة الفروع المتعددة وتوسيع نطاق أعمالك بذكاء.' : 'Add your first branch to start managing multiple locations and scale your business effortlessly.'}
+          </p>
+          
+          {isAdmin && (
+             <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={openNew} 
+               className="relative z-10 btn btn-primary bg-gradient-to-r from-primary-600 to-emerald-500 hover:from-primary-700 hover:to-emerald-600 text-white px-8 py-4 rounded-2xl font-bold shadow-xl shadow-primary-500/30 flex items-center gap-2 overflow-hidden group border-none">
+               <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+               <Plus className="w-5 h-5 relative z-10" />
+               <span className="relative z-10 text-lg">{t('addBranch')}</span>
+             </motion.button>
+          )}
         </motion.div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -260,50 +277,98 @@ export default function RestaurantBranches() {
       <AnimatePresence>
         {showForm && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setShowForm(false)}>
-            <motion.div initial={{ scale: 0.92, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.92, opacity: 0, y: 20 }}
-              className="relative bg-white dark:bg-dark-800 w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-3xl shadow-2xl shadow-black/20 border border-gray-100 dark:border-dark-700"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md p-4 sm:p-6" onClick={() => setShowForm(false)}>
+            <motion.div initial={{ scale: 0.9, opacity: 0, y: 30 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 30 }} transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="relative bg-white dark:bg-dark-900 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] shadow-2xl shadow-primary-500/10 border border-gray-100/50 dark:border-dark-700/50"
               onClick={e => e.stopPropagation()}>
-              <div className="relative bg-gradient-to-r from-primary-600 to-emerald-500 p-6 pb-8">
-                <div className="absolute top-0 right-0 -mt-2 -mr-2 w-20 h-20 bg-white/10 rounded-full blur-xl" />
-                <div className="relative flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center"><Store className="w-5 h-5 text-white" /></div>
-                    <div><h3 className="text-lg font-bold text-white">{editing ? t('editBranch') : t('newBranch')}</h3></div>
+              
+              <div className="relative overflow-hidden bg-gradient-to-br from-primary-600 via-primary-700 to-emerald-600 p-8">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 mix-blend-overlay" />
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald-400/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
+                
+                <div className="relative z-10 flex items-start justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center border border-white/20 shadow-inner">
+                      <Store className="w-7 h-7 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-black text-white tracking-tight">{editing ? t('editBranch') : t('newBranch')}</h3>
+                      <p className="text-white/70 text-sm font-medium mt-1">
+                        {editing ? (isRtl ? 'تحديث تفاصيل الفرع' : 'Update branch details and settings') : (isRtl ? 'إعداد فرع جديد' : 'Configure your new branch location')}
+                      </p>
+                    </div>
                   </div>
-                  <button onClick={() => setShowForm(false)} className="p-2 hover:bg-white/20 rounded-xl text-white/80 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+                  <button onClick={() => setShowForm(false)} className="w-10 h-10 bg-white/10 hover:bg-white/25 backdrop-blur-md rounded-full flex items-center justify-center text-white/90 hover:text-white transition-all shadow-sm">
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
               </div>
-              <div className="p-6 space-y-5">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+              <div className="p-8 space-y-6 bg-gray-50/30 dark:bg-dark-900/50">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
-                    <label className="label flex items-center justify-between">
+                    <label className="label flex items-center justify-between text-gray-700 dark:text-gray-300 font-semibold mb-2">
                       <span>{t('branchName')}</span>
                       {!isRtl && !editing && (
-                        <button onClick={() => setAutoOn(p => !p)} className={`text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 transition-colors ${autoOn ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300' : 'bg-gray-100 text-gray-500'}`}>
-                          <Sparkles className="w-3 h-3" />{autoOn ? 'Auto' : 'Manual'}
+                        <button onClick={() => setAutoOn(p => !p)} className={`text-[10px] font-bold px-3 py-1 rounded-full flex items-center gap-1.5 transition-all shadow-sm ${autoOn ? 'bg-gradient-to-r from-primary-100 to-emerald-100 text-primary-700 dark:from-primary-900/40 dark:to-emerald-900/40 dark:text-primary-300 border border-primary-200/50' : 'bg-gray-100 text-gray-500 border border-transparent'}`}>
+                          <Sparkles className="w-3.5 h-3.5" />{autoOn ? 'Auto-Translate' : 'Manual'}
                         </button>
                       )}
                     </label>
-                    <input className="input mt-1" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
+                    <input className="input w-full bg-white dark:bg-dark-800 border-gray-200 dark:border-dark-700 rounded-xl py-3 focus:ring-2 focus:ring-primary-500/50 transition-all shadow-sm" placeholder="e.g. Downtown Branch" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
                   </div>
                   <div>
-                    <label className="label flex items-center gap-1.5">{t('branchNameAr')} {tLoading && <Loader2 className="w-3 h-3 text-primary-400 animate-spin" />}</label>
-                    <input className="input mt-1" value={form.nameAr} onChange={e => { setAutoOn(false); setForm(p => ({ ...p, nameAr: e.target.value })) }} dir="rtl" />
+                    <label className="label flex items-center gap-2 text-gray-700 dark:text-gray-300 font-semibold mb-2">
+                      {t('branchNameAr')} 
+                      {tLoading && <Loader2 className="w-3.5 h-3.5 text-primary-500 animate-spin" />}
+                    </label>
+                    <input className="input w-full bg-white dark:bg-dark-800 border-gray-200 dark:border-dark-700 rounded-xl py-3 focus:ring-2 focus:ring-primary-500/50 transition-all shadow-sm" placeholder="مثال: فرع وسط المدينة" value={form.nameAr} onChange={e => { setAutoOn(false); setForm(p => ({ ...p, nameAr: e.target.value })) }} dir="rtl" />
                   </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div><label className="label">{t('branchPhone')}</label><input className="input mt-1" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} /></div>
-                  <div><label className="label">{t('branchEmail')}</label><input className="input mt-1" type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} /></div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div>
+                    <label className="label text-gray-700 dark:text-gray-300 font-semibold mb-2">{t('branchPhone')}</label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input className="input w-full pl-10 bg-white dark:bg-dark-800 border-gray-200 dark:border-dark-700 rounded-xl py-3 focus:ring-2 focus:ring-primary-500/50 transition-all shadow-sm" placeholder="+966 50 000 0000" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="label text-gray-700 dark:text-gray-300 font-semibold mb-2">{t('branchEmail')}</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input className="input w-full pl-10 bg-white dark:bg-dark-800 border-gray-200 dark:border-dark-700 rounded-xl py-3 focus:ring-2 focus:ring-primary-500/50 transition-all shadow-sm" type="email" placeholder="branch@example.com" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} />
+                    </div>
+                  </div>
                 </div>
-                <div><label className="label">{t('managerName')}</label><input className="input mt-1" value={form.managerName} onChange={e => setForm(p => ({ ...p, managerName: e.target.value }))} /></div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div><label className="label">{t('city')}</label><input className="input mt-1" value={form.address.city} onChange={e => setForm(p => ({ ...p, address: { ...p.address, city: e.target.value } }))} /></div>
-                  <div><label className="label">{t('district')}</label><input className="input mt-1" value={form.address.district} onChange={e => setForm(p => ({ ...p, address: { ...p.address, district: e.target.value } }))} /></div>
+
+                <div>
+                  <label className="label text-gray-700 dark:text-gray-300 font-semibold mb-2">{t('managerName')}</label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input className="input w-full pl-10 bg-white dark:bg-dark-800 border-gray-200 dark:border-dark-700 rounded-xl py-3 focus:ring-2 focus:ring-primary-500/50 transition-all shadow-sm" placeholder="Manager full name" value={form.managerName} onChange={e => setForm(p => ({ ...p, managerName: e.target.value }))} />
+                  </div>
                 </div>
-                <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }} onClick={onSave} disabled={createM.isPending}
-                  className="w-full bg-gradient-to-r from-primary-600 to-emerald-500 hover:from-primary-700 hover:to-emerald-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-primary-500/20 transition-all disabled:opacity-60 flex items-center justify-center gap-2">
-                  {createM.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <><ArrowRight className="w-4 h-4" />{t('saveBranch')}</>}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-white dark:bg-dark-800 p-6 rounded-2xl border border-gray-100 dark:border-dark-700 shadow-sm">
+                  <div>
+                    <label className="label text-gray-700 dark:text-gray-300 font-semibold mb-2">{t('city')}</label>
+                    <div className="relative">
+                       <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                       <input className="input w-full pl-10 bg-gray-50 dark:bg-dark-900 border-gray-200 dark:border-dark-700 rounded-xl py-3 focus:ring-2 focus:ring-primary-500/50 transition-all" placeholder="City" value={form.address.city} onChange={e => setForm(p => ({ ...p, address: { ...p.address, city: e.target.value } }))} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="label text-gray-700 dark:text-gray-300 font-semibold mb-2">{t('district')}</label>
+                    <input className="input w-full bg-gray-50 dark:bg-dark-900 border-gray-200 dark:border-dark-700 rounded-xl py-3 focus:ring-2 focus:ring-primary-500/50 transition-all" placeholder="District or Area" value={form.address.district} onChange={e => setForm(p => ({ ...p, address: { ...p.address, district: e.target.value } }))} />
+                  </div>
+                </div>
+
+                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={onSave} disabled={createM.isPending}
+                  className="w-full relative overflow-hidden bg-gradient-to-r from-primary-600 to-emerald-500 text-white font-bold py-4 rounded-2xl shadow-xl shadow-primary-500/25 transition-all disabled:opacity-60 flex items-center justify-center gap-2 group border-none">
+                  <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                  {createM.isPending ? <Loader2 className="w-6 h-6 animate-spin relative z-10" /> : <><ArrowRight className="w-5 h-5 relative z-10" /><span className="relative z-10 text-lg">{t('saveBranch')}</span></>}
                 </motion.button>
               </div>
             </motion.div>
