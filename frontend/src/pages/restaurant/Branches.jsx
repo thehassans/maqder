@@ -176,34 +176,34 @@ export default function RestaurantBranches() {
 
   return (
     <div className="space-y-8">
-      {/* Ultra Premium Header */}
+      {/* Ultra Premium Header - Light Theme */}
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} 
-        className="relative overflow-hidden rounded-[2rem] bg-[#0A0A0B] p-8 sm:p-10 shadow-2xl">
+        className="relative overflow-hidden rounded-[2rem] bg-white p-8 sm:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100">
         {/* Dynamic Background Effects */}
-        <div className="absolute top-0 right-0 w-[40rem] h-[40rem] bg-gradient-to-br from-primary-600/30 via-emerald-500/20 to-transparent rounded-full blur-[80px] -translate-y-1/2 translate-x-1/3" />
-        <div className="absolute bottom-0 left-0 w-[30rem] h-[30rem] bg-gradient-to-tr from-emerald-600/20 to-transparent rounded-full blur-[60px] translate-y-1/3 -translate-x-1/4" />
-        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-10 mix-blend-overlay" />
+        <div className="absolute top-0 right-0 w-[40rem] h-[40rem] bg-gradient-to-br from-emerald-50 via-teal-50 to-transparent rounded-full blur-[80px] -translate-y-1/2 translate-x-1/3" />
+        <div className="absolute bottom-0 left-0 w-[30rem] h-[30rem] bg-gradient-to-tr from-green-50 to-transparent rounded-full blur-[60px] translate-y-1/3 -translate-x-1/4" />
+        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-[0.03] mix-blend-overlay" />
         
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
           <div>
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10 shadow-inner">
-                <Store className="w-5 h-5 text-emerald-400" />
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center border border-emerald-100 shadow-sm">
+                <Store className="w-5 h-5 text-emerald-600" />
               </div>
-              <span className="text-emerald-400 text-sm font-bold tracking-[0.2em] uppercase">{isRtl ? t('branchManagementAr') : t('branchManagement')}</span>
+              <span className="text-emerald-600 text-sm font-bold tracking-[0.2em] uppercase">{isRtl ? t('branchManagementAr') : t('branchManagement')}</span>
             </div>
-            <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight mb-2">
+            <h1 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight mb-2">
               {t('branchManagement')}
             </h1>
-            <div className="flex items-center gap-2 text-white/60 text-sm font-medium">
+            <div className="flex items-center gap-2 text-gray-500 text-sm font-medium">
               <span>{t('activeBranches')}</span>
-              <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]" />
-              <span className="text-white"><strong className="text-white text-base">{branches.length}</strong> / {maxB || '∞'}</span>
+              <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
+              <span className="text-gray-500"><strong className="text-gray-900 text-base">{branches.length}</strong> / {maxB || '∞'}</span>
             </div>
           </div>
           {isAdmin && (
             <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={openNew}
-              className="relative overflow-hidden inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-400 text-gray-900 font-bold px-6 py-4 rounded-2xl shadow-[0_0_30px_rgba(16,185,129,0.3)] hover:shadow-[0_0_40px_rgba(16,185,129,0.5)] transition-all">
+              className="relative overflow-hidden inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-400 text-white font-bold px-6 py-4 rounded-2xl shadow-[0_8px_20px_rgba(16,185,129,0.25)] hover:shadow-[0_12px_25px_rgba(16,185,129,0.35)] transition-all">
               <Plus className="w-5 h-5" />
               <span className="text-base tracking-wide">{t('addBranch')}</span>
             </motion.button>
@@ -215,32 +215,32 @@ export default function RestaurantBranches() {
         <div className="flex items-center justify-center py-32"><Loader2 className="w-10 h-10 text-emerald-500 animate-spin" /></div>
       ) : branches.length === 0 ? (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          className="relative overflow-hidden rounded-[2.5rem] bg-[#0A0A0B] p-12 sm:p-24 text-center min-h-[50vh] flex flex-col items-center justify-center shadow-2xl border border-white/5">
+          className="relative overflow-hidden rounded-[2.5rem] bg-white p-12 sm:p-24 text-center min-h-[50vh] flex flex-col items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100">
           {/* Rich Ambient Lighting for Empty State */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl h-full bg-gradient-to-b from-emerald-500/10 via-primary-500/5 to-transparent rounded-[100%] blur-[100px] pointer-events-none" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl h-full bg-gradient-to-b from-emerald-50 via-teal-50/50 to-transparent rounded-[100%] blur-[100px] pointer-events-none" />
           
           <div className="relative z-10 w-32 h-32 mx-auto mb-10 group">
-            <div className="absolute inset-0 bg-emerald-500/20 rounded-[2.5rem] blur-xl group-hover:bg-emerald-400/30 transition-all duration-500" />
-            <div className="absolute inset-0 rounded-[2.5rem] border border-emerald-500/30 border-dashed animate-[spin_15s_linear_infinite]" />
-            <div className="relative w-full h-full bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl rounded-[2.5rem] shadow-2xl shadow-black flex items-center justify-center border border-white/10 overflow-hidden">
-              <div className="absolute top-0 right-0 w-16 h-16 bg-white/20 blur-xl translate-x-1/2 -translate-y-1/2" />
-              <Building2 className="w-12 h-12 text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.5)]" />
+            <div className="absolute inset-0 bg-emerald-100 rounded-[2.5rem] blur-xl group-hover:bg-emerald-200/60 transition-all duration-500" />
+            <div className="absolute inset-0 rounded-[2.5rem] border-2 border-emerald-200 border-dashed animate-[spin_15s_linear_infinite]" />
+            <div className="relative w-full h-full bg-white rounded-[2.5rem] shadow-xl shadow-emerald-900/5 flex items-center justify-center border border-gray-50 overflow-hidden">
+              <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-50 blur-xl translate-x-1/2 -translate-y-1/2" />
+              <Building2 className="w-12 h-12 text-emerald-500 drop-shadow-[0_0_15px_rgba(52,211,153,0.3)]" />
             </div>
-            <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }} className="absolute -top-4 -right-4 bg-gradient-to-br from-emerald-400 to-primary-500 rounded-full p-2.5 shadow-lg border border-emerald-300/30">
+            <motion.div animate={{ y: [0, -10, 0] }} transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }} className="absolute -top-4 -right-4 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full p-2.5 shadow-lg shadow-emerald-500/20 border border-white">
                <Sparkles className="w-5 h-5 text-white" />
             </motion.div>
           </div>
           
-          <h3 className="text-3xl sm:text-4xl font-black text-white mb-5 tracking-tight relative z-10">{t('noBranchesYet')}</h3>
-          <p className="text-gray-400 max-w-lg mx-auto mb-12 leading-relaxed text-lg sm:text-xl relative z-10 font-medium">
+          <h3 className="text-3xl sm:text-4xl font-black text-gray-900 mb-5 tracking-tight relative z-10">{t('noBranchesYet')}</h3>
+          <p className="text-gray-500 max-w-lg mx-auto mb-12 leading-relaxed text-lg sm:text-xl relative z-10 font-medium">
              {isRtl ? 'قم بإضافة فرعك الأول لبدء إدارة الفروع المتعددة وتوسيع نطاق أعمالك بذكاء.' : 'Add your first branch to start managing multiple locations and scale your business effortlessly.'}
           </p>
           
           {isAdmin && (
              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={openNew} 
-               className="relative z-10 bg-white text-gray-900 px-10 py-5 rounded-2xl font-black shadow-[0_0_40px_rgba(255,255,255,0.15)] hover:shadow-[0_0_60px_rgba(255,255,255,0.25)] flex items-center gap-3 overflow-hidden group transition-all">
-               <div className="absolute inset-0 bg-emerald-500/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-               <Plus className="w-6 h-6 text-emerald-500 group-hover:scale-110 transition-transform relative z-10" />
+               className="relative z-10 bg-gray-900 text-white px-10 py-5 rounded-2xl font-black shadow-[0_10px_30px_rgba(0,0,0,0.15)] hover:shadow-[0_15px_40px_rgba(0,0,0,0.2)] flex items-center gap-3 overflow-hidden group transition-all">
+               <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+               <Plus className="w-6 h-6 text-emerald-400 group-hover:scale-110 transition-transform relative z-10" />
                <span className="relative z-10 text-lg tracking-wide uppercase">{t('addBranch')}</span>
              </motion.button>
           )}
@@ -299,29 +299,29 @@ export default function RestaurantBranches() {
               className="relative bg-white dark:bg-dark-900 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-[2.5rem] shadow-2xl shadow-primary-500/10 border border-gray-100/50 dark:border-dark-700/50"
               onClick={e => e.stopPropagation()}>
               
-              <div className="relative overflow-hidden bg-gradient-to-br from-primary-600 via-primary-700 to-emerald-600 p-8">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 mix-blend-overlay" />
-                <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald-400/20 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
+              <div className="relative overflow-hidden bg-gradient-to-br from-emerald-50 via-white to-teal-50 p-8 border-b border-gray-100">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-100/50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                <div className="absolute bottom-0 left-0 w-48 h-48 bg-teal-100/50 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2" />
                 
                 <div className="relative z-10 flex items-start justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center border border-white/20 shadow-inner">
-                      <Store className="w-7 h-7 text-white" />
+                    <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-emerald-100 shadow-sm">
+                      <Store className="w-7 h-7 text-emerald-600" />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-black text-white tracking-tight">{editing ? t('editBranch') : t('newBranch')}</h3>
-                      <p className="text-white/70 text-sm font-medium mt-1">
+                      <h3 className="text-2xl font-black text-gray-900 tracking-tight">{editing ? t('editBranch') : t('newBranch')}</h3>
+                      <p className="text-gray-500 text-sm font-medium mt-1">
                         {editing ? (isRtl ? 'تحديث تفاصيل الفرع' : 'Update branch details and settings') : (isRtl ? 'إعداد فرع جديد' : 'Configure your new branch location')}
                       </p>
                     </div>
                   </div>
-                  <button onClick={() => setShowForm(false)} className="w-10 h-10 bg-white/10 hover:bg-white/25 backdrop-blur-md rounded-full flex items-center justify-center text-white/90 hover:text-white transition-all shadow-sm">
+                  <button onClick={() => setShowForm(false)} className="w-10 h-10 bg-white hover:bg-gray-50 border border-gray-100 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 transition-all shadow-sm">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
               </div>
 
-              <div className="p-8 space-y-6 bg-gray-50/30 dark:bg-dark-900/50">
+              <div className="p-8 space-y-6 bg-white">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
                     <label className="label flex items-center justify-between text-gray-700 dark:text-gray-300 font-semibold mb-2">
