@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
@@ -623,6 +623,10 @@ export default function TenantForm() {
                     <p className="text-sm text-gray-500 dark:text-gray-400">{language === 'ar' ? 'يمكّن المستأجر من إنشاء وإدارة فروع متعددة مع مستخدمين مستقلين لكل فرع.' : 'Enables the tenant to create and manage multiple branches with independent users per branch.'}</p>
                   </div>
                   <input type="checkbox" {...register('subscription.hasBranchAddon')} className="h-4 w-4 accent-amber-500" />
+                </label>
+                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                  <input type="checkbox" {...register('subscription.hasDeliveryAddon')} className="h-4 w-4 accent-teal-500" />
+                  {language === 'ar' ? 'إضافة منصات التوصيل' : 'Delivery Platforms Add-on'}
                 </label>
                 <div>
                   <label className="label">{language === 'ar' ? 'الحد الأقصى للفروع' : 'Max Branches'}</label>

@@ -26,7 +26,7 @@ export default function RestaurantMenuItems() {
     queryKey: ['restaurant-menu-items', page, search],
     queryFn: () =>
       api
-        .get('/restaurant/menu-items', { params: { page, limit: 50, search } })
+        .get('/restaurant/menu-items', { params: { page, limit: 50, search, isActive: 'all' } })
         .then((res) => res.data),
   })
 

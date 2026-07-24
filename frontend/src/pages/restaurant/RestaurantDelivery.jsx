@@ -474,12 +474,15 @@ function PlatformCard({ platform, config, onConnect, onEdit, onTest, onSync, onD
 
 export default function RestaurantDelivery() {
   const { language } = useSelector((state) => state.ui)
+  const { tenant } = useSelector((state) => state.auth)
   const queryClient = useQueryClient()
   const isRtl = language === 'ar'
   const [activeTab, setActiveTab] = useState('dashboard')
   const [showModal, setShowModal] = useState(false)
   const [editConfig, setEditConfig] = useState(null)
   const [orderFilter, setOrderFilter] = useState({ platform: '', status: '' })
+
+  const hasDeliveryAddon = tenant?.subscription?.hasDeliveryAddon;
 
   const { data: dashData, isLoading: dashLoading } = useQuery({
     queryKey: ['delivery-dashboard'],
@@ -541,6 +544,34 @@ export default function RestaurantDelivery() {
   const pendingPayouts = dashData?.pendingPayouts || []
   const dailyTrend = dashData?.dailyTrend || []
   const orders = ordersData?.orders || []
+
+  if (!hasDeliveryAddon) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh] bg-gradient-to-b from-gray-50 to-white dark:from-dark-900 dark:to-dark-800 rounded-3xl border border-gray-100 dark:border-dark-700 p-8 text-center relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-violet-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+        
+        <div className="relative w-24 h-24 mb-6 rounded-full bg-white dark:bg-dark-800 shadow-2xl flex items-center justify-center border border-gray-100 dark:border-dark-600">
+           <div className="absolute inset-0 rounded-full border-2 border-primary-500 border-dashed animate-[spin_10s_linear_infinite] opacity-20" />
+           <Bike className="w-10 h-10 text-primary-500" />
+        </div>
+        
+        <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-3">
+          {isRtl ? 'إضافة منصات التوصيل' : 'Delivery Platforms Add-on'}
+        </h2>
+        <p className="text-gray-500 dark:text-gray-400 max-w-md mb-8 leading-relaxed">
+          {isRtl 
+            ? 'احصل على تكامل سلس مع جاهز، هنقرستيشن، نينجا، كيتا والمزيد. أدر جميع طلبات التوصيل من لوحة تحكم واحدة مركزية.' 
+            : 'Unlock seamless integration with Jahez, HungerStation, Ninja, Keeta, and more. Manage all your delivery orders from one centralized dashboard.'}
+        </p>
+        
+        <a href="mailto:support@maqder.com" className="btn btn-primary bg-primary-600 hover:bg-primary-700 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-primary-500/30 flex items-center gap-2 transition-all hover:scale-105">
+           <Sparkles className="w-5 h-5" />
+           {isRtl ? 'تواصل معنا للتفعيل' : 'Contact Sales to Enable'}
+        </a>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">

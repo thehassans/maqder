@@ -13,6 +13,13 @@ const restaurantTableSchema = new mongoose.Schema({
     default: 'available'
   },
   
+  // Layout properties for 3D floor plan
+  positionX: { type: Number, default: 0 },
+  positionY: { type: Number, default: 0 },
+  shape: { type: String, enum: ['rectangle', 'circle', 'square'], default: 'rectangle' },
+  width: { type: Number, default: 100 },
+  height: { type: Number, default: 100 },
+  
   isActive: { type: Boolean, default: true },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, {

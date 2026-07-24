@@ -75,4 +75,38 @@ router.delete('/:id', checkPermission('restaurant', 'delete'), async (req, res) 
   }
 });
 
+// Seed initial tables for new restaurant
+router.post('/seed', checkPermission('restaurant', 'create'), async (req, res) => {
+  try {
+    const existing = await RestaurantTable.countDocuments(req.tenantFilter);
+    if (existing > 0) {
+      return res.status(400).json({ error: 'Tables already seeded for this tenant' });
+    }
+
+    const seedData = [
+      { tableNumber: '1', name: 'Window 1', seats: 2, shape: 'circle', positionX: 50, positionY: 50, width: 80, height: 80 },
+      { tableNumber: '2', name: 'Window 2', seats: 2, shape: 'circle', positionX: 200, positionY: 50, width: 80, height: 80 },
+      { tableNumber: '3', name: 'Center 1', seats: 4, shape: 'rectangle', positionX: 100, positionY: 200, width: 120, height: 80 },
+      { tableNumber: '4', name: 'Center 2', seats: 4, shape: 'rectangle', positionX: 300, positionY: 200, width: 120, height: 80 },
+      { tableNumber: '5', name: 'Booth A', seats: 6, shape: 'rectangle', positionX: 50, positionY: 350, width: 160, height: 100 },
+      { tableNumber: '6', name: 'Booth B', seats: 6, shape: 'rectangle', positionX: 250, positionY: 350, width: 160, height: 100 },
+      { tableNumber: 'VIP', name: 'VIP Room', seats: 10, shape: 'rectangle', positionX: 450, positionY: 100, width: 200, height: 150 },
+    ];
+
+    const tablesToInsert = seedData.map(t => ({
+      ...t,
+      tenantId: req.user.tenantId,
+      createdBy: req.user._id,
+      status: 'available',
+      isActive: true,
+    }));
+
+    await RestaurantTable.insertMany(tablesToInsert);
+    res.json({ message: 'Tables seeded successfully' });
+  } catch (error) {
+    console.error('Table seed error:', error);
+    res.status(500).json({ error: 'Failed to seed tables' });
+  }
+});
+
 export default router;
