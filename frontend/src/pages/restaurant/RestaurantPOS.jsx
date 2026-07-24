@@ -34,7 +34,7 @@ export default function RestaurantPOS() {
   const [orderType, setOrderType] = useState('dine_in') // dine_in, takeaway, delivery
   const [selectedTable, setSelectedTable] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('cash')
-  const [applyVat, setApplyVat] = useState(true)
+  const [applyVat, setApplyVat] = useState(false)
   
   // Checkout states
   const [isProcessing, setIsProcessing] = useState(false)
@@ -416,7 +416,7 @@ export default function RestaurantPOS() {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row h-[calc(100vh-7rem)] min-h-0 max-h-full gap-4 lg:gap-6 overflow-hidden">
+    <div className="flex flex-col lg:flex-row h-[calc(100vh-11rem)] lg:h-[calc(100vh-12rem)] min-h-[500px] gap-4 lg:gap-6 overflow-hidden">
       
       {/* Left: Menu Grid */}
       <div className="flex-1 flex flex-col min-w-0">
