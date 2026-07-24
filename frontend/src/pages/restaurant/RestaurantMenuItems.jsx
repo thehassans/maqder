@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useRef } from 'react'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { Link, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Search, UtensilsCrossed, Edit, Trash2, Sparkles } from 'lucide-react'
+import { Plus, Search, UtensilsCrossed, Edit, Trash2, Sparkles, Camera, Loader2 } from 'lucide-react'
 import api, { getImageUrl } from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import Money from '../../components/ui/Money'
@@ -20,9 +20,11 @@ export default function RestaurantMenuItems() {
   const { language } = useSelector((state) => state.ui)
   const { t } = useTranslation(language)
 
+  const fileInputRef = useRef(null)
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [isOCRModalOpen, setIsOCRModalOpen] = useState(false)
+  const [uploadingItemId, setUploadingItemId] = useState(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['restaurant-menu-items', page, search],
@@ -78,6 +80,33 @@ export default function RestaurantMenuItems() {
       toast.error(err.response?.data?.error || 'Failed to update status')
     }
   })
+
+  const imageUploadMutation = useMutation({
+    mutationFn: async ({ id, file }) => {
+      const formData = new FormData()
+      formData.append('image', file)
+      const { data: { imageUrl } } = await api.post('/restaurant/menu-items/upload-image', formData)
+      await api.put(`/restaurant/menu-items/${id}`, { imageUrl })
+    },
+    onSuccess: () => {
+      toast.success(language === 'ar' ? 'تم تحديث الصورة' : 'Image updated successfully')
+      queryClient.invalidateQueries(['restaurant-menu-items'])
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.error || 'Failed to upload image')
+    },
+    onSettled: () => {
+      setUploadingItemId(null)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  })
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0]
+    if (file && uploadingItemId) {
+      imageUploadMutation.mutate({ id: uploadingItemId, file })
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -171,13 +200,35 @@ export default function RestaurantMenuItems() {
                     <td className="font-mono text-sm">{it.sku || '-'}</td>
                     <td>
                       <div className="flex items-center gap-3">
-                        {it.imageUrl ? (
-                           <img src={getImageUrl(it.imageUrl)} alt={it.nameEn} className="w-10 h-10 rounded-lg object-cover bg-gray-100" />
-                        ) : (
-                          <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-dark-700 flex items-center justify-center">
-                            <UtensilsCrossed className="w-5 h-5 text-gray-400" />
-                          </div>
-                        )}
+                        <div 
+                          className="relative cursor-pointer group"
+                          onClick={() => {
+                            if (!imageUploadMutation.isPending) {
+                              setUploadingItemId(it._id);
+                              fileInputRef.current?.click();
+                            }
+                          }}
+                        >
+                          {uploadingItemId === it._id ? (
+                            <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-dark-700 flex items-center justify-center">
+                              <Loader2 className="w-5 h-5 text-primary-500 animate-spin" />
+                            </div>
+                          ) : it.imageUrl ? (
+                            <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-gray-100">
+                              <img src={getImageUrl(it.imageUrl)} alt={it.nameEn} className="w-full h-full object-cover" />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <Camera className="w-4 h-4 text-white" />
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="relative w-10 h-10 rounded-lg bg-gray-100 dark:bg-dark-700 flex items-center justify-center overflow-hidden">
+                              <UtensilsCrossed className="w-5 h-5 text-gray-400 group-hover:opacity-0 transition-opacity" />
+                              <div className="absolute inset-0 bg-gray-200 dark:bg-dark-600 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <Camera className="w-4 h-4 text-gray-500 dark:text-gray-300" />
+                              </div>
+                            </div>
+                          )}
+                        </div>
                         <div>
                           <div className="font-medium text-gray-900 dark:text-white">
                             {language === 'ar' ? it.nameAr || it.nameEn : it.nameEn || it.nameAr}
@@ -263,6 +314,15 @@ export default function RestaurantMenuItems() {
         onClose={() => setIsOCRModalOpen(false)}
         onSaved={() => queryClient.invalidateQueries(['restaurant-menu-items'])}
       />
+
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        onChange={handleFileSelect} 
+        accept="image/*" 
+        className="hidden" 
+      />
     </div>
   )
 }
+

@@ -21,7 +21,7 @@ export const TRIAL_LIMITS = {
   vouchers: 10,
   shipments: 5,
   restaurantOrders: 10,
-  restaurantMenuItems: 10,
+  restaurantMenuItems: 200,
   restaurantTables: 5,
   travelBookings: 10,
   rentalCars: 5,
