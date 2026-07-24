@@ -3,13 +3,14 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { Link, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Search, UtensilsCrossed, Edit, Trash2, Sparkles, Camera, Loader2 } from 'lucide-react'
+import { Plus, Search, UtensilsCrossed, Edit, Trash2, Sparkles, Camera, Loader2, Image as ImageIcon } from 'lucide-react'
 import api, { getImageUrl } from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import Money from '../../components/ui/Money'
 import toast from 'react-hot-toast'
 import SarIcon from '../../components/ui/SarIcon'
 import RestaurantMenuOCRModal from './RestaurantMenuOCRModal'
+import RestaurantMenuBulkImagesModal from './RestaurantMenuBulkImagesModal'
 
 export default function RestaurantMenuItems() {
   const queryClient = useQueryClient()
@@ -24,6 +25,7 @@ export default function RestaurantMenuItems() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [isOCRModalOpen, setIsOCRModalOpen] = useState(false)
+  const [isBulkImagesOpen, setIsBulkImagesOpen] = useState(false)
   const [uploadingItemId, setUploadingItemId] = useState(null)
 
   const { data, isLoading } = useQuery({
@@ -143,6 +145,13 @@ export default function RestaurantMenuItems() {
               <UtensilsCrossed className="w-4 h-4" />
             )}
             {language === 'ar' ? 'توليد مشروبات' : 'Seed Drinks'}
+          </button>
+          <button
+            onClick={() => setIsBulkImagesOpen(true)}
+            className="btn btn-secondary bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40 border-transparent hidden sm:flex"
+          >
+            <ImageIcon className="w-4 h-4" />
+            {language === 'ar' ? 'إضافة صور' : 'Add Images'}
           </button>
           <button
             onClick={() => setIsOCRModalOpen(true)}
@@ -315,6 +324,12 @@ export default function RestaurantMenuItems() {
         onSaved={() => queryClient.invalidateQueries(['restaurant-menu-items'])}
       />
 
+      <RestaurantMenuBulkImagesModal
+        isOpen={isBulkImagesOpen}
+        onClose={() => setIsBulkImagesOpen(false)}
+        onSaved={() => queryClient.invalidateQueries(['restaurant-menu-items'])}
+      />
+
       <input 
         type="file" 
         ref={fileInputRef} 
@@ -325,4 +340,5 @@ export default function RestaurantMenuItems() {
     </div>
   )
 }
+
 
