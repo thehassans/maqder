@@ -416,7 +416,7 @@ export default function RestaurantPOS() {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row h-[calc(100vh-6rem)] gap-6">
+    <div className="flex flex-col lg:flex-row h-[calc(100vh-7rem)] min-h-0 max-h-full gap-4 lg:gap-6 overflow-hidden">
       
       {/* Left: Menu Grid */}
       <div className="flex-1 flex flex-col min-w-0">
@@ -520,7 +520,7 @@ export default function RestaurantPOS() {
       </div>
 
       {/* Right: Cart Sidebar */}
-      <div className="w-full lg:w-96 bg-white dark:bg-dark-800 rounded-2xl shadow-sm flex flex-col flex-shrink-0">
+      <div className="w-full lg:w-96 bg-white dark:bg-dark-800 rounded-2xl shadow-sm flex flex-col flex-shrink-0 min-h-0 h-full border border-gray-100 dark:border-dark-700">
         
         {/* Order Type Selector */}
         <div className="p-3 border-b border-gray-100 dark:border-dark-700 bg-gray-50 dark:bg-dark-900/40 rounded-t-2xl">
@@ -562,7 +562,7 @@ export default function RestaurantPOS() {
         </div>
 
         {/* Customer & Table Inputs */}
-        <div className="p-4 border-b border-gray-100 dark:border-dark-700 space-y-3">
+        <div className="p-3 sm:p-4 border-b border-gray-100 dark:border-dark-700 space-y-3 flex-shrink-0">
           {orderType === 'dine_in' && (
             <select
               value={selectedTable}
@@ -642,9 +642,9 @@ export default function RestaurantPOS() {
         </div>
 
         {/* Totals & Checkout */}
-        <div className="p-4 bg-gray-50 dark:bg-dark-900/50 rounded-b-2xl border-t border-gray-100 dark:border-dark-700 space-y-3">
+        <div className="p-3 sm:p-4 bg-gray-50 dark:bg-dark-900/50 rounded-b-2xl border-t border-gray-100 dark:border-dark-700 space-y-3 flex-shrink-0">
           
-          <div className="flex gap-2 mb-4">
+          <div className="flex gap-2 mb-2 sm:mb-4">
             {['cash', 'card'].map(pm => (
               <button
                 key={pm}
