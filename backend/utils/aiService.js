@@ -237,3 +237,146 @@ export const extractKhayyatMeasurements = async ({ base64Image, mimeType }) => {
 
   throw lastError || new Error('No AI provider configured for OCR or all providers failed. Please set your API key in System Settings.');
 };
+
+export const extractRestaurantMenu = async ({ base64Image, mimeType }) => {
+  const settings = await getAISettings();
+  let lastError = null;
+  
+  const systemPrompt = `You are an expert AI for a restaurant. Extract the food items from the provided menu image. Return a JSON object with an "items" array containing the extracted fields: nameEn (string, required), nameAr (string, optional), descriptionEn (string, optional), descriptionAr (string, optional), category (string, required, e.g., 'Starters', 'Main Course', 'Drinks'), sellingPrice (number, required). Return only valid JSON.`;
+
+  const geminiKey = settings?.gemini?.apiKey || process.env.GEMINI_API_KEY;
+  const openaiKey = settings?.openai?.apiKey || process.env.OPENAI_API_KEY;
+
+  // 0. Try Self-Hosted GLM-OCR
+  const glmOcrEnabled = settings?.glmOcr?.enabled;
+  if (glmOcrEnabled) {
+    try {
+      const glmOcrKey = settings?.glmOcr?.apiKey || process.env.GLM_OCR_API_KEY || 'EMPTY';
+      const glmOcrBaseURL = settings?.glmOcr?.baseURL || 'http://localhost:8000/v1';
+      const client = new OpenAI({ apiKey: glmOcrKey, baseURL: glmOcrBaseURL });
+      const response = await client.chat.completions.create({
+        model: settings?.glmOcr?.model || 'glm-ocr',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: [
+              { type: 'text', text: 'Extract restaurant menu items from this image. Return structured JSON.' },
+              { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64Image}` } }
+            ]
+          }
+        ],
+        temperature: 0.1,
+        response_format: { type: 'json_object' }
+      });
+      if (response.choices?.[0]?.message?.content) {
+        return JSON.parse(response.choices[0].message.content.trim());
+      }
+    } catch (e) {
+      lastError = e;
+      console.warn('[OCR] GLM-OCR failed, falling back...', e.message);
+    }
+  }
+
+  // 1. Try Gemini
+  if (settings?.gemini?.enabled !== false && geminiKey) {
+    try {
+      const client = new GoogleGenAI({ apiKey: geminiKey });
+      const response = await client.models.generateContent({
+        model: settings?.gemini?.model || 'gemini-2.5-flash',
+        contents: [
+          { role: 'user', parts: [
+              { text: systemPrompt + '\n\nExtract restaurant menu items from this image. Return structured JSON.' },
+              { inlineData: { data: base64Image, mimeType } }
+            ]
+          }
+        ],
+        config: { temperature: 0.1, responseMimeType: 'application/json' }
+      });
+      if (response?.text) return JSON.parse(response.text.trim());
+    } catch (e) {
+      lastError = e;
+      console.warn('[OCR] Gemini failed, falling back...', e.message);
+    }
+  }
+
+  // 2. Try OpenAI
+  if (settings?.openai?.enabled !== false && openaiKey) {
+    try {
+      const client = new OpenAI({ apiKey: openaiKey });
+      const response = await client.chat.completions.create({
+        model: settings?.openai?.model || 'gpt-4o',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: [
+              { type: 'text', text: 'Extract restaurant menu items from this image. Return structured JSON.' },
+              { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64Image}` } }
+            ]
+          }
+        ],
+        temperature: 0.1,
+        response_format: { type: 'json_object' }
+      });
+      if (response.choices?.[0]?.message?.content) {
+        return JSON.parse(response.choices[0].message.content.trim());
+      }
+    } catch (e) {
+      lastError = e;
+      console.warn('[OCR] OpenAI failed...', e.message);
+    }
+  }
+
+  // 3. Try Grok (xAI)
+  const grokKey = settings?.grok?.apiKey || process.env.GROK_API_KEY;
+  if (settings?.grok?.enabled !== false && grokKey) {
+    try {
+      const client = new OpenAI({ apiKey: grokKey, baseURL: 'https://api.x.ai/v1' });
+      const response = await client.chat.completions.create({
+        model: settings?.grok?.model || 'grok-2-vision-latest',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: [
+              { type: 'text', text: 'Extract restaurant menu items from this image. Return structured JSON.' },
+              { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64Image}` } }
+            ]
+          }
+        ],
+        temperature: 0.1,
+        response_format: { type: 'json_object' }
+      });
+      if (response.choices?.[0]?.message?.content) {
+        return JSON.parse(response.choices[0].message.content.trim());
+      }
+    } catch (e) {
+      lastError = e;
+      console.warn('[OCR] Grok failed...', e.message);
+    }
+  }
+
+  // 4. Try Groq
+  const groqKey = settings?.groq?.apiKey || process.env.GROQ_API_KEY;
+  if (settings?.groq?.enabled !== false && groqKey) {
+    try {
+      const client = new OpenAI({ apiKey: groqKey, baseURL: 'https://api.groq.com/openai/v1' });
+      const response = await client.chat.completions.create({
+        model: settings?.groq?.model || 'llama-3.1-8b-instant',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: [
+              { type: 'text', text: 'Extract restaurant menu items from this image. Return structured JSON.' },
+              { type: 'image_url', image_url: { url: `data:${mimeType};base64,${base64Image}` } }
+            ]
+          }
+        ],
+        temperature: 0.1,
+        response_format: { type: 'json_object' }
+      });
+      if (response.choices?.[0]?.message?.content) {
+        return JSON.parse(response.choices[0].message.content.trim());
+      }
+    } catch (e) {
+      lastError = e;
+      console.warn('[OCR] Groq failed...', e.message);
+    }
+  }
+
+  throw lastError || new Error('No AI provider configured for OCR or all providers failed. Please set your API key in System Settings.');
+};

@@ -4,7 +4,7 @@ import OpenAI from 'openai';
 import Product from '../models/Product.js';
 import Invoice from '../models/Invoice.js';
 import { protect, tenantFilter, checkPermission } from '../middleware/auth.js';
-import { translateWithFallback, extractKhayyatMeasurements } from '../utils/aiService.js';
+import { translateWithFallback, extractKhayyatMeasurements, extractRestaurantMenu } from '../utils/aiService.js';
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -77,6 +77,27 @@ router.post('/khayyat-ocr', upload.single('image'), async (req, res) => {
     const mimeType = req.file.mimetype;
     
     const extractedData = await extractKhayyatMeasurements({ base64Image, mimeType });
+    
+    res.json({
+      success: true,
+      ...extractedData
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// @route   POST /api/ai/restaurant-menu-ocr
+router.post('/restaurant-menu-ocr', upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image uploaded' });
+    }
+    
+    const base64Image = req.file.buffer.toString('base64');
+    const mimeType = req.file.mimetype;
+    
+    const extractedData = await extractRestaurantMenu({ base64Image, mimeType });
     
     res.json({
       success: true,

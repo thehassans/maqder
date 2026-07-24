@@ -81,6 +81,35 @@ router.post('/', checkTrialLimits('restaurantMenuItems'), checkPermission('resta
   }
 });
 
+// Bulk Insert Endpoint
+router.post('/bulk', checkTrialLimits('restaurantMenuItems'), checkPermission('restaurant', 'create'), async (req, res) => {
+  try {
+    if (!req.user.tenantId) {
+      return res.status(400).json({ error: 'No tenant associated with user' });
+    }
+
+    const { items } = req.body;
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'Items array is required' });
+    }
+
+    const itemsToInsert = items.map(item => ({
+      ...item,
+      tenantId: req.user.tenantId,
+      createdBy: req.user._id,
+      sku: item.sku || `SKU-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+    }));
+
+    const inserted = await RestaurantMenuItem.insertMany(itemsToInsert);
+    res.status(201).json({ success: true, count: inserted.length, items: inserted });
+  } catch (error) {
+    if (error?.code === 11000) {
+      return res.status(400).json({ error: 'Duplicate SKU found in bulk items' });
+    }
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Image Upload Endpoint
 router.post('/upload-image', checkPermission('restaurant', 'create'), upload.single('image'), async (req, res) => {
   try {

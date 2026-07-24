@@ -3,12 +3,13 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { useSelector } from 'react-redux'
 import { Link, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Search, UtensilsCrossed, Edit, Trash2 } from 'lucide-react'
+import { Plus, Search, UtensilsCrossed, Edit, Trash2, Sparkles } from 'lucide-react'
 import api, { getImageUrl } from '../../lib/api'
 import { useTranslation } from '../../lib/translations'
 import Money from '../../components/ui/Money'
 import toast from 'react-hot-toast'
 import SarIcon from '../../components/ui/SarIcon'
+import RestaurantMenuOCRModal from './RestaurantMenuOCRModal'
 
 export default function RestaurantMenuItems() {
   const queryClient = useQueryClient()
@@ -21,6 +22,7 @@ export default function RestaurantMenuItems() {
 
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
+  const [isOCRModalOpen, setIsOCRModalOpen] = useState(false)
 
   const { data, isLoading } = useQuery({
     queryKey: ['restaurant-menu-items', page, search],
@@ -112,6 +114,13 @@ export default function RestaurantMenuItems() {
               <UtensilsCrossed className="w-4 h-4" />
             )}
             {language === 'ar' ? 'توليد مشروبات' : 'Seed Drinks'}
+          </button>
+          <button
+            onClick={() => setIsOCRModalOpen(true)}
+            className="btn btn-secondary bg-primary-50 text-primary-600 hover:bg-primary-100 dark:bg-primary-900/20 dark:text-primary-400 dark:hover:bg-primary-900/40 border-transparent"
+          >
+            <Sparkles className="w-4 h-4 text-amber-500" />
+            {language === 'ar' ? 'استخراج (OCR)' : 'Scan Menu (OCR)'}
           </button>
           <Link to={`${basePath}/new`} className="btn btn-primary">
             <Plus className="w-4 h-4" />
@@ -248,6 +257,12 @@ export default function RestaurantMenuItems() {
           </button>
         </div>
       )}
+
+      <RestaurantMenuOCRModal
+        isOpen={isOCRModalOpen}
+        onClose={() => setIsOCRModalOpen(false)}
+        onSaved={() => queryClient.invalidateQueries(['restaurant-menu-items'])}
+      />
     </div>
   )
 }
