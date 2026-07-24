@@ -628,6 +628,14 @@ export default function TenantForm() {
                   <input type="checkbox" {...register('subscription.hasDeliveryAddon')} className="h-4 w-4 accent-teal-500" />
                   {language === 'ar' ? 'إضافة منصات التوصيل' : 'Delivery Platforms Add-on'}
                 </label>
+                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                  <input type="checkbox" {...register('subscription.hasMessAddon')} className="h-4 w-4 accent-indigo-500" />
+                  {language === 'ar' ? 'إضافة المطعم الجماعي' : 'Mess / Cafeteria Add-on'}
+                </label>
+                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                  <input type="checkbox" {...register('subscription.hasCombosAddon')} className="h-4 w-4 accent-purple-500" />
+                  {language === 'ar' ? 'إضافة العروض والباقات' : 'Combos & Deals Add-on'}
+                </label>
                 <div>
                   <label className="label">{language === 'ar' ? 'الحد الأقصى للفروع' : 'Max Branches'}</label>
                   <input type="number" {...register('subscription.maxBranches', { valueAsNumber: true })} className="input" />

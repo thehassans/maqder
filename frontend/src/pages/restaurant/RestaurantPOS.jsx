@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSelector } from 'react-redux'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Minus, Trash2, ShoppingBag, CreditCard, Search, Coffee, Truck, UtensilsCrossed } from 'lucide-react'
+import { Plus, Minus, Trash2, ShoppingBag, CreditCard, Search, Coffee, Truck, UtensilsCrossed, Gift } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import api, { getImageUrl } from '../../lib/api'
 import { toast } from 'react-hot-toast'
@@ -22,11 +22,12 @@ export default function RestaurantPOS() {
   const [editingOrder, setEditingOrder] = useState(null)
 
   const [menuItems, setMenuItems] = useState([])
+  const [combos, setCombos] = useState([])
   const [tables, setTables] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [activeCategory, setActiveCategory] = useState('all')
-  
+
   const [cart, setCart] = useState([])
   const [customerName, setCustomerName] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
@@ -53,12 +54,14 @@ export default function RestaurantPOS() {
   const fetchData = async () => {
     try {
       setLoading(true)
-      const [menuRes, tablesRes] = await Promise.all([
+      const [menuRes, tablesRes, combosRes] = await Promise.all([
         api.get('/restaurant/menu-items?limit=200'),
-        api.get('/restaurant/tables?status=available')
+        api.get('/restaurant/tables?status=available'),
+        tenant?.subscription?.hasCombosAddon ? api.get('/restaurant/combos?isActive=true') : Promise.resolve({ data: { combos: [] } })
       ])
       const loadedMenuItems = menuRes.data.items || []
       setMenuItems(loadedMenuItems)
+      setCombos(combosRes.data.combos || [])
       setTables(tablesRes.data || [])
 
       if (editOrderId) {
@@ -85,7 +88,9 @@ export default function RestaurantPOS() {
                 unitPrice: li.unitPrice,
                 taxRate: li.taxRate,
                 nameEn: li.name || li.nameEn,
-                nameAr: li.nameAr || li.name
+                nameAr: li.nameAr || li.name,
+                isCombo: li.isCombo,
+                comboId: li.comboId,
               }
             })
             setCart(reconstructedCart)
@@ -102,12 +107,19 @@ export default function RestaurantPOS() {
   }
 
   const categories = ['all', ...new Set(menuItems.map(m => m.category).filter(Boolean))]
+  if (tenant?.subscription?.hasCombosAddon && combos.length > 0) {
+    categories.push('combos')
+  }
 
   const filteredItems = menuItems.filter(m => {
     const matchesSearch = (m.nameEn?.toLowerCase().includes(searchQuery.toLowerCase()) || m.nameAr?.includes(searchQuery))
     const matchesCat = activeCategory === 'all' || m.category === activeCategory
     return matchesSearch && matchesCat
   })
+  
+  const displayCombos = (tenant?.subscription?.hasCombosAddon && (activeCategory === 'all' || activeCategory === 'combos'))
+    ? combos.filter(c => c.name?.toLowerCase().includes(searchQuery.toLowerCase()) || c.nameAr?.includes(searchQuery))
+    : []
 
   const handleItemClick = (menuItem) => {
     if (menuItem.hasHalfPlate) {
@@ -147,6 +159,31 @@ export default function RestaurantPOS() {
     })
     
     setSelectedHalfPlateItem(null)
+  }
+
+  const addComboToCart = (combo) => {
+    const cartItemId = `combo-${combo._id}`
+    setCart(prev => {
+      const existing = prev.find(item => item.cartItemId === cartItemId)
+      if (existing) {
+        return prev.map(item => 
+          item.cartItemId === cartItemId
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        )
+      }
+      return [...prev, { 
+        cartItemId,
+        menuItem: { _id: combo._id }, 
+        isCombo: true,
+        comboId: combo._id,
+        quantity: 1, 
+        unitPrice: combo.comboPrice || 0, 
+        taxRate: 15,
+        nameEn: `${combo.name} (Combo)`,
+        nameAr: `${combo.nameAr || combo.name} (عرض)`
+      }]
+    })
   }
 
   const updateQuantity = (cartItemId, delta) => {
@@ -198,6 +235,8 @@ export default function RestaurantPOS() {
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           taxRate: applyVat ? item.taxRate : 0,
+          isCombo: item.isCombo,
+          comboId: item.comboId,
         }))
       }
       
@@ -257,6 +296,8 @@ export default function RestaurantPOS() {
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           taxRate: applyVat ? item.taxRate : 0,
+          isCombo: item.isCombo,
+          comboId: item.comboId,
         }))
       }
       if (orderType === 'dine_in') {
@@ -317,6 +358,8 @@ export default function RestaurantPOS() {
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           taxRate: applyVat ? item.taxRate : 0,
+          isCombo: item.isCombo,
+          comboId: item.comboId,
         }))
       }
       if (orderType === 'dine_in') {
@@ -410,6 +453,34 @@ export default function RestaurantPOS() {
             <div className="flex items-center justify-center h-full text-gray-500">Loading...</div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+              {displayCombos.map(combo => (
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  key={`combo-${combo._id}`}
+                  onClick={() => addComboToCart(combo)}
+                  className="bg-white dark:bg-dark-800 rounded-2xl shadow-sm border border-transparent hover:border-pink-500 text-left flex flex-col relative overflow-hidden group"
+                >
+                  <div className="h-36 w-full bg-gradient-to-br from-pink-500/10 to-purple-500/10 relative overflow-hidden p-3 flex items-center justify-center">
+                    <div className="w-full h-full flex items-center justify-center text-pink-500">
+                      <Gift className="w-12 h-12 drop-shadow-sm group-hover:scale-110 transition-transform duration-300" />
+                    </div>
+                    {combo.badgeText && (
+                      <div className="absolute top-2 left-2 bg-pink-600 text-white text-[10px] px-2 py-0.5 rounded-full font-bold">
+                        {combo.badgeText}
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-3 flex-1 flex flex-col">
+                    <div className="font-bold text-gray-900 dark:text-white mb-1 line-clamp-1">
+                      {isRtl ? (combo.nameAr || combo.name) : combo.name}
+                    </div>
+                    <div className="text-sm font-bold text-pink-600">
+                      SAR {(combo.comboPrice || 0).toFixed(2)}
+                    </div>
+                  </div>
+                </motion.button>
+              ))}
               {filteredItems.map(item => (
                 <motion.button
                   whileHover={{ scale: 1.02 }}

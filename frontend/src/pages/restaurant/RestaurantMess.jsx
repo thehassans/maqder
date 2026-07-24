@@ -293,8 +293,12 @@ function SubscriberModal({ plans, onClose, editSubscriber }) {
 
 export default function RestaurantMess() {
   const { language } = useSelector((state) => state.ui)
+  const { tenant } = useSelector((state) => state.auth)
   const queryClient = useQueryClient()
   const isRtl = language === 'ar'
+  
+  const hasMessAddon = tenant?.subscription?.hasMessAddon;
+  
   const [activeTab, setActiveTab] = useState('dashboard')
   const [showPlanModal, setShowPlanModal] = useState(false)
   const [editPlan, setEditPlan] = useState(null)
@@ -384,6 +388,34 @@ export default function RestaurantMess() {
   const subscribers = subData?.subscribers || []
   const billings = billData?.billings || []
   const billSummary = billData?.summary || {}
+
+  if (!hasMessAddon) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh] bg-gradient-to-b from-gray-50 to-white dark:from-dark-900 dark:to-dark-800 rounded-3xl border border-gray-100 dark:border-dark-700 p-8 text-center relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+        
+        <div className="relative w-24 h-24 mb-6 rounded-full bg-white dark:bg-dark-800 shadow-2xl flex items-center justify-center border border-gray-100 dark:border-dark-600">
+           <div className="absolute inset-0 rounded-full border-2 border-indigo-500 border-dashed animate-[spin_10s_linear_infinite] opacity-20" />
+           <UtensilsCrossed className="w-10 h-10 text-indigo-500" />
+        </div>
+        
+        <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-3">
+          {isRtl ? 'إضافة المطعم الجماعي' : 'Mess & Cafeteria Add-on'}
+        </h2>
+        <p className="text-gray-500 dark:text-gray-400 max-w-md mb-8 leading-relaxed">
+          {isRtl 
+            ? 'احصل على نظام متكامل لإدارة الاشتراكات، الحضور، والفوترة الشهرية للوجبات الجماعية.' 
+            : 'Unlock a comprehensive system for managing meal subscriptions, daily attendance, and automated billing for your cafeteria.'}
+        </p>
+        
+        <a href="mailto:support@maqder.com" className="btn btn-primary bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-indigo-500/30 flex items-center gap-2 transition-all hover:scale-105">
+           <Plus className="w-5 h-5" />
+           {isRtl ? 'تواصل معنا للتفعيل' : 'Contact Sales to Enable'}
+        </a>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">

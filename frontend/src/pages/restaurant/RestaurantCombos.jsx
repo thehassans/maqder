@@ -206,10 +206,13 @@ function ComboModal({ menuItems, onClose, editCombo }) {
 
 export default function RestaurantCombos() {
   const { language } = useSelector((state) => state.ui)
+  const { tenant } = useSelector((state) => state.auth)
   const queryClient = useQueryClient()
   const [showModal, setShowModal] = useState(false)
   const [editCombo, setEditCombo] = useState(null)
   const [filterType, setFilterType] = useState('')
+  
+  const hasCombosAddon = tenant?.subscription?.hasCombosAddon;
 
   const { data, isLoading } = useQuery({
     queryKey: ['restaurant-combos', filterType],
@@ -230,6 +233,34 @@ export default function RestaurantCombos() {
   })
 
   const combos = data?.combos || []
+
+  if (!hasCombosAddon) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh] bg-gradient-to-b from-gray-50 to-white dark:from-dark-900 dark:to-dark-800 rounded-3xl border border-gray-100 dark:border-dark-700 p-8 text-center relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-pink-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+        
+        <div className="relative w-24 h-24 mb-6 rounded-full bg-white dark:bg-dark-800 shadow-2xl flex items-center justify-center border border-gray-100 dark:border-dark-600">
+           <div className="absolute inset-0 rounded-full border-2 border-pink-500 border-dashed animate-[spin_10s_linear_infinite] opacity-20" />
+           <Gift className="w-10 h-10 text-pink-500" />
+        </div>
+        
+        <h2 className="text-3xl font-black text-gray-900 dark:text-white mb-3">
+          {language === 'ar' ? 'إضافة العروض والباقات' : 'Combos & Deals Add-on'}
+        </h2>
+        <p className="text-gray-500 dark:text-gray-400 max-w-md mb-8 leading-relaxed">
+          {language === 'ar'
+            ? 'أنشئ وجبات مجمعة، وعروض وقت سعيد، وباقات عائلية لزيادة المبيعات وجذب المزيد من العملاء.' 
+            : 'Create combo meals, happy hours, BOGOs, and family packages to boost sales and attract more customers.'}
+        </p>
+        
+        <a href="mailto:support@maqder.com" className="btn btn-primary bg-pink-600 hover:bg-pink-700 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-pink-500/30 flex items-center gap-2 transition-all hover:scale-105">
+           <Tag className="w-5 h-5" />
+           {language === 'ar' ? 'تواصل معنا للتفعيل' : 'Contact Sales to Enable'}
+        </a>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
